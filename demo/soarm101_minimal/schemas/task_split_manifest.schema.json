@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.task_split_manifest.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "split_id",
+    "library_id",
+    "library_version",
+    "status",
+    "selection_seed",
+    "split_unit",
+    "counts",
+    "generation_visible_task_ids",
+    "pilot_heldout",
+    "leakage_audit",
+    "demo_batch",
+    "hash_algorithm",
+    "content_hashes",
+    "bundle_hash_convention"
+  ],
+  "properties": {
+    "schema_version": {"const": "robot_capability.task_split_manifest.v1"},
+    "split_id": {"type": "string", "minLength": 1},
+    "library_id": {"type": "string", "minLength": 1},
+    "library_version": {"type": "string", "minLength": 1},
+    "status": {"const": "ready_for_generation_snapshot"},
+    "selection_seed": {"type": "integer", "minimum": 0},
+    "split_unit": {"const": "similarity_group"},
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_templates", "generation_visible", "pilot_heldout"],
+      "properties": {
+        "total_templates": {"const": 12},
+        "generation_visible": {"const": 9},
+        "pilot_heldout": {"const": 3}
+      }
+    },
+    "generation_visible_task_ids": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "pilot_heldout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "reporting_label",
+        "task_ids_disclosed_to_generation",
+        "instructions_disclosed_to_generation",
+        "initial_states_disclosed_to_generation",
+        "oracles_disclosed_to_generation"
+      ],
+      "properties": {
+        "count": {"const": 3},
+        "reporting_label": {"const": "pilot-held-out"},
+        "task_ids_disclosed_to_generation": {"const": false},
+        "instructions_disclosed_to_generation": {"const": false},
+        "initial_states_disclosed_to_generation": {"const": false},
+        "oracles_disclosed_to_generation": {"const": false}
+      }
+    },
+    "leakage_audit": {"type": "object"},
+    "demo_batch": {"type": "object"},
+    "hash_algorithm": {"const": "sha256_raw_bytes"},
+    "content_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources.yaml",
+        "taxonomy.yaml",
+        "visible_tasks.jsonl",
+        "private_heldout_tasks.jsonl",
+        "private_similarity_matrix.json",
+        "private_task_oracles.yaml",
+        "private_demo_batch.json",
+        "private_initial_states_bundle"
+      ],
+      "properties": {
+        "sources.yaml": {"$ref": "#/$defs/hash"},
+        "taxonomy.yaml": {"$ref": "#/$defs/hash"},
+        "visible_tasks.jsonl": {"$ref": "#/$defs/hash"},
+        "private_heldout_tasks.jsonl": {"$ref": "#/$defs/hash"},
+        "private_similarity_matrix.json": {"$ref": "#/$defs/hash"},
+        "private_task_oracles.yaml": {"$ref": "#/$defs/hash"},
+        "private_demo_batch.json": {"$ref": "#/$defs/hash"},
+        "private_initial_states_bundle": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "bundle_hash_convention": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

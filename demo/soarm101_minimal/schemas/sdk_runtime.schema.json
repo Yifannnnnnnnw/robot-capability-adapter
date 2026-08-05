@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.sdk_api_surface.v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "runtime_id",
+    "distribution",
+    "version",
+    "commit",
+    "canonical_import",
+    "configuration",
+    "motors",
+    "unit_profiles",
+    "properties",
+    "methods",
+    "action_details"
+  ],
+  "properties": {
+    "schema_version": {"const": "robot_capability.sdk_api_surface.v1"},
+    "runtime_id": {"const": "lerobot_soarm101_0_6_0"},
+    "distribution": {"const": "lerobot"},
+    "version": {"const": "0.6.0"},
+    "commit": {"const": "30da8e687a6dfc617fcd94afc367ac7071c376ce"},
+    "evidence_level": {"type": "string"},
+    "canonical_import": {"type": "object", "required": ["module", "symbols", "code"]},
+    "aliases_at_v0_6_0": {"type": "object"},
+    "configuration": {"type": "object", "required": ["class", "registry_type", "fields"]},
+    "motors": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {"type": "object", "required": ["id", "name", "feature_key", "role"]}
+    },
+    "unit_profiles": {"type": "object", "required": ["p0_degrees", "normalized_body"]},
+    "properties": {"type": "array", "minItems": 4},
+    "methods": {"type": "array", "minItems": 7},
+    "action_details": {"type": "object", "required": ["p0_allowed_fields", "receipt", "relative_clipping"]}
+  }
+}

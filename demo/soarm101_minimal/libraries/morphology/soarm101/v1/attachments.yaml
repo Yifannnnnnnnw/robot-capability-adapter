@@ -1,0 +1,22 @@
+schema_version: robot_capability.morphology_attachments.v1
+robot_id: soarm101
+version: 1.0.0
+attachments:
+  - attachment_id: stock_parallel_gripper
+    kind: end_effector
+    integration: integrated_in_robot_model
+    status: active
+    required_runtime_id: lerobot_soarm101_0_6_0
+    model_binding:
+      robot_model_path: model/so101.xml
+      robot_model_sha256: 7cbf65e39879787564b9cc13dd23b55092755dfd930c63973fb2b29d58ee620d
+      geometry_payloads:
+        - path: model/meshes/wrist_roll_follower_so101_gripper_part0_v1.stl
+          sha256: 370eb470a6ab48b08febcaeb5274d2bcc91246692532ce12c795fb82977def72
+        - path: model/meshes/moving_jaw_so101_gripper_part0_v1.stl
+          sha256: 3a92e115d1934d4c45cff808c4eff2ea10361a137a7f89940033a1f8a821b88c
+        - path: model/meshes/moving_jaw_so101_gripper_part1_v1.stl
+          sha256: d10f6c671d26f62988ec95efee9370a0657b5833b3c5f8aad59fd69a87ef2aee
+    capabilities:
+      provides: [parallel_pinch, open_close_position_command]
+      selection_policy: always_with_robot

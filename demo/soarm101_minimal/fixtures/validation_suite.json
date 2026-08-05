@@ -1,0 +1,75 @@
+{
+  "schema_version": "robot_capability.validation_suite.v2",
+  "cases": [
+    {
+      "case_id": "validate_g1_move_joints",
+      "capability_id": "G1.move_joints",
+      "module": "g1",
+      "function_name": "move_joints",
+      "initial_state": {"qpos": {}},
+      "call_arguments": {"targets": {"shoulder_pan.pos": 10.0, "shoulder_lift.pos": 5.0}},
+      "target_measurements": {"joint_positions": {"shoulder_pan.pos": 10.0, "shoulder_lift.pos": 5.0}},
+      "tolerances": {"joint_positions": {"shoulder_pan.pos": 0.5, "shoulder_lift.pos": 0.5}},
+      "forbidden_conditions": ["action_clipped"],
+      "timeout_s": 5.0,
+      "test_entrypoint": "soarm_demo.direct_validation:execute_case",
+      "reference_provenance": ["sdk_runtime/lerobot_soarm101/0.6.0/runtime_contract.yaml"]
+    },
+    {
+      "case_id": "validate_g2_move_to_cartesian",
+      "capability_id": "G2.move_to_cartesian",
+      "module": "g2",
+      "function_name": "move_to_cartesian",
+      "initial_state": {"qpos": {}},
+      "call_arguments": {"position_m": [0.34, 0.02, 0.09]},
+      "target_measurements": {"end_effector_position_m": [0.34, 0.02, 0.09]},
+      "tolerances": {"end_effector_position_m": [0.015, 0.015, 0.015]},
+      "forbidden_conditions": ["action_clipped"],
+      "timeout_s": 10.0,
+      "test_entrypoint": "soarm_demo.direct_validation:execute_case",
+      "reference_provenance": ["morphology/soarm101/v1/kinematics.yaml"]
+    },
+    {
+      "case_id": "validate_g3_push_object",
+      "capability_id": "G3.push_object",
+      "module": "g3",
+      "function_name": "push_object",
+      "initial_state": {"bodies": [{"id": "test_cube", "kind": "cube", "position_m": [0.30, -0.05, 0.037]}]},
+      "call_arguments": {"object_position_m": [0.30, -0.05, 0.037], "target_position_m": [0.39, -0.05, 0.02]},
+      "target_measurements": {"object_positions_m": {"test_cube": [0.39, -0.05, 0.037]}},
+      "tolerances": {"object_positions_m": {"test_cube": [0.02, 0.02, 0.02]}},
+      "forbidden_conditions": ["action_clipped", "object_outside_workspace"],
+      "timeout_s": 20.0,
+      "test_entrypoint": "soarm_demo.direct_validation:execute_case",
+      "reference_provenance": ["fixtures/validation_reference/tabletop_primitives.yaml"]
+    },
+    {
+      "case_id": "validate_g3_pick_and_place",
+      "capability_id": "G3.pick_and_place",
+      "module": "g3",
+      "function_name": "pick_and_place",
+      "initial_state": {"bodies": [{"id": "test_cylinder", "kind": "cylinder", "position_m": [0.31, 0.08, 0.040], "radius_m": 0.015, "height_m": 0.040}]},
+      "call_arguments": {"object_position_m": [0.31, 0.08, 0.040], "target_position_m": [0.40, -0.05, 0.02]},
+      "target_measurements": {"object_positions_m": {"test_cylinder": [0.40, -0.05, 0.040]}},
+      "tolerances": {"object_positions_m": {"test_cylinder": [0.02, 0.02, 0.02]}},
+      "forbidden_conditions": ["action_clipped", "object_outside_workspace"],
+      "timeout_s": 20.0,
+      "test_entrypoint": "soarm_demo.direct_validation:execute_case",
+      "reference_provenance": ["fixtures/validation_reference/tabletop_primitives.yaml"]
+    },
+    {
+      "case_id": "validate_g3_place_objects",
+      "capability_id": "G3.place_objects",
+      "module": "g3",
+      "function_name": "place_objects",
+      "initial_state": {"bodies": [{"id": "cube_a", "kind": "cube", "position_m": [0.29, -0.08, 0.037], "size_m": [0.03, 0.03, 0.03]}, {"id": "cylinder_b", "kind": "cylinder", "position_m": [0.31, 0.08, 0.040], "radius_m": 0.015, "height_m": 0.040}]},
+      "call_arguments": {"moves": [{"object_position_m": [0.29, -0.08, 0.037], "target_position_m": [0.41, -0.06, 0.02], "object_extent_m": 0.03}, {"object_position_m": [0.31, 0.08, 0.040], "target_position_m": [0.41, 0.06, 0.02], "object_extent_m": 0.03}]},
+      "target_measurements": {"object_positions_m": {"cube_a": [0.41, -0.06, 0.037], "cylinder_b": [0.41, 0.06, 0.040]}},
+      "tolerances": {"object_positions_m": {"cube_a": [0.02, 0.02, 0.02], "cylinder_b": [0.02, 0.02, 0.02]}},
+      "forbidden_conditions": ["action_clipped", "object_outside_workspace"],
+      "timeout_s": 25.0,
+      "test_entrypoint": "soarm_demo.direct_validation:execute_case",
+      "reference_provenance": ["fixtures/validation_reference/tabletop_primitives.yaml"]
+    }
+  ]
+}

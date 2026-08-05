@@ -1,0 +1,57 @@
+{
+  "schema_version": "robot_capability.task_split_manifest.v1",
+  "split_id": "soarm101_p0_cluster_stratified_3_to_1_v1",
+  "library_id": "soarm101_tabletop",
+  "library_version": "1.0.0",
+  "status": "ready_for_generation_snapshot",
+  "selection_seed": 10120260804,
+  "split_unit": "similarity_group",
+  "counts": {
+    "total_templates": 12,
+    "generation_visible": 9,
+    "pilot_heldout": 3
+  },
+  "generation_visible_task_ids": [
+    "soarm101_p0_reach_target_pose",
+    "soarm101_p0_push_cube_to_region",
+    "soarm101_p0_grasp_cube_hold",
+    "soarm101_p0_lift_cube_by_height",
+    "soarm101_p0_place_cube_on_target",
+    "soarm101_p0_place_cube_in_tray",
+    "soarm101_p0_place_cylinder_in_tray",
+    "soarm101_p0_stack_red_on_green",
+    "soarm101_p0_place_two_objects_in_tray"
+  ],
+  "pilot_heldout": {
+    "count": 3,
+    "reporting_label": "pilot-held-out",
+    "task_ids_disclosed_to_generation": false,
+    "instructions_disclosed_to_generation": false,
+    "initial_states_disclosed_to_generation": false,
+    "oracles_disclosed_to_generation": false
+  },
+  "leakage_audit": {
+    "same_similarity_group_crosses_split": false,
+    "template_or_paraphrase_overlap": false,
+    "structured_similarity_report_ref": "../../../../../private/task_library/soarm101_tabletop/v1/similarity_matrix.json",
+    "result": "pass"
+  },
+  "demo_batch": {
+    "private_ref": "../../../../../private/task_library/soarm101_tabletop/v1/demo_batch.json",
+    "visible_count": 3,
+    "pilot_heldout_count": 3,
+    "fixed_before_generation": true
+  },
+  "hash_algorithm": "sha256_raw_bytes",
+  "content_hashes": {
+    "sources.yaml": "d1f61ab568bdaf126c10e43d856843520780bb46c778c7a36f7cbc94560f803e",
+    "taxonomy.yaml": "09a1ced61a91093413f34c4595a5fd6c6e3c97b1a97877d4c35bde3269a72fd5",
+    "visible_tasks.jsonl": "db6ae1692f2425413ce0460826699f30bac24b09c5b012072bcac0f566bcfec4",
+    "private_heldout_tasks.jsonl": "fd5a243bb203d2bd872425112881551236b08f1fa85ef19853a61b62b12d111b",
+    "private_similarity_matrix.json": "a9f0885c2e40a1ebcb069c644913305917cb9b5f5a5a2b3b62b246eec800945d",
+    "private_task_oracles.yaml": "4c2e5e748d982ababa863f505678dbf294af9bbf6589e0997d59c6eb98bdaa04",
+    "private_demo_batch.json": "ecc9108755a369b5f31723867b1413420c0f734a08a8daa644b17c1cb8a33404",
+    "private_initial_states_bundle": "0e10cba73c8ea1375d62e52dea019df4220978c227ccc59619f07ab4b8dee84f"
+  },
+  "bundle_hash_convention": "For a bundle, sort paths relative to its declared base; for each file append UTF-8 path, NUL, lowercase SHA-256 of raw file bytes, newline; SHA-256 the concatenated bytes."
+}

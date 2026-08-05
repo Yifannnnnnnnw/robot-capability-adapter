@@ -1,0 +1,134 @@
+schema_version: robot_capability.validation_reference.v2
+reference_id: soarm101_p0_tabletop_primitives
+visibility: private_validation_only
+runtime:
+  kind: actual_mujoco_mjmodel_mjdata
+  bridge: lerobot_compatible_send_action_get_observation
+  simulation_hz: 200
+  action_units:
+    arm: degrees
+    gripper: normalized_0_to_100
+  initial_joint_state_field: qpos_rad
+  initial_joint_state_units: radians
+permitted_measurements:
+  - joint_positions
+  - end_effector_position_m
+  - object_positions_m
+  - contact
+  - contacts
+  - contact_pairs
+  - finite
+  - finite_state
+forbidden_conditions:
+  - action_clipped
+  - object_outside_workspace
+  - object_outside_table_support_polygon
+  - non_gripper_robot_table_collision
+  - actuator_or_joint_limit_exceeded
+  - simulation_nan_or_instability
+scene_asset_contract:
+  source: frozen_morphology_scene_catalog
+  formal_case_shape: asset_ref_plus_id_plus_pose_only
+  inline_physics_overrides_allowed: false
+  note: The pipeline injects the exact resolver-frozen scene_asset_catalog and its SHA-256 into the private three-pass validation context.
+initial_state_contract:
+  bodies:
+    required_per_body: [asset_ref, id, position_m]
+    permitted_instance_fields: [asset_ref, id, position_m, quaternion_wxyz]
+    note: Geometry, runtime kind, mass, material, friction, and collision parameters are resolved only from the frozen Morphology catalog.
+  markers:
+    required_per_marker: [asset_ref, id]
+    permitted_pose_fields: [center_m, position_m, approach_vector]
+  qpos_rad:
+    note: Optional raw MuJoCo joint angles keyed by motor name, in radians.
+measurement_contract:
+  joint_positions:
+    meaning: LeRobot-shaped arm degrees and gripper normalized 0..100 values.
+    exact_keys:
+      - shoulder_pan.pos
+      - shoulder_lift.pos
+      - elbow_flex.pos
+      - wrist_flex.pos
+      - wrist_roll.pos
+      - gripper.pos
+  end_effector_position_m: MuJoCo gripperframe site position in world metres.
+  object_positions_m: MuJoCo free-body world positions in metres after settling.
+  contact: True iff at least one MuJoCo contact exists.
+  finite: True iff the complete measured MuJoCo state is finite.
+tolerance_contract:
+  shape: Mirror target_measurements recursively; never use dotted pseudo-path keys.
+  examples:
+    joint_positions:
+      target: {joint_positions: {shoulder_pan.pos: 10.0}}
+      tolerance: {joint_positions: {shoulder_pan.pos: 1.0}}
+    object_positions_m:
+      target: {object_positions_m: {test_cube: [0.35, 0.0, 0.035]}}
+      tolerance: {object_positions_m: {test_cube: 0.025}}
+  physical_numeric_tolerances: Must be finite, strictly positive, and inside the trusted P0 ranges below.
+trusted_case_policy:
+  case_id_pattern: "^[A-Za-z0-9][A-Za-z0-9_.-]{0,159}$"
+  exactly_one_case_per_capability: true
+  complementary_g3_shapes:
+    pick_place: one_vertical_cylinder
+    lift: one_cube
+    ordered_pick_place_sequence: one_cube_plus_one_vertical_cylinder
+  exact_measurements_by_module:
+    g1: [joint_positions, finite]
+    g2: [end_effector_position_m, finite]
+    g3: [object_positions_m, finite]
+  tolerance_range_inclusive:
+    g1_joint_degrees: [0.25, 2.0]
+    g2_end_effector_m: [0.005, 0.030]
+    g3_object_position_m: [0.008, 0.035]
+  recommended_tolerance:
+    g1_joint_degrees: 0.5
+    g2_end_effector_m: 0.015
+    g3_object_position_m: 0.020
+  minimum_case_timeout_s:
+    g1: 3.0
+    g2: 8.0
+    g3: 12.0
+  timeout_contract:
+    harness_deadline_field: cases[].timeout_s
+    harness_deadline_clock: host_monotonic_wall
+    public_timeout_clock: mujoco_simulation_time
+    nominal_optional_public_timeout_policy: omit_argument_use_declared_default
+    cross_clock_numeric_margin_required: false
+  conservative_workspace_bounds_m:
+    x: [0.22, 0.46]
+    y: [-0.14, 0.14]
+    z: [0.035, 0.22]
+  conservative_g1_action_envelope:
+    arm_degrees: [-90.0, 90.0]
+    gripper_normalized: [0.0, 100.0]
+  rationale: Reject numerically brittle, clipped, out-of-envelope, or under-timed cases before they can produce generation repair feedback.
+trusted_g3_runtime_postconditions:
+  evidence_source: actual MuJoCo MjData and framework-owned bridge trajectory diagnostics
+  placement_terminal_speed_max_m_s: 0.03
+  lift_terminal_speed_max_m_s: 0.04
+  placement_terminal_support_required: true
+  placement_terminal_gripper_contact_prohibited: true
+  lift_terminal_opposing_jaw_contact_required: true
+  opposing_jaw_grasp_must_appear_in_trace: true
+  verified_tabletop_lift_m: 0.09
+  transient_lift_validation_slack_m: 0.02
+  note: These fixed framework checks supplement, rather than consume fields in, the one compact model-authored case per capability.
+resting_object_center_height:
+  table_surface_z_m: 0.020
+  cube: table_surface_z plus half of size_m z extent
+  cylinder: table_surface_z plus half of height_m
+  default_cube_center_z_m: 0.035
+  default_cylinder_center_z_m: 0.040
+  note: A target point on the table surface is not the free body's expected center z.
+rules:
+  - Minimal P0 has exactly one direct-call case for every frozen Stage 1 capability.
+  - Runtime is injected and never appears in call_arguments.
+  - Cases assert measurable postconditions rather than result text alone.
+  - Object motion must be asserted from MuJoCo free-body state; returned result text is not evidence.
+  - G1 cases should assert joint_positions and simulation stability.
+  - G2 cases should assert end_effector_position_m and simulation stability.
+  - G3 cases should assert object_positions_m and relevant safety conditions.
+  - Complement G3 shapes across the five cases: cylinder pick-place, cube lift, and a mixed cube/cylinder sequence.
+  - Trusted G3 execution also checks terminal velocity, support/release or retained grasp as appropriate, and the verified transient-lift bound; terminal position alone is insufficient.
+  - Do not claim reachability merely because an authored scene compiles.
+  - Use tolerances that reflect the controller and physics; do not demand exact floating-point equality.

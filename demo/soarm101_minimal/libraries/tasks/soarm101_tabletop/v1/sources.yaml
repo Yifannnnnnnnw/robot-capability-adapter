@@ -1,0 +1,102 @@
+schema_version: robot_capability.task_sources.v1
+library_id: soarm101_tabletop
+version: 1.0.0
+researched_on: 2026-08-04
+adaptation_policy:
+  copied_code_assets_or_task_files: false
+  copied_demonstrations: false
+  copied_oracle_thresholds: false
+  use: Research provenance and task-design inspiration only.
+  local_changes:
+    - Re-authored every template for a fixed-base SO-ARM101 and a small MuJoCo tabletop scene.
+    - Replaced visual observations with an explicit structured-coordinate input contract.
+    - Defined local initial states, geometry, tolerances, safety conditions, and split policy.
+    - Labels all unseen tasks pilot-held-out; results are not comparable to any cited benchmark.
+
+sources:
+  - source_id: libero
+    title: LIBERO — Benchmarking Knowledge Transfer in Lifelong Robot Learning
+    kind: official_repository
+    url: https://github.com/Lifelong-Robot-Learning/LIBERO
+    license_note: Repository code is MIT; datasets are CC BY 4.0 according to the official repository. No code or data is copied here.
+    borrowed_design_ideas:
+      - Separate spatial, object, goal, and entangled task axes.
+      - Keep language, scene/initial-state specification, and goal conditions as distinct fields.
+      - Freeze task initial states for evaluation.
+  - source_id: libero_procedural_generation
+    title: LIBERO procedural task generation documentation
+    kind: official_documentation
+    url: https://lifelong-robot-learning.github.io/LIBERO/html/procedural_generation/task_generation.html
+    license_note: Documentation consulted for schema design; no BDDL is copied.
+    borrowed_design_ideas:
+      - Represent tasks as structured templates instead of text-only prompts.
+      - Treat regions, objects, and predicates as explicit task components.
+  - source_id: libero_pro
+    title: LIBERO-PRO — robust evaluation beyond memorization
+    kind: official_repository
+    url: https://github.com/Zxy-MLlab/LIBERO-PRO
+    license_note: Repository consulted for taxonomy only; no perturbation files or task data are copied.
+    borrowed_design_ideas:
+      - Record object, position, semantic, task, and environment generalization axes separately.
+      - Keep controlled perturbations distinguishable from task-logic changes.
+  - source_id: rlbench
+    title: RLBench task library
+    kind: official_repository
+    url: https://github.com/stepjam/RLBench/tree/master/rlbench/tasks
+    license_note: GPL-3.0 repository consulted for task concepts only; no source, model, waypoint, or scene file is copied.
+    borrowed_design_ideas:
+      - Allow multiple natural-language descriptions per task variation.
+      - Encode success as composable conditions.
+      - Treat task/robot feasibility as a required filter when changing arms.
+  - source_id: rlbench_reach_target
+    title: RLBench ReachTarget task
+    kind: official_task_source
+    url: https://github.com/stepjam/RLBench/blob/master/rlbench/tasks/reach_target.py
+    license_note: Semantic inspiration only.
+    borrowed_design_ideas:
+      - A minimal Cartesian reach task with target variation.
+  - source_id: rlbench_stack_blocks
+    title: RLBench StackBlocks task
+    kind: official_task_source
+    url: https://github.com/stepjam/RLBench/blob/master/rlbench/tasks/stack_blocks.py
+    license_note: Semantic inspiration only.
+    borrowed_design_ideas:
+      - Stacking as a composition of placement and support conditions.
+  - source_id: calvin
+    title: CALVIN — language-conditioned long-horizon manipulation
+    kind: official_repository
+    url: https://github.com/mees/calvin
+    license_note: MIT repository consulted for evaluation structure; no data or code is copied.
+    borrowed_design_ideas:
+      - Build long-horizon evaluation sequences from ordered atomic language-conditioned tasks.
+      - Reset the robot before independent evaluation sequences.
+  - source_id: maniskill_tabletop
+    title: ManiSkill table-top two-finger gripper task cards
+    kind: official_documentation
+    url: https://maniskill.readthedocs.io/en/latest/tasks/table_top_gripper/index.html
+    license_note: Task-card semantics consulted; no simulator code, assets, demonstrations, ranges, or thresholds are copied.
+    borrowed_design_ideas:
+      - Cover reach/pick, push, placement, and stack task families.
+      - Require released/static terminal states for placement and stacking where appropriate.
+      - Express success with geometric predicates and tolerances.
+  - source_id: maniskill_tabletop_source
+    title: ManiSkill tabletop task implementations
+    kind: official_repository
+    url: https://github.com/haosulab/ManiSkill/tree/main/mani_skill/envs/tasks/tabletop
+    license_note: Apache-2.0 source consulted for provenance only; no implementation is copied.
+    borrowed_design_ideas:
+      - Keep randomized initial state generation separate from success evaluation.
+  - source_id: robocasa_foundation_benchmark
+    title: RoboCasa foundation-model learning benchmark
+    kind: official_documentation
+    url: https://robocasa.ai/docs/build/html/benchmarking/foundation_model_learning.html
+    license_note: Documentation consulted for split vocabulary only; no task, scene, object, dataset, or code is copied.
+    borrowed_design_ideas:
+      - Distinguish atomic-seen, composite-seen, and composite-unseen task categories.
+  - source_id: robocasa
+    title: RoboCasa official repository
+    kind: official_repository
+    url: https://github.com/robocasa/robocasa
+    license_note: Code is MIT and assets/datasets are CC BY 4.0 according to the official repository; none are copied here.
+    borrowed_design_ideas:
+      - Keep task logic independent from scene/object instantiation.

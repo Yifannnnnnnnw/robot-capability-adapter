@@ -1,0 +1,33 @@
+schema_version: robot_capability.model_config.v1
+default_profile: sonnet45_long
+profiles:
+  sonnet45_long:
+    provider: aws_model_api
+    model: anthropic.claude-sonnet-4-5-20250929-v1:0
+    api_key_env: AWS_MODEL_API_KEY
+    route: long
+    short_endpoint: https://i5xpracyci.execute-api.eu-west-2.amazonaws.com/model-api/invoke
+    long_base_url: https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws
+    long_path: /v1/chat/completions
+    max_tokens: 8192
+    temperature: 0.2
+    short_timeout_s: 30
+    long_timeout_s: 120
+    # One plan-level LLM call is one HTTP request; retries are disabled so the
+    # Stage1=3, Stage2-initial=30, validation-suite=3, each repair round=6
+    # (at most 10 independent rounds), and each Demo task=30 are hard
+    # provider-attempt ceilings.
+    max_retries: 0
+  sonnet45_short:
+    provider: aws_model_api
+    model: anthropic.claude-sonnet-4-5-20250929-v1:0
+    api_key_env: AWS_MODEL_API_KEY
+    route: short
+    short_endpoint: https://i5xpracyci.execute-api.eu-west-2.amazonaws.com/model-api/invoke
+    long_base_url: https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws
+    long_path: /v1/chat/completions
+    max_tokens: 4096
+    temperature: 0.2
+    short_timeout_s: 30
+    long_timeout_s: 120
+    max_retries: 0

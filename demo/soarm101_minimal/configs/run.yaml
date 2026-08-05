@@ -1,0 +1,54 @@
+schema_version: robot_capability.demo_run_config.v1
+run_name: soarm101_minimal_p0
+seed: 101
+target:
+  robot_id: soarm101
+  morphology_entry: soarm101/v1
+  morphology_scene_entry: scenes/soarm101_tabletop/v1
+  sdk_runtime_entry: lerobot_soarm101/0.6.0
+  task_entry: soarm101_tabletop/v1
+  experience_entry: v1
+generation:
+  model_profile: sonnet45_long
+  continuous_agent: true
+  stage1_max_model_calls: 3
+  stage2_initial_max_model_calls: 30
+  max_repair_rounds: 10
+  repair_max_model_calls_per_round: 6
+  public_simulation:
+    enabled: true
+    profile: soarm101_tabletop_public_smoke_v1
+    max_probe_calls: 12
+    max_total_simulation_s: 90
+    max_simulation_s_per_call: 15
+    max_runtime_calls_per_probe: 2000
+    worker_startup_timeout_s: 10
+    wall_timeout_s: 12
+    max_worker_memory_mb: 1536
+validation:
+  suite_model_profile: sonnet45_long
+  suite_max_model_calls: 3
+  require_all_capabilities: true
+  direct_function_calls: true
+tool_packaging:
+  demo_catalog: combined
+demo:
+  model_profile: sonnet45_long
+  visible_task_count: 3
+  heldout_task_count: 3
+  max_model_calls_per_task: 30
+  reset_context_between_tasks: true
+  allow_repair: false
+runtime:
+  kind: lerobot_compatible_mujoco
+  control_hz: 50
+  simulation_hz: 200
+  host_auto_step: false
+  use_degrees: true
+  camera_ids: []
+  record_video_in_aws: true
+  video_renderer: mujoco.Renderer
+  video_codec: mp4v
+  video_fps: 20
+  video_width: 640
+  video_height: 480

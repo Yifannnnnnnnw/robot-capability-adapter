@@ -1,0 +1,96 @@
+{
+  "schema_version": "robot_capability.stage1.v2",
+  "target": {
+    "robot_id": "soarm101",
+    "runtime_id": "lerobot_soarm101_0_6_0"
+  },
+  "layers": {
+    "G1": {
+      "rationale": "Expose the smallest joint-space command with explicit convergence evidence.",
+      "capabilities": [
+        {
+          "capability_id": "G1.move_joints",
+          "function_name": "move_joints",
+          "intended_outcome": "Command a partial SO-ARM101 joint target and report whether observed positions converge.",
+          "implementation_family": "joint_motion",
+          "implementation_evidence": {
+            "status": "verified",
+            "basis": "orchestration_fixture",
+            "refs": ["fixture://generated_pass/g1.py"]
+          },
+          "validation_effect": "joint_targets"
+        }
+      ]
+    },
+    "G2": {
+      "rationale": "Provide a closed-loop Cartesian semantic motion primitive over the six-key runtime.",
+      "capabilities": [
+        {
+          "capability_id": "G2.move_to_cartesian",
+          "function_name": "move_to_cartesian",
+          "intended_outcome": "Move the gripper to a supplied Cartesian position while controlling its opening.",
+          "implementation_family": "cartesian_motion",
+          "implementation_evidence": {
+            "status": "verified",
+            "basis": "orchestration_fixture",
+            "refs": ["fixture://generated_pass/g2.py"]
+          },
+          "validation_effect": "cartesian_target"
+        }
+      ]
+    },
+    "G3": {
+      "rationale": "Compose reusable tabletop behaviors needed by both atomic and multi-object tasks.",
+      "capabilities": [
+        {
+          "capability_id": "G3.push_object",
+          "function_name": "push_object",
+          "intended_outcome": "Push a tabletop object from its supplied position into a supplied planar target.",
+          "implementation_family": "push",
+          "implementation_evidence": {
+            "status": "verified",
+            "basis": "orchestration_fixture",
+            "refs": ["fixture://generated_pass/g3.py"]
+          },
+          "validation_effect": "object_source_to_target"
+        },
+        {
+          "capability_id": "G3.pick_and_place",
+          "function_name": "pick_and_place",
+          "intended_outcome": "Pick an object at a supplied position and release it at a supplied target position.",
+          "implementation_family": "pick_place",
+          "implementation_evidence": {
+            "status": "verified",
+            "basis": "orchestration_fixture",
+            "refs": ["fixture://generated_pass/g3.py"]
+          },
+          "validation_effect": "object_source_to_target"
+        },
+        {
+          "capability_id": "G3.place_objects",
+          "function_name": "place_objects",
+          "intended_outcome": "Execute an ordered list of pick-and-place moves and report every completed move.",
+          "implementation_family": "ordered_pick_place_sequence",
+          "implementation_evidence": {
+            "status": "verified",
+            "basis": "orchestration_fixture",
+            "refs": ["fixture://generated_pass/g3.py"]
+          },
+          "validation_effect": "object_move_sequence"
+        }
+      ]
+    }
+  },
+  "assumptions": [
+    "P0 tasks provide object and target coordinates in the robot-base frame.",
+    "Runtime ownership, stepping, connection lifecycle, and safety enforcement remain framework responsibilities."
+  ],
+  "unresolved_evidence_gaps": [
+    "The fixture Cartesian mapping must be replaced by calibrated SO-ARM101 kinematics before physical scoring."
+  ],
+  "evidence_refs": [
+    "morphology/soarm101/v1/kinematics.yaml",
+    "sdk_runtime/lerobot_soarm101/0.6.0/api_surface.yaml",
+    "tasks/soarm101_tabletop/v1/visible_tasks.jsonl"
+  ]
+}

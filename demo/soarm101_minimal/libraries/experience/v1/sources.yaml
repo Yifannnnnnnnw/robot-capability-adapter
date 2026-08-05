@@ -1,0 +1,14 @@
+schema_version: robot_capability.experience_sources.v1
+entry_id: empty_p0_experience
+version: 1.0.0
+sources:
+  - source_id: p0_empty_library_policy
+    kind: local_design_contract
+    location: DEMO_PLAN.md#evolution-candidates-are-not-experience-records
+    facts:
+      - The committed P0 Experience Library intentionally contains zero records.
+      - Validation and Demo evidence may produce only run-local candidate records.
+      - Publishing an Experience record requires explicit review and approval.
+provenance:
+  created_for: soarm101_minimal_capability_generation_demo
+  content_policy: No private task, oracle, run identifier, or failure evidence is stored here.

@@ -1,0 +1,55 @@
+schema_version: robot_capability.morphology_scene.v1
+scene_id: soarm101_tabletop_p0
+version: 1.0.0
+ownership: morphology_scene_registry
+compatible_robot_ids: [soarm101]
+required_runtime_id: lerobot_soarm101_0_6_0
+asset_catalog_ref: {catalog_id: soarm101_tabletop_primitives, version: 1.0.0, path: assets/primitive_catalog.yaml}
+coordinate_convention:
+  frame: robot_base
+  handedness: right_handed
+  position_unit: m
+  angle_unit: rad
+  axes: {x: forward, y: left, z: up}
+workspace_bounds_m: {x: [0.22, 0.46], y: [-0.14, 0.14], z: [0.02, 0.22]}
+runtime_builder:
+  implementation: soarm_demo.bridge.mujoco_tabletop.SO101MujocoTabletopRuntime
+  composition: robot_mjcf_plus_catalog_resolved_scene_assets
+  accepted_instance_fields: [asset_ref, id, position_m, center_m, quaternion_wxyz]
+  asset_resolution: deterministic_catalog_ref
+public_simulation:
+  privacy_class: public_generation_sandbox
+  not_task_instance: true
+  common_reset:
+    table:
+      asset_ref: morphology.scene_asset/tabletop_standard_p0@1.0.0#brown
+      center_m: [0.35, 0.0, 0.01]
+    robot:
+      joint_order: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]
+      qpos_rad: [0.0, -0.65, 0.85, 0.30, -1.5707963267948966, 0.209442]
+      qvel_rad_s: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    settle_before_probe_s: 0.5
+  smoke_instance:
+    instance_id: public_generation_smoke_v1
+    provenance:
+      kind: public_synthetic_not_task_instance
+      origin: locally_authored_generation_sandbox_profile
+      benchmark_task: false
+    bodies:
+      - {asset_ref: morphology.scene_asset/cube_30mm_20g@1.0.0#red, id: public_red_cube, position_m: [0.285, -0.115, 0.035], quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+      - {asset_ref: morphology.scene_asset/cylinder_r13_h36_18g@1.0.0#blue, id: public_blue_cylinder, position_m: [0.285, 0.115, 0.038], quaternion_wxyz: [1.0, 0.0, 0.0, 0.0]}
+      - {asset_ref: morphology.scene_asset/tray_100x100_rim12@1.0.0#generic, id: public_tray, center_m: [0.435, 0.075, 0.02]}
+      - {asset_ref: morphology.scene_asset/bowl_r45_rim25@1.0.0#purple, id: public_bowl, center_m: [0.435, -0.095, 0.02]}
+    markers:
+      - {asset_ref: morphology.scene_asset/planar_circle_r25@1.0.0#green, id: public_planar_target, center_m: [0.39, -0.02, 0.0205]}
+      - {asset_ref: morphology.scene_asset/pose_target_r8@1.0.0#green, id: public_pose_target, position_m: [0.31, 0.0, 0.16]}
+  probe_inputs:
+    joint_targets: {shoulder_pan.pos: 0.0, shoulder_lift.pos: -37.0, elbow_flex.pos: 49.0, wrist_flex.pos: 17.0, wrist_roll.pos: -90.0, gripper.pos: 20.0}
+    cartesian_target_m: [0.31, 0.0, 0.16]
+    object_source_m: [0.285, -0.115, 0.035]
+    object_target_m: [0.435, 0.075, 0.035]
+    height_delta_m: 0.06
+    object_extent_m: 0.03
+    sequence_moves:
+      - {object_id: public_red_cube, object_source_m: [0.285, -0.115, 0.035], object_target_m: [0.435, 0.055, 0.035], object_extent_m: 0.03}
+      - {object_id: public_blue_cylinder, object_source_m: [0.285, 0.115, 0.038], object_target_m: [0.435, 0.095, 0.038], object_extent_m: 0.026}

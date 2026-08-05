@@ -1,0 +1,54 @@
+# Credentials and local overrides
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Isolated Python environments and generated metadata
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+**/.pytest_cache/
+.mypy_cache/
+**/.mypy_cache/
+.ruff_cache/
+**/.ruff_cache/
+.tox/
+**/.tox/
+.nox/
+**/.nox/
+.coverage
+**/.coverage
+coverage.xml
+**/coverage.xml
+htmlcov/
+**/htmlcov/
+*.egg-info/
+**/*.egg-info/
+build/
+**/build/
+dist/
+**/dist/
+
+# Local OS/editor state
+.DS_Store
+**/.DS_Store
+
+# Raw experiment evidence stays local. Results documents retain run ids and
+# content hashes; large traces/videos and private run snapshots are not Git data.
+**/runs/*
+!**/runs/.gitkeep
+*.mp4
+*.mov
+*.avi
+*.webm
+*.mkv
+*.log
+*.tmp
+*.swp
+*~

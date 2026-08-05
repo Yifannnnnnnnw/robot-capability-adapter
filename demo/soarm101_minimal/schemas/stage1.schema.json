@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.stage1.v2",
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capability_id",
+        "function_name",
+        "intended_outcome",
+        "validation_effect",
+        "implementation_family",
+        "implementation_evidence"
+      ],
+      "properties": {
+        "capability_id": {"type": "string", "pattern": "^G[123]\\.[a-z][a-z0-9_]*$"},
+        "function_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "not": {
+            "anyOf": [
+              {
+                "enum": [
+                  "and", "as", "assert", "async", "await", "break", "class",
+                  "continue", "def", "del", "elif", "else", "except", "finally",
+                  "for", "from", "global", "if", "import", "in", "is", "lambda",
+                  "nonlocal", "not", "or", "pass", "raise", "return", "try",
+                  "while", "with", "yield"
+                ]
+              },
+              {"pattern": "^(get|read)_"}
+            ]
+          }
+        },
+        "intended_outcome": {"type": "string", "minLength": 10},
+        "implementation_family": {
+          "enum": [
+            "joint_motion",
+            "cartesian_motion",
+            "push",
+            "pick_place",
+            "lift",
+            "ordered_pick_place_sequence"
+          ]
+        },
+        "implementation_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "basis", "refs"],
+          "properties": {
+            "status": {"const": "verified"},
+            "basis": {
+              "enum": [
+                "pinned_runtime_contract",
+                "compiled_kinematics",
+                "verified_physical_baseline",
+                "orchestration_fixture"
+              ]
+            },
+            "refs": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 3}
+            }
+          }
+        },
+        "validation_effect": {
+          "enum": [
+            "joint_targets",
+            "cartesian_target",
+            "object_source_to_target",
+            "object_source_plus_height_delta",
+            "object_move_sequence"
+          ]
+        }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rationale", "capabilities"],
+      "properties": {
+        "rationale": {"type": "string", "minLength": 10},
+        "capabilities": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/capability"}}
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "target", "layers", "assumptions", "unresolved_evidence_gaps", "evidence_refs"],
+  "properties": {
+    "schema_version": {"const": "robot_capability.stage1.v2"},
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["robot_id", "runtime_id"],
+      "properties": {
+        "robot_id": {"const": "soarm101"},
+        "runtime_id": {"const": "lerobot_soarm101_0_6_0"}
+      }
+    },
+    "layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["G1", "G2", "G3"],
+      "properties": {
+        "G1": {
+          "allOf": [
+            {"$ref": "#/$defs/layer"},
+            {"properties": {"capabilities": {"maxItems": 1, "items": {"properties": {"capability_id": {"pattern": "^G1\\."}, "validation_effect": {"const": "joint_targets"}, "implementation_family": {"const": "joint_motion"}, "implementation_evidence": {"properties": {"basis": {"enum": ["pinned_runtime_contract", "orchestration_fixture"]}}}}}}}}
+          ]
+        },
+        "G2": {
+          "allOf": [
+            {"$ref": "#/$defs/layer"},
+            {"properties": {"capabilities": {"maxItems": 1, "items": {"properties": {"capability_id": {"pattern": "^G2\\."}, "validation_effect": {"const": "cartesian_target"}, "implementation_family": {"const": "cartesian_motion"}, "implementation_evidence": {"properties": {"basis": {"enum": ["compiled_kinematics", "orchestration_fixture"]}}}}}}}}
+          ]
+        },
+        "G3": {
+          "allOf": [
+            {"$ref": "#/$defs/layer"},
+            {"properties": {"capabilities": {"maxItems": 3, "items": {"properties": {"capability_id": {"pattern": "^G3\\."}, "validation_effect": {"enum": ["object_source_to_target", "object_source_plus_height_delta", "object_move_sequence"]}, "implementation_family": {"enum": ["push", "pick_place", "lift", "ordered_pick_place_sequence"]}, "implementation_evidence": {"properties": {"basis": {"enum": ["verified_physical_baseline", "orchestration_fixture"]}}}}}}}}
+          ]
+        }
+      }
+    },
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "unresolved_evidence_gaps": {"type": "array", "items": {"type": "string"}},
+    "evidence_refs": {"type": "array", "items": {"type": "string"}}
+  }
+}

@@ -1,0 +1,87 @@
+schema_version: robot_capability.morphology_sources.v1
+entry_id: soarm101
+version: v1
+researched_on: "2026-08-04"
+
+source_chain:
+  - source_id: robotstudio_so101_upstream
+    title: The Robot Studio SO-101 MJCF
+    kind: official_robot_model
+    repository: https://github.com/TheRobotStudio/SO-ARM100
+    declared_source_revision: aec17bbc256d1a7342d53aaa4950595d4c30b40d
+    reference_file: https://github.com/TheRobotStudio/SO-ARM100/blob/608122e9ac330a753735f2e18aee73338e9ac407/Simulation/SO101/so101_new_calib.xml
+    license: Apache-2.0
+    note: The predecessor asset README identifies this public model as its origin.
+  - source_id: auto_adapter_predecessor_bundle
+    title: auto-adapter RobotStudio SO-101 asset bundle
+    kind: predecessor_repository_asset
+    public_repository: https://github.com/981526092/auto-adapter
+    local_checkout_commit: 40c39e23fbdb5330fcace8757ebb8d7e67ca950a
+    asset_subtree_last_commit: cf4dbd885c312cc1011cbf0877c005f83de54a7a
+    source_subtree: assets/mjcf/robotstudio_so101
+    source_mjcf_sha256: 21899581b4b093935bc26ba81a5bba92841181f9db8c0a2559bdcfd61da89778
+    license: Apache-2.0
+    predecessor_changes_declared_in_readme:
+      - Rounded and reformatted upstream XML.
+      - Switched the integrator to implicitfast.
+      - Used the actuator default force range.
+      - Added primitive collision geometry for the arm and gripper.
+      - Added gripper contact solver parameters.
+      - Added a camera mount.
+
+selection_policy:
+  purpose: Generation-visible robot morphology only.
+  mjcf_entrypoint: model/so101.xml
+  included:
+    - The single robot-body MJCF entrypoint.
+    - Exactly the 18 STL files referenced by that MJCF.
+    - Machine-readable kinematics and an actual compile probe.
+    - Apache-2.0 license and provenance.
+  excluded:
+    - scene.xml
+    - scene_box.xml
+    - scene_tabletop_d405.xml
+    - banana.stl
+    - bottle.stl
+    - duck.stl
+    - lego.stl
+    - mug.stl
+    - screwdriver.stl
+    - so101.png
+  exclusion_reason: Evaluation objects, scene composition, object placements, and task-specific fixtures are not robot morphology and must not leak into generation.
+
+locally_derived_evidence:
+  - evidence_id: soarm101_selected_open_controlled_point_ik_v1
+    kind: deterministic_real_mujoco_regression
+    source: tests/test_gripper_contact_profile.py::test_command_20_profile_places_releases_and_retreats_with_post_conversion_fk_bound
+    directly_measured_claim: A deterministic real-MuJoCo episode physically completed approach, descent, opposing-jaw close, lift, transport, placement lower, release dwell, vertical retreat, and settle for a generic 30 mm cube, with supported placement and no forbidden physical evidence.
+    directly_computed_claim: At every checked controlled-point waypoint, including placement lower, the regression applies the effective-interior joint clamp, converts the arm command to SDK degrees, reconstructs the runtime-accepted radians, and checks exact reference FK of the same selected-open tool center at no more than 0.0006 m translation error.
+    derived_safety_contract_requirement: Consumers must repeat the post-conversion exact-FK check at no more than 0.0006 m for clearance-critical approach, descent, and lower commands; that fail-closed requirement is derived from the local regression and is not an upstream manufacturer claim.
+    public_runtime_boundary: Robot control uses only the LeRobot-compatible send_action/get_observation facade; MuJoCo state, contact judgment, and regression assertions remain framework-owned.
+    privacy_boundary: Contains no task target coordinates or pilot-held-out content.
+  - evidence_id: soarm101_independent_release_aperture_clearance_v1
+    kind: deterministic_real_mujoco_regression
+    source: tests/test_gripper_release_clearance.py::test_independent_release_aperture_prevents_cylinder_retreat_recontact
+    directly_measured_claim: Three deterministic real-MuJoCo repetitions used a generic 30 mm vertical cylinder and physically verified that an independently selected release aperture cleared both jaws before the first vertical-retreat waypoint, did not recontact during retreat, and finished supported, upright, within position tolerance, below 0.03 m/s, and without forbidden physical evidence.
+    directly_computed_claim: >-
+      The regression applies the morphology's two independent discrete
+      selection rules to the same 0.030 m maximum horizontal extent: grasp uses
+      the smallest sample at object extent plus 0.002 m total clearance
+      (command 20), while release and retreat use the smallest sample at object
+      extent plus 0.008 m total clearance (command 24) and that release sample's
+      tool center.
+    derived_safety_contract_requirement: Consumers must select release aperture independently from grasp aperture and must use the selected release sample's command and tool center throughout release dwell and vertical-retreat IK; this locally verified SOARM101 P0 rule is not an upstream manufacturer or real-hardware claim.
+    public_runtime_boundary: Robot control uses only the LeRobot-compatible send_action/get_observation facade; MuJoCo state, contact, pose, velocity, support, and forbidden-condition assertions remain framework-owned.
+    privacy_boundary: Uses a generic regression scene and contains no task target coordinates or pilot-held-out content.
+
+local_packaging_changes:
+  - path: model/so101.xml
+    change: Changed compiler meshdir from assets to meshes and added an explanatory XML comment.
+    reason: Match the versioned morphology library layout without altering robot dynamics, kinematics, geometry, actuators, sites, or cameras.
+  - path: model/meshes/*.stl
+    change: Copied byte-for-byte from the predecessor asset bundle; filenames and bytes are unchanged.
+
+license:
+  spdx_id: Apache-2.0
+  bundled_text: LICENSE
+  upstream_notice_requirement: Preserve this provenance and license when redistributing the model or meshes.

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.generation_simulation_accounting.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "environment_freeze_sha256",
+    "mode",
+    "evidence_class",
+    "budget",
+    "probe_records",
+    "validation_claim"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "robot_capability.generation_simulation_accounting.v1"
+    },
+    "environment_freeze_sha256": {"$ref": "#/$defs/sha256"},
+    "mode": {"enum": ["aws", "offline"]},
+    "evidence_class": {
+      "const": "static_catalog_inspection_no_world"
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "calls",
+        "simulation_seconds",
+        "accounting_scope",
+        "worker_wall_time_seconds"
+      ],
+      "properties": {
+        "calls": {"$ref": "#/$defs/count_budget"},
+        "simulation_seconds": {"$ref": "#/$defs/number_budget"},
+        "accounting_scope": {"const": "local_generation_probe_not_llm_budget"},
+        "worker_wall_time_seconds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trusted_startup_limit",
+            "generated_execution_limit",
+            "combined_limit"
+          ],
+          "properties": {
+            "trusted_startup_limit": {"type": "number", "exclusiveMinimum": 0},
+            "generated_execution_limit": {"type": "number", "exclusiveMinimum": 0},
+            "combined_limit": {"type": "number", "exclusiveMinimum": 0, "maximum": 22}
+          }
+        }
+      }
+    },
+    "probe_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sequence",
+          "capability_id",
+          "package_sha256",
+          "environment_freeze_sha256",
+          "outcome",
+          "result_sha256",
+          "infrastructure_timing",
+          "record_sha256"
+        ],
+        "properties": {
+          "sequence": {"type": "integer", "minimum": 1},
+          "capability_id": {"type": "string", "pattern": "^G[123]\\.[a-z][a-z0-9_]*$"},
+          "package_sha256": {"$ref": "#/$defs/sha256"},
+          "environment_freeze_sha256": {"$ref": "#/$defs/sha256"},
+          "outcome": {"type": "string", "minLength": 1, "maxLength": 128},
+          "result_sha256": {"$ref": "#/$defs/sha256"},
+          "infrastructure_timing": {
+            "oneOf": [
+              {"type": "object", "maxProperties": 0},
+              {"$ref": "#/$defs/worker_timing"}
+            ]
+          },
+          "record_sha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "validation_claim": {"const": "none"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "worker_timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trusted_startup_s", "generated_execution_s"],
+      "properties": {
+        "trusted_startup_s": {"type": "number", "minimum": 0},
+        "generated_execution_s": {"type": "number", "minimum": 0}
+      }
+    },
+    "count_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["limit", "used", "remaining"],
+      "properties": {
+        "limit": {"type": "integer", "minimum": 1},
+        "used": {"type": "integer", "minimum": 0},
+        "remaining": {"type": "integer", "minimum": 0}
+      }
+    },
+    "number_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["limit", "used", "remaining"],
+      "properties": {
+        "limit": {"type": "number", "exclusiveMinimum": 0},
+        "used": {"type": "number", "minimum": 0},
+        "remaining": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}

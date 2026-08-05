@@ -1,0 +1,16 @@
+{
+  "schema_version": "robot_capability.private_task_instance.v1",
+  "instance_id": "soarm101_p0_reach_target_pose__seed_1101",
+  "task_id": "soarm101_p0_reach_target_pose",
+  "seed": 1101,
+  "inherits_reset": "_common_reset.json",
+  "bodies": [],
+  "markers": [{"asset_ref": "morphology.scene_asset/pose_target_r8@1.0.0#green", "id": "reach_target", "position_m": [0.31, -0.08, 0.16]}],
+  "agent_input": {
+    "coordinate_frame": "robot_base",
+    "position_unit": "m",
+    "targets": {"reach_target": {"position_m": [0.31, -0.08, 0.16], "approach_vector": [0.0, 0.0, -1.0]}}
+  },
+  "oracle_ref": "oracle.reach_target_pose",
+  "status": "authored_requires_reachability_probe"
+}

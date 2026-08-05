@@ -1,0 +1,19 @@
+{
+  "schema_version": "robot_capability.private_scene_reset.v1",
+  "reset_profile_id": "soarm101_tabletop_p0_common",
+  "scene_id": "soarm101_tabletop_p0",
+  "coordinate_frame": "robot_base",
+  "units": {"position": "m", "angle": "rad"},
+  "table": {
+    "asset_ref": "morphology.scene_asset/tabletop_standard_p0@1.0.0#brown",
+    "center_m": [0.35, 0.0, 0.01]
+  },
+  "robot": {
+    "joint_order": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"],
+    "qpos_rad": [0.0, -0.8, 0.6, 0.5, -1.4, 1.2],
+    "qvel_rad_s": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    "source_note": "SO-101 predecessor tabletop MJCF keyframe; copied as a private P0 reset candidate and not exposed to either Agent."
+  },
+  "settle_before_task_s": 0.5,
+  "status": "bridge_scene_compile_pass_reachability_probe_pending"
+}

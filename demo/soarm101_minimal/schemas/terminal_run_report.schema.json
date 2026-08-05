@@ -1,0 +1,599 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.terminal_run_report.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "terminal_state",
+    "terminal_reason",
+    "mode",
+    "ended_at",
+    "error",
+    "input_hashes",
+    "artifact_hashes",
+    "budgets",
+    "model_accounting",
+    "repair",
+    "video_recording",
+    "evidence_files"
+  ],
+  "properties": {
+    "schema_version": {"const": "robot_capability.terminal_run_report.v2"},
+    "run_id": {"type": "string", "minLength": 1},
+    "terminal_state": {
+      "enum": [
+        "INPUT_INVALID",
+        "GENERATION_FAILED",
+        "VALIDATION_SUITE_GENERATION_FAILED",
+        "VALIDATION_FAILED",
+        "TOOL_PACKAGING_FAILED",
+        "DEMO_FAILED",
+        "INFRASTRUCTURE_FAILED"
+      ]
+    },
+    "terminal_reason": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["offline", "aws"]},
+    "ended_at": {"type": "string", "format": "date-time"},
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {"type": {"type": "string", "minLength": 1}}
+    },
+    "input_hashes": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/hash"}
+    },
+    "artifact_hashes": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/hash"}
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generation_stage1": {"$ref": "#/$defs/stage1Budget"},
+        "generation_stage2_initial": {"$ref": "#/$defs/stage2Budget"},
+        "validation_suite": {"$ref": "#/$defs/suiteBudget"},
+        "demo": {"$ref": "#/$defs/demoBudget"},
+        "repair": {"$ref": "#/$defs/repairBudget"}
+      }
+    },
+    "model_accounting": {
+      "type": "object",
+      "required": ["public_identities", "roles", "aggregate", "generation_phases"],
+      "properties": {
+        "generation_phases": {"$ref": "#/$defs/terminalGenerationPhases"}
+      }
+    },
+    "repair": {"$ref": "#/$defs/repairSummary"},
+    "video_recording": {
+      "oneOf": [
+        {"$ref": "#/$defs/terminalVideoIndex"},
+        {"$ref": "#/$defs/videoUnavailable"}
+      ]
+    },
+    "evidence_files": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/fileEvidence"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"mode": {"const": "aws"}}, "required": ["mode"]},
+      "then": {
+        "properties": {
+          "video_recording": {
+            "properties": {"required": {"const": true}}
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "video_recording": {
+            "properties": {"required": {"const": false}}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "video_recording": {
+            "properties": {
+              "schema_version": {
+                "const": "robot_capability.mujoco_video_index.v1"
+              }
+            },
+            "required": ["schema_version"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "artifact_hashes": {"required": ["video_index"]},
+          "evidence_files": {
+            "contains": {
+              "type": "object",
+              "required": ["path"],
+              "properties": {"path": {"const": "video_index.json"}}
+            },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "fileEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/hash"},
+        "bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "videoFileEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/hash"},
+        "bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "stage1Budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "limit", "used", "remaining"],
+      "properties": {
+        "name": {"const": "generation_stage1"},
+        "limit": {"const": 3},
+        "used": {"type": "integer", "minimum": 0, "maximum": 3},
+        "remaining": {"type": "integer", "minimum": 0, "maximum": 3}
+      }
+    },
+    "stage2Budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "limit", "used", "remaining"],
+      "properties": {
+        "name": {"const": "generation_stage2_initial"},
+        "limit": {"const": 30},
+        "used": {"type": "integer", "minimum": 0, "maximum": 30},
+        "remaining": {"type": "integer", "minimum": 0, "maximum": 30}
+      }
+    },
+    "suiteBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "limit", "used", "remaining"],
+      "properties": {
+        "name": {"const": "validation_suite"},
+        "limit": {"const": 3},
+        "used": {"type": "integer", "minimum": 0, "maximum": 3},
+        "remaining": {"type": "integer", "minimum": 0, "maximum": 3}
+      }
+    },
+    "demoTaskBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "limit", "used", "remaining"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^demo:.+"},
+        "limit": {"const": 30},
+        "used": {"type": "integer", "minimum": 0, "maximum": 30},
+        "remaining": {"type": "integer", "minimum": 0, "maximum": 30}
+      }
+    },
+    "demoBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["limit_per_task", "used_per_task", "per_task"],
+      "properties": {
+        "limit_per_task": {"const": 30},
+        "used_per_task": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {"type": "integer", "minimum": 0, "maximum": 30}
+        },
+        "per_task": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/demoTaskBudget"}
+        }
+      }
+    },
+    "repairRoundBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "limit", "used", "remaining"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^generation_repair_round_(0[1-9]|10)$"
+        },
+        "limit": {"const": 6},
+        "used": {"type": "integer", "minimum": 0, "maximum": 6},
+        "remaining": {"type": "integer", "minimum": 0, "maximum": 6}
+      }
+    },
+    "phaseResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "agent_turns",
+        "provider_http_attempts",
+        "provider_retries",
+        "agent_turn_budget",
+        "provider_attempt_budget_policy",
+        "usage",
+        "session_id",
+        "episode_id"
+      ],
+      "properties": {
+        "status": {"type": "string", "minLength": 1},
+        "agent_turns": {"type": "integer", "minimum": 0},
+        "provider_http_attempts": {"type": "integer", "minimum": 0},
+        "provider_retries": {"type": "integer", "minimum": 0},
+        "agent_turn_budget": {"type": "object"},
+        "provider_attempt_budget_policy": {"type": "object"},
+        "usage": {"type": "object"},
+        "session_id": {"type": "string", "minLength": 1},
+        "episode_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "stage1PhaseResult": {
+      "allOf": [
+        {"$ref": "#/$defs/phaseResult"},
+        {"properties": {"agent_turn_budget": {"$ref": "#/$defs/stage1Budget"}}}
+      ]
+    },
+    "stage2PhaseResult": {
+      "allOf": [
+        {"$ref": "#/$defs/phaseResult"},
+        {"properties": {"agent_turn_budget": {"$ref": "#/$defs/stage2Budget"}}}
+      ]
+    },
+    "repairResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "round",
+        "status",
+        "agent_turns",
+        "provider_http_attempts",
+        "provider_retries",
+        "client_kind",
+        "scripted",
+        "agent_turn_budget",
+        "provider_attempt_budget_policy",
+        "usage",
+        "session_id",
+        "episode_id"
+      ],
+      "properties": {
+        "round": {"type": "integer", "minimum": 1, "maximum": 10},
+        "status": {"type": "string", "minLength": 1},
+        "agent_turns": {"type": "integer", "minimum": 0, "maximum": 6},
+        "provider_http_attempts": {"type": "integer", "minimum": 0, "maximum": 6},
+        "provider_retries": {"const": 0},
+        "client_kind": {"type": "string", "minLength": 1},
+        "scripted": {"type": "boolean"},
+        "agent_turn_budget": {"$ref": "#/$defs/repairRoundBudget"},
+        "provider_attempt_budget_policy": {"type": "object"},
+        "usage": {"type": "object"},
+        "session_id": {"type": "string", "minLength": 1},
+        "episode_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "repairBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "round_limit",
+        "rounds_used",
+        "rounds_remaining",
+        "model_call_limit_per_round",
+        "results"
+      ],
+      "properties": {
+        "round_limit": {"const": 10},
+        "rounds_used": {"type": "integer", "minimum": 0, "maximum": 10},
+        "rounds_remaining": {"type": "integer", "minimum": 0, "maximum": 10},
+        "model_call_limit_per_round": {"const": 6},
+        "results": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/repairResult"}
+        }
+      }
+    },
+    "repairSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "round_limit",
+        "rounds_used",
+        "rounds_remaining",
+        "model_call_limit_per_round",
+        "results",
+        "history"
+      ],
+      "properties": {
+        "round_limit": {"const": 10},
+        "rounds_used": {"type": "integer", "minimum": 0, "maximum": 10},
+        "rounds_remaining": {"type": "integer", "minimum": 0, "maximum": 10},
+        "model_call_limit_per_round": {"const": 6},
+        "results": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/repairResult"}
+        },
+        "history": {"type": "array", "maxItems": 10}
+      }
+    },
+    "terminalGenerationPhases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage1", "stage2_initial", "repair_rounds"],
+      "properties": {
+        "stage1": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/stage1PhaseResult"}
+          ]
+        },
+        "stage2_initial": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/stage2PhaseResult"}
+          ]
+        },
+        "repair_rounds": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/repairResult"}
+        }
+      }
+    },
+    "videoRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "id",
+        "video",
+        "metadata",
+        "renderer_kind",
+        "codec",
+        "fps",
+        "frames",
+        "width",
+        "height",
+        "simulation_start_s",
+        "simulation_end_s",
+        "encoded_duration_s"
+      ],
+      "properties": {
+        "phase": {"enum": ["validation", "demo"]},
+        "id": {"type": "string", "minLength": 1},
+        "video": {"$ref": "#/$defs/videoFileEvidence"},
+        "metadata": {"$ref": "#/$defs/videoFileEvidence"},
+        "renderer_kind": {"const": "mujoco.Renderer"},
+        "codec": {"const": "mp4v"},
+        "fps": {"const": 20},
+        "frames": {"type": "integer", "minimum": 1},
+        "width": {"const": 640},
+        "height": {"const": 480},
+        "simulation_start_s": {"type": "number"},
+        "simulation_end_s": {"type": "number"},
+        "encoded_duration_s": {"type": "number", "exclusiveMinimum": 0},
+        "resolved_scene_binding": {"$ref": "#/$defs/resolvedSceneBinding"},
+        "generation_environment_freeze_sha256": {"$ref": "#/$defs/hash"},
+        "generation_environment_manifest_sha256": {"$ref": "#/$defs/hash"},
+        "round": {"type": "integer", "minimum": 0, "maximum": 10},
+        "case_id": {"type": "string", "minLength": 1},
+        "task_id": {"type": "string", "minLength": 1},
+        "suite_sha256": {"$ref": "#/$defs/hash"},
+        "package_sha256": {"$ref": "#/$defs/hash"},
+        "direct_report": {"$ref": "#/$defs/videoFileEvidence"},
+        "demo_freeze": {"$ref": "#/$defs/videoFileEvidence"},
+        "demo_report": {"$ref": "#/$defs/videoFileEvidence"}
+      },
+      "dependentRequired": {
+        "generation_environment_freeze_sha256": [
+          "generation_environment_manifest_sha256",
+          "resolved_scene_binding"
+        ],
+        "generation_environment_manifest_sha256": [
+          "generation_environment_freeze_sha256",
+          "resolved_scene_binding"
+        ]
+      }
+    },
+    "resolvedSceneBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_sha256",
+        "source_scene_request_sha256",
+        "scene_catalog"
+      ],
+      "properties": {
+        "binding_sha256": {"$ref": "#/$defs/hash"},
+        "source_scene_request_sha256": {"$ref": "#/$defs/hash"},
+        "scene_catalog": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "catalog_id",
+            "version",
+            "source_sha256",
+            "content_sha256"
+          ],
+          "properties": {
+            "catalog_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]*$"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+            },
+            "source_sha256": {"$ref": "#/$defs/hash"},
+            "content_sha256": {"$ref": "#/$defs/hash"}
+          }
+        }
+      }
+    },
+    "validationVideo": {
+      "allOf": [
+        {"$ref": "#/$defs/videoRecord"},
+        {
+          "required": [
+            "round",
+            "case_id",
+            "suite_sha256",
+            "package_sha256",
+            "direct_report"
+          ],
+          "properties": {"phase": {"const": "validation"}},
+          "not": {
+            "anyOf": [
+              {"required": ["task_id"]},
+              {"required": ["demo_freeze"]},
+              {"required": ["demo_report"]}
+            ]
+          }
+        }
+      ]
+    },
+    "demoVideo": {
+      "allOf": [
+        {"$ref": "#/$defs/videoRecord"},
+        {
+          "required": [
+            "task_id",
+            "package_sha256",
+            "demo_freeze",
+            "demo_report"
+          ],
+          "properties": {"phase": {"const": "demo"}},
+          "not": {
+            "anyOf": [
+              {"required": ["round"]},
+              {"required": ["case_id"]},
+              {"required": ["suite_sha256"]},
+              {"required": ["direct_report"]}
+            ]
+          }
+        }
+      ]
+    },
+    "terminalVideoIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "required",
+        "status",
+        "renderer_kind",
+        "codec",
+        "fps",
+        "width",
+        "height",
+        "validation",
+        "demo",
+        "offline_reason"
+      ],
+      "properties": {
+        "schema_version": {"const": "robot_capability.mujoco_video_index.v1"},
+        "required": {"type": "boolean"},
+        "status": {"enum": ["partial", "complete"]},
+        "renderer_kind": {"const": "mujoco.Renderer"},
+        "codec": {"const": "mp4v"},
+        "fps": {"const": 20},
+        "width": {"const": 640},
+        "height": {"const": 480},
+        "validation": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/validationVideo"}
+        },
+        "demo": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/demoVideo"}
+        },
+        "offline_reason": {"type": ["string", "null"]}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"required": {"const": true}},
+            "required": ["required"]
+          },
+          "then": {
+            "properties": {"offline_reason": {"type": "null"}}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "required": {"const": true},
+              "status": {"const": "complete"}
+            },
+            "required": ["required", "status"]
+          },
+          "then": {
+            "properties": {
+              "validation": {"minItems": 1},
+              "demo": {"minItems": 6, "maxItems": 6},
+              "offline_reason": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"required": {"const": false}},
+            "required": ["required"]
+          },
+          "then": {
+            "properties": {
+              "validation": {"maxItems": 0},
+              "demo": {"maxItems": 0},
+              "offline_reason": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      ]
+    },
+    "videoUnavailable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "required", "status", "reason_code"],
+      "properties": {
+        "schema_version": {
+          "const": "robot_capability.mujoco_video_status.v1"
+        },
+        "required": {"type": "boolean"},
+        "status": {"enum": ["unavailable", "error"]},
+        "reason_code": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$"
+        }
+      }
+    }
+  }
+}

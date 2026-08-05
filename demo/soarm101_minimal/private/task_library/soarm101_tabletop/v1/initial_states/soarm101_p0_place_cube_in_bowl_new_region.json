@@ -1,0 +1,20 @@
+{
+  "schema_version": "robot_capability.private_task_instance.v1",
+  "instance_id": "soarm101_p0_place_cube_in_bowl_new_region__seed_2201",
+  "task_id": "soarm101_p0_place_cube_in_bowl_new_region",
+  "seed": 2201,
+  "inherits_reset": "_common_reset.json",
+  "bodies": [
+    {"asset_ref": "morphology.scene_asset/cube_34mm_25g@1.0.0#purple", "id": "purple_cube", "position_m": [0.43, -0.09, 0.037], "quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]},
+    {"asset_ref": "morphology.scene_asset/bowl_r45_rim25@1.0.0#purple", "id": "bowl", "center_m": [0.32, 0.08, 0.02]}
+  ],
+  "markers": [],
+  "agent_input": {
+    "coordinate_frame": "robot_base",
+    "position_unit": "m",
+    "objects": {"purple_cube": {"position_m": [0.43, -0.09, 0.037], "size_m": [0.034, 0.034, 0.034]}},
+    "receptacles": {"bowl": {"center_m": [0.32, 0.08, 0.02], "inner_radius_m": 0.045, "rim_height_m": 0.025}}
+  },
+  "oracle_ref": "oracle.place_cube_in_bowl_new_region",
+  "status": "authored_requires_reachability_probe"
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": "robot_capability.private_task_instance.v1",
+  "instance_id": "soarm101_p0_place_cube_in_tray__seed_1601",
+  "task_id": "soarm101_p0_place_cube_in_tray",
+  "seed": 1601,
+  "inherits_reset": "_common_reset.json",
+  "bodies": [
+    {"asset_ref": "morphology.scene_asset/cube_34mm_25g@1.0.0#red", "id": "red_cube", "position_m": [0.31, 0.09, 0.037], "quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]},
+    {"asset_ref": "morphology.scene_asset/tray_90x80_rim12@1.0.0#generic", "id": "tray", "center_m": [0.40, -0.06, 0.02]}
+  ],
+  "markers": [],
+  "agent_input": {
+    "coordinate_frame": "robot_base",
+    "position_unit": "m",
+    "objects": {"red_cube": {"position_m": [0.31, 0.09, 0.037], "size_m": [0.034, 0.034, 0.034]}},
+    "receptacles": {"tray": {"center_m": [0.40, -0.06, 0.02], "inner_size_m": [0.09, 0.08], "rim_height_m": 0.012}}
+  },
+  "oracle_ref": "oracle.place_cube_in_tray",
+  "status": "authored_requires_reachability_probe"
+}

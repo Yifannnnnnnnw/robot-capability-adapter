@@ -1,0 +1,16 @@
+{
+  "schema_version": "robot_capability.private_task_instance.v1",
+  "instance_id": "soarm101_p0_grasp_cube_hold__seed_1301",
+  "task_id": "soarm101_p0_grasp_cube_hold",
+  "seed": 1301,
+  "inherits_reset": "_common_reset.json",
+  "bodies": [{"asset_ref": "morphology.scene_asset/cube_34mm_25g@1.0.0#blue", "id": "blue_cube", "position_m": [0.33, 0.06, 0.037], "quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]}],
+  "markers": [],
+  "agent_input": {
+    "coordinate_frame": "robot_base",
+    "position_unit": "m",
+    "objects": {"blue_cube": {"position_m": [0.33, 0.06, 0.037], "size_m": [0.034, 0.034, 0.034], "grasp_axis": [0.0, 1.0, 0.0]}}
+  },
+  "oracle_ref": "oracle.grasp_cube_hold",
+  "status": "authored_requires_reachability_probe"
+}

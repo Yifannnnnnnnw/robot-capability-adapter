@@ -1,0 +1,89 @@
+{
+  "schema_version": "robot_capability.sdk_api_probe_result.v1",
+  "status": "pass",
+  "target": {
+    "package": "lerobot",
+    "distribution": "lerobot",
+    "version": "0.6.0",
+    "commit": "30da8e687a6dfc617fcd94afc367ac7071c376ce"
+  },
+  "runtime_id": "lerobot_soarm101_0_6_0",
+  "environment": {
+    "python_version": "3.12.13",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "environment_policy": "demo_local_venv"
+  },
+  "canonical_import": {
+    "module": "lerobot.robots.so_follower",
+    "symbols": [
+      "SO101Follower",
+      "SO101FollowerConfig"
+    ]
+  },
+  "alias_targets": {
+    "SO101Follower": "SOFollower",
+    "SO101FollowerConfig": "SOFollowerRobotConfig"
+  },
+  "canonical_aliases": {
+    "SO101Follower_is_SOFollower": true,
+    "SO101FollowerConfig_is_SOFollowerRobotConfig": true
+  },
+  "config_fields": [
+    "calibration_dir",
+    "cameras",
+    "disable_torque_on_disconnect",
+    "id",
+    "max_relative_target",
+    "port",
+    "use_degrees"
+  ],
+  "public_methods": [
+    "setup_motors",
+    "connect",
+    "calibrate",
+    "configure",
+    "get_observation",
+    "send_action",
+    "disconnect"
+  ],
+  "action_keys": [
+    "shoulder_pan.pos",
+    "shoulder_lift.pos",
+    "elbow_flex.pos",
+    "wrist_flex.pos",
+    "wrist_roll.pos",
+    "gripper.pos"
+  ],
+  "observation_keys": [
+    "shoulder_pan.pos",
+    "shoulder_lift.pos",
+    "elbow_flex.pos",
+    "wrist_flex.pos",
+    "wrist_roll.pos",
+    "gripper.pos"
+  ],
+  "signatures": {
+    "setup_motors": "(self) -> None",
+    "connect": "(self, calibrate: bool = True) -> None",
+    "calibrate": "(self) -> None",
+    "configure": "(self) -> None",
+    "get_observation": "(self) -> dict[str, typing.Any]",
+    "send_action": "(self, action: dict[str, typing.Any]) -> dict[str, typing.Any]",
+    "disconnect": "(self)"
+  },
+  "command_trace": {
+    "unclipped_read_count": 0,
+    "unclipped_write_count": 1,
+    "clipped_read_count": 1,
+    "clipped_write_count": 1,
+    "waits_for_arrival": false
+  },
+  "unit_modes": {
+    "use_degrees_true_arm": "degrees",
+    "use_degrees_false_arm": "range_m100_100",
+    "gripper_in_both_profiles": "range_0_100"
+  },
+  "fixture": "probes/probe_api.py",
+  "executed_on": "2026-08-05",
+  "hardware_or_serial_opened": false
+}

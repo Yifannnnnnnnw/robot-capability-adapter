@@ -1,0 +1,26 @@
+schema_version: robot_capability.task_environment_requirements.v1
+library_id: soarm101_tabletop
+version: 1.0.0
+robot_requirement: {robot_id: soarm101, robot_version: v1, required_attachment_ids: [stock_parallel_gripper]}
+runtime_requirement: {runtime_id: lerobot_soarm101_0_6_0, package: lerobot, package_version: 0.6.0}
+scene_requirement: {entry_id: soarm101_tabletop, entry_version: 1.0.0, scene_id: soarm101_tabletop_p0}
+visible_task_requirements:
+  - task_id: soarm101_p0_reach_target_pose
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/pose_target_r8@1.0.0#green]
+  - task_id: soarm101_p0_push_cube_to_region
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cube_34mm_25g@1.0.0#red, morphology.scene_asset/planar_circle_r30@1.0.0#green]
+  - task_id: soarm101_p0_grasp_cube_hold
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cube_34mm_25g@1.0.0#blue]
+  - task_id: soarm101_p0_lift_cube_by_height
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cube_34mm_25g@1.0.0#green]
+  - task_id: soarm101_p0_place_cube_on_target
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cube_34mm_25g@1.0.0#yellow, morphology.scene_asset/planar_circle_r25@1.0.0#green]
+  - task_id: soarm101_p0_place_cube_in_tray
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cube_34mm_25g@1.0.0#red, morphology.scene_asset/tray_90x80_rim12@1.0.0#generic]
+  - task_id: soarm101_p0_place_cylinder_in_tray
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cylinder_r15_h40_22g@1.0.0#blue, morphology.scene_asset/tray_90x80_rim12@1.0.0#generic]
+  - task_id: soarm101_p0_stack_red_on_green
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cube_34mm_25g@1.0.0#red, morphology.scene_asset/cube_34mm_25g@1.0.0#green]
+  - task_id: soarm101_p0_place_two_objects_in_tray
+    required_asset_refs: [morphology.scene_asset/tabletop_standard_p0@1.0.0#brown, morphology.scene_asset/cube_30mm_20g@1.0.0#red, morphology.scene_asset/cylinder_r13_h36_18g@1.0.0#blue, morphology.scene_asset/tray_100x100_rim12@1.0.0#generic]
+missing_asset_policy: {result: MISSING_ASSET, mutate_current_run: false, next_step: add_asset_to_morphology_library_then_start_new_run}

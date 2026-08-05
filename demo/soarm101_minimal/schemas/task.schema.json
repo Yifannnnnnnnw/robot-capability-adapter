@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.task_template.v1",
+  "type": "object",
+  "required": ["schema_version", "task_id", "version", "robot_scope", "scene_id", "language", "agent_input_contract", "taxonomy", "initial_state", "goal", "generalization_axes", "split", "provenance"],
+  "properties": {
+    "schema_version": {"const": "robot_capability.task_template.v1"},
+    "task_id": {"type": "string", "minLength": 1},
+    "version": {"type": "string"},
+    "robot_scope": {"type": "array", "contains": {"const": "soarm101"}},
+    "scene_id": {"type": "string"},
+    "language": {"type": "object", "required": ["canonical", "paraphrases"]},
+    "agent_input_contract": {"type": "object", "required": ["observation_mode", "coordinate_frame", "required_scene_fact_paths", "forbidden_scene_fact_prefixes"]},
+    "taxonomy": {"type": "object", "required": ["family", "level", "skill_sequence", "goal_predicates"]},
+    "initial_state": {"type": "object"},
+    "goal": {"type": "object"},
+    "generalization_axes": {"type": "object"},
+    "split": {"type": "object", "required": ["visibility", "template_id", "similarity_group"]},
+    "provenance": {"type": "object"}
+  }
+}

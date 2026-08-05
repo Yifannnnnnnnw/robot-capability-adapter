@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.tool_catalog.v1",
+  "$defs": {
+    "scalarParameterSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"enum": ["string", "integer", "number", "boolean", "null"]},
+        "default": {},
+        "description": {"type": "string"},
+        "minimum": {"type": "number"},
+        "exclusiveMinimum": {"type": "number"},
+        "maximum": {"type": "number"},
+        "exclusiveMaximum": {"type": "number"}
+      }
+    },
+    "arrayParameterSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items"],
+      "properties": {
+        "type": {"const": "array"},
+        "items": {"$ref": "#/$defs/parameterSchema"},
+        "minItems": {"type": "integer", "minimum": 0},
+        "maxItems": {"type": "integer", "minimum": 0},
+        "default": {},
+        "description": {"type": "string"}
+      }
+    },
+    "objectParameterSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "additionalProperties"],
+      "properties": {
+        "type": {"const": "object"},
+        "additionalProperties": {
+          "oneOf": [
+            {"type": "boolean"},
+            {"$ref": "#/$defs/parameterSchema"}
+          ]
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/parameterSchema"}
+        },
+        "required": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "default": {},
+        "description": {"type": "string"}
+      }
+    },
+    "unionParameterSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anyOf"],
+      "properties": {
+        "anyOf": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"$ref": "#/$defs/parameterSchema"}
+        },
+        "default": {},
+        "description": {"type": "string"}
+      }
+    },
+    "unconstrainedParameterSchema": {
+      "type": "object",
+      "maxProperties": 0
+    },
+    "parameterSchema": {
+      "oneOf": [
+        {"$ref": "#/$defs/scalarParameterSchema"},
+        {"$ref": "#/$defs/arrayParameterSchema"},
+        {"$ref": "#/$defs/objectParameterSchema"},
+        {"$ref": "#/$defs/unionParameterSchema"},
+        {"$ref": "#/$defs/unconstrainedParameterSchema"}
+      ]
+    },
+    "toolInputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "additionalProperties", "properties", "required"],
+      "properties": {
+        "type": {"const": "object"},
+        "additionalProperties": {"const": false},
+        "properties": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/parameterSchema"}
+        },
+        "required": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "catalog_id", "package_sha256", "tools"],
+  "properties": {
+    "schema_version": {"const": "robot_capability.tool_catalog.v1"},
+    "catalog_id": {"type": "string"},
+    "package_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "description", "parameters", "capability_id", "binding"],
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "parameters": {"$ref": "#/$defs/toolInputSchema"},
+          "capability_id": {"type": "string"},
+          "binding": {"type": "string"}
+        }
+      }
+    }
+  }
+}

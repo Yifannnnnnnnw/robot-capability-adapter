@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.private_execution_preflight.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "private_execution_bundle_freeze_sha256",
+    "private_execution_bundle_manifest_sha256",
+    "source_bindings",
+    "partition_counts",
+    "authored_scene_checks",
+    "asset_resolution",
+    "validation_reference",
+    "mujoco_worlds_created",
+    "privacy"
+  ],
+  "properties": {
+    "schema_version": {"const": "robot_capability.private_execution_preflight.v2"},
+    "private_execution_bundle_freeze_sha256": {"$ref": "#/$defs/hash"},
+    "private_execution_bundle_manifest_sha256": {"$ref": "#/$defs/hash"},
+    "source_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "private_partition_source_sha256",
+        "visible_task_catalog_sha256",
+        "pilot_heldout_task_catalog_sha256",
+        "common_reset_sha256",
+        "task_template_binding_sha256",
+        "authored_instance_binding_sha256",
+        "task_instance_pairing_sha256",
+        "scene_catalog_sha256",
+        "scene_freeze_manifest_sha256",
+        "complete_source_binding_sha256"
+      ],
+      "properties": {
+        "private_partition_source_sha256": {"$ref": "#/$defs/hash"},
+        "visible_task_catalog_sha256": {"$ref": "#/$defs/hash"},
+        "pilot_heldout_task_catalog_sha256": {"$ref": "#/$defs/hash"},
+        "common_reset_sha256": {"$ref": "#/$defs/hash"},
+        "task_template_binding_sha256": {"$ref": "#/$defs/hash"},
+        "authored_instance_binding_sha256": {"$ref": "#/$defs/hash"},
+        "task_instance_pairing_sha256": {"$ref": "#/$defs/hash"},
+        "scene_catalog_sha256": {"$ref": "#/$defs/hash"},
+        "scene_freeze_manifest_sha256": {"$ref": "#/$defs/hash"},
+        "complete_source_binding_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "partition_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog_visible",
+        "catalog_pilot_heldout",
+        "authored_instances",
+        "selected_visible",
+        "selected_pilot_heldout",
+        "selected_overlap"
+      ],
+      "properties": {
+        "catalog_visible": {"const": 9},
+        "catalog_pilot_heldout": {"const": 3},
+        "authored_instances": {"const": 12},
+        "selected_visible": {"const": 3},
+        "selected_pilot_heldout": {"const": 3},
+        "selected_overlap": {"const": 0}
+      }
+    },
+    "authored_scene_checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_partition_disjoint",
+        "task_instance_bijection",
+        "selected_instances_match_authored_sources",
+        "scene_and_reset_binding_consistent",
+        "required_scene_fact_paths_present",
+        "catalog_derived_asset_ids_complete",
+        "catalog_is_only_physical_fact_authority",
+        "all_numbers_finite"
+      ],
+      "properties": {
+        "task_partition_disjoint": {"const": true},
+        "task_instance_bijection": {"const": true},
+        "selected_instances_match_authored_sources": {"const": true},
+        "scene_and_reset_binding_consistent": {"const": true},
+        "required_scene_fact_paths_present": {"const": true},
+        "catalog_derived_asset_ids_complete": {"const": true},
+        "catalog_is_only_physical_fact_authority": {"const": true},
+        "all_numbers_finite": {"const": true}
+      }
+    },
+    "asset_resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authored_instances",
+        "resolved_asset_references",
+        "unique_asset_descriptors",
+        "descriptor_binding_sha256",
+        "scene_catalog_sha256"
+      ],
+      "properties": {
+        "authored_instances": {"const": 12},
+        "resolved_asset_references": {"type": "integer", "minimum": 13},
+        "unique_asset_descriptors": {"type": "integer", "minimum": 1},
+        "descriptor_binding_sha256": {"$ref": "#/$defs/hash"},
+        "scene_catalog_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "validation_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "frozen_catalog_contract_verified"],
+      "properties": {
+        "sha256": {"$ref": "#/$defs/hash"},
+        "frozen_catalog_contract_verified": {"const": true}
+      }
+    },
+    "mujoco_worlds_created": {"const": 0},
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contains_task_ids",
+        "contains_language",
+        "contains_poses",
+        "contains_oracle_thresholds",
+        "contains_source_paths",
+        "generation_visible"
+      ],
+      "properties": {
+        "contains_task_ids": {"const": false},
+        "contains_language": {"const": false},
+        "contains_poses": {"const": false},
+        "contains_oracle_thresholds": {"const": false},
+        "contains_source_paths": {"const": false},
+        "generation_visible": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

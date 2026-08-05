@@ -1,0 +1,77 @@
+schema_version: robot_capability.library_manifest.v1
+library_type: experience
+entry_id: empty_p0_experience
+version: 1.0.0
+status: ready
+generation_visibility: visible
+
+payloads:
+  - path: sources.yaml
+    visibility: generation
+    media_type: application/yaml
+    required: true
+  - path: experience.schema.json
+    visibility: framework
+    media_type: application/schema+json
+    required: true
+  - path: records.jsonl
+    visibility: generation
+    media_type: application/x-ndjson
+    required: true
+
+content_hashes:
+  algorithm: sha256_raw_bytes
+  sources.yaml: c68ecfeb94510e8e1b6112682dcd51ff72c36292945fa52078a57c853d979ca6
+  experience.schema.json: 3eb96d5235b8896ea26950583fee26d6b5fb77fe502c23a39c0aeca488988634
+  records.jsonl: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+compatibility:
+  robots: [soarm101]
+  runtime_ids: [lerobot_soarm101_0_6_0]
+  stages: [generation_stage_1, generation_stage_2, generation_repair]
+  record_count: 0
+  interface:
+    list:
+      signature: "list() -> list[ExperienceRecord]"
+      empty_result: []
+      ordering: lexicographic_by_experience_id_then_semver
+    select:
+      signature: "select(ids: list[str]) -> list[ExperienceRecord]"
+      empty_ids_result: []
+      missing_id_behavior: raise ExperienceNotFoundError
+      duplicate_id_behavior: reject_before_read
+      ordering: preserve_requested_id_order
+    generation_view:
+      signature: "generation_view(ids: list[str]) -> list[dict]"
+      empty_ids_result: []
+      allowed_fields:
+        - experience_id
+        - version
+        - scope
+        - failure_summary.category
+        - failure_summary.symptom
+        - diagnosis.hypothesis
+        - diagnosis.confidence
+        - recommended_change.change_type
+        - recommended_change.guidance
+        - recommended_change.must_preserve
+        - outcome.repair_succeeded
+        - outcome.regressions
+        - outcome.reuse_risk
+        - generation_summary
+      forbidden_fields:
+        - origin.run_id
+        - evidence.artifact_refs
+        - evidence.before_measurements
+        - evidence.after_measurements
+        - private_task_or_oracle_content
+  write_policy:
+    p0_automatic_writeback: false
+    records_must_be_schema_valid: true
+    records_must_be_explicitly_approved: true
+    note: Validation and Demo failure evidence may be archived under a run, but P0 never mutates this library automatically.
+
+provenance:
+  created_for: soarm101_minimal_capability_generation_demo
+  created_on: 2026-08-04
+  initial_state: Intentionally empty.

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.morphology_scene.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scene_id", "version", "ownership", "compatible_robot_ids", "required_runtime_id", "asset_catalog_ref", "coordinate_convention", "workspace_bounds_m", "runtime_builder", "public_simulation"],
+  "properties": {
+    "schema_version": {"const": "robot_capability.morphology_scene.v1"},
+    "scene_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "ownership": {"const": "morphology_scene_registry"},
+    "compatible_robot_ids": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"}, "minItems": 1, "uniqueItems": true},
+    "required_runtime_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+    "asset_catalog_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog_id", "version", "path"],
+      "properties": {
+        "catalog_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "path": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"}
+      }
+    },
+    "coordinate_convention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frame", "handedness", "position_unit", "angle_unit", "axes"],
+      "properties": {
+        "frame": {"type": "string", "minLength": 1},
+        "handedness": {"enum": ["right_handed", "left_handed"]},
+        "position_unit": {"enum": ["m", "mm"]},
+        "angle_unit": {"enum": ["rad", "deg"]},
+        "axes": {
+          "type": "object", "additionalProperties": false, "required": ["x", "y", "z"],
+          "properties": {"x": {"type": "string", "minLength": 1}, "y": {"type": "string", "minLength": 1}, "z": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "workspace_bounds_m": {
+      "type": "object", "additionalProperties": false, "required": ["x", "y", "z"],
+      "properties": {"x": {"$ref": "#/$defs/range"}, "y": {"$ref": "#/$defs/range"}, "z": {"$ref": "#/$defs/range"}}
+    },
+    "runtime_builder": {
+      "type": "object", "additionalProperties": false,
+      "required": ["implementation", "composition", "accepted_instance_fields", "asset_resolution"],
+      "properties": {
+        "implementation": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]+$"},
+        "composition": {"type": "string", "minLength": 1},
+        "accepted_instance_fields": {"type": "array", "items": {"enum": ["asset_ref", "id", "kind", "position_m", "center_m", "quaternion_wxyz", "size_m", "mass_kg", "radius_m", "height_m", "inner_size_m", "inner_radius_m", "rim_height_m", "material_rgba"]}, "uniqueItems": true},
+        "asset_resolution": {"const": "deterministic_catalog_ref"}
+      }
+    },
+    "public_simulation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["privacy_class", "not_task_instance", "common_reset", "smoke_instance", "probe_inputs"],
+      "properties": {
+        "privacy_class": {"const": "public_generation_sandbox"},
+        "not_task_instance": {"const": true},
+        "common_reset": {"$ref": "#/$defs/common_reset"},
+        "smoke_instance": {"$ref": "#/$defs/smoke_instance"},
+        "probe_inputs": {"$ref": "#/$defs/probe_inputs"}
+      }
+    }
+  },
+  "$defs": {
+    "number": {"type": "number", "minimum": -10, "maximum": 10},
+    "positive": {"type": "number", "exclusiveMinimum": 0, "maximum": 10},
+    "vec2": {"type": "array", "prefixItems": [{"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}], "items": false},
+    "vec3": {"type": "array", "prefixItems": [{"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}], "items": false},
+    "positive_vec2": {"type": "array", "prefixItems": [{"$ref": "#/$defs/positive"}, {"$ref": "#/$defs/positive"}], "items": false},
+    "positive_vec3": {"type": "array", "prefixItems": [{"$ref": "#/$defs/positive"}, {"$ref": "#/$defs/positive"}, {"$ref": "#/$defs/positive"}], "items": false},
+    "quat": {"type": "array", "prefixItems": [{"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}], "items": false},
+    "rgba": {"type": "array", "prefixItems": [{"type": "number", "minimum": 0, "maximum": 1}, {"type": "number", "minimum": 0, "maximum": 1}, {"type": "number", "minimum": 0, "maximum": 1}, {"type": "number", "minimum": 0, "maximum": 1}], "items": false},
+    "range": {"type": "array", "prefixItems": [{"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}], "items": false},
+    "common_reset": {
+      "type": "object", "additionalProperties": false, "required": ["table", "robot", "settle_before_probe_s"],
+      "properties": {
+        "table": {"type": "object", "additionalProperties": false, "required": ["asset_ref", "center_m"], "properties": {"asset_ref": {"type": "string"}, "center_m": {"$ref": "#/$defs/vec3"}}},
+        "robot": {"type": "object", "additionalProperties": false, "required": ["joint_order", "qpos_rad", "qvel_rad_s"], "properties": {"joint_order": {"type": "array", "prefixItems": [{"const": "shoulder_pan"}, {"const": "shoulder_lift"}, {"const": "elbow_flex"}, {"const": "wrist_flex"}, {"const": "wrist_roll"}, {"const": "gripper"}], "items": false}, "qpos_rad": {"type": "array", "prefixItems": [{"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}], "items": false}, "qvel_rad_s": {"type": "array", "prefixItems": [{"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}, {"$ref": "#/$defs/number"}], "items": false}}},
+        "settle_before_probe_s": {"type": "number", "minimum": 0, "maximum": 5}
+      }
+    },
+    "body": {
+      "type": "object", "additionalProperties": false, "required": ["asset_ref", "id"],
+      "properties": {"asset_ref": {"type": "string"}, "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$"}, "position_m": {"$ref": "#/$defs/vec3"}, "center_m": {"$ref": "#/$defs/vec3"}, "quaternion_wxyz": {"$ref": "#/$defs/quat"}}
+    },
+    "marker": {
+      "type": "object", "additionalProperties": false, "required": ["asset_ref", "id"],
+      "properties": {"asset_ref": {"type": "string"}, "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$"}, "center_m": {"$ref": "#/$defs/vec3"}, "position_m": {"$ref": "#/$defs/vec3"}}
+    },
+    "smoke_instance": {"type": "object", "additionalProperties": false, "required": ["instance_id", "provenance", "bodies", "markers"], "properties": {"instance_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}, "provenance": {"type": "object", "additionalProperties": false, "required": ["kind", "origin", "benchmark_task"], "properties": {"kind": {"enum": ["public_synthetic_not_task_instance", "public_synthetic_smoke_scene"]}, "origin": {"type": "string", "minLength": 1}, "benchmark_task": {"const": false}}}, "bodies": {"type": "array", "items": {"$ref": "#/$defs/body"}}, "markers": {"type": "array", "items": {"$ref": "#/$defs/marker"}}}},
+    "joint_targets": {"type": "object", "additionalProperties": false, "required": ["shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos", "wrist_flex.pos", "wrist_roll.pos", "gripper.pos"], "properties": {"shoulder_pan.pos": {"type": "number"}, "shoulder_lift.pos": {"type": "number"}, "elbow_flex.pos": {"type": "number"}, "wrist_flex.pos": {"type": "number"}, "wrist_roll.pos": {"type": "number"}, "gripper.pos": {"type": "number"}}},
+    "sequence_move": {"type": "object", "additionalProperties": false, "required": ["object_id", "object_source_m", "object_target_m", "object_extent_m"], "properties": {"object_id": {"type": "string"}, "object_source_m": {"$ref": "#/$defs/vec3"}, "object_target_m": {"$ref": "#/$defs/vec3"}, "object_extent_m": {"$ref": "#/$defs/positive"}}},
+    "probe_inputs": {"type": "object", "additionalProperties": false, "required": ["joint_targets", "cartesian_target_m", "object_source_m", "object_target_m", "height_delta_m", "object_extent_m", "sequence_moves"], "properties": {"joint_targets": {"$ref": "#/$defs/joint_targets"}, "cartesian_target_m": {"$ref": "#/$defs/vec3"}, "object_source_m": {"$ref": "#/$defs/vec3"}, "object_target_m": {"$ref": "#/$defs/vec3"}, "height_delta_m": {"$ref": "#/$defs/positive"}, "object_extent_m": {"$ref": "#/$defs/positive"}, "sequence_moves": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/sequence_move"}}}}
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.task_environment_requirements.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "library_id",
+    "version",
+    "robot_requirement",
+    "runtime_requirement",
+    "scene_requirement",
+    "visible_task_requirements",
+    "missing_asset_policy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "robot_capability.task_environment_requirements.v1"
+    },
+    "library_id": {"$ref": "#/$defs/identifier"},
+    "version": {"$ref": "#/$defs/semver"},
+    "robot_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["robot_id", "robot_version", "required_attachment_ids"],
+      "properties": {
+        "robot_id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+        "robot_version": {"type": "string", "minLength": 1},
+        "required_attachment_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identifier"}
+        }
+      }
+    },
+    "runtime_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime_id", "package", "package_version"],
+      "properties": {
+        "runtime_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+        "package": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+        "package_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "scene_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entry_id", "entry_version", "scene_id"],
+      "properties": {
+        "entry_id": {"$ref": "#/$defs/identifier"},
+        "entry_version": {"$ref": "#/$defs/semver"},
+        "scene_id": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "visible_task_requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "required_asset_refs"],
+        "properties": {
+          "task_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*$"},
+          "required_asset_refs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/asset_ref"}
+          }
+        }
+      }
+    },
+    "missing_asset_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "mutate_current_run", "next_step"],
+      "properties": {
+        "result": {"const": "MISSING_ASSET"},
+        "mutate_current_run": {"const": false},
+        "next_step": {
+          "const": "add_asset_to_morphology_library_then_start_new_run"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "asset_ref": {
+      "type": "string",
+      "pattern": "^morphology\\.scene_asset/[a-z][a-z0-9_]*@[0-9]+\\.[0-9]+\\.[0-9]+#[a-z][a-z0-9_]*$"
+    }
+  }
+}

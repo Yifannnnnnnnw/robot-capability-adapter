@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soarm101-capability-demo"
+version = "0.1.0"
+description = "Minimal SO-ARM101 capability-generation pipeline demo"
+requires-python = ">=3.12"
+dependencies = [
+  "jsonschema==4.25.1",
+  "mujoco==3.11.0",
+  "numpy==2.2.6",
+  "opencv-python-headless==4.13.0.92",
+  "PyYAML==6.0.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.4.2"]
+lerobot = ["lerobot[core_scripts,feetech]==0.6.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

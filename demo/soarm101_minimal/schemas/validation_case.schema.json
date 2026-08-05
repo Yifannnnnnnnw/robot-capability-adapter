@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.validation_case.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "capability_id", "module", "function_name", "initial_state", "call_arguments", "target_measurements", "tolerances", "forbidden_conditions", "timeout_s", "test_entrypoint", "reference_provenance"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "capability_id": {"type": "string", "minLength": 1},
+    "module": {"enum": ["g1", "g2", "g3"]},
+    "function_name": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "initial_state": {"type": "object"},
+    "call_arguments": {"type": "object"},
+    "target_measurements": {"type": "object", "minProperties": 1},
+    "tolerances": {"$ref": "#/$defs/tolerance_object"},
+    "forbidden_conditions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "timeout_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 30,
+      "description": "Trusted harness hard deadline in host-monotonic wall-clock seconds; independent of any public capability timeout measured in MuJoCo simulation time."
+    },
+    "test_entrypoint": {"type": "string", "minLength": 1},
+    "reference_provenance": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "positive_number": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "tolerance_value": {
+      "oneOf": [
+        {"$ref": "#/$defs/positive_number"},
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/tolerance_value"}
+        },
+        {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"$ref": "#/$defs/tolerance_value"}
+        }
+      ]
+    },
+    "tolerance_object": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/tolerance_value"}
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "robot_capability.private_task_instance.v1",
+  "instance_id": "soarm101_p0_push_cube_to_region__seed_1201",
+  "task_id": "soarm101_p0_push_cube_to_region",
+  "seed": 1201,
+  "inherits_reset": "_common_reset.json",
+  "bodies": [{"asset_ref": "morphology.scene_asset/cube_34mm_25g@1.0.0#red", "id": "red_cube", "position_m": [0.30, -0.08, 0.037], "quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]}],
+  "markers": [{"asset_ref": "morphology.scene_asset/planar_circle_r30@1.0.0#green", "id": "push_region", "center_m": [0.39, -0.08, 0.0205]}],
+  "agent_input": {
+    "coordinate_frame": "robot_base",
+    "position_unit": "m",
+    "objects": {"red_cube": {"position_m": [0.30, -0.08, 0.037], "size_m": [0.034, 0.034, 0.034]}},
+    "targets": {"push_region": {"center_m": [0.39, -0.08, 0.0205], "radius_m": 0.03, "z_reference": "support_surface"}}
+  },
+  "oracle_ref": "oracle.push_cube_to_region",
+  "status": "authored_requires_reachability_probe"
+}

@@ -1,0 +1,123 @@
+schema_version: robot_capability.runtime_contract.v1
+runtime_id: lerobot_soarm101_0_6_0
+target_class: lerobot.robots.so_follower.SO101Follower
+contract_kind: injected_connected_robot_handle
+
+ownership:
+  owner: framework_runtime_manager
+  injected_into_generated_functions: true
+  required_state_on_entry: connected
+  generated_package_must_not:
+    - instantiate SO101Follower or SO101FollowerConfig
+    - call setup_motors
+    - call connect
+    - call calibrate
+    - call configure
+    - call disconnect
+    - access bus, cameras, serial ports, MuJoCo, the bridge, or oracle internals
+  generated_package_may:
+    - call get_observation
+    - call send_action
+
+runtime_view:
+  generated_package_surface:
+    properties: {}
+    required_methods:
+      get_observation:
+        parameters: []
+        returns: dict[str, object]
+      send_action:
+        parameters:
+          - name: action
+            type: dict[str, object]
+        returns: dict[str, object]
+  framework_only_inspection_surface:
+    note: These real LeRobot-compatible properties are available to the framework bridge and SDK probes but intentionally excluded from generated capability code.
+    properties:
+      observation_features: dict[str, type | tuple]
+      action_features: dict[str, type]
+      is_connected: bool
+      is_calibrated: bool
+
+p0_configuration:
+  use_degrees: true
+  cameras: {}
+  action_keys:
+    - shoulder_pan.pos
+    - shoulder_lift.pos
+    - elbow_flex.pos
+    - wrist_flex.pos
+    - wrist_roll.pos
+    - gripper.pos
+  observation_keys:
+    - shoulder_pan.pos
+    - shoulder_lift.pos
+    - elbow_flex.pos
+    - wrist_flex.pos
+    - wrist_roll.pos
+    - gripper.pos
+  units:
+    shoulder_pan.pos: deg
+    shoulder_lift.pos: deg
+    elbow_flex.pos: deg
+    wrist_flex.pos: deg
+    wrist_roll.pos: deg
+    gripper.pos: normalized_0_100
+
+command_semantics:
+  control_mode: joint_position_target
+  send_action_return_point: After the target write returns, not after the robot reaches the target.
+  physical_completion_signal: none
+  polling_required_for_completion: true
+  generated_capability_responsibilities:
+    - Generate any required inverse kinematics or joint-space path.
+    - Split motion into safe commands when appropriate.
+    - Poll get_observation to measure convergence.
+    - Implement capability-level timeout and result reporting.
+    - Respect joint limits and the active unit profile.
+  sdk_does_not_provide:
+    - inverse kinematics
+    - trajectory generation
+    - collision checking
+    - arrival waiting
+    - timeout handling
+    - task-level recovery
+
+generated_time_semantics:
+  import_statement: import time
+  allowed_calls:
+    - time.sleep
+    - time.monotonic
+  minimum_sleep_s: 0.0
+  maximum_sleep_s: 60.0
+  mujoco:
+    host_auto_step: false
+    monotonic_source: MjData.time
+    sleep_advances: active_real_MjModel_MjData_pair
+    sleep_step_count: ceil(seconds / model.opt.timestep)
+    per_tick_framework_callbacks:
+      - evidence_sampling
+      - video_capture_scheduling
+  hardware:
+    module_binding: python_standard_library_time
+    monotonic_source: python_standard_library_time.monotonic
+    sleep_effect: python_standard_library_time.sleep
+
+error_semantics:
+  disconnected_get_or_send: Raises the LeRobot not-connected device error via decorators.
+  transport_failures: May propagate lower-level bus or camera exceptions.
+  invalid_relative_clip_dictionary: Raises ValueError when keys do not exactly match requested motors.
+  unsupported_relative_clip_type: Raises TypeError.
+  thread_safety: Not documented; P0 serializes runtime calls.
+
+bridge_requirement:
+  implementation: SO101MujocoRobot
+  relationship: Structural API compatibility for the P0 runtime view, not a subclass and not Feetech byte-level emulation.
+  must_match:
+    - six feature keys
+    - configured units
+    - connected-state guard
+    - optional max_relative_target clipping
+    - action receipt after target acceptance
+    - no wait for simulated physical convergence inside send_action
+  simulation_stepping_owner: framework_runtime_manager

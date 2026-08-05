@@ -1,0 +1,17 @@
+{
+  "schema_version": "robot_capability.private_task_instance.v1",
+  "instance_id": "soarm101_p0_push_cylinder_lateral__seed_2101",
+  "task_id": "soarm101_p0_push_cylinder_lateral",
+  "seed": 2101,
+  "inherits_reset": "_common_reset.json",
+  "bodies": [{"asset_ref": "morphology.scene_asset/cylinder_r15_h40_22g@1.0.0#orange", "id": "orange_cylinder", "position_m": [0.32, -0.08, 0.04], "quaternion_wxyz": [1.0, 0.0, 0.0, 0.0]}],
+  "markers": [{"asset_ref": "morphology.scene_asset/planar_circle_r30@1.0.0#green", "id": "push_region", "center_m": [0.32, 0.08, 0.0205]}],
+  "agent_input": {
+    "coordinate_frame": "robot_base",
+    "position_unit": "m",
+    "objects": {"orange_cylinder": {"position_m": [0.32, -0.08, 0.04], "radius_m": 0.015, "height_m": 0.04, "axis_vector": [0.0, 0.0, 1.0]}},
+    "targets": {"push_region": {"center_m": [0.32, 0.08, 0.0205], "radius_m": 0.03, "z_reference": "support_surface"}}
+  },
+  "oracle_ref": "oracle.push_cylinder_lateral",
+  "status": "authored_requires_reachability_probe"
+}

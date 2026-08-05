@@ -1,0 +1,65 @@
+{
+  "schema_version": "robot_capability.demo_batch.v1",
+  "batch_id": "soarm101_p0_demo_3_visible_3_pilot_heldout_v1",
+  "status": "fixed_before_generation",
+  "selection_policy": {
+    "visible": "one atomic push, one atomic pick-place, and one composite template",
+    "pilot_heldout": "all private pilot-held-out templates",
+    "result_independent": true
+  },
+  "task_order_seed": 10120260804,
+  "ordered_instances": [
+    {
+      "ordinal": 1,
+      "partition": "visible",
+      "task_id": "soarm101_p0_push_cube_to_region",
+      "instance_ref": "initial_states/soarm101_p0_push_cube_to_region.json"
+    },
+    {
+      "ordinal": 2,
+      "partition": "pilot-held-out",
+      "task_id": "soarm101_p0_push_cylinder_lateral",
+      "instance_ref": "initial_states/soarm101_p0_push_cylinder_lateral.json"
+    },
+    {
+      "ordinal": 3,
+      "partition": "visible",
+      "task_id": "soarm101_p0_place_cube_in_tray",
+      "instance_ref": "initial_states/soarm101_p0_place_cube_in_tray.json"
+    },
+    {
+      "ordinal": 4,
+      "partition": "pilot-held-out",
+      "task_id": "soarm101_p0_place_cube_in_bowl_new_region",
+      "instance_ref": "initial_states/soarm101_p0_place_cube_in_bowl_new_region.json"
+    },
+    {
+      "ordinal": 5,
+      "partition": "visible",
+      "task_id": "soarm101_p0_place_two_objects_in_tray",
+      "instance_ref": "initial_states/soarm101_p0_place_two_objects_in_tray.json"
+    },
+    {
+      "ordinal": 6,
+      "partition": "pilot-held-out",
+      "task_id": "soarm101_p0_sort_two_cubes_matching_trays",
+      "instance_ref": "initial_states/soarm101_p0_sort_two_cubes_matching_trays.json"
+    }
+  ],
+  "counts": {
+    "visible": 3,
+    "pilot_heldout": 3,
+    "total": 6
+  },
+  "per_task_runtime_policy": {
+    "reset_world": true,
+    "reset_runtime": true,
+    "reset_demo_agent_context": true,
+    "max_llm_calls": 30
+  },
+  "freeze_requirements": [
+    "bridge_reachability_probe_passes_for_all_six_instances",
+    "oracle_thresholds_are_verified_and_hashed",
+    "generated_package_and_tool_catalog_hashes_are_bound_in_the_run_manifest"
+  ]
+}

@@ -1,0 +1,106 @@
+schema_version: robot_capability.sdk_runtime_sources.v1
+entry_id: lerobot_soarm101
+version: 0.6.0
+researched_on: "2026-08-04"
+
+release:
+  distribution: lerobot
+  version: 0.6.0
+  git_tag: v0.6.0
+  commit: 30da8e687a6dfc617fcd94afc367ac7071c376ce
+  released_on: "2026-07-06"
+  license: Apache-2.0
+  requires_python: ">=3.12"
+  planned_install: "lerobot[core_scripts,feetech]==0.6.0"
+
+official_sources:
+  - source_id: release
+    title: LeRobot v0.6.0 release
+    url: https://github.com/huggingface/lerobot/releases/tag/v0.6.0
+    supports:
+      - version
+      - release commit
+      - breaking-change warning about canonical import paths
+  - source_id: pyproject
+    title: LeRobot v0.6.0 package metadata
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/pyproject.toml
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/pyproject.toml
+    supports:
+      - Python requirement
+      - package version
+      - feetech extra
+      - Apache-2.0 license
+  - source_id: installation
+    title: LeRobot v0.6.0 installation guide
+    url: https://huggingface.co/docs/lerobot/v0.6.0/installation
+    supports:
+      - installation workflow
+  - source_id: so101_guide
+    title: LeRobot v0.6.0 SO-101 guide
+    url: https://huggingface.co/docs/lerobot/v0.6.0/so101
+    supports:
+      - canonical SO101Follower import
+      - SO-101 follower motor identities
+      - setup and calibration workflow
+  - source_id: package_public_entrypoint
+    title: SO follower package public exports
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/src/lerobot/robots/so_follower/__init__.py
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/src/lerobot/robots/so_follower/__init__.py
+    supports:
+      - canonical public imports
+      - SO100/SO101 aliases
+  - source_id: follower_config
+    title: SO follower configuration source
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/src/lerobot/robots/so_follower/config_so_follower.py
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/src/lerobot/robots/so_follower/config_so_follower.py
+    supports:
+      - configuration fields and defaults
+      - config aliases
+      - use_degrees behavior selector
+  - source_id: follower_runtime
+    title: SO follower runtime source
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/src/lerobot/robots/so_follower/so_follower.py
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/src/lerobot/robots/so_follower/so_follower.py
+    supports:
+      - motor IDs and normalization modes
+      - feature keys
+      - lifecycle and runtime methods
+      - send_action receipt and command-return semantics
+  - source_id: robot_config
+    title: LeRobot RobotConfig source
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/src/lerobot/robots/config.py
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/src/lerobot/robots/config.py
+    supports:
+      - inherited id and calibration_dir fields
+  - source_id: robot_protocol
+    title: LeRobot Robot base protocol
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/src/lerobot/robots/robot.py
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/src/lerobot/robots/robot.py
+    supports:
+      - abstract property and method contracts
+      - context-manager lifecycle
+  - source_id: safety_clipping
+    title: LeRobot robot goal-position safety helper
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/src/lerobot/robots/utils.py
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/src/lerobot/robots/utils.py
+    supports:
+      - scalar and per-motor relative target clipping
+      - exact-key requirement for per-motor clipping dictionaries
+  - source_id: action_types
+    title: LeRobot action and observation type aliases
+    url: https://github.com/huggingface/lerobot/blob/v0.6.0/src/lerobot/types.py
+    raw_url: https://raw.githubusercontent.com/huggingface/lerobot/v0.6.0/src/lerobot/types.py
+    supports:
+      - RobotAction and RobotObservation are flat dictionaries
+
+evidence_policy:
+  documented_fact: Supported by official documentation or release metadata.
+  source_verified_fact: Read directly from source at the pinned tag and commit.
+  probe_verified_fact: Confirmed only after probes/probe_api.py passes in the pinned environment.
+  assumption: Must be labeled and cannot be promoted to a runtime fact without evidence.
+
+local_copy_policy:
+  copied_lerobot_source: false
+  copied_hardware_calibration: false
+  copied_predecessor_runtime_profile: false
+  note: This dossier re-expresses the public contract and links to pinned official sources; no LeRobot implementation is vendored.

@@ -1,0 +1,562 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.morphology_kinematics.v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "robot_id",
+    "model_file",
+    "morphology_family",
+    "coordinate_convention",
+    "base",
+    "dofs",
+    "command_limit_policy",
+    "joints",
+    "end_effector",
+    "gripper",
+    "gripper_contact_model",
+    "compile_expectations"
+  ],
+  "properties": {
+    "schema_version": {"const": "robot_capability.morphology_kinematics.v1"},
+    "robot_id": {"const": "soarm101"},
+    "model_file": {"type": "string", "minLength": 1},
+    "morphology_family": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "coordinate_convention": {
+      "type": "object",
+      "required": ["handedness", "linear_unit", "angular_unit", "base_frame"]
+    },
+    "base": {"type": "object", "required": ["fixed", "body", "frame_site"]},
+    "dofs": {
+      "type": "object",
+      "required": ["total", "arm", "gripper", "qpos", "qvel"],
+      "properties": {"total": {"const": 6}, "arm": {"const": 5}, "gripper": {"const": 1}}
+    },
+    "command_limit_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effective_range_rule",
+        "conversion_roundoff_margin_rad",
+        "validated_dynamic_margin_rad",
+        "effective_interior_margin_rule",
+        "conversion_policy",
+        "long_distance_joint_motion"
+      ],
+      "properties": {
+        "effective_range_rule": {"type": "string", "minLength": 1},
+        "conversion_roundoff_margin_rad": {"type": "number", "exclusiveMinimum": 0},
+        "validated_dynamic_margin_rad": {"type": "number", "minimum": 0.02},
+        "effective_interior_margin_rule": {"type": "string", "minLength": 1},
+        "conversion_policy": {"type": "string", "minLength": 1},
+        "long_distance_joint_motion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "single_step_prohibited",
+            "bounded_waypoint_interpolation_required",
+            "poll_every_waypoint",
+            "evidence_source"
+          ],
+          "properties": {
+            "status": {
+              "enum": ["verified", "required_but_unverified"]
+            },
+            "single_step_prohibited": {"const": true},
+            "bounded_waypoint_interpolation_required": {"const": true},
+            "poll_every_waypoint": {"const": true},
+            "verified_maximum_arm_step_deg": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "verified_maximum_gripper_step_normalized": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "verification_scope": {"type": "string", "minLength": 1},
+            "unresolved_gap": {"type": "string", "minLength": 1},
+            "evidence_source": {"type": "string", "minLength": 1}
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {"status": {"const": "verified"}},
+                "required": ["status"]
+              },
+              "then": {
+                "required": [
+                  "verified_maximum_arm_step_deg",
+                  "verified_maximum_gripper_step_normalized",
+                  "verification_scope"
+                ],
+                "not": {"required": ["unresolved_gap"]}
+              },
+              "else": {
+                "required": ["unresolved_gap"],
+                "not": {
+                  "anyOf": [
+                    {"required": ["verified_maximum_arm_step_deg"]},
+                    {"required": ["verified_maximum_gripper_step_normalized"]},
+                    {"required": ["verification_scope"]}
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "joints": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["name", "sdk_key", "type", "axis_local", "range_rad", "qpos_index", "actuator"]
+      }
+    },
+    "end_effector": {"type": "object", "required": ["body", "frame_site"]},
+    "gripper": {"type": "object", "required": ["present", "joint", "sdk_key"]},
+    "gripper_contact_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_source",
+        "frame",
+        "command_key",
+        "command_unit",
+        "pinch_axis_in_frame",
+        "approach_axis_in_frame",
+        "fixed_tip_centroid_in_frame_m",
+        "closed_tool_center_in_frame_m",
+        "aperture_definition",
+        "tool_center_definition",
+        "aperture_samples",
+        "verified_tabletop_pinch_baseline",
+        "tabletop_release_and_sequence_requirements",
+        "planning_notes"
+      ],
+      "properties": {
+        "evidence_source": {"type": "string", "minLength": 1},
+        "frame": {"type": "string", "minLength": 1},
+        "command_key": {"type": "string", "minLength": 1},
+        "command_unit": {"const": "normalized_0_100"},
+        "pinch_axis_in_frame": {"$ref": "#/$defs/vector3"},
+        "approach_axis_in_frame": {"$ref": "#/$defs/vector3"},
+        "fixed_tip_centroid_in_frame_m": {"$ref": "#/$defs/vector3"},
+        "closed_tool_center_in_frame_m": {"$ref": "#/$defs/vector3"},
+        "aperture_definition": {"type": "string", "minLength": 1},
+        "tool_center_definition": {"type": "string", "minLength": 1},
+        "aperture_samples": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "command",
+              "joint_position_rad",
+              "aperture_m",
+              "moving_tip_centroid_in_frame_m",
+              "tool_center_in_frame_m"
+            ],
+            "properties": {
+              "command": {"type": "number", "minimum": 0, "maximum": 100},
+              "joint_position_rad": {"type": "number"},
+              "aperture_m": {"type": "number", "exclusiveMinimum": 0},
+              "moving_tip_centroid_in_frame_m": {"$ref": "#/$defs/vector3"},
+              "tool_center_in_frame_m": {"$ref": "#/$defs/vector3"}
+            }
+          }
+        },
+        "verified_tabletop_pinch_baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_source",
+            "fixed_wrist_roll_rad",
+            "minimum_total_aperture_clearance_m",
+            "approach_height_above_object_m",
+            "descent_waypoints",
+            "close_waypoints",
+            "lift_height_m",
+            "lift_waypoints",
+            "verified_holding_motion_interpolation",
+            "verified_controlled_point_ik",
+            "verified_close_command",
+            "verified_arm_waypoint_completion_policy",
+            "pre_contact_completion_policy",
+            "contact_phase_completion_policy"
+          ],
+          "properties": {
+            "evidence_source": {"type": "string", "minLength": 1},
+            "fixed_wrist_roll_rad": {"type": "number"},
+            "minimum_total_aperture_clearance_m": {"type": "number", "exclusiveMinimum": 0},
+            "approach_height_above_object_m": {"type": "number", "exclusiveMinimum": 0},
+            "descent_waypoints": {"type": "integer", "minimum": 2},
+            "close_waypoints": {"type": "integer", "minimum": 2},
+            "lift_height_m": {"type": "number", "exclusiveMinimum": 0},
+            "lift_waypoints": {"type": "integer", "minimum": 2},
+            "verified_holding_motion_interpolation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "phases",
+                "lift_waypoints",
+                "lower_waypoints",
+                "maximum_transport_waypoint_step_m",
+                "omit_current_pose_waypoint",
+                "evidence_source"
+              ],
+              "properties": {
+                "status": {"const": "verified"},
+                "phases": {"const": ["lift", "transport", "lower"]},
+                "lift_waypoints": {"const": 18},
+                "lower_waypoints": {"const": 20},
+                "maximum_transport_waypoint_step_m": {"const": 0.02},
+                "omit_current_pose_waypoint": {"const": true},
+                "evidence_source": {"type": "string", "minLength": 1}
+              }
+            },
+            "verified_controlled_point_ik": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "phases",
+                "point_source",
+                "tolerance_m",
+                "post_clamp_fk_check_required",
+                "post_clamp_fk_point_source",
+                "post_clamp_fk_tolerance_m",
+                "evidence_source",
+                "directly_replayed_real_mujoco_phases",
+                "directly_measured_physical_outcomes",
+                "directly_checked_numeric_chain",
+                "derived_safety_contract_requirement"
+              ],
+              "properties": {
+                "status": {"const": "verified"},
+                "phases": {"const": ["approach", "descent", "lower"]},
+                "point_source": {
+                  "const": "selected_open_aperture_sample.tool_center_in_frame_m"
+                },
+                "tolerance_m": {"const": 0.0006},
+                "post_clamp_fk_check_required": {"const": true},
+                "post_clamp_fk_point_source": {
+                  "const": "selected_open_aperture_sample.tool_center_in_frame_m"
+                },
+                "post_clamp_fk_tolerance_m": {"const": 0.0006},
+                "evidence_source": {
+                  "const": "tests/test_gripper_contact_profile.py::test_command_20_profile_places_releases_and_retreats_with_post_conversion_fk_bound"
+                },
+                "directly_replayed_real_mujoco_phases": {
+                  "const": ["approach", "descent", "close", "lift", "transport", "lower", "release_dwell", "vertical_retreat", "settle"]
+                },
+                "directly_measured_physical_outcomes": {
+                  "const": ["opposing_jaw_grasp", "lift", "supported_placement", "release", "vertical_retreat", "settled_object"]
+                },
+                "directly_checked_numeric_chain": {
+                  "const": ["effective_interior_clamp_rad", "sdk_degree_conversion", "runtime_accepted_action_round_trip", "exact_fk_selected_open_tool_point"]
+                },
+                "derived_safety_contract_requirement": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "verified_close_command": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "command",
+                "command_unit",
+                "actuator_ctrl_span_rad",
+                "validated_dynamic_margin_rad",
+                "minimum_normalized_interior_command",
+                "normalization_formula",
+                "evidence_source"
+              ],
+              "properties": {
+                "status": {"const": "verified"},
+                "command": {"const": 1.1},
+                "command_unit": {"const": "normalized_0_100"},
+                "actuator_ctrl_span_rad": {"const": 1.91986},
+                "validated_dynamic_margin_rad": {"const": 0.02},
+                "minimum_normalized_interior_command": {
+                  "const": 1.041742627066557
+                },
+                "normalization_formula": {
+                  "const": "validated_dynamic_margin_rad * 100 / actuator_ctrl_span_rad"
+                },
+                "evidence_source": {"type": "string", "minLength": 1}
+              }
+            },
+            "verified_arm_waypoint_completion_policy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "global_deadline_is_outer_bound",
+                "waypoint_settle_timeout_s",
+                "poll_period_s",
+                "required_consecutive_polls",
+                "omit_current_pose_waypoint",
+                "open_or_pre_contact_motion",
+                "contact_holding_motion",
+                "settle_expiry_result",
+                "evidence_source"
+              ],
+              "properties": {
+                "status": {"const": "verified"},
+                "global_deadline_is_outer_bound": {"const": true},
+                "waypoint_settle_timeout_s": {"const": 3.0},
+                "poll_period_s": {"const": 0.02},
+                "required_consecutive_polls": {"const": 2},
+                "omit_current_pose_waypoint": {"const": true},
+                "open_or_pre_contact_motion": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["phases", "criterion", "maximum_joint_error_deg"],
+                  "properties": {
+                    "phases": {
+                      "const": [
+                        "approach",
+                        "descent",
+                        "vertical_retreat",
+                        "inter_object_transit"
+                      ]
+                    },
+                    "criterion": {"const": "all_five_arm_joint_errors_within_deg"},
+                    "maximum_joint_error_deg": {"const": 1.0}
+                  }
+                },
+                "contact_holding_motion": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "phases",
+                    "criterion",
+                    "controlled_point_in_gripperframe_m",
+                    "maximum_fk_translation_error_m"
+                  ],
+                  "properties": {
+                    "phases": {"const": ["lift", "transport", "lower"]},
+                    "criterion": {
+                      "const": "observed_vs_commanded_arm_fk_translation_error"
+                    },
+                    "controlled_point_in_gripperframe_m": {
+                      "const": [0.0, 0.0, 0.0]
+                    },
+                    "maximum_fk_translation_error_m": {"const": 0.01}
+                  }
+                },
+                "settle_expiry_result": {"const": "truthful_phase_timeout"},
+                "evidence_source": {"type": "string", "minLength": 1}
+              }
+            },
+            "pre_contact_completion_policy": {"type": "string", "minLength": 1},
+            "contact_phase_completion_policy": {"type": "string", "minLength": 1}
+          }
+        },
+        "tabletop_release_and_sequence_requirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_source",
+            "release_dwell_s",
+            "minimum_vertical_retreat_m",
+            "retreat_waypoints",
+            "release_aperture_selection",
+            "gripper_phase_command_contract",
+            "multi_object_safe_transit",
+            "sequence_move_item_contract",
+            "completion_policy",
+            "sequence_policy"
+          ],
+          "properties": {
+            "evidence_source": {"type": "string", "minLength": 1},
+            "release_dwell_s": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 5
+            },
+            "minimum_vertical_retreat_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "retreat_waypoints": {"type": "integer", "minimum": 2},
+            "release_aperture_selection": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "object_extent_semantics",
+                "minimum_total_aperture_clearance_m",
+                "selection_rule",
+                "independent_from_grasp_aperture_selection",
+                "selected_sample_name",
+                "command_source",
+                "tool_center_source",
+                "no_qualifying_sample_result",
+                "evidence_source"
+              ],
+              "properties": {
+                "status": {"const": "verified"},
+                "object_extent_semantics": {
+                  "const": "maximum_horizontal_extent_m"
+                },
+                "minimum_total_aperture_clearance_m": {"const": 0.008},
+                "selection_rule": {
+                  "const": "smallest_sample_with_aperture_m_gte_object_extent_m_plus_minimum_total_aperture_clearance_m"
+                },
+                "independent_from_grasp_aperture_selection": {"const": true},
+                "selected_sample_name": {
+                  "const": "selected_release_aperture_sample"
+                },
+                "command_source": {
+                  "const": "selected_release_aperture_sample.command"
+                },
+                "tool_center_source": {
+                  "const": "selected_release_aperture_sample.tool_center_in_frame_m"
+                },
+                "no_qualifying_sample_result": {"const": "invalid_extent"},
+                "evidence_source": {"type": "string", "minLength": 1}
+              }
+            },
+            "gripper_phase_command_contract": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "holding_motion",
+                "post_release_retreat",
+                "commands_must_be_distinct"
+              ],
+              "properties": {
+                "holding_motion": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "phases",
+                    "gripper_command_source",
+                    "explicit_command_required_each_action"
+                  ],
+                  "properties": {
+                    "phases": {"const": ["lift", "transport", "lower"]},
+                    "gripper_command_source": {
+                      "const": "verified_tabletop_pinch_baseline.verified_close_command.command"
+                    },
+                    "explicit_command_required_each_action": {"const": true}
+                  }
+                },
+                "post_release_retreat": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "phases",
+                    "gripper_command_source",
+                    "tool_center_source",
+                    "explicit_command_required_each_action",
+                    "same_selected_release_command_required_every_retreat_tick",
+                    "same_selected_release_tool_center_required_for_retreat_ik"
+                  ],
+                  "properties": {
+                    "phases": {"const": ["release_dwell", "vertical_retreat"]},
+                    "gripper_command_source": {
+                      "const": "selected_release_aperture_sample.command"
+                    },
+                    "tool_center_source": {
+                      "const": "selected_release_aperture_sample.tool_center_in_frame_m"
+                    },
+                    "explicit_command_required_each_action": {"const": true},
+                    "same_selected_release_command_required_every_retreat_tick": {
+                      "const": true
+                    },
+                    "same_selected_release_tool_center_required_for_retreat_ik": {
+                      "const": true
+                    }
+                  }
+                },
+                "commands_must_be_distinct": {"const": true}
+              }
+            },
+            "multi_object_safe_transit": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "path_space",
+                "safe_z_rule",
+                "maximum_cartesian_waypoint_step_m",
+                "completed_vertical_retreat_required",
+                "single_joint_space_jump_prohibited",
+                "evidence_source"
+              ],
+              "properties": {
+                "status": {"const": "verified"},
+                "path_space": {"const": "cartesian"},
+                "safe_z_rule": {
+                  "const": "z_m >= min(completed_retreat_tool_z_m, next_approach_tool_z_m)"
+                },
+                "maximum_cartesian_waypoint_step_m": {"const": 0.02},
+                "completed_vertical_retreat_required": {"const": true},
+                "single_joint_space_jump_prohibited": {"const": true},
+                "evidence_source": {"type": "string", "minLength": 1}
+              }
+            },
+            "sequence_move_item_contract": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_position_field",
+                "target_position_field",
+                "object_extent_field",
+                "object_extent_semantics",
+                "position_components",
+                "fields_are_literal_keys",
+                "object_extent_required_per_move",
+                "hardcoded_default_object_extent_prohibited"
+              ],
+              "properties": {
+                "source_position_field": {"const": "source_position_m"},
+                "target_position_field": {"const": "target_position_m"},
+                "object_extent_field": {"const": "object_extent_m"},
+                "object_extent_semantics": {
+                  "const": "maximum_horizontal_extent_m"
+                },
+                "position_components": {"const": "xyz"},
+                "fields_are_literal_keys": {"const": true},
+                "object_extent_required_per_move": {"const": true},
+                "hardcoded_default_object_extent_prohibited": {"const": true}
+              }
+            },
+            "completion_policy": {"type": "string", "minLength": 1},
+            "sequence_policy": {"type": "string", "minLength": 1}
+          }
+        },
+        "planning_notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "model_cameras": {"type": "object"},
+    "compile_expectations": {
+      "type": "object",
+      "required": ["minimum_mujoco_version", "joint_order", "actuator_order", "required_sites"]
+    }
+  },
+  "$defs": {
+    "vector3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"type": "number"}
+    }
+  }
+}

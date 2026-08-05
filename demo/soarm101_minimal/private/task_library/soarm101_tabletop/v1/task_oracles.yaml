@@ -1,0 +1,302 @@
+schema_version: robot_capability.private_task_oracles.v1
+oracle_set_id: soarm101_tabletop_p0
+version: 1.0.1
+visibility: harness_only
+status: p0_frozen
+scene_feasibility_gate:
+  evidence_role: framework/private_execution_preflight.json
+  evidence_schema: robot_capability.private_execution_preflight.v2
+  authored_task_scope: {generation_visible: 9, pilot_heldout: 3, total: 12}
+  native_policy: fresh_task_world_compile_reset_and_finite_state_required_at_execution
+  offline_policy: catalog_and_task_contract_checks_only_no_native_claim
+
+measurement_convention:
+  coordinate_frame: robot_base
+  position_unit: m
+  velocity_unit: m/s
+  angle_unit: rad
+  evaluation_time: after_task_termination_request_and_settle_window
+  note: All measurements come from MuJoCo state owned by the private harness. They are never included in Generation or Demo Agent inputs.
+
+common_forbidden_conditions:
+  - condition: infrastructure_error
+    disposition: do_not_score_as_capability_failure
+  - condition: object_outside_table_support_polygon
+    disposition: fail
+  - condition: non_gripper_robot_table_collision
+    disposition: fail
+  - condition: actuator_or_joint_limit_exceeded
+    parameters: {minimum_limit_margin_rad: 0.02}
+    disposition: fail
+  - condition: simulation_nan_or_instability
+    disposition: fail
+
+predicates:
+  oracle.reach_target_pose:
+    task_id: soarm101_p0_reach_target_pose
+    timeout_s: 12.0
+    settle_window_s: 0.25
+    all_of:
+      - measure: ee_position_error_m
+        target_ref: agent_input.targets.reach_target.position_m
+        operator: less_than_or_equal
+        tolerance: 0.015
+      - measure: ee_linear_speed_m_s
+        operator: less_than_or_equal
+        tolerance: 0.05
+
+  oracle.push_cube_to_region:
+    task_id: soarm101_p0_push_cube_to_region
+    timeout_s: 15.0
+    settle_window_s: 0.35
+    all_of:
+      - measure: object_xy_distance_to_target_center_m
+        object_id: red_cube
+        target_ref: agent_input.targets.push_region.center_m
+        operator: less_than_or_equal
+        tolerance: 0.025
+      - measure: object_supported_by_table
+        object_id: red_cube
+        operator: is_true
+      - measure: maximum_object_lift_above_initial_m
+        object_id: red_cube
+        operator: less_than_or_equal
+        tolerance: 0.010
+      - measure: object_linear_speed_m_s
+        object_id: red_cube
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+  oracle.grasp_cube_hold:
+    task_id: soarm101_p0_grasp_cube_hold
+    timeout_s: 12.0
+    hold_window_s: 0.75
+    all_of:
+      - measure: opposing_gripper_contacts
+        object_id: blue_cube
+        operator: is_true_for_window
+      - measure: object_gripper_relative_translation_drift_m
+        object_id: blue_cube
+        operator: less_than_or_equal_over_window
+        tolerance: 0.008
+      - measure: object_dropped
+        object_id: blue_cube
+        operator: is_false
+
+  oracle.lift_cube_by_height:
+    task_id: soarm101_p0_lift_cube_by_height
+    timeout_s: 15.0
+    hold_window_s: 0.5
+    all_of:
+      - measure: object_height_delta_error_m
+        object_id: green_cube
+        target_ref: agent_input.goals.lift.height_delta_m
+        operator: less_than_or_equal
+        tolerance: 0.012
+      - measure: opposing_gripper_contacts
+        object_id: green_cube
+        operator: is_true_for_window
+      - measure: object_linear_speed_m_s
+        object_id: green_cube
+        operator: less_than_or_equal
+        tolerance: 0.04
+
+  oracle.place_cube_on_target:
+    task_id: soarm101_p0_place_cube_on_target
+    timeout_s: 20.0
+    settle_window_s: 0.5
+    all_of:
+      - measure: object_xy_distance_to_target_center_m
+        object_id: yellow_cube
+        target_ref: agent_input.targets.place_region.center_m
+        operator: less_than_or_equal
+        tolerance: 0.020
+      - measure: object_supported_by_table
+        object_id: yellow_cube
+        operator: is_true
+      - measure: object_grasped
+        object_id: yellow_cube
+        operator: is_false
+      - measure: object_linear_speed_m_s
+        object_id: yellow_cube
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+  oracle.place_cube_in_tray:
+    task_id: soarm101_p0_place_cube_in_tray
+    timeout_s: 20.0
+    settle_window_s: 0.5
+    all_of:
+      - measure: object_footprint_contained_by_receptacle
+        object_id: red_cube
+        receptacle_id: tray
+        parameters: {minimum_wall_margin_m: 0.003}
+        operator: is_true
+      - measure: object_supported_inside_receptacle
+        object_id: red_cube
+        receptacle_id: tray
+        operator: is_true
+      - measure: object_grasped
+        object_id: red_cube
+        operator: is_false
+      - measure: object_linear_speed_m_s
+        object_id: red_cube
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+  oracle.place_cylinder_in_tray:
+    task_id: soarm101_p0_place_cylinder_in_tray
+    timeout_s: 20.0
+    settle_window_s: 0.5
+    all_of:
+      - measure: object_footprint_contained_by_receptacle
+        object_id: blue_cylinder
+        receptacle_id: tray
+        parameters: {minimum_wall_margin_m: 0.003}
+        operator: is_true
+      - measure: object_axis_tilt_rad
+        object_id: blue_cylinder
+        target_axis: [0.0, 0.0, 1.0]
+        operator: less_than_or_equal
+        tolerance: 0.20
+      - measure: object_grasped
+        object_id: blue_cylinder
+        operator: is_false
+      - measure: object_linear_speed_m_s
+        object_id: blue_cylinder
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+  oracle.stack_red_on_green:
+    task_id: soarm101_p0_stack_red_on_green
+    timeout_s: 25.0
+    settle_window_s: 0.75
+    all_of:
+      - measure: object_xy_alignment_error_m
+        object_id: red_cube
+        support_object_id: green_cube
+        operator: less_than_or_equal
+        tolerance: 0.012
+      - measure: object_vertical_support_gap_error_m
+        object_id: red_cube
+        support_object_id: green_cube
+        operator: less_than_or_equal
+        tolerance: 0.008
+      - measure: object_supported_by_object
+        object_id: red_cube
+        support_object_id: green_cube
+        operator: is_true
+      - measure: object_grasped
+        object_id: red_cube
+        operator: is_false
+      - measure: max_object_linear_speed_m_s
+        object_ids: [red_cube, green_cube]
+        operator: less_than_or_equal
+        tolerance: 0.025
+
+  oracle.place_two_objects_in_tray:
+    task_id: soarm101_p0_place_two_objects_in_tray
+    timeout_s: 40.0
+    settle_window_s: 0.75
+    all_of:
+      - measure: successful_containment_event_order
+        expected_object_ids_ref: agent_input.goals.ordered_object_ids
+        receptacle_id: tray
+        parameters:
+          minimum_wall_margin_m: 0.002
+          stable_placement_event:
+            continuous_window_s: 0.10
+            all_of:
+              - object_footprint_contained_by_receptacle
+              - object_supported_by_table
+              - object_grasped_is_false
+            latch_first_qualifying_event: true
+            revoke_after_latch_on_transient_jitter: false
+        operator: equals
+      - measure: all_object_footprints_contained_by_receptacle
+        object_ids: [red_cube, blue_cylinder]
+        receptacle_id: tray
+        parameters: {minimum_wall_margin_m: 0.002}
+        operator: is_true
+      - measure: any_object_grasped
+        object_ids: [red_cube, blue_cylinder]
+        operator: is_false
+      - measure: max_object_linear_speed_m_s
+        object_ids: [red_cube, blue_cylinder]
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+  oracle.push_cylinder_lateral:
+    task_id: soarm101_p0_push_cylinder_lateral
+    timeout_s: 18.0
+    settle_window_s: 0.5
+    all_of:
+      - measure: object_xy_distance_to_target_center_m
+        object_id: orange_cylinder
+        target_ref: agent_input.targets.push_region.center_m
+        operator: less_than_or_equal
+        tolerance: 0.025
+      - measure: object_axis_tilt_rad
+        object_id: orange_cylinder
+        target_axis: [0.0, 0.0, 1.0]
+        operator: less_than_or_equal
+        tolerance: 0.20
+      - measure: object_supported_by_table
+        object_id: orange_cylinder
+        operator: is_true
+      - measure: maximum_object_lift_above_initial_m
+        object_id: orange_cylinder
+        operator: less_than_or_equal
+        tolerance: 0.010
+      - measure: object_linear_speed_m_s
+        object_id: orange_cylinder
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+  oracle.place_cube_in_bowl_new_region:
+    task_id: soarm101_p0_place_cube_in_bowl_new_region
+    timeout_s: 22.0
+    settle_window_s: 0.75
+    all_of:
+      - measure: object_contained_by_bowl
+        object_id: purple_cube
+        receptacle_id: bowl
+        parameters: {maximum_radial_center_distance_m: 0.025, maximum_center_height_above_rim_m: 0.020}
+        operator: is_true
+      - measure: object_grasped
+        object_id: purple_cube
+        operator: is_false
+      - measure: object_linear_speed_m_s
+        object_id: purple_cube
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+  oracle.sort_two_cubes_matching_trays:
+    task_id: soarm101_p0_sort_two_cubes_matching_trays
+    timeout_s: 45.0
+    settle_window_s: 0.75
+    all_of:
+      - measure: object_receptacle_assignment
+        expected_mapping_ref: agent_input.goals.object_to_receptacle
+        operator: equals
+      - measure: all_object_footprints_contained_by_assigned_receptacle
+        expected_mapping_ref: agent_input.goals.object_to_receptacle
+        parameters: {minimum_wall_margin_m: 0.002}
+        operator: is_true
+      - measure: any_object_grasped
+        object_ids: [red_cube, blue_cube]
+        operator: is_false
+      - measure: max_object_linear_speed_m_s
+        object_ids: [red_cube, blue_cube]
+        operator: less_than_or_equal
+        tolerance: 0.03
+
+freeze_gate:
+  status: passed
+  scope: p0_scoring_threshold_contract
+  reachability: not_predeclared_or_scored
+  contract_binding: raw_bytes_sha256_in_private_execution_bundle
+  required_evidence:
+    - schema_and_semantic_validation
+    - exact_pass_fail_boundary_unit_probes
+    - per_executed_case_fresh_world_compile_reset_and_finite_state
