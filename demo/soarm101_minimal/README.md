@@ -24,9 +24,10 @@ four generation-visible library views
   -> separate ReAct Demo Consumer
        fresh session/history/tools/budget/trace for each task
        3 visible + 3 pilot-held-out tasks
-  -> sealed report
-  -> deterministic post-run Evolution Evidence Compiler
-       bounded, privacy-filtered run evidence and candidate records
+  -> sealed or terminal report
+  -> independent read-only Evolution Audit Agent
+       deterministic Evidence Compiler -> one Experience claim
+       -> trusted evidence/privacy judge -> conditional publication
 ```
 
 Validation is serial. Validation A applies deterministic static checks first.
@@ -116,6 +117,11 @@ No key is committed. Either export the complete key:
 ```bash
 export AWS_MODEL_API_KEY='...'
 .venv/bin/python run_pipeline_with_video.py --mode aws
+
+# After a source run terminates, run the independent read-only Evolution stage:
+.venv/bin/python run_evolution.py \
+  --source-run aws-postfix-evolution-source-20260805b \
+  --run-id my-new-evolution-run
 ```
 
 or copy `.env.example` to the ignored `.env` and fill
@@ -183,7 +189,7 @@ contains such files.
 | Morphology | Apache-2.0 MJCF, 18 meshes, measured kinematics/provenance, plus the versioned thin tabletop scene catalog | Kinematics, sources, compile facts, robot MJCF and public scene/catalog records; not binary meshes |
 | SDK/runtime | LeRobot 0.6.0 dossier and hardware-free API probe | Sanitized API surface, runtime contract, minimal example |
 | Tasks | 12 templates and structure-aware similarity model | Only 9 visible templates, taxonomy, sources, and 9/3 policy counts; no split seed, private path/hash, or held-out content |
-| Experience | Versioned repair-experience interface | Empty committed `records.jsonl`; selection returns `[]` |
+| Experience | Versioned positive, negative, or unresolved research lessons | Only the sanitized approved view selected for this new run; never raw provenance/evidence |
 
 The three pilot-held-out templates, all concrete task instances, oracle
 thresholds, similarity audit, and fixed Demo batch remain in `private/` and
@@ -219,44 +225,60 @@ catalog. An unknown `asset_ref` is a plain `MISSING_ASSET` input error; add the
 asset to a later Morphology Library version and start a new run. The current
 run never invents inline geometry or mutates its asset catalog.
 
-## Current and planned Evolution boundary
+## Evolution boundary
 
-The currently implemented `evolution.py` is a deterministic post-run
-**Evidence Compiler**, not a global audit Agent. It builds the run-local
-`evolution/candidate_bundle.json` from bounded, redacted Validation, repair,
-and Demo artifacts. Candidate records remain `status: candidate`; this current
-compiler neither edits source nor writes the Experience Library.
+Evolution is implemented as an independent global observer. Its overall
+architecture is Evidence-grounded Audit–Synthesize–Judge–Publish; a bounded
+ReAct loop is used only for adaptive, read-only inspection.
 
-Each candidate also carries a detached `candidate_payload_sha256`: the
-canonical SHA-256 of every candidate field except that digest field itself.
-Any later evaluator must bind this full payload hash, not only the shorter
-evidence-oriented `candidate_id`. The digest remains run-local and is not
-written back into the sealed report or run manifest.
+`evolution.py` is the single deterministic evidence/privacy authority. It
+rebuilds a projection in memory from a completed or terminal source run,
+verifies exact bytes, schema, run-manifest binding, and cross-artifact
+semantics, and excludes private tasks, Oracle material, hidden measurements,
+raw model messages, tracebacks, credentials, and absolute paths. The observed
+598,979-byte source report fits the 1 MiB default limit while the 2 MiB hard
+ceiling remains enforced; no truncation or historical rewrite is used.
 
-The current candidate format records independent schema, evidence, privacy,
-and replay facts. A failed repair may produce only negative `avoid` evidence,
-and incomplete or infrastructure-tainted evidence remains unresolved; neither
-is presented as a successful repair.
+The separate Evolution Agent can read projection sections and SHA-frozen,
+line-sanitized public repository excerpts. Each excerpt is labelled as matching,
+changed since, or absent from the source-run snapshot, so present-day code is
+not silently used as historical causal evidence. The Agent ranks 2–8 findings
+and submits exactly one positive, negative, or unresolved Experience claim; the
+first valid submission is frozen. It has no write, patch, shell, threshold,
+private-file, or source-run mutation tool.
 
-Every indexed causal artifact separately records `hash_bound` and
-`semantic_valid`. Manifest binding proves which bytes ended the run; it does
-not prove that those bytes tell a coherent story. Evolution therefore audits
-failure feedback against its schema and checks Static, Direct, repair-gate,
-and Demo cross-field invariants. A bound contradiction is retained as
-`semantic_invalid`, but it cannot support a successful/confirmed outcome or
-the evidence gate.
+After the Agent stops, one deterministic trusted evaluator independently
+recompiles the source evidence and checks framework stability, schema, ranking,
+evidence references, claim strength, privacy, and output size. A positive
+claim requires `confirmed_success`; a negative claim requires
+`confirmed_failure`. Failure evidence proves an execution outcome, not a
+specific mechanism: the trusted compiler keeps causal diagnoses and remedies
+explicitly unproven in the Generation-facing record. The evaluator also runs
+the existing terminal/video semantic audit, enforces the 64 KiB audit limit,
+and hash-binds the accepted record to the only publication API.
 
-The proposed next phase is a separate, global-observer ReAct Evolution Agent:
-it will audit the frozen inputs, Generation/repair process, Validation, Demo,
-videos, budgets, and historical runs; select one evidence-backed intervention;
-produce one atomic candidate patch; and end before the trusted replay judge
-runs. This Agent and its evaluator/publisher are **designed but not yet
-implemented**. Once that design is approved and implemented, a successful
-independent replay and deterministic privacy/evidence gates may automatically
-publish one immutable, versioned record to the Experience Library. The
-published record becomes visible only to a newly frozen later run, never to the
-run that produced it. See [`RESULTS.md`](RESULTS.md) for the present evidence
-boundary.
+`accepted`, `rejected`, and `inconclusive` refer only to the Experience claim,
+never to a framework patch or capability improvement. A storage/publication
+failure leaves an accepted claim accepted while the overall Evolution process
+ends inconclusive.
+
+Only an accepted, hash-bound claim may append one version at a time to
+`libraries/experience/v1/records.jsonl`. `status: approved` means safe to
+publish; `conclusion_kind` separately records the scientific sign. Generation
+receives only the strictly allowlisted `selected_records.json`, with source-run
+provenance, raw evidence, and ambiguous repair outcome fields removed. The
+ledger retains the original `1.0.0` wording and a hardened `1.1.0` correction;
+latest-version selection exposes only `1.1.0`, which preserves the repeated G3
+failure fact and states that its exact cause is unproven. The source run ID is
+explicitly excluded, and capability improvement still requires a fresh
+Generation/Validation experiment. Required Experience payload hashes and
+canonical bounded semantic versions are fail-closed. The one checked projector
+validates the selected record, approved/latest status, exact file allowlist,
+and content privacy before Generation receives it; changing manifest visibility
+cannot expose `records.jsonl`. See [`EVOLUTION_DESIGN.md`](EVOLUTION_DESIGN.md)
+for the complete contract and
+[`EVOLUTION_CORRECTION_RECEIPT.json`](EVOLUTION_CORRECTION_RECEIPT.json) for the
+hash-bound, zero-model-call 1.1.0 correction.
 
 ## Evidence boundary
 
@@ -283,4 +305,5 @@ boundary.
   experiment gates.
 
 See [`RESULTS.md`](RESULTS.md) for the historical runs, current local
-verification, and remaining post-fix AWS replay gate.
+verification, completed Evolution audit, and the remaining fresh
+Generation/Validation experiment needed to test capability improvement.

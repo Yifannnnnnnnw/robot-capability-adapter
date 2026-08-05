@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "robot_capability.evolution_run_report.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "source_run_id", "architecture",
+    "agent", "evaluation", "experience", "read_only_guards", "terminal_status"
+  ],
+  "$defs": {
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "limit", "used", "remaining"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "limit": {"type": "integer", "minimum": 1, "maximum": 30},
+        "used": {"type": "integer", "minimum": 0, "maximum": 30},
+        "remaining": {"type": "integer", "minimum": 0, "maximum": 30}
+      }
+    },
+    "gate": {
+      "type": "object",
+      "required": ["passed"],
+      "properties": {"passed": {"type": "boolean"}}
+    }
+  },
+  "properties": {
+    "schema_version": {"const": "robot_capability.evolution_run_report.v1"},
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "source_run_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "architecture": {"const": "evidence_grounded_audit_synthesize_judge_publish"},
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role", "session_id", "episode_id", "model", "client_kind",
+        "scripted", "status", "error_type", "agent_turns",
+        "provider_http_attempts", "provider_retries", "agent_turn_budget",
+        "phase_budget_policy", "provider_attempt_budget_policy", "usage", "trace"
+      ],
+      "properties": {
+        "role": {"const": "evolution_global_auditor"},
+        "session_id": {"type": "string", "minLength": 1},
+        "episode_id": {"type": "string", "minLength": 1},
+        "model": {"type": "string", "minLength": 1},
+        "client_kind": {"type": "string", "minLength": 1},
+        "scripted": {"type": "boolean"},
+        "status": {"enum": ["completed", "failed"]},
+        "error_type": {"type": ["string", "null"]},
+        "agent_turns": {"type": "integer", "minimum": 0, "maximum": 30},
+        "provider_http_attempts": {"type": "integer", "minimum": 0, "maximum": 30},
+        "provider_retries": {"const": 0},
+        "agent_turn_budget": {"$ref": "#/$defs/budget"},
+        "phase_budget_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "global_audit_limit", "synthesis_limit",
+            "same_agent_session_and_history", "forced_synthesis_transition"
+          ],
+          "properties": {
+            "global_audit_limit": {"type": "integer", "minimum": 1, "maximum": 20},
+            "synthesis_limit": {"type": "integer", "minimum": 0, "maximum": 10},
+            "same_agent_session_and_history": {"const": true},
+            "forced_synthesis_transition": {"type": "boolean"}
+          }
+        },
+        "provider_attempt_budget_policy": {"type": "object"},
+        "usage": {"type": "object"},
+        "trace": {"const": "evolution/agent_trace.jsonl"}
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "verdict", "publishable", "approved_record_sha256",
+        "reason_codes", "gates", "claims"
+      ],
+      "properties": {
+        "schema_version": {"const": "robot_capability.evolution_evaluation.v1"},
+        "verdict": {"enum": ["accepted", "rejected", "inconclusive"]},
+        "publishable": {"type": "boolean"},
+        "approved_record_sha256": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            {"type": "null"}
+          ]
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_integrity", "framework_snapshot", "audit_schema",
+            "audit_semantics", "evidence_binding", "claim_strength",
+            "privacy", "experience_schema"
+          ],
+          "properties": {
+            "source_integrity": {"$ref": "#/$defs/gate"},
+            "framework_snapshot": {"$ref": "#/$defs/gate"},
+            "audit_schema": {"$ref": "#/$defs/gate"},
+            "audit_semantics": {"$ref": "#/$defs/gate"},
+            "evidence_binding": {"$ref": "#/$defs/gate"},
+            "claim_strength": {"$ref": "#/$defs/gate"},
+            "privacy": {"$ref": "#/$defs/gate"},
+            "experience_schema": {"$ref": "#/$defs/gate"}
+          }
+        },
+        "claims": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evolution_process_completed", "experience_claim_accepted",
+            "framework_change_applied", "capability_improvement_proven",
+            "new_generation_validation_required"
+          ],
+          "properties": {
+            "evolution_process_completed": {"type": "boolean"},
+            "experience_claim_accepted": {"type": "boolean"},
+            "framework_change_applied": {"const": false},
+            "capability_improvement_proven": {"const": false},
+            "new_generation_validation_required": {"const": true}
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"verdict": {"const": "accepted"}}},
+          "then": {
+            "properties": {
+              "publishable": {"const": true},
+              "approved_record_sha256": {"type": "string"},
+              "claims": {
+                "properties": {"experience_claim_accepted": {"const": true}}
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "publishable": {"const": false},
+              "approved_record_sha256": {"type": "null"},
+              "claims": {
+                "properties": {"experience_claim_accepted": {"const": false}}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "experience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["published"],
+      "properties": {
+        "published": {"type": "boolean"},
+        "reason": {"type": "string"},
+        "idempotent": {"type": "boolean"},
+        "experience_id": {"type": "string"},
+        "version": {"type": "string", "pattern": "^(0|[1-9][0-9]{0,8})\\.(0|[1-9][0-9]{0,8})\\.(0|[1-9][0-9]{0,8})$"},
+        "record_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "records_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "record_count": {"type": "integer", "minimum": 1},
+        "generation_view_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"published": {"const": false}}},
+          "then": {"required": ["reason"]}
+        },
+        {
+          "if": {"properties": {"published": {"const": true}}},
+          "then": {
+            "required": [
+              "idempotent", "experience_id", "version",
+              "record_sha256", "records_sha256", "record_count",
+              "generation_view_sha256", "manifest_sha256"
+            ]
+          }
+        }
+      ]
+    },
+    "read_only_guards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_report_sha256", "source_report_bytes", "projection_sha256",
+        "framework_inputs_sha256", "framework_unchanged_during_agent",
+        "agent_write_tools", "historical_source_run_written"
+      ],
+      "properties": {
+        "source_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "source_report_bytes": {"type": "integer", "minimum": 1, "maximum": 2097152},
+        "projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "framework_inputs_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "framework_unchanged_during_agent": {"type": "boolean"},
+        "agent_write_tools": {"const": []},
+        "historical_source_run_written": {"const": false}
+      }
+    },
+    "terminal_status": {
+      "enum": ["EVOLUTION_ACCEPTED", "EVOLUTION_REJECTED", "EVOLUTION_INCONCLUSIVE"]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"terminal_status": {"const": "EVOLUTION_ACCEPTED"}}},
+      "then": {
+        "properties": {
+          "evaluation": {
+            "properties": {
+              "verdict": {"const": "accepted"},
+              "publishable": {"const": true}
+            }
+          },
+          "experience": {"properties": {"published": {"const": true}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"terminal_status": {"const": "EVOLUTION_REJECTED"}}},
+      "then": {
+        "properties": {
+          "evaluation": {
+            "properties": {
+              "verdict": {"const": "rejected"},
+              "publishable": {"const": false}
+            }
+          },
+          "experience": {"properties": {"published": {"const": false}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"terminal_status": {"const": "EVOLUTION_INCONCLUSIVE"}}},
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "evaluation": {"properties": {"verdict": {"const": "inconclusive"}}},
+              "experience": {"properties": {"published": {"const": false}}}
+            }
+          },
+          {
+            "properties": {
+              "evaluation": {"properties": {"verdict": {"const": "accepted"}}},
+              "experience": {"properties": {"published": {"const": false}}}
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -339,8 +339,37 @@ def materialize_inputs(paths: DemoPaths, run: RunManifest) -> tuple[Path, dict[s
         snapshot = entry.materialize_generation_view(destination / name)
         reports[name]["snapshot"] = snapshot
     experience = ExperienceLibrary(paths.libraries["experience"] / "records.jsonl")
-    if experience.list() != [] or experience.select([]) != [] or experience.generation_view([]) != []:
-        raise PipelineError("P0 Experience Library must be operational and empty")
+    selected_experience = experience.generation_view(
+        exclude_source_run_ids={run.run_id}
+    )
+    selected_path = destination / "experience" / "selected_records.json"
+    atomic_write_json(selected_path, selected_experience)
+    experience_snapshot_path = destination / "experience" / "snapshot.json"
+    experience_snapshot = load_json(experience_snapshot_path)
+    experience_snapshot["files"]["selected_records.json"] = sha256_file(selected_path)
+    experience_snapshot["selected_record_count"] = len(selected_experience)
+    atomic_write_json(experience_snapshot_path, experience_snapshot)
+    experience_files = {
+        path.relative_to(selected_path.parent).as_posix()
+        for path in selected_path.parent.rglob("*")
+        if path.is_file()
+    }
+    expected_experience_files = {
+        "selected_records.json",
+        "snapshot.json",
+        "sources.yaml",
+    }
+    if experience_files != expected_experience_files:
+        raise PipelineError(
+            "Experience Generation snapshot violated its exact file allowlist: "
+            f"{sorted(experience_files)}"
+        )
+    reports["experience"]["snapshot"] = experience_snapshot
+    reports["experience"]["selection"] = {
+        "approved_record_count": len(selected_experience),
+        "selected_records_sha256": sha256_file(selected_path),
+        "raw_records_exposed_to_generation": "records.jsonl" in experience_files,
+    }
     # File-level isolation: only allowlisted materialized payloads are present.
     forbidden_names = {"heldout_tasks.jsonl", "task_oracles.yaml", "demo_batch.json", "similarity_matrix.json"}
     leaked = [path.name for path in destination.rglob("*") if path.name in forbidden_names]
@@ -1853,7 +1882,20 @@ def _run_evidence(paths: DemoPaths, run: RunManifest) -> dict[str, Any]:
                 run.root / "generation_input_snapshot_manifest.json",
             ),
             "prompts": _evidence_for_paths(
-                paths.root, sorted((paths.root / "prompts").glob("*.md"))
+                paths.root,
+                [
+                    paths.root / "prompts" / name
+                    for name in (
+                        "demo_react.md",
+                        "generation_system.md",
+                        "repair.md",
+                        "stage1.md",
+                        "stage2.md",
+                        "validation_final_review.md",
+                        "validation_generate.md",
+                        "validation_review.md",
+                    )
+                ],
             ),
         },
         "run_manifest_preseal": _file_evidence(

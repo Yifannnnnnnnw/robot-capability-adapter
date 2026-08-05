@@ -8,7 +8,7 @@ All commands and test claims in this document refer to
 - Python 3.12.13;
 - LeRobot 0.6.0 hardware-free API probe: pass;
 - MuJoCo 3.11.0 SO-ARM101 model and bridge probes: pass;
-- full test collection: 522 tests;
+- full test collection: 555 tests;
 - most recent full test execution: one environment-dependent skip, exit 0;
 - deterministic offline end-to-end fixture
   `offline-postfix-closure-20260805a`: `SEALED`, with zero report-schema or
@@ -69,19 +69,107 @@ is commit `a494207`, tagged `soarm101-pre-evolution-v0.1.1`.
   Validation gate. This is expected protocol behavior, not missing Demo
   evidence that can be inferred as a pass.
 
-The current deterministic Evolution Evidence Compiler refused to verify this
-run's 598,979-byte terminal report as a source report: it classified the input
-as oversized, set `source_report_verified` to false, and emitted zero
-candidates. This preserves the old evidence rather than truncating or silently
-accepting it. Supporting a valid large terminal report is an input-adaptation
-problem for the next Evolution goal; the historical report must not be edited
-to work around it.
+The deterministic Evolution Evidence Compiler now reads this complete
+598,979-byte terminal report under a 1 MiB default limit and 2 MiB hard ceiling.
+It verifies the original exact SHA and run-manifest/schema binding without
+editing the historical report, reports zero invalid/oversized and zero unbound
+source artifacts, and derives five redacted `confirmed_failure` candidates.
+The older run-local candidate bundle created under the former 512 KiB limit is
+not treated as authority and is not overwritten; each Evolution run recompiles
+the source evidence in memory.
 
 The retained MP4 counts above come from each run's `video_index.json`. They are
 formal, actual-MuJoCo Validation/Demo recordings rather than renderer
 preflight clips. A `partial` index means the run did not seal the complete
 evidence set; it does not imply that every retained and fully decoded MP4 is
 corrupt.
+
+## Read-only Evolution experiment
+
+The finalized Evolution architecture is
+Evidence-grounded Audit–Synthesize–Judge–Publish. Its ReAct inspection and
+synthesis windows are one Agent identity/session/history with a single 30-call
+ceiling: at most 20 calls for global read-only inspection and the remaining 10
+for schema-valid synthesis. The synthesis phase disables repository browsing;
+it retains only privacy-safe evidence reads and audit submission.
+
+Development runs were retained rather than overwritten:
+
+| Evolution run | Real model outcome | Trusted result | Change motivated |
+|---|---:|---|---|
+| `aws-evolution-readonly-20260805a` | 0 successful responses; 30 sandbox transport failures | `inconclusive`, no publication | rerun with permitted network access |
+| `aws-evolution-readonly-20260805b` | 30/30 responses | `rejected`: selected claim exceeded evidence and used refs outside the selected finding | expose exact schema and align claim/evidence contract |
+| `aws-evolution-readonly-postfix-20260805a` | 30/30 responses | `inconclusive`: Agent kept browsing and submitted no audit | enforce 20-call audit + 10-call synthesis phases |
+| `aws-evolution-readonly-phased-20260805a` | 22/22 responses | `rejected`: wrong robot scope and negative claim lacked a confirmed-failure candidate | move existing evaluator rules into submit preflight/schema |
+| `aws-evolution-readonly-final-20260805a` | 22/22 responses | `accepted`; one negative claim published, then conservatively version-corrected after trusted-boundary audit | final model-backed result |
+
+The final run used model
+`anthropic.claude-sonnet-4-5-20250929-v1:0`, one independent Agent session, 22
+logical requests, 22 HTTP attempts, zero retries, 290,496 reported input tokens,
+and 4,729 reported output tokens. The endpoint did not report cost/quota fields
+for these responses, so no dollar-cost claim is made.
+
+The Agent ranked five findings and selected
+`g3_oracle_mismatch_all_candidates`: G1/G2 passed consistently, while all three
+G3 capabilities failed five direct-validation executions and five compiler
+candidates carried `confirmed_failure`. The Agent proposed tool-point/site-frame
+transformation or object-interaction logic as a mechanism hypothesis, while
+retaining timeout, gripper/contact, calibration, and kinematics-transcription
+alternatives. Evolution did not apply the proposed prompt change.
+
+The trusted evaluator independently recompiled the unchanged 598,979-byte
+source report and passed all eight gates: source integrity, framework snapshot,
+audit schema, audit semantics, evidence binding, claim strength, privacy, and
+Experience schema. It published:
+
+```text
+experience_id: evolution.b9ee1c81d3c1c516c075000e
+version: 1.0.0
+status: approved
+conclusion_kind: negative
+```
+
+Here `approved` means safe and sufficiently grounded for publication; it does
+not make the result positive. The record states
+`framework_change_applied=false`, `capability_improvement_proven=false`, and
+`new_generation_validation_required=true`.
+
+A post-publication code audit then found that the negative execution fact was
+supported, but the specific mechanism text was stronger than the evidence: the
+Stage 2 prompt already requested the cited site-quaternion composition, and the
+generated kinematics implementation contained that composition. Historical
+run artifacts and the original `1.0.0` ledger line were not rewritten. The
+hardened trusted compiler re-ran the same accepted audit and appended `1.1.0`
+for the same Experience identity. It preserves the repeated G3 failure fact,
+sets `repair_succeeded=null`, and states that the exact mechanism and remedy
+remain unproven. Latest-version selection exposes only `1.1.0` to Generation.
+
+The hardening also binds publication to the evaluator-approved record hash,
+rejects symlinks throughout the Experience authority path, makes the 64 KiB
+audit limit a real gate, freezes the first valid submission, reuses the full
+terminal/video semantic audit, sanitizes public source lines and labels their
+source-run hash status, and treats publication failure as process-inconclusive
+rather than scientific rejection. The complete accepted-report schema and
+cross-field semantics are now checked before the shared Experience ledger is
+mutated. Existing ledger bytes, record count, canonical JSONL form, required
+payload hashes, schema, and latest-version semantics are all verified before
+either an append or an idempotent response.
+
+An independent post-publication probe verified the Experience library schema,
+two immutable raw versions, manifest count/hash, and strict latest-version
+projection. A newly created run materialized exactly one non-empty
+`selected_records.json` at version `1.1.0`; it contained no raw origin, artifact
+refs, before/after measurements, ambiguous repair outcome, private task, or
+Oracle payload. The source run itself was unchanged and cannot consume its own
+record.
+
+The deterministic correction is recorded in
+[`EVOLUTION_CORRECTION_RECEIPT.json`](EVOLUTION_CORRECTION_RECEIPT.json). It
+hash-binds the immutable historical report and audit, the complete source
+terminal report, the eight-gate 1.1.0 re-evaluation, the published record,
+ledger, manifest, and sole Generation view. Replaying this correction uses zero
+additional model calls. The historical AWS report remains byte-for-byte
+unchanged even though it predates the hardened report schema.
 
 ## Changes exercised by the post-fix AWS run
 
@@ -122,7 +210,10 @@ failed and the run never crossed the Validation gate.
 - terminal budget/accounting preservation on failed runs;
 - local regression coverage for the post-run fixes listed above;
 - a reproducible post-fix AWS failure run whose complete direct-validation
-  evidence can be used by the next Evolution experiment.
+  evidence was consumed by the reported Evolution experiment;
+- the read-only global Evolution Agent, deterministic trusted evaluator, and
+  versioned Experience publisher completed the accepted real-model run
+  reported above, and a later Generation run can load its sanitized record.
 
 ## What remains unproven
 
@@ -132,12 +223,9 @@ failed and the run never crossed the Validation gate.
   cases; its fresh replay terminated before Demo after repeated 2/5 results;
 - `pilot-held-out` remains a pilot partition, not a formal generalization
   claim;
-- simulation results do not establish real-robot performance;
-- the global-observer ReAct Evolution Agent, trusted replay evaluator, and
-  automatic versioned Experience publisher are designed but not yet
-  implemented or executed.
+- simulation results do not establish real-robot performance.
 
-The currently implemented `evolution.py` should therefore be interpreted only
-as a deterministic, privacy-filtering post-run Evidence Compiler. Its
-candidate bundle is useful audit input; it is not evidence that an Evolution
-patch or Experience publication has occurred.
+Evolution acceptance is an Experience-claim result only. It does not mean that
+a framework patch occurred—the Agent is read-only—or that robot capability
+improved. Any recommended change must be tested by a later fresh
+Generation/Validation experiment.

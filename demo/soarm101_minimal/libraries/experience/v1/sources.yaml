@@ -1,14 +1,19 @@
 schema_version: robot_capability.experience_sources.v1
-entry_id: empty_p0_experience
-version: 1.0.0
+entry_id: soarm101_evolution_experience
+version: 1.1.0
 sources:
-  - source_id: p0_empty_library_policy
+  - source_id: trusted_evolution_publication_policy
     kind: local_design_contract
-    location: DEMO_PLAN.md#evolution-candidates-are-not-experience-records
+    location: DEMO_PLAN.md#evolution-status-and-intended-experience-closure
     facts:
-      - The committed P0 Experience Library intentionally contains zero records.
-      - Validation and Demo evidence may produce only run-local candidate records.
-      - Publishing an Experience record requires explicit review and approval.
+      - Raw Experience records remain framework-only because they retain provenance.
+      - Generation receives only a deterministic allowlisted view of approved records.
+      - Publication requires schema, evidence, privacy, and trusted-evaluator gates.
+      - A source run cannot consume an Experience record derived from its own outcome.
+      - Approved is a publication status; conclusion_kind separately records positive, negative, or unresolved evidence.
+      - Evolution recommendations are not automatically applied and do not prove capability improvement.
+      - A confirmed execution outcome does not by itself prove a specific causal mechanism or remedy.
+      - When one Experience identity has multiple versions, Generation receives only the latest approved projection.
 provenance:
   created_for: soarm101_minimal_capability_generation_demo
-  content_policy: No private task, oracle, run identifier, or failure evidence is stored here.
+  content_policy: No private task, oracle threshold, API key, or exact hidden measurement may be stored or exposed to Generation.

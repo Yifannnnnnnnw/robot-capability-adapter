@@ -63,12 +63,13 @@ maps that design to the executable folder.
     `video_index.json`. Bind Validation videos to round/case, suite/package
     hashes, and direct report; bind Demo videos to frozen task IDs. Embed the
     same index and hashes in the sealed report before sealing budgets.
-14. After the run has sealed or reached a terminal failure, the currently
-    implemented deterministic Evolution Evidence Compiler writes a bounded,
-    redacted `evolution/candidate_bundle.json` under that run. It does not edit
-    source or publish an Experience record. The separately designed global
-    ReAct Evolution Agent, trusted evaluator/replay, and versioned Experience
-    publisher remain the next implementation phase.
+14. After the run has sealed or reached a terminal failure, an independent
+    read-only Evolution Agent audits the deterministic privacy-safe evidence
+    projection, ranks findings, and submits one Experience claim. A separate
+    trusted evaluator recompiles the source evidence and checks grounding,
+    privacy, and claim strength. An accepted claim may append one versioned
+    Experience record; Evolution never edits framework files or historical
+    evidence and never claims capability improvement without a later fresh run.
 
 ## Hard budgets
 
@@ -97,35 +98,40 @@ diagnostics; only bounded, allowlisted diagnostic signatures may remain. It is
 projected into the next repair epoch and persisted as run evidence, including
 rounds that end in budget exhaustion, provider error, or another exception.
 
-## Evolution status and intended Experience closure
+## Evolution and Experience closure
 
-Today, `evolution.py` is the deterministic post-run Evidence Compiler. Its
-private, run-local candidate bundle is audit evidence, not yet an Experience
-record. It verifies artifact binding and causal consistency while withholding
-private payloads, but it is not a second Agent and it does not edit source.
+The implemented architecture is Evidence-grounded
+Audit–Synthesize–Judge–Publish. `evolution.py` remains the single deterministic
+Evidence Compiler, evaluator, privacy gate, and publisher; the independent
+Agent runtime owns only its read-only tools, model identity/session/budget, and
+trace.
 
-The current compiler gives every candidate a detached
-`candidate_payload_sha256`, which covers the complete canonical candidate
-payload except the digest field itself. Any later evaluator or publisher must
-bind that full digest. It is not inserted into the sealed report or run
-manifest, avoiding a hash self-reference.
+The compiler rebuilds evidence in memory and never treats an older run-local
+candidate bundle as authority. It records artifact binding and artifact meaning
+separately. Manifest-bound but contradictory artifacts remain
+`semantic_invalid` and cannot support a causal claim. The 598,979-byte target
+terminal report is read in full and exact-byte hashed under the 1 MiB default
+and 2 MiB hard ceiling.
 
-A causally supported successful repair may currently be represented only as a candidate.
-A failed repair is restricted to an `avoid` lesson; missing, infrastructure, or
-otherwise inconclusive evidence is marked unresolved and cannot claim success.
-Artifact provenance and artifact meaning are independent checks: each indexed
-artifact records `hash_bound` and `semantic_valid`. Even a manifest-bound
-Static, Direct, repair-result, feedback, or Demo artifact is excluded from
-causal conclusions when its schema or cross-field semantics contradict its
-claimed result; the audit status is `semantic_invalid`.
-The proposed next design will add a global-observer ReAct Evolution Agent that
-may read the bounded whole-run evidence, identify several issues, and select
-one primary causal hypothesis for one atomic candidate patch. A trusted code
-evaluator then checks diff scope, tests, protected inputs, privacy, and one
-independent AWS replay. When all deterministic gates pass, a publisher may
-automatically append one immutable, versioned Experience record. A published
-record is frozen into a later run only; the source run can never consume its
-own outcome. This Agent/evaluator/publisher path is not yet implemented.
+The Agent ranks several global findings but selects exactly one primary
+finding and one falsifiable Experience claim. It has no mechanism to write a
+patch or alter prompts, schemas, thresholds, source, frozen inputs, or history.
+A deterministic evaluator then checks source re-verification, evidence refs,
+claim strength, privacy, total artifact size, and the Generation projection.
+It treats a confirmed failure as outcome evidence rather than proof of a
+specific mechanism. Only its private, hash-bound evaluate→publish API can
+append one version at a time.
+
+Publication status and scientific sign are deliberately separate. An approved
+record may be positive, negative, or unresolved. All records produced by this
+Evolution run state that no framework change was applied, no capability
+improvement was proved, and a fresh Generation/Validation run is needed. Raw
+provenance/evidence remains framework-only; the next run receives only the
+sanitized selected view and explicitly excludes records derived from its own
+run ID. The first real negative claim retains its original `1.0.0` ledger line;
+a post-publication boundary audit appended conservative `1.1.0` wording, and
+latest-version selection exposes only `1.1.0`. The correction does not rewrite
+the source run or claim that the Agent's proposed mechanism was proved.
 
 The Python evaluator itself is also part of the frozen experiment input. A
 fixed source allowlist covers entrypoints, pipeline, validation-suite/static/

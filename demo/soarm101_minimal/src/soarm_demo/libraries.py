@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .audit import atomic_write_json, sha256_file
+from .audit import atomic_write_json, canonical_json, sha256_file
 from .schema_validation import non_finite_json_issues, validate_json_schema
 
 try:
@@ -23,6 +24,28 @@ class LibraryError(RuntimeError):
 
 class ExperienceNotFoundError(LibraryError):
     pass
+
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_SEMVER_RE = re.compile(
+    r"^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$"
+)
+_EXPERIENCE_SECRET_RE = re.compile(r"\brp_[A-Za-z0-9]{16,}\b")
+_EXPERIENCE_ABSOLUTE_PATH_RE = re.compile(
+    r"(?i)(?:^|[\s=\"'])(?:/(?:users|home|private|var|tmp)/|[a-z]:\\users\\)"
+)
+_FORBIDDEN_EXPERIENCE_PUBLIC_TEXT = (
+    ".env",
+    "heldout_tasks.jsonl",
+    "task_oracles.yaml",
+    "private/task_library",
+    "private_task_oracles",
+    "private/oracle",
+    "demo_batch.json",
+    "observed_measurements",
+    "target_measurements",
+    "traceback_lines",
+)
 
 
 def _reject_json_constant(value: str) -> None:
@@ -121,6 +144,10 @@ class LibraryEntry:
     def verify(self) -> dict[str, Any]:
         errors: list[str] = []
         computed: dict[str, str] = {}
+        content_hashes = self.manifest.get("content_hashes")
+        if not isinstance(content_hashes, dict):
+            content_hashes = {}
+            errors.append("manifest content_hashes must be an object")
         for payload in self.payloads:
             path = self.resolve_payload(payload)
             if payload.required and not path.exists():
@@ -128,8 +155,12 @@ class LibraryEntry:
                 continue
             if path.is_file():
                 computed[payload.path] = sha256_file(path)
-                expected = self.manifest.get("content_hashes", {}).get(payload.path)
-                if expected and expected != computed[payload.path]:
+                expected = content_hashes.get(payload.path)
+                if payload.required and (
+                    not isinstance(expected, str) or not _SHA256_RE.fullmatch(expected)
+                ):
+                    errors.append(f"missing or invalid required hash: {payload.path}")
+                elif isinstance(expected, str) and expected != computed[payload.path]:
                     errors.append(f"hash mismatch: {payload.path}")
         return {
             "ok": not errors,
@@ -198,6 +229,17 @@ class LibraryEntry:
             else:
                 records = load_jsonl(payload_path)
                 schema_path = schema_dir / schema_name
+                if library_type == "experience":
+                    expected_count = (
+                        self.manifest.get("compatibility", {}).get("record_count")
+                        if isinstance(self.manifest.get("compatibility"), dict)
+                        else None
+                    )
+                    if expected_count != len(records):
+                        errors.append(
+                            "manifest.yaml.compatibility.record_count must equal "
+                            f"records.jsonl line count ({len(records)})"
+                        )
                 for index, record in enumerate(records, start=1):
                     check(record, schema_path, f"{relative}:{index}")
                 if not records:
@@ -308,6 +350,22 @@ class LibraryEntry:
                 )
 
         if library_type == "experience":
+            expected_visibility = {
+                "sources.yaml": "generation",
+                "experience.schema.json": "framework",
+                "records.jsonl": "framework",
+            }
+            actual_visibility = {
+                payload.path: payload.visibility for payload in self.payloads
+            }
+            if (
+                len(self.payloads) != len(expected_visibility)
+                or actual_visibility != expected_visibility
+            ):
+                errors.append(
+                    "manifest.yaml.payloads: Experience must expose only sources.yaml; "
+                    "records.jsonl and experience.schema.json must remain framework-only"
+                )
             mirror = self.root / "experience.schema.json"
             canonical = schema_dir / "experience.schema.json"
             if not mirror.is_file():
@@ -327,6 +385,17 @@ class LibraryEntry:
 
     def materialize_generation_view(self, destination: str | Path) -> dict[str, Any]:
         target = Path(destination)
+        if self.manifest.get("library_type") == "experience":
+            generation_payloads = {
+                payload.path
+                for payload in self.payloads
+                if payload.visibility == "generation"
+            }
+            if generation_payloads != {"sources.yaml"}:
+                raise LibraryError(
+                    "Experience materialization may expose only sources.yaml; "
+                    "use ExperienceLibrary.generation_view for records"
+                )
         if target.exists() and any(target.iterdir()):
             raise LibraryError(f"generation destination must be empty: {target}")
         target.mkdir(parents=True, exist_ok=True)
@@ -358,14 +427,32 @@ class LibraryEntry:
 
 
 class ExperienceLibrary:
-    """Operational empty-library interface for P0."""
+    """Versioned records with an allowlisted Generation projection."""
 
     def __init__(self, records_path: str | Path):
         self.records_path = Path(records_path)
 
     def list(self) -> list[dict[str, Any]]:
+        records = load_jsonl(self.records_path)
+        identities: set[tuple[str, str]] = set()
+        for record in records:
+            version = record.get("version")
+            if not isinstance(version, str) or _SEMVER_RE.fullmatch(version) is None:
+                raise LibraryError(
+                    f"Experience version must be bounded canonical semver: {version!r}"
+                )
+            identity = (
+                str(record.get("experience_id", "")),
+                version,
+            )
+            if identity in identities:
+                raise LibraryError(
+                    "duplicate Experience identity is not allowed: "
+                    f"{identity[0]}@{identity[1]}"
+                )
+            identities.add(identity)
         return sorted(
-            load_jsonl(self.records_path),
+            records,
             key=lambda item: (
                 str(item.get("experience_id", "")),
                 _semver_key(str(item.get("version", "0.0.0"))),
@@ -381,29 +468,103 @@ class ExperienceLibrary:
             raise ExperienceNotFoundError(f"experience IDs not found: {missing}")
         return [index[identifier] for identifier in ids]
 
-    def generation_view(self, ids: list[str]) -> list[dict[str, Any]]:
-        return [_experience_generation_view(item) for item in self.select(ids)]
+    def generation_view(
+        self,
+        ids: list[str] | None = None,
+        *,
+        exclude_source_run_ids: set[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return the sole approved, sanitized Experience view for Generation.
+
+        Raw records retain framework-side provenance and evidence.  Generation
+        receives this deterministic projection, never ``records.jsonl``.  A
+        newer deprecated/rejected version supersedes an older approved version.
+        Records derived from an excluded source run are removed before version
+        selection, making the no-self-consumption rule deterministic rather
+        than merely dependent on publication timing.
+        """
+
+        excluded = exclude_source_run_ids or set()
+        latest: dict[str, dict[str, Any]] = {}
+        for record in self.list():
+            origin = record.get("origin")
+            source_run_id = origin.get("run_id") if isinstance(origin, dict) else None
+            if isinstance(source_run_id, str) and source_run_id in excluded:
+                continue
+            identifier = str(record.get("experience_id", ""))
+            if identifier:
+                latest[identifier] = record
+        approved = [
+            latest[identifier]
+            for identifier in sorted(latest)
+            if latest[identifier].get("status") == "approved"
+        ]
+        approved_index = {
+            str(record["experience_id"]): record
+            for record in approved
+        }
+        if ids is None:
+            selected = approved
+        else:
+            if len(ids) != len(set(ids)):
+                raise LibraryError("duplicate experience IDs are not allowed")
+            missing = [identifier for identifier in ids if identifier not in approved_index]
+            if missing:
+                raise ExperienceNotFoundError(
+                    f"approved experience IDs not found or ineligible: {missing}"
+                )
+            selected = [approved_index[identifier] for identifier in ids]
+        schema_path = self.records_path.parent / "experience.schema.json"
+        if not schema_path.is_file():
+            raise LibraryError(f"missing Experience projection schema: {schema_path}")
+        schema = load_structured(schema_path)
+        if not isinstance(schema, dict):
+            raise LibraryError("Experience projection schema must be an object")
+        return [experience_generation_view(record, schema=schema) for record in selected]
 
 
 def _semver_key(value: str) -> tuple[int, int, int, str]:
-    parts = value.split(".")
-    if len(parts) == 3 and all(part.isdigit() for part in parts):
-        return int(parts[0]), int(parts[1]), int(parts[2]), ""
-    return 0, 0, 0, value
+    if _SEMVER_RE.fullmatch(value) is None:
+        raise LibraryError(f"Experience version must be bounded canonical semver: {value!r}")
+    major, minor, patch = value.split(".")
+    return int(major), int(minor), int(patch), ""
 
 
 def _experience_generation_view(record: dict[str, Any]) -> dict[str, Any]:
     """Build the manifest-declared allowlist without copying private evidence."""
 
     output: dict[str, Any] = {}
-    for scalar in ("experience_id", "version", "scope", "generation_summary"):
+    for scalar in ("experience_id", "version", "conclusion_kind"):
         if scalar in record:
             output[scalar] = record[scalar]
+    scope = record.get("scope")
+    if isinstance(scope, dict):
+        output["scope"] = {
+            key: list(scope[key])
+            for key in ("robot_ids", "runtime_ids", "granularities", "capability_ids")
+            if isinstance(scope.get(key), list)
+        }
+    generation_summary = record.get("generation_summary")
+    if isinstance(generation_summary, dict):
+        output["generation_summary"] = {
+            key: generation_summary[key]
+            for key in (
+                "applicability",
+                "lesson",
+                "recommended_pattern",
+                "avoid_pattern",
+            )
+            if isinstance(generation_summary.get(key), str)
+        }
     nested_allowlist = {
         "failure_summary": ("category", "symptom"),
         "diagnosis": ("hypothesis", "confidence"),
         "recommended_change": ("change_type", "guidance", "must_preserve"),
-        "outcome": ("repair_succeeded", "regressions", "reuse_risk"),
+        "scientific_claims": (
+            "framework_change_applied",
+            "capability_improvement_proven",
+            "new_generation_validation_required",
+        ),
     }
     for parent, fields in nested_allowlist.items():
         source = record.get(parent)
@@ -413,3 +574,48 @@ def _experience_generation_view(record: dict[str, Any]) -> dict[str, Any]:
         if selected:
             output[parent] = selected
     return output
+
+
+def experience_generation_view(
+    record: dict[str, Any],
+    *,
+    schema: dict[str, Any],
+) -> dict[str, Any]:
+    """Project through a schema already bound by the trusted library/evaluator path."""
+
+    if schema.get("$id") != "robot_capability.experience_record.v1":
+        raise LibraryError("unrecognized Experience projection schema authority")
+    issues = validate_json_schema(record, schema, instance_path="$experience")
+    if issues:
+        raise LibraryError(
+            "Experience record failed schema before Generation projection: "
+            + "; ".join(f"{issue.path}: {issue.message}" for issue in issues[:8])
+        )
+    if record.get("status") != "approved":
+        raise LibraryError("only approved Experience records may be projected")
+    view = _experience_generation_view(record)
+    issues = experience_public_privacy_issue_codes(view)
+    if issues:
+        raise LibraryError(
+            "Experience Generation view failed deterministic privacy checks: "
+            + ", ".join(issues)
+        )
+    return view
+
+
+def experience_public_privacy_issue_codes(value: Any) -> list[str]:
+    """Scan any Generation-visible Experience value at the shared privacy edge."""
+
+    try:
+        text = canonical_json(value)
+    except (TypeError, ValueError, OverflowError):
+        return ["not_canonical_json"]
+    lowered = text.lower()
+    issues: list[str] = []
+    if _EXPERIENCE_SECRET_RE.search(text):
+        issues.append("api_key_pattern")
+    if _EXPERIENCE_ABSOLUTE_PATH_RE.search(text):
+        issues.append("absolute_path")
+    if any(marker in lowered for marker in _FORBIDDEN_EXPERIENCE_PUBLIC_TEXT):
+        issues.append("forbidden_private_marker")
+    return sorted(set(issues))

@@ -1,0 +1,79 @@
+{
+  "schema_version": "robot_capability.evolution_correction_receipt.v1",
+  "correction_id": "aws-evolution-readonly-final-20260805a-experience-1.1.0",
+  "created_on": "2026-08-05",
+  "reason": "A post-publication trusted-boundary audit found that the repeated G3 failures were supported, while the exact causal mechanism and proposed remedy were not established by the cited execution evidence. The immutable 1.0.0 observation is retained and a conservative 1.1.0 version is appended.",
+  "source": {
+    "run_id": "aws-postfix-evolution-source-20260805b",
+    "terminal_report_path": "runs/aws-postfix-evolution-source-20260805b/terminal_report.json",
+    "terminal_report_bytes": 598979,
+    "terminal_report_sha256": "9c930ebcd9c0f593bc51ce8f732daeaa942c19543b48331b0a00a4bc069cbd29"
+  },
+  "historical_evolution": {
+    "run_id": "aws-evolution-readonly-final-20260805a",
+    "report_path": "runs/aws-evolution-readonly-final-20260805a/evolution_report.json",
+    "report_sha256": "c36153d72361765d2428e062329fd8e470d07484221d0967a66b08219312bea0",
+    "audit_path": "runs/aws-evolution-readonly-final-20260805a/evolution/audit.json",
+    "audit_sha256": "0dbacfc60252ab8cb9f36dd23d676406d0c62e6fc14b8ff86a2d84bb86c04a16",
+    "framework_inputs_path": "runs/aws-evolution-readonly-final-20260805a/evolution/framework_inputs.json",
+    "framework_inputs_artifact_sha256": "5350b31ccf4f2877fae16484b82a4d84665a7c0c1055684168e42116f77ad247",
+    "framework_inputs_tree_sha256": "c9a0d935a670513d223c234c6d7f1aaa6ad4f601cf3bfefdeb1d82dfcf579a35",
+    "trusted_evaluation_sha256": "f8e8740588c940e896a64d5c2bf16cd71fa4332f7dcd17b218a57111750a49b9",
+    "approved_record_artifact_sha256": "0b7ef05b54229a4bdf03b151f2af6e4748462a29464fd441d7bb382e39562250",
+    "original_record_version": "1.0.0",
+    "original_record_sha256": "50fea76bd0fbcd270ae8c3f386d5027de889d39405936c32e2cb18b2af425a94",
+    "historical_artifacts_modified": false
+  },
+  "deterministic_reevaluation": {
+    "architecture": "evidence_grounded_audit_synthesize_judge_publish",
+    "model_calls_added": 0,
+    "projection_sha256": "5c3a1a28ba9857ffe65e67e638991b340867129aba813b8b37eccd972fba3c70",
+    "record_version": "1.1.0",
+    "allowed_repository_refs": [
+      "repo:RESULTS.md@00a445d3adc40b86304cfaddaecb7e3678cbf52ba2eb68e2c5634766b27b2236#L59-L59",
+      "repo:src/soarm_demo/react_agent.py@4faf96b25ff86a60e749ee20d50c77c56c31372cead6950a9569a22ec8c74774#L69-L69"
+    ],
+    "verdict": "accepted",
+    "reason_codes": [],
+    "gates": {
+      "source_integrity": true,
+      "framework_snapshot": true,
+      "audit_schema": true,
+      "audit_semantics": true,
+      "evidence_binding": true,
+      "claim_strength": true,
+      "privacy": true,
+      "experience_schema": true
+    },
+    "approved_record_sha256": "6a01e6c0d1f16dc4d72f755a0ffb747030dc1740c427daa994e3847b8e99b570",
+    "record_matches_published_ledger": true
+  },
+  "publication": {
+    "experience_id": "evolution.b9ee1c81d3c1c516c075000e",
+    "current_version": "1.1.0",
+    "record_sha256": "6a01e6c0d1f16dc4d72f755a0ffb747030dc1740c427daa994e3847b8e99b570",
+    "records_path": "libraries/experience/v1/records.jsonl",
+    "records_sha256": "f48f1611bfaa00797dde6ff48f9f04f137394b73847792f13c3fd97a264c8a50",
+    "record_count": 2,
+    "manifest_path": "libraries/experience/v1/manifest.yaml",
+    "manifest_sha256": "f770c3960945ecd120944fe1f8e666aa4eb226c1de7a51a81c84789a0bc96a3d",
+    "generation_view_sha256": "1f99198ef9af33ce7e98be6f24f25fc298c0f3ff9502d8ad74a0372f823907ef",
+    "generation_view_record_count": 1
+  },
+  "scientific_status": {
+    "evolution_process_completed": true,
+    "experience_claim_accepted": true,
+    "framework_change_applied": false,
+    "capability_improvement_proven": false,
+    "exact_causal_mechanism_proven": false,
+    "recommended_remedy_proven": false,
+    "new_generation_validation_required": true
+  },
+  "privacy": {
+    "api_keys_included": false,
+    "raw_heldout_tasks_included": false,
+    "private_oracles_included": false,
+    "test_answers_included": false,
+    "exact_hidden_measurements_included": false
+  }
+}
