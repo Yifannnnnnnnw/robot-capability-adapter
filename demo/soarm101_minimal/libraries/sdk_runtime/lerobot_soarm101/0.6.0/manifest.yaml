@@ -14,10 +14,10 @@ payloads:
 content_hashes:
   api_probe.json: 4f40a3389e9080f2413abe26b4aea6be13f563a555c89fca77d2deb0049b2aac
   api_surface.yaml: 3aef7a91a1ac89b7b3e07b20b79577cfc1cff138a44f63484f7cc7a0f64e8ce5
-  examples/minimal_follower.py: d6bc3deaa97569b2ec2cd811546b22315dbe18fcb4d3499c9b8cae4bde0f4c69
+  examples/minimal_follower.py: 70d35ff184c41cb77e91415669731c879eb630b384940290fb7799bc87c2b6e9
   probes/probe_api.py: aa1be9e735b8115ae2743e9fcbbb0e91cdc786cc721561612bc8bccabf1aaa92
   runtime_contract.yaml: 54a4b50373cd9471df5a6c0b3ab40ab9ee65ead6b39f1e8f1abbb1c9e659eeff
-  sources.yaml: 6fc1dba220e765c9acefa4721ea0a9641d5ca5dc586c89a4b1423422e5375994
+  sources.yaml: 41694a126034b7dc8567699c39bb3fddcd90b60f792d9c4ac535eba5d9cec4e3
 compatibility:
   robot_id: soarm101
   package: lerobot
