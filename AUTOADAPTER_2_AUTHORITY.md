@@ -4,9 +4,9 @@
 > **Authority status:** `ACTIVE` — sole normative project document  
 > **Normative language:** English  
 > **Chinese text:** auxiliary reading support only  
-> **Document revision:** `0.14.0`
+> **Document revision:** `0.15.0`
 > **Effective date:** 2026-08-11
-> **Current project state:** General Demo foundation implementation and source-evidence probes exist; two-robot integration contracts are frozen and authorized for implementation; formal Library/RIM admission and Readiness execution remain pending
+> **Current project state:** experiment-grade two-robot General Demo implementation is authorized; exact robot/SDK/Translation facts and Readiness rules are frozen, while enterprise-style registry and attestation machinery is explicitly excluded
 
 This file is the sole authority for the current AutoAdapter 2.0 project description, research
 design, system boundaries, approved requirements, and implementation conformance. Its main body
@@ -48,24 +48,21 @@ These state axes are independent.
 | Realization | `NOT_STARTED → IMPLEMENTED → VERIFIED` | Code existence and verification state; it does not change decision maturity |
 | Evidence level | `NONE → PILOT → INDEPENDENT_VALIDATION → FORMAL_EXPERIMENT` | Strength of evidence supporting an implementation or scientific claim |
 
-Formal integration records use additional operational states that are independent of document
-decision maturity:
+The General Demo uses only two additional experiment-artifact states:
 
-| Axis | States | Meaning |
+| Artifact | States | Meaning |
 |---|---|---|
-| Record admission | `NOT_ADMITTED → ADMITTED → REVOKED` | Whether the exact immutable Library or integration record has passed its owning admission checks |
-| RIM activation | `INACTIVE ↔ ACTIVE` while admitted | Whether an admitted Robot Integration Manifest may be selected for a new run; admission `REVOKED` is a separate terminal state that takes precedence |
-| Readiness attempt | `NOT_RUN`, `FAIL`, or `PASS` | Result for one immutable attempt on one exact selected combination; it never changes the record's decision or admission state |
+| Integration manifest | `DRAFT` or `READY` | `READY` means the exact robot, SDK, Translation, runtime, and simulator references resolve and pass the direct compatibility checks in this section |
+| Readiness report | `NOT_RUN`, `FAIL`, or `PASS` | `PASS` means all six checks and cleanup passed for one exact run and one exact integration-manifest hash |
 
-Admission, activation, and revocation are effective states computed from Framework-owned,
-append-only event records; they are never trusted as mutable self-claims inside the subject
-record. `UNKNOWN` may appear only in source-probe metadata and is not a formal Readiness-attempt
-state. `FROZEN`, `ADMITTED`, `ACTIVE`, and Readiness `PASS` are not synonyms. Together they may
-produce an `INTEGRATION_READY` receipt for the selected route, but they are not by themselves
-sufficient to start Stage 1. The later composite run gate issues `READY_FOR_STAGE1` only after all
-other applicable frozen run-input, granularity, observation, Generation, and experiment-profile
-conditions also pass. `FROZEN_FIXTURE` is a test-only marker rather than a formal decision state;
-it can never satisfy a formal run gate.
+These states are stored directly in content-addressed JSON artifacts. The Demo does not implement
+admission registries, activation/revocation event chains, trusted issuers, signatures, schema-
+bootstrap attestations, or multi-process governance locks. Those mechanisms do not improve the
+scientific comparison in this experimental project and are outside scope. A run may start Stage 1
+only when its selected `integration_manifest.json` is `READY`, its matching
+`readiness_report.json` is `PASS`, and the run configuration, G2 profile, observation profile, and
+required Library snapshots resolve. `FROZEN_FIXTURE` remains test-only and cannot satisfy this
+gate.
 
 `validated` is reserved for a candidate capability layer that passes the applicable independent
 Validation gates. It is not a document-decision state.
@@ -675,7 +672,55 @@ Blue Line status `READY` and continues through the complete downstream path.
 | Tasks | Maintain downstream task descriptions, classifications, and private pass criteria | Supplies task context to Generation and the fixed Demo task set |
 | Experience | Maintain governed long-term experience accepted from prior runs | Supplies relevant prior experience to future run input |
 
-##### General Demo v1 integration-record contract
+##### General Demo experiment-grade integration contract
+
+The first General Demo deliberately uses the smallest integration contract that can protect
+experimental correctness. For each robot, the repository contains one
+`integration_manifest.json` that directly pins the exact robot configuration, Morphology record,
+simulation profile, SDK record and installed-artifact hash, Translation package and source hash,
+runtime profile, MuJoCo version, and compatibility-check results. Its status is `READY` only when
+all references and robot-specific facts resolve and all direct compatibility checks pass.
+
+For each run, the Session Runner writes one `readiness_report.json`. It binds `run_id`, the exact
+integration-manifest hash, runtime/environment fingerprint, the six ordered Readiness results,
+evidence paths/hashes, time limits, numerical tolerances, overall verdict, and cleanup result. Its
+overall verdict is `PASS` only when every check and cleanup passes. The run then writes one
+`run_snapshot.json` that pins the integration manifest, Readiness report, selected Library views,
+task set, G2 and observation profiles, model/prompt/configuration, budgets, Blue Line inputs, and
+later sealed artifacts used by that run.
+
+The pre-Stage-1 gate performs only these deterministic checks:
+
+1. all three JSON artifacts pass their project schemas and referenced files exist;
+2. all recorded hashes match the exact bytes used by the run;
+3. the canonical SO-ARM101 or Go2 facts and Translation mappings in this section match the loaded
+   records, including joint/entity order, units, Feetech registers, DDS topics/slot rules, and
+   stale-command behavior;
+4. the Readiness report is `PASS` and binds the same run, manifest, runtime, and profile; and
+5. the selected G2, observation, Tasks, and model-budget inputs are complete.
+
+If any check fails, the run stops before Stage 1 as an infrastructure/configuration failure.
+Otherwise it proceeds directly to Stage 1. Content hashes make a closed run reproducible; no
+registry, issuer, admission/activation lifecycle, signature, or append-only governance log is
+required. Compatibility and Readiness code must be source-driven and tested against the complete
+SO-ARM101 and Go2 records, not only against synthetic one-joint fixtures.
+
+Where later retained text uses `admitted` for a Morphology, SDK, Translation, runtime, or RIM
+record, revision 0.15.0 interprets it only as: its direct project checks passed and its containing
+integration manifest is `READY`. It never implies an external registry or event lifecycle.
+
+**中文辅助说明。** 这是一套实验项目合同，不是企业发布系统。每款机器人只有一份集成清单；
+每次 run 只有一份 Readiness 报告和一份运行快照。文件、hash、机器人映射和六项 Readiness 都对，
+就进入 Stage 1；否则停止。没有注册表、签发机构、激活/撤销事件链或证明体系。
+
+##### Withdrawn 0.14.0 integration-governance design — non-normative
+
+The detailed schema-bootstrap, admission-registry, RIM-activation, trusted-issuer, receipt-chain,
+and integration-gate design below, through the end of Section 4.1.1, is retained temporarily only
+to make the 0.14.0-to-0.15.0 simplification reviewable. It is withdrawn, has no normative force,
+must not guide implementation, and will be removed mechanically after the concise schemas and
+tests above land. Exact two-robot facts later in Sections 4.1.3, 4.1.4, 4.1.6, and 4.1.7 remain
+normative.
 
 This subsection freezes only the first General Demo's Morphology, SDK, Robot Integration Manifest,
 Translation, runtime, and Simulation Integration Readiness contracts. It does not freeze Tasks,
@@ -1532,24 +1577,16 @@ accelerometer, frame-position, and frame-linear-velocity mappings use absolute t
 and relative tolerance `1e-6`; the commanded joint must change by at least `1e-5` radians during
 the effect probe. Reset qpos and qvel use absolute tolerance `1e-9`.
 
-The immutable private report binds its canonical attempt identity, `run_id`, exact selection
-reference, exact same-selection `RIM_RESOLVED` receipt reference, exact Readiness-profile
-reference, all resolved exact references, exact
-resolved-combination reference, runtime lock and
-platform fingerprint, deadlines, six
-ordered results, evidence references, start/end times, overall verdict, and cleanup result. Each
-failed check records one infrastructure category. A failed attempt remains immutable; a corrected
-rerun uses a new attempt ID. Only six checks plus cleanup all passing may produce a non-sensitive,
-sealed `PASS` receipt. The private report is the verdict source; the receipt binds its exact hash
-and is issued into the Framework-owned append-only Readiness registry by the configured trusted
-issuer. A hash or seal made outside that registry has no gate authority. Any change to RIM,
+The content-addressed `readiness_report.json` binds its attempt ID, `run_id`, exact
+integration-manifest hash, Readiness-profile hash, resolved dependency hashes, runtime/environment
+fingerprint, deadlines, six ordered results, evidence paths/hashes, start/end times, overall
+verdict, and cleanup result. Each failed check records one infrastructure category. A failed
+attempt remains immutable; a corrected rerun writes a new report with a new attempt ID. The report
+is `PASS` only when all six checks and cleanup pass. Any change to the integration manifest,
 Morphology, simulation profile, SDK Entry or installed artifact, Translation source/configuration,
-runtime lock, MuJoCo version, or Readiness profile invalidates that receipt.
-The trusted issuer and integration gate require the selection, private report, and receipt to bind
-the same exact Readiness-profile reference and require the private report, Readiness receipt, and
-`INTEGRATION_READY` event to bind the same prior `RIM_RESOLVED` receipt for the same run,
-selection, RIM, and resolved combination. Copied numeric limits or an unreferenced earlier event
-are not sufficient.
+runtime lock, MuJoCo version, or Readiness profile requires a new report. The pre-Stage-1 gate
+reads this report directly and verifies its hashes and bindings; no separate receipt, registry,
+issuer, or `RIM_RESOLVED`/`INTEGRATION_READY` event exists.
 
 **中文辅助说明。** Readiness Check 发生在 Generation 之前，但它不是能力验证。它只证明本次
 选定的真实 SDK、专用 Translation Layer 和 MuJoCo 基础路径可以双向运行，避免把集成故障错误
@@ -1561,7 +1598,7 @@ are not sufficient.
 | Type | ID | State | Revision | Tracked scope |
 |---|---|---|---:|---|
 | Decision | `DEC-LIB-001` | `APPROVED` | 3 | Run-input assembly and the four top-level Library families |
-| Decision | `DEC-RIM-001` | `FROZEN` | 2 | Exact v1 RIM identities and fields; exact-reference compatibility; admission, activation, supersession and revocation; one active fixed configuration per robot model |
+| Decision | `DEC-RIM-001` | `FROZEN` | 3 | One direct content-addressed integration manifest for each exact v1 robot route; deterministic compatibility checks; no activation, revocation, or registry lifecycle |
 | Decision | `DEC-TASK-001` | `FROZEN` | 4 | Public benchmark/research sourcing, robot-specific curation, the 28-task SO-ARM101 batch, and its reviewed robot-conditioned D1–D4 scale |
 | Decision | `DEC-TASK-002` | `FROZEN` | 3 | Authored criteria, description-only visibility, fixed five-task designation, and separation from capability-validation tasks |
 | Decision | `DEC-TASK-003` | `FROZEN` | 1 | Reviewed-only human-readable Tasks Library catalog and recipient-specific projections |
@@ -1570,8 +1607,8 @@ are not sufficient.
 | Decision | `DEC-EXP-001` | `APPROVED` | 3 | Governed recipient-specific design/implementation Experience, immutable admitted versions, frozen future-run snapshots, no current-run feedback, and no direct Experience-to-Demo-Consumer route |
 | Decision | `DEC-TRANS-001` | `FROZEN` | 1 | Exact SO Feetech-PTY and Go2 DDS Translation routes, command/state mappings, timing/stale/reset rules, and prohibition on capability behavior |
 | Decision | `DEC-SIM-002` | `FROZEN` | 2 | Minimal Framework-private Session Runner, fresh-process formal runtime, simulator stepping and prohibited semantic assistance |
-| Decision | `DEC-READY-001` | `FROZEN` | 2 | Exact Readiness profile, six checks, numerical/time limits, immutable attempts, receipt and invalidation contract |
-| Decision | `DEC-INTEG-GATE-001` | `FROZEN` | 2 | Immutable subjects plus trusted admission/activation/Readiness event registries; separate fixture and formal gates; `RIM_RESOLVED` before Readiness, `INTEGRATION_READY` from a matching trusted PASS receipt, and later composite `READY_FOR_STAGE1` only after all run gates pass |
+| Decision | `DEC-READY-001` | `FROZEN` | 3 | Exact Readiness profile, six checks, numerical/time limits, immutable content-addressed reports, and invalidation contract |
+| Decision | `DEC-INTEG-GATE-001` | `FROZEN` | 3 | Experiment-grade direct gate over one READY integration manifest, one matching PASS Readiness report, and one frozen run snapshot; enterprise registries and attestation machinery excluded |
 | Open question | `OQ-TASK-001` | `OPEN` | — | Cross-robot difficulty comparability, infeasible/inapplicable-task representation, machine-readable record schema, and review fields |
 | Open question | `OQ-TASK-002` | `OPEN` | — | Catalogs for the remaining robot configurations, cross-catalog type taxonomy, exact five SO-ARM101 Demo tasks, and executable pass-criterion schema |
 | Open question | `OQ-MORPH-001` | `OPEN` | — | Environment-composition rules beyond the two fixed v1 robot entries and future shared-component promotion criteria |
@@ -2555,12 +2592,12 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 | Requirement | `REQ-GD-018` | `FROZEN` | Normal robot motion uses MuJoCo actuator control and physics stepping rather than direct simulated-state overwrite | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-019` | `FROZEN` | Every formal Validation B case/repetition and Demo task trial/repetition produces private, content-addressed, simulation-time-linked Framework Evaluation Video from post-reset pre-invocation/task state through terminal observation/timeout; the recording and manifest remain inaccessible to the Blue Line, Stage 1, Stage 2, Sandbox model, generated candidate/layer, Repair, and Demo Consumer, and neither video content nor human viewing may supply or override the structured Harness verdict; missing/incomplete/integrity-failed video invalidates the execution as infrastructure/evidence failure rather than candidate/Consumer failure | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-020` | `FROZEN` | The first complete two-robot architecture Demo executes G2 only: one separate single-RIM run for SO-ARM101 and one for Unitree Go2, each exposing only its G2 layer to the Demo Consumer; the generic Framework retains profile selection for future separate G1/G2/G3 runs, and exact G2 semantics plus exactly-one-profile-per-run enforcement remain blocked on `OQ-GRAN-001` freeze | `NOT_STARTED` | `NONE` |
-| Requirement | `REQ-GD-021` | `FROZEN` | Formal v1 integration records use the frozen `general-demo-integration-schemas@1.0.0` closed-world schema package, immutable semantic versions and exact `kind/id/version/content_hash` references; immutable subjects never self-claim admission/activation, and formal selection resolves trusted append-only events to require `FROZEN`, effectively `ADMITTED`, non-fixture records, an effectively `ACTIVE` exact RIM and mechanically verified compatibility | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-021` | `FROZEN` | Each robot route uses one schema-validated, content-addressed `integration_manifest.json`; each run uses one matching `readiness_report.json` and one frozen `run_snapshot.json`; direct checks verify exact refs, hashes, canonical robot facts and compatibility without registry, issuer, admission, activation, revocation, signature, or append-only event machinery | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-022` | `FROZEN` | The first Demo Morphology population is exactly the fixed-base five-arm-joint SO-ARM101 follower plus stock gripper and the free-base stock 12-DoF Go2 with joint/IMU state, using the pinned source files/closures and MuJoCo 3.3.6; reset qpos/qvel must reproduce within absolute `1e-9` | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-023` | `FROZEN` | The formal SO SDK Entry pins real LeRobot 0.6.0 plus Feetech SDK 1.0.0 on the frozen Linux runtime and the formal Go2 Entry pins real SDK2Py 1.0.1/CycloneDDS 0.10.2 on its frozen Linux runtime; Admission must verify actual environment/artifact identities and may not use placeholder hashes | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-024` | `FROZEN` | The two exact v1 Translation packages implement only the frozen real-SDK Feetech-PTY and SDK2-DDS bidirectional mappings, actuator-control/physics path, reset/stale/error/cleanup rules and no IK, trajectory, gait, posture, planning, recovery or task behavior | `NOT_STARTED` | `NONE` |
-| Requirement | `REQ-GD-025` | `FROZEN` | Fixture and formal gates are disjoint; formal selection issues only `RIM_RESOLVED`; a trusted-registry PASS receipt matching the run, selection, RIM, resolved combination, runtime lock, Readiness profile, issuer and private report may issue only `INTEGRATION_READY`; the later composite gate alone may issue `READY_FOR_STAGE1` after every applicable frozen run condition passes | `NOT_STARTED` | `NONE` |
-| Requirement | `REQ-GD-026` | `FROZEN` | `general-demo-integration-readiness@1.0.0` executes the six frozen checks in a fresh exact Linux runtime using the frozen per-check/attempt/transport/cleanup/simulation limits and numerical tolerances; no hidden retry or macOS/source-probe PASS is permitted, every dependency change invalidates the receipt, and only the Framework-owned trusted Readiness registry grants gate authority | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-025` | `FROZEN` | The pre-Stage-1 gate proceeds only when the selected integration manifest is `READY`, the matching same-run Readiness report is `PASS`, all hashes and canonical robot facts verify, and all other frozen run inputs are complete; fixtures and mismatched reports fail closed | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-026` | `FROZEN` | `general-demo-integration-readiness@1.0.0` executes the six frozen checks in a fresh exact Linux runtime using the frozen per-check/attempt/transport/cleanup/simulation limits and numerical tolerances; no hidden retry or macOS/source-probe PASS is permitted, and every dependency change requires a new content-addressed report | `NOT_STARTED` | `NONE` |
 
 ---
 

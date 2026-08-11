@@ -5,8 +5,8 @@
 | Field | Value |
 |---|---|
 | Status | `ACTIVE_NON_NORMATIVE_DESIGN` |
-| Implementation authorization | `WAVES_3_AND_4_FROZEN_INTEGRATION_SCOPE_ONLY` |
-| Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` revision `0.14.0` |
+| Implementation authorization | `EXPERIMENT_GRADE_FULL_DEMO_AUTHORIZED` |
+| Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` revision `0.15.0` |
 | Companion plan | `GENERAL_DEMO_PLAN.md` |
 | Initial robot scope | SO-ARM101 follower + stock gripper; Unitree Go2 |
 | Initial Demo Consumer | ReAct LLM Agent |
@@ -15,14 +15,18 @@
 This is a non-normative implementation design. Authority-defined names and layouts are preserved.
 Every additional filename, module split, schema name, and configuration path remains subordinate
 to the applicable frozen Authority contract. If this document and the Authority conflict, the
-Authority wins. Authority revision `0.14.0` authorizes only the frozen integration-record subset of
-Construction Wave 3 and the frozen Translation/Readiness subset of Wave 4; all other components
-remain blocked by their owning open contracts.
+Authority wins. Authority revision `0.15.0` authorizes the complete experiment-grade two-robot G2
+Demo path. The implementation should be small enough to understand and change quickly.
 
-The following user decisions are reflected here. Authority revision `0.14.0` additionally freezes
-the two exact robot configurations, SDK/runtime pins, RIMs, Translation routes, and Readiness/formal
-gate for implementation. The exact G2 profile, Consumer, and later Framework contracts still
-require their owning Authority decisions before construction:
+The integration core consists of one `integration_manifest.json` per robot, one
+`run_snapshot.json` per run, and one matching `readiness_report.json`. It does not include schema
+bootstrap admission, registry configs, trusted issuers, activation/revocation logs, signatures, or
+receipt/event chains. Any later tree or catalog entry in this document describing those withdrawn
+0.14.0 mechanisms is superseded and must not be implemented.
+
+The following user decisions are reflected here. Authority revision `0.15.0` freezes the two exact
+robot configurations, SDK/runtime pins, integration manifests, Translation routes, six-check
+Readiness rules, and complete experiment-grade G2 path for implementation:
 
 - the first complete Demo covers exactly SO-ARM101 follower with stock gripper and Unitree Go2;
 - both robots must each complete at least one full `READY` downstream route before wholesale
@@ -92,10 +96,10 @@ require their owning Authority decisions before construction:
 Authority + frozen contracts
              |
              v
-Four Libraries + one selected RIM
+Four Libraries + one selected integration manifest
              |
              v
-RIM resolve -> Integration Readiness -> recipient-specific Run Input
+freeze run snapshot -> six-check Integration Readiness -> recipient-specific Run Input
                                                |
                                                v
 Stage 1 -> Design conformance -> sealed capability_design.json
@@ -183,9 +187,7 @@ auto_adapter2.0/
     ├── design_proposals/
     │   └── <OQ-ID>/                                   # never loadable by production code
     ├── contracts/
-    │   ├── schema_packages/
-    │   │   └── general-demo-integration-schemas/1.0.0/ # Authority-frozen package home
-    │   ├── schemas/                               # each family/schema-id/version is immutable
+    │   ├── schemas/                               # small project schemas
     │   │   ├── common/
     │   │   ├── evidence/
     │   │   ├── orchestration/
@@ -240,7 +242,6 @@ auto_adapter2.0/
     │   ├── manifests/
     │   ├── translations/
     │   ├── readiness/
-    │   ├── registry_configs/                         # five Authority-frozen trust anchors
     │   └── source_evidence/
     ├── environments/
     │   ├── framework/Containerfile
@@ -303,18 +304,15 @@ layout is defined in Section 9.
 
 - YAML: human-reviewed governed source records, profiles, policies, and configuration;
 - JSON: machine-produced runtime artifacts, reports, manifests, snapshots, and seals;
-- JSONL: append-only events and time-ordered traces;
+- JSONL: time-ordered execution traces only;
 - Markdown: human documentation and the existing human reference/catalog views;
 - Python: generic Framework and Python Translation/adapter implementations;
 - XML/MJCF plus binary assets: admitted simulation payloads;
 - native source/build files: only inside a versioned Translation/runtime profile when an SDK seam
   requires them.
 
-Authority revision 0.14.0 now freezes one scoped exception to the otherwise open generic
-canonicalization policy: integration-v1 formal JSON records and schemas use RFC 8785 JCS UTF-8 and
-SHA-256, while non-JSON payloads use exact stored bytes. Human YAML remains a source/review view
-and never becomes a formal record through implicit conversion. Canonicalization for later
-Generation, Blue Line and full-run artifacts remains owned by its open contract.
+Experiment artifacts use stable UTF-8 JSON and SHA-256; non-JSON payloads use exact stored bytes.
+No schema-package bootstrap or attestation layer is required.
 
 ## 4. Version-controlled file catalog
 

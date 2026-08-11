@@ -5,9 +5,9 @@
 | Field | Value |
 |---|---|
 | Status | `ACTIVE_NON_NORMATIVE_PLAN` |
-| Implementation authorization | `WAVES_3_AND_4_FROZEN_INTEGRATION_SCOPE_ONLY` |
+| Implementation authorization | `EXPERIMENT_GRADE_FULL_DEMO_AUTHORIZED` |
 | Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` |
-| Authority revision read for this plan | `0.14.0` |
+| Authority revision read for this plan | `0.15.0` |
 | Detailed Framework/file design | `GENERAL_DEMO_FRAMEWORK_DESIGN.md` |
 | Demo purpose | Discover architectural and contract problems before mainline construction |
 | Migration intent | If the Demo passes its migration gates, migrate its structure and files into the main Framework rather than reimplementing them; then document and exercise a repeatable one-robot-at-a-time onboarding process |
@@ -18,11 +18,16 @@
 
 This plan is non-normative. If it conflicts with `AUTOADAPTER_2_AUTHORITY.md`, the Authority wins.
 An exact schema, prompt, API, budget, threshold, directory contract, or experimental allocation that
-the Authority still marks `OPEN` remains open here. Authority revision `0.14.0` freezes and
-authorizes implementation of the two fixed Morphology/SDK/runtime/RIM/Translation routes and their
-Readiness/formal-gate contracts. It does not authorize implementation of later components whose
-owning contracts remain open, including the exact G2 profile, Stage 1, Blue Line, Stage 2,
-Validation, Repair, Consumer, Demo, or Evolution.
+the Authority still marks `OPEN` remains open here. Authority revision `0.15.0` authorizes rapid
+implementation of the complete two-robot G2 experimental path. The implementation must preserve
+experimental correctness and information isolation, but it must not build enterprise deployment,
+attestation, registry, activation/revocation, or distributed-governance machinery.
+
+The Phase-2 implementation contract is intentionally small: one content-addressed
+`integration_manifest.json` per robot; one frozen `run_snapshot.json` and one matching
+`readiness_report.json` per run. Six Readiness checks plus cleanup must all pass before Stage 1.
+Any later sections of this plan that mention admission/activation registries, trusted issuers, or
+receipt chains are superseded by this direct experiment-grade rule.
 
 ## 1. Purpose and scope
 
@@ -155,7 +160,7 @@ fixed robot configuration and one RIM, owns its own snapshots, Design, suite, ca
 task collection, and verdicts, and closes independently. Campaign reporting may compare/aggregate
 only after both closures and must not merge the two execution sessions or their authorities.
 
-### 3.3 Source discovery and admission order
+### 3.3 Source discovery, review, and freezing
 
 Missing MuJoCo models, scenes, mappings, integration facts, and related robot materials are researched in
 the following order:
@@ -187,11 +192,11 @@ The Demo implements the following lifecycle rather than a shortened happy-path s
 
 ```text
 freeze applicable contracts and run inputs
-  -> resolve RIM
+  -> write and freeze run_snapshot.json
+  -> load the selected READY integration_manifest.json
   -> six-part Simulation Integration Readiness Check
-  -> trusted INTEGRATION_READY for the exact robot route
-  -> composite pre-Generation gate checks the frozen G2, observation, run-input, and experiment contracts
-  -> trusted READY_FOR_STAGE1
+  -> write matching readiness_report.json
+  -> direct pre-Stage-1 gate checks six PASS results, hashes, G2, observation, run-input, and experiment contracts
   -> Generation Stage 1 semantic design
   -> Stage 1 schema + semantic conformance loop
   -> seal capability_design.json
