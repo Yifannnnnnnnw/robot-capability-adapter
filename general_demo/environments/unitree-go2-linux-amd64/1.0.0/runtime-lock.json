@@ -42,10 +42,11 @@
   "oci_image_digest": null,
   "complete_dependency_artifact_hashes": null,
   "unresolved": [
-    "build has not been executed and verified on Linux amd64",
+    "the 2026-08-11 linux-amd64 build attempt was blocked before image construction by a Docker Desktop containerd metadata/blob input-output error; no runtime evidence was produced",
     "exact SDK2 source-build, CycloneDDS, MuJoCo and transitive artifact hashes are not captured",
     "complete Go2 MJCF asset-closure hashes are not captured",
     "OCI image digest, CPython build identity and native-library fingerprints are not captured",
-    "real SDK2/CycloneDDS/MuJoCo six-check readiness has not run"
+    "the real route still needs same-publication-step LowState and SportModeState correlation plus complete free-base reset and cleanup evidence",
+    "real SDK2/CycloneDDS/MuJoCo six-check readiness has not run; all six formal checks remain NOT_RUN"
   ]
 }

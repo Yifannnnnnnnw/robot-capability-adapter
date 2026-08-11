@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 3 ]]; then
-  echo "usage: $0 IMAGE VERIFIED_RUNTIME_LOCK OUTPUT_DIRECTORY" >&2
+if [[ $# -ne 4 ]]; then
+  echo "usage: $0 IMAGE VERIFIED_RUNTIME_LOCK INTEGRATION_MANIFEST OUTPUT_DIRECTORY" >&2
   exit 64
 fi
 
 image="$1"
 runtime_lock="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
-output_directory="$(mkdir -p "$3" && cd "$3" && pwd)"
+integration_manifest="$(cd "$(dirname "$3")" && pwd)/$(basename "$3")"
+output_directory="$(mkdir -p "$4" && cd "$4" && pwd)"
 
-docker run --rm --network none \
+if [[ -e "$output_directory/readiness_report.json" ]]; then
+  echo "output directory already contains readiness_report.json; use a new attempt directory" >&2
+  exit 73
+fi
+
+docker run --rm --platform linux/amd64 --network none \
   -v "$runtime_lock:/run/autoadapter/runtime-lock.json:ro" \
+  -v "$integration_manifest:/opt/autoadapter/general_demo/integrations/unitree-go2/integration_manifest.json:ro" \
   -v "$output_directory:/opt/autoadapter/general_demo/readiness_output" \
   "$image" \
   python3.10 scripts/run_unitree_go2_readiness.py \

@@ -3,7 +3,11 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONUNBUFFERED=1 \
-    MUJOCO_GL=egl
+    MUJOCO_GL=egl \
+    PYTHONPATH=/opt/autoadapter/general_demo/src
+
+# This runtime is an amd64 contract even when Docker is hosted by Apple Silicon.
+RUN test "$(uname -m)" = "x86_64"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates git python3.10 python3.10-dev python3-pip \
@@ -31,9 +35,15 @@ RUN git clone https://github.com/unitreerobotics/unitree_mujoco.git /opt/unitree
     && echo "3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599  /opt/unitree_mujoco/simulate_python/unitree_sdk2py_bridge.py" | sha256sum -c - \
     && echo "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b  /opt/unitree_mujoco/unitree_robots/go2/go2.xml" | sha256sum -c -
 
-RUN python3.10 -m pip install cyclonedds==0.10.2 mujoco==3.3.6 pytest==8.4.2 \
-    && python3.10 -m pip install /opt/unitree_sdk2_python \
-    && python3.10 -m pip install /opt/autoadapter/general_demo
+# SDK2's setup.py does not include utils/lib/crc_amd64.so in a built wheel.
+# The pinned editable checkout is the upstream-supported Demo installation and
+# keeps that native CRC library at its expected source-relative path.  The
+# framework runner is deliberately loaded from PYTHONPATH because this Go2
+# Authority runtime is Python 3.10 while the wider Demo package targets 3.11+.
+RUN python3.10 -m pip install --no-cache-dir cyclonedds==0.10.2 mujoco==3.3.6 pytest==8.4.2 \
+    && python3.10 -m pip install --no-cache-dir -e /opt/unitree_sdk2_python \
+    && python3.10 -c "from unitree_sdk2py.utils.crc import CRC; CRC()" \
+    && python3.10 -c "from autoadapter2.integrations.unitree_go2.readiness import run_readiness"
 
 ENV AUTOADAPTER_GO2_MODEL=/opt/unitree_mujoco/unitree_robots/go2/go2.xml
 WORKDIR /opt/autoadapter/general_demo
