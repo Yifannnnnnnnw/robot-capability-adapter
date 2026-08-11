@@ -17,14 +17,14 @@ docker build --platform linux/amd64 \
   -t autoadapter-so101-readiness:dev .
 ```
 
-Capture the lock from that exact image, supplying the digest reported by the
-container runtime:
+Capture the lock from that exact local image, supplying its validated Docker
+image ID:
 
 ```bash
 docker image inspect autoadapter-so101-readiness:dev \
-  --format '{{.Descriptor.Digest}}'
+  --format '{{.Id}}'
 docker run --rm --platform linux/amd64 --network none \
-  -e AUTOADAPTER_IMAGE_DIGEST=sha256:<digest> \
+  -e AUTOADAPTER_IMAGE_DIGEST=sha256:<image-id> \
   -v "$PWD/general_demo/environments/so-arm101-linux-amd64/1.0.0:/run/autoadapter:ro" \
   -v "$PWD/general_demo:/opt/autoadapter/general_demo:ro" \
   -v "$PWD/evidence:/evidence" \

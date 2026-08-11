@@ -49,6 +49,28 @@ EXPECTED_PACKAGE_ARTIFACTS = {
     },
     "mujoco": {"version": "3.3.6"},
 }
+EXPECTED_SDK_RUNTIME = {
+    "id": "so-arm101-linux-amd64",
+    "version": "1.0.0",
+    "os": "Ubuntu 24.04",
+    "architecture": "amd64",
+    "python": "3.12",
+    "mujoco": "3.3.6",
+}
+EXPECTED_SDK_PACKAGES = {
+    "lerobot": {
+        "version": "0.6.0",
+        "commit": EXPECTED_SDK_COMMIT,
+        "artifact_kind": "wheel",
+        "sha256": EXPECTED_PACKAGE_ARTIFACTS["lerobot"]["artifact_sha256"],
+    },
+    "feetech-servo-sdk": {
+        "version": "1.0.0",
+        "artifact_kind": "sdist",
+        "sha256": EXPECTED_PACKAGE_ARTIFACTS["feetech-servo-sdk"]["artifact_sha256"],
+    },
+}
+EXPECTED_SO_SDK_FIELDS = [f"{name}.pos" for name in MOTOR_NAMES]
 RUNTIME_SOURCE_PATHS = (
     "general_demo/src/autoadapter2/integrations/so_arm101/feetech_protocol.py",
     "general_demo/src/autoadapter2/integrations/so_arm101/translation.py",
@@ -202,6 +224,69 @@ def _report_artifact_hashes() -> dict[str, dict[str, str]]:
     return result
 
 
+def _validate_sdk_record(record: Any) -> dict[str, dict[str, Any]]:
+    """Validate the exact SO SDK record selected by the Integration Manifest."""
+    if not isinstance(record, dict):
+        raise ReadinessError("manifest.sdk_ref does not contain an SDK record object")
+    expected_identity = {
+        "record_type": "sdk",
+        "id": "lerobot-so101-follower",
+        "version": "1.0.0",
+        "robot_configuration_id": "so-arm101-follower-stock-gripper",
+    }
+    for field, expected in expected_identity.items():
+        if record.get(field) != expected:
+            raise ReadinessError(f"manifest.sdk_ref has the wrong SO SDK {field}")
+    runtime = record.get("runtime")
+    if not isinstance(runtime, dict) or any(
+        runtime.get(key) != value for key, value in EXPECTED_SDK_RUNTIME.items()
+    ):
+        raise ReadinessError("manifest.sdk_ref has the wrong SO SDK runtime identity")
+    if (
+        record.get("action_fields") != EXPECTED_SO_SDK_FIELDS
+        or record.get("observation_fields") != EXPECTED_SO_SDK_FIELDS
+    ):
+        raise ReadinessError("manifest.sdk_ref has the wrong SO SDK fields")
+    packages = record.get("packages")
+    if not isinstance(packages, list) or {
+        item.get("name") for item in packages if isinstance(item, dict)
+    } != set(EXPECTED_SDK_PACKAGES):
+        raise ReadinessError("manifest.sdk_ref does not declare the exact SO SDK package set")
+    declared: dict[str, dict[str, Any]] = {}
+    for package in packages:
+        if not isinstance(package, dict):
+            raise ReadinessError("manifest.sdk_ref contains a malformed SDK package")
+        name = package.get("name")
+        expected = EXPECTED_SDK_PACKAGES.get(name)
+        if expected is None or name in declared:
+            raise ReadinessError("manifest.sdk_ref contains an unexpected or duplicate SDK package")
+        for field, value in expected.items():
+            if package.get(field) != value:
+                raise ReadinessError(f"manifest.sdk_ref has the wrong {name} {field}")
+        declared[name] = package
+    return declared
+
+
+def _compare_sdk_record_to_runtime_lock(
+    sdk_record: dict[str, Any], runtime_lock: dict[str, Any]
+) -> None:
+    declared = _validate_sdk_record(sdk_record)
+    locked = {item.get("name"): item for item in runtime_lock.get("packages", [])}
+    for name, package in declared.items():
+        locked_item = locked.get(name)
+        if not isinstance(locked_item, dict):
+            raise ReadinessError(f"runtime lock lacks the SDK-declared {name} package")
+        for field in ("version", "artifact_kind"):
+            if locked_item.get(field) != package[field]:
+                raise ReadinessError(f"runtime lock disagrees with the SDK-declared {name} {field}")
+        if locked_item.get("artifact_sha256") != package["sha256"]:
+            raise ReadinessError(f"runtime lock disagrees with the SDK-declared {name} artifact")
+        if name == "lerobot" and locked_item.get("source_commit") != package["commit"]:
+            raise ReadinessError("runtime lock disagrees with the SDK-declared LeRobot source commit")
+    if runtime_lock.get("sdk_source_commit") != declared["lerobot"]["commit"]:
+        raise ReadinessError("runtime lock does not bind the SDK-declared LeRobot source commit")
+
+
 def capture_verified_runtime_lock(
     *,
     output_path: str | Path,
@@ -210,8 +295,7 @@ def capture_verified_runtime_lock(
 ) -> dict[str, Any]:
     """Capture a deterministic lock from the running Linux image.
 
-    The image digest is supplied by the container launcher because an OCI digest is
-    only known after the image has been exported.  All other values are measured from
+    The local Docker image ID is supplied by the container launcher.  All other values are measured from
     the running interpreter/filesystem and are never copied from the draft lock.
     """
     output_path = Path(output_path).resolve()
@@ -219,7 +303,7 @@ def capture_verified_runtime_lock(
     reference_root = Path(reference_root).resolve()
     image_digest = os.environ.get("AUTOADAPTER_IMAGE_DIGEST", "")
     if not image_digest.startswith("sha256:") or len(image_digest) != 71:
-        raise ReadinessError("AUTOADAPTER_IMAGE_DIGEST must contain the verified OCI image digest")
+        raise ReadinessError("AUTOADAPTER_IMAGE_DIGEST must contain the verified local Docker image ID")
     if sys.platform != "linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
         raise ReadinessError("runtime capture requires Linux amd64")
     if sys.version_info[:2] != (3, 12):
@@ -353,13 +437,18 @@ def public_positions_to_ticks(values: dict[str, Any]) -> dict[int, int]:
     return result
 
 
-def _real_identity(runtime_lock: dict[str, Any]) -> dict[str, Any]:
+def _real_identity(
+    runtime_lock: dict[str, Any], *, sdk_record: dict[str, Any] | None = None
+) -> dict[str, Any]:
     if sys.platform != "linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
         raise ReadinessError("formal SO-ARM101 readiness requires Linux amd64")
     if sys.version_info[:2] != (3, 12):
         raise ReadinessError(f"formal runtime requires CPython 3.12, found {platform.python_version()}")
     if runtime_lock.get("status") != "FROZEN_FROM_VERIFIED_LINUX_BUILD":
         raise ReadinessError("runtime lock is DRAFT; no verified Linux build may claim sdk_identity_load PASS")
+    if sdk_record is None:
+        raise ReadinessError("formal SDK identity requires the manifest.sdk_ref record")
+    _validate_sdk_record(sdk_record)
     image_record = runtime_lock.get("image")
     expected_image_digest = runtime_lock.get("oci_image_digest")
     if expected_image_digest is None and isinstance(image_record, dict):
@@ -404,8 +493,7 @@ def _real_identity(runtime_lock: dict[str, Any]) -> dict[str, Any]:
             raise ReadinessError(f"installed dependency artifact does not match the image build report for {name}")
         if locked_item.get("installed_files_sha256") != actual.get("installed_files_sha256"):
             raise ReadinessError(f"installed dependency files do not match the runtime lock for {name}")
-    if runtime_lock.get("sdk_source_commit") != EXPECTED_SDK_COMMIT:
-        raise ReadinessError("runtime lock does not bind the pinned LeRobot source commit")
+    _compare_sdk_record_to_runtime_lock(sdk_record, runtime_lock)
     python_record = runtime_lock.get("python")
     if not isinstance(python_record, dict) or python_record.get("sha256") != _sha256(Path(sys.executable).resolve()):
         raise ReadinessError("runtime lock does not bind the running CPython executable")
@@ -594,6 +682,7 @@ def run_readiness(
         raise ReadinessError("hidden retries are forbidden")
     injected = any(value is not None for value in (identity_checker, backend_factory, sdk_factory))
     morphology: dict[str, Any] | None = None
+    sdk_record: dict[str, Any] | None = None
     translation_record: dict[str, Any] | None = None
     if not injected:
         # A formal readiness attempt must exercise the exact files selected by the
@@ -603,6 +692,11 @@ def run_readiness(
             raise ReadinessError("runtime lock bytes do not match the integration manifest")
         if _sha256(profile_path) != manifest["readiness_profile_ref"]["sha256"]:
             raise ReadinessError("readiness profile bytes do not match the integration manifest")
+        if "sdk_ref" not in manifest:
+            raise ReadinessError("integration manifest is missing sdk_ref")
+        sdk_path = _resolve_reference(reference_root, manifest["sdk_ref"], label="sdk_ref")
+        sdk_record = json.loads(sdk_path.read_text(encoding="utf-8"))
+        _validate_sdk_record(sdk_record)
         morphology_path = _resolve_reference(
             reference_root, manifest["morphology_ref"], label="morphology_ref"
         )
@@ -629,7 +723,12 @@ def run_readiness(
             _resolve_reference(
                 reference_root, reference, label=f"translation implementation source {index}"
             )
-    identity_checker = identity_checker or _real_identity
+    if identity_checker is None:
+        identity_checker = (
+            (lambda lock: _real_identity(lock, sdk_record=sdk_record))
+            if not injected
+            else _real_identity
+        )
     backend_factory = backend_factory or (
         lambda: MuJoCoSO101Backend(
             model_path, gripper_tick_increases_qpos=gripper_tick_increases_qpos
@@ -934,7 +1033,7 @@ def run_readiness(
         "run_id": run_id,
         "integration_manifest_ref": _reference(manifest_path, reference_root),
         "runtime_sha256": runtime_sha256,
-        "readiness_profile_ref": _reference(profile_path, reference_root),
+        "readiness_profile_ref": dict(manifest["readiness_profile_ref"]),
         "environment_fingerprint_sha256": hashlib.sha256(
             canonical_bytes(environment_fingerprint)
         ).hexdigest(),

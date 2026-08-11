@@ -25,12 +25,12 @@ if [[ -e "$output_directory" ]]; then
 fi
 
 attempt="$(basename "$output_directory")"
-if ! image_digest="$(docker image inspect "$image" --format '{{.Descriptor.Digest}}')"; then
+if ! image_id="$(docker image inspect "$image" --format '{{.Id}}')"; then
   echo "could not inspect the Docker image: $image" >&2
   exit 65
 fi
-if [[ ! "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-  echo "could not resolve a verified OCI image digest for $image" >&2
+if [[ ! "$image_id" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+  echo "could not resolve a verified local Docker image ID for $image" >&2
   exit 65
 fi
 
@@ -41,7 +41,7 @@ cp "$readiness_profile" "$output_directory/readiness_profile.json"
 
 set +e
 docker run --rm --platform linux/amd64 --network none \
-  --env AUTOADAPTER_IMAGE_DIGEST="$image_digest" \
+  --env AUTOADAPTER_IMAGE_DIGEST="$image_id" \
   --env AUTOADAPTER_GRIPPER_DIRECTION="${AUTOADAPTER_GRIPPER_DIRECTION:-tick-increases-qpos}" \
   --volume "$output_directory:/opt/autoadapter/run_artifacts/$attempt" \
   "$image" \

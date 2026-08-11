@@ -63,7 +63,7 @@
     ],
     "readiness_runner": {
       "path": "general_demo/src/autoadapter2/integrations/so_arm101/readiness.py",
-      "sha256": "654d482a6b8573a9350f874358383fdad7da72c28d5a6b1ee303e802485d95ac"
+      "sha256": "0a3be747b92408df75e6dd55043a4ea6b1e125ccbb53ee9d11570fcb891a61fc"
     },
     "mujoco_version": "3.3.6",
     "supported_instructions": ["ping", "read", "write", "sync_read", "sync_write", "action"],

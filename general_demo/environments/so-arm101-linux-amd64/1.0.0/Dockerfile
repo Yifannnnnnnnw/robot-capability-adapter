@@ -49,9 +49,10 @@ RUN mkdir -p /tmp/wheels /opt/autoadapter/runtime-build \
     && rm -rf /tmp/wheels
 
 # Keep mutable manifest/profile/runtime-lock files outside the image.  The launcher
-# mounts them into a unique attempt directory, so a captured OCI digest does not
+# mounts them into a unique attempt directory, so a captured local image ID does not
 # become self-referential when those records bind the image.
 COPY general_demo/pyproject.toml /opt/autoadapter/general_demo/pyproject.toml
+COPY general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json /opt/autoadapter/general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json
 COPY general_demo/src /opt/autoadapter/general_demo/src
 COPY general_demo/linux_tests /opt/autoadapter/general_demo/linux_tests
 COPY general_demo/scripts /opt/autoadapter/general_demo/scripts
