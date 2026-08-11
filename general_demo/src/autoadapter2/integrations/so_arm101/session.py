@@ -28,7 +28,8 @@ from xml.etree import ElementTree as ET
 from ...demo import ValidationEvidence
 from ...evaluation import FrozenVideoProfile, RGBFrame
 from ...validation import HarnessInvocation, MeasurementSample
-from .feetech_protocol import MOTOR_IDS, MOTOR_NAMES
+from .feetech_protocol import MOTOR_NAMES
+from .readiness import ReadinessError, _real_sdk_factory
 from .translation import FeetechPTYTranslation, MuJoCoSO101Backend
 
 
@@ -131,45 +132,12 @@ def _read_json(path: str | Path, label: str) -> dict[str, Any]:
 
 
 def _default_follower_factory(port: str, calibration_dir: Path) -> Any:
-    """Construct the pinned real LeRobot SO101Follower.
-
-    This is intentionally the same public SDK construction used by the
-    readiness runner.  No local SDK facade is substituted in the formal path.
-    """
+    """Reuse the readiness factory, including its cooperative PTY read hook."""
 
     try:
-        from lerobot.motors.feetech import FeetechMotorsBus
-        try:
-            from lerobot.robots.so101_follower import SO101Follower, SO101FollowerConfig
-        except ImportError:
-            from lerobot.robots.so_follower import SO101Follower, SO101FollowerConfig
-    except ImportError as exc:  # pragma: no cover - exact Linux runtime only
-        raise SOArm101SessionError("real LeRobot 0.6.0 SO101Follower imports failed") from exc
-
-    calibration_dir.mkdir(parents=True, exist_ok=True)
-    calibration = {
-        name: {
-            "id": MOTOR_IDS[name],
-            "drive_mode": 0,
-            "homing_offset": 0,
-            "range_min": 0,
-            "range_max": 4095,
-        }
-        for name in MOTOR_NAMES
-    }
-    (calibration_dir / "autoadapter-so101.json").write_text(
-        json.dumps(calibration, sort_keys=True), encoding="utf-8"
-    )
-    follower = SO101Follower(
-        SO101FollowerConfig(
-            port=port,
-            id="autoadapter-so101-evaluation",
-            calibration_dir=calibration_dir,
-        )
-    )
-    if not isinstance(follower.bus, FeetechMotorsBus):
-        raise SOArm101SessionError("SO101Follower did not construct the real FeetechMotorsBus")
-    return follower
+        return _real_sdk_factory(port, calibration_dir)
+    except ReadinessError as exc:  # pragma: no cover - exact Linux runtime only
+        raise SOArm101SessionError(str(exc)) from exc
 
 
 def _load_frame_capture_factory() -> Callable[..., Any]:
