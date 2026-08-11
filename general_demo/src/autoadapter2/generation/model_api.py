@@ -77,8 +77,12 @@ class ModelApiClient:
             },
             method="POST",
         )
-        ca_file = os.environ.get("SSL_CERT_FILE", "/etc/ssl/cert.pem")
-        ssl_context = ssl.create_default_context(cafile=ca_file)
+        ca_file = os.environ.get("SSL_CERT_FILE")
+        ssl_context = (
+            ssl.create_default_context(cafile=ca_file)
+            if ca_file
+            else ssl.create_default_context()
+        )
         try:
             with urllib.request.urlopen(
                 request, timeout=self.config.timeout_s, context=ssl_context
