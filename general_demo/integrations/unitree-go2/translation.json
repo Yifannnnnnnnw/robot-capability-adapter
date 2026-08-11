@@ -1,0 +1,74 @@
+{
+  "record_type": "translation",
+  "id": "unitree-sdk2-go2-dds-mujoco",
+  "version": "1.0.0",
+  "route": [
+    "ChannelPublisher/ChannelSubscriber",
+    "CycloneDDS domain 1 loopback",
+    "rt/lowcmd",
+    "headless Session-Runner-clocked bridge",
+    "MuJoCo actuators and physics",
+    "rt/lowstate and rt/sportmodestate",
+    "ChannelSubscriber"
+  ],
+  "bridge_source": {
+    "repository": "https://github.com/unitreerobotics/unitree_mujoco",
+    "commit": "ae6a8403e272733e9996ef59990880330496177f",
+    "path": "simulate_python/unitree_sdk2py_bridge.py",
+    "sha256": "3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599"
+  },
+  "dds": {
+    "domain_id": 1,
+    "interface": "lo",
+    "topics": {
+      "command": "rt/lowcmd",
+      "state": "rt/lowstate",
+      "sport_state_read_only": "rt/sportmodestate"
+    },
+    "message_type": "LowCmd_",
+    "motor_slot_count": 20
+  },
+  "active_motor_mapping": [
+    {"index": 0, "actuator": "FR_hip", "joint": "FR_hip_joint"},
+    {"index": 1, "actuator": "FR_thigh", "joint": "FR_thigh_joint"},
+    {"index": 2, "actuator": "FR_calf", "joint": "FR_calf_joint"},
+    {"index": 3, "actuator": "FL_hip", "joint": "FL_hip_joint"},
+    {"index": 4, "actuator": "FL_thigh", "joint": "FL_thigh_joint"},
+    {"index": 5, "actuator": "FL_calf", "joint": "FL_calf_joint"},
+    {"index": 6, "actuator": "RR_hip", "joint": "RR_hip_joint"},
+    {"index": 7, "actuator": "RR_thigh", "joint": "RR_thigh_joint"},
+    {"index": 8, "actuator": "RR_calf", "joint": "RR_calf_joint"},
+    {"index": 9, "actuator": "RL_hip", "joint": "RL_hip_joint"},
+    {"index": 10, "actuator": "RL_thigh", "joint": "RL_thigh_joint"},
+    {"index": 11, "actuator": "RL_calf", "joint": "RL_calf_joint"}
+  ],
+  "active_slot_rule": {
+    "indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "mode": 1,
+    "finite_fields": ["q", "dq", "kp", "kd", "tau"],
+    "control_equation": "tau + kp * (q_target - sensed_q) + kd * (dq_target - sensed_dq)"
+  },
+  "inactive_slot_rule": {
+    "indices": [12, 13, 14, 15, 16, 17, 18, 19],
+    "mode": 1,
+    "q": 2146000000.0,
+    "dq": 16000.0,
+    "kp": 0.0,
+    "kd": 0.0,
+    "tau": 0.0
+  },
+  "crc_rule": "pinned SDK2 CRC must match before control update",
+  "rejection_rule": "wrong type/width/order/mode/inactive slot/CRC or non-finite active field does not modify controls or refresh stale timer",
+  "stale_rule": {
+    "clock": "simulation_time",
+    "limit_s": 0.1,
+    "action": "zero_all_controls_and_mark_STALE"
+  },
+  "observation_mapping": {
+    "LowState": ["q", "dq", "tau_est", "imu quaternion", "gyroscope", "accelerometer"],
+    "SportModeState": ["IMU-site frame_position", "IMU-site frame_linear_velocity"]
+  },
+  "normal_motion_writes": "actuator_control_only",
+  "direct_qpos_qvel_write": "reset_only",
+  "forbidden_behavior": ["stand", "sit", "move", "IK", "trajectory", "gait", "balance", "recovery"]
+}

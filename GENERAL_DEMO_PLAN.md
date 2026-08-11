@@ -230,7 +230,7 @@ budget. Repair has its own budget and cannot consume unused Stage 2 resources.
 
 ### 5.1 Stage 1 — semantic capability design
 
-Stage 1 receives the selected target/readiness receipt, Morphology Design Projection, SDK Overview,
+Stage 1 receives the selected target plus matching run snapshot/Readiness report, Morphology Design Projection, SDK Overview,
 opaque task-description requirements, a single granularity profile, the State-Provided observation
 condition, and any admitted Design Experience. It produces robot-specific but implementation-free
 semantic capability contracts in `capability_design.json`.
@@ -245,8 +245,7 @@ single-RIM runs, but both select the same exact frozen robot-independent G2 prof
 only its own G2 layer to ReAct. G2 is intended to expose reusable synthesized capabilities above raw
 SDK primitives—for example, building semantic stand/sit/move or arm end-effector operations from
 lower-level commands and observations—and is not limited to forwarding an existing convenient SDK
-method. The exact G2 profile and the generic exactly-one-profile-per-run envelope remain Authority
-freeze items under `OQ-GRAN-001` before implementation. G1 and G3 are
+method. The selected profile is `g2-reusable-effect@1.0.0`; exactly one profile is allowed per run. G1 and G3 are
 not built or executed in this first Demo, although generic profile selection remains in the
 Framework for later separate runs and the future RQ2 comparison.
 
@@ -639,31 +638,27 @@ reused only after the failure is understood; the structure is not migrated whole
 ## 12. Remaining alignment before later construction waves
 
 The Authority has frozen and authorized the two exact robot configurations, SDK/runtime pins,
-RIM/Translation routes, integration schemas and formal admission/activation/Readiness gate for
-Waves 3 and 4. Their implementation may proceed. The following are the remaining
+integration-manifest/Translation routes, direct Readiness gate, and first-Demo G2 profile. Their
+implementation may proceed. The following are the remaining
 discussion/freeze checkpoints for later waves and must not be guessed:
 
 1. confirm the proposed stricter requirement that both robots, not merely one, must complete a
    full run before migration;
 2. decide and freeze the State-Provided structured observation contract;
 3. define/freeze the Stage 1 Design schema/checker and Stage 2 Binding/Manifest contracts;
-4. under `OQ-GRAN-001`, define and freeze the exact G2 profile selected for this architecture Demo
-   and the generic exactly-one-profile-per-run envelope; retain the generic
-   profile mechanism and leave exact G1/G3 profiles for later separate runs/RQ2 without requiring
-   them for the first Demo;
-5. populate/freeze both task catalogs, the exact five-task Demo structure, and private criteria;
-6. freeze the fixed Blue Line model/prompt/configuration, standards snapshot, Measurement Catalog,
+4. populate/freeze both task catalogs, the exact five-task Demo structure, and private criteria;
+5. freeze the fixed Blue Line model/prompt/configuration, standards snapshot, Measurement Catalog,
    Generation Policy, exact artifacts/checker/compiler, and review flow;
-7. freeze Validation A/B, Repair, Router, Demo Harness, and Evolution minimum machine contracts;
-8. freeze the Evaluation Video recording/manifest/integrity/private-retention contracts and
+6. freeze Validation A/B, Repair, Router, Demo Harness, and Evolution minimum machine contracts;
+7. freeze the Evaluation Video recording/manifest/integrity/private-retention contracts and
     infrastructure rerun rule without turning video into an observation or verdict input;
-9. freeze exact LLM/tool/Sandbox/Repair/Consumer/Demo budgets and provider-failure accounting;
-10. freeze the first producer and ReAct Consumer model/prompt/tool/budget configuration without
+8. freeze exact LLM/tool/Sandbox/Repair/Consumer/Demo budgets and provider-failure accounting;
+9. freeze the first producer and ReAct Consumer model/prompt/tool/budget configuration without
     treating the architecture Demo as final RQ evidence;
-11. approve the proposed repository boundary or replace it before later-wave files are scaffolded.
+10. approve the proposed repository boundary or replace it before later-wave files are scaffolded.
 
-These remaining items do not block the currently authorized Wave 3/4 integration implementation;
-they do block the corresponding later components and the full end-to-end run.
+These are implementation details to settle while building; they do not block the authorized
+experiment-grade end-to-end Demo and must not trigger new enterprise subsystems.
 
 ## 13. Post-Demo robot onboarding
 

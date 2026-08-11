@@ -1685,10 +1685,22 @@ attribution also requires prespecified matching and matched semantic-effect cove
 conditions. The base Schema therefore does not hard-code G1/G2/G3 meanings, counts, arm-specific
 capability families, or robot-specific validation effects.
 
-`OQ-GRAN-001` owns the generic one-profile-per-run envelope/resolution contract and the exact G2
-profile required by the first architecture Demo. `OQ-EXP-001` does not block that first Demo: it
-owns the later G1/G3 profiles and the additional matching, coverage, metrics, and ablation contract
-needed for the formal RQ2 comparison.
+The first Demo freezes profile `g2-reusable-effect@1.0.0`. A run selects exactly one granularity
+profile, and this campaign rejects G1, G3, multi-profile, and mixed-granularity layers. Under this
+G2 profile, a capability is one reusable, task-independent semantic effect, state-maintenance
+contract, observation contract, or coherent composition of lower-level SDK primitives. It may use
+feedback, IK, trajectories, posture/gait logic, or several SDK calls when those are required to
+realize that one declared reusable effect. It must not encode a complete downstream task solution,
+a particular Demo scene or object instance, private criteria, or task-specific strategy. Raw SDK
+pass-through operations may be used internally but are not emitted as separate G2 capabilities
+unless they themselves form a meaningful reusable semantic contract. Examples include arm
+joint/pose achievement and gripper state on SO-ARM101, and stand, sit, body-pose maintenance, or
+bounded motion on Go2. The exact capability set remains Stage 1 output conditioned on the visible
+task descriptions; the profile fixes the abstraction boundary, not a hard-coded list.
+
+The generic resolver takes one exact profile ID/version per run and does not branch on robot type.
+Later G1/G3 definitions, matched-effect rules, metrics, and formal RQ2 ablations remain owned by
+`OQ-EXP-001` and do not block this architecture Demo.
 
 The Artifact is the explicit semantic interface between the stages. It freezes stable capability
 identities; language-independent public inputs and outputs with their logical types, shapes,
@@ -2066,7 +2078,7 @@ probe 与独立 Validation、固定 Demo 完全分离；Sandbox 只帮助开发�
 | Decision | `DEC-GEN-005` | `APPROVED` | 3 | Robot-independent Capability Design Contract, one granularity condition per run, opaque requirement coverage, semantic-not-language interface, bounded pre-seal Conformance Repair, pre-Blue-Line sealing, and no downstream current-run Design Repair |
 | Decision | `DEC-GEN-006` | `APPROVED` | 1 | First-profile `capability.py` executable submission, Framework-generated Python Binding Contract and skeleton, Framework-derived non-heuristic Implementation Manifest, and Runner-injected SDK lifecycle |
 | Open question | `OQ-GEN-001` | `OPEN` | — | Exact Stage Bundle projections, complete Capability Design fields/JSON Schema and semantic checker, Stage 1 Conformance Repair budget, Python Binding Contract/skeleton and Implementation Manifest schemas, Stage 1/Stage 2 prompts, dependency/isolation policy, inference retry/cache/token accounting, artifact binding, exploratory tuning/freeze protocol, canonicalization, and byte-level reproducibility |
-| Open question | `OQ-GRAN-001` | `OPEN` | — | Generic granularity-profile ID/version/schema and resolver; exactly-one-profile-per-run enforcement; exact robot-independent G2 semantics, Design conformance and composition boundary for the first two-robot architecture Demo; campaign rejection of G1/G3 and multi-granularity layers while preserving the generic future profile extension point |
+| Decision | `DEC-GRAN-001` | `FROZEN` | 1 | `g2-reusable-effect@1.0.0`, exactly one profile per run, reusable task-independent effect/composition boundary, and first-campaign rejection of G1/G3 or mixed-granularity layers |
 | Open question | `OQ-SANDBOX-001` | `OPEN` | — | Development-probe manifest and selection, tool request/response schema, feedback declassification/redaction, Sandbox calls/episodes/simulated-time/control-step/output/wall-time caps distinct from the 30-inference ceiling, failure accounting, and audit evidence |
 | Open question | `OQ-BLUE-001` | `OPEN` | — | Exact Project Validation Standards Reference and Frozen Validation Standards Snapshot, Private Measurement Catalog, Validation Spec, suite, Blue Line Manifest, and Binding Overlay schemas; fixed model identifier, prompt and decoding configuration; reference matching, adaptation format, and machine-readable encoding/enforcement of the approved material-change review rule; exact case/trial/repetition limits; deterministic checker/compiler and privacy enforcement; machine-readable review/version records and workflow mechanics consistent with the approved pre-experiment review-and-freeze boundary; canonicalization, hashing, sealing, and provider retry/cache/token accounting within the approved three-accounted-call ceiling |
 
@@ -2466,7 +2478,7 @@ depth. Auxiliary matched-effect analysis compares only capabilities that make th
 effect claim; different capabilities or effects are not treated as if one shared threshold made
 them directly interchangeable. Pure granularity attribution additionally requires matched
 semantic-effect coverage and prespecified matching rules. The first architecture Demo's exact G2
-profile is owned separately by `OQ-GRAN-001`. Exact G1/G3 profiles, any separately versioned
+profile is frozen as `g2-reusable-effect@1.0.0`. Exact G1/G3 profiles, any separately versioned
 RQ2-specific G2 revision, matching rules, and the final minimum RQ2 combination remain open here.
 
 ### 5.1 Section status and traceability
@@ -2475,7 +2487,7 @@ RQ2-specific G2 revision, matching rules, and the final minimum RQ2 combination 
 |---|---|---|---:|---|
 | Decision | `DEC-EXPDES-001` | `APPROVED` | 5 | RQ-aligned factors plus separate G1/G2/G3 runs, frozen simplified Blue Line inputs/policy, one layer visible per condition, granularity-profile outcome reporting, profile characterization, and matched-effect-only auxiliary comparison |
 | Decision | `DEC-EXPDES-002` | `APPROVED` | 2 | Separation of project-standard preparation, Stage 1, isolated Stage 2, and end-to-end studies; exact Design/spec/Blue Line Manifest/suite freeze for Stage 2 backbone comparisons; one shared Blue Line run in isolated Stage 2 comparisons; and no post-freeze condition-specific standard change |
-| Open question | `OQ-EXP-001` | `OPEN` | — | Exact G1/G3 profiles; selection of the `OQ-GRAN-001`-frozen G2 version or admission of a separately versioned RQ2 G2 revision; capability/effect matching and semantic-coverage rules; interface/composition characterization; metrics; and minimum sufficient RQ2 ablation protocol |
+| Open question | `OQ-EXP-001` | `OPEN` | — | Exact G1/G3 profiles; use of `g2-reusable-effect@1.0.0` or a separately versioned RQ2 G2 revision; capability/effect matching and semantic-coverage rules; interface/composition characterization; metrics; and minimum sufficient RQ2 ablation protocol |
 
 ---
 
@@ -2501,8 +2513,8 @@ identity applicable to its robot/configuration. Neither run also produces a G1 o
 Demo Consumer sees only its run's G2 layer. This selection reduces the first architecture rehearsal;
 it does not delete G1/G3 support from the generic profile mechanism, redefine the later RQ2
 comparison, or make the architecture Demo final granularity evidence. The exact robot-independent
-G2 profile and the generic one-profile-per-run contract must still be reviewed and frozen under
-`OQ-GRAN-001` before either run is implementable.
+G2 profile is `g2-reusable-effect@1.0.0` as frozen in Section 4.2.1. Exact G1/G3 profiles and the
+formal RQ2 matching/measurement design remain future work.
 
 Legacy schemas, prompts, names, constants, and defaults do not become General Demo design unless
 the current authority explicitly adopts them. Component implementation begins only after its
@@ -2591,7 +2603,7 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 | Requirement | `REQ-GD-017` | `FROZEN` | Minimal private Session Runner with lifecycle/clock/limits/traces but no public robot API or capability semantics | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-018` | `FROZEN` | Normal robot motion uses MuJoCo actuator control and physics stepping rather than direct simulated-state overwrite | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-019` | `FROZEN` | Every formal Validation B case/repetition and Demo task trial/repetition produces private, content-addressed, simulation-time-linked Framework Evaluation Video from post-reset pre-invocation/task state through terminal observation/timeout; the recording and manifest remain inaccessible to the Blue Line, Stage 1, Stage 2, Sandbox model, generated candidate/layer, Repair, and Demo Consumer, and neither video content nor human viewing may supply or override the structured Harness verdict; missing/incomplete/integrity-failed video invalidates the execution as infrastructure/evidence failure rather than candidate/Consumer failure | `NOT_STARTED` | `NONE` |
-| Requirement | `REQ-GD-020` | `FROZEN` | The first complete two-robot architecture Demo executes G2 only: one separate single-RIM run for SO-ARM101 and one for Unitree Go2, each exposing only its G2 layer to the Demo Consumer; the generic Framework retains profile selection for future separate G1/G2/G3 runs, and exact G2 semantics plus exactly-one-profile-per-run enforcement remain blocked on `OQ-GRAN-001` freeze | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-020` | `FROZEN` | The first complete two-robot architecture Demo executes only `g2-reusable-effect@1.0.0`: one separate single-manifest run for SO-ARM101 and one for Unitree Go2, each exposing only its G2 layer to the Demo Consumer; the generic Framework accepts exactly one profile per run and retains future G1/G3 extension points | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-021` | `FROZEN` | Each robot route uses one schema-validated, content-addressed `integration_manifest.json`; each run uses one matching `readiness_report.json` and one frozen `run_snapshot.json`; direct checks verify exact refs, hashes, canonical robot facts and compatibility without registry, issuer, admission, activation, revocation, signature, or append-only event machinery | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-022` | `FROZEN` | The first Demo Morphology population is exactly the fixed-base five-arm-joint SO-ARM101 follower plus stock gripper and the free-base stock 12-DoF Go2 with joint/IMU state, using the pinned source files/closures and MuJoCo 3.3.6; reset qpos/qvel must reproduce within absolute `1e-9` | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-023` | `FROZEN` | The formal SO SDK Entry pins real LeRobot 0.6.0 plus Feetech SDK 1.0.0 on the frozen Linux runtime and the formal Go2 Entry pins real SDK2Py 1.0.1/CycloneDDS 0.10.2 on its frozen Linux runtime; Admission must verify actual environment/artifact identities and may not use placeholder hashes | `NOT_STARTED` | `NONE` |
@@ -2628,7 +2640,6 @@ preserve obsolete questions.
 | Coverage inventory | Classify source assets and confirm the unique covered-robot count | `OQ-COV-001` |
 | RQ1 protocol | Exact producer endpoints; Consumer models/policies and training/freeze points; isolated-Stage-2 versus end-to-end allocation; fixed Capability Design/capability-set/suite selection; stage/Consumer budgets, repetitions, tasks, seeds, and frozen reference layer | `OQ-RQ1-001` |
 | RQ3 protocol | Robot sampling hierarchy, functionally matched task families, and frozen multi-robot Validation Standards Snapshot partitions | `OQ-RQ3-001` |
-| First-Demo granularity | Generic granularity-profile ID/version/schema and resolver, exactly-one-profile-per-run enforcement, and exact robot-independent G2 semantics/composition boundary for the first two-robot architecture Demo | `OQ-GRAN-001` |
 | Structured observation | State schema, entities, frames/units, precision, timestamp, and deterministic update cadence | `OQ-OBS-001` |
 | Tasks Library | Cross-robot difficulty rules, inapplicable tasks, machine schema, remaining robot catalogs, type taxonomy, fixed five tasks, and criterion schema | `OQ-TASK-001`, `OQ-TASK-002` |
 | Future Morphology expansion | Environment composition beyond the two frozen v1 entries and later shared-component promotion rules | `OQ-MORPH-001` |

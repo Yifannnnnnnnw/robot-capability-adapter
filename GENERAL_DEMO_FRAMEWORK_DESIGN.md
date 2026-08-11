@@ -345,7 +345,7 @@ created until their exact content is approved and frozen.
 
 | Planned path | Responsibility | Owning open contract |
 |---|---|---|
-| `contracts/profiles/granularity/<profile_id>/<version>/{profile,manifest}.yaml` | Generic, robot-independent, exactly-one-profile-per-run envelope and allowed Design shape; the first campaign loads only its frozen G2 profile, while later campaigns may load separately frozen G1/G3 profiles through the same resolver | first-Demo G2 and generic envelope: `OQ-GRAN-001`; later G1/G3 and RQ2 protocol: `OQ-EXP-001` |
+| `contracts/profiles/granularity/<profile_id>/<version>/profile.json` | Generic, robot-independent, exactly-one-profile-per-run envelope; the first campaign loads only frozen `g2-reusable-effect@1.0.0`, while later campaigns may add separately frozen G1/G3 profiles through the same resolver | first-Demo G2: `DEC-GRAN-001`; later G1/G3 and RQ2 protocol: `OQ-EXP-001` |
 | `contracts/profiles/observation/state_provided/<version>/{profile,manifest}.yaml` | Public entity/state schema, frame/unit rules, timestamps, precision, update cadence, noise/latency declaration | `OQ-OBS-001` |
 | `contracts/profiles/python_binding/one_file/<version>/{profile,manifest}.yaml` | Permitted Python binding/result envelope and one-file candidate profile | `OQ-GEN-001` |
 | `contracts/policies/canonicalization/<version>/{policy,manifest}.yaml` | Generic Generation/Blue Line/full-run normalization and hash rules; excludes the Authority-frozen integration-v1 JCS/raw-byte rule | `OQ-GEN-001`, `OQ-BLUE-001` |
@@ -1855,9 +1855,6 @@ The following table distinguishes a recommendation from a silently frozen decisi
   and Sandbox/Validation/Demo recipient rules;
 - task machine records, the two-robot interpretation of the fixed five-task requirement, and
   executable criterion/Harness contracts;
-- under `OQ-GRAN-001`, the exact G2 profile used by this architecture Demo and the generic
-  exactly-one-profile-per-run envelope; generic profile resolution remains required,
-  while exact G1/G3 profiles may remain for later separate runs/RQ2;
 - Stage 1/Stage 2 Bundles, Design schema/checker, Binding/skeleton/Manifest, prompts, and provider
   accounting;
 - Blue Line fixed model/prompt/config, standards/measurement/policy schemas, checker/compiler,

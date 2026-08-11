@@ -1,0 +1,41 @@
+{
+  "record_type": "translation",
+  "id": "lerobot-so101-feetech-pty-mujoco",
+  "version": "1.0.0",
+  "route": [
+    "SO101Follower",
+    "FeetechMotorsBus",
+    "Feetech Protocol 0 serial packets",
+    "Linux PTY virtual STS3215",
+    "MuJoCo position actuators",
+    "Present_Position",
+    "FeetechMotorsBus",
+    "SO101Follower"
+  ],
+  "motor_mapping": [
+    {"motor_id": 1, "sdk_field": "shoulder_pan.pos", "joint": "shoulder_pan", "actuator": "shoulder_pan"},
+    {"motor_id": 2, "sdk_field": "shoulder_lift.pos", "joint": "shoulder_lift", "actuator": "shoulder_lift"},
+    {"motor_id": 3, "sdk_field": "elbow_flex.pos", "joint": "elbow_flex", "actuator": "elbow_flex"},
+    {"motor_id": 4, "sdk_field": "wrist_flex.pos", "joint": "wrist_flex", "actuator": "wrist_flex"},
+    {"motor_id": 5, "sdk_field": "wrist_roll.pos", "joint": "wrist_roll", "actuator": "wrist_roll"},
+    {"motor_id": 6, "sdk_field": "gripper.pos", "joint": "gripper", "actuator": "gripper"}
+  ],
+  "registers": {
+    "Goal_Position": {"address": 42, "width_bytes": 2, "access": "write"},
+    "Present_Position": {"address": 56, "width_bytes": 2, "access": "read"}
+  },
+  "conversion": {
+    "raw_tick_range": [0, 4095],
+    "drive_mode": 0,
+    "homing_offset": 0,
+    "arm_path": "raw ticks -> pinned LeRobot degree conversion -> MuJoCo radians",
+    "gripper_sdk_range": [0, 100],
+    "gripper_affine_mapping_status": "PENDING_ENDPOINT_APERTURE_MEASUREMENT"
+  },
+  "command_rule": "latest valid goal remains latched until reset or replacement",
+  "observation_rule": "Present_Position derives from current MuJoCo joint state",
+  "error_rule": "bad checksum, unknown ID/register, read-only write, wrong width, or malformed packet does not alter actuator control",
+  "normal_motion_writes": "actuator_control_only",
+  "direct_qpos_qvel_write": "reset_only",
+  "implementation_seed": "general_demo/probes/phase2/virtual_feetech.py"
+}

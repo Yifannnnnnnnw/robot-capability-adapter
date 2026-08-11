@@ -1,0 +1,68 @@
+{
+  "record_type": "morphology",
+  "id": "unitree-go2-stock-12dof",
+  "version": "1.0.0",
+  "robot_model_id": "unitree-go2",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "base_type": "free",
+  "actuated_dof": 12,
+  "joint_names": [
+    "FR_hip_joint",
+    "FR_thigh_joint",
+    "FR_calf_joint",
+    "FL_hip_joint",
+    "FL_thigh_joint",
+    "FL_calf_joint",
+    "RR_hip_joint",
+    "RR_thigh_joint",
+    "RR_calf_joint",
+    "RL_hip_joint",
+    "RL_thigh_joint",
+    "RL_calf_joint"
+  ],
+  "actuator_names": [
+    "FR_hip",
+    "FR_thigh",
+    "FR_calf",
+    "FL_hip",
+    "FL_thigh",
+    "FL_calf",
+    "RR_hip",
+    "RR_thigh",
+    "RR_calf",
+    "RL_hip",
+    "RL_thigh",
+    "RL_calf"
+  ],
+  "joint_unit": "rad",
+  "state": ["joint_position", "joint_velocity", "estimated_torque", "imu"],
+  "sensor_names": [
+    "FR_hip_pos", "FR_thigh_pos", "FR_calf_pos",
+    "FL_hip_pos", "FL_thigh_pos", "FL_calf_pos",
+    "RR_hip_pos", "RR_thigh_pos", "RR_calf_pos",
+    "RL_hip_pos", "RL_thigh_pos", "RL_calf_pos",
+    "FR_hip_vel", "FR_thigh_vel", "FR_calf_vel",
+    "FL_hip_vel", "FL_thigh_vel", "FL_calf_vel",
+    "RR_hip_vel", "RR_thigh_vel", "RR_calf_vel",
+    "RL_hip_vel", "RL_thigh_vel", "RL_calf_vel",
+    "FR_hip_torque", "FR_thigh_torque", "FR_calf_torque",
+    "FL_hip_torque", "FL_thigh_torque", "FL_calf_torque",
+    "RR_hip_torque", "RR_thigh_torque", "RR_calf_torque",
+    "RL_hip_torque", "RL_thigh_torque", "RL_calf_torque",
+    "imu_quat", "imu_gyro", "imu_acc", "frame_pos", "frame_vel"
+  ],
+  "excluded_components": ["arm", "wheel", "payload", "camera", "depth_sensor", "lidar"],
+  "mujoco": {
+    "version": "3.3.6",
+    "entrypoint": "unitree_robots/go2/go2.xml",
+    "source_sha256": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b",
+    "reset_qpos_qvel_abs_tolerance": 1e-09,
+    "asset_closure_status": "PENDING_CAPTURE"
+  },
+  "source": {
+    "repository": "https://github.com/unitreerobotics/unitree_mujoco",
+    "commit": "ae6a8403e272733e9996ef59990880330496177f",
+    "path": "unitree_robots/go2/go2.xml",
+    "license": "BSD-3-Clause"
+  }
+}

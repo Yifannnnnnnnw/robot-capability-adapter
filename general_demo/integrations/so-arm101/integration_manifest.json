@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_id": "so-arm101-follower-stock-gripper-mujoco",
+  "version": "1.0.0",
+  "status": "DRAFT",
+  "robot_model_id": "so-arm101",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "morphology_ref": {
+    "path": "general_demo/libraries/morphology/so-arm101/1.0.0/record.json",
+    "sha256": "f968fa6f246daa6960f98c3656f96738a5ef7c51d81d7e685f233da78969bcc0"
+  },
+  "sdk_ref": {
+    "path": "general_demo/libraries/sdks/lerobot-so101-follower/1.0.0/record.json",
+    "sha256": "03403e4667a7283fe902333795688ba409eda6773369eca9b60b829b4f41a3ff"
+  },
+  "translation_ref": {
+    "path": "general_demo/integrations/so-arm101/translation.json",
+    "sha256": "48cf55e04a6a63e08841ec732a40c57f35a01eb188ad0c62dda45bff2dc7f97e"
+  },
+  "runtime": {
+    "id": "so-arm101-linux-amd64",
+    "version": "1.0.0",
+    "os": "Ubuntu 24.04",
+    "architecture": "amd64",
+    "python": "3.12",
+    "mujoco": "3.3.6",
+    "lock_sha256": null
+  },
+  "compatibility_checks": [
+    {"check_id": "robot_identity", "verdict": "PASS"},
+    {"check_id": "joint_and_actuator_order", "verdict": "PASS"},
+    {"check_id": "sdk_fields_and_units", "verdict": "PASS"},
+    {"check_id": "motor_ids_and_registers", "verdict": "PASS"},
+    {"check_id": "mujoco_asset_closure", "verdict": "NOT_RUN"},
+    {"check_id": "gripper_endpoint_direction", "verdict": "NOT_RUN"},
+    {"check_id": "runtime_lock", "verdict": "NOT_RUN"},
+    {"check_id": "real_sdk_mujoco_roundtrip", "verdict": "NOT_RUN"}
+  ],
+  "unresolved_gaps": [
+    "capture and hash complete SO-ARM101 MJCF asset closure",
+    "measure and freeze gripper endpoint aperture direction",
+    "install MuJoCo 3.3.6 in the pinned Linux image and freeze its runtime lock",
+    "run the six formal Readiness checks through real LeRobot and MuJoCo"
+  ]
+}

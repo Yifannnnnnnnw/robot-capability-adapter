@@ -1,0 +1,45 @@
+{
+  "record_type": "sdk",
+  "id": "unitree-sdk2-go2-lowlevel",
+  "version": "1.0.0",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "runtime": {
+    "id": "unitree-go2-linux-amd64",
+    "version": "1.0.0",
+    "os": "Ubuntu 22.04",
+    "architecture": "amd64",
+    "python": "3.10",
+    "mujoco": "3.3.6",
+    "cyclonedds": "0.10.2",
+    "container_digest_status": "PENDING_BUILD"
+  },
+  "packages": [
+    {
+      "name": "unitree_sdk2py",
+      "version": "1.0.1",
+      "commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
+      "artifact_hash_status": "PENDING_RUNTIME_CAPTURE",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "name": "cyclonedds",
+      "version": "0.10.2"
+    }
+  ],
+  "public_symbols": [
+    "ChannelFactoryInitialize",
+    "ChannelPublisher",
+    "ChannelSubscriber",
+    "LowCmd_",
+    "LowState_",
+    "SportModeState_"
+  ],
+  "topics": {
+    "command": "rt/lowcmd",
+    "state": "rt/lowstate",
+    "sport_state_read_only": "rt/sportmodestate"
+  },
+  "motor_slot_count": 20,
+  "active_motor_count": 12,
+  "excluded": ["SportClient.Sit", "SportClient.StandUp", "SportClient.Move", "high_level_sport_requests"]
+}
