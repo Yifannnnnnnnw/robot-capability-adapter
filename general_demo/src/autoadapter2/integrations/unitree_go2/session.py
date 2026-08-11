@@ -14,7 +14,6 @@ advances MuJoCo only after the candidate invocation through the existing
 from __future__ import annotations
 
 import copy
-import importlib
 import json
 import math
 import os
@@ -23,19 +22,16 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Protocol
 
 from ...demo import ValidationEvidence
 from ...evaluation import FrozenVideoProfile, RGBFrame
 from ...validation import HarnessInvocation, MeasurementSample, ValidatedCandidateHandle
 from .bridge import (
-    ACTIVE_MODE,
-    ACTIVE_MOTOR_COUNT,
-    DDS_MOTOR_SLOT_COUNT,
     Go2Backend,
     Go2DDSMuJoCoBridge,
     Go2Transport,
-    INACTIVE_SAFE_FIELDS,
     MuJoCoGo2Backend,
     UnitreeSDK2Transport,
 )
@@ -47,6 +43,7 @@ RESET_ABSOLUTE_TOLERANCE = 1e-9
 DEFAULT_ROLLOUT_STEPS = 1
 DEFAULT_STATE_WAIT_S = 2.0
 DEFAULT_MAX_ROLLOUT_STEPS = 5000
+DEFAULT_INVOCATION_WINDOW_S = 0.25
 DEFAULT_FLOOR_Z_M = 0.0
 DEFAULT_STANDING_HEIGHT_M = 0.34
 
@@ -196,7 +193,6 @@ class FrameCaptureFactory(Protocol):
         self,
         profile: FrozenVideoProfile,
         render_rgb: Callable[[], Any],
-        simulation_time: float,
     ) -> Any: ...
 
 
@@ -233,70 +229,24 @@ def _profile(value: FrozenVideoProfile | Mapping[str, Any] | None) -> FrozenVide
     )
 
 
-def _compat_frame_capture(
-    profile: FrozenVideoProfile,
-    render_rgb: Callable[[], Any],
-    simulation_time: float,
-) -> RGBFrame:
-    """Compatibility call for the shared ``MuJoCoFrameCapture`` contract.
+def _load_frame_capture_factory() -> FrameCaptureFactory:
+    """Load the shared capture helper only when a recording is requested."""
 
-    The normal path resolves the shared helper from the evaluation package.  A
-    small RGBFrame-only adapter is retained for this checkout because the
-    shared helper is intentionally supplied by the evaluation infrastructure,
-    not by a robot integration.  It does not own recording, encoding, or
-    frame-integrity policy.
-    """
-
-    raw = render_rgb()
-    if isinstance(raw, RGBFrame):
-        if raw.simulation_time_s != simulation_time:
-            return RGBFrame(simulation_time, raw.width, raw.height, raw.rgb)
-        return raw
-    if isinstance(raw, Mapping):
-        width = int(raw.get("width", profile.width))
-        height = int(raw.get("height", profile.height))
-        pixels = raw.get("rgb")
-    else:
-        width = profile.width
-        height = profile.height
-        pixels = raw
-    if hasattr(pixels, "tobytes") and callable(pixels.tobytes):
-        pixels = pixels.tobytes()
-    if not isinstance(pixels, bytes):
-        raise Go2SessionError("render_rgb must return RGB bytes or an RGBFrame")
-    return RGBFrame(simulation_time, width, height, pixels)
+    try:
+        from ..session_support import MuJoCoFrameCapture
+    except ImportError as exc:  # pragma: no cover - packaging/runtime failure
+        raise Go2SessionError(
+            "the shared integrations.session_support.MuJoCoFrameCapture is required"
+        ) from exc
+    return MuJoCoFrameCapture
 
 
-def _resolve_shared_frame_capture() -> FrameCaptureFactory:
-    """Resolve the shared renderer helper when one is installed by the Demo."""
+class _UnitreeGo2SDKConnection:
+    """Private owner of the real SDK2 DDS endpoints.
 
-    for module_name in (
-        "autoadapter2.evaluation.mujoco_capture",
-        "autoadapter2.evaluation.capture",
-        "autoadapter2.evaluation",
-    ):
-        try:
-            module = importlib.import_module(module_name)
-        except ImportError:
-            continue
-        helper = getattr(module, "MuJoCoFrameCapture", None)
-        if callable(helper):
-            return helper
-    return _compat_frame_capture
-
-
-# Keep the shared helper injectable and discoverable for the evaluation
-# assembly.  The fallback is only the RGBFrame adapter above; recording and
-# integrity policy remain in ``EvaluationVideoRecorder``.
-MuJoCoFrameCapture = _resolve_shared_frame_capture()
-
-
-class UnitreeGo2LowLevelSDK:
-    """Real SDK2 DDS façade admitted to candidate capability code.
-
-    Only the low-level command/state methods are part of this façade.  The
-    endpoint construction deliberately uses the pinned SDK2Py symbols and
-    CRC implementation; it does not import or wrap any high-level client.
+    The object itself never crosses into generated capability code.  Its
+    ``binding`` is a plain namespace containing only upstream SDK symbols and
+    the connected upstream publisher/subscriber/CRC instances.
     """
 
     is_real_sdk = True
@@ -305,22 +255,24 @@ class UnitreeGo2LowLevelSDK:
         self._lock = threading.Lock()
         self._started = False
         self._closed = False
-        self._low_state: object | None = None
-        self._sport_mode_state: object | None = None
         self._low_state_publications = 0
         self._sport_mode_state_publications = 0
-        self._command_count = 0
-        self._last_command_type_verified = False
-        self._last_command_crc_verified = False
-        self._last_command: object | None = None
+        self._binding: SimpleNamespace | None = None
+        self._lowcmd_type: type[Any] | None = None
 
     @property
     def started(self) -> bool:
         return self._started
 
     @property
-    def command_count(self) -> int:
-        return self._command_count
+    def binding(self) -> object:
+        self._require_started()
+        assert self._binding is not None
+        return self._binding
+
+    @property
+    def lowcmd_type(self) -> type[Any] | None:
+        return self._lowcmd_type
 
     @property
     def low_state_publications(self) -> int:
@@ -330,25 +282,15 @@ class UnitreeGo2LowLevelSDK:
     def sport_mode_state_publications(self) -> int:
         return self._sport_mode_state_publications
 
-    @property
-    def last_command_evidence(self) -> Mapping[str, Any]:
-        return {
-            "command_count": self._command_count,
-            "type_verified": self._last_command_type_verified,
-            "crc_verified": self._last_command_crc_verified,
-            "message_type": type(self._last_command).__name__ if self._last_command is not None else None,
-        }
-
     def start(self) -> None:  # pragma: no cover - exercised by Linux route
         if self._started or self._closed:
-            raise Go2SDKError("invalid SDK2 façade lifecycle")
+            raise Go2SDKError("invalid SDK2 endpoint lifecycle")
         try:
             from unitree_sdk2py.core.channel import (
                 ChannelFactoryInitialize,
                 ChannelPublisher,
                 ChannelSubscriber,
             )
-            from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
             from unitree_sdk2py.idl.unitree_go.msg.dds_ import (
                 LowCmd_,
                 LowState_,
@@ -361,82 +303,51 @@ class UnitreeGo2LowLevelSDK:
             ) from exc
 
         ChannelFactoryInitialize(1, "lo")
-        self._command_factory = unitree_go_msg_dds__LowCmd_
-        self._lowcmd_type = LowCmd_
-        self._crc = CRC()
-        self._publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
-        self._lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
-        self._sport_subscriber = ChannelSubscriber("rt/sportmodestate", SportModeState_)
+        crc = CRC()
+        lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
+        lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
+        sport_subscriber = ChannelSubscriber("rt/sportmodestate", SportModeState_)
         try:
-            self._publisher.Init()
-            self._lowstate_subscriber.Init(self._on_low_state, 10)
-            self._sport_subscriber.Init(self._on_sport_mode_state, 10)
+            lowcmd_publisher.Init()
+            lowstate_subscriber.Init(self._on_low_state, 10)
+            sport_subscriber.Init(self._on_sport_mode_state, 10)
         except Exception:
+            self._publisher = lowcmd_publisher
+            self._lowstate_subscriber = lowstate_subscriber
+            self._sport_subscriber = sport_subscriber
             self._close_endpoints()
             raise
+        self._publisher = lowcmd_publisher
+        self._lowstate_subscriber = lowstate_subscriber
+        self._sport_subscriber = sport_subscriber
+        self._crc = crc
+        self._lowcmd_type = LowCmd_
+        self._binding = SimpleNamespace(
+            ChannelFactoryInitialize=ChannelFactoryInitialize,
+            ChannelPublisher=ChannelPublisher,
+            ChannelSubscriber=ChannelSubscriber,
+            LowCmd_=LowCmd_,
+            LowState_=LowState_,
+            SportModeState_=SportModeState_,
+            CRC=CRC,
+            lowcmd_publisher=lowcmd_publisher,
+            lowstate_subscriber=lowstate_subscriber,
+            sport_mode_state_subscriber=sport_subscriber,
+            crc=crc,
+        )
         self._started = True
 
-    def write_low_command(
-        self,
-        q: Sequence[float],
-        dq: Sequence[float],
-        kp: Sequence[float],
-        kd: Sequence[float],
-        tau: Sequence[float],
-    ) -> None:  # pragma: no cover - exercised by Linux route
-        self._require_started()
-        values = {
-            "q": _vector(q, ACTIVE_MOTOR_COUNT, "q"),
-            "dq": _vector(dq, ACTIVE_MOTOR_COUNT, "dq"),
-            "kp": _vector(kp, ACTIVE_MOTOR_COUNT, "kp"),
-            "kd": _vector(kd, ACTIVE_MOTOR_COUNT, "kd"),
-            "tau": _vector(tau, ACTIVE_MOTOR_COUNT, "tau"),
-        }
-        command = self._command_factory()
-        slots = tuple(command.motor_cmd)
-        if len(slots) != DDS_MOTOR_SLOT_COUNT:
-            raise Go2SDKError("pinned LowCmd_ factory did not create 20 motor slots")
-        for index, slot in enumerate(slots):
-            slot.mode = ACTIVE_MODE
-            if index < ACTIVE_MOTOR_COUNT:
-                for field_name, field_values in values.items():
-                    setattr(slot, field_name, field_values[index])
-            else:
-                for field_name, value in INACTIVE_SAFE_FIELDS.items():
-                    setattr(slot, field_name, value)
-        command.crc = int(self._crc.Crc(command)) & 0xFFFFFFFF
-        calculated_crc = int(self._crc.Crc(command)) & 0xFFFFFFFF
-        self._last_command_type_verified = isinstance(command, self._lowcmd_type)
-        self._last_command_crc_verified = command.crc == calculated_crc
-        if not self._last_command_type_verified or not self._last_command_crc_verified:
-            raise Go2SDKError("constructed LowCmd_ failed pinned type or CRC verification")
-        self._publisher.Write(command)
-        self._last_command = command
-        self._command_count += 1
-
-    def get_low_state(self) -> object | None:
-        self._require_started()
+    def _on_low_state(self, _message: object) -> None:  # pragma: no cover - DDS callback
         with self._lock:
-            return self._low_state
-
-    def get_sport_mode_state(self) -> object | None:
-        self._require_started()
-        with self._lock:
-            return self._sport_mode_state
-
-    def _on_low_state(self, message: object) -> None:  # pragma: no cover - DDS callback
-        with self._lock:
-            self._low_state = message
             self._low_state_publications += 1
 
-    def _on_sport_mode_state(self, message: object) -> None:  # pragma: no cover - DDS callback
+    def _on_sport_mode_state(self, _message: object) -> None:  # pragma: no cover - DDS callback
         with self._lock:
-            self._sport_mode_state = message
             self._sport_mode_state_publications += 1
 
     def _require_started(self) -> None:
         if not self._started or self._closed:
-            raise Go2SDKError("SDK2 façade is not started")
+            raise Go2SDKError("SDK2 endpoints are not started")
 
     def _close_endpoints(self) -> None:
         for name in ("_publisher", "_lowstate_subscriber", "_sport_subscriber"):
@@ -455,7 +366,7 @@ class UnitreeGo2LowLevelSDK:
         self._started = False
         self._closed = True
 
-    def __enter__(self) -> "UnitreeGo2LowLevelSDK":
+    def __enter__(self) -> "_UnitreeGo2SDKConnection":
         if not self._started:
             self.start()
         return self
@@ -510,6 +421,10 @@ class UnitreeGo2EvaluationRobotSession:
         reset_tolerance: float = RESET_ABSOLUTE_TOLERANCE,
         auto_start: bool = True,
     ) -> None:
+        injected_backend = backend is not None
+        injected_transport = transport is not None
+        injected_bridge = bridge is not None
+        injected_sdk = sdk is not None
         if backend is None and model_path is None:
             model_path = os.environ.get("AUTOADAPTER_GO2_MODEL")
         if backend is None and model_path is None:
@@ -536,16 +451,17 @@ class UnitreeGo2EvaluationRobotSession:
         if bridge is None:
             bridge = (bridge_factory or Go2DDSMuJoCoBridge)(backend, transport)
         if sdk is None:
-            sdk = UnitreeGo2LowLevelSDK()
+            sdk = _UnitreeGo2SDKConnection()
 
         self._model_path = Path(model_path).resolve() if model_path is not None else None
         self._backend = backend
         self._transport = transport
         self._bridge = bridge
-        self._sdk = sdk
+        self._sdk_connection = sdk
+        self._sdk_binding: object | None = None
         self._truth_provider = truth_provider
         self._video_profile = _profile(video_profile)
-        self._frame_capture_factory = frame_capture_factory or MuJoCoFrameCapture
+        self._frame_capture_factory = frame_capture_factory
         self._render_rgb = render_rgb or self._build_renderer()
         self._renderer: Any | None = getattr(self, "_renderer", None)
         self._task_instances = self._load_task_instances(task_instances_path)
@@ -553,6 +469,20 @@ class UnitreeGo2EvaluationRobotSession:
         self._max_rollout_steps = max_rollout_steps
         self._state_wait_s = state_wait_s
         self._reset_tolerance = reset_tolerance
+        self._injected_dependencies = any(
+            (
+                injected_backend,
+                injected_transport,
+                injected_bridge,
+                injected_sdk,
+                backend_factory is not None,
+                transport_factory is not None,
+                bridge_factory is not None,
+                truth_provider is not None,
+                frame_capture_factory is not None,
+                render_rgb is not None,
+            )
+        )
 
         self._started = False
         self._closed = False
@@ -568,15 +498,17 @@ class UnitreeGo2EvaluationRobotSession:
         self._reset_verification: dict[str, Any] = {}
         self._truth_samples: list[Go2TruthSample] = []
         self._last_bridge_result: dict[str, Any] = {}
+        self._physics_steps = 0
         self._accepted_baseline = 0
-        self._command_baseline = 0
         self._lowstate_baseline = 0
         self._sportstate_baseline = 0
         self._recording = False
         self._recording_phase: str | None = None
         self._recording_execution_id: str | None = None
-        self._recording_frames: list[RGBFrame] = []
-        self._next_frame_time_s: float | None = None
+        self._capture: Any | None = None
+        self._last_invocation_start_s = 0.0
+        self._last_invocation_end_s = 0.0
+        self._trial_action_start_s = 0.0
         self._last_route_evidence: dict[str, Any] = {}
 
         if auto_start:
@@ -588,7 +520,10 @@ class UnitreeGo2EvaluationRobotSession:
 
     @property
     def sdk(self) -> object:
-        return self._sdk
+        self._require_started()
+        if self._sdk_binding is None:
+            raise Go2SessionError("real SDK2 binding is unavailable")
+        return self._sdk_binding
 
     @property
     def simulation_time_s(self) -> float:
@@ -599,7 +534,9 @@ class UnitreeGo2EvaluationRobotSession:
 
     @property
     def evidence_scope(self) -> str:
-        return "SDK_GROUNDED_SIMULATION"
+        if not self._started or self._closed or self._sdk_binding is None:
+            return "UNAVAILABLE"
+        return "TEST_FIXTURE_ONLY" if self._injected_dependencies else "SDK_GROUNDED_SIMULATION"
 
     @property
     def robot_model_id(self) -> str:
@@ -638,12 +575,16 @@ class UnitreeGo2EvaluationRobotSession:
         try:
             if not bridge_started:
                 self._bridge.start()
-            sdk_started = bool(getattr(self._sdk, "started", False))
+            sdk_started = bool(getattr(self._sdk_connection, "started", False))
             if not sdk_started:
-                start = getattr(self._sdk, "start", None)
+                start = getattr(self._sdk_connection, "start", None)
                 if not callable(start):
-                    raise Go2SessionError("SDK façade does not implement start")
+                    raise Go2SessionError("SDK2 connection does not implement start")
                 start()
+            binding = getattr(self._sdk_connection, "binding", None)
+            if binding is None:
+                raise Go2SessionError("SDK2 connection did not expose its real binding")
+            self._sdk_binding = binding
             self._started = True
         except Exception:
             self._started = False
@@ -699,14 +640,17 @@ class UnitreeGo2EvaluationRobotSession:
         self._reset_time_s = self.simulation_time_s
         self._truth_samples.clear()
         self._last_bridge_result = {}
+        self._physics_steps = 0
         self._accepted_baseline = self._bridge_accepted_count()
-        self._command_baseline = self._sdk_count("command_count")
         self._lowstate_baseline = self._sdk_count("low_state_publications")
         self._sportstate_baseline = self._sdk_count("sport_mode_state_publications")
         self._last_route_evidence = {}
         start = self._record_truth()
         self._start_truth = start
         self._forward_axis, self._lateral_axis = initial_body_yaw_frame(start.body_x_axis)
+        self._trial_action_start_s = self._reset_time_s
+        self._last_invocation_start_s = self._reset_time_s
+        self._last_invocation_end_s = self._reset_time_s
 
     def start_external_recording(self, *, phase: str, execution_id: str) -> None:
         self._require_started()
@@ -716,23 +660,36 @@ class UnitreeGo2EvaluationRobotSession:
             raise Go2SessionError("external recording is already active")
         if self._start_truth is None:
             raise Go2SessionError("recording requires a verified reset")
-        self._recording = True
-        self._recording_phase = phase
-        self._recording_execution_id = execution_id
-        self._recording_frames.clear()
-        self._next_frame_time_s = self.simulation_time_s
-        self._capture_frame(force=True)
+        factory = self._frame_capture_factory or _load_frame_capture_factory()
+        try:
+            capture = factory(self._video_profile, self._render_rgb)
+            if not all(callable(getattr(capture, name, None)) for name in ("start", "on_step", "stop")):
+                raise Go2SessionError("MuJoCoFrameCapture does not implement start/on_step/stop")
+            self._capture_call(capture, "start")
+            self._recording = True
+            self._recording_phase = phase
+            self._recording_execution_id = execution_id
+            self._capture = capture
+            self._capture_call(capture, "on_step")
+        except BaseException:
+            self._recording = False
+            self._capture = None
+            raise
 
     def stop_external_recording(self) -> tuple[RGBFrame, ...]:
-        if not self._recording:
-            return ()
-        self._capture_frame(force=True)
-        frames = tuple(self._recording_frames)
+        self._require_started()
+        if not self._recording or self._capture is None:
+            raise Go2SessionError("no external recording is active")
+        capture = self._capture
+        self._capture = None
         self._recording = False
         self._recording_phase = None
         self._recording_execution_id = None
-        self._recording_frames.clear()
-        self._next_frame_time_s = None
+        frames = self._capture_call(capture, "stop")
+        if not isinstance(frames, tuple):
+            frames = tuple(frames) if isinstance(frames, Sequence) else ()
+        if not all(isinstance(frame, RGBFrame) for frame in frames):
+            raise Go2SessionError("MuJoCoFrameCapture returned invalid RGB frames")
         return frames
 
     def invoke(
@@ -752,27 +709,17 @@ class UnitreeGo2EvaluationRobotSession:
         invoke = getattr(candidate, "_invoke", None)
         if not callable(invoke):
             raise Go2SessionError("candidate does not expose the Framework invocation boundary")
-        result = invoke(capability_id, copy.deepcopy(dict(arguments)), self._sdk)
+        action_start = self.simulation_time_s
+        result = invoke(capability_id, copy.deepcopy(dict(arguments)), self.sdk)
         if not isinstance(result, Mapping):
             raise Go2SessionError("candidate result must be a mapping")
 
         steps = self._steps_for_invocation(arguments)
-        for _ in range(steps):
-            self._step_physics()
-            if (
-                getattr(self._sdk, "is_real_sdk", False)
-                and not self._last_bridge_result.get("accepted", False)
-                and self.simulation_time_s - self._reset_time_s < 0.1
-            ):
-                # DDS delivery is asynchronous.  A bounded poll advances only
-                # the existing bridge clock; it never fabricates a command.
-                deadline = time.monotonic() + self._state_wait_s
-                while (
-                    not self._last_bridge_result.get("accepted", False)
-                    and time.monotonic() < deadline
-                ):
-                    time.sleep(0.001)
-                    self._step_physics()
+        self._last_invocation_start_s = action_start
+        self._advance(steps * float(self._backend.timestep), wait_for_command=True)
+        self._last_invocation_end_s = self.simulation_time_s
+        self._wait_for_sdk_state()
+        self._last_route_evidence = self._route_evidence()
         return copy.deepcopy(dict(result))
 
     def validation_evidence(self, invocation: HarnessInvocation) -> ValidationEvidence:
@@ -781,22 +728,38 @@ class UnitreeGo2EvaluationRobotSession:
             raise Go2SessionError("validation evidence requires a typed Harness invocation")
         if self._start_truth is None:
             raise Go2SessionError("validation evidence requires a verified reset")
+        # Validation B invokes the candidate directly with ``session.sdk`` and
+        # only then calls ``collect``.  This is the deterministic clock owner:
+        # the command can be accepted only while this method advances the
+        # private bridge and MuJoCo state.
+        action_start = self._last_invocation_end_s if self._last_invocation_end_s > self._reset_time_s else self._reset_time_s
+        duration = max(DEFAULT_INVOCATION_WINDOW_S, float(invocation.dwell_s))
+        duration = min(duration, float(invocation.timeout_s))
+        if duration < 0:
+            raise Go2SessionError("validation timeout/dwell is invalid")
+        self._last_invocation_start_s = action_start
+        self._advance(duration, wait_for_command=True)
+        self._last_invocation_end_s = self.simulation_time_s
         self._wait_for_sdk_state()
-        if not self._truth_samples:
-            self._record_truth()
         route = self._route_evidence()
+        selected = [
+            sample for sample in self._truth_samples
+            if sample.time_s > action_start + 1e-12
+        ]
+        if not selected:
+            selected = [self._truth_samples[-1]]
         metric = invocation.metric if isinstance(invocation.metric, str) else "body_height_m"
         samples = tuple(
             MeasurementSample(
-                max(0.0, sample.time_s - self._reset_time_s),
+                max(0.0, sample.time_s - action_start),
                 self._metric_value(sample, metric),
             )
-            for sample in self._truth_samples
+            for sample in selected
         )
-        finite = all(sample.finite_required_state for sample in self._truth_samples)
+        finite = all(self._sample_finite(sample) for sample in selected)
         no_contact = all(
             sample.body_floor_contact is False and sample.head_floor_contact is False
-            for sample in self._truth_samples
+            for sample in selected
         )
         guards = self._guard_results(
             requested=invocation.guard_ids,
@@ -807,7 +770,7 @@ class UnitreeGo2EvaluationRobotSession:
         self._last_route_evidence = route
         return Go2ValidationEvidence(
             samples=samples,
-            elapsed_s=max(0.0, self.simulation_time_s - self._reset_time_s),
+            elapsed_s=max(0.0, self.simulation_time_s - action_start),
             guard_results=guards,
             sdk_route_verified=bool(route["verified"]),
             route_evidence=copy.deepcopy(route),
@@ -829,61 +792,76 @@ class UnitreeGo2EvaluationRobotSession:
             "standing_height_m",
             self._standing_height_m,
         )
-        if not self._truth_samples:
-            self._record_truth()
-        route = self._route_evidence()
-        finite = all(sample.finite_required_state for sample in self._truth_samples)
-        no_contact = all(
-            sample.body_floor_contact is False and sample.head_floor_contact is False
-            for sample in self._truth_samples
-        )
-        sample_records = [self._sample_record(sample) for sample in self._truth_samples]
-        result: dict[str, Any] = {
-            "task_id": task_id,
-            "standing_height_m": self._standing_height_m,
-            "start_position_m": list(self._start_truth.body_position),
-            "start_frame": {
-                "forward": list(self._forward_axis),
-                "lateral": list(self._lateral_axis),
-            },
-            "samples": sample_records,
-            "guards": {
-                "finite_required_state": finite,
-                "no_body_or_head_floor_contact": no_contact,
-                "sdk_route_verified": bool(route["verified"]),
-            },
-            "route_evidence": copy.deepcopy(route),
-            "simulation_time_start_s": self._reset_time_s,
-            "simulation_time_end_s": self.simulation_time_s,
-        }
+        instance = self._task_instances.get(task_id, {})
+        dwell = self._instance_number(instance, "dwell_s", 1.0)
         if task_id == "G04":
-            instance = self._task_instances.get(task_id, {})
             dwell = self._instance_number(instance, "final_stop_dwell_s", 0.5)
-            end_time = self._truth_samples[-1].time_s
-            result["motion_samples"] = sample_records[1:]
-            result["terminal_stop_samples"] = [
-                item for item in sample_records
-                if float(item["simulation_time_s"]) >= end_time - dwell - 1e-12
+        terminal_start = self.simulation_time_s
+        self._advance(dwell, wait_for_command=False)
+        self._wait_for_sdk_state()
+        route = self._route_evidence()
+        self._last_route_evidence = route
+        terminal_samples = [
+            sample for sample in self._truth_samples
+            if sample.time_s > self._reset_time_s + 1e-12
+            and sample.time_s >= terminal_start - 1e-12
+        ]
+        if not terminal_samples:
+            terminal_samples = [self._truth_samples[-1]]
+        if task_id == "G04":
+            motion_start = self._last_invocation_start_s
+            motion_samples = [
+                sample for sample in self._truth_samples
+                if sample.time_s > self._reset_time_s + 1e-12
+                and sample.time_s >= motion_start - 1e-12
+                and sample.time_s <= terminal_start + 1e-12
             ]
-            result["final_stop_dwell_s"] = dwell
-        if task_id == "G05":
-            instance = self._task_instances.get(task_id, {})
-            result["target_body_height_m"] = self._instance_number(
-                instance, "target_body_height_m", self._standing_height_m
-            )
-        return result
+            if motion_start <= self._reset_time_s + 1e-12 and terminal_start > motion_start:
+                motion_samples.insert(0, self._start_truth)
+            motion_records = [self._sample_record(sample, phase="motion") for sample in motion_samples]
+            terminal_records = [self._sample_record(sample, phase="terminal") for sample in terminal_samples]
+            all_records = motion_records + terminal_records
+            result: dict[str, Any] = {
+                "task_id": task_id,
+                "samples": all_records,
+                "motion_samples": motion_records,
+                "terminal_samples": terminal_records,
+                "motion_duration_s": self._sample_duration(motion_samples),
+                "terminal_duration_s": self._sample_duration(terminal_samples),
+                "terminal_dwell_s": self._sample_duration(terminal_samples),
+                "elapsed_s": self._sample_duration(terminal_samples),
+                "duration_s": self._sample_duration(terminal_samples),
+                "guard_results": self._demo_guard_results(
+                    [*motion_samples, *terminal_samples], route
+                ),
+            }
+            return result
+
+        records = [self._sample_record(sample, phase="terminal") for sample in terminal_samples]
+        terminal_duration = self._sample_duration(terminal_samples)
+        return {
+            "task_id": task_id,
+            "samples": records,
+            "terminal_samples": records,
+            "terminal_duration_s": terminal_duration,
+            "elapsed_s": terminal_duration,
+            "duration_s": terminal_duration,
+            "guard_results": self._demo_guard_results(terminal_samples, route),
+        }
 
     def close(self) -> None:
         if self._closed:
             return
         errors: list[BaseException] = []
-        if self._recording:
+        if self._recording and self._capture is not None:
             try:
-                self.stop_external_recording()
+                self._capture_call(self._capture, "stop")
             except BaseException as exc:
                 errors.append(exc)
+            self._capture = None
+            self._recording = False
         try:
-            close_sdk = getattr(self._sdk, "close", None)
+            close_sdk = getattr(self._sdk_connection, "close", None)
             if callable(close_sdk):
                 close_sdk()
         except BaseException as exc:
@@ -958,11 +936,45 @@ class UnitreeGo2EvaluationRobotSession:
             raise Go2SessionError("candidate rollout exceeds the frozen session limit")
         return steps
 
+    def _advance(self, seconds: float, *, wait_for_command: bool) -> None:
+        self._require_started()
+        seconds = _finite(seconds, "physics advance duration")
+        if seconds < 0:
+            raise Go2SessionError("physics advance duration must be non-negative")
+        timestep = _finite(self._backend.timestep, "MuJoCo timestep")
+        if timestep <= 0:
+            raise Go2SessionError("MuJoCo timestep must be positive")
+        # Treat an exact integral number of MuJoCo steps as exact despite
+        # binary floating-point representation (for example 3 * 0.1).
+        steps = int(math.ceil(max(0.0, seconds / timestep - 1e-12))) if seconds else 0
+        if steps > self._max_rollout_steps:
+            raise Go2SessionError("physics advance exceeds the frozen session limit")
+        for _ in range(steps):
+            self._step_physics()
+            if wait_for_command and self._should_wait_for_command_delivery():
+                deadline = time.monotonic() + self._state_wait_s
+                while (
+                    not self._last_bridge_result.get("accepted", False)
+                    and self.simulation_time_s - self._reset_time_s < 0.1
+                    and time.monotonic() < deadline
+                ):
+                    time.sleep(0.001)
+                    self._step_physics()
+
+    def _should_wait_for_command_delivery(self) -> bool:
+        return bool(
+            getattr(self._sdk_connection, "is_real_sdk", False)
+            and not self._last_bridge_result.get("accepted", False)
+            and self.simulation_time_s - self._reset_time_s < 0.1
+        )
+
     def _step_physics(self) -> None:
         result = self._bridge.step()
         self._last_bridge_result = dict(result) if isinstance(result, Mapping) else {}
+        self._physics_steps += 1
         self._record_truth()
-        self._capture_frame(force=False)
+        if self._recording and self._capture is not None:
+            self._capture_call(self._capture, "on_step")
 
     def _record_truth(self) -> Go2TruthSample:
         raw = None
@@ -1075,7 +1087,7 @@ class UnitreeGo2EvaluationRobotSession:
             "body_height_m": position[2] - floor_z,
             "body_floor_contact": body_contact,
             "head_floor_contact": head_contact,
-            "contact_observation_available": bool(floor_ids and body_ids),
+            "contact_observation_available": bool(floor_ids and body_ids and head_ids),
         })
 
     def _root_body_id(self, mj: Any, model: Any) -> int:
@@ -1259,41 +1271,11 @@ class UnitreeGo2EvaluationRobotSession:
 
         return render
 
-    def _capture_frame(self, *, force: bool) -> None:
-        if not self._recording:
-            return
-        current = self.simulation_time_s
-        if not force and self._next_frame_time_s is not None and current + 1e-12 < self._next_frame_time_s:
-            return
-        if self._recording_frames and self._recording_frames[-1].simulation_time_s == current:
-            return
-        result = self._frame_capture_factory(self._video_profile, self._render_rgb, current)
-        if hasattr(result, "capture") and callable(result.capture):
-            result = result.capture()
-        if callable(result) and not isinstance(result, (bytes, bytearray)):
-            result = result()
-        frame = self._coerce_frame(result, current)
-        self._recording_frames.append(frame)
-        self._next_frame_time_s = current + 1.0 / self._video_profile.fps
-
-    def _coerce_frame(self, value: Any, simulation_time: float) -> RGBFrame:
-        if isinstance(value, RGBFrame):
-            if value.simulation_time_s == simulation_time:
-                return value
-            return RGBFrame(simulation_time, value.width, value.height, value.rgb)
-        if isinstance(value, Mapping):
-            width = int(value.get("width", self._video_profile.width))
-            height = int(value.get("height", self._video_profile.height))
-            rgb = value.get("rgb")
-        else:
-            width = self._video_profile.width
-            height = self._video_profile.height
-            rgb = value
-        if hasattr(rgb, "tobytes") and callable(rgb.tobytes):
-            rgb = rgb.tobytes()
-        if not isinstance(rgb, bytes):
-            raise Go2SessionError("MuJoCoFrameCapture did not return an RGBFrame")
-        return RGBFrame(simulation_time, width, height, rgb)
+    def _capture_call(self, capture: Any, method_name: str) -> Any:
+        method = getattr(capture, method_name, None)
+        if not callable(method):
+            raise Go2SessionError(f"MuJoCoFrameCapture is missing {method_name}()")
+        return method(self.simulation_time_s)
 
     def _capture_metrics(self, sample: Go2TruthSample) -> tuple[float, float, float]:
         if self._start_truth is None:
@@ -1305,30 +1287,64 @@ class UnitreeGo2EvaluationRobotSession:
             self._lateral_axis,
         )
 
-    def _sample_record(self, sample: Go2TruthSample) -> dict[str, Any]:
+    def _sample_record(self, sample: Go2TruthSample, *, phase: str) -> dict[str, Any]:
+        phase = _text(phase, "sample phase")
         forward, lateral, drift = self._capture_metrics(sample)
         return {
-            "simulation_time_s": max(0.0, sample.time_s - self._reset_time_s),
-            "body_height_m": sample.body_height_m,
-            "upright_score": sample.upright_score,
-            "planar_speed_m_s": sample.planar_speed_m_s,
-            "forward_displacement_m": forward,
-            "lateral_displacement_m": lateral,
-            "absolute_lateral_displacement_m": abs(lateral),
-            "horizontal_drift_m": drift,
-            "body_height_to_standing_height_ratio": sample.body_height_m / self._standing_height_m,
-            "absolute_body_height_error_m": abs(
-                sample.body_height_m
-                - self._instance_number(
-                    self._task_instances.get(self._task_id or ""),
-                    "target_body_height_m",
-                    self._standing_height_m,
-                )
+            "time_s": max(0.0, sample.time_s - self._reset_time_s),
+            "phase": phase,
+            "metrics": {
+                "body_height_m": float(sample.body_height_m),
+                "upright_score": float(sample.upright_score),
+                "planar_speed_m_s": float(sample.planar_speed_m_s),
+                "forward_displacement_m": float(forward),
+                "lateral_displacement_m": float(lateral),
+                "absolute_lateral_displacement_m": float(abs(lateral)),
+                "horizontal_drift_m": float(drift),
+                "body_height_to_standing_height_ratio": float(
+                    sample.body_height_m / self._standing_height_m
+                ),
+                "absolute_body_height_error_m": float(
+                    abs(
+                        sample.body_height_m
+                        - self._instance_number(
+                            self._task_instances.get(self._task_id or ""),
+                            "target_body_height_m",
+                            self._standing_height_m,
+                        )
+                    )
+                ),
+                "body_floor_contact": sample.body_floor_contact is True,
+                "head_floor_contact": sample.head_floor_contact is True,
+                "finite_required_state": self._sample_finite(sample),
+                "contact_observation_available": sample.contact_observation_available,
+            },
+        }
+
+    @staticmethod
+    def _sample_duration(samples: Sequence[Go2TruthSample]) -> float:
+        if not samples:
+            return 0.0
+        return max(0.0, float(samples[-1].time_s) - float(samples[0].time_s))
+
+    def _demo_guard_results(
+        self,
+        samples: Sequence[Go2TruthSample],
+        _route: Mapping[str, Any],
+    ) -> dict[str, bool]:
+        finite = bool(samples) and all(self._sample_finite(sample) for sample in samples)
+        no_contact = bool(samples) and all(
+            sample.body_floor_contact is False
+            and sample.head_floor_contact is False
+            and sample.contact_observation_available
+            for sample in samples
+        )
+        return {
+            "trusted-external-verdict": bool(
+                self._started and not self._closed and self._start_truth is not None
             ),
-            "body_floor_contact": sample.body_floor_contact,
-            "head_floor_contact": sample.head_floor_contact,
-            "finite_required_state": sample.finite_required_state,
-            "contact_observation_available": sample.contact_observation_available,
+            "finite-required-state": finite,
+            "no-body-or-head-floor-contact": no_contact,
         }
 
     def _metric_value(self, sample: Go2TruthSample, metric: str) -> float:
@@ -1368,7 +1384,13 @@ class UnitreeGo2EvaluationRobotSession:
             sample.upright_score,
             sample.planar_speed_m_s,
         )
-        return sample.finite_required_state and all(math.isfinite(float(value)) for value in values)
+        return bool(
+            sample.finite_required_state
+            and sample.contact_observation_available
+            and isinstance(sample.body_floor_contact, bool)
+            and isinstance(sample.head_floor_contact, bool)
+            and all(math.isfinite(float(value)) for value in values)
+        )
 
     def _guard_results(
         self,
@@ -1406,7 +1428,7 @@ class UnitreeGo2EvaluationRobotSession:
             return 0
 
     def _sdk_count(self, name: str) -> int:
-        value = getattr(self._sdk, name, 0)
+        value = getattr(self._sdk_connection, name, 0)
         if callable(value):
             value = value()
         try:
@@ -1414,25 +1436,12 @@ class UnitreeGo2EvaluationRobotSession:
         except (TypeError, ValueError):
             return 0
 
-    def _sdk_command_evidence(self) -> Mapping[str, Any]:
-        value = getattr(self._sdk, "last_command_evidence", {})
-        if callable(value):
-            value = value()
-        return dict(value) if isinstance(value, Mapping) else {}
-
     def _wait_for_sdk_state(self) -> None:
-        low = getattr(self._sdk, "get_low_state", None)
-        sport = getattr(self._sdk, "get_sport_mode_state", None)
-        if not callable(low) or not callable(sport):
-            return
         deadline = time.monotonic() + self._state_wait_s
         while time.monotonic() < deadline:
-            try:
-                if low() is not None and sport() is not None:
-                    return
-            except Exception:
+            if self._state_observed():
                 return
-            if not getattr(self._sdk, "is_real_sdk", False):
+            if not getattr(self._sdk_connection, "is_real_sdk", False):
                 return
             time.sleep(0.001)
 
@@ -1441,13 +1450,8 @@ class UnitreeGo2EvaluationRobotSession:
         sport_count = self._sdk_count("sport_mode_state_publications")
         if low_count > self._lowstate_baseline and sport_count > self._sportstate_baseline:
             return True
-        try:
-            low = self._sdk.get_low_state()
-            sport = self._sdk.get_sport_mode_state()
-        except Exception:
-            low = sport = None
-        if low is not None and sport is not None:
-            return True
+        low: object | None = None
+        sport: object | None = None
         for name in ("lowstates", "low_states", "sportstates", "sport_states"):
             values = getattr(self._transport, name, None)
             if isinstance(values, Sequence) and len(values) > 0:
@@ -1460,14 +1464,12 @@ class UnitreeGo2EvaluationRobotSession:
     def _route_evidence(self) -> dict[str, Any]:
         accepted_count = self._bridge_accepted_count()
         accepted_delta = accepted_count - self._accepted_baseline
-        command_evidence = self._sdk_command_evidence()
-        type_verified = bool(command_evidence.get("type_verified"))
-        crc_verified = bool(command_evidence.get("crc_verified"))
-        if accepted_delta > 0:
-            # The bridge's accepted counter is only incremented after exact
-            # DDS type, width, mode, finite-field, and CRC validation.
-            type_verified = True if "type_verified" not in command_evidence else type_verified
-            crc_verified = True if "crc_verified" not in command_evidence else crc_verified
+        lowcmd_type = getattr(self._sdk_connection, "lowcmd_type", None)
+        type_verified = bool(accepted_delta > 0 and lowcmd_type is not None)
+        # The bridge increments its accepted counter only after exact DDS
+        # type, width, finite-field, and CRC validation.  That counter is the
+        # source of this truth; no candidate-visible receipt is consulted.
+        crc_verified = bool(accepted_delta > 0)
         state_observed = self._state_observed()
         progress = self.simulation_time_s > self._reset_time_s + 1e-15
         verified = bool(
@@ -1489,32 +1491,24 @@ class UnitreeGo2EvaluationRobotSession:
             "simulation_time_start_s": self._reset_time_s,
             "simulation_time_end_s": self.simulation_time_s,
             "simulation_time_progressed": progress,
-            "lowcmd_message_type": command_evidence.get("message_type"),
+            "lowcmd_message_type": getattr(lowcmd_type, "__name__", None),
         }
 
 
 # Short aliases used by integration assembly and tests.
 UnitreeGo2EvaluationSession = UnitreeGo2EvaluationRobotSession
 Go2EvaluationRobotSession = UnitreeGo2EvaluationRobotSession
-UnitreeGo2SDK = UnitreeGo2LowLevelSDK
-UnitreeGo2SDKFacade = UnitreeGo2LowLevelSDK
-Go2SDKFacade = UnitreeGo2LowLevelSDK
 
 
 __all__ = [
     "Go2EvaluationRobotSession",
-    "Go2SDKFacade",
     "Go2SessionError",
     "Go2SDKError",
     "Go2TruthSample",
     "Go2ValidationEvidence",
     "Go2Transport",
-    "MuJoCoFrameCapture",
     "UnitreeGo2EvaluationRobotSession",
     "UnitreeGo2EvaluationSession",
-    "UnitreeGo2LowLevelSDK",
-    "UnitreeGo2SDK",
-    "UnitreeGo2SDKFacade",
     "initial_body_yaw_frame",
     "start_frame_displacement",
     "upright_score",

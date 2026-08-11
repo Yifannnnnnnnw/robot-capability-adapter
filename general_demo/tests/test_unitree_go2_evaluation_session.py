@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import copy
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from autoadapter2.demo import EvaluationRobotSession
+from autoadapter2.demo.fixed_criteria import evaluate_fixed_demo_criterion
 from autoadapter2.evaluation import FrozenVideoProfile, RGBFrame
+from autoadapter2.integrations.session_support import MuJoCoFrameCapture
 from autoadapter2.integrations.unitree_go2.bridge import (
     ACTIVE_MOTOR_NAMES,
     DDS_MOTOR_SLOT_COUNT,
@@ -38,7 +42,7 @@ class Slot:
 
 @dataclass
 class LowCmd:
-    motor_cmd: list[Slot]
+    motor_cmd: list[Slot] = field(default_factory=lambda: [Slot() for _ in range(DDS_MOTOR_SLOT_COUNT)])
     crc: int = 0
 
 
@@ -104,7 +108,10 @@ class FakeTransport:
         total = 0
         for slot in message.motor_cmd:
             total += slot.mode
-            total += sum(int(getattr(slot, field) * 1000) for field in ("q", "dq", "kp", "kd", "tau"))
+            total += sum(
+                int(getattr(slot, name) * 1000)
+                for name in ("q", "dq", "kp", "kd", "tau")
+            )
         return total & 0xFFFFFFFF
 
     def start(self) -> None:
@@ -130,65 +137,86 @@ class FakeTransport:
         self.closed = True
 
 
-class FakeSDK:
+class FakePublisher:
+    def __init__(self, transport: FakeTransport) -> None:
+        self._transport = transport
+        self.writes: list[object] = []
+
+    def Write(self, message: object) -> None:
+        self.writes.append(message)
+        self._transport.queue.append(message)
+
+
+class FakeCRC:
+    def Crc(self, message: object) -> int:
+        assert isinstance(message, LowCmd)
+        return FakeTransport.crc_for(message)
+
+
+class FakeSDKConnection:
+    """A connected upstream-shaped binding; it exposes no command methods."""
+
     is_real_sdk = False
 
     def __init__(self, transport: FakeTransport) -> None:
         self.transport = transport
         self.started = False
         self.closed = False
-        self.command_count = 0
-        self.low_state_publications = 0
-        self.sport_mode_state_publications = 0
-        self._last_command_evidence = {}
+        self.lowcmd_type = LowCmd
+        self.lowcmd_publisher = FakePublisher(transport)
+        self.crc = FakeCRC()
+        self.binding = SimpleNamespace(
+            ChannelFactoryInitialize=lambda *_args: None,
+            ChannelPublisher=object,
+            ChannelSubscriber=object,
+            LowCmd_=LowCmd,
+            LowState_=object,
+            SportModeState_=object,
+            CRC=FakeCRC,
+            lowcmd_publisher=self.lowcmd_publisher,
+            lowstate_subscriber=object(),
+            sport_mode_state_subscriber=object(),
+            crc=self.crc,
+        )
 
     @property
-    def last_command_evidence(self):
-        return self._last_command_evidence
+    def low_state_publications(self) -> int:
+        return len(self.transport.lowstates)
+
+    @property
+    def sport_mode_state_publications(self) -> int:
+        return len(self.transport.sportstates)
 
     def start(self) -> None:
         self.started = True
-
-    def write_low_command(self, q, dq, kp, kd, tau) -> None:
-        active = [Slot(q=q[i], dq=dq[i], kp=kp[i], kd=kd[i], tau=tau[i]) for i in range(12)]
-        message = LowCmd(active + [Slot(**INACTIVE_SAFE_FIELDS) for _ in range(8)])
-        message.crc = FakeTransport.crc_for(message)
-        self.transport.queue.append(message)
-        self.command_count += 1
-        self._last_command_evidence = {
-            "command_count": self.command_count,
-            "type_verified": True,
-            "crc_verified": True,
-            "message_type": "LowCmd_",
-        }
-
-    def get_low_state(self):
-        if self.transport.lowstates:
-            self.low_state_publications = len(self.transport.lowstates)
-            return self.transport.lowstates[-1]
-        return None
-
-    def get_sport_mode_state(self):
-        if self.transport.sportstates:
-            self.sport_mode_state_publications = len(self.transport.sportstates)
-            return self.transport.sportstates[-1]
-        return None
 
     def close(self) -> None:
         self.closed = True
         self.started = False
 
 
+def _publish_command(sdk: object, value: float = 0.3) -> None:
+    command = sdk.LowCmd_()
+    assert len(command.motor_cmd) == DDS_MOTOR_SLOT_COUNT
+    for index, slot in enumerate(command.motor_cmd):
+        slot.mode = 1
+        if index < 12:
+            slot.q = value
+            slot.dq = 0.0
+            slot.kp = 20.0
+            slot.kd = 0.5
+            slot.tau = 0.0
+        else:
+            for name, safe_value in INACTIVE_SAFE_FIELDS.items():
+                setattr(slot, name, safe_value)
+    command.crc = sdk.crc.Crc(command)
+    sdk.lowcmd_publisher.Write(command)
+
+
 class Candidate:
-    def _invoke(self, capability_id, arguments, sdk):
+    def _invoke(self, capability_id, _arguments, sdk):
         assert capability_id == "low-level-command"
-        sdk.write_low_command(
-            [0.3] * 12,
-            [0.0] * 12,
-            [20.0] * 12,
-            [0.5] * 12,
-            [0.0] * 12,
-        )
+        _publish_command(sdk)
         return {"status": "issued"}
 
 
@@ -224,7 +252,11 @@ def _invocation(metric: str = "forward_displacement_m") -> HarnessInvocation:
         dwell_s=0.0,
         timeout_s=2.0,
         aggregation="ALL",
-        guard_ids=("trusted-external-verdict", "finite-required-state", "no-body-or-head-floor-contact"),
+        guard_ids=(
+            "trusted-external-verdict",
+            "finite-required-state",
+            "no-body-or-head-floor-contact",
+        ),
         run_snapshot_hash="sha256:" + "1" * 64,
         candidate_source_hash="sha256:" + "2" * 64,
         suite_hash="sha256:" + "3" * 64,
@@ -235,7 +267,7 @@ def _invocation(metric: str = "forward_displacement_m") -> HarnessInvocation:
 def _session(*, rollout_steps: int = 3):
     backend = FakeBackend()
     transport = FakeTransport()
-    sdk = FakeSDK(transport)
+    sdk = FakeSDKConnection(transport)
     profile = FrozenVideoProfile(
         profile_id="test",
         profile_version="1.0.0",
@@ -247,6 +279,12 @@ def _session(*, rollout_steps: int = 3):
         container="raw",
         codec="raw",
     )
+    capture_count = {"created": 0}
+
+    def capture_factory(capture_profile, render):
+        capture_count["created"] += 1
+        return MuJoCoFrameCapture(capture_profile, render)
+
     session = UnitreeGo2EvaluationRobotSession(
         backend=backend,
         transport=transport,
@@ -255,12 +293,10 @@ def _session(*, rollout_steps: int = 3):
         truth_provider=_truth,
         render_rgb=lambda: b"\x01\x02\x03" * 2,
         video_profile=profile,
-        frame_capture_factory=lambda _profile, render, simulation_time: RGBFrame(
-            simulation_time, 2, 1, render()
-        ),
+        frame_capture_factory=capture_factory,
         rollout_steps=rollout_steps,
     )
-    return session, backend, transport, sdk
+    return session, backend, transport, sdk, capture_count
 
 
 def test_formula_helpers_use_initial_yaw_and_upright_dot() -> None:
@@ -268,27 +304,54 @@ def test_formula_helpers_use_initial_yaw_and_upright_dot() -> None:
     forward, lateral = initial_body_yaw_frame((0.0, 1.0, 0.0))
     assert forward == pytest.approx((0.0, 1.0))
     assert lateral == pytest.approx((-1.0, 0.0))
-    assert start_frame_displacement((0.0, 0.0, 0.3), (0.2, 0.4, 0.3), forward, lateral) == pytest.approx(
-        (0.4, -0.2, 0.4472135955)
-    )
+    assert start_frame_displacement(
+        (0.0, 0.0, 0.3), (0.2, 0.4, 0.3), forward, lateral
+    ) == pytest.approx((0.4, -0.2, 0.4472135955))
 
 
 def test_reset_records_and_verifies_state_without_candidate_or_behavior() -> None:
-    session, backend, _transport, sdk = _session()
+    session, backend, _transport, _sdk, _capture_count = _session()
     assert isinstance(session, EvaluationRobotSession)
-    session.reset(phase="VALIDATION_B", execution_id="reset-1", initial_state={"task_id": "G01"})
+    session.reset(
+        phase="VALIDATION_B",
+        execution_id="reset-1",
+        initial_state={"task_id": "G01"},
+    )
     assert session.reset_verification["verified"] is True
     assert session.start_position == pytest.approx((0.0, 0.0, 0.34))
     assert session.start_yaw_frame["forward"] == pytest.approx((1.0, 0.0))
     assert session.standing_height_m == pytest.approx(0.34)
-    assert sdk.command_count == 0
     assert backend.time == 0.0
     session.close()
 
 
-def test_invoke_accepts_real_bridge_command_rolls_physics_and_collects_private_truth() -> None:
-    session, backend, transport, sdk = _session()
-    session.reset(phase="DEMO", execution_id="G04-trial", initial_state={"task_id": "G04"})
+def test_direct_validation_candidate_then_collect_advances_private_clock() -> None:
+    session, backend, _transport, sdk, _capture_count = _session()
+    session.reset(
+        phase="VALIDATION_B",
+        execution_id="direct-collect",
+        initial_state={"task_id": "G04"},
+    )
+    # This is the Validation-B ordering: candidate code sees only connected
+    # SDK2 objects, then the session-owned collector advances the bridge.
+    result = Candidate()._invoke("low-level-command", {}, session.sdk)
+    evidence = session.validation_evidence(_invocation())
+    assert result == {"status": "issued"}
+    assert backend.time > 0.0
+    assert evidence.sdk_route_verified is True
+    assert session.route_evidence["accepted_command_count"] == 1
+    assert sdk.lowcmd_publisher.writes
+    assert not hasattr(session.sdk, "write_low_command")
+    session.close()
+
+
+def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
+    session, backend, transport, sdk, capture_count = _session()
+    session.reset(
+        phase="DEMO",
+        execution_id="G04-trial",
+        initial_state={"task_id": "G04"},
+    )
     session.start_external_recording(phase="DEMO", execution_id="G04-trial")
     result = session.invoke(Candidate(), "low-level-command", {"duration_s": 0.3})
     frames = session.stop_external_recording()
@@ -297,39 +360,177 @@ def test_invoke_accepts_real_bridge_command_rolls_physics_and_collects_private_t
     assert len(frames) == 4
     assert frames[0].simulation_time_s == 0.0
     assert frames[-1].simulation_time_s == pytest.approx(0.3)
+    assert capture_count["created"] == 1
+    assert session.route_evidence["accepted_command_count"] == 1
+    assert session.route_evidence["accepted_command_type_verified"] is True
+    assert session.route_evidence["accepted_command_crc_verified"] is True
+    assert session.route_evidence["state_publication_observed"] is True
+    assert session.route_evidence["simulation_time_progressed"] is True
+    assert len(transport.lowstates) == len(transport.sportstates) == 3
+    assert sdk.lowcmd_publisher.writes
+
     evidence = session.validation_evidence(_invocation())
     assert evidence.sdk_route_verified is True
     assert evidence.guard_results["finite-required-state"] is True
     assert evidence.guard_results["no-body-or-head-floor-contact"] is True
-    assert evidence.samples[-1].value == pytest.approx(0.15)
-    route = session.route_evidence
-    assert route["accepted_command_count"] == 1
-    assert route["accepted_command_type_verified"] is True
-    assert route["accepted_command_crc_verified"] is True
-    assert route["state_publication_observed"] is True
-    assert route["simulation_time_progressed"] is True
-    assert len(transport.lowstates) == len(transport.sportstates) == 3
-    assert sdk.command_count == 1
+    assert evidence.samples[-1].value > 0.0
+
     demo = session.demo_evidence("G04")
     assert demo["motion_samples"]
-    assert demo["terminal_stop_samples"]
-    assert "criterion" not in json.dumps(demo).lower()
+    assert demo["terminal_samples"]
+    assert all(sample["phase"] == "motion" for sample in demo["motion_samples"])
+    assert all(sample["phase"] == "terminal" for sample in demo["terminal_samples"])
+    assert demo["motion_samples"][-1]["time_s"] == pytest.approx(
+        demo["terminal_samples"][0]["time_s"]
+    )
+    assert "terminal_stop_samples" not in demo
+    assert set(demo["guard_results"]) == {
+        "trusted-external-verdict",
+        "finite-required-state",
+        "no-body-or-head-floor-contact",
+    }
     session.close()
 
 
 def test_context_manager_closes_sdk_bridge_transport_and_backend() -> None:
-    session, backend, transport, sdk = _session()
+    session, backend, transport, sdk, _capture_count = _session()
     with session:
-        session.reset(phase="VALIDATION_B", execution_id="close-1", initial_state={"task_id": "G01"})
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="close-1",
+            initial_state={"task_id": "G01"},
+        )
     assert sdk.closed is True
     assert transport.closed is True
     assert backend.closed is True
     session.close()
 
 
+@pytest.mark.parametrize("task_id, dwell_s", [("G01", 1.0), ("G02", 1.0), ("G03", 2.0), ("G05", 1.0)])
+def test_demo_evidence_uses_post_action_terminal_windows(task_id: str, dwell_s: float) -> None:
+    session, _backend, _transport, _sdk, _capture_count = _session(rollout_steps=1)
+    session.reset(phase="DEMO", execution_id=f"{task_id}-window", initial_state={"task_id": task_id})
+    session.invoke(Candidate(), "low-level-command", {"duration_s": 0.1})
+    evidence = session.demo_evidence(task_id)
+    terminal = evidence["terminal_samples"]
+    assert terminal
+    assert all(sample["phase"] == "terminal" for sample in terminal)
+    assert all(sample["time_s"] > 0.0 for sample in terminal)
+    assert all(isinstance(value, (int, float, bool)) for sample in terminal for value in sample["metrics"].values())
+    assert evidence["duration_s"] == pytest.approx(dwell_s)
+    assert set(evidence["guard_results"]) == {
+        "trusted-external-verdict",
+        "finite-required-state",
+        "no-body-or-head-floor-contact",
+    }
+    session.close()
+
+
 def test_private_task_instances_cover_only_fixed_demo_tasks() -> None:
-    path = Path(__file__).parents[1] / "libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
+    path = Path(__file__).parents[1] / (
+        "libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
+    )
     value = json.loads(path.read_text(encoding="utf-8"))
     assert value["visibility"] == "DEMO_EVALUATION_HARNESS_ONLY"
-    assert [item["task_id"] for item in value["instances"]] == ["G01", "G02", "G03", "G04", "G05"]
+    assert [item["task_id"] for item in value["instances"]] == [
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G05",
+    ]
     assert value["instances"][3]["parameters"]["final_stop_dwell_s"] == 0.5
+
+
+def _fixed_criteria() -> dict[str, dict]:
+    path = Path(__file__).parents[1] / (
+        "libraries/tasks/unitree-go2-stock-12dof/1.0.0/evaluation_private.json"
+    )
+    value = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        item["task_id"]: item
+        for item in value["criteria"]
+        if item["task_id"] in {"G01", "G02", "G03", "G04", "G05"}
+    }
+
+
+def _sample(time_s: float, metrics: dict[str, object], phase: str = "terminal") -> dict:
+    return {"time_s": time_s, "phase": phase, "metrics": metrics}
+
+
+def _positive_demo_evidence(task_id: str) -> dict:
+    guards = {
+        "trusted-external-verdict": True,
+        "finite-required-state": True,
+        "no-body-or-head-floor-contact": True,
+    }
+    if task_id == "G01":
+        samples = [
+            _sample(time_s, {"body_height_m": 0.34, "upright_score": 1.0, "planar_speed_m_s": 0.0})
+            for time_s in (0.0, 0.5, 1.0)
+        ]
+        return {"task_id": task_id, "samples": samples, "duration_s": 1.0, "guard_results": guards}
+    if task_id == "G02":
+        samples = [
+            _sample(
+                time_s,
+                {
+                    "body_height_to_standing_height_ratio": 0.5,
+                    "upright_score": 1.0,
+                    "planar_speed_m_s": 0.0,
+                },
+            )
+            for time_s in (0.0, 0.5, 1.0)
+        ]
+        return {"task_id": task_id, "samples": samples, "duration_s": 1.0, "guard_results": guards}
+    if task_id == "G03":
+        samples = [
+            _sample(time_s, {"body_height_m": 0.34, "upright_score": 1.0, "horizontal_drift_m": 0.0})
+            for time_s in (0.0, 1.0, 2.0)
+        ]
+        return {"task_id": task_id, "samples": samples, "duration_s": 2.0, "guard_results": guards}
+    if task_id == "G04":
+        motion = [
+            _sample(0.0, {"forward_displacement_m": 0.04, "body_height_m": 0.34, "upright_score": 1.0, "absolute_lateral_displacement_m": 0.0}, "motion"),
+            _sample(0.5, {"forward_displacement_m": 0.1, "body_height_m": 0.34, "upright_score": 1.0, "absolute_lateral_displacement_m": 0.0}, "motion"),
+        ]
+        terminal = [
+            _sample(0.5, {"planar_speed_m_s": 0.0}, "terminal"),
+            _sample(1.0, {"planar_speed_m_s": 0.0}, "terminal"),
+        ]
+        return {
+            "task_id": task_id,
+            "samples": motion + terminal,
+            "motion_samples": motion,
+            "terminal_samples": terminal,
+            "motion_duration_s": 0.5,
+            "terminal_duration_s": 0.5,
+            "duration_s": 0.5,
+            "guard_results": guards,
+        }
+    samples = [
+        _sample(time_s, {"absolute_body_height_error_m": 0.0, "upright_score": 1.0, "horizontal_drift_m": 0.0})
+        for time_s in (0.0, 0.5, 1.0)
+    ]
+    return {"task_id": task_id, "samples": samples, "duration_s": 1.0, "guard_results": guards}
+
+
+@pytest.mark.parametrize("task_id", ["G01", "G02", "G03", "G04", "G05"])
+def test_fixed_demo_evaluator_accepts_one_positive_and_rejects_one_decisive_negative(task_id: str) -> None:
+    criterion = _fixed_criteria()[task_id]
+    positive = _positive_demo_evidence(task_id)
+    assert evaluate_fixed_demo_criterion(criterion, positive) is True
+
+    negative = copy.deepcopy(positive)
+    if task_id == "G01":
+        negative["samples"][1]["metrics"]["planar_speed_m_s"] = 0.2
+    elif task_id == "G02":
+        negative["samples"][1]["metrics"]["body_height_to_standing_height_ratio"] = 0.9
+    elif task_id == "G03":
+        negative["samples"][1]["metrics"]["horizontal_drift_m"] = 0.1
+    elif task_id == "G04":
+        negative["motion_samples"][1]["metrics"]["forward_displacement_m"] = 0.0
+        negative["samples"][1]["metrics"]["forward_displacement_m"] = 0.0
+    else:
+        negative["samples"][1]["metrics"]["absolute_body_height_error_m"] = 0.1
+    assert evaluate_fixed_demo_criterion(criterion, negative) is False

@@ -1,39 +1,55 @@
-"""Frozen low-level Unitree Go2 integration and production evaluation session."""
+"""Frozen low-level Unitree Go2 integration exports.
 
-from .bridge import Go2DDSMuJoCoBridge, MuJoCoGo2Backend, UnitreeSDK2Transport
-from .session import (
-    Go2EvaluationRobotSession,
-    Go2SDKFacade,
-    Go2SessionError,
-    Go2SDKError,
-    Go2TruthSample,
-    Go2ValidationEvidence,
-    MuJoCoFrameCapture,
-    UnitreeGo2EvaluationRobotSession,
-    UnitreeGo2EvaluationSession,
-    UnitreeGo2LowLevelSDK,
-    UnitreeGo2SDK,
-    UnitreeGo2SDKFacade,
-    initial_body_yaw_frame,
-    start_frame_displacement,
-    upright_score,
+The bridge remains importable for readiness-only processes without importing
+the session's MuJoCo renderer, SDK2 endpoint owner, or candidate binding.  The
+session module is loaded only when one of its public names is requested.
+"""
+
+from importlib import import_module
+
+from .bridge import Go2DDSMuJoCoBridge, Go2Transport, MuJoCoGo2Backend, UnitreeSDK2Transport
+
+
+_SESSION_EXPORTS = frozenset(
+    {
+        "Go2EvaluationRobotSession",
+        "Go2SessionError",
+        "Go2SDKError",
+        "Go2TruthSample",
+        "Go2ValidationEvidence",
+        "UnitreeGo2EvaluationRobotSession",
+        "UnitreeGo2EvaluationSession",
+        "initial_body_yaw_frame",
+        "start_frame_displacement",
+        "upright_score",
+    }
 )
+
+
+def __getattr__(name: str):
+    if name not in _SESSION_EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = import_module(".session", __name__)
+    value = getattr(module, name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | _SESSION_EXPORTS)
+
 
 __all__ = [
     "Go2DDSMuJoCoBridge",
     "Go2EvaluationRobotSession",
-    "Go2SDKFacade",
     "Go2SessionError",
     "Go2SDKError",
     "Go2TruthSample",
     "Go2ValidationEvidence",
-    "MuJoCoFrameCapture",
+    "Go2Transport",
     "MuJoCoGo2Backend",
     "UnitreeGo2EvaluationRobotSession",
     "UnitreeGo2EvaluationSession",
-    "UnitreeGo2LowLevelSDK",
-    "UnitreeGo2SDK",
-    "UnitreeGo2SDKFacade",
     "UnitreeSDK2Transport",
     "initial_body_yaw_frame",
     "start_frame_displacement",

@@ -11,6 +11,7 @@ import os
 import sys
 
 from autoadapter2.evaluation import FrozenVideoProfile
+from autoadapter2.integrations.unitree_go2.bridge import INACTIVE_SAFE_FIELDS
 from autoadapter2.integrations.unitree_go2.session import (
     UnitreeGo2EvaluationRobotSession,
 )
@@ -18,13 +19,21 @@ from autoadapter2.integrations.unitree_go2.session import (
 
 class _RealCommand:
     def _invoke(self, _capability_id, _arguments, sdk):
-        sdk.write_low_command(
-            [0.0] * 12,
-            [0.0] * 12,
-            [0.0] * 12,
-            [0.0] * 12,
-            [0.0] * 12,
-        )
+        command = sdk.LowCmd_()
+        assert len(command.motor_cmd) == 20
+        for index, slot in enumerate(command.motor_cmd):
+            slot.mode = 0x01
+            if index < 12:
+                slot.q = 0.0
+                slot.dq = 0.0
+                slot.kp = 0.0
+                slot.kd = 0.0
+                slot.tau = 0.0
+            else:
+                for name, value in INACTIVE_SAFE_FIELDS.items():
+                    setattr(slot, name, value)
+        command.crc = sdk.crc.Crc(command)
+        sdk.lowcmd_publisher.Write(command)
         return {"status": "issued"}
 
 
