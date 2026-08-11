@@ -20,7 +20,12 @@ from probes.phase2.feetech_wire import (
     encode_sync_read,
     encode_sync_write,
 )
-from probes.phase2.real_lerobot import RealProbeUnavailable, run_real_so101_probe
+from probes.phase2 import real_lerobot
+from probes.phase2.real_lerobot import (
+    RealProbeIdentityError,
+    RealProbeUnavailable,
+    run_real_so101_probe,
+)
 from probes.phase2.virtual_feetech import VirtualFeetechDevice, VirtualFeetechPTY
 
 
@@ -132,6 +137,28 @@ def test_so101_mapping_is_six_named_motors_with_ids_one_through_six():
         "gripper",
     )
     assert SO101_MOTOR_IDS == {name: index for index, name in enumerate(SO101_MOTOR_NAMES, 1)}
+
+
+def test_real_probe_accepts_exact_distribution_versions_without_importing_optional_stack(monkeypatch):
+    versions = {"lerobot": "0.6.0", "feetech-servo-sdk": "1.0.0"}
+    monkeypatch.setattr(real_lerobot.metadata, "version", versions.__getitem__)
+    assert real_lerobot.verify_pinned_distribution_identity() == versions
+
+
+def test_real_probe_missing_distribution_is_unavailable(monkeypatch):
+    def missing(distribution):
+        raise real_lerobot.metadata.PackageNotFoundError(distribution)
+
+    monkeypatch.setattr(real_lerobot.metadata, "version", missing)
+    with pytest.raises(RealProbeUnavailable):
+        real_lerobot._load_real_symbols()
+
+
+def test_real_probe_wrong_distribution_version_is_identity_error_not_skip(monkeypatch):
+    versions = {"lerobot": "0.5.3", "feetech-servo-sdk": "1.0.0"}
+    monkeypatch.setattr(real_lerobot.metadata, "version", versions.__getitem__)
+    with pytest.raises(RealProbeIdentityError, match="lerobot==0.6.0"):
+        real_lerobot._load_real_symbols()
 
 
 @pytest.mark.skipif(

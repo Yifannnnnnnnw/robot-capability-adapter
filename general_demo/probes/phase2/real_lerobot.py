@@ -4,12 +4,14 @@ The imports are intentionally lazy.  The repository has no LeRobot or
 ``scservo_sdk`` dependency, so the normal unit-test path remains stdlib-only.
 When called on Linux with the pinned packages installed, this module constructs
 the real ``SO101Follower`` and verifies that its bus is the real
-``FeetechMotorsBus`` before connect/configure/send_action/get_observation.
+``FeetechMotorsBus``.  It also verifies the installed distribution versions
+before connect/configure/send_action/get_observation.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib import metadata
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -18,10 +20,16 @@ from .feetech_wire import SO101_MOTOR_NAMES
 
 LEROBOT_VERSION = "0.6.0"
 LEROBOT_COMMIT = "30da8e687a6dfc617fcd94afc367ac7071c376ce"
+FEETECH_SDK_DISTRIBUTION = "feetech-servo-sdk"
+FEETECH_SDK_VERSION = "1.0.0"
 
 
 class RealProbeUnavailable(RuntimeError):
     """Raised when the optional real hardware stack is not installed."""
+
+
+class RealProbeIdentityError(RuntimeError):
+    """Raised when an installed optional distribution is not the pinned one."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,7 +38,32 @@ class RealProbeResult:
     observation: dict[str, Any]
 
 
+def verify_pinned_distribution_identity() -> dict[str, str]:
+    """Require the exact distributions named by this source-evidence probe."""
+
+    expected = {
+        "lerobot": LEROBOT_VERSION,
+        FEETECH_SDK_DISTRIBUTION: FEETECH_SDK_VERSION,
+    }
+    installed: dict[str, str] = {}
+    for distribution, expected_version in expected.items():
+        try:
+            installed_version = metadata.version(distribution)
+        except metadata.PackageNotFoundError as exc:
+            raise RealProbeUnavailable(
+                f"required distribution {distribution!r} is not installed"
+            ) from exc
+        if installed_version != expected_version:
+            raise RealProbeIdentityError(
+                f"pinned probe requires {distribution}=={expected_version}, "
+                f"found {installed_version}"
+            )
+        installed[distribution] = installed_version
+    return installed
+
+
 def _load_real_symbols():
+    verify_pinned_distribution_identity()
     try:
         from lerobot.motors.feetech import FeetechMotorsBus
         try:
