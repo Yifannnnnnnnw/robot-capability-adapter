@@ -82,6 +82,22 @@ PROFILE = ValidationAProfile(
         },
     },
 )
+GO2_PROFILE = ValidationAProfile(
+    sdk_facade_members={"reach-joint-target": ("LowCmd_", "CRC", "publisher")},
+    fixture_probes={
+        "reach-joint-target": {
+            "inputs": {
+                "q": {"value": [0.0] * 20, "type": "number", "shape": "vector:20", "unit": "rad", "frame": "joint"},
+            },
+        },
+    },
+)
+GO2_IMPLEMENTATION_BUNDLE = copy.deepcopy(IMPLEMENTATION_BUNDLE)
+GO2_IMPLEMENTATION_BUNDLE["sdk_implementation_projection"] = {
+    "sdk_entry_id": "unitree-sdk2",
+    "members": ["LowCmd_", "CRC", "publisher"],
+}
+GO2_BUNDLE_HASH = content_hash(canonical_bytes(GO2_IMPLEMENTATION_BUNDLE))
 
 
 def _bundle() -> dict:
@@ -92,6 +108,18 @@ def _source(status: str = "PASS") -> str:
     return f'''def capability_reach_joint_target(arg_target, *, _sdk):
     _sdk.command(arg_target)
     return {{"reported_status": "{status}"}}
+'''
+
+
+def _go2_source() -> str:
+    assignments = "\n".join(f"    cmd.motor_cmd[{index}].q = arg_q[{index}]" for index in range(20))
+    return f'''def capability_reach_joint_target(arg_q, *, _sdk):
+    cmd = _sdk.LowCmd_()
+    crc = _sdk.CRC()
+{assignments}
+    cmd.crc = crc.Crc(cmd)
+    _sdk.publisher.Write(cmd)
+    return {{"reported_status": "PASS"}}
 '''
 
 
@@ -231,7 +259,7 @@ def _sealed_design() -> tuple[dict, dict]:
     return result.capability_design, result.seal
 
 
-def _blue_ready(design: dict, design_seal: dict):
+def _blue_ready(design: dict, design_seal: dict, *, input_name: str = "target", input_value: object = 0.3):
     spec = {
         "capability_specs": [{
             "capability_id": "reach-joint-target",
@@ -242,7 +270,7 @@ def _blue_ready(design: dict, design_seal: dict):
             "timeout_s": 2.0,
             "aggregation": "ALL",
             "guard_ids": ["physical-state-not-command-receipt"],
-            "cases": [{"case_id": "nominal", "initial_state": {"joint": 0.0}, "inputs": {"target": 0.3}}],
+            "cases": [{"case_id": "nominal", "initial_state": {"joint": 0.0}, "inputs": {input_name: input_value}}],
             "lineage": {"kind": "COPIED", "standard_id": "joint-arrival", "material": False},
         }],
     }
@@ -259,6 +287,29 @@ def _stage2_submission(source: str = _source()):
     )
     assert stage2.status == "SUBMITTED"
     return design, design_seal, stage2, blue
+
+
+def _go2_a_result(source: str | None = None):
+    body = copy.deepcopy(_design_body())
+    body["capabilities"][0]["inputs"] = [{
+        "name": "q", "type": "number", "shape": "vector:20", "unit": "rad", "frame": "joint", "required": True,
+    }]
+    design_result = Stage1Runner(FixtureJsonGenerator([body])).run("run-validation-go2", ROBOT, TASKS, G2)
+    assert design_result.status == "SEALED" and design_result.capability_design and design_result.seal
+    design = design_result.capability_design
+    design_seal = design_result.seal
+    blue = _blue_ready(design, design_seal, input_name="q", input_value=[0.0] * 20)
+    candidate_source = _go2_source() if source is None else source
+    stage2 = Stage2Runner(FixtureJsonGenerator([{"action": "submit", "capability.py": candidate_source}])).run(
+        design, design_seal, blue.stage2_authorization, GO2_IMPLEMENTATION_BUNDLE
+    )
+    assert stage2.status == "SUBMITTED"
+    result = ValidationARunner(GO2_PROFILE).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": candidate_source}, stage2.implementation_manifest, stage2.manifest_seal,
+        stage2.implementation_bundle_hash,
+    )
+    return result, candidate_source, stage2
 
 
 def _context(design: dict, design_seal: dict, blue) -> ValidationContext:
@@ -345,6 +396,31 @@ def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> N
     for source in cases:
         _design, _seal, _stage2, _blue, result = _a_result(source)
         assert result.status == "FAIL"
+
+
+def test_validation_a_accepts_real_shaped_go2_construction_and_sdk_derived_mutations() -> None:
+    result, source, stage2 = _go2_a_result()
+    assert source.count(".q =") == 20
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+    assert result.implementation_bundle_hash == stage2.bundle_hash == GO2_BUNDLE_HASH
+
+
+def test_validation_a_rejects_sdk_mutation_unapproved_roots_and_input_calls() -> None:
+    cases = {
+        "sdk_mutation": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    _sdk.LowCmd_ = arg_q\n    cmd = _sdk.LowCmd_()"),
+        "unapproved_root": _go2_source().replace("_sdk.LowCmd_()", "_sdk.Hidden()"),
+        "input_call": _go2_source().replace("_sdk.publisher.Write(cmd)", "arg_q.execute()"),
+        "global": _go2_source().replace("def capability_reach_joint_target(arg_q, *, _sdk):", "def capability_reach_joint_target(arg_q, *, _sdk):\n    global external"),
+        "nested_function": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    def nested():\n        return 1\n    cmd = _sdk.LowCmd_()"),
+        "nested_class": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    class Nested:\n        pass\n    cmd = _sdk.LowCmd_()"),
+    }
+    for name, source in cases.items():
+        result, _source_text, _stage2 = _go2_a_result(source)
+        assert result.status == "FAIL", name
+
+    assert "SDK_FACADE" in {item["code"] for item in _go2_a_result(cases["unapproved_root"])[0].diagnostics}
+    assert "FORBIDDEN_CALL" in {item["code"] for item in _go2_a_result(cases["input_call"])[0].diagnostics}
 
 
 def test_validation_b_evaluates_sealed_measurements_not_candidate_self_report() -> None:

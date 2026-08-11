@@ -377,6 +377,230 @@ def _dunder(value: str) -> bool:
     return "__" in value
 
 
+def _expression_root(value: ast.AST) -> str | None:
+    current = value
+    while isinstance(current, (ast.Attribute, ast.Subscript)):
+        current = current.value
+    return current.id if isinstance(current, ast.Name) else None
+
+
+def _sdk_path_root(value: ast.AST) -> tuple[bool, str | None]:
+    """Return whether an expression is rooted at ``_sdk`` and its first member."""
+
+    segments: list[tuple[str, str | None]] = []
+    current = value
+    while isinstance(current, (ast.Attribute, ast.Subscript)):
+        if isinstance(current, ast.Attribute):
+            segments.append(("attribute", current.attr))
+        else:
+            segments.append(("subscript", None))
+        current = current.value
+    if not isinstance(current, ast.Name) or current.id != "_sdk":
+        return False, None
+    segments.reverse()
+    if not segments or segments[0][0] != "attribute":
+        return True, None
+    return True, segments[0][1]
+
+
+class _SdkStaticAnalyzer(ast.NodeVisitor):
+    """Small ordered analysis for locals that originate at an approved SDK root."""
+
+    def __init__(self, function: ast.FunctionDef, public_inputs: list[str], members: tuple[str, ...] | list[str]):
+        self.function = function
+        self.public_inputs = set(public_inputs)
+        self.members = set(members)
+        self.sdk_locals: set[str] = set()
+        self.safe_locals: set[str] = set()
+        self.issues: list[dict[str, str]] = []
+        self._issue_keys: set[tuple[str, str]] = set()
+        self.approved_sdk_use = False
+
+    def _add_issue(self, code: str, message: str) -> None:
+        key = (code, message)
+        if key not in self._issue_keys:
+            self._issue_keys.add(key)
+            self.issues.append(_issue(code, message))
+
+    def analyze(self) -> list[dict[str, str]]:
+        for statement in self.function.body:
+            self.visit(statement)
+        return self.issues
+
+    def _call_origin(self, function: ast.AST) -> str | None:
+        sdk_root, member = _sdk_path_root(function)
+        if sdk_root:
+            if member in self.members:
+                return "sdk-root"
+            return None
+        root = _expression_root(function)
+        return "sdk-local" if root in self.sdk_locals else None
+
+    def _classify_expression(self, value: ast.AST) -> tuple[bool, bool]:
+        """Return ``(allowed, sdk_derived)`` without widening the accepted language."""
+
+        if isinstance(value, ast.Constant):
+            return True, False
+        if isinstance(value, ast.Name):
+            if value.id in self.public_inputs or value.id in self.safe_locals:
+                return True, False
+            if value.id in self.sdk_locals:
+                return True, True
+            return False, False
+        if isinstance(value, (ast.Attribute, ast.Subscript)):
+            sdk_root, member = _sdk_path_root(value)
+            if sdk_root:
+                return member in self.members, member in self.members
+            root = _expression_root(value)
+            if root in self.sdk_locals:
+                return True, True
+            if root in self.public_inputs or root in self.safe_locals:
+                return True, False
+            return False, False
+        if isinstance(value, ast.Call):
+            allowed = self._call_origin(value.func) is not None
+            return allowed, allowed
+        if isinstance(value, ast.Starred):
+            return self._classify_expression(value.value)
+        if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+            results = [self._classify_expression(item) for item in value.elts]
+            return all(item[0] for item in results), False
+        if isinstance(value, ast.Dict):
+            results = [self._classify_expression(item) for item in [*value.keys, *value.values] if item is not None]
+            return all(item[0] for item in results), False
+        if isinstance(value, ast.UnaryOp):
+            return self._classify_expression(value.operand)[0], False
+        if isinstance(value, ast.BinOp):
+            left = self._classify_expression(value.left)
+            right = self._classify_expression(value.right)
+            return left[0] and right[0], False
+        if isinstance(value, ast.BoolOp):
+            results = [self._classify_expression(item) for item in value.values]
+            return all(item[0] for item in results), False
+        if isinstance(value, ast.Compare):
+            results = [self._classify_expression(value.left)] + [
+                self._classify_expression(item) for item in value.comparators
+            ]
+            return all(item[0] for item in results), False
+        if isinstance(value, ast.IfExp):
+            results = [
+                self._classify_expression(value.test),
+                self._classify_expression(value.body),
+                self._classify_expression(value.orelse),
+            ]
+            return all(item[0] for item in results), False
+        return False, False
+
+    def _assignment_issue(self, message: str = "only approved local assignments and SDK-derived mutations are allowed") -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", message)
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        self.visit(node.value)
+        if len(node.targets) != 1:
+            self._assignment_issue()
+            return
+        target = node.targets[0]
+        if isinstance(target, ast.Name):
+            if _dunder(target.id) or target.id == "_sdk":
+                self._assignment_issue("assignment to a reserved or dunder name is forbidden")
+                return
+            allowed, sdk_derived = self._classify_expression(node.value)
+            if not allowed:
+                self._assignment_issue()
+                return
+            if sdk_derived:
+                self.sdk_locals.add(target.id)
+                self.safe_locals.discard(target.id)
+            else:
+                self.safe_locals.add(target.id)
+                self.sdk_locals.discard(target.id)
+            return
+        self.visit(target)
+        root = _expression_root(target)
+        if root not in self.sdk_locals:
+            self._assignment_issue("only a local value derived from the injected SDK may be mutated")
+
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self._assignment_issue("augmented assignment is forbidden")
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        self._assignment_issue("annotated assignment is forbidden")
+        self.generic_visit(node)
+
+    def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
+        self._assignment_issue("named expressions are forbidden")
+        self.generic_visit(node)
+
+    def visit_Delete(self, node: ast.Delete) -> None:
+        self._assignment_issue("deletion is forbidden")
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        sdk_root, member = _sdk_path_root(node.func)
+        origin = self._call_origin(node.func)
+        if origin is not None:
+            self.approved_sdk_use = True
+        elif sdk_root:
+            self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
+        else:
+            self._add_issue("FORBIDDEN_CALL", "only calls rooted in the injected _sdk facade are allowed")
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        sdk_root, member = _sdk_path_root(node)
+        if sdk_root:
+            if member in self.members:
+                self.approved_sdk_use = True
+            else:
+                self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
+        if _dunder(node.attr):
+            self._add_issue("FORBIDDEN_DUNDER", "dunder attributes are forbidden in the experimental profile")
+        self.generic_visit(node)
+
+    def visit_Subscript(self, node: ast.Subscript) -> None:
+        sdk_root, member = _sdk_path_root(node)
+        if sdk_root:
+            if member in self.members:
+                self.approved_sdk_use = True
+            else:
+                self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
+        self.generic_visit(node)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if _dunder(node.id):
+            self._add_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile")
+
+    def visit_keyword(self, node: ast.keyword) -> None:
+        if node.arg is not None and _dunder(node.arg):
+            self._add_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile")
+        self.generic_visit(node)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        self._add_issue("FORBIDDEN_IMPORT", "imports are forbidden in the experimental profile")
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        self._add_issue("FORBIDDEN_IMPORT", "imports are forbidden in the experimental profile")
+
+    def visit_Global(self, node: ast.Global) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "global and namespace mutation are forbidden")
+
+    def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "global and namespace mutation are forbidden")
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "nested functions are forbidden")
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "nested functions are forbidden")
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "nested classes are forbidden")
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "nested functions are forbidden")
+
+
 def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]], profile: ValidationAProfile) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
     functions: dict[str, list[ast.FunctionDef]] = {}
@@ -385,6 +609,8 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
         if not isinstance(node, ast.FunctionDef):
             issues.append(_issue("EXPERIMENTAL_PROFILE", "only bound function definitions are allowed at module scope"))
             continue
+        if _dunder(node.name):
+            issues.append(_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile"))
         functions.setdefault(node.name, []).append(node)
     if any(len(nodes) != 1 for nodes in functions.values()) or set(functions) != expected_symbols:
         issues.append(_issue("PUBLIC_SYMBOLS", "capability.py must define exactly the bound public functions"))
@@ -400,6 +626,7 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
             function.decorator_list
             or function.returns is not None
             or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
+            or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
             or arguments.defaults
             or any(default is not None for default in arguments.kw_defaults)
             or arguments.posonlyargs
@@ -409,27 +636,9 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
             or arguments.kwarg is not None
         ):
             issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
-        for node in ast.walk(function):
-            if isinstance(node, (ast.Import, ast.ImportFrom)):
-                issues.append(_issue("FORBIDDEN_IMPORT", "imports are forbidden in the experimental profile"))
-            if isinstance(node, ast.Name) and _dunder(node.id):
-                issues.append(_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile"))
-            if isinstance(node, ast.Attribute) and _dunder(node.attr):
-                issues.append(_issue("FORBIDDEN_DUNDER", "dunder attributes are forbidden in the experimental profile"))
-            if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.NamedExpr, ast.Global, ast.Nonlocal)):
-                issues.append(_issue("EXPERIMENTAL_PROFILE", "assignment and namespace mutation are forbidden"))
-            if isinstance(node, ast.Call):
-                if not isinstance(node.func, ast.Attribute) or not isinstance(node.func.value, ast.Name) or node.func.value.id != "_sdk":
-                    issues.append(_issue("FORBIDDEN_CALL", "only calls to the injected _sdk facade are allowed"))
-                elif node.func.attr not in profile.sdk_facade_members[capability_id]:
-                    issues.append(_issue("SDK_FACADE", f"{node.func.attr} is not in the bound SDK facade"))
-        if not any(
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "_sdk"
-            for node in ast.walk(function)
-        ):
+        analyzer = _SdkStaticAnalyzer(function, expected_parameters, profile.sdk_facade_members[capability_id])
+        issues.extend(analyzer.analyze())
+        if not analyzer.approved_sdk_use:
             issues.append(_issue("SDK_INJECTION", f"{symbol} must call the injected _sdk facade"))
     return issues
 
@@ -519,19 +728,44 @@ def _runtime_result(result: Any, fields: list[Mapping[str, Any]]) -> None:
     canonical_bytes(dict(result))
 
 
+class _FixtureSdkProxy:
+    """Non-executing object proxy for the approved SDK surface."""
+
+    __slots__ = ("_facade", "_path")
+
+    def __init__(self, facade: "_FixtureSdkFacade", path: str):
+        object.__setattr__(self, "_facade", facade)
+        object.__setattr__(self, "_path", path)
+
+    def __getattr__(self, name: str) -> "_FixtureSdkProxy":
+        if _dunder(name):
+            raise AttributeError(name)
+        return _FixtureSdkProxy(self._facade, f"{self._path}.{name}")
+
+    def __getitem__(self, index: Any) -> "_FixtureSdkProxy":
+        return _FixtureSdkProxy(self._facade, f"{self._path}[{index!r}]")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in {"_facade", "_path"}:
+            object.__setattr__(self, name, value)
+            return
+        self._facade.mutations.append((f"{self._path}.{name}", value))
+
+    def __call__(self, *args: Any, **kwargs: Any) -> "_FixtureSdkProxy":
+        self._facade.calls.append((self._path, args, kwargs))
+        return _FixtureSdkProxy(self._facade, f"{self._path}()")
+
+
 class _FixtureSdkFacade:
     def __init__(self, members: tuple[str, ...] | list[str]):
         self.calls: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
+        self.mutations: list[tuple[str, Any]] = []
         self._members = members
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> _FixtureSdkProxy:
         if name not in self._members:
             raise AttributeError(name)
-
-        def invoke(*args: Any, **kwargs: Any) -> None:
-            self.calls.append((name, args, kwargs))
-
-        return invoke
+        return _FixtureSdkProxy(self, name)
 
 
 def _isolated_module(source: str) -> ModuleType:
