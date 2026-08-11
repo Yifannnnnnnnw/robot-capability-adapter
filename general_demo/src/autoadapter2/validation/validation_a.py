@@ -404,13 +404,14 @@ def _sdk_path_root(value: ast.AST) -> tuple[bool, str | None]:
 
 
 class _SdkStaticAnalyzer(ast.NodeVisitor):
-    """Small ordered analysis for locals that originate at an approved SDK root."""
+    """Small ordered analysis for approved SDK locals and call-result mutability."""
 
     def __init__(self, function: ast.FunctionDef, public_inputs: list[str], members: tuple[str, ...] | list[str]):
         self.function = function
         self.public_inputs = set(public_inputs)
         self.members = set(members)
-        self.sdk_locals: set[str] = set()
+        self.sdk_readable_locals: set[str] = set()
+        self.mutable_sdk_locals: set[str] = set()
         self.safe_locals: set[str] = set()
         self.issues: list[dict[str, str]] = []
         self._issue_keys: set[tuple[str, str]] = set()
@@ -434,62 +435,66 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
                 return "sdk-root"
             return None
         root = _expression_root(function)
-        return "sdk-local" if root in self.sdk_locals else None
+        return "sdk-local" if root in self.sdk_readable_locals | self.mutable_sdk_locals else None
 
-    def _classify_expression(self, value: ast.AST) -> tuple[bool, bool]:
-        """Return ``(allowed, sdk_derived)`` without widening the accepted language."""
+    def _classify_expression(self, value: ast.AST) -> tuple[bool, bool, bool]:
+        """Return ``(allowed, sdk_derived, mutable)`` without widening the language."""
 
         if isinstance(value, ast.Constant):
-            return True, False
+            return True, False, False
         if isinstance(value, ast.Name):
             if value.id in self.public_inputs or value.id in self.safe_locals:
-                return True, False
-            if value.id in self.sdk_locals:
-                return True, True
-            return False, False
+                return True, False, False
+            if value.id in self.mutable_sdk_locals:
+                return True, True, True
+            if value.id in self.sdk_readable_locals:
+                return True, True, False
+            return False, False, False
         if isinstance(value, (ast.Attribute, ast.Subscript)):
             sdk_root, member = _sdk_path_root(value)
             if sdk_root:
-                return member in self.members, member in self.members
+                return member in self.members, member in self.members, False
             root = _expression_root(value)
-            if root in self.sdk_locals:
-                return True, True
+            if root in self.mutable_sdk_locals:
+                return True, True, True
+            if root in self.sdk_readable_locals:
+                return True, True, False
             if root in self.public_inputs or root in self.safe_locals:
-                return True, False
-            return False, False
+                return True, False, False
+            return False, False, False
         if isinstance(value, ast.Call):
             allowed = self._call_origin(value.func) is not None
-            return allowed, allowed
+            return allowed, allowed, allowed
         if isinstance(value, ast.Starred):
             return self._classify_expression(value.value)
         if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
             results = [self._classify_expression(item) for item in value.elts]
-            return all(item[0] for item in results), False
+            return all(item[0] for item in results), False, False
         if isinstance(value, ast.Dict):
             results = [self._classify_expression(item) for item in [*value.keys, *value.values] if item is not None]
-            return all(item[0] for item in results), False
+            return all(item[0] for item in results), False, False
         if isinstance(value, ast.UnaryOp):
-            return self._classify_expression(value.operand)[0], False
+            return self._classify_expression(value.operand)[0], False, False
         if isinstance(value, ast.BinOp):
             left = self._classify_expression(value.left)
             right = self._classify_expression(value.right)
-            return left[0] and right[0], False
+            return left[0] and right[0], False, False
         if isinstance(value, ast.BoolOp):
             results = [self._classify_expression(item) for item in value.values]
-            return all(item[0] for item in results), False
+            return all(item[0] for item in results), False, False
         if isinstance(value, ast.Compare):
             results = [self._classify_expression(value.left)] + [
                 self._classify_expression(item) for item in value.comparators
             ]
-            return all(item[0] for item in results), False
+            return all(item[0] for item in results), False, False
         if isinstance(value, ast.IfExp):
             results = [
                 self._classify_expression(value.test),
                 self._classify_expression(value.body),
                 self._classify_expression(value.orelse),
             ]
-            return all(item[0] for item in results), False
-        return False, False
+            return all(item[0] for item in results), False, False
+        return False, False, False
 
     def _assignment_issue(self, message: str = "only approved local assignments and SDK-derived mutations are allowed") -> None:
         self._add_issue("EXPERIMENTAL_PROFILE", message)
@@ -504,20 +509,26 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if _dunder(target.id) or target.id == "_sdk":
                 self._assignment_issue("assignment to a reserved or dunder name is forbidden")
                 return
-            allowed, sdk_derived = self._classify_expression(node.value)
+            allowed, sdk_derived, mutable = self._classify_expression(node.value)
             if not allowed:
                 self._assignment_issue()
                 return
-            if sdk_derived:
-                self.sdk_locals.add(target.id)
+            if mutable:
+                self.mutable_sdk_locals.add(target.id)
+                self.sdk_readable_locals.discard(target.id)
+                self.safe_locals.discard(target.id)
+            elif sdk_derived:
+                self.sdk_readable_locals.add(target.id)
+                self.mutable_sdk_locals.discard(target.id)
                 self.safe_locals.discard(target.id)
             else:
                 self.safe_locals.add(target.id)
-                self.sdk_locals.discard(target.id)
+                self.sdk_readable_locals.discard(target.id)
+                self.mutable_sdk_locals.discard(target.id)
             return
         self.visit(target)
         root = _expression_root(target)
-        if root not in self.sdk_locals:
+        if root not in self.mutable_sdk_locals:
             self._assignment_issue("only a local value derived from the injected SDK may be mutated")
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:

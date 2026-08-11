@@ -405,12 +405,20 @@ def test_validation_a_accepts_real_shaped_go2_construction_and_sdk_derived_mutat
     assert result.candidate_handle is not None
     assert result.implementation_bundle_hash == stage2.bundle_hash == GO2_BUNDLE_HASH
 
+    alias_source = _go2_source().replace("    _sdk.publisher.Write(cmd)", "    publisher = _sdk.publisher\n    publisher.Write(cmd)")
+    alias_result, _alias_source, _alias_stage2 = _go2_a_result(alias_source)
+    assert alias_result.status == "PASS"
+
 
 def test_validation_a_rejects_sdk_mutation_unapproved_roots_and_input_calls() -> None:
     cases = {
         "sdk_mutation": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    _sdk.LowCmd_ = arg_q\n    cmd = _sdk.LowCmd_()"),
         "unapproved_root": _go2_source().replace("_sdk.LowCmd_()", "_sdk.Hidden()"),
         "input_call": _go2_source().replace("_sdk.publisher.Write(cmd)", "arg_q.execute()"),
+        "endpoint_alias_mutation": _go2_source().replace(
+            "    _sdk.publisher.Write(cmd)",
+            "    endpoint = _sdk.publisher\n    endpoint.some_internal_field = arg_q[0]\n    _sdk.publisher.Write(cmd)",
+        ),
         "global": _go2_source().replace("def capability_reach_joint_target(arg_q, *, _sdk):", "def capability_reach_joint_target(arg_q, *, _sdk):\n    global external"),
         "nested_function": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    def nested():\n        return 1\n    cmd = _sdk.LowCmd_()"),
         "nested_class": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    class Nested:\n        pass\n    cmd = _sdk.LowCmd_()"),
