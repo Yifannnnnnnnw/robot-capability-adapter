@@ -285,6 +285,29 @@ def test_first_campaign_accepts_only_frozen_g2_fixture(tmp_path):
         })
 
 
+def test_run_selection_direct_constructor_rejects_unsafe_values(tmp_path):
+    rim_registry = RecordRegistry(tmp_path / "rims", "rim")
+    profile_registry = ProfileRegistry(tmp_path / "profiles")
+    rim = rim_registry.publish(
+        "fixture-alpha", "1.0.0",
+        {"fixture_only": True, "authority_status": "OPEN"},
+    )
+    profile = profile_registry.publish(
+        "g2", "1.0.0",
+        {"profile_family": "granularity", "granularity": "G2",
+         "fixture_only": True, "authority_status": "OPEN"},
+        "FROZEN_FIXTURE",
+    )
+    with pytest.raises(Exception):
+        RunSelection("../../bad", rim.ref, profile.ref, "first")
+    with pytest.raises(Exception):
+        RunSelection("run-1", rim.ref, profile.ref, "arbitrary")
+    with pytest.raises(Exception):
+        RunSelection("run-1", "not-an-exact-ref", profile.ref, "first")
+    with pytest.raises(Exception):
+        RunSelection("run-1", rim.ref, rim.ref, "first")
+
+
 def test_run_index_detects_tamper_and_truncation(tmp_path):
     index = RunIndex(tmp_path / "runs.jsonl")
     selection = {"run_id": "run-1", "rim_ref": "rim:fixture-alpha@1.0.0#" + "sha256:" + "1" * 64,

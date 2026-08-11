@@ -19,6 +19,19 @@ class RunSelection:
     granularity_profile_ref: ExactReference
     campaign: str = "first"
 
+    def __post_init__(self) -> None:
+        _id(self.run_id, "run_id")
+        _id(self.campaign, "campaign")
+        if self.campaign != "first":
+            raise GateError("only the first campaign is admitted")
+        if not isinstance(self.rim_ref, ExactReference) or self.rim_ref.kind != "rim":
+            raise ContractError("run selection requires one exact RIM reference")
+        if (
+            not isinstance(self.granularity_profile_ref, ExactReference)
+            or self.granularity_profile_ref.kind != "profile"
+        ):
+            raise ContractError("run selection requires one exact profile reference")
+
     @classmethod
     def from_mapping(cls, value: dict[str, Any]) -> "RunSelection":
         if not isinstance(value, dict):
