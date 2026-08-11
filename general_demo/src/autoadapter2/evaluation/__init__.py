@@ -6,6 +6,7 @@ from .video import (
     OpaqueVideoHandle,
     RGBFrame,
     VideoEncoder,
+    VideoEncodingError,
     VideoInfraCode,
     VideoInfrastructureFailure,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "OpaqueVideoHandle",
     "RGBFrame",
     "VideoEncoder",
+    "VideoEncodingError",
     "VideoInfraCode",
     "VideoInfrastructureFailure",
 ]

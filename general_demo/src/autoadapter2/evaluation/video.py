@@ -112,6 +112,14 @@ class EncodedVideo:
     payload: bytes = field(repr=False)
 
 
+class VideoEncodingError(Exception):
+    """Encoder infrastructure failure with optional retained partial media."""
+
+    def __init__(self, message: str, *, partial: EncodedVideo | None = None):
+        super().__init__(message)
+        self.partial = partial
+
+
 @runtime_checkable
 class VideoEncoder(Protocol):
     def encode(
@@ -297,6 +305,21 @@ class EvaluationVideoRecorder:
         if self._frames:
             try:
                 encoded = self._encoder.encode(self._profile, tuple(self._frames))
+            except VideoEncodingError as exc:
+                partial = exc.partial
+                if (
+                    isinstance(partial, EncodedVideo)
+                    and isinstance(partial.handle, OpaqueVideoHandle)
+                    and isinstance(partial.payload, bytes)
+                    and partial.payload
+                ):
+                    handle = partial.handle
+                    media_size = len(partial.payload)
+                    media_hash = content_hash(partial.payload)
+                self._failure(
+                    VideoInfraCode.ENCODER_FAILED,
+                    "encoder reported an infrastructure failure",
+                )
             except Exception as exc:
                 self._failure(
                     VideoInfraCode.ENCODER_FAILED,
