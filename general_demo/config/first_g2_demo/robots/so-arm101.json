@@ -1,0 +1,220 @@
+{
+  "artifact_type": "first_g2_robot_template",
+  "schema_version": "1.0.0",
+  "robot_model_id": "so-arm101",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "public_projection": {
+    "affordances": {
+      "actions": ["joint_position_command", "gripper_position_command"],
+      "observations": ["joint_position", "gripper_position", "end_effector_pose", "public_task_state"]
+    },
+    "effect_allowlist": [
+      "move_end_effector_to_target",
+      "establish_target_contact",
+      "move_object_to_region",
+      "grasp_and_lift_object",
+      "actuate_target_button"
+    ],
+    "units": {
+      "joint_position": "rad",
+      "sdk_arm_position": "degree",
+      "sdk_gripper_position": "normalized_0_100",
+      "position": "m",
+      "speed": "m/s",
+      "time": "s"
+    },
+    "frames": ["joint", "base", "world", "end_effector"],
+    "topology": {
+      "base_type": "fixed",
+      "actuated_dof": 6,
+      "joint_groups": {
+        "arm": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"],
+        "gripper": ["gripper"]
+      },
+      "joint_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"],
+      "actuator_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"],
+      "effectors": ["stock_gripper"]
+    },
+    "sensors": ["joint_position", "gripper_position", "end_effector_pose"],
+    "ranges": {
+      "arm_position": {"unit": "degree", "minimum": -180, "maximum": 180},
+      "gripper_position": {"unit": "normalized_0_100", "minimum": 0, "maximum": 100}
+    },
+    "lifecycle": ["connect", "send_action", "get_observation", "disconnect"],
+    "limits": {
+      "arm_position_unit": "degree",
+      "gripper_position_unit": "normalized_0_100",
+      "normal_motion_write_scope": "actuator_control_only",
+      "reset_write_scope": "reset_only",
+      "latest_valid_action": "latched_until_reset_or_replacement"
+    },
+    "unsupported_behavior": ["camera", "IK", "trajectory", "planning", "recovery", "task_policy"]
+  },
+  "public_state_schema": {
+    "type": "object",
+    "properties": {
+      "task_parameters": {
+        "type": "object",
+        "properties": {
+          "target_position_m": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+          "target_face": {"type": "string"},
+          "object_id": {"type": "string"},
+          "goal_center_m": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3},
+          "goal_region_radius_m": {"type": "number", "minimum": 0},
+          "button_id": {"type": "string"},
+          "target_frame": {"type": "string", "enum": ["world", "base", "joint", "end_effector"]}
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "required": ["task_parameters"],
+    "additionalProperties": false
+  },
+  "public_task_states": {
+    "T01": {"task_parameters": {"target_position_m": [0.22, 0.0, 0.22], "target_frame": "world"}},
+    "T02": {"task_parameters": {"object_id": "target_object", "target_face": "front", "target_frame": "world"}},
+    "T03": {"task_parameters": {"object_id": "target_cube", "goal_center_m": [0.28, 0.0, 0.02], "goal_region_radius_m": 0.05, "target_frame": "world"}},
+    "T08": {"task_parameters": {"object_id": "target_cube", "target_frame": "world"}},
+    "T20": {"task_parameters": {"button_id": "target_button", "target_frame": "world"}}
+  },
+  "task_instances": {
+    "artifact_type": "first_g2_task_instances",
+    "schema_version": "1.0.0",
+    "robot_model_id": "so-arm101",
+    "robot_configuration_id": "so-arm101-follower-stock-gripper",
+    "task_catalog_version": "1.0.0",
+    "instances": [
+      {
+        "task_id": "T01",
+        "instance_version": "1.0.0",
+        "public_state": {"task_parameters": {"target_position_m": [0.22, 0.0, 0.22], "target_frame": "world"}},
+        "private_binding": {
+          "reset": {"scene_reset_id": "so-arm101-table-reset-v1", "qpos": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "qvel": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "target": {"kind": "reach_target", "position_m": [0.22, 0.0, 0.22], "frame": "world"}},
+          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:T01", "truth_source": "trusted_harness_physical_state", "timeout_s": 5.0, "horizon_s": 5.0}
+        }
+      },
+      {
+        "task_id": "T02",
+        "instance_version": "1.0.0",
+        "public_state": {"task_parameters": {"object_id": "target_object", "target_face": "front", "target_frame": "world"}},
+        "private_binding": {
+          "reset": {"scene_reset_id": "so-arm101-table-reset-v1", "qpos": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "qvel": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "target": {"object_id": "target_object", "face": "front", "frame": "world"}},
+          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:T02", "truth_source": "trusted_harness_physical_state", "timeout_s": 5.0, "horizon_s": 5.0}
+        }
+      },
+      {
+        "task_id": "T03",
+        "instance_version": "1.0.0",
+        "public_state": {"task_parameters": {"object_id": "target_cube", "goal_center_m": [0.28, 0.0, 0.02], "goal_region_radius_m": 0.05, "target_frame": "world"}},
+        "private_binding": {
+          "reset": {"scene_reset_id": "so-arm101-table-reset-v1", "qpos": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "qvel": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "target": {"object_id": "target_cube", "goal_center_m": [0.28, 0.0, 0.02], "goal_region_radius_m": 0.05, "frame": "world"}},
+          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:T03", "truth_source": "trusted_harness_physical_state", "timeout_s": 8.0, "horizon_s": 8.0}
+        }
+      },
+      {
+        "task_id": "T08",
+        "instance_version": "1.0.0",
+        "public_state": {"task_parameters": {"object_id": "target_cube", "target_frame": "world"}},
+        "private_binding": {
+          "reset": {"scene_reset_id": "so-arm101-table-reset-v1", "qpos": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "qvel": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "target": {"object_id": "target_cube", "frame": "world"}},
+          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:T08", "truth_source": "trusted_harness_physical_state", "timeout_s": 8.0, "horizon_s": 8.0}
+        }
+      },
+      {
+        "task_id": "T20",
+        "instance_version": "1.0.0",
+        "public_state": {"task_parameters": {"button_id": "target_button", "target_frame": "world"}},
+        "private_binding": {
+          "reset": {"scene_reset_id": "so-arm101-table-reset-v1", "qpos": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "qvel": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "target": {"button_id": "target_button", "frame": "world"}},
+          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:T20", "truth_source": "trusted_harness_physical_state", "timeout_s": 5.0, "horizon_s": 5.0}
+        }
+      }
+    ]
+  },
+  "blue_line_policy": {
+    "policy_id": "first-g2-so-arm101-blue-line-v1",
+    "model_id": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "prompt_id": "first-g2-blue-line-v1",
+    "max_cases_per_capability": 8,
+    "repetitions": 1
+  },
+  "validation_a_template": {
+    "artifact_type": "validation_a_template",
+    "schema_version": "1.0.0",
+    "profile_id": "experimental-python-a-v1",
+    "robot_model_id": "so-arm101",
+    "robot_configuration_id": "so-arm101-follower-stock-gripper",
+    "facade": {"members": ["send_action", "get_observation"], "lifecycle": "framework_injected_so101_sdk_lifecycle"},
+    "probe": {
+      "input_value_policy": {"number": 0.0, "integer": 0, "boolean": false, "string": "fixture", "object": {}, "array": []},
+      "metadata_policy": "copy sealed design field metadata exactly"
+    }
+  },
+  "validation_harness_config": {
+    "artifact_type": "validation_harness_config",
+    "schema_version": "1.0.0",
+    "robot_model_id": "so-arm101",
+    "robot_configuration_id": "so-arm101-follower-stock-gripper",
+    "truth_source": "trusted_harness_physical_state",
+    "candidate_self_report_is_truth": false,
+    "sdk_receipt_is_truth": false,
+    "required_video": true,
+    "video_coverage": {"start": "post_reset_pre_invocation", "end": "terminal_observation_or_timeout", "verdict_source": false},
+    "video_profile": {
+      "profile_id": "framework-external-scene-ffv1",
+      "profile_version": "1.0.0",
+      "camera": "external-scene",
+      "view": "external-scene",
+      "fps": 30,
+      "resolution": {"width": 640, "height": 480},
+      "container": "matroska",
+      "codec": "ffv1"
+    }
+  },
+  "implementation_projection": {
+    "sdk_implementation_projection": {
+      "sdk_entry_id": "lerobot-so101-follower",
+      "sdk_entry_version": "1.0.0",
+      "permitted_types": ["SO101Follower", "SOFollower", "FeetechMotorsBus"],
+      "permitted_operations": ["connect", "disconnect", "send_action", "get_observation"],
+      "action_fields": ["shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos", "wrist_flex.pos", "wrist_roll.pos", "gripper.pos"],
+      "observation_fields": ["shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos", "wrist_flex.pos", "wrist_roll.pos", "gripper.pos"],
+      "field_order": ["shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos", "wrist_flex.pos", "wrist_roll.pos", "gripper.pos"],
+      "units": {"arm": "degree", "gripper": "normalized_0_100"},
+      "lifecycle": ["connect", "send_action", "get_observation", "disconnect"],
+      "transport_constraints": {
+        "normal_motion_writes": "actuator_control_only",
+        "reset_write_scope": "reset_only",
+        "latest_valid_action": "latest valid goal remains latched until reset or replacement",
+        "invalid_input": "bad checksum, unknown ID/register, read-only write, wrong width, or malformed packet does not alter actuator control"
+      },
+      "unsupported_behavior": ["camera", "IK", "trajectory", "planning", "recovery", "task_policy"]
+    },
+    "robot_implementation_facts": {
+      "robot_model_id": "so-arm101",
+      "robot_configuration_id": "so-arm101-follower-stock-gripper",
+      "base_type": "fixed",
+      "actuated_dof": 6,
+      "topology": {
+        "base_type": "fixed",
+        "actuated_dof": 6,
+        "joint_groups": {"arm": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"], "gripper": ["gripper"]},
+        "joint_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"],
+        "actuator_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"],
+        "effectors": ["stock_gripper"]
+      },
+      "sensors": ["joint_position", "gripper_position", "end_effector_pose"],
+      "observations": ["joint_position", "gripper_position", "end_effector_pose", "public_task_state"],
+      "units": {"joint_position": "rad", "sdk_arm_position": "degree", "sdk_gripper_position": "normalized_0_100", "position": "m", "speed": "m/s", "time": "s"},
+      "frames": ["joint", "base", "world", "end_effector"],
+      "ranges": {"arm_position": {"unit": "degree", "minimum": -180, "maximum": 180}, "gripper_position": {"unit": "normalized_0_100", "minimum": 0, "maximum": 100}},
+      "limits": {"arm_position_unit": "degree", "gripper_position_unit": "normalized_0_100", "normal_motion_write_scope": "actuator_control_only", "reset_write_scope": "reset_only", "latest_valid_action": "latched_until_reset_or_replacement"},
+      "effect_allowlist": ["move_end_effector_to_target", "establish_target_contact", "move_object_to_region", "grasp_and_lift_object", "actuate_target_button"],
+      "unsupported_behavior": ["camera", "IK", "trajectory", "planning", "recovery", "task_policy"]
+    }
+  },
+  "implementation_experience": [
+    {"experience_id": "so-arm101-checked-in-public-surface-v1", "basis": "checked_in_sdk_morphology_route_records", "guidance": "Use the six ordered pos fields, the recorded SDK lifecycle, and the recorded actuator-only route."}
+  ]
+}

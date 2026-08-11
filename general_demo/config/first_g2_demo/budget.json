@@ -1,0 +1,23 @@
+{
+  "artifact_type": "run_budget",
+  "schema_version": "1.0.0",
+  "stage1": {
+    "max_correction_calls": 2
+  },
+  "blue_line": {
+    "max_inference_calls": 3
+  },
+  "stage2": {
+    "max_llm_calls": 30
+  },
+  "repair": {
+    "max_repairs": 10,
+    "max_infrastructure_retries": 1
+  },
+  "consumer": {
+    "max_steps": 4
+  },
+  "demo": {
+    "repetitions": 1
+  }
+}
