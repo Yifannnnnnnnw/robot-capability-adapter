@@ -76,6 +76,37 @@ def test_probe_manifest_is_source_evidence_only_and_pinned():
         "sha256": "d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c",
     }
     assert sdk["provenance"] == "THIRD_PARTY_DISTRIBUTION_NOT_HF_OR_FEETECH_OFFICIAL"
+    go2_probe = manifest["go2_probe"]
+    assert go2_probe["route"] == "LOW_LEVEL_ONLY"
+    assert go2_probe["active_motor_count"] == 12
+    assert go2_probe["dds_motor_slot_count"] == 20
+    assert go2_probe["active_order"] == [
+        "FR_hip",
+        "FR_thigh",
+        "FR_calf",
+        "FL_hip",
+        "FL_thigh",
+        "FL_calf",
+        "RR_hip",
+        "RR_thigh",
+        "RR_calf",
+        "RL_hip",
+        "RL_thigh",
+        "RL_calf",
+    ]
+    assert go2_probe["real_linux_dds_mujoco_roundtrip"] == "NOT_RUN"
+    assert go2_probe["readiness"] == "UNKNOWN"
+    unitree_sdk = next(source for source in manifest["sources"] if source["name"] == "Unitree SDK2Py")
+    assert unitree_sdk["distribution"] == {"name": "unitree_sdk2py", "version": "1.0.1"}
+    assert unitree_sdk["pinned_runtime_dependency"] == {
+        "name": "cyclonedds",
+        "version": "0.10.2",
+    }
+    mujoco = next(source for source in manifest["sources"] if source["name"] == "unitree_mujoco")
+    assert mujoco["key_files"] == {
+        "simulate_python/unitree_sdk2py_bridge.py": "3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599",
+        "unitree_robots/go2/go2.xml": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b",
+    }
 
 
 def test_packet_checksum_round_trip():
