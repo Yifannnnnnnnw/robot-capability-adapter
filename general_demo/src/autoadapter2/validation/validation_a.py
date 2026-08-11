@@ -59,7 +59,7 @@ class ValidatedCandidateHandle:
     """A-produced opaque binding of exact source, manifest, module, and overlay."""
 
     __slots__ = (
-        "_source_hash", "_implementation_manifest_hash", "_module", "_contracts",
+        "_source_hash", "_implementation_manifest_hash", "_implementation_bundle_hash", "_module", "_contracts",
         "_overlay", "_a_report_hash",
     )
 
@@ -69,6 +69,7 @@ class ValidatedCandidateHandle:
         *,
         source_hash: str,
         implementation_manifest_hash: str,
+        implementation_bundle_hash: str,
         module: ModuleType,
         contracts: Mapping[str, Mapping[str, Any]],
         a_report_hash: str,
@@ -78,6 +79,7 @@ class ValidatedCandidateHandle:
             raise ContractError("ValidatedCandidateHandle is Framework-created only")
         self._source_hash = source_hash
         self._implementation_manifest_hash = implementation_manifest_hash
+        self._implementation_bundle_hash = implementation_bundle_hash
         self._module = module
         self._contracts = copy.deepcopy(dict(contracts))
         self._a_report_hash = a_report_hash
@@ -92,6 +94,10 @@ class ValidatedCandidateHandle:
         return self._implementation_manifest_hash
 
     @property
+    def implementation_bundle_hash(self) -> str:
+        return self._implementation_bundle_hash
+
+    @property
     def overlay_hash(self) -> str | None:
         return self._overlay.overlay_hash if self._overlay is not None else None
 
@@ -100,6 +106,7 @@ class ValidatedCandidateHandle:
             _HANDLE_TOKEN,
             source_hash=self._source_hash,
             implementation_manifest_hash=self._implementation_manifest_hash,
+            implementation_bundle_hash=self._implementation_bundle_hash,
             module=self._module,
             contracts=self._contracts,
             a_report_hash=self._a_report_hash,
@@ -130,6 +137,7 @@ class ValidationAResult:
     binding_result: dict[str, Any]
     source_hash: str | None
     implementation_manifest_hash: str
+    implementation_bundle_hash: str
     candidate_handle: ValidatedCandidateHandle | None
     diagnostics: tuple[dict[str, str], ...]
 
@@ -238,6 +246,7 @@ def _manifest_issues(
     *,
     design_hash: str,
     binding_hash: str,
+    implementation_bundle_hash: str,
     contracts: Mapping[str, Mapping[str, Any]],
     source_hash: str | None,
 ) -> tuple[str, list[dict[str, str]]]:
@@ -252,6 +261,7 @@ def _manifest_issues(
         "schema_version": _SCHEMA_VERSION,
         "design_hash": design_hash,
         "binding_contract_hash": binding_hash,
+        "implementation_bundle_hash": implementation_bundle_hash,
         "source_file": "capability.py",
         "source_hash": source_hash,
         "symbols": expected_symbols,
@@ -260,7 +270,16 @@ def _manifest_issues(
     if frozen != expected:
         issues.append(_issue("IMPLEMENTATION_MANIFEST", "Implementation Manifest does not match sealed Design, Binding, and source"))
     try:
-        if not verify_seal(dict(manifest_seal)) or manifest_seal.get("artifact_type") != "implementation_manifest" or manifest_seal.get("artifact_hash") != manifest_hash:
+        expected_parents = sorted(
+            {design_hash, binding_hash, implementation_bundle_hash}
+            | ({source_hash} if is_content_hash(source_hash) else set())
+        )
+        if (
+            not verify_seal(dict(manifest_seal))
+            or manifest_seal.get("artifact_type") != "implementation_manifest"
+            or manifest_seal.get("artifact_hash") != manifest_hash
+            or manifest_seal.get("parents") != expected_parents
+        ):
             issues.append(_issue("IMPLEMENTATION_MANIFEST_SEAL", "Implementation Manifest seal is invalid"))
     except Exception:
         issues.append(_issue("IMPLEMENTATION_MANIFEST_SEAL", "Implementation Manifest seal is invalid"))
@@ -345,7 +364,22 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
 def _descriptor_match(value: Any, field: Mapping[str, Any]) -> bool:
     field_type = field["type"]
     shape = field["shape"]
-    if field_type == "number":
+    vector_length: int | None = None
+    if (
+        isinstance(shape, str)
+        and shape.startswith("vector:")
+        and shape.removeprefix("vector:").isdigit()
+        and int(shape.removeprefix("vector:")) > 0
+    ):
+        vector_length = int(shape.removeprefix("vector:"))
+    if vector_length is not None and field_type == "number":
+        type_ok = isinstance(value, list) and all(
+            isinstance(item, (int, float))
+            and not isinstance(item, bool)
+            and math.isfinite(float(item))
+            for item in value
+        )
+    elif field_type == "number":
         type_ok = isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
     elif field_type == "integer":
         type_ok = isinstance(value, int) and not isinstance(value, bool)
@@ -363,6 +397,8 @@ def _descriptor_match(value: Any, field: Mapping[str, Any]) -> bool:
         shape_ok = not isinstance(value, (list, tuple, Mapping))
     elif shape == "vector":
         shape_ok = isinstance(value, list)
+    elif vector_length is not None:
+        shape_ok = isinstance(value, list) and len(value) == vector_length
     elif shape == "mapping":
         shape_ok = isinstance(value, Mapping)
     else:
@@ -445,7 +481,10 @@ class ValidationARunner:
         submission: Mapping[str, Any],
         implementation_manifest: Mapping[str, Any],
         implementation_manifest_seal: Mapping[str, Any],
+        implementation_bundle_hash: str,
     ) -> ValidationAResult:
+        if not is_content_hash(implementation_bundle_hash):
+            raise ContractError("Validation A requires an Implementation Bundle hash")
         _design, design_hash, design_capabilities = _verified_design(capability_design, design_seal)
         contract, binding_hash = _verified_binding(binding_contract, binding_seal, design_hash)
         contracts = _capability_contracts(design_capabilities, contract)
@@ -456,6 +495,7 @@ class ValidationARunner:
             implementation_manifest_seal,
             design_hash=design_hash,
             binding_hash=binding_hash,
+            implementation_bundle_hash=implementation_bundle_hash,
             contracts=contracts,
             source_hash=source_hash,
         )
@@ -497,6 +537,7 @@ class ValidationARunner:
             "design_hash": design_hash,
             "binding_contract_hash": binding_hash,
             "implementation_manifest_hash": manifest_hash,
+            "implementation_bundle_hash": implementation_bundle_hash,
             "source_hash": source_hash,
             "profile_hash": self.profile.profile_hash,
             "symbols": symbols,
@@ -510,13 +551,14 @@ class ValidationARunner:
             "diagnostics": copy.deepcopy(diagnostics),
         }
         report_hash = content_hash(canonical_bytes(report))
-        parents = [design_hash, binding_hash] + ([manifest_hash] if is_content_hash(manifest_hash) else []) + ([source_hash] if source_hash else [])
+        parents = [design_hash, binding_hash, implementation_bundle_hash] + ([manifest_hash] if is_content_hash(manifest_hash) else []) + ([source_hash] if source_hash else [])
         handle = None
         if status == "PASS" and module is not None and source_hash is not None:
             handle = ValidatedCandidateHandle(
                 _HANDLE_TOKEN,
                 source_hash=source_hash,
                 implementation_manifest_hash=manifest_hash,
+                implementation_bundle_hash=implementation_bundle_hash,
                 module=module,
                 contracts=contracts,
                 a_report_hash=report_hash,
@@ -529,6 +571,7 @@ class ValidationARunner:
             binding_result=binding_result,
             source_hash=source_hash,
             implementation_manifest_hash=manifest_hash,
+            implementation_bundle_hash=implementation_bundle_hash,
             candidate_handle=handle,
             diagnostics=tuple(diagnostics),
         )
@@ -555,13 +598,18 @@ def bind_candidate_to_suite(result: ValidationAResult, validation_suite_hash: st
         "schema_version": _SCHEMA_VERSION,
         "suite_hash": validation_suite_hash,
         "implementation_manifest_hash": result.implementation_manifest_hash,
+        "implementation_bundle_hash": result.implementation_bundle_hash,
         "capability_bindings": bindings,
     }
     overlay_hash = content_hash(canonical_bytes(overlay))
     sealed = BindingOverlay(
         overlay=overlay,
         overlay_hash=overlay_hash,
-        seal=create_seal("validation_execution_binding_overlay", overlay_hash, [validation_suite_hash, result.implementation_manifest_hash]),
+        seal=create_seal(
+            "validation_execution_binding_overlay",
+            overlay_hash,
+            [validation_suite_hash, result.implementation_manifest_hash, result.implementation_bundle_hash],
+        ),
     )
     return result.candidate_handle._with_overlay(sealed)
 

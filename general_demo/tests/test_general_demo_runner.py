@@ -1,0 +1,439 @@
+from __future__ import annotations
+
+import copy
+import json
+import shutil
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from autoadapter2.demo import DemoTask, ValidationEvidence
+from autoadapter2.evaluation import (
+    EncodedVideo,
+    FrozenVideoProfile,
+    OpaqueVideoHandle,
+    RGBFrame,
+)
+from autoadapter2.foundation.hashing import sha256_bytes
+from autoadapter2.generation import FixtureJsonGenerator
+from autoadapter2.integration import (
+    READINESS_CHECK_IDS,
+    stable_json_sha256,
+    write_stable_json,
+)
+from autoadapter2.orchestration import DemoModelAdapters, DemoRunPlan, GeneralDemoRunner
+from autoadapter2.validation import MeasurementSample, RepairConfig, ValidationAProfile
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
+
+
+def _copy(root: Path, relative: str) -> None:
+    source = PROJECT_ROOT / relative
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, target)
+
+
+def _json_ref(root: Path, relative: str, value: object) -> dict[str, str]:
+    return {"path": relative, "sha256": write_stable_json(root / relative, value)}
+
+
+def _bytes_ref(root: Path, relative: str, payload: bytes) -> dict[str, str]:
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(payload)
+    return {"path": relative, "sha256": sha256_bytes(payload)}
+
+
+def _ready_robot_run(root: Path, robot: str) -> tuple[str, str, str, dict[str, Any]]:
+    manifest_rel = f"general_demo/integrations/{robot}/integration_manifest.json"
+    manifest = json.loads((PROJECT_ROOT / manifest_rel).read_text(encoding="utf-8"))
+    records: dict[str, dict[str, Any]] = {}
+    for name in ("morphology_ref", "sdk_ref", "translation_ref"):
+        relative = manifest[name]["path"]
+        records[name] = json.loads((PROJECT_ROOT / relative).read_text(encoding="utf-8"))
+
+    morphology = records["morphology_ref"]
+    morphology["mujoco"]["asset_closure_status"] = "VERIFIED"
+    manifest["morphology_ref"] = _json_ref(root, manifest["morphology_ref"]["path"], morphology)
+
+    sdk = records["sdk_ref"]
+    sdk["runtime"]["container_digest_status"] = "VERIFIED"
+    manifest["sdk_ref"] = _json_ref(root, manifest["sdk_ref"]["path"], sdk)
+
+    translation = records["translation_ref"]
+    if robot == "so-arm101":
+        implementation_refs = list(translation["implementation"]["source_files"])
+        implementation_refs.append(translation["implementation"]["readiness_runner"])
+    else:
+        implementation_refs = []
+        for relative in (
+            "general_demo/src/autoadapter2/integrations/unitree_go2/bridge.py",
+            "general_demo/src/autoadapter2/integrations/unitree_go2/readiness.py",
+        ):
+            _copy(root, relative)
+            implementation_refs.append(
+                {"path": relative, "sha256": sha256_bytes((root / relative).read_bytes())}
+            )
+        translation["implementation"] = {
+            "source_files": implementation_refs,
+            "readiness_runner": None,
+        }
+    for reference in implementation_refs:
+        if not (root / reference["path"]).exists():
+            _copy(root, reference["path"])
+    translation.update(status="READY", conformance_status="PASS", unresolved=[])
+    manifest["translation_ref"] = _json_ref(
+        root, manifest["translation_ref"]["path"], translation
+    )
+
+    profile_rel = (
+        "general_demo/contracts/profiles/readiness/"
+        "general-demo-integration-readiness/1.0.0/profile.json"
+    )
+    profile = json.loads((PROJECT_ROOT / profile_rel).read_text(encoding="utf-8"))
+    profile_ref = _json_ref(root, profile_rel, profile)
+    manifest.update(status="READY", readiness_profile_ref=profile_ref, unresolved_gaps=[])
+    manifest["runtime"]["lock_sha256"] = "a" * 64
+    for check in manifest["compatibility_checks"]:
+        check["verdict"] = "PASS"
+    manifest_ref = _json_ref(root, manifest_rel, manifest)
+
+    run_id = f"run-{robot}"
+    input_ref = _json_ref(root, f"general_demo/runs/{run_id}/input.json", {"frozen": True})
+    checks = [
+        {
+            "check_id": check_id,
+            "verdict": "PASS",
+            "evidence_refs": [
+                _bytes_ref(
+                    root,
+                    f"general_demo/runs/{run_id}/evidence/{check_id}.txt",
+                    check_id.encode(),
+                )
+            ],
+        }
+        for check_id in READINESS_CHECK_IDS
+    ]
+    report = {
+        "schema_version": "1.0.0",
+        "attempt_id": f"attempt-{robot}",
+        "run_id": run_id,
+        "integration_manifest_ref": manifest_ref,
+        "runtime_sha256": stable_json_sha256(manifest["runtime"]),
+        "readiness_profile_ref": profile_ref,
+        "environment_fingerprint_sha256": "b" * 64,
+        "dependency_sha256": {
+            "morphology": manifest["morphology_ref"]["sha256"],
+            "sdk": manifest["sdk_ref"]["sha256"],
+            "translation": manifest["translation_ref"]["sha256"],
+            "runtime_lock": manifest["runtime"]["lock_sha256"],
+            "readiness_profile": profile_ref["sha256"],
+        },
+        "time_limits": copy.deepcopy(profile["time_limits"]),
+        "numerical_tolerances": copy.deepcopy(profile["numerical_tolerances"]),
+        "checks": checks,
+        "cleanup": {
+            "verdict": "PASS",
+            "evidence_refs": [
+                _bytes_ref(
+                    root,
+                    f"general_demo/runs/{run_id}/evidence/cleanup.txt",
+                    b"cleanup",
+                )
+            ],
+        },
+        "started_at": "2026-08-11T00:00:00Z",
+        "ended_at": "2026-08-11T00:00:01Z",
+        "verdict": "PASS",
+    }
+    report_rel = f"general_demo/runs/{run_id}/readiness_report.json"
+    report_ref = _json_ref(root, report_rel, report)
+    snapshot = {
+        "schema_version": "1.0.0",
+        "run_id": run_id,
+        "integration_manifest_ref": manifest_ref,
+        "readiness_report_ref": report_ref,
+        "runtime_sha256": stable_json_sha256(manifest["runtime"]),
+        "readiness_profile_ref": profile_ref,
+        "library_view_refs": [input_ref],
+        "task_set_ref": input_ref,
+        "g2_profile_ref": input_ref,
+        "observation_profile_ref": input_ref,
+        "model_prompt_config_ref": input_ref,
+        "budget_ref": input_ref,
+        "blue_line_input_refs": [input_ref],
+        "sealed_artifact_refs": [],
+    }
+    snapshot_rel = f"general_demo/runs/{run_id}/run_snapshot.json"
+    _json_ref(root, snapshot_rel, snapshot)
+    projection = {
+        "robot_model_id": manifest["robot_model_id"],
+        "robot_configuration_id": manifest["robot_configuration_id"],
+        "action_affordances": ["joint target command"],
+        "observation_affordances": ["joint position observation"],
+        "unit_allowlist": ["rad", "none"],
+        "frame_allowlist": ["joint", "none"],
+    }
+    return manifest_rel, snapshot_rel, report_rel, projection
+
+
+class _Encoder:
+    def encode(self, _profile, frames):
+        return EncodedVideo(OpaqueVideoHandle("fixture-video"), b"encoded:" + bytes([len(frames)]))
+
+
+class _Sdk:
+    def __init__(self, owner: "_RobotSession") -> None:
+        self._owner = owner
+
+    def command(self, target: list[float]) -> None:
+        self._owner.target = list(target)
+        self._owner.time_s = 0.2
+
+
+class _RobotSession:
+    evidence_scope = "TEST_FIXTURE_ONLY"
+
+    def __init__(self, width: int, robot: str) -> None:
+        self.width = width
+        self.robot_model_id = robot
+        self.robot_configuration_id = (
+            "so-arm101-follower-stock-gripper"
+            if robot == "so-arm101" else "unitree-go2-stock-12dof"
+        )
+        self.time_s = 0.0
+        self.target = [0.0] * width
+        self.sdk = _Sdk(self)
+
+    @property
+    def simulation_time_s(self) -> float:
+        return self.time_s
+
+    def reset(self, *, phase: str, execution_id: str, initial_state) -> None:
+        del phase, execution_id, initial_state
+        self.time_s = 0.0
+
+    def start_external_recording(self, *, phase: str, execution_id: str) -> None:
+        del phase, execution_id
+
+    def stop_external_recording(self) -> tuple[RGBFrame, ...]:
+        rgb = b"\x00" * (2 * 2 * 3)
+        return (RGBFrame(0.0, 2, 2, rgb), RGBFrame(0.2, 2, 2, rgb))
+
+    def validation_evidence(self, _invocation) -> ValidationEvidence:
+        return ValidationEvidence(
+            samples=(MeasurementSample(0.0, 0.01), MeasurementSample(0.2, 0.01)),
+            elapsed_s=0.2,
+            guard_results={"physical-state-not-command-receipt": True},
+            sdk_route_verified=True,
+        )
+
+    def demo_evidence(self, _task_id: str) -> dict[str, bool]:
+        return {"passed": True}
+
+    def invoke(self, candidate, capability_id: str, arguments):
+        return candidate._invoke(capability_id, arguments, self.sdk)
+
+
+def _design(width: int) -> dict[str, Any]:
+    return {
+        "capabilities": [{
+            "capability_id": "set-joint-configuration",
+            "kind": "action",
+            "requirement_ids": [f"req-{index}" for index in range(1, 6)],
+            "inputs": [{
+                "name": "target", "type": "number", "shape": f"vector:{width}",
+                "unit": "rad", "frame": "joint", "required": True,
+            }],
+            "outputs": [{
+                "name": "accepted", "type": "boolean", "shape": "scalar",
+                "unit": "none", "frame": "none", "required": True,
+            }],
+            "effect": "The declared robot joints reach the requested configuration.",
+            "preconditions": ["robot is connected"],
+            "invocation_semantics": "Invoke once with the public target vector.",
+            "temporal_semantics": "Returns after a bounded observation window.",
+            "invariants": ["physical completion is judged outside candidate code"],
+            "required_action_affordances": ["joint target command"],
+            "required_observation_affordances": ["joint position observation"],
+            "errors": [{"code": "TARGET_REJECTED", "message": "Target was rejected."}],
+            "unsupported_scope": ["task-specific planning"],
+        }],
+        "unsupported_requirement_ids": [],
+        "blocking_requirement_ids": [],
+    }
+
+
+def _blue_spec(width: int) -> dict[str, Any]:
+    return {
+        "capability_specs": [{
+            "capability_id": "set-joint-configuration",
+            "measurement": {
+                "measurement_id": "joint-error", "entity": "joint-set",
+                "unit": "rad", "frame": "joint",
+            },
+            "metric": "max_joint_error",
+            "threshold": {"comparator": "<=", "value": 0.05},
+            "dwell_s": 0.2,
+            "timeout_s": 2.0,
+            "aggregation": "ALL",
+            "guard_ids": ["physical-state-not-command-receipt"],
+            "cases": [{
+                "case_id": "nominal",
+                "initial_state": {"joint": [0.0] * width},
+                "inputs": {"target": [0.1] * width},
+            }],
+            "lineage": {"kind": "COPIED", "standard_id": "joint-arrival", "material": False},
+        }]
+    }
+
+
+def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAdapters]:
+    manifest, snapshot, report, projection = _ready_robot_run(root, robot)
+    tasks = tuple(
+        DemoTask(
+            requirement_id=f"req-{index}",
+            task_id=f"task-{index}",
+            description=f"Execute fixed task {index}.",
+            public_state={"target": [0.1] * width},
+            private_criterion={"criterion_id": f"criterion-{index}"},
+        )
+        for index in range(1, 6)
+    )
+    descriptor = {
+        "value": [0.1] * width, "type": "number", "shape": f"vector:{width}",
+        "unit": "rad", "frame": "joint",
+    }
+    standards = {
+        "snapshot_id": "standards-demo",
+        "standards": [{
+            "standard_id": "joint-arrival", "measurement_id": "joint-error",
+            "metric": "max_joint_error", "comparator": "<=", "threshold_value": 0.05,
+            "dwell_s": 0.2, "timeout_s": 2.0, "aggregation": "ALL",
+        }],
+    }
+    measurements = {
+        "catalog_id": "measurements-demo",
+        "measurements": [{
+            "measurement_id": "joint-error", "entity": "joint-set", "unit": "rad",
+            "frame": "joint", "adapter_id": "truth-joint-state",
+            "truth_source": "physical_state", "metrics": ["max_joint_error"],
+        }],
+        "guards": [{
+            "guard_id": "physical-state-not-command-receipt",
+            "adapter_id": "truth-joint-state",
+        }],
+    }
+    policy = {
+        "policy_id": "blue-demo", "model_id": "fixed-fixture",
+        "prompt_id": "blue-prompt", "max_cases_per_capability": 1, "repetitions": 1,
+    }
+    profile = ValidationAProfile(
+        sdk_facade_members={"set-joint-configuration": ("command",)},
+        fixture_probes={"set-joint-configuration": {"inputs": {"target": descriptor}}},
+    )
+    snapshot_path = root / snapshot
+    frozen_snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    run_dir = f"general_demo/runs/run-{robot}"
+    frozen_snapshot["task_set_ref"] = _json_ref(
+        root, f"{run_dir}/task_set.json", {"tasks": [task.frozen_record() for task in tasks]}
+    )
+    frozen_snapshot["g2_profile_ref"] = _json_ref(
+        root, f"{run_dir}/g2_profile.json", G2
+    )
+    frozen_snapshot["observation_profile_ref"] = _json_ref(
+        root, f"{run_dir}/robot_projection.json", projection
+    )
+    frozen_snapshot["blue_line_input_refs"] = [
+        _json_ref(root, f"{run_dir}/standards.json", standards),
+        _json_ref(root, f"{run_dir}/measurements.json", measurements),
+        _json_ref(root, f"{run_dir}/blue_line_policy.json", policy),
+    ]
+    write_stable_json(snapshot_path, frozen_snapshot)
+    plan = DemoRunPlan(
+        run_id=f"run-{robot}",
+        integration_manifest_path=manifest,
+        run_snapshot_path=snapshot,
+        readiness_report_path=report,
+        robot_public_projection=projection,
+        g2_profile=G2,
+        tasks=tasks,
+        standards_snapshot=standards,
+        measurement_catalog=measurements,
+        blue_line_policy=policy,
+        validation_a_profile=profile,
+        public_state_schema={
+            "type": "object",
+            "properties": {
+                "target": {
+                    "type": "array", "items": {"type": "number"},
+                    "minItems": width, "maxItems": width,
+                }
+            },
+            "required": ["target"],
+            "additionalProperties": False,
+        },
+        validation_harness_config={"profile": "fixture"},
+        repair_config=RepairConfig(max_repairs=10, max_infrastructure_retries=1),
+    )
+
+    consumer_calls: dict[str, int] = {}
+
+    def consumer_model(inputs: dict[str, Any]) -> dict[str, Any]:
+        task_id = inputs["task"]["task_id"]
+        consumer_calls[task_id] = consumer_calls.get(task_id, 0) + 1
+        if consumer_calls[task_id] == 1:
+            return {
+                "thought": "Use the promoted G2 capability.",
+                "action": {
+                    "capability_id": "set-joint-configuration",
+                    "arguments": {"target": inputs["task"]["public_state"]["target"]},
+                },
+            }
+        return {"thought": "The action completed.", "final": {"done": True}}
+
+    source = (
+        "def capability_set_joint_configuration(arg_target, *, _sdk):\n"
+        "    _sdk.command(arg_target)\n"
+        "    return {\"accepted\": True}\n"
+    )
+    models = DemoModelAdapters(
+        stage1=FixtureJsonGenerator([_design(width)]),
+        blue_line=FixtureJsonGenerator([_blue_spec(width)]),
+        stage2=FixtureJsonGenerator([{"action": "submit", "capability.py": source}]),
+        repair=lambda _request: pytest.fail("Repair must not run on the passing path"),
+        consumer=consumer_model,
+    )
+    return plan, models
+
+
+@pytest.mark.parametrize(
+    ("robot", "width"),
+    [("so-arm101", 6), ("unitree-go2", 12)],
+)
+def test_same_g2_runner_completes_two_robot_shaped_runs(
+    tmp_path: Path, robot: str, width: int
+) -> None:
+    plan, models = _plan(tmp_path, robot, width)
+    result = GeneralDemoRunner(
+        tmp_path,
+        models,
+        _RobotSession(width, robot),
+        FrozenVideoProfile("demo-video", "1.0.0", "external", "fixed", 5, 2, 2, "mp4", "h264"),
+        lambda _phase, _execution_id: _Encoder(),
+        lambda criterion, evidence: bool(criterion) and evidence == {"passed": True},
+    ).run(plan)
+
+    assert result.status == "COMPLETE"
+    assert [stage["status"] for stage in result.summary["stages"]] == [
+        "READY", "SEALED", "READY", "SUBMITTED", "PASS", "PROMOTED", "PASS",
+    ]
+    assert len(result.validation_video_handles) == 1
+    assert len(result.demo_trials) == 5
+    assert all(trial.status == "PASS" for trial in result.demo_trials)
+    assert result.summary["robot"]["robot_model_id"] == robot
+    assert result.summary["granularity_profile"]["granularity"] == "G2"

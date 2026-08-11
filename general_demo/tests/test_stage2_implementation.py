@@ -5,10 +5,18 @@ import copy
 import pytest
 
 from autoadapter2.blue_line import BlueLineRunner
+from autoadapter2.foundation.canonical import canonical_bytes
 from autoadapter2.foundation.errors import ContractError
+from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.foundation.seals import verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
-from autoadapter2.implementation import CallbackSandbox, Stage2Config, Stage2Runner, derive_python_binding
+from autoadapter2.implementation import (
+    CallbackSandbox,
+    Stage2Config,
+    Stage2Runner,
+    derive_python_binding,
+    validate_implementation_bundle,
+)
 
 
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
@@ -42,6 +50,25 @@ POLICY = {
     "policy_id": "blue-stage2", "model_id": "fixed-fixture", "prompt_id": "blue-prompt-1",
     "max_cases_per_capability": 1, "repetitions": 1,
 }
+IMPLEMENTATION_BUNDLE = {
+    "artifact_type": "stage2_implementation_bundle",
+    "schema_version": "1.0.0",
+    "sdk_implementation_projection": {
+        "sdk_entry_id": "lerobot-so-arm101",
+        "members": ["command"],
+    },
+    "robot_implementation_facts": {
+        "joint_order": ["shoulder_pan"],
+        "position_unit": "rad",
+    },
+    "implementation_experience": [
+        {"experience_id": "so-arm101-command-v1", "guidance": "Use the pinned command member."},
+    ],
+}
+
+
+def _bundle() -> dict:
+    return copy.deepcopy(IMPLEMENTATION_BUNDLE)
 
 
 def _design_body() -> dict:
@@ -117,26 +144,28 @@ def test_stage2_requires_non_sensitive_ready_authorization() -> None:
     design, seal = _sealed_design()
     fixture = FixtureJsonGenerator([{"action": "blocked", "reason": "The public SDK method is unavailable."}])
     with pytest.raises(ContractError):
-        Stage2Runner(fixture).run(design, seal, False)
+        Stage2Runner(fixture).run(design, seal, False, _bundle())
     with pytest.raises(ContractError):
-        Stage2Runner(fixture).run(design, seal, {"authorized": True, "suite_hash": "sha256:" + "0" * 64})
+        Stage2Runner(fixture).run(design, seal, {"authorized": True, "suite_hash": "sha256:" + "0" * 64}, _bundle())
     assert fixture.calls == []
 
     other_design, other_seal = _sealed_design("other-run")
     with pytest.raises(ContractError):
-        Stage2Runner(fixture).run(design, seal, _authorization(other_design, other_seal))
-    result = Stage2Runner(fixture).run(design, seal, _authorization(design, seal))
+        Stage2Runner(fixture).run(design, seal, _authorization(other_design, other_seal), _bundle())
+    result = Stage2Runner(fixture).run(design, seal, _authorization(design, seal), _bundle())
     assert result.status == "IMPLEMENTATION_BLOCKED"
     assert result.blocked_reason == "The public SDK method is unavailable."
     assert set(fixture.calls[0]["inputs"]) == {
         "capability_design", "binding_contract", "starter_skeleton", "blue_line_authorization",
+        "implementation_bundle",
     }
+    assert fixture.calls[0]["inputs"]["implementation_bundle"] == IMPLEMENTATION_BUNDLE
 
 
 def test_stage2_caps_accounted_llm_calls_at_thirty() -> None:
     design, seal = _sealed_design()
     fixture = FixtureJsonGenerator(lambda _stage, _prompt, _inputs: {"action": "not-an-action"})
-    result = Stage2Runner(fixture).run(design, seal, _authorization(design, seal))
+    result = Stage2Runner(fixture).run(design, seal, _authorization(design, seal), _bundle())
 
     assert result.status == "CALL_LIMIT_EXHAUSTED"
     assert result.llm_calls == len(result.call_log) == len(fixture.calls) == 30
@@ -157,7 +186,7 @@ def test_sandbox_is_callback_only_and_is_not_an_extra_llm_call() -> None:
         {"action": "submit", "capability.py": binding.starter_skeleton},
     ])
     result = Stage2Runner(fixture, sandbox=CallbackSandbox(callback)).run(
-        design, seal, _authorization(design, seal)
+        design, seal, _authorization(design, seal), _bundle()
     )
 
     assert result.status == "SUBMITTED"
@@ -176,7 +205,7 @@ def test_submit_seals_exact_source_and_framework_derives_manifest() -> None:
     binding = derive_python_binding(design, seal)
     result = Stage2Runner(FixtureJsonGenerator([
         {"action": "submit", "capability.py": binding.starter_skeleton},
-    ])).run(design, seal, _authorization(design, seal))
+    ])).run(design, seal, _authorization(design, seal), _bundle())
 
     assert result.status == "SUBMITTED"
     assert result.capability_source == binding.starter_skeleton
@@ -185,6 +214,7 @@ def test_submit_seals_exact_source_and_framework_derives_manifest() -> None:
     assert verify_seal(result.manifest_seal)
     assert result.implementation_manifest["design_hash"] == binding.contract["design_hash"]
     assert result.implementation_manifest["binding_contract_hash"] == binding.contract_hash
+    assert result.implementation_manifest["implementation_bundle_hash"] == result.implementation_bundle_hash
     assert result.implementation_manifest["source_hash"] == result.source_hash
     assert result.implementation_manifest["symbols"] == [{
         "capability_id": "reach-joint-target", "function_name": "capability_reach_joint_target",
@@ -192,7 +222,7 @@ def test_submit_seals_exact_source_and_framework_derives_manifest() -> None:
 
     blocked = Stage2Runner(FixtureJsonGenerator([
         {"action": "blocked", "reason": "The public SDK method is unavailable."},
-    ])).run(design, seal, _authorization(design, seal))
+    ])).run(design, seal, _authorization(design, seal), _bundle())
     assert blocked.status == "IMPLEMENTATION_BLOCKED"
     assert blocked.capability_source is None
 
@@ -203,10 +233,50 @@ def test_model_cannot_submit_extra_files_or_a_manifest(extra: str) -> None:
     source = derive_python_binding(design, seal).starter_skeleton
     response = {"action": "submit", "capability.py": source, extra: {"not": "accepted"}}
     result = Stage2Runner(FixtureJsonGenerator([response]), config=Stage2Config(max_llm_calls=1)).run(
-        design, seal, _authorization(design, seal)
+        design, seal, _authorization(design, seal), _bundle()
     )
 
     assert result.status == "CALL_LIMIT_EXHAUSTED"
     assert result.capability_source is None
     assert result.implementation_manifest is None
     assert {item["code"] for item in result.diagnostics} == {"MODEL_ACTION_FIELDS"}
+
+
+def test_implementation_bundle_is_closed_deep_copied_and_required_before_llm() -> None:
+    raw = _bundle()
+    validated = validate_implementation_bundle(raw)
+    expected_hash = content_hash(canonical_bytes(raw))
+    raw["sdk_implementation_projection"]["members"].append("not-authorized")
+    returned = validated.artifact
+    returned["robot_implementation_facts"]["position_unit"] = "degree"
+    assert validated.bundle_hash == expected_hash
+    assert validated.artifact == IMPLEMENTATION_BUNDLE
+
+    design, seal = _sealed_design()
+    fixture = FixtureJsonGenerator([{"action": "blocked", "reason": "The public SDK method is unavailable."}])
+    for invalid in (
+        {},
+        dict(_bundle(), unexpected=True),
+        dict(_bundle(), artifact_type="wrong"),
+        dict(_bundle(), implementation_experience={}),
+    ):
+        with pytest.raises(ContractError):
+            Stage2Runner(fixture).run(design, seal, _authorization(design, seal), invalid)
+    validated._artifact["robot_implementation_facts"]["position_unit"] = "degree"
+    with pytest.raises(ContractError):
+        Stage2Runner(fixture).run(design, seal, _authorization(design, seal), validated)
+    assert fixture.calls == []
+
+
+def test_stage2_llm_and_manifest_are_bound_to_exact_implementation_bundle() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    fixture = FixtureJsonGenerator([{"action": "submit", "capability.py": binding.starter_skeleton}])
+    bundle = _bundle()
+    result = Stage2Runner(fixture).run(design, seal, _authorization(design, seal), bundle)
+
+    assert fixture.calls[0]["inputs"]["implementation_bundle"] == bundle
+    assert result.implementation_bundle_hash == content_hash(canonical_bytes(bundle))
+    assert result.bundle_hash == result.implementation_bundle_hash
+    assert result.implementation_manifest["implementation_bundle_hash"] == result.implementation_bundle_hash
+    assert result.implementation_bundle_hash in result.manifest_seal["parents"]

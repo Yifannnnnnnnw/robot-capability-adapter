@@ -194,6 +194,7 @@ def derive_implementation_manifest(
     *,
     design_hash: str,
     binding_hash: str,
+    implementation_bundle_hash: str,
     source_hash: str,
     symbols: list[Mapping[str, str]],
 ) -> tuple[dict[str, Any], str, dict[str, Any]]:
@@ -204,6 +205,7 @@ def derive_implementation_manifest(
         "schema_version": _BINDING_SCHEMA_VERSION,
         "design_hash": design_hash,
         "binding_contract_hash": binding_hash,
+        "implementation_bundle_hash": implementation_bundle_hash,
         "source_file": "capability.py",
         "source_hash": source_hash,
         "symbols": [dict(symbol) for symbol in symbols],
@@ -212,5 +214,9 @@ def derive_implementation_manifest(
     return (
         manifest,
         manifest_hash,
-        create_seal("implementation_manifest", manifest_hash, [design_hash, binding_hash, source_hash]),
+        create_seal(
+            "implementation_manifest",
+            manifest_hash,
+            [design_hash, binding_hash, implementation_bundle_hash, source_hash],
+        ),
     )

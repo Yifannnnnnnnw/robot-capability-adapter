@@ -12,6 +12,7 @@ from ..foundation.errors import ContractError
 from ..foundation.hashing import content_hash
 from ..foundation.seals import create_seal, verify_seal
 from ..implementation.binding import derive_implementation_manifest
+from ..implementation.bundle import ImplementationBundle, validate_implementation_bundle
 from .validation_a import ValidationAResult, ValidationARunner, bind_candidate_to_suite
 from .validation_b import (
     FrozenValidationContext,
@@ -134,17 +135,25 @@ class RepairRunner:
         initial_manifest: Mapping[str, Any],
         initial_manifest_seal: Mapping[str, Any],
         context: ValidationContext,
+        implementation_bundle: Mapping[str, Any] | ImplementationBundle,
     ) -> RepairResult:
+        bundle = validate_implementation_bundle(implementation_bundle)
         frozen_design, design_hash = _freeze_design(capability_design, design_seal, binding_contract)
         frozen_binding = copy.deepcopy(dict(binding_contract))
         frozen_binding_seal = copy.deepcopy(dict(binding_seal))
         frozen_context = freeze_validation_context(context)
         if frozen_context.design_hash != design_hash:
             raise ContractError("Repair run_snapshot does not bind the sealed Design")
+        if (
+            frozen_context.implementation_bundle_hash != bundle.bundle_hash
+            or initial_manifest.get("implementation_bundle_hash") != bundle.bundle_hash
+        ):
+            raise ContractError("Repair requires one frozen Implementation Bundle across manifest and run_snapshot")
         binding_hash = content_hash(canonical_bytes(frozen_binding))
         hashes = {
             "design_hash": design_hash,
             "binding_contract_hash": binding_hash,
+            "implementation_bundle_hash": bundle.bundle_hash,
             "blue_line_spec_hash": frozen_context.spec_hash,
             "blue_line_manifest_hash": frozen_context.manifest_hash,
             "suite_hash": frozen_context.suite_hash,
@@ -159,6 +168,7 @@ class RepairRunner:
             copy.deepcopy(dict(initial_submission)),
             copy.deepcopy(dict(initial_manifest)),
             copy.deepcopy(dict(initial_manifest_seal)),
+            bundle.bundle_hash,
         )
         initial_b = self._run_b(initial_a, frozen_context, 0, ledger)
         if initial_b is not None and initial_b.status == "PASS":
@@ -179,6 +189,8 @@ class RepairRunner:
                 "repair_index": requested_index,
                 "capability.py": current_source,
                 "binding_contract": copy.deepcopy(frozen_binding),
+                "implementation_bundle": bundle.artifact,
+                "implementation_bundle_hash": bundle.bundle_hash,
                 "design_hash": design_hash,
                 "run_snapshot_hash": frozen_context.run_snapshot_hash,
                 "diagnostics": _sanitized_diagnostics(current_a, current_b),
@@ -210,6 +222,7 @@ class RepairRunner:
             manifest, _manifest_hash, manifest_seal = derive_implementation_manifest(
                 design_hash=design_hash,
                 binding_hash=binding_hash,
+                implementation_bundle_hash=bundle.bundle_hash,
                 source_hash=source_hash,
                 symbols=_expected_symbols(frozen_binding),
             )
@@ -221,6 +234,7 @@ class RepairRunner:
                 {"capability.py": repaired_source},
                 manifest,
                 manifest_seal,
+                bundle.bundle_hash,
             )
             current_b = self._run_b(current_a, frozen_context, repairs_consumed, ledger)
             repair_log.append({
@@ -263,6 +277,7 @@ class RepairRunner:
                 "execution_attempt": execution_attempt,
                 "source_hash": candidate.source_hash,
                 "implementation_manifest_hash": candidate.implementation_manifest_hash,
+                "implementation_bundle_hash": candidate.implementation_bundle_hash,
                 "overlay_hash": candidate.overlay_hash,
                 "run_snapshot_hash": frozen.run_snapshot_hash,
                 "b_status": result.status,

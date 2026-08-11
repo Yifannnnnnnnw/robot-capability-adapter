@@ -94,6 +94,7 @@ class FrozenValidationContext:
     manifest_hash: str
     suite_hash: str
     run_snapshot_hash: str
+    implementation_bundle_hash: str
     suite_entries: tuple[dict[str, Any], ...]
     repetitions: int
 
@@ -237,12 +238,13 @@ def freeze_validation_context(context: ValidationContext) -> FrozenValidationCon
         "blue_line_spec_hash": spec_hash,
         "blue_line_manifest_hash": manifest_hash,
         "suite_hash": suite_hash,
+        "implementation_bundle_hash": snapshot.get("implementation_bundle_hash"),
         "rim_hash": snapshot.get("rim_hash"),
         "sdk_entry_hash": snapshot.get("sdk_entry_hash"),
         "runtime_hash": snapshot.get("runtime_hash"),
         "harness_config_hash": snapshot.get("harness_config_hash"),
     }
-    if snapshot != expected_snapshot or not all(is_content_hash(snapshot[key]) for key in ("rim_hash", "sdk_entry_hash", "runtime_hash", "harness_config_hash")):
+    if snapshot != expected_snapshot or not all(is_content_hash(snapshot[key]) for key in ("implementation_bundle_hash", "rim_hash", "sdk_entry_hash", "runtime_hash", "harness_config_hash")):
         raise ContractError("Validation B run_snapshot must freeze lineage, RIM, SDK, runtime, and Harness")
     frozen_context = ValidationContext(
         capability_design=design,
@@ -262,6 +264,7 @@ def freeze_validation_context(context: ValidationContext) -> FrozenValidationCon
         manifest_hash=manifest_hash,
         suite_hash=suite_hash,
         run_snapshot_hash=content_hash(canonical_bytes(snapshot)),
+        implementation_bundle_hash=snapshot["implementation_bundle_hash"],
         suite_entries=entries,
         repetitions=repetitions,
     )
@@ -273,16 +276,35 @@ def _verify_handle(handle: ValidatedCandidateHandle, frozen: FrozenValidationCon
     overlay = copy.deepcopy(handle._overlay.overlay)
     overlay_hash = content_hash(canonical_bytes(overlay))
     try:
-        if not verify_seal(dict(handle._overlay.seal)) or handle._overlay.seal.get("artifact_type") != "validation_execution_binding_overlay" or handle._overlay.seal.get("artifact_hash") != overlay_hash:
+        expected_parents = sorted({
+            frozen.suite_hash,
+            handle.implementation_manifest_hash,
+            handle.implementation_bundle_hash,
+        })
+        if (
+            not verify_seal(dict(handle._overlay.seal))
+            or handle._overlay.seal.get("artifact_type") != "validation_execution_binding_overlay"
+            or handle._overlay.seal.get("artifact_hash") != overlay_hash
+            or handle._overlay.seal.get("parents") != expected_parents
+        ):
             raise ContractError("Validation B candidate overlay seal is invalid")
     except Exception as exc:
         if isinstance(exc, ContractError):
             raise
         raise ContractError("Validation B candidate overlay seal is invalid") from exc
     expected = {
-        "artifact_type", "schema_version", "suite_hash", "implementation_manifest_hash", "capability_bindings",
+        "artifact_type", "schema_version", "suite_hash", "implementation_manifest_hash",
+        "implementation_bundle_hash", "capability_bindings",
     }
-    if set(overlay) != expected or overlay.get("artifact_type") != "validation_execution_binding_overlay" or overlay.get("schema_version") != _SCHEMA_VERSION or overlay.get("suite_hash") != frozen.suite_hash or overlay.get("implementation_manifest_hash") != handle.implementation_manifest_hash:
+    if (
+        set(overlay) != expected
+        or overlay.get("artifact_type") != "validation_execution_binding_overlay"
+        or overlay.get("schema_version") != _SCHEMA_VERSION
+        or overlay.get("suite_hash") != frozen.suite_hash
+        or overlay.get("implementation_manifest_hash") != handle.implementation_manifest_hash
+        or overlay.get("implementation_bundle_hash") != handle.implementation_bundle_hash
+        or overlay.get("implementation_bundle_hash") != frozen.implementation_bundle_hash
+    ):
         raise ContractError("Validation B candidate overlay does not bind this exact suite and manifest")
     expected_symbols = {
         capability_id: handle._contracts[capability_id]["function_name"] for capability_id in handle._contracts
@@ -470,6 +492,7 @@ class ValidationBRunner:
             "overlay_hash": overlay_hash,
             "source_hash": candidate.source_hash,
             "implementation_manifest_hash": candidate.implementation_manifest_hash,
+            "implementation_bundle_hash": candidate.implementation_bundle_hash,
             "run_snapshot_hash": frozen.run_snapshot_hash,
             "executions": executions,
             "diagnostics": copy.deepcopy(diagnostics),
@@ -482,7 +505,14 @@ class ValidationBRunner:
             report_seal=create_seal(
                 "validation_b_report",
                 report_hash,
-                [frozen.design_hash, frozen.spec_hash, frozen.manifest_hash, frozen.suite_hash, overlay_hash],
+                [
+                    frozen.design_hash,
+                    frozen.spec_hash,
+                    frozen.manifest_hash,
+                    frozen.suite_hash,
+                    frozen.implementation_bundle_hash,
+                    overlay_hash,
+                ],
             ),
             suite_hash=frozen.suite_hash,
             overlay_hash=overlay_hash,

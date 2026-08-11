@@ -56,6 +56,14 @@ POLICY = {
     "policy_id": "blue-1", "model_id": "fixed-fixture", "prompt_id": "blue-prompt-1",
     "max_cases_per_capability": 2, "repetitions": 2,
 }
+IMPLEMENTATION_BUNDLE = {
+    "artifact_type": "stage2_implementation_bundle",
+    "schema_version": "1.0.0",
+    "sdk_implementation_projection": {"sdk_entry_id": "lerobot-so-arm101", "members": ["command"]},
+    "robot_implementation_facts": {"joint_order": ["shoulder_pan"], "position_unit": "rad"},
+    "implementation_experience": [{"experience_id": "so-arm101-command-v1"}],
+}
+BUNDLE_HASH = content_hash(canonical_bytes(IMPLEMENTATION_BUNDLE))
 PROFILE = ValidationAProfile(
     sdk_facade_members={"reach-joint-target": ("command",)},
     fixture_probes={
@@ -66,6 +74,10 @@ PROFILE = ValidationAProfile(
         },
     },
 )
+
+
+def _bundle() -> dict:
+    return copy.deepcopy(IMPLEMENTATION_BUNDLE)
 
 
 def _source(status: str = "PASS") -> str:
@@ -180,7 +192,7 @@ def _stage2_submission(source: str = _source()):
     design, design_seal = _sealed_design()
     blue = _blue_ready(design, design_seal)
     stage2 = Stage2Runner(FixtureJsonGenerator([{"action": "submit", "capability.py": source}])).run(
-        design, design_seal, blue.stage2_authorization
+        design, design_seal, blue.stage2_authorization, _bundle()
     )
     assert stage2.status == "SUBMITTED"
     return design, design_seal, stage2, blue
@@ -194,6 +206,7 @@ def _context(design: dict, design_seal: dict, blue) -> ValidationContext:
         "blue_line_spec_hash": blue.spec_hash,
         "blue_line_manifest_hash": blue.manifest_hash,
         "suite_hash": blue.suite_hash,
+        "implementation_bundle_hash": BUNDLE_HASH,
         "rim_hash": content_hash(b"rim"),
         "sdk_entry_hash": content_hash(b"sdk"),
         "runtime_hash": content_hash(b"runtime"),
@@ -217,13 +230,16 @@ def _a_result(source: str = _source()):
     result = ValidationARunner(PROFILE).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
         {"capability.py": source}, stage2.implementation_manifest, stage2.manifest_seal,
+        stage2.implementation_bundle_hash,
     )
     return design, design_seal, stage2, blue, result
 
 
 def test_validation_a_profile_checks_facade_envelopes_and_opaque_handle() -> None:
-    _design, _seal, stage2, blue, result = _a_result()
+    design, design_seal, stage2, blue, result = _a_result()
     assert result.status == "PASS"
+    assert result.implementation_bundle_hash == stage2.bundle_hash
+    assert result.binding_result["implementation_bundle_hash"] == stage2.bundle_hash
     assert result.candidate_handle is not None
     assert not hasattr(result.candidate_handle, "module")
     assert verify_seal(result.report_seal)
@@ -241,6 +257,17 @@ def test_validation_a_profile_checks_facade_envelopes_and_opaque_handle() -> Non
     _design, _seal, _stage2, _blue, envelope_result = _a_result(extra_output)
     assert envelope_result.status == "FAIL"
     assert "FIXTURE_PROBE" in {item["code"] for item in envelope_result.diagnostics}
+
+    wrong_bundle_hash = content_hash(b"wrong-implementation-bundle")
+    wrong_bundle_result = ValidationARunner(PROFILE).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, wrong_bundle_hash,
+    )
+    assert wrong_bundle_result.status == "FAIL"
+    assert {item["code"] for item in wrong_bundle_result.diagnostics} == {
+        "IMPLEMENTATION_MANIFEST", "IMPLEMENTATION_MANIFEST_SEAL",
+    }
 
 
 def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> None:
@@ -325,7 +352,7 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
         lambda _request: {"capability.py": _source("INITIAL"), "llm_calls": 1},
     ).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
-        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert no_change.status == "NO_CHANGE"
     assert no_change.repairs_consumed == 0
@@ -340,7 +367,7 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
         lambda _request: {"capability.py": _source("REPAIRED"), "llm_calls": 2},
     ).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
-        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert repaired.status == "PASS"
     assert repaired.first_passing_repair_index == repaired.repairs_consumed == 1
@@ -354,7 +381,7 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
         lambda _request: {"capability.py": next(outputs), "llm_calls": 1},
     ).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
-        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert historical.status == "NO_CHANGE"
     assert historical.repairs_consumed == 1
@@ -370,7 +397,7 @@ def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_
         lambda _request: {"capability.py": _source("REPAIRED"), "llm_calls": 1},
     ).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
-        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert result.status == "PASS"
     assert result.repairs_consumed == 1
@@ -389,7 +416,52 @@ def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_
     always_fail = _FixedHarness(context.run_snapshot, ["fail"] * 22)
     capped = RepairRunner(ValidationARunner(PROFILE), ValidationBRunner(always_fail), ten_distinct).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
-        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert capped.status == "FAILED_AFTER_REPAIRS"
     assert capped.repairs_consumed == capped.repair_llm_calls == calls == 10
+
+
+def test_repair_reuses_exact_bundle_and_rejects_manifest_or_snapshot_drift() -> None:
+    design, design_seal, stage2, blue = _stage2_submission(_source("INITIAL"))
+    context = _context(design, design_seal, blue)
+    requests: list[dict] = []
+
+    def repair(request):
+        requests.append(copy.deepcopy(dict(request)))
+        return {"capability.py": _source("REPAIRED"), "llm_calls": 1}
+
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail", "pass", "pass"])),
+        repair,
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+    assert result.status == "PASS"
+    assert requests[0]["implementation_bundle"] == IMPLEMENTATION_BUNDLE
+    assert requests[0]["implementation_bundle_hash"] == BUNDLE_HASH
+    assert result.final_validation_a.implementation_bundle_hash == BUNDLE_HASH
+    assert result.final_validation_a.binding_result["implementation_bundle_hash"] == BUNDLE_HASH
+    assert result.final_validation_b.report["implementation_bundle_hash"] == BUNDLE_HASH
+    assert result.frozen_artifact_hashes["implementation_bundle_hash"] == BUNDLE_HASH
+
+    changed_bundle = _bundle()
+    changed_bundle["robot_implementation_facts"]["position_unit"] = "degree"
+    with pytest.raises(ContractError):
+        RepairRunner(ValidationARunner(PROFILE), ValidationBRunner(_FixedHarness(context.run_snapshot, [])), repair).run(
+            design, design_seal, stage2.binding_contract, stage2.binding_seal,
+            {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+            stage2.manifest_seal, context, changed_bundle,
+        )
+
+    changed_context = copy.deepcopy(context)
+    changed_context.run_snapshot["implementation_bundle_hash"] = content_hash(b"other-bundle")
+    with pytest.raises(ContractError):
+        RepairRunner(ValidationARunner(PROFILE), ValidationBRunner(_FixedHarness(changed_context.run_snapshot, [])), repair).run(
+            design, design_seal, stage2.binding_contract, stage2.binding_seal,
+            {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+            stage2.manifest_seal, changed_context, _bundle(),
+        )

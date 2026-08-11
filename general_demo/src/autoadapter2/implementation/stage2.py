@@ -18,6 +18,7 @@ from ..foundation.hashing import content_hash
 from ..foundation.seals import create_seal
 from ..generation.llm import JsonGenerator
 from .binding import PythonBinding, derive_implementation_manifest, derive_python_binding, verify_capability_source
+from .bundle import ImplementationBundle, validate_implementation_bundle
 from .sandbox import CallbackSandbox
 
 
@@ -46,6 +47,7 @@ class Stage2Config:
 @dataclass(frozen=True)
 class Stage2Result:
     status: str
+    bundle_hash: str
     binding_contract: dict[str, Any]
     binding_hash: str
     binding_seal: dict[str, Any]
@@ -63,6 +65,12 @@ class Stage2Result:
     sandbox_log: tuple[dict[str, Any], ...]
     diagnostics: tuple[dict[str, str], ...]
     blocked_reason: str | None
+
+    @property
+    def implementation_bundle_hash(self) -> str:
+        """Explicit alias used by downstream manifest and validation contracts."""
+
+        return self.bundle_hash
 
 
 def _issue(code: str, message: str) -> dict[str, str]:
@@ -112,7 +120,9 @@ class Stage2Runner:
         capability_design: Mapping[str, Any],
         design_seal: Mapping[str, Any],
         blue_line_authorization: Stage2Authorization,
+        implementation_bundle: Mapping[str, Any] | ImplementationBundle,
     ) -> Stage2Result:
+        bundle = validate_implementation_bundle(implementation_bundle)
         binding = derive_python_binding(capability_design, design_seal)
         authorization = _authorization(
             blue_line_authorization, binding.contract["design_hash"]
@@ -123,6 +133,7 @@ class Stage2Runner:
             "binding_contract": copy.deepcopy(binding.contract),
             "starter_skeleton": binding.starter_skeleton,
             "blue_line_authorization": authorization,
+            "implementation_bundle": bundle.artifact,
         }
         calls: list[dict[str, Any]] = []
         sandbox_log: list[dict[str, Any]] = []
@@ -181,7 +192,7 @@ class Stage2Runner:
                 continue
             if action == "blocked":
                 return self._result(
-                    "IMPLEMENTATION_BLOCKED", binding, None, None, None, None,
+                    "IMPLEMENTATION_BLOCKED", bundle.bundle_hash, binding, None, None, None, None,
                     calls, sandbox_log, diagnostics, output_dict["reason"],
                 )
             # Submit starts the immutable candidate boundary.  Only basic parsing and
@@ -199,21 +210,23 @@ class Stage2Runner:
             manifest, manifest_hash, manifest_seal = derive_implementation_manifest(
                 design_hash=binding.contract["design_hash"],
                 binding_hash=binding.contract_hash,
+                implementation_bundle_hash=bundle.bundle_hash,
                 source_hash=source_hash,
                 symbols=symbols,
             )
             return self._result(
-                "SUBMITTED", binding, source, source_hash, source_seal,
+                "SUBMITTED", bundle.bundle_hash, binding, source, source_hash, source_seal,
                 (manifest, manifest_hash, manifest_seal), calls, sandbox_log, (), None,
             )
         return self._result(
-            "CALL_LIMIT_EXHAUSTED", binding, None, None, None, None,
+            "CALL_LIMIT_EXHAUSTED", bundle.bundle_hash, binding, None, None, None, None,
             calls, sandbox_log, diagnostics, None,
         )
 
     @staticmethod
     def _result(
         status: str,
+        implementation_bundle_hash: str,
         binding: PythonBinding,
         source: str | None,
         source_hash: str | None,
@@ -227,6 +240,7 @@ class Stage2Runner:
         manifest, manifest_hash, manifest_seal = manifest_data if manifest_data is not None else (None, None, None)
         return Stage2Result(
             status=status,
+            bundle_hash=implementation_bundle_hash,
             binding_contract=binding.contract,
             binding_hash=binding.contract_hash,
             binding_seal=binding.contract_seal,
