@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,50 @@ def validate_robot_facts(project_root: Path, manifest: dict[str, Any]) -> None:
         _validate_go2(manifest, morphology, sdk, translation)
     else:
         raise ContractError(f"unsupported first-Demo robot_model_id: {robot!r}")
+    if manifest.get("status") == "READY":
+        _validate_ready_dependencies(project_root, morphology, sdk, translation)
+
+
+def _validate_ready_dependencies(
+    project_root: Path,
+    morphology: dict[str, Any],
+    sdk: dict[str, Any],
+    translation: dict[str, Any],
+) -> None:
+    """Reject a top-level READY claim built on visibly unfinished robot records."""
+    _expect(
+        morphology["mujoco"].get("asset_closure_status") == "VERIFIED",
+        "READY integration requires a verified MuJoCo asset closure",
+    )
+    _expect(
+        sdk["runtime"].get("container_digest_status") == "VERIFIED",
+        "READY integration requires a verified SDK runtime image",
+    )
+    _expect(translation.get("status") == "READY", "READY integration requires a READY Translation")
+    _expect(
+        translation.get("conformance_status") == "PASS",
+        "READY integration requires Translation conformance PASS",
+    )
+    _expect(not translation.get("unresolved"), "READY Translation must have no unresolved gaps")
+    implementation = translation.get("implementation")
+    _expect(isinstance(implementation, dict), "READY Translation requires implementation lineage")
+    refs = list(implementation.get("source_files", []))
+    runner = implementation.get("readiness_runner")
+    if runner is not None:
+        refs.append(runner)
+    _expect(bool(refs), "READY Translation requires source file references")
+    for reference in refs:
+        _expect(set(reference) == {"path", "sha256"}, "invalid Translation source reference")
+        path = (project_root / reference["path"]).resolve()
+        try:
+            path.relative_to(project_root.resolve())
+        except ValueError as exc:
+            raise ContractError("Translation source reference escapes project root") from exc
+        _expect(path.is_file() and not path.is_symlink(), "Translation source file is missing")
+        _expect(
+            hashlib.sha256(path.read_bytes()).hexdigest() == reference["sha256"],
+            "Translation source file hash mismatch",
+        )
 
 
 def _validate_so(
@@ -109,6 +154,16 @@ def _validate_so(
     _expect(translation["conversion"]["raw_tick_range"] == [0, 4095], "wrong SO raw tick range")
     _expect(translation["normal_motion_writes"] == "actuator_control_only", "SO motion may only write actuator control")
     _expect(translation["direct_qpos_qvel_write"] == "reset_only", "SO direct state write must be reset-only")
+    if manifest.get("status") == "READY":
+        conversion = translation["conversion"]
+        _expect(
+            conversion.get("gripper_affine_mapping_status") == "FROZEN",
+            "READY SO Translation requires frozen gripper endpoint mapping",
+        )
+        _expect(
+            isinstance(conversion.get("gripper_tick_increases_qpos"), bool),
+            "READY SO Translation requires an explicit gripper direction",
+        )
 
 
 def _validate_go2(

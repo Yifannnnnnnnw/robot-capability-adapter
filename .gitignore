@@ -43,6 +43,7 @@ dist/
 # content hashes; large traces/videos and private run snapshots are not Git data.
 **/runs/*
 !**/runs/.gitkeep
+general_demo/run_artifacts/
 *.mp4
 *.mov
 *.avi

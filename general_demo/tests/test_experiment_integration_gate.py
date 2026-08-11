@@ -52,6 +52,29 @@ def _ready_so_run(root: Path) -> dict[str, object]:
     ):
         _copy_source(root, relative)
 
+    morphology_path = root / manifest["morphology_ref"]["path"]
+    morphology = json.loads(morphology_path.read_text(encoding="utf-8"))
+    morphology["mujoco"]["asset_closure_status"] = "VERIFIED"
+    manifest["morphology_ref"]["sha256"] = write_stable_json(morphology_path, morphology)
+
+    sdk_path = root / manifest["sdk_ref"]["path"]
+    sdk = json.loads(sdk_path.read_text(encoding="utf-8"))
+    sdk["runtime"]["container_digest_status"] = "VERIFIED"
+    manifest["sdk_ref"]["sha256"] = write_stable_json(sdk_path, sdk)
+
+    translation_path = root / manifest["translation_ref"]["path"]
+    translation = json.loads(translation_path.read_text(encoding="utf-8"))
+    translation["status"] = "READY"
+    translation["conversion"]["gripper_affine_mapping_status"] = "FROZEN"
+    translation["conversion"]["gripper_tick_increases_qpos"] = True
+    translation["conformance_status"] = "PASS"
+    translation["unresolved"] = []
+    implementation_refs = list(translation["implementation"]["source_files"])
+    implementation_refs.append(translation["implementation"]["readiness_runner"])
+    for reference in implementation_refs:
+        _copy_source(root, reference["path"])
+    manifest["translation_ref"]["sha256"] = write_stable_json(translation_path, translation)
+
     profile_ref = _json_ref(
         root,
         "general_demo/profiles/readiness_profile.json",

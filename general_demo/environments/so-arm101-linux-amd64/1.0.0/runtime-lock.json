@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0-draft",
+  "runtime_id": "so-arm101-linux-amd64",
+  "version": "1.0.0",
+  "status": "DRAFT_UNVERIFIED_BUILD",
+  "platform": {
+    "os": "Ubuntu 24.04",
+    "architecture": "amd64",
+    "python": "3.12"
+  },
+  "packages": [
+    {
+      "name": "lerobot",
+      "version": "0.6.0",
+      "artifact_kind": "wheel",
+      "artifact_sha256": "b38a564fbc441d98380576863bf68635dde5fc2c42ddc2a39d0486640dc9e9a8"
+    },
+    {
+      "name": "feetech-servo-sdk",
+      "version": "1.0.0",
+      "artifact_kind": "sdist",
+      "artifact_sha256": "d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c"
+    },
+    {
+      "name": "mujoco",
+      "version": "3.3.6",
+      "artifact_kind": "wheel",
+      "artifact_sha256": null
+    }
+  ],
+  "oci_image_digest": null,
+  "complete_dependency_artifact_hashes": null,
+  "unresolved": [
+    "MuJoCo platform-wheel hash has not been captured from the real amd64 build",
+    "complete transitive dependency artifact hashes have not been captured",
+    "OCI image digest and CPython/native-library fingerprints require the real Linux build"
+  ]
+}
+

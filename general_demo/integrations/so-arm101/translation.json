@@ -2,6 +2,7 @@
   "record_type": "translation",
   "id": "lerobot-so101-feetech-pty-mujoco",
   "version": "1.0.0",
+  "status": "DRAFT",
   "route": [
     "SO101Follower",
     "FeetechMotorsBus",
@@ -30,12 +31,48 @@
     "homing_offset": 0,
     "arm_path": "raw ticks -> pinned LeRobot degree conversion -> MuJoCo radians",
     "gripper_sdk_range": [0, 100],
-    "gripper_affine_mapping_status": "PENDING_ENDPOINT_APERTURE_MEASUREMENT"
+    "gripper_affine_mapping_status": "FROZEN",
+    "gripper_tick_increases_qpos": true,
+    "gripper_joint_endpoints_rad": [-0.17453297762778586, 1.7453291995659765],
+    "endpoint_evidence_ref": {
+      "path": "general_demo/integrations/so-arm101/gripper_endpoint_evidence.json",
+      "sha256": "3ab32cf6fe4c4c33d3e237e91e6cf2ac72cce94c047d4f07d35e9696e1aa36c6"
+    },
+    "measurement_script_ref": {
+      "path": "general_demo/scripts/measure_so101_gripper.py",
+      "sha256": "cd60e0447a6a2bf7eb2d7e515d926bf0a2f42d103e3c536dfa3d34844b37ecf0"
+    }
   },
   "command_rule": "latest valid goal remains latched until reset or replacement",
   "observation_rule": "Present_Position derives from current MuJoCo joint state",
   "error_rule": "bad checksum, unknown ID/register, read-only write, wrong width, or malformed packet does not alter actuator control",
   "normal_motion_writes": "actuator_control_only",
   "direct_qpos_qvel_write": "reset_only",
-  "implementation_seed": "general_demo/probes/phase2/virtual_feetech.py"
+  "implementation": {
+    "entrypoint": "autoadapter2.integrations.so_arm101.translation:FeetechPTYTranslation",
+    "backend": "autoadapter2.integrations.so_arm101.translation:MuJoCoSO101Backend",
+    "source_files": [
+      {
+        "path": "general_demo/src/autoadapter2/integrations/so_arm101/translation.py",
+        "sha256": "c7812a8d4d29790169f3898be65f1c23384a5113b551659276830655805ab7f6"
+      },
+      {
+        "path": "general_demo/src/autoadapter2/integrations/so_arm101/feetech_protocol.py",
+        "sha256": "5df1ac0c371f1287444f12ca3feb6f64af89e56572bd1e794bf589b229bbe8a4"
+      }
+    ],
+    "readiness_runner": {
+      "path": "general_demo/src/autoadapter2/integrations/so_arm101/readiness.py",
+      "sha256": "01bc4d7e10824322a67373f30b5bbaf2db5385724a3bcade87efacc8d993369d"
+    },
+    "mujoco_version": "3.3.6",
+    "supported_instructions": ["ping", "read", "write", "sync_read", "sync_write", "action"],
+    "lifecycle": ["install", "step", "reset", "health", "close"],
+    "forbidden_behavior": ["IK", "trajectory", "planning", "recovery", "task_policy"]
+  },
+  "implementation_seed": "general_demo/probes/phase2/virtual_feetech.py",
+  "conformance_status": "NOT_RUN",
+  "unresolved": [
+    "run exact Linux real-SDK bidirectional conformance and six-check readiness"
+  ]
 }

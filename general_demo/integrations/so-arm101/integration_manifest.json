@@ -7,7 +7,7 @@
   "robot_configuration_id": "so-arm101-follower-stock-gripper",
   "morphology_ref": {
     "path": "general_demo/libraries/morphology/so-arm101/1.0.0/record.json",
-    "sha256": "f968fa6f246daa6960f98c3656f96738a5ef7c51d81d7e685f233da78969bcc0"
+    "sha256": "3750722074e0adf384a6afc8917945515e85b0c4fc488d1c088c1f4c1841936c"
   },
   "sdk_ref": {
     "path": "general_demo/libraries/sdks/lerobot-so101-follower/1.0.0/record.json",
@@ -15,7 +15,7 @@
   },
   "translation_ref": {
     "path": "general_demo/integrations/so-arm101/translation.json",
-    "sha256": "48cf55e04a6a63e08841ec732a40c57f35a01eb188ad0c62dda45bff2dc7f97e"
+    "sha256": "28c63b19ed248fb5886095e1ba1ba87d1c1f132952fc8c3ff673def087609a03"
   },
   "readiness_profile_ref": {
     "path": "general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json",
@@ -28,22 +28,20 @@
     "architecture": "amd64",
     "python": "3.12",
     "mujoco": "3.3.6",
-    "lock_sha256": null
+    "lock_sha256": "92a5d25d2539aeff246b34d50c660d31a5adcfb9cb0610bee9aa1e20df1d954e"
   },
   "compatibility_checks": [
     {"check_id": "robot_identity", "verdict": "PASS"},
     {"check_id": "joint_and_actuator_order", "verdict": "PASS"},
     {"check_id": "sdk_fields_and_units", "verdict": "PASS"},
     {"check_id": "motor_ids_and_registers", "verdict": "PASS"},
-    {"check_id": "mujoco_asset_closure", "verdict": "NOT_RUN"},
-    {"check_id": "gripper_endpoint_direction", "verdict": "NOT_RUN"},
+    {"check_id": "mujoco_asset_closure", "verdict": "PASS"},
+    {"check_id": "gripper_endpoint_direction", "verdict": "PASS"},
     {"check_id": "runtime_lock", "verdict": "NOT_RUN"},
     {"check_id": "real_sdk_mujoco_roundtrip", "verdict": "NOT_RUN"}
   ],
   "unresolved_gaps": [
-    "capture and hash complete SO-ARM101 MJCF asset closure",
-    "measure and freeze gripper endpoint aperture direction",
-    "install MuJoCo 3.3.6 in the pinned Linux image and freeze its runtime lock",
+    "build the Linux image and replace the DRAFT runtime lock with verified full dependency and OCI hashes",
     "run the six formal Readiness checks through real LeRobot and MuJoCo"
   ]
 }
