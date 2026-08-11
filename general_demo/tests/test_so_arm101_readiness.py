@@ -224,6 +224,48 @@ def test_linux_launcher_uses_local_docker_image_id() -> None:
     assert ".Descriptor.Digest" not in readme
 
 
+def test_runtime_inventory_skips_only_unpinned_local_egg_info(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Distribution:
+        def __init__(self, name: str) -> None:
+            self.metadata = {"Name": name}
+
+    local = Distribution("autoadapter2-general-demo")
+    required = Distribution("mujoco")
+    monkeypatch.setattr(
+        so_readiness.importlib.metadata,
+        "distributions",
+        lambda: [local, required],
+    )
+
+    def fingerprint(distribution: Distribution) -> dict[str, object]:
+        if distribution is local:
+            raise ReadinessError("no regular RECORD file")
+        return {
+            "version": "3.3.6",
+            "installed_files_sha256": "1" * 64,
+            "record_sha256": "2" * 64,
+            "file_count": 1,
+        }
+
+    monkeypatch.setattr(so_readiness, "_installed_distribution_fingerprint", fingerprint)
+    assert set(so_readiness._installed_distributions()) == {"mujoco"}
+
+    monkeypatch.setattr(
+        so_readiness.importlib.metadata,
+        "distributions",
+        lambda: [Distribution("mujoco")],
+    )
+    monkeypatch.setattr(
+        so_readiness,
+        "_installed_distribution_fingerprint",
+        lambda _distribution: (_ for _ in ()).throw(ReadinessError("no regular RECORD file")),
+    )
+    with pytest.raises(ReadinessError, match="no regular RECORD"):
+        so_readiness._installed_distributions()
+
+
 def _run_formal_preflight_with_manifest(
     tmp_path: Path, manifest: dict[str, object], *, reference_root: Path
 ) -> None:

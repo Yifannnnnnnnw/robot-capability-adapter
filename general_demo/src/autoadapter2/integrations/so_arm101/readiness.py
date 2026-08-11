@@ -182,10 +182,18 @@ def _installed_distributions() -> dict[str, dict[str, Any]]:
         if not name:
             continue
         normalised = _normalise_distribution_name(name)
-        result[normalised] = {
-            "name": name,
-            **_installed_distribution_fingerprint(distribution),
-        }
+        try:
+            fingerprint = _installed_distribution_fingerprint(distribution)
+        except ReadinessError:
+            # The project source is copied into the image and is therefore
+            # exposed by importlib.metadata as a local egg-info distribution.
+            # It has no wheel RECORD; its exact runtime files are bound below
+            # through source_hashes and the immutable image ID.  Pinned SDK and
+            # simulator distributions must still have a real RECORD.
+            if normalised in EXPECTED_PACKAGE_ARTIFACTS:
+                raise
+            continue
+        result[normalised] = {"name": name, **fingerprint}
     return dict(sorted(result.items()))
 
 
