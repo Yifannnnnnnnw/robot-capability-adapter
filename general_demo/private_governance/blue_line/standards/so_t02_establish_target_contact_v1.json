@@ -1,0 +1,18 @@
+{
+  "artifact_type": "project_validation_standard",
+  "schema_version": "1.0.0",
+  "standard_id": "so-t02-establish-target-contact-v1",
+  "version": "1.0.0",
+  "record_status": "APPROVED",
+  "intended_use": "capability_validation_b",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "effect_id": "establish_target_contact",
+  "criteria": [
+    {"criterion_id": "t02-target-contact", "measurement_id": "so-target-contact", "metric": "target_contact_truth", "comparator": "==", "threshold_value": 1, "dwell_s": 0.3, "timeout_s": 8.0, "aggregation": "ALL"},
+    {"criterion_id": "t02-non-target-contact", "measurement_id": "so-non-target-contact", "metric": "non_target_contact_count", "comparator": "==", "threshold_value": 0, "dwell_s": 0.0, "timeout_s": 8.0, "aggregation": "ALL"},
+    {"criterion_id": "t02-displacement", "measurement_id": "so-target-object-displacement", "metric": "target_object_displacement_m", "comparator": "<=", "threshold_value": 0.01, "dwell_s": 0.0, "timeout_s": 8.0, "aggregation": "ALL"}
+  ],
+  "required_guard_ids": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_forbidden_collision_or_safety_violation"],
+  "false_pass_requirements": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_forbidden_collision_or_safety_violation"],
+  "approval_lineage": {"review_status": "HUMAN_APPROVED", "reviewed_by": "sol-5.6-ultra", "approval_id": "pvstd-so-t02-contact-2026-08-12", "reviewed_at": "2026-08-12"}
+}

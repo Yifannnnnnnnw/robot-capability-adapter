@@ -1,0 +1,18 @@
+{
+  "artifact_type": "project_validation_standard",
+  "schema_version": "1.0.0",
+  "standard_id": "so-t08-grasp-and-lift-object-v1",
+  "version": "1.0.0",
+  "record_status": "APPROVED",
+  "intended_use": "capability_validation_b",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "effect_id": "grasp_and_lift_object",
+  "criteria": [
+    {"criterion_id": "t08-rise", "measurement_id": "so-cube-rise", "metric": "cube_height_increase_m", "comparator": ">=", "threshold_value": 0.02, "dwell_s": 1.0, "timeout_s": 10.0, "aggregation": "ALL"},
+    {"criterion_id": "t08-slip", "measurement_id": "so-cube-slip", "metric": "gripper_relative_cube_slip_m", "comparator": "<=", "threshold_value": 0.005, "dwell_s": 1.0, "timeout_s": 10.0, "aggregation": "ALL"},
+    {"criterion_id": "t08-held", "measurement_id": "so-cube-held", "metric": "cube_held_truth", "comparator": "==", "threshold_value": 1, "dwell_s": 1.0, "timeout_s": 10.0, "aggregation": "ALL"}
+  ],
+  "required_guard_ids": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_forbidden_collision_or_safety_violation"],
+  "false_pass_requirements": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_forbidden_collision_or_safety_violation"],
+  "approval_lineage": {"review_status": "HUMAN_APPROVED", "reviewed_by": "sol-5.6-ultra", "approval_id": "pvstd-so-t08-grasp-lift-2026-08-12", "reviewed_at": "2026-08-12"}
+}

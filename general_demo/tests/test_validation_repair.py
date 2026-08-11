@@ -155,6 +155,11 @@ class _Session:
     def __init__(self, observation: HarnessMeasurement):
         self.sdk = _Sdk()
         self._observation = observation
+        self.invoke_calls = []
+
+    def invoke(self, candidate, capability_id, inputs):
+        self.invoke_calls.append((candidate, capability_id, copy.deepcopy(dict(inputs))))
+        return candidate._invoke(capability_id, inputs, self.sdk)
 
     def collect(self) -> HarnessMeasurement:
         return self._observation
@@ -167,6 +172,7 @@ class _FixedHarness:
         self._snapshot = snapshot
         self._outcomes = list(outcomes)
         self.invocations = []
+        self.sessions = []
         self.config_hash = snapshot["harness_config_hash"]
 
     def open(self, invocation):
@@ -205,7 +211,9 @@ class _FixedHarness:
             sdk_route_evidence=route,
             video_evidence=video,
         )
-        return _Session(observation)
+        session = _Session(observation)
+        self.sessions.append(session)
+        return session
 
 
 class _ValidationTestVideoEncoder:
@@ -237,6 +245,7 @@ def _video_evidence(invocation, *, complete: bool) -> ClosedEvaluationVideo:
         bindings={
             "phase": "VALIDATION_B",
             "capability_id": invocation.capability_id,
+            "criterion_id": invocation.criterion_id,
             "case_id": invocation.case_id,
             "repetition": str(invocation.repetition),
             "run_snapshot_hash": invocation.run_snapshot_hash,
@@ -496,6 +505,18 @@ def test_validation_b_requires_handle_lineage_sdk_video_and_candidate_exception_
     with pytest.raises(AttributeError):
         a_result.candidate_handle._source = "replacement"  # type: ignore[attr-defined]
     assert tampered is not None
+
+
+def test_validation_b_routes_candidate_execution_through_typed_session() -> None:
+    design, design_seal, _stage2, blue, a_result = _a_result(_source("PASS"))
+    context = _context(design, design_seal, blue)
+    harness = _FixedHarness(context.run_snapshot, ["pass", "pass"])
+    result = ValidationBRunner(harness).run(
+        bind_candidate_to_suite(a_result, blue.suite_hash), context
+    )
+    assert result.status == "PASS"
+    assert len(harness.sessions) == 2
+    assert all(len(session.invoke_calls) == 1 for session in harness.sessions)
 
 
 def test_validation_b_rejects_self_resealed_rules_without_blue_line_ready_origin() -> None:

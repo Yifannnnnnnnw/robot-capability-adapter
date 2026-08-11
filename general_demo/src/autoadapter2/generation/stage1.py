@@ -128,6 +128,7 @@ def _check_capability(
     supplied_requirement_ids: set[str],
     action_affordances: set[str] | None,
     observation_affordances: set[str] | None,
+    effect_allowlist: set[str] | None,
     allowed_units: set[str] | None,
     allowed_frames: set[str] | None,
     issues: list[dict[str, str]],
@@ -159,6 +160,8 @@ def _check_capability(
     _check_semantic_fields(capability.get("outputs"), f"{location}.outputs", issues, allowed_units, allowed_frames)
     if not _id(capability.get("effect")):
         issues.append(_issues("SEMANTIC_EFFECT", f"{location}.effect must be a public semantic statement"))
+    elif effect_allowlist is not None and capability.get("effect") not in effect_allowlist:
+        issues.append(_issues("PUBLIC_EFFECT", f"{location}.effect is not in the robot public effect allowlist"))
     if capability.get("kind") not in {"action", "observation", "state_maintenance", "composition"}:
         issues.append(_issues("CAPABILITY_KIND", f"{location}.kind is invalid"))
     _string_array(capability.get("preconditions"), f"{location}.preconditions", issues)
@@ -210,6 +213,7 @@ def check_capability_design(design: Mapping[str, Any]) -> list[dict[str, str]]:
         projection = {}
     action_affordances = _projection_strings(projection, "action_affordances", issues, required=True)
     observation_affordances = _projection_strings(projection, "observation_affordances", issues, required=True)
+    effect_allowlist = _projection_allowlist(projection, "effect_allowlist", "effects", issues)
     allowed_units = _projection_allowlist(projection, "unit_allowlist", "units", issues)
     allowed_frames = _projection_allowlist(projection, "frame_allowlist", "frames", issues)
     profile = artifact.get("granularity_profile")
@@ -240,6 +244,7 @@ def check_capability_design(design: Mapping[str, Any]) -> list[dict[str, str]]:
             supplied,
             action_affordances,
             observation_affordances,
+            effect_allowlist,
             allowed_units,
             allowed_frames,
             issues,

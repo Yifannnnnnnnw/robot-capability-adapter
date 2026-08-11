@@ -1,0 +1,18 @@
+{
+  "artifact_type": "project_validation_standard",
+  "schema_version": "1.0.0",
+  "standard_id": "so-t20-actuate-target-button-v1",
+  "version": "1.0.0",
+  "record_status": "APPROVED",
+  "intended_use": "capability_validation_b",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "effect_id": "actuate_target_button",
+  "criteria": [
+    {"criterion_id": "t20-displacement", "measurement_id": "so-button-displacement", "metric": "specified_button_displacement_m", "comparator": ">=", "threshold_value": 0.003, "dwell_s": 0.0, "timeout_s": 8.0, "aggregation": "ALL"},
+    {"criterion_id": "t20-activation", "measurement_id": "so-button-activation", "metric": "specified_button_activation_truth", "comparator": "==", "threshold_value": 1, "dwell_s": 0.25, "timeout_s": 8.0, "aggregation": "ALL"},
+    {"criterion_id": "t20-other-button", "measurement_id": "so-other-button-activation", "metric": "other_button_activation_count", "comparator": "==", "threshold_value": 0, "dwell_s": 0.0, "timeout_s": 8.0, "aggregation": "ALL"}
+  ],
+  "required_guard_ids": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_forbidden_collision_or_safety_violation"],
+  "false_pass_requirements": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_forbidden_collision_or_safety_violation"],
+  "approval_lineage": {"review_status": "HUMAN_APPROVED", "reviewed_by": "sol-5.6-ultra", "approval_id": "pvstd-so-t20-button-2026-08-12", "reviewed_at": "2026-08-12"}
+}

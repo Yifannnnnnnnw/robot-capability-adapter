@@ -70,12 +70,17 @@ class HarnessInvocation:
     candidate_source_hash: str
     suite_hash: str
     execution_attempt: int
+    criterion_id: str = ""
 
 
 @runtime_checkable
 class TypedHarnessSession(Protocol):
-    @property
-    def sdk(self) -> object: ...
+    def invoke(
+        self,
+        candidate: ValidatedCandidateHandle,
+        capability_id: str,
+        inputs: Mapping[str, Any],
+    ) -> Mapping[str, Any]: ...
 
     def collect(self) -> HarnessMeasurement: ...
 
@@ -163,62 +168,197 @@ def _rule_entries(suite: Mapping[str, Any], spec: Mapping[str, Any], design_ids:
     spec_entries = spec.get("capability_specs")
     if not isinstance(spec_entries, list):
         raise ContractError("Blue Line spec is incomplete")
-    spec_by_capability = {
-        entry.get("capability_id"): entry for entry in spec_entries if isinstance(entry, Mapping) and _text(entry.get("capability_id"))
-    }
-    seen: set[str] = set()
-    checked: list[dict[str, Any]] = []
-    required = {
-        "capability_id", "measurement", "threshold", "dwell_s", "timeout_s", "aggregation",
-        "metric", "guard_ids", "cases", "lineage",
-    }
-    for entry in entries:
-        if not isinstance(entry, Mapping) or set(entry) != required or not _text(entry.get("capability_id")):
-            raise ContractError("Validation B suite has an invalid capability rule")
-        capability_id = entry["capability_id"]
-        if capability_id in seen or capability_id not in design_ids or capability_id not in spec_by_capability:
-            raise ContractError("Validation B suite has invalid capability coverage")
-        seen.add(capability_id)
-        spec_entry = spec_by_capability[capability_id]
-        for key in required - {"capability_id"}:
-            if entry.get(key) != spec_entry.get(key):
-                raise ContractError("Validation B suite rule does not match its sealed Blue Line spec")
-        measurement = entry.get("measurement")
-        threshold = entry.get("threshold")
-        guards = entry.get("guard_ids")
-        cases = entry.get("cases")
+
+    def criterion_rule(
+        group: Mapping[str, Any],
+        criterion: Mapping[str, Any],
+        fallback_id: str,
+    ) -> dict[str, Any]:
+        measurement = criterion.get("measurement")
+        if measurement is None and isinstance(group.get("measurement"), Mapping):
+            measurement = group["measurement"]
+        threshold = criterion.get("threshold")
+        if threshold is None and isinstance(group.get("threshold"), Mapping):
+            threshold = group["threshold"]
+        criterion_id = criterion.get("criterion_id", fallback_id)
+        guard_ids = criterion.get("guard_ids")
+        if not guard_ids:
+            guard_ids = group.get("guard_ids")
+        if not guard_ids:
+            guard_ids = [
+                item.get("guard_id")
+                for item in group.get("false_pass_analysis", [])
+                if isinstance(item, Mapping) and _text(item.get("guard_id"))
+            ]
+        return {
+            "capability_id": group.get("capability_id"),
+            "criterion_id": criterion_id,
+            "measurement": copy.deepcopy(dict(measurement)) if isinstance(measurement, Mapping) else measurement,
+            "measurement_id": criterion.get(
+                "measurement_id",
+                measurement.get("measurement_id") if isinstance(measurement, Mapping) else None,
+            ),
+            "metric": criterion.get("metric", group.get("metric")),
+            "threshold": copy.deepcopy(dict(threshold)) if isinstance(threshold, Mapping) else threshold,
+            "comparator": criterion.get(
+                "comparator",
+                threshold.get("comparator") if isinstance(threshold, Mapping) else None,
+            ),
+            "threshold_value": criterion.get(
+                "threshold_value",
+                threshold.get("value") if isinstance(threshold, Mapping) else None,
+            ),
+            "dwell_s": criterion.get("dwell_s", group.get("dwell_s")),
+            "timeout_s": criterion.get("timeout_s", group.get("timeout_s")),
+            "aggregation": criterion.get("aggregation", group.get("aggregation")),
+            "guard_ids": copy.deepcopy(guard_ids),
+            "cases": copy.deepcopy(group.get("cases")),
+            "lineage": copy.deepcopy(group.get("lineage")),
+            "false_pass_analysis": copy.deepcopy(group.get("false_pass_analysis", [])),
+        }
+
+    def spec_rules() -> list[dict[str, Any]]:
+        result: list[dict[str, Any]] = []
+        for entry in spec_entries:
+            if not isinstance(entry, Mapping) or not _text(entry.get("capability_id")):
+                raise ContractError("Blue Line spec has an invalid capability entry")
+            capability_id = entry["capability_id"]
+            if isinstance(entry.get("criteria"), list):
+                for criterion in entry["criteria"]:
+                    if not isinstance(criterion, Mapping):
+                        raise ContractError("Blue Line spec has an invalid criterion")
+                    result.append(criterion_rule(entry, criterion, f"{capability_id}:default"))
+            else:
+                result.append(criterion_rule(entry, entry, f"{capability_id}:default"))
+        return result
+
+    def checked_cases(value: Any) -> list[dict[str, Any]]:
+        if not isinstance(value, list) or not value:
+            raise ContractError("Validation B suite has no cases")
+        result: list[dict[str, Any]] = []
+        case_ids: set[str] = set()
+        for case in value:
+            if (
+                not isinstance(case, Mapping)
+                or set(case) != {"case_id", "initial_state", "inputs"}
+                or not _text(case.get("case_id"))
+                or not isinstance(case.get("initial_state"), Mapping)
+                or not isinstance(case.get("inputs"), Mapping)
+                or case["case_id"] in case_ids
+            ):
+                raise ContractError("Validation B suite has an invalid case")
+            case_ids.add(case["case_id"])
+            result.append(copy.deepcopy(dict(case)))
+        return result
+
+    def validate_rule(rule: Mapping[str, Any]) -> dict[str, Any]:
+        measurement = rule.get("measurement")
+        threshold = rule.get("threshold")
+        guards = rule.get("guard_ids")
         if (
-            not isinstance(measurement, Mapping)
+            not _text(rule.get("criterion_id"))
+            or not isinstance(measurement, Mapping)
             or set(measurement) != {"measurement_id", "entity", "unit", "frame"}
             or not all(_text(measurement.get(key)) for key in measurement)
-            or not _text(entry.get("metric"))
+            or rule.get("measurement_id") != measurement.get("measurement_id")
+            or not _text(rule.get("metric"))
             or not isinstance(threshold, Mapping)
             or set(threshold) != {"comparator", "value"}
             or threshold.get("comparator") not in {"<", "<=", ">", ">=", "=="}
             or not _finite(threshold.get("value"))
-            or not _finite(entry.get("dwell_s"))
-            or entry.get("dwell_s") < 0
-            or not _finite(entry.get("timeout_s"), positive=True)
-            or entry.get("aggregation") not in {"ALL", "ANY", "MEAN"}
+            or rule.get("comparator") != threshold.get("comparator")
+            or rule.get("threshold_value") != threshold.get("value")
+            or not _finite(rule.get("dwell_s"))
+            or rule.get("dwell_s") < 0
+            or not _finite(rule.get("timeout_s"), positive=True)
+            or rule.get("aggregation") not in {"ALL", "ANY", "MEAN"}
             or not isinstance(guards, list)
             or not guards
             or not all(_text(item) for item in guards)
             or len(set(guards)) != len(guards)
-            or not isinstance(cases, list)
-            or not cases
         ):
             raise ContractError("Validation B suite has an incomplete evaluation rule")
-        checked_cases: list[dict[str, Any]] = []
-        case_ids: set[str] = set()
-        for case in cases:
-            if not isinstance(case, Mapping) or set(case) != {"case_id", "initial_state", "inputs"} or not _text(case.get("case_id")) or not isinstance(case.get("initial_state"), Mapping) or not isinstance(case.get("inputs"), Mapping) or case["case_id"] in case_ids:
-                raise ContractError("Validation B suite has an invalid case")
-            case_ids.add(case["case_id"])
-            checked_cases.append(copy.deepcopy(dict(case)))
-        checked.append(copy.deepcopy(dict(entry)) | {"cases": checked_cases})
-    if seen != design_ids or set(spec_by_capability) != design_ids:
+        checked = copy.deepcopy(dict(rule))
+        checked["cases"] = checked_cases(rule.get("cases"))
+        return checked
+
+    spec_by_key: dict[tuple[str, str], dict[str, Any]] = {}
+    spec_capabilities: set[str] = set()
+    for rule in spec_rules():
+        key = (rule["capability_id"], rule["criterion_id"])
+        if key in spec_by_key:
+            raise ContractError("Blue Line spec has duplicate criterion coverage")
+        spec_by_key[key] = rule
+        spec_capabilities.add(rule["capability_id"])
+
+    suite_rules: list[dict[str, Any]] = []
+    suite_keys: set[tuple[str, str]] = set()
+    for entry in entries:
+        if not isinstance(entry, Mapping) or not _text(entry.get("capability_id")):
+            raise ContractError("Validation B suite has an invalid capability rule")
+        capability_id = entry["capability_id"]
+        entry_rules: list[dict[str, Any]] = []
+        if "criteria" in entry:
+            allowed = {"capability_id", "criteria", "cases", "lineage", "false_pass_analysis", "guard_ids"}
+            required = allowed - {"guard_ids"}
+            if (
+                not required.issubset(set(entry))
+                or set(entry) - allowed
+                or not isinstance(entry.get("criteria"), list)
+                or not entry["criteria"]
+            ):
+                raise ContractError("Validation B suite has an invalid criterion list")
+            for criterion in entry["criteria"]:
+                if not isinstance(criterion, Mapping):
+                    raise ContractError("Validation B suite has an invalid criterion")
+                rule = validate_rule(criterion_rule(entry, criterion, f"{capability_id}:default"))
+                rule["false_pass_analysis"] = copy.deepcopy(entry["false_pass_analysis"])
+                rule["lineage"] = copy.deepcopy(entry["lineage"])
+                entry_rules.append(rule)
+        else:
+            required = {
+                "capability_id", "criterion_id", "measurement", "threshold", "dwell_s", "timeout_s",
+                "aggregation", "metric", "guard_ids", "cases", "lineage",
+            }
+            legacy_required = required - {"criterion_id"}
+            if set(entry) not in (required, legacy_required):
+                raise ContractError("Validation B suite has an invalid capability rule")
+            rule = validate_rule(criterion_rule(entry, entry, f"{capability_id}:default"))
+            entry_rules.append(rule)
+        suite_rules.extend(entry_rules)
+        for rule in entry_rules:
+            key = (rule["capability_id"], rule["criterion_id"])
+            if key in suite_keys:
+                raise ContractError("Validation B suite has duplicate criterion coverage")
+            suite_keys.add(key)
+
+    if spec_capabilities != design_ids or {key[0] for key in suite_keys} != design_ids:
         raise ContractError("Validation B must cover every sealed Design capability exactly once")
-    return tuple(checked), repetitions
+    if suite_keys != set(spec_by_key):
+        raise ContractError("Validation B must cover every sealed criterion exactly once")
+    for rule in suite_rules:
+        key = (rule["capability_id"], rule["criterion_id"])
+        expected = spec_by_key[key]
+        for field in (
+            "measurement_id", "metric", "comparator", "threshold_value", "dwell_s", "timeout_s",
+            "aggregation", "guard_ids", "cases", "lineage", "false_pass_analysis",
+        ):
+            expected_value = expected.get(field)
+            actual_value = rule.get(field)
+            if field == "measurement_id" and expected_value is None:
+                expected_value = expected.get("measurement", {}).get("measurement_id") if isinstance(expected.get("measurement"), Mapping) else None
+            if field == "false_pass_analysis" and expected_value is None:
+                expected_value = []
+            if field == "cases":
+                expected_value = checked_cases(expected_value)
+            if actual_value != expected_value:
+                raise ContractError("Validation B suite rule does not match its sealed Blue Line spec")
+        expected_measurement = expected.get("measurement")
+        if isinstance(expected_measurement, Mapping):
+            for field in ("measurement_id", "entity", "unit", "frame"):
+                if field in expected_measurement and rule["measurement"].get(field) != expected_measurement[field]:
+                    raise ContractError("Validation B suite measurement does not match its sealed Blue Line spec")
+    return tuple(suite_rules), repetitions
 
 
 def freeze_validation_context(context: ValidationContext) -> FrozenValidationContext:
@@ -475,6 +615,7 @@ def _verify_video_evidence(
     expected_bindings = {
         "phase": "VALIDATION_B",
         "capability_id": invocation.capability_id,
+        "criterion_id": invocation.criterion_id,
         "case_id": invocation.case_id,
         "repetition": str(invocation.repetition),
         "run_snapshot_hash": invocation.run_snapshot_hash,
@@ -521,6 +662,7 @@ class ValidationBRunner:
                 for repetition in range(1, frozen.repetitions + 1):
                     invocation = HarnessInvocation(
                         capability_id=rule["capability_id"],
+                        criterion_id=rule["criterion_id"],
                         case_id=case["case_id"],
                         inputs=copy.deepcopy(case["inputs"]),
                         initial_state=copy.deepcopy(case["initial_state"]),
@@ -542,42 +684,57 @@ class ValidationBRunner:
                         if not isinstance(session, TypedHarnessSession):
                             raise ContractError("TypedHarness returned an invalid session")
                     except HarnessInfrastructureError as exc:
-                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
+                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
                         infrastructure_error = True
                         break
                     except Exception:
-                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "FAIL", ["HARNESS_PROTOCOL"]))
+                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "FAIL", ["HARNESS_PROTOCOL"]))
                         candidate_failure = True
                         continue
                     candidate_exception = False
+                    candidate_infrastructure_error: HarnessInfrastructureError | None = None
                     try:
-                        candidate._invoke(rule["capability_id"], case["inputs"], session.sdk)
+                        session.invoke(candidate, rule["capability_id"], case["inputs"])
+                    except HarnessInfrastructureError as exc:
+                        candidate_infrastructure_error = exc
                     except Exception:
                         candidate_exception = True
                     try:
                         observation = session.collect()
                     except HarnessInfrastructureError as exc:
-                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
+                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
                         infrastructure_error = True
                         break
                     except Exception:
-                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "FAIL", ["HARNESS_PROTOCOL"]))
+                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "FAIL", ["HARNESS_PROTOCOL"]))
                         candidate_failure = True
                         continue
+                    if candidate_infrastructure_error is not None:
+                        executions.append(_execution(
+                            rule["capability_id"],
+                            rule["criterion_id"],
+                            case["case_id"],
+                            repetition,
+                            "INFRASTRUCTURE_ERROR",
+                            ["HARNESS_INFRASTRUCTURE"],
+                            observation.video_evidence if isinstance(observation, HarnessMeasurement) else candidate_infrastructure_error.video_evidence,
+                        ))
+                        infrastructure_error = True
+                        break
                     if not isinstance(observation, HarnessMeasurement):
                         failures = ["HARNESS_PROTOCOL"]
                     else:
                         try:
                             _verify_video_evidence(observation.video_evidence, invocation)
                         except HarnessInfrastructureError as exc:
-                            executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
+                            executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
                             infrastructure_error = True
                             break
                         _passed, failures = _evaluate_measurement(observation, rule, frozen.context.run_snapshot)
                     if candidate_exception:
                         failures = [*failures, "CANDIDATE_EXCEPTION"]
                     verdict = "PASS" if not failures else "FAIL"
-                    executions.append(_execution(rule["capability_id"], case["case_id"], repetition, verdict, failures, observation.video_evidence if isinstance(observation, HarnessMeasurement) else None))
+                    executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, verdict, failures, observation.video_evidence if isinstance(observation, HarnessMeasurement) else None))
                     candidate_failure |= verdict == "FAIL"
                 if infrastructure_error:
                     break
@@ -644,6 +801,7 @@ class ValidationBRunner:
 
 def _execution(
     capability_id: str,
+    criterion_id: str,
     case_id: str,
     repetition: int,
     verdict: str,
@@ -652,6 +810,7 @@ def _execution(
 ) -> dict[str, Any]:
     return {
         "capability_id": capability_id,
+        "criterion_id": criterion_id,
         "case_id": case_id,
         "repetition": repetition,
         "verdict": verdict,

@@ -1,0 +1,18 @@
+{
+  "artifact_type": "project_validation_standard",
+  "schema_version": "1.0.0",
+  "standard_id": "go2-g02-sit-v1",
+  "version": "1.0.0",
+  "record_status": "APPROVED",
+  "intended_use": "capability_validation_b",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "effect_id": "sit",
+  "criteria": [
+    {"criterion_id": "g02-height-ratio", "measurement_id": "go2-body-height-ratio", "metric": "body_height_to_standing_height_ratio", "comparator": "<", "threshold_value": 0.8, "dwell_s": 1.0, "timeout_s": 8.0, "aggregation": "ALL"},
+    {"criterion_id": "g02-upright", "measurement_id": "go2-upright", "metric": "upright_score", "comparator": ">=", "threshold_value": 0.7, "dwell_s": 1.0, "timeout_s": 8.0, "aggregation": "ALL"},
+    {"criterion_id": "g02-planar-speed", "measurement_id": "go2-planar-speed", "metric": "planar_speed_m_s", "comparator": "<=", "threshold_value": 0.05, "dwell_s": 1.0, "timeout_s": 8.0, "aggregation": "ALL"}
+  ],
+  "required_guard_ids": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_body_or_head_ground_contact"],
+  "false_pass_requirements": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_body_or_head_ground_contact"],
+  "approval_lineage": {"review_status": "HUMAN_APPROVED", "reviewed_by": "sol-5.6-ultra", "approval_id": "pvstd-go2-g02-sit-2026-08-12", "reviewed_at": "2026-08-12"}
+}

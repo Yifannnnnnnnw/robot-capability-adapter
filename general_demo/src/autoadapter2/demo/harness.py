@@ -205,9 +205,13 @@ class _ValidationSession:
         self._recorder = recorder
         self._collected = False
 
-    @property
-    def sdk(self) -> object:
-        return self._owner._robot_session.sdk
+    def invoke(
+        self,
+        candidate: ValidatedCandidateHandle,
+        capability_id: str,
+        inputs: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        return self._owner._robot_session.invoke(candidate, capability_id, inputs)
 
     def collect(self) -> HarnessMeasurement:
         if self._collected:
@@ -256,6 +260,7 @@ class RecordingValidationHarness:
             raise ContractError("Validation Harness requires a typed invocation")
         identity = {
             "capability_id": invocation.capability_id,
+            "criterion_id": invocation.criterion_id,
             "case_id": invocation.case_id,
             "inputs": invocation.inputs,
             "initial_state": invocation.initial_state,
@@ -284,6 +289,7 @@ class RecordingValidationHarness:
                     execution_id,
                     {
                         "capability_id": invocation.capability_id,
+                        "criterion_id": invocation.criterion_id,
                         "case_id": invocation.case_id,
                         "repetition": invocation.repetition,
                         "run_snapshot_hash": invocation.run_snapshot_hash,
