@@ -43,7 +43,7 @@ from ..validation import (
 )
 
 
-_AUTHORITY_REVISION = "0.16.0"
+_AUTHORITY_REVISION = "0.16.1"
 _G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
 _SCALAR_TYPES = {"null", "boolean", "integer", "number", "string"}
 
