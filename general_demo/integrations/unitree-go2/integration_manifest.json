@@ -17,6 +17,10 @@
     "path": "general_demo/integrations/unitree-go2/translation.json",
     "sha256": "35343c7fc5913cc4b998b17ed571ee421b4bc23ba799c9cc17e059d4af6e25d7"
   },
+  "readiness_profile_ref": {
+    "path": "general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json",
+    "sha256": "b626cb1ef34a4c76f5df28499bbb516d1f86af62c45022dbd7a5af5a41e55b6f"
+  },
   "runtime": {
     "id": "unitree-go2-linux-amd64",
     "version": "1.0.0",
