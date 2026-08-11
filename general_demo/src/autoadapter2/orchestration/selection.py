@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..contracts.registry import ProfileRegistry, RecordRegistry, RegistryEntry
 from ..foundation.errors import ContractError, GateError
 from ..foundation.identifiers import ExactReference, _id
 from .state import GateReceipt
+
+if TYPE_CHECKING:
+    from .run_index import RunIndex
 
 
 @dataclass(frozen=True)
@@ -59,13 +62,20 @@ class RunSelection:
 
 
 class RunSelectionGate:
-    def __init__(self, rim_registry: RecordRegistry, profile_registry: ProfileRegistry):
+    def __init__(
+        self,
+        rim_registry: RecordRegistry,
+        profile_registry: ProfileRegistry,
+        run_index: "RunIndex",
+    ):
         self.rim_registry = rim_registry
         self.profile_registry = profile_registry
+        self.run_index = run_index
 
     def admit(self, selection: RunSelection | dict[str, Any]) -> tuple[RegistryEntry, RegistryEntry]:
         if not isinstance(selection, RunSelection):
             selection = RunSelection.from_mapping(selection)
+        selection_hash = self.run_index.selection_hash(selection)
         if selection.campaign != "first":
             raise GateError("only the first campaign is admitted")
         rim = self.rim_registry.resolve(selection.rim_ref, require_frozen=True)
@@ -88,12 +98,23 @@ class RunSelectionGate:
     def receipts(self, selection: RunSelection | dict[str, Any]) -> tuple[GateReceipt, GateReceipt]:
         if not isinstance(selection, RunSelection):
             selection = RunSelection.from_mapping(selection)
+        selection_hash = self.run_index.selection_hash(selection)
         rim, profile = self.admit(selection)
         evidence = {
             "rim_ref": rim.ref.to_dict(),
             "granularity_profile_ref": profile.ref.to_dict(),
         }
         return (
-            GateReceipt.issue(selection.run_id, "rim_resolved", {"rim_ref": rim.ref.to_dict()}),
-            GateReceipt.issue(selection.run_id, "ready_for_stage1", evidence),
+            GateReceipt._from_registered(
+                selection.run_id,
+                "rim_resolved",
+                selection_hash,
+                {"rim_ref": rim.ref.to_dict()},
+            ),
+            GateReceipt._from_registered(
+                selection.run_id,
+                "ready_for_stage1",
+                selection_hash,
+                evidence,
+            ),
         )

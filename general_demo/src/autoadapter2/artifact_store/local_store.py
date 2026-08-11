@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -43,10 +44,32 @@ class LocalArtifactStore:
                 raise ImmutableError("content-addressed object was changed")
             return StoredArtifact(digest, len(data), media_type)
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_suffix(".tmp")
-        temporary.write_bytes(data)
-        os.replace(temporary, path)
-        return StoredArtifact(digest, len(data), media_type)
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        for _ in range(8):
+            temporary = path.parent / f".{path.name}.{secrets.token_hex(16)}.tmp"
+            try:
+                descriptor = os.open(temporary, flags, 0o600)
+            except FileExistsError:
+                continue
+            descriptor_open = True
+            try:
+                with os.fdopen(descriptor, "wb") as stream:
+                    descriptor_open = False
+                    stream.write(data)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, path)
+                return StoredArtifact(digest, len(data), media_type)
+            finally:
+                if descriptor_open:
+                    os.close(descriptor)
+                try:
+                    temporary.unlink()
+                except FileNotFoundError:
+                    pass
+        raise FileExistsError("could not create a unique artifact temporary file")
 
     def put_json(self, value: Any) -> StoredArtifact:
         return self.put_bytes(canonical_bytes(value), "application/json")

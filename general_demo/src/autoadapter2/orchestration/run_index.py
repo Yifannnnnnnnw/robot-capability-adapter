@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..foundation.errors import ImmutableError
+from ..foundation.canonical import canonical_bytes
+from ..foundation.errors import ImmutableError, IntegrityError
+from ..foundation.hashing import content_hash
 from ..foundation.jsonl import AppendOnlyJSONL
 from .selection import RunSelection
 
@@ -14,9 +16,10 @@ class RunIndex:
     def __init__(self, path: str | Path):
         self.log = AppendOnlyJSONL(path)
 
-    def register(self, selection: RunSelection | dict[str, Any]) -> None:
+    def register(self, selection: RunSelection | dict[str, Any]) -> str:
         if not isinstance(selection, RunSelection):
             selection = RunSelection.from_mapping(selection)
+        selection_hash = content_hash(canonical_bytes(selection.to_dict()))
         for event in self.log.records():
             if event.get("type") == "run_registered" and event.get("run_id") == selection.run_id:
                 raise ImmutableError(f"run {selection.run_id!r} is already registered")
@@ -24,7 +27,23 @@ class RunIndex:
             "type": "run_registered",
             "run_id": selection.run_id,
             "selection": selection.to_dict(),
+            "selection_hash": selection_hash,
         })
+        return selection_hash
+
+    def selection_hash(self, selection: RunSelection) -> str:
+        expected = content_hash(canonical_bytes(selection.to_dict()))
+        matches = [
+            event for event in self.log.records()
+            if event.get("type") == "run_registered"
+            and event.get("run_id") == selection.run_id
+        ]
+        if not matches:
+            raise KeyError(selection.run_id)
+        event = matches[0]
+        if event.get("selection") != selection.to_dict() or event.get("selection_hash") != expected:
+            raise IntegrityError("registered selection does not match the requested selection")
+        return expected
 
     def append_event(self, run_id: str, event: dict[str, Any]) -> None:
         events = self.log.records()

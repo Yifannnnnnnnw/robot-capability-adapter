@@ -168,6 +168,22 @@ def test_content_addressed_store_rejects_symlink_escape(tmp_path):
         store.get_bytes(artifact.content_hash)
 
 
+def test_artifact_random_temp_does_not_follow_precreated_tmp_symlink(tmp_path):
+    store = LocalArtifactStore(tmp_path / "objects")
+    data = b"new-content"
+    digest = content_hash(data)
+    object_path = store._path(digest)
+    object_path.parent.mkdir(parents=True, exist_ok=True)
+    external = tmp_path / "external"
+    external.write_bytes(b"must-not-change")
+    predictable_tmp = object_path.with_suffix(".tmp")
+    predictable_tmp.symlink_to(external)
+    artifact = store.put_bytes(data)
+    assert store.get_bytes(artifact.content_hash) == data
+    assert external.read_bytes() == b"must-not-change"
+    assert predictable_tmp.is_symlink()
+
+
 def test_json_schema_validation_and_visibility_guard():
     schema = {
         "type": "object",
@@ -209,9 +225,16 @@ def test_first_campaign_accepts_only_frozen_g2_fixture(tmp_path):
          "fixture_only": True, "authority_status": "OPEN"},
         "FROZEN_FIXTURE",
     )
-    gate = RunSelectionGate(rim_registry, registry)
     selection = RunSelection("run-1", rim.ref, g2.ref)
+    run_index = RunIndex(tmp_path / "runs.jsonl")
+    selection_hash = run_index.register(selection)
+    gate = RunSelectionGate(rim_registry, registry, run_index)
     assert gate.admit(selection)[1].payload["granularity"] == "G2"
+    receipts = gate.receipts(selection)
+    assert receipts[0].selection_hash == selection_hash
+    machine = RunStateMachine(selection.run_id, selection_hash)
+    assert machine.transition(RunState.RIM_RESOLVED, receipts[0]) == RunState.RIM_RESOLVED
+    assert machine.transition(RunState.READY_FOR_STAGE1, receipts[1]) == RunState.READY_FOR_STAGE1
     for bad_profile in [
         g1.ref,
         g3.ref,
@@ -243,10 +266,11 @@ def test_first_campaign_accepts_only_frozen_g2_fixture(tmp_path):
         {"fixture_only": True, "authority_status": "OPEN"},
         "DRAFT",
     )
+    draft_index = RunIndex(tmp_path / "draft-runs.jsonl")
+    draft_selection = RunSelection("run-1", draft_rim.ref, g2.ref)
+    draft_index.register(draft_selection)
     with pytest.raises(Exception):
-        RunSelectionGate(draft_rim_registry, registry).admit(
-            RunSelection("run-1", draft_rim.ref, g2.ref)
-        )
+        RunSelectionGate(draft_rim_registry, registry, draft_index).admit(draft_selection)
     with pytest.raises(Exception):
         gate.admit({
             "run_id": "bad",
@@ -284,15 +308,25 @@ def test_run_index_detects_tamper_and_truncation(tmp_path):
 
 
 def test_gate_receipts_are_required_for_state_transitions(tmp_path):
-    gate = RunStateMachine(run_id="run-1")
+    selection_hash = content_hash(b"registered-selection")
+    gate = RunStateMachine(
+        run_id="run-1",
+        selection_hash=selection_hash,
+        initial=RunState.RIM_RESOLVED,
+    )
     with pytest.raises(Exception):
-        gate.transition(RunState.RIM_RESOLVED)
-    receipt = GateReceipt.issue("run-1", "rim_resolved", {"ref": "x"})
-    assert gate.transition(RunState.RIM_RESOLVED, receipt) == RunState.RIM_RESOLVED
+        gate.transition(RunState.READY_FOR_STAGE1)
+    forged = GateReceipt(
+        "run-1",
+        "ready_for_stage1",
+        content_hash(b"evidence"),
+        content_hash(b"receipt"),
+        selection_hash,
+    )
     with pytest.raises(Exception):
         gate.transition(
             RunState.READY_FOR_STAGE1,
-            GateReceipt.issue("other-run", "ready_for_stage1", {"ref": "x"}),
+            forged,
         )
 
 
@@ -314,14 +348,6 @@ def test_closed_run_index_rejects_new_events(tmp_path):
 
 
 def test_run_state_machine_rejects_illegal_transition():
-    machine = RunStateMachine()
-    assert machine.transition(
-        RunState.RIM_RESOLVED,
-        GateReceipt.issue("run", "rim_resolved", {"ref": "rim"}),
-    ) == RunState.RIM_RESOLVED
-    assert machine.transition(
-        RunState.READY_FOR_STAGE1,
-        GateReceipt.issue("run", "ready_for_stage1", {"ref": "profile"}),
-    ) == RunState.READY_FOR_STAGE1
+    machine = RunStateMachine("run", content_hash(b"selection"), RunState.READY_FOR_STAGE1)
     with pytest.raises(Exception):
         machine.transition(RunState.CREATED)
