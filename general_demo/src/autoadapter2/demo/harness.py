@@ -511,14 +511,35 @@ class DemoEvaluationHarness:
             )
         except Exception:
             consumer_failed = True
+        evidence: dict[str, Any] | None = None
+        evidence_error: Exception | None = None
+        try:
+            # Dwell and terminal samples are collected while the external
+            # recorder is still open.  A session may need the live renderer or
+            # simulation state to finish its trusted evidence acquisition.
+            evidence = copy.deepcopy(dict(self._robot_session.demo_evidence(task.task_id)))
+        except Exception as exc:
+            evidence_error = exc
+
+        closed: ClosedEvaluationVideo | None = None
+        close_error: Exception | None = None
         try:
             closed = _close_recording(self._robot_session, recorder)
-            if closed.is_infrastructure_error:
-                return DemoTrialResult(
-                    task.task_id, repetition, "INFRASTRUCTURE_ERROR", consumer_result,
-                    criterion_hash, None, closed,
-                )
-            evidence = copy.deepcopy(dict(self._robot_session.demo_evidence(task.task_id)))
+        except Exception as exc:
+            close_error = exc
+
+        if close_error is not None:
+            return DemoTrialResult(
+                task.task_id, repetition, "INFRASTRUCTURE_ERROR", consumer_result,
+                criterion_hash, None, None,
+            )
+        assert closed is not None
+        if closed.is_infrastructure_error or evidence_error is not None or evidence is None:
+            return DemoTrialResult(
+                task.task_id, repetition, "INFRASTRUCTURE_ERROR", consumer_result,
+                criterion_hash, None, closed,
+            )
+        try:
             evidence_hash = content_hash(canonical_bytes(evidence))
             passed = not consumer_failed and bool(
                 self._criterion_evaluator(
@@ -529,7 +550,7 @@ class DemoEvaluationHarness:
         except Exception:
             return DemoTrialResult(
                 task.task_id, repetition, "INFRASTRUCTURE_ERROR", consumer_result,
-                criterion_hash, None, None,
+                criterion_hash, None, closed,
             )
         return DemoTrialResult(
             task.task_id,
