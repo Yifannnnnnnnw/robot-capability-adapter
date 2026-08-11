@@ -31,11 +31,7 @@ class ModelApiConfig:
         api_key = os.environ.get("AUTOADAPTER_MODEL_API_KEY", "").strip()
         if not api_key:
             raise ContractError("AUTOADAPTER_MODEL_API_KEY is required")
-        return cls(
-            api_key=api_key,
-            base_url=os.environ.get("AUTOADAPTER_MODEL_API_BASE_URL", DEFAULT_BASE_URL).rstrip("/"),
-            model=os.environ.get("AUTOADAPTER_MODEL_ID", DEFAULT_MODEL),
-        )
+        return cls(api_key=api_key)
 
 
 class ModelApiClient:
@@ -93,6 +89,23 @@ class ModelApiClient:
         choices = payload.get("choices") if isinstance(payload, dict) else None
         if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
             raise ContractError("model API response lacks choices")
+        returned_models: list[str] = []
+        candidates: list[Any] = [payload.get("model")] if isinstance(payload, dict) else []
+        metadata = payload.get("metadata") if isinstance(payload, dict) else None
+        if isinstance(metadata, Mapping):
+            candidates.append(metadata.get("model"))
+        candidates.append(choices[0].get("model"))
+        for candidate in candidates:
+            if candidate is None:
+                continue
+            if not isinstance(candidate, str) or not candidate.strip():
+                raise ContractError("model API response contains an invalid model identity")
+            returned_models.append(candidate.strip())
+        if returned_models and any(model != self.config.model for model in returned_models):
+            raise ContractError("model API response model identity does not match the frozen model")
+        if len(set(returned_models)) > 1:
+            raise ContractError("model API response contains conflicting model identities")
+        returned_model = returned_models[0] if returned_models else None
         message = choices[0].get("message")
         content = message.get("content") if isinstance(message, dict) else None
         text = content.strip() if isinstance(content, str) else ""
@@ -114,6 +127,7 @@ class ModelApiClient:
             {
                 "stage": stage,
                 "model": self.config.model,
+                "returned_model": returned_model,
                 "usage": payload.get("usage"),
                 "metadata": payload.get("metadata"),
             }

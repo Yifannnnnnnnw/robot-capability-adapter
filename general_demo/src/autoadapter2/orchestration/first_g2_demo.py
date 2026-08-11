@@ -11,15 +11,17 @@ from __future__ import annotations
 
 import copy
 import importlib
+import os
 import re
 import secrets
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Protocol
 
-from ..demo import CriterionEvaluator, DemoTask, EvaluationRobotSession
+from ..demo import DemoTask, EvaluationRobotSession, evaluate_fixed_demo_criterion
 from ..evaluation import (
     ClosedEvaluationVideo,
     FrozenVideoProfile,
@@ -27,8 +29,11 @@ from ..evaluation import (
 )
 from ..evaluation.ffmpeg import FFmpegVideoEncoder
 from ..foundation.errors import ContractError
+from ..foundation.canonical import canonical_bytes
 from ..foundation.hashing import content_hash, sha256_bytes
-from ..generation import ModelApiClient, ModelApiConfig, Stage1Config
+from ..foundation.seals import create_seal, verify_seal
+from ..generation import ModelApiClient, ModelApiConfig, Stage1Config, Stage1Result, Stage1Runner
+from ..generation.model_api import DEFAULT_BASE_URL, DEFAULT_MODEL
 from ..implementation import Stage2Config
 from ..integration import ExperimentIntegrationGate, write_stable_json
 from ..integration.artifacts import load_json_artifact, load_run_snapshot, verify_file_reference
@@ -47,6 +52,26 @@ G2_PROFILE = {
     "version": "1.0.0",
     "granularity": "G2",
 }
+
+PRODUCTION_SESSION_ADAPTER_PATHS = MappingProxyType({
+    "so-arm101": "autoadapter2.integrations.so_arm101.session:create_evaluation_robot_session",
+    "unitree-go2": "autoadapter2.integrations.unitree_go2.session:create_evaluation_robot_session",
+})
+
+_MODEL_PROMPT_CONFIG_FIELDS = {
+    "artifact_type",
+    "schema_version",
+    "provider",
+    "base_url",
+    "endpoint_path",
+    "model",
+    "max_tokens",
+    "temperature",
+    "timeout_s",
+    "credential_env",
+    "roles",
+}
+_MODEL_PROMPT_ROLES = {"stage1", "blue_line", "stage2", "repair", "consumer"}
 
 ROBOT_CONFIGURATIONS = {
     "so-arm101": {
@@ -97,6 +122,107 @@ class ModelClient(Protocol):
 
 
 @dataclass(frozen=True)
+class ValidationAProfileTemplate:
+    """Frozen robot-level Validation A scaffold materialized after Stage 1."""
+
+    profile_id: str
+    facade_members: tuple[str, ...]
+    input_value_policy: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class _Stage1Replay:
+    """Replay the already sealed Stage 1 output into the generic runner."""
+
+    result: Stage1Result
+
+    def generate_json(
+        self, stage: str, _prompt: str, _inputs: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        if stage != "stage1" or self.result.status != "SEALED" or self.result.capability_design is None:
+            raise ContractError("the sealed Stage 1 replay is unavailable")
+        design = self.result.capability_design
+        return {
+            "capabilities": copy.deepcopy(design["capabilities"]),
+            "unsupported_requirement_ids": copy.deepcopy(design["unsupported_requirement_ids"]),
+            "blocking_requirement_ids": copy.deepcopy(design["blocking_requirement_ids"]),
+        }
+
+
+class _ModelCallCapture:
+    """Record content-addressed orchestration calls without retaining prompts."""
+
+    def __init__(self, client: ModelClient):
+        self._client = client
+        self.records: list[dict[str, Any]] = []
+
+    def generate_json(
+        self, stage: str, prompt: str, inputs: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        try:
+            output = self._client.generate_json(stage, prompt, inputs)
+        except Exception as exc:
+            self.records.append({
+                "operation": "generate_json",
+                "stage": stage,
+                "input_hash": content_hash(canonical_bytes(dict(inputs))),
+                "error": type(exc).__name__,
+            })
+            raise
+        if not isinstance(output, Mapping):
+            raise ContractError(f"model client returned a non-object for {stage}")
+        self.records.append({
+            "operation": "generate_json",
+            "stage": stage,
+            "input_hash": content_hash(canonical_bytes(dict(inputs))),
+            "output_hash": content_hash(canonical_bytes(dict(output))),
+        })
+        return output
+
+    def repair(self, request: Mapping[str, Any]) -> Mapping[str, Any]:
+        try:
+            output = self._client.repair(request)
+        except Exception as exc:
+            self.records.append({
+                "operation": "repair",
+                "stage": "repair",
+                "input_hash": content_hash(canonical_bytes(dict(request))),
+                "error": type(exc).__name__,
+            })
+            raise
+        if not isinstance(output, Mapping):
+            raise ContractError("model client returned a non-object for repair")
+        self.records.append({
+            "operation": "repair",
+            "stage": "repair",
+            "input_hash": content_hash(canonical_bytes(dict(request))),
+            "output_hash": content_hash(canonical_bytes(dict(output))),
+        })
+        return output
+
+    def react(self, request: Mapping[str, Any]) -> Mapping[str, Any]:
+        try:
+            output = self._client.react(request)
+        except Exception as exc:
+            self.records.append({
+                "operation": "react",
+                "stage": "react_consumer",
+                "input_hash": content_hash(canonical_bytes(dict(request))),
+                "error": type(exc).__name__,
+            })
+            raise
+        if not isinstance(output, Mapping):
+            raise ContractError("model client returned a non-object for react_consumer")
+        self.records.append({
+            "operation": "react",
+            "stage": "react_consumer",
+            "input_hash": content_hash(canonical_bytes(dict(request))),
+            "output_hash": content_hash(canonical_bytes(dict(output))),
+        })
+        return output
+
+
+@dataclass(frozen=True)
 class FirstG2DemoConfig:
     """Inputs for exactly one robot-scoped first-Demo run."""
 
@@ -105,14 +231,13 @@ class FirstG2DemoConfig:
     integration_manifest_path: str | Path
     run_snapshot_path: str | Path
     readiness_report_path: str | Path
-    robot_session_factory: RobotSessionFactory
+    robot_session_factory: RobotSessionFactory | None = None
     output_root: str | Path | None = None
     blue_line_input_paths: tuple[str | Path, ...] | None = None
-    validation_a_profile: ValidationAProfile | Mapping[str, Any] | None = None
+    validation_a_profile: ValidationAProfile | ValidationAProfileTemplate | Mapping[str, Any] | None = None
     validation_harness_config: Mapping[str, Any] | None = None
     video_profile: FrozenVideoProfile | None = None
     model_client: ModelClient | None = None
-    criterion_evaluator: CriterionEvaluator | None = None
     test_only_allow_fixture_session: bool = False
 
     def __post_init__(self) -> None:
@@ -120,14 +245,36 @@ class FirstG2DemoConfig:
             raise ContractError(
                 f"first G2 Demo robot must be one of {sorted(ROBOT_CONFIGURATIONS)}"
             )
-        if not callable(self.robot_session_factory):
-            raise ContractError("first G2 Demo requires an injected robot-session factory")
+        if self.test_only_allow_fixture_session:
+            if not callable(self.robot_session_factory):
+                raise ContractError(
+                    "TEST_FIXTURE_ONLY first G2 Demo requires an injected test factory"
+                )
+        elif self.robot_session_factory is not None:
+            raise ContractError(
+                "production first G2 Demo does not accept a caller robot-session factory"
+            )
+        if not self.test_only_allow_fixture_session and self.model_client is not None:
+            raise ContractError(
+                "production first G2 Demo does not accept a caller model client"
+            )
+        if not self.test_only_allow_fixture_session and any(
+            value is not None
+            for value in (
+                self.validation_a_profile,
+                self.validation_harness_config,
+                self.video_profile,
+            )
+        ):
+            raise ContractError(
+                "production first G2 Demo loads profiles from frozen snapshot references"
+            )
         if self.blue_line_input_paths is not None and len(self.blue_line_input_paths) != 3:
             raise ContractError(
                 "first G2 Demo requires exactly three Blue Line input files"
             )
         if self.validation_a_profile is not None and not isinstance(
-            self.validation_a_profile, (ValidationAProfile, Mapping)
+            self.validation_a_profile, (ValidationAProfile, ValidationAProfileTemplate, Mapping)
         ):
             raise ContractError("validation_a_profile must be a ValidationAProfile or object")
         if self.validation_harness_config is not None and not isinstance(
@@ -148,6 +295,8 @@ class FirstG2DemoResult:
     seal_path: Path
     validation_video_references_path: Path
     demo_video_references_path: Path
+    stage_artifacts_path: Path
+    model_call_log_path: Path
     summary_hash: str
     runner_result: DemoRunResult
 
@@ -294,17 +443,21 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
     )
     tasks = _tasks_from_canonical_library(task_package, run_id, input_values["task_set"])
     implementation_bundle = _find_implementation_bundle(input_values["library_views"])
-    validation_a_profile = _resolve_validation_a_profile(
+    validation_a_source = _resolve_validation_a_profile(
         config.validation_a_profile,
         input_values["library_views"],
-        input_values["model_prompt_config"],
+        config.robot,
+        test_only=config.test_only_allow_fixture_session,
     )
     validation_harness_config = _resolve_harness_config(
         config.validation_harness_config,
         input_values["library_views"],
+        test_only=config.test_only_allow_fixture_session,
     )
     video_profile = config.video_profile or _video_profile_from_inputs(
-        input_values["observation_profile"], validation_harness_config
+        input_values["observation_profile"],
+        validation_harness_config,
+        allow_default=config.test_only_allow_fixture_session,
     )
     public_state_schema = _public_state_schema(
         input_values["observation_profile"], tasks
@@ -321,24 +474,68 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         run_id,
         config.robot,
     )
-    session = config.robot_session_factory(config.robot, manifest_path, run_directory)
+    session = _create_robot_session(
+        config,
+        config.robot,
+        manifest_path,
+        run_directory,
+    )
     if not isinstance(session, EvaluationRobotSession):
         raise ContractError("robot-session factory did not return an EvaluationRobotSession")
     if (
-        session.evidence_scope == "TEST_FIXTURE_ONLY"
+        session.evidence_scope != "TEST_FIXTURE_ONLY"
+        and config.test_only_allow_fixture_session
+    ):
+        raise ContractError(
+            "test-only first G2 Demo requires the session to report TEST_FIXTURE_ONLY"
+        )
+    if (
+        session.evidence_scope != "SDK_GROUNDED_SIMULATION"
         and not config.test_only_allow_fixture_session
     ):
         raise ContractError(
-            "production first G2 Demo refuses TEST_FIXTURE_ONLY physical evidence"
+            "production first G2 Demo requires SDK_GROUNDED_SIMULATION physical evidence"
         )
+
+    model_capture = _ModelCallCapture(model_client)
+    stage1_preflight: Stage1Result | None = None
+    if isinstance(validation_a_source, ValidationAProfileTemplate):
+        stage1_preflight = Stage1Runner(model_capture, stage1_config).run(
+            run_id,
+            input_values["observation_profile"],
+            [task.stage1_view() for task in tasks],
+            input_values["g2_profile"],
+        )
+        if (
+            stage1_preflight.status != "SEALED"
+            or stage1_preflight.capability_design is None
+            or stage1_preflight.seal is None
+            or stage1_preflight.design_hash is None
+        ):
+            raise ContractError("the model did not produce a sealed Stage 1 Capability Design")
+        if not _design_covers_tasks(stage1_preflight.capability_design, tasks):
+            raise ContractError("the sealed Stage 1 Capability Design does not cover the fixed-five tasks")
+        validation_a_profile = materialize_validation_a_profile(
+            validation_a_source,
+            stage1_preflight.capability_design,
+            design_seal=stage1_preflight.seal,
+        )
+        stage1_model: ModelClient = _Stage1Replay(stage1_preflight)
+    else:
+        validation_a_profile = validation_a_source
+        stage1_model = model_capture
+    if not isinstance(validation_a_profile, ValidationAProfile):
+        raise ContractError("first G2 Demo did not resolve a Validation A profile")
+    validation_harness_config = copy.deepcopy(dict(validation_harness_config))
+    validation_harness_config["validation_a_profile_hash"] = validation_a_profile.profile_hash
 
     video_store = _VideoStore(run_directory, run_id, video_profile)
     models = DemoModelAdapters(
-        stage1=model_client,
-        blue_line=model_client,
-        stage2=model_client,
-        repair=model_client.repair,
-        consumer=model_client.react,
+        stage1=stage1_model,
+        blue_line=model_capture,
+        stage2=model_capture,
+        repair=model_capture.repair,
+        consumer=model_capture.react,
     )
     plan = DemoRunPlan(
         run_id=run_id,
@@ -370,8 +567,9 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         session,
         video_profile,
         video_store.encoder,
-        config.criterion_evaluator or evaluate_demo_criterion,
+        evaluate_fixed_demo_criterion,
     ).run(plan)
+    result = _bind_validation_a_profile(result, validation_a_profile.profile_hash)
 
     validation_references = video_store.persist("VALIDATION_B", result.validation_video_handles)
     demo_videos = tuple(
@@ -384,6 +582,8 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
     seal_path = run_directory / "summary.seal.json"
     validation_path = run_directory / "validation_video_references.json"
     demo_path = run_directory / "demo_video_references.json"
+    stage_artifacts_path = run_directory / "stage_artifacts.json"
+    model_call_log_path = run_directory / "model_call_log.json"
     summary_hash = write_stable_json(summary_path, result.summary)
     if summary_hash != result.summary_hash.removeprefix("sha256:"):
         raise ContractError("persisted first G2 Demo summary hash does not match the runner result")
@@ -396,6 +596,33 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         demo_path,
         _video_reference_artifact(run_id, config.robot, demo_references),
     )
+    stage_artifacts = {
+        "artifact_type": "first_g2_stage_artifacts",
+        "schema_version": "1.0.0",
+        "run_id": run_id,
+        "robot": config.robot,
+        "validation_a_profile_hash": validation_a_profile.profile_hash,
+        "summary": copy.deepcopy(result.summary),
+        "summary_hash": result.summary_hash,
+        "summary_seal": copy.deepcopy(result.summary_seal),
+        "stage1_preflight": _stage1_artifact(stage1_preflight),
+        "orchestration_call_log": copy.deepcopy(model_capture.records),
+    }
+    write_stable_json(stage_artifacts_path, stage_artifacts)
+    provider_calls = getattr(model_client, "calls", [])
+    if not isinstance(provider_calls, list):
+        provider_calls = []
+    write_stable_json(
+        model_call_log_path,
+        {
+            "artifact_type": "first_g2_model_call_log",
+            "schema_version": "1.0.0",
+            "run_id": run_id,
+            "robot": config.robot,
+            "calls": copy.deepcopy(provider_calls),
+            "orchestration_calls": copy.deepcopy(model_capture.records),
+        },
+    )
     return FirstG2DemoResult(
         robot=config.robot,
         run_id=run_id,
@@ -405,62 +632,90 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         seal_path=seal_path,
         validation_video_references_path=validation_path,
         demo_video_references_path=demo_path,
+        stage_artifacts_path=stage_artifacts_path,
+        model_call_log_path=model_call_log_path,
         summary_hash=result.summary_hash,
         runner_result=result,
     )
 
 
-def evaluate_demo_criterion(
-    criterion: Mapping[str, Any], evidence: Mapping[str, Any]
-) -> bool:
-    """Apply the fixed task criterion to trusted Harness evidence only.
+def _bind_validation_a_profile(
+    result: DemoRunResult, profile_hash: str
+) -> DemoRunResult:
+    """Bind the post-Stage-1 profile into the sealed run context."""
 
-    The Session Runner owns sampling and physical-state acquisition.  This
-    adapter only compares the Harness-provided aggregate measurements; it never
-    reads Consumer returns or capability traces.
-    """
-
-    if not isinstance(criterion, Mapping) or not isinstance(evidence, Mapping):
-        return False
-    guard_ids = criterion.get("guard_ids", [])
-    if not isinstance(guard_ids, list):
-        return False
-    guards = evidence.get("guard_results", evidence.get("guards", {}))
-    if not isinstance(guards, Mapping) or any(guards.get(item) is not True for item in guard_ids):
-        return False
-    checks: list[Mapping[str, Any]] = []
-    for field in ("checks", "motion_checks", "terminal_checks"):
-        values = criterion.get(field, [])
-        if not isinstance(values, list) or any(not isinstance(item, Mapping) for item in values):
-            return False
-        checks.extend(values)
-    for check in checks:
-        metric = check.get("metric")
-        if not isinstance(metric, str) or not metric:
-            return False
-        actual = evidence.get(metric)
-        if actual is None and isinstance(evidence.get("measurements"), Mapping):
-            actual = evidence["measurements"].get(metric)
-        if not _compare(actual, check.get("comparator"), check.get("value")):
-            return False
-    return bool(checks)
+    summary = copy.deepcopy(result.summary)
+    summary["validation_a_profile_hash"] = profile_hash
+    gate_bindings = summary.get("gate_bindings")
+    if isinstance(gate_bindings, Mapping):
+        gate_bindings = dict(gate_bindings)
+        gate_bindings["validation_a_profile_hash"] = profile_hash
+        summary["gate_bindings"] = gate_bindings
+    summary_hash = content_hash(canonical_bytes(summary))
+    old_seal = result.summary_seal
+    parents = old_seal.get("parents", []) if isinstance(old_seal, Mapping) else []
+    if not isinstance(parents, list):
+        raise ContractError("General Demo returned an invalid summary seal parent list")
+    summary_seal = create_seal(
+        "general_demo_run_summary",
+        summary_hash,
+        [*parents, profile_hash],
+    )
+    return replace(
+        result,
+        summary=summary,
+        summary_hash=summary_hash,
+        summary_seal=summary_seal,
+    )
 
 
-def load_factory(specification: str) -> RobotSessionFactory:
-    """Load a production Session Runner factory from ``module:attribute``."""
-
-    if not isinstance(specification, str) or ":" not in specification:
-        raise ContractError("robot-session factory must use module:attribute syntax")
+def _load_production_session_factory(robot: str) -> RobotSessionFactory:
+    specification = PRODUCTION_SESSION_ADAPTER_PATHS[robot]
     module_name, attribute_name = specification.split(":", 1)
-    if not module_name or not attribute_name:
-        raise ContractError("robot-session factory must use module:attribute syntax")
     try:
         factory = getattr(importlib.import_module(module_name), attribute_name)
     except (ImportError, AttributeError) as exc:
-        raise ContractError("could not import the robot-session factory") from exc
+        raise ContractError(
+            f"Framework-owned {robot} session adapter is unavailable at {specification}"
+        ) from exc
     if not callable(factory):
-        raise ContractError("robot-session factory attribute is not callable")
+        raise ContractError(
+            f"Framework-owned {robot} session adapter is not callable: {specification}"
+        )
     return factory
+
+
+def _create_robot_session(
+    config: FirstG2DemoConfig,
+    robot: str,
+    manifest_path: Path,
+    run_directory: Path,
+) -> EvaluationRobotSession:
+    factory = (
+        config.robot_session_factory
+        if config.test_only_allow_fixture_session
+        else _load_production_session_factory(robot)
+    )
+    if not callable(factory):
+        raise ContractError("first G2 Demo session factory is unavailable")
+    try:
+        session = factory(robot, manifest_path, run_directory)
+    except ContractError:
+        raise
+    except Exception as exc:
+        source = "test-only session factory" if config.test_only_allow_fixture_session else (
+            f"Framework-owned {robot} session adapter"
+        )
+        raise ContractError(f"{source} could not create the selected session") from exc
+    if not isinstance(session, EvaluationRobotSession):
+        raise ContractError("robot-session factory did not return an EvaluationRobotSession")
+    expected = ROBOT_CONFIGURATIONS[robot]
+    if (
+        session.robot_model_id != expected["robot_model_id"]
+        or session.robot_configuration_id != expected["robot_configuration_id"]
+    ):
+        raise ContractError("robot session does not match the selected Integration Manifest")
+    return session
 
 
 def _resolve_run_inputs(
@@ -551,31 +806,206 @@ def _find_implementation_bundle(library_views: Sequence[Mapping[str, Any]]) -> d
     return matches[0]
 
 
+def _design_covers_tasks(
+    design: Mapping[str, Any], tasks: Sequence[DemoTask]
+) -> bool:
+    capabilities = design.get("capabilities")
+    if not isinstance(capabilities, list):
+        return False
+    covered: set[str] = set()
+    for capability in capabilities:
+        if not isinstance(capability, Mapping):
+            return False
+        requirement_ids = capability.get("requirement_ids")
+        if not isinstance(requirement_ids, list) or any(
+            not isinstance(item, str) for item in requirement_ids
+        ):
+            return False
+        covered.update(requirement_ids)
+    return (
+        covered == {task.requirement_id for task in tasks}
+        and design.get("unsupported_requirement_ids") == []
+        and design.get("blocking_requirement_ids") == []
+    )
+
+
+def _stage1_artifact(result: Stage1Result | None) -> dict[str, Any] | None:
+    if result is None:
+        return None
+    return {
+        "status": result.status,
+        "capability_design": copy.deepcopy(result.capability_design),
+        "design_hash": result.design_hash,
+        "seal": copy.deepcopy(result.seal),
+        "call_log": copy.deepcopy(list(result.call_log)),
+        "diagnostics": copy.deepcopy(list(result.diagnostics)),
+    }
+
+
+def _template_from_mapping(
+    raw: Mapping[str, Any], robot: str | None
+) -> ValidationAProfileTemplate:
+    profile = raw.get("template") if isinstance(raw.get("template"), Mapping) else raw
+    if not isinstance(profile, Mapping):
+        raise ContractError("Validation A template must be an object")
+    if profile.get("artifact_type") != "validation_a_template" or profile.get("schema_version") != "1.0.0":
+        raise ContractError("Validation A template identity is invalid")
+    if robot is not None:
+        for key, expected in (
+            ("robot_model_id", ROBOT_CONFIGURATIONS[robot]["robot_model_id"]),
+            ("robot_configuration_id", ROBOT_CONFIGURATIONS[robot]["robot_configuration_id"]),
+        ):
+            if key in profile and profile[key] != expected:
+                raise ContractError("Validation A template does not match the selected robot")
+    profile_id = profile.get("profile_id")
+    facade = profile.get("facade")
+    probe = profile.get("probe")
+    if not isinstance(profile_id, str) or not profile_id.strip():
+        raise ContractError("Validation A template profile_id must be non-empty")
+    if not isinstance(facade, Mapping) or not isinstance(probe, Mapping):
+        raise ContractError("Validation A template facade and probe are required")
+    members = facade.get("members")
+    policy = probe.get("input_value_policy")
+    if (
+        not isinstance(members, list)
+        or not members
+        or any(not isinstance(item, str) or not item.strip() for item in members)
+        or len(set(members)) != len(members)
+    ):
+        raise ContractError("Validation A template facade members are invalid")
+    if not isinstance(policy, Mapping) or set(policy) != {
+        "number", "integer", "boolean", "string", "object", "array"
+    }:
+        raise ContractError("Validation A template input value policy is incomplete")
+    if probe.get("metadata_policy") != "copy sealed design field metadata exactly":
+        raise ContractError("Validation A template metadata policy is invalid")
+    return ValidationAProfileTemplate(
+        profile_id=profile_id,
+        facade_members=tuple(members),
+        input_value_policy=copy.deepcopy(dict(policy)),
+    )
+
+
+def _probe_value(field: Mapping[str, Any], policy: Mapping[str, Any]) -> Any:
+    field_type = field.get("type")
+    shape = field.get("shape")
+    if field_type == "number" and isinstance(shape, str) and shape.startswith("vector:"):
+        length_text = shape.removeprefix("vector:")
+        if not length_text.isdigit() or int(length_text) <= 0:
+            raise ContractError("sealed Stage 1 vector shape is invalid")
+        return [copy.deepcopy(policy["number"])] * int(length_text)
+    if field_type in {"number", "integer", "boolean", "string", "object", "array"} and shape == "scalar":
+        return copy.deepcopy(policy[field_type])
+    if field_type == "object" and shape == "mapping":
+        return copy.deepcopy(policy["object"])
+    if field_type == "array" and shape == "vector":
+        return copy.deepcopy(policy["array"])
+    raise ContractError(
+        f"sealed Stage 1 field cannot be materialized by Validation A: {field}"
+    )
+
+
+def materialize_validation_a_profile(
+    template: ValidationAProfileTemplate | Mapping[str, Any],
+    capability_design: Mapping[str, Any],
+    *,
+    design_seal: Mapping[str, Any] | None = None,
+) -> ValidationAProfile:
+    """Materialize exact capability-keyed probes from a sealed Stage 1 design."""
+
+    resolved_template = (
+        template
+        if isinstance(template, ValidationAProfileTemplate)
+        else _template_from_mapping(template, None)
+    )
+    if not isinstance(capability_design, Mapping):
+        raise ContractError("sealed Capability Design must be an object")
+    if design_seal is not None:
+        design_hash = content_hash(canonical_bytes(dict(capability_design)))
+        if (
+            not isinstance(design_seal, Mapping)
+            or not verify_seal(dict(design_seal))
+            or design_seal.get("artifact_type") != "capability_design"
+            or design_seal.get("artifact_hash") != design_hash
+        ):
+            raise ContractError("Validation A materialization requires the exact sealed Capability Design")
+    capabilities = capability_design.get("capabilities")
+    if not isinstance(capabilities, list) or not capabilities:
+        raise ContractError("sealed Capability Design must contain capabilities")
+    members: dict[str, tuple[str, ...]] = {}
+    probes: dict[str, dict[str, Any]] = {}
+    for capability in capabilities:
+        if not isinstance(capability, Mapping):
+            raise ContractError("sealed Capability Design has an invalid capability")
+        capability_id = capability.get("capability_id")
+        fields = capability.get("inputs")
+        if not isinstance(capability_id, str) or not capability_id.strip():
+            raise ContractError("sealed Capability Design has an invalid capability identity")
+        if capability_id in members:
+            raise ContractError(f"sealed Capability Design duplicates capability {capability_id}")
+        if not isinstance(fields, list):
+            raise ContractError(f"sealed capability {capability_id} has no input fields")
+        inputs: dict[str, Any] = {}
+        for field in fields:
+            if not isinstance(field, Mapping):
+                raise ContractError(f"sealed capability {capability_id} has an invalid input descriptor")
+            name = field.get("name")
+            if not isinstance(name, str) or not name.strip() or name in inputs:
+                raise ContractError(f"sealed capability {capability_id} has duplicate or invalid input names")
+            if not all(key in field for key in ("type", "shape", "unit", "frame")):
+                raise ContractError(f"sealed capability {capability_id} input descriptor is incomplete")
+            inputs[name] = {
+                "value": _probe_value(field, resolved_template.input_value_policy),
+                "type": field["type"],
+                "shape": field["shape"],
+                "unit": field["unit"],
+                "frame": field["frame"],
+            }
+        members[capability_id] = resolved_template.facade_members
+        probes[capability_id] = {"inputs": inputs}
+    return ValidationAProfile(
+        sdk_facade_members=members,
+        fixture_probes=probes,
+        profile_id=resolved_template.profile_id,
+    )
+
+
 def _resolve_validation_a_profile(
     supplied: ValidationAProfile | Mapping[str, Any] | None,
     library_views: Sequence[Mapping[str, Any]],
-    model_prompt_config: Mapping[str, Any],
-) -> ValidationAProfile:
+    robot: str,
+    *,
+    test_only: bool,
+) -> ValidationAProfile | ValidationAProfileTemplate:
     raw: Any = supplied
     if raw is None:
-        matches = [
-            value
-            for value in library_views
-            if value.get("artifact_type") in {"validation_a_profile", "validation_a_config"}
-            or {"sdk_facade_members", "fixture_probes"}.issubset(value)
-        ]
-        nested = model_prompt_config.get("validation_a_profile")
-        if nested is not None:
-            matches.append(nested)
+        matches = [value for value in library_views if value.get("artifact_type") == "validation_a_template"]
+        if test_only:
+            matches.extend(
+                value
+                for value in library_views
+                if value.get("artifact_type") in {"validation_a_profile", "validation_a_config"}
+                or {"sdk_facade_members", "fixture_probes"}.issubset(value)
+            )
         if len(matches) != 1:
             raise ContractError(
-                "the first G2 Demo requires one frozen Validation A profile input"
+                "the first G2 Demo requires one frozen Validation A template from snapshot/library refs"
             )
         raw = matches[0]
+    if isinstance(raw, Mapping) and raw.get("artifact_type") == "validation_a_template":
+        return _template_from_mapping(raw, robot)
+    if isinstance(raw, ValidationAProfileTemplate):
+        if not test_only:
+            raise ContractError("production Validation A accepts only a snapshot template")
+        return raw
     if isinstance(raw, ValidationAProfile):
+        if not test_only:
+            raise ContractError("production Validation A accepts only a snapshot template")
         return raw
     if not isinstance(raw, Mapping):
         raise ContractError("Validation A profile input must be an object")
+    if not test_only:
+        raise ContractError("production Validation A accepts only a snapshot template")
     profile = raw.get("profile") if isinstance(raw.get("profile"), Mapping) else raw
     members = profile.get("sdk_facade_members")
     probes = profile.get("fixture_probes")
@@ -596,13 +1026,17 @@ def _resolve_validation_a_profile(
 def _resolve_harness_config(
     supplied: Mapping[str, Any] | None,
     library_views: Sequence[Mapping[str, Any]],
+    *,
+    test_only: bool,
 ) -> dict[str, Any]:
     if supplied is not None:
+        if not test_only:
+            raise ContractError("production Validation Harness accepts only snapshot/library refs")
         return copy.deepcopy(dict(supplied))
     matches = [
         value
         for value in library_views
-        if value.get("artifact_type") in {"validation_harness_config", "harness_config"}
+        if value.get("artifact_type") == "validation_harness_config"
     ]
     if len(matches) != 1:
         raise ContractError(
@@ -616,10 +1050,14 @@ def _resolve_harness_config(
 def _video_profile_from_inputs(
     observation_profile: Mapping[str, Any],
     harness_config: Mapping[str, Any],
+    *,
+    allow_default: bool,
 ) -> FrozenVideoProfile:
     raw = harness_config.get("video_profile") or observation_profile.get("video_profile")
     if raw is None:
-        return _DEFAULT_VIDEO_PROFILE
+        if allow_default:
+            return _DEFAULT_VIDEO_PROFILE
+        raise ContractError("production first G2 Demo requires a frozen video profile reference")
     if not isinstance(raw, Mapping):
         raise ContractError("video_profile input must be an object")
     resolution = raw.get("resolution")
@@ -727,45 +1165,43 @@ def _budgets(
 
 
 def _model_client(model_prompt_config: Mapping[str, Any]) -> ModelApiClient:
-    if "api_key" in model_prompt_config or "key" in model_prompt_config:
-        raise ContractError("model prompt/config input must not contain an API key")
-    environment = ModelApiConfig.from_environment()
-    values = model_prompt_config.get("model")
-    model_values = values if isinstance(values, Mapping) else model_prompt_config
-
-    def value(name: str, fallback: Any) -> Any:
-        return model_values.get(name, fallback)
-
-    try:
-        model_config = ModelApiConfig(
-            api_key=environment.api_key,
-            base_url=str(value("base_url", environment.base_url)).rstrip("/"),
-            model=str(value("model_id", value("model", environment.model))),
-            max_tokens=int(value("max_tokens", environment.max_tokens)),
-            temperature=float(value("temperature", environment.temperature)),
-            timeout_s=float(value("timeout_s", environment.timeout_s)),
+    if not isinstance(model_prompt_config, Mapping) or not model_prompt_config:
+        raise ContractError("model_prompt_config must be a non-empty closed object")
+    if set(model_prompt_config) != _MODEL_PROMPT_CONFIG_FIELDS:
+        raise ContractError("model_prompt_config must be a closed frozen object")
+    if (
+        model_prompt_config.get("artifact_type") != "model_prompt_config"
+        or model_prompt_config.get("schema_version") != "1.0.0"
+        or model_prompt_config.get("provider") != "anthropic-compatible"
+        or model_prompt_config.get("base_url") != DEFAULT_BASE_URL
+        or model_prompt_config.get("endpoint_path") != "/v1/chat/completions"
+        or model_prompt_config.get("model") != DEFAULT_MODEL
+        or model_prompt_config.get("max_tokens") != 4096
+        or model_prompt_config.get("temperature") != 0
+        or model_prompt_config.get("timeout_s") != 125
+        or model_prompt_config.get("credential_env") != "AUTOADAPTER_MODEL_API_KEY"
+    ):
+        raise ContractError("model_prompt_config does not match the frozen first G2 model")
+    roles = model_prompt_config.get("roles")
+    if (
+        not isinstance(roles, Mapping)
+        or set(roles) != _MODEL_PROMPT_ROLES
+        or any(not isinstance(value, str) or not value.strip() for value in roles.values())
+    ):
+        raise ContractError("model_prompt_config roles are not closed and non-empty")
+    api_key = os.environ.get("AUTOADAPTER_MODEL_API_KEY", "").strip()
+    if not api_key:
+        raise ContractError("AUTOADAPTER_MODEL_API_KEY is required")
+    return ModelApiClient(
+        ModelApiConfig(
+            api_key=api_key,
+            base_url=model_prompt_config["base_url"].rstrip("/"),
+            model=model_prompt_config["model"],
+            max_tokens=model_prompt_config["max_tokens"],
+            temperature=model_prompt_config["temperature"],
+            timeout_s=model_prompt_config["timeout_s"],
         )
-    except (TypeError, ValueError) as exc:
-        raise ContractError("model prompt/config input contains invalid API settings") from exc
-    return ModelApiClient(model_config)
-
-
-def _compare(actual: Any, comparator: Any, expected: Any) -> bool:
-    if comparator == "==":
-        return actual == expected
-    if isinstance(actual, bool) or isinstance(expected, bool):
-        return False
-    if not isinstance(actual, (int, float)) or not isinstance(expected, (int, float)):
-        return False
-    if comparator == "<":
-        return actual < expected
-    if comparator == "<=":
-        return actual <= expected
-    if comparator == ">":
-        return actual > expected
-    if comparator == ">=":
-        return actual >= expected
-    return False
+    )
 
 
 def _video_reference_artifact(
@@ -834,9 +1270,10 @@ __all__ = [
     "FirstG2DemoConfig",
     "FirstG2DemoResult",
     "G2_PROFILE",
+    "PRODUCTION_SESSION_ADAPTER_PATHS",
     "ROBOT_CONFIGURATIONS",
     "RobotSessionFactory",
-    "evaluate_demo_criterion",
-    "load_factory",
+    "ValidationAProfileTemplate",
+    "materialize_validation_a_profile",
     "run_first_g2_demo",
 ]
