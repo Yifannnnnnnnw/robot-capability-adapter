@@ -7,7 +7,7 @@ from typing import Any
 from .errors import IdentifierError
 from .hashing import is_content_hash
 
-ID_PATTERN = re.compile(r"^[a-z][a-z0-9._/-]*$")
+ID_PATTERN = re.compile(r"^[a-z][a-z0-9._-]*$")
 VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 REF_PATTERN = re.compile(
     r"^(?P<kind>[a-z][a-z0-9._/-]*):(?P<id>[a-z][a-z0-9._/-]*)@"
@@ -16,7 +16,13 @@ REF_PATTERN = re.compile(
 
 
 def _id(value: str, label: str = "identifier") -> str:
-    if not isinstance(value, str) or not ID_PATTERN.fullmatch(value):
+    if (
+        not isinstance(value, str)
+        or value in {".", ".."}
+        or "/" in value
+        or "\\" in value
+        or not ID_PATTERN.fullmatch(value)
+    ):
         raise IdentifierError(f"invalid {label}: {value!r}")
     return value
 

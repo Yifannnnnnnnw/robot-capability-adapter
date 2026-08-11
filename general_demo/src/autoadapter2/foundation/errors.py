@@ -36,3 +36,7 @@ class ArtifactNotFoundError(AutoAdapterError, FileNotFoundError):
 
 class StateTransitionError(ContractError):
     pass
+
+
+class GateError(ContractError):
+    pass

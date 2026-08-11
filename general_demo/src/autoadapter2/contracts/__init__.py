@@ -1,5 +1,5 @@
 from .registry import ProfileRegistry, RecordRegistry, SchemaRegistry
-from .schema_validator import validate_json
+from .fixture_schema_subset import validate_fixture_schema
 from .visibility import VisibilityGuard
 
 __all__ = [
@@ -7,5 +7,5 @@ __all__ = [
     "RecordRegistry",
     "SchemaRegistry",
     "VisibilityGuard",
-    "validate_json",
+    "validate_fixture_schema",
 ]

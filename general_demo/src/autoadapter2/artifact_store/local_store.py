@@ -7,7 +7,7 @@ from typing import Any
 
 from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ArtifactNotFoundError, ImmutableError
-from ..foundation.hashing import content_hash, verify_content_hash
+from ..foundation.hashing import content_hash, is_content_hash, verify_content_hash
 
 
 @dataclass(frozen=True)
@@ -23,14 +23,21 @@ class LocalArtifactStore:
         self.objects = self.root / "sha256"
 
     def _path(self, digest: str) -> Path:
-        if not digest.startswith("sha256:"):
+        if not is_content_hash(digest):
             raise ValueError("artifact reference must be sha256:<hex>")
         value = digest.removeprefix("sha256:")
-        return self.objects / value[:2] / value
+        path = self.objects / value[:2] / value
+        try:
+            path.resolve().relative_to(self.objects.resolve())
+        except ValueError as exc:
+            raise ValueError("artifact path escapes its root") from exc
+        return path
 
     def put_bytes(self, data: bytes, media_type: str = "application/octet-stream") -> StoredArtifact:
         digest = content_hash(data)
         path = self._path(digest)
+        if path.is_symlink():
+            raise ImmutableError("content-addressed object cannot be a symlink")
         if path.exists():
             if path.read_bytes() != data:
                 raise ImmutableError("content-addressed object was changed")
@@ -48,6 +55,8 @@ class LocalArtifactStore:
         path = self._path(digest)
         if not path.exists():
             raise ArtifactNotFoundError(digest)
+        if path.is_symlink():
+            raise ImmutableError("content-addressed object cannot be a symlink")
         data = path.read_bytes()
         verify_content_hash(data, digest)
         return data
