@@ -300,12 +300,40 @@ def test_run_selection_direct_constructor_rejects_unsafe_values(tmp_path):
     )
     with pytest.raises(Exception):
         RunSelection("../../bad", rim.ref, profile.ref, "first")
-    with pytest.raises(Exception):
-        RunSelection("run-1", rim.ref, profile.ref, "arbitrary")
+    future_selection = RunSelection("run-1", rim.ref, profile.ref, "future-g1")
+    assert future_selection.campaign == "future-g1"
     with pytest.raises(Exception):
         RunSelection("run-1", "not-an-exact-ref", profile.ref, "first")
     with pytest.raises(Exception):
         RunSelection("run-1", rim.ref, rim.ref, "first")
+
+
+def test_future_synthetic_campaign_can_use_configured_g1_gate_without_artifact(tmp_path):
+    rim_registry = RecordRegistry(tmp_path / "rims", "rim")
+    profile_registry = ProfileRegistry(tmp_path / "profiles")
+    rim = rim_registry.publish(
+        "fixture-alpha", "1.0.0",
+        {"fixture_only": True, "authority_status": "OPEN"},
+    )
+    g1 = profile_registry.publish(
+        "g1", "1.0.0",
+        {"profile_family": "granularity", "granularity": "G1",
+         "fixture_only": True, "authority_status": "OPEN"},
+        "FROZEN_FIXTURE",
+    )
+    selection = RunSelection("future-run", rim.ref, g1.ref, "future-g1")
+    run_index = RunIndex(tmp_path / "runs.jsonl")
+    run_index.register(selection)
+    gate = RunSelectionGate(
+        rim_registry,
+        profile_registry,
+        run_index,
+        campaign_id="future-g1",
+        allowed_granularity="G1",
+    )
+    _, profile_entry = gate.admit(selection)
+    assert profile_entry.payload["granularity"] == "G1"
+    assert not (tmp_path / "formal-artifacts").exists()
 
 
 def test_run_index_detects_tamper_and_truncation(tmp_path):

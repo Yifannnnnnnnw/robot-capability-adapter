@@ -22,8 +22,6 @@ class RunSelection:
     def __post_init__(self) -> None:
         _id(self.run_id, "run_id")
         _id(self.campaign, "campaign")
-        if self.campaign != "first":
-            raise GateError("only the first campaign is admitted")
         if not isinstance(self.rim_ref, ExactReference) or self.rim_ref.kind != "rim":
             raise ContractError("run selection requires one exact RIM reference")
         if (
@@ -54,8 +52,6 @@ class RunSelection:
         _id(value["run_id"], "run_id")
         campaign = value.get("campaign", "first")
         _id(campaign, "campaign")
-        if campaign != "first":
-            raise GateError("only the first campaign is admitted")
         return cls(
             run_id=value["run_id"],
             rim_ref=ExactReference.from_value(value["rim_ref"], expected_kind="rim"),
@@ -80,32 +76,50 @@ class RunSelectionGate:
         rim_registry: RecordRegistry,
         profile_registry: ProfileRegistry,
         run_index: "RunIndex",
+        campaign_id: str = "first",
+        allowed_granularity: str = "G2",
     ):
+        _id(campaign_id, "campaign_id")
+        if (
+            not isinstance(allowed_granularity, str)
+            or not allowed_granularity
+            or "/" in allowed_granularity
+            or "\\" in allowed_granularity
+        ):
+            raise ContractError("allowed_granularity must be a safe value")
         self.rim_registry = rim_registry
         self.profile_registry = profile_registry
         self.run_index = run_index
+        self.campaign_id = campaign_id
+        self.allowed_granularity = allowed_granularity
 
     def admit(self, selection: RunSelection | dict[str, Any]) -> tuple[RegistryEntry, RegistryEntry]:
         if not isinstance(selection, RunSelection):
             selection = RunSelection.from_mapping(selection)
         selection_hash = self.run_index.selection_hash(selection)
-        if selection.campaign != "first":
-            raise GateError("only the first campaign is admitted")
+        if selection.campaign != self.campaign_id:
+            raise GateError(f"campaign {selection.campaign!r} is not admitted by this gate")
         rim = self.rim_registry.resolve(selection.rim_ref, require_frozen=True)
         profile = self.profile_registry.resolve(
             selection.granularity_profile_ref, require_frozen=True
         )
         if profile.status != "FROZEN_FIXTURE":
-            raise GateError("first campaign requires a FROZEN_FIXTURE profile")
+            raise GateError("campaign requires a FROZEN_FIXTURE profile")
         if rim.status != "FROZEN_FIXTURE":
-            raise GateError("first campaign requires a FROZEN_FIXTURE RIM")
+            raise GateError("campaign requires a FROZEN_FIXTURE RIM")
         if not rim.payload.get("fixture_only") or rim.payload.get("authority_status") != "OPEN":
-            raise GateError("first campaign RIM must remain explicitly synthetic")
+            raise GateError("campaign RIM must remain explicitly synthetic")
         payload = profile.payload
-        if payload.get("profile_family") != "granularity" or payload.get("granularity") != "G2":
-            raise GateError("first campaign accepts only the frozen G2 fixture")
+        if (
+            payload.get("profile_family") != "granularity"
+            or payload.get("granularity") != self.allowed_granularity
+        ):
+            raise GateError(
+                f"campaign {self.campaign_id!r} accepts only "
+                f"the {self.allowed_granularity} fixture"
+            )
         if payload.get("authority_status") != "OPEN" or not payload.get("fixture_only"):
-            raise GateError("first campaign profile must remain explicitly synthetic")
+            raise GateError("campaign profile must remain explicitly synthetic")
         return rim, profile
 
     def receipts(self, selection: RunSelection | dict[str, Any]) -> tuple[GateReceipt, GateReceipt]:
