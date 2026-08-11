@@ -12,6 +12,7 @@ import math
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Any, Mapping
+from weakref import WeakKeyDictionary
 
 from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ContractError
@@ -55,70 +56,142 @@ class BindingOverlay:
     seal: dict[str, Any]
 
 
-class ValidatedCandidateHandle:
-    """A-produced opaque binding of exact source, manifest, module, and overlay."""
+@dataclass(frozen=True)
+class _CandidatePayload:
+    """Authoritative candidate state held outside the user-visible handle."""
 
-    __slots__ = (
-        "_source_hash", "_implementation_manifest_hash", "_implementation_bundle_hash", "_module", "_contracts",
-        "_overlay", "_a_report_hash",
-    )
+    source: str
+    source_hash: str
+    implementation_manifest_hash: str
+    implementation_bundle_hash: str
+    contracts: dict[str, dict[str, Any]]
+    validation_a_report_hash: str
+    overlay: BindingOverlay | None
+
+
+def _payload_registry() -> tuple[Any, Any]:
+    """Keep payload ownership inside a Framework-private closure.
+
+    Reads always return a deep copy.  Even code which deliberately calls the
+    private snapshot hook therefore cannot mutate the authoritative payload.
+    """
+
+    payloads: WeakKeyDictionary[object, _CandidatePayload] = WeakKeyDictionary()
+
+    def register(handle: object, payload: _CandidatePayload) -> None:
+        if handle in payloads:
+            raise ContractError("candidate handle is already registered")
+        payloads[handle] = copy.deepcopy(payload)
+
+    def snapshot(handle: object) -> _CandidatePayload:
+        try:
+            payload = payloads[handle]
+        except (KeyError, TypeError) as exc:
+            raise ContractError("candidate handle is not Framework-registered") from exc
+        return copy.deepcopy(payload)
+
+    return register, snapshot
+
+
+_register_candidate_payload, _candidate_payload_snapshot = _payload_registry()
+del _payload_registry
+
+
+class ValidatedCandidateHandle:
+    """A-produced immutable binding of exact source, manifest, and overlay."""
+
+    # The handle intentionally contains no authority-bearing fields.  Its
+    # identity selects a Framework-private payload, and the weak-reference slot
+    # merely lets that payload disappear with the handle.
+    __slots__ = ("__weakref__",)
 
     def __init__(
         self,
         token: object,
         *,
         source_hash: str,
+        source: str,
         implementation_manifest_hash: str,
         implementation_bundle_hash: str,
-        module: ModuleType,
         contracts: Mapping[str, Mapping[str, Any]],
         a_report_hash: str,
         overlay: BindingOverlay | None = None,
     ):
         if token is not _HANDLE_TOKEN:
             raise ContractError("ValidatedCandidateHandle is Framework-created only")
-        self._source_hash = source_hash
-        self._implementation_manifest_hash = implementation_manifest_hash
-        self._implementation_bundle_hash = implementation_bundle_hash
-        self._module = module
-        self._contracts = copy.deepcopy(dict(contracts))
-        self._a_report_hash = a_report_hash
-        self._overlay = overlay
+        if content_hash(source.encode("utf-8")) != source_hash:
+            raise ContractError("candidate source no longer matches its Validation A hash")
+        _register_candidate_payload(
+            self,
+            _CandidatePayload(
+                source=source,
+                source_hash=source_hash,
+                implementation_manifest_hash=implementation_manifest_hash,
+                implementation_bundle_hash=implementation_bundle_hash,
+                contracts=copy.deepcopy(dict(contracts)),
+                validation_a_report_hash=a_report_hash,
+                overlay=copy.deepcopy(overlay),
+            ),
+        )
+
+    def __setattr__(self, _name: str, _value: Any) -> None:
+        raise AttributeError("ValidatedCandidateHandle is immutable")
+
+    def __copy__(self) -> "ValidatedCandidateHandle":
+        return self
+
+    def __deepcopy__(self, _memo: dict[int, Any]) -> "ValidatedCandidateHandle":
+        return self
+
+    def _framework_payload_snapshot(self) -> _CandidatePayload:
+        """Return a non-authoritative copy for Framework validation modules."""
+
+        return _candidate_payload_snapshot(self)
 
     @property
     def source_hash(self) -> str:
-        return self._source_hash
+        return _candidate_payload_snapshot(self).source_hash
 
     @property
     def implementation_manifest_hash(self) -> str:
-        return self._implementation_manifest_hash
+        return _candidate_payload_snapshot(self).implementation_manifest_hash
 
     @property
     def implementation_bundle_hash(self) -> str:
-        return self._implementation_bundle_hash
+        return _candidate_payload_snapshot(self).implementation_bundle_hash
+
+    @property
+    def validation_a_report_hash(self) -> str:
+        return _candidate_payload_snapshot(self).validation_a_report_hash
 
     @property
     def overlay_hash(self) -> str | None:
-        return self._overlay.overlay_hash if self._overlay is not None else None
+        overlay = _candidate_payload_snapshot(self).overlay
+        return overlay.overlay_hash if overlay is not None else None
 
     def _with_overlay(self, overlay: BindingOverlay) -> "ValidatedCandidateHandle":
+        payload = _candidate_payload_snapshot(self)
         return ValidatedCandidateHandle(
             _HANDLE_TOKEN,
-            source_hash=self._source_hash,
-            implementation_manifest_hash=self._implementation_manifest_hash,
-            implementation_bundle_hash=self._implementation_bundle_hash,
-            module=self._module,
-            contracts=self._contracts,
-            a_report_hash=self._a_report_hash,
+            source=payload.source,
+            source_hash=payload.source_hash,
+            implementation_manifest_hash=payload.implementation_manifest_hash,
+            implementation_bundle_hash=payload.implementation_bundle_hash,
+            contracts=payload.contracts,
+            a_report_hash=payload.validation_a_report_hash,
             overlay=overlay,
         )
 
     def _invoke(self, capability_id: str, inputs: Mapping[str, Any], sdk: object) -> Any:
-        contract = self._contracts.get(capability_id)
+        payload = _candidate_payload_snapshot(self)
+        contract = payload.contracts.get(capability_id)
         if not isinstance(contract, Mapping):
             raise ContractError("candidate handle does not bind this capability")
         values = _runtime_inputs(inputs, contract["inputs"])
-        function = getattr(self._module, contract["function_name"])
+        if content_hash(payload.source.encode("utf-8")) != payload.source_hash:
+            raise ContractError("candidate source changed after Validation A")
+        module = _isolated_module(payload.source)
+        function = getattr(module, contract["function_name"])
         arguments = {
             parameter["parameter"]: values[parameter["public_name"]]
             for parameter in contract["parameters"]
@@ -556,10 +629,10 @@ class ValidationARunner:
         if status == "PASS" and module is not None and source_hash is not None:
             handle = ValidatedCandidateHandle(
                 _HANDLE_TOKEN,
+                source=source,
                 source_hash=source_hash,
                 implementation_manifest_hash=manifest_hash,
                 implementation_bundle_hash=implementation_bundle_hash,
-                module=module,
                 contracts=contracts,
                 a_report_hash=report_hash,
             )
@@ -584,6 +657,23 @@ def bind_candidate_to_suite(result: ValidationAResult, validation_suite_hash: st
 
     if result.status != "PASS" or result.candidate_handle is None or not is_content_hash(validation_suite_hash):
         raise ContractError("only a Validation A PASS may be bound to a sealed suite")
+    handle = result.candidate_handle
+    if not isinstance(handle, ValidatedCandidateHandle):
+        raise ContractError("only a Framework Validation A candidate may be bound")
+    payload = handle._framework_payload_snapshot()
+    if (
+        result.source_hash != payload.source_hash
+        or result.implementation_manifest_hash != payload.implementation_manifest_hash
+        or result.implementation_bundle_hash != payload.implementation_bundle_hash
+        or result.report_hash != payload.validation_a_report_hash
+        or content_hash(canonical_bytes(result.report)) != result.report_hash
+        or result.report.get("status") != "PASS"
+        or result.report.get("binding_result") != result.binding_result
+        or not verify_seal(dict(result.report_seal))
+        or result.report_seal.get("artifact_type") != "validation_a_report"
+        or result.report_seal.get("artifact_hash") != result.report_hash
+    ):
+        raise ContractError("Validation A result no longer matches its Framework candidate payload")
     symbols = result.binding_result.get("symbols")
     if not isinstance(symbols, list):
         raise ContractError("Validation A binding result is malformed")
@@ -597,8 +687,10 @@ def bind_candidate_to_suite(result: ValidationAResult, validation_suite_hash: st
         "artifact_type": "validation_execution_binding_overlay",
         "schema_version": _SCHEMA_VERSION,
         "suite_hash": validation_suite_hash,
+        "source_hash": payload.source_hash,
         "implementation_manifest_hash": result.implementation_manifest_hash,
         "implementation_bundle_hash": result.implementation_bundle_hash,
+        "validation_a_report_hash": result.report_hash,
         "capability_bindings": bindings,
     }
     overlay_hash = content_hash(canonical_bytes(overlay))
@@ -608,10 +700,16 @@ def bind_candidate_to_suite(result: ValidationAResult, validation_suite_hash: st
         seal=create_seal(
             "validation_execution_binding_overlay",
             overlay_hash,
-            [validation_suite_hash, result.implementation_manifest_hash, result.implementation_bundle_hash],
+            [
+                validation_suite_hash,
+                payload.source_hash,
+                result.implementation_manifest_hash,
+                result.implementation_bundle_hash,
+                result.report_hash,
+            ],
         ),
     )
-    return result.candidate_handle._with_overlay(sealed)
+    return handle._with_overlay(sealed)
 
 
 # Kept as a small compatibility name; it returns the opaque B handle, never a module.

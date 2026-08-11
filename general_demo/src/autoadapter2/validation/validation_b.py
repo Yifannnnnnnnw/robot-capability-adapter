@@ -7,6 +7,8 @@ import math
 from dataclasses import dataclass
 from typing import Any, Mapping, Protocol, runtime_checkable
 
+from ..evaluation import ClosedEvaluationVideo, verify_closed_evaluation_video
+from ..blue_line import BlueLineReadyBundle
 from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ContractError
 from ..foundation.hashing import content_hash, is_content_hash
@@ -19,6 +21,15 @@ _SCHEMA_VERSION = "1.0.0"
 
 class HarnessInfrastructureError(Exception):
     """The sole Harness condition that produces a B infrastructure outcome."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        video_evidence: ClosedEvaluationVideo | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.video_evidence = video_evidence
 
 
 @dataclass(frozen=True)
@@ -38,12 +49,13 @@ class HarnessMeasurement:
     elapsed_s: float
     guard_results: Mapping[str, bool]
     sdk_route_evidence: Mapping[str, Any]
-    video_artifact_ref: Mapping[str, Any]
+    video_evidence: ClosedEvaluationVideo
 
 
 @dataclass(frozen=True)
 class HarnessInvocation:
     capability_id: str
+    case_id: str
     inputs: Mapping[str, Any]
     initial_state: Mapping[str, Any]
     repetition: int
@@ -55,6 +67,9 @@ class HarnessInvocation:
     aggregation: str
     guard_ids: tuple[str, ...]
     run_snapshot_hash: str
+    candidate_source_hash: str
+    suite_hash: str
+    execution_attempt: int
 
 
 @runtime_checkable
@@ -83,6 +98,7 @@ class ValidationContext:
     manifest_seal: Mapping[str, Any]
     validation_suite: Mapping[str, Any]
     suite_seal: Mapping[str, Any]
+    blue_line_ready_bundle: BlueLineReadyBundle
     run_snapshot: Mapping[str, Any]
 
 
@@ -212,6 +228,9 @@ def freeze_validation_context(context: ValidationContext) -> FrozenValidationCon
     spec, spec_hash = _sealed_hash(context.blue_line_spec, context.spec_seal, "blue_line_validation_spec")
     manifest, manifest_hash = _sealed_hash(context.blue_line_manifest, context.manifest_seal, "blue_line_manifest")
     suite, suite_hash = _sealed_hash(context.validation_suite, context.suite_seal, "validation_b_suite")
+    if not isinstance(context.blue_line_ready_bundle, BlueLineReadyBundle):
+        raise ContractError("Validation B requires the Framework Blue Line READY bundle")
+    ready_payload = context.blue_line_ready_bundle._verified_payload(design_hash)
     if (
         spec.get("design_hash") != design_hash
         or manifest.get("status") != "READY"
@@ -223,6 +242,12 @@ def freeze_validation_context(context: ValidationContext) -> FrozenValidationCon
         or not {design_hash, spec_hash}.issubset(set(context.suite_seal.get("parents", [])))
         or design_hash not in set(context.spec_seal.get("parents", []))
         or not {design_hash, spec_hash}.issubset(set(context.manifest_seal.get("parents", [])))
+        or ready_payload != {
+            "design_hash": design_hash,
+            "spec_hash": spec_hash,
+            "manifest_hash": manifest_hash,
+            "suite_hash": suite_hash,
+        }
     ):
         raise ContractError("Validation B Blue Line lineage is not sealed and READY")
     capabilities = design.get("capabilities")
@@ -255,6 +280,7 @@ def freeze_validation_context(context: ValidationContext) -> FrozenValidationCon
         manifest_seal=copy.deepcopy(dict(context.manifest_seal)),
         validation_suite=suite,
         suite_seal=copy.deepcopy(dict(context.suite_seal)),
+        blue_line_ready_bundle=context.blue_line_ready_bundle,
         run_snapshot=snapshot,
     )
     return FrozenValidationContext(
@@ -271,21 +297,42 @@ def freeze_validation_context(context: ValidationContext) -> FrozenValidationCon
 
 
 def _verify_handle(handle: ValidatedCandidateHandle, frozen: FrozenValidationContext) -> tuple[dict[str, Any], str]:
-    if not isinstance(handle, ValidatedCandidateHandle) or handle._overlay is None:  # Framework-private fields are intentional here.
+    if not isinstance(handle, ValidatedCandidateHandle):
         raise ContractError("Validation B only accepts an A-produced overlay-bound candidate handle")
-    overlay = copy.deepcopy(handle._overlay.overlay)
+    payload = handle._framework_payload_snapshot()
+    binding_overlay = payload.overlay
+    if binding_overlay is None:
+        raise ContractError("Validation B only accepts an A-produced overlay-bound candidate handle")
+    if (
+        content_hash(payload.source.encode("utf-8")) != payload.source_hash
+        or not all(
+            is_content_hash(value)
+            for value in (
+                payload.source_hash,
+                payload.implementation_manifest_hash,
+                payload.implementation_bundle_hash,
+                payload.validation_a_report_hash,
+                frozen.suite_hash,
+            )
+        )
+    ):
+        raise ContractError("Validation B candidate source lineage is invalid")
+    overlay = copy.deepcopy(binding_overlay.overlay)
     overlay_hash = content_hash(canonical_bytes(overlay))
     try:
         expected_parents = sorted({
             frozen.suite_hash,
-            handle.implementation_manifest_hash,
-            handle.implementation_bundle_hash,
+            payload.source_hash,
+            payload.implementation_manifest_hash,
+            payload.implementation_bundle_hash,
+            payload.validation_a_report_hash,
         })
         if (
-            not verify_seal(dict(handle._overlay.seal))
-            or handle._overlay.seal.get("artifact_type") != "validation_execution_binding_overlay"
-            or handle._overlay.seal.get("artifact_hash") != overlay_hash
-            or handle._overlay.seal.get("parents") != expected_parents
+            binding_overlay.overlay_hash != overlay_hash
+            or not verify_seal(dict(binding_overlay.seal))
+            or binding_overlay.seal.get("artifact_type") != "validation_execution_binding_overlay"
+            or binding_overlay.seal.get("artifact_hash") != overlay_hash
+            or binding_overlay.seal.get("parents") != expected_parents
         ):
             raise ContractError("Validation B candidate overlay seal is invalid")
     except Exception as exc:
@@ -293,21 +340,27 @@ def _verify_handle(handle: ValidatedCandidateHandle, frozen: FrozenValidationCon
             raise
         raise ContractError("Validation B candidate overlay seal is invalid") from exc
     expected = {
-        "artifact_type", "schema_version", "suite_hash", "implementation_manifest_hash",
-        "implementation_bundle_hash", "capability_bindings",
+        "artifact_type", "schema_version", "suite_hash", "source_hash", "implementation_manifest_hash",
+        "implementation_bundle_hash", "validation_a_report_hash", "capability_bindings",
     }
     if (
         set(overlay) != expected
         or overlay.get("artifact_type") != "validation_execution_binding_overlay"
         or overlay.get("schema_version") != _SCHEMA_VERSION
         or overlay.get("suite_hash") != frozen.suite_hash
-        or overlay.get("implementation_manifest_hash") != handle.implementation_manifest_hash
-        or overlay.get("implementation_bundle_hash") != handle.implementation_bundle_hash
+        or overlay.get("source_hash") != payload.source_hash
+        or overlay.get("implementation_manifest_hash") != payload.implementation_manifest_hash
+        or overlay.get("implementation_bundle_hash") != payload.implementation_bundle_hash
         or overlay.get("implementation_bundle_hash") != frozen.implementation_bundle_hash
+        or overlay.get("validation_a_report_hash") != payload.validation_a_report_hash
     ):
-        raise ContractError("Validation B candidate overlay does not bind this exact suite and manifest")
+        raise ContractError(
+            "Validation B candidate overlay does not bind this exact source, manifest, "
+            "Validation A report, bundle, and suite"
+        )
     expected_symbols = {
-        capability_id: handle._contracts[capability_id]["function_name"] for capability_id in handle._contracts
+        capability_id: payload.contracts[capability_id]["function_name"]
+        for capability_id in payload.contracts
     }
     actual_symbols: dict[str, str] = {}
     bindings = overlay.get("capability_bindings")
@@ -387,10 +440,60 @@ def _evaluate_measurement(
     }
     if not isinstance(route, Mapping) or dict(route) != expected_route:
         failures.append("SDK_ROUTE_EVIDENCE")
-    video = observation.video_artifact_ref
-    if not isinstance(video, Mapping) or set(video) != {"artifact_id", "content_hash", "complete"} or not _text(video.get("artifact_id")) or not is_content_hash(video.get("content_hash")) or video.get("complete") is not True:
-        failures.append("VIDEO_ARTIFACT")
     return not failures, failures
+
+
+def _verify_video_evidence(
+    video: Any,
+    invocation: HarnessInvocation,
+) -> None:
+    if not isinstance(video, ClosedEvaluationVideo):
+        raise HarnessInfrastructureError("Validation B video evidence is missing")
+    if not verify_closed_evaluation_video(video):
+        raise HarnessInfrastructureError(
+            "Validation B video evidence was not issued by the Framework recorder",
+            video_evidence=video,
+        )
+    if (
+        content_hash(video.manifest_bytes) != video.manifest_content_hash
+        or video.completion_status != "COMPLETE"
+        or video.execution_disposition != "EVIDENCE_COMPLETE"
+        or video.media_content_hash is None
+        or video.handle is None
+        or video.failures
+    ):
+        raise HarnessInfrastructureError(
+            "Validation B video evidence is incomplete", video_evidence=video
+        )
+    try:
+        manifest = video.manifest
+    except Exception as exc:
+        raise HarnessInfrastructureError(
+            "Validation B video manifest is invalid", video_evidence=video
+        ) from exc
+    media = manifest.get("media")
+    expected_bindings = {
+        "phase": "VALIDATION_B",
+        "capability_id": invocation.capability_id,
+        "case_id": invocation.case_id,
+        "repetition": str(invocation.repetition),
+        "run_snapshot_hash": invocation.run_snapshot_hash,
+        "candidate_source_hash": invocation.candidate_source_hash,
+        "suite_hash": invocation.suite_hash,
+        "execution_attempt": str(invocation.execution_attempt),
+    }
+    bindings = manifest.get("bindings")
+    if (
+        manifest.get("manifest_type") != "framework_evaluation_video"
+        or manifest.get("closed") is not True
+        or not isinstance(media, Mapping)
+        or media.get("content_hash") != video.media_content_hash
+        or not isinstance(bindings, Mapping)
+        or any(bindings.get(key) != value for key, value in expected_bindings.items())
+    ):
+        raise HarnessInfrastructureError(
+            "Validation B video lineage is invalid", video_evidence=video
+        )
 
 
 class ValidationBRunner:
@@ -400,12 +503,15 @@ class ValidationBRunner:
         if not isinstance(harness, TypedHarness):
             raise ContractError("Validation B requires a TypedHarness, not a verdict callback")
         self._harness = harness
+        self._execution_attempt = 0
 
     def run(self, candidate: ValidatedCandidateHandle, context: ValidationContext) -> ValidationBResult:
         frozen = freeze_validation_context(context)
         if self._harness.config_hash != frozen.context.run_snapshot["harness_config_hash"]:
             raise ContractError("Validation B Harness config does not match the frozen run_snapshot")
         _overlay, overlay_hash = _verify_handle(candidate, frozen)
+        self._execution_attempt += 1
+        execution_attempt = self._execution_attempt
         executions: list[dict[str, Any]] = []
         diagnostics: list[dict[str, str]] = []
         infrastructure_error = False
@@ -415,6 +521,7 @@ class ValidationBRunner:
                 for repetition in range(1, frozen.repetitions + 1):
                     invocation = HarnessInvocation(
                         capability_id=rule["capability_id"],
+                        case_id=case["case_id"],
                         inputs=copy.deepcopy(case["inputs"]),
                         initial_state=copy.deepcopy(case["initial_state"]),
                         repetition=repetition,
@@ -426,13 +533,16 @@ class ValidationBRunner:
                         aggregation=rule["aggregation"],
                         guard_ids=tuple(rule["guard_ids"]),
                         run_snapshot_hash=frozen.run_snapshot_hash,
+                        candidate_source_hash=candidate.source_hash,
+                        suite_hash=frozen.suite_hash,
+                        execution_attempt=execution_attempt,
                     )
                     try:
                         session = self._harness.open(invocation)
                         if not isinstance(session, TypedHarnessSession):
                             raise ContractError("TypedHarness returned an invalid session")
-                    except HarnessInfrastructureError:
-                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"]))
+                    except HarnessInfrastructureError as exc:
+                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
                         infrastructure_error = True
                         break
                     except Exception:
@@ -446,8 +556,8 @@ class ValidationBRunner:
                         candidate_exception = True
                     try:
                         observation = session.collect()
-                    except HarnessInfrastructureError:
-                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"]))
+                    except HarnessInfrastructureError as exc:
+                        executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
                         infrastructure_error = True
                         break
                     except Exception:
@@ -457,11 +567,17 @@ class ValidationBRunner:
                     if not isinstance(observation, HarnessMeasurement):
                         failures = ["HARNESS_PROTOCOL"]
                     else:
+                        try:
+                            _verify_video_evidence(observation.video_evidence, invocation)
+                        except HarnessInfrastructureError as exc:
+                            executions.append(_execution(rule["capability_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
+                            infrastructure_error = True
+                            break
                         _passed, failures = _evaluate_measurement(observation, rule, frozen.context.run_snapshot)
                     if candidate_exception:
                         failures = [*failures, "CANDIDATE_EXCEPTION"]
                     verdict = "PASS" if not failures else "FAIL"
-                    executions.append(_execution(rule["capability_id"], case["case_id"], repetition, verdict, failures))
+                    executions.append(_execution(rule["capability_id"], case["case_id"], repetition, verdict, failures, observation.video_evidence if isinstance(observation, HarnessMeasurement) else None))
                     candidate_failure |= verdict == "FAIL"
                 if infrastructure_error:
                     break
@@ -493,6 +609,7 @@ class ValidationBRunner:
             "source_hash": candidate.source_hash,
             "implementation_manifest_hash": candidate.implementation_manifest_hash,
             "implementation_bundle_hash": candidate.implementation_bundle_hash,
+            "validation_a_report_hash": candidate.validation_a_report_hash,
             "run_snapshot_hash": frozen.run_snapshot_hash,
             "executions": executions,
             "diagnostics": copy.deepcopy(diagnostics),
@@ -511,6 +628,7 @@ class ValidationBRunner:
                     frozen.manifest_hash,
                     frozen.suite_hash,
                     frozen.implementation_bundle_hash,
+                    candidate.validation_a_report_hash,
                     overlay_hash,
                 ],
             ),
@@ -524,11 +642,20 @@ class ValidationBRunner:
     validate = run
 
 
-def _execution(capability_id: str, case_id: str, repetition: int, verdict: str, failures: list[str]) -> dict[str, Any]:
+def _execution(
+    capability_id: str,
+    case_id: str,
+    repetition: int,
+    verdict: str,
+    failures: list[str],
+    video: ClosedEvaluationVideo | None = None,
+) -> dict[str, Any]:
     return {
         "capability_id": capability_id,
         "case_id": case_id,
         "repetition": repetition,
         "verdict": verdict,
         "failure_codes": failures,
+        "video_manifest_hash": video.manifest_content_hash if video is not None else None,
+        "video_media_hash": video.media_content_hash if video is not None else None,
     }

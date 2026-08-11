@@ -22,6 +22,7 @@ from autoadapter2.integration import (
     stable_json_sha256,
     write_stable_json,
 )
+from autoadapter2.libraries import TasksLibrary
 from autoadapter2.orchestration import DemoModelAdapters, DemoRunPlan, GeneralDemoRunner
 from autoadapter2.validation import MeasurementSample, RepairConfig, ValidationAProfile
 
@@ -239,12 +240,12 @@ class _RobotSession:
         return candidate._invoke(capability_id, arguments, self.sdk)
 
 
-def _design(width: int) -> dict[str, Any]:
+def _design(width: int, requirement_ids: list[str]) -> dict[str, Any]:
     return {
         "capabilities": [{
             "capability_id": "set-joint-configuration",
             "kind": "action",
-            "requirement_ids": [f"req-{index}" for index in range(1, 6)],
+            "requirement_ids": requirement_ids,
             "inputs": [{
                 "name": "target", "type": "number", "shape": f"vector:{width}",
                 "unit": "rad", "frame": "joint", "required": True,
@@ -294,15 +295,26 @@ def _blue_spec(width: int) -> dict[str, Any]:
 
 def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAdapters]:
     manifest, snapshot, report, projection = _ready_robot_run(root, robot)
+    task_library_root = root / "general_demo/libraries/tasks"
+    shutil.copytree(
+        PROJECT_ROOT / "general_demo/libraries/tasks",
+        task_library_root,
+        dirs_exist_ok=True,
+    )
+    task_package = TasksLibrary(task_library_root).load(
+        projection["robot_configuration_id"], "1.0.0"
+    )
+    public_tasks = task_package.demo_public_tasks(f"run-{robot}")
+    private_criteria = task_package.demo_private_criteria()
     tasks = tuple(
         DemoTask(
-            requirement_id=f"req-{index}",
-            task_id=f"task-{index}",
-            description=f"Execute fixed task {index}.",
+            requirement_id=public["requirement_id"],
+            task_id=public["task_id"],
+            description=public["description"],
             public_state={"target": [0.1] * width},
-            private_criterion={"criterion_id": f"criterion-{index}"},
+            private_criterion=criterion,
         )
-        for index in range(1, 6)
+        for public, criterion in zip(public_tasks, private_criteria, strict=True)
     )
     descriptor = {
         "value": [0.1] * width, "type": "number", "shape": f"vector:{width}",
@@ -336,6 +348,20 @@ def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAda
         sdk_facade_members={"set-joint-configuration": ("command",)},
         fixture_probes={"set-joint-configuration": {"inputs": {"target": descriptor}}},
     )
+    implementation_bundle = {
+        "artifact_type": "stage2_implementation_bundle",
+        "schema_version": "1.0.0",
+        "sdk_implementation_projection": {
+            "approved_member": "command",
+            "robot": robot,
+        },
+        "robot_implementation_facts": {
+            "joint_count": width,
+            "unit": "rad",
+            "frame": "joint",
+        },
+        "implementation_experience": [],
+    }
     snapshot_path = root / snapshot
     frozen_snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
     run_dir = f"general_demo/runs/run-{robot}"
@@ -353,6 +379,9 @@ def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAda
         _json_ref(root, f"{run_dir}/measurements.json", measurements),
         _json_ref(root, f"{run_dir}/blue_line_policy.json", policy),
     ]
+    frozen_snapshot["library_view_refs"] = [
+        _json_ref(root, f"{run_dir}/implementation_bundle.json", implementation_bundle)
+    ]
     write_stable_json(snapshot_path, frozen_snapshot)
     plan = DemoRunPlan(
         run_id=f"run-{robot}",
@@ -365,6 +394,7 @@ def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAda
         standards_snapshot=standards,
         measurement_catalog=measurements,
         blue_line_policy=policy,
+        implementation_bundle=implementation_bundle,
         validation_a_profile=profile,
         public_state_schema={
             "type": "object",
@@ -402,7 +432,9 @@ def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAda
         "    return {\"accepted\": True}\n"
     )
     models = DemoModelAdapters(
-        stage1=FixtureJsonGenerator([_design(width)]),
+        stage1=FixtureJsonGenerator(
+            [_design(width, [task.requirement_id for task in tasks])]
+        ),
         blue_line=FixtureJsonGenerator([_blue_spec(width)]),
         stage2=FixtureJsonGenerator([{"action": "submit", "capability.py": source}]),
         repair=lambda _request: pytest.fail("Repair must not run on the passing path"),

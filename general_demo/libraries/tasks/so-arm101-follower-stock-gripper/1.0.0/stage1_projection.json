@@ -1,0 +1,31 @@
+{
+  "artifact_type": "task_description_projection_template",
+  "schema_version": "1.0.0",
+  "projection_id": "so-arm101-follower-stock-gripper-demo-five-stage1",
+  "projection_version": "1.0.0",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "source_collection_id": "so-arm101-follower-stock-gripper-demo-five",
+  "source_collection_version": "1.0.0",
+  "tasks": [
+    {
+      "task_id": "T01",
+      "description": "Move the gripper reference point to the specified 3-D target and stop."
+    },
+    {
+      "task_id": "T02",
+      "description": "Touch the specified face of the target object without moving the object."
+    },
+    {
+      "task_id": "T03",
+      "description": "Push the cube into the specified planar goal region."
+    },
+    {
+      "task_id": "T08",
+      "description": "Grasp the target cube and hold it securely just above the table."
+    },
+    {
+      "task_id": "T20",
+      "description": "Press the specified large button until it activates."
+    }
+  ]
+}

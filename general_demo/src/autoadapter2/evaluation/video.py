@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import weakref
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
@@ -174,6 +175,120 @@ class ClosedEvaluationVideo:
         return self.execution_disposition == "INFRASTRUCTURE_ERROR"
 
 
+@dataclass(frozen=True)
+class _VideoOrigin:
+    closure_hash: str
+    media_payload: bytes | None
+    handle: OpaqueVideoHandle | None
+
+
+_VIDEO_ORIGINS: dict[
+    int, tuple[weakref.ReferenceType[ClosedEvaluationVideo], _VideoOrigin]
+] = {}
+
+
+def _closure_hash(video: ClosedEvaluationVideo) -> str:
+    return content_hash(canonical_bytes({
+        "completion_status": video.completion_status,
+        "execution_disposition": video.execution_disposition,
+        "media_content_hash": video.media_content_hash,
+        "manifest_content_hash": video.manifest_content_hash,
+        "manifest_bytes_hash": content_hash(video.manifest_bytes),
+        "handle_present": video.handle is not None,
+        "failures": [failure.to_dict() for failure in video.failures],
+    }))
+
+
+def _register_closed_video(
+    video: ClosedEvaluationVideo,
+    media_payload: bytes | None,
+) -> None:
+    key = id(video)
+
+    def remove(reference: weakref.ReferenceType[ClosedEvaluationVideo]) -> None:
+        current = _VIDEO_ORIGINS.get(key)
+        if current is not None and current[0] is reference:
+            _VIDEO_ORIGINS.pop(key, None)
+
+    reference = weakref.ref(video, remove)
+    _VIDEO_ORIGINS[key] = (
+        reference,
+        _VideoOrigin(_closure_hash(video), media_payload, video.handle),
+    )
+
+
+def verify_closed_evaluation_video(video: Any) -> bool:
+    """Verify that an unmodified closure was issued by this Recorder process."""
+
+    if not isinstance(video, ClosedEvaluationVideo):
+        return False
+    registered = _VIDEO_ORIGINS.get(id(video))
+    if registered is None or registered[0]() is not video:
+        return False
+    origin = registered[1]
+    try:
+        if _closure_hash(video) != origin.closure_hash or video.handle is not origin.handle:
+            return False
+        manifest = video.manifest
+    except Exception:
+        return False
+    top_level = {
+        "manifest_type", "manifest_version", "canonicalizer", "closed",
+        "recording_id", "bindings", "profile", "profile_content_hash",
+        "coverage", "frame_index_content_hash", "media", "completion_status",
+        "execution_disposition", "failures",
+    }
+    profile_fields = {
+        "profile_id", "profile_version", "camera", "view", "fps",
+        "resolution", "container", "codec",
+    }
+    coverage_fields = {
+        "start_simulation_time_s", "terminal_simulation_time_s",
+        "first_frame_simulation_time_s", "last_frame_simulation_time_s",
+        "frame_count", "frame_simulation_timestamps_s", "frame_slots",
+    }
+    media_fields = {"content_hash", "size_bytes", "container", "codec"}
+    profile = manifest.get("profile") if isinstance(manifest, dict) else None
+    coverage = manifest.get("coverage") if isinstance(manifest, dict) else None
+    media = manifest.get("media") if isinstance(manifest, dict) else None
+    bindings = manifest.get("bindings") if isinstance(manifest, dict) else None
+    if (
+        not isinstance(manifest, dict)
+        or set(manifest) != top_level
+        or manifest.get("manifest_type") != "framework_evaluation_video"
+        or manifest.get("manifest_version") != "0.1.0"
+        or manifest.get("canonicalizer") != CANONICALIZER_VERSION
+        or manifest.get("closed") is not True
+        or not isinstance(manifest.get("recording_id"), str)
+        or not manifest["recording_id"].strip()
+        or not isinstance(bindings, dict)
+        or any(not isinstance(key, str) or not key or not isinstance(value, str) or not value for key, value in bindings.items())
+        or not isinstance(profile, dict)
+        or set(profile) != profile_fields
+        or not isinstance(coverage, dict)
+        or set(coverage) != coverage_fields
+        or not isinstance(media, dict)
+        or set(media) != media_fields
+        or manifest.get("profile_content_hash") != content_hash(canonical_bytes(profile))
+        or manifest.get("completion_status") != video.completion_status
+        or manifest.get("execution_disposition") != video.execution_disposition
+        or manifest.get("failures") != [failure.to_dict() for failure in video.failures]
+        or media.get("content_hash") != video.media_content_hash
+        or content_hash(video.manifest_bytes) != video.manifest_content_hash
+    ):
+        return False
+    payload = origin.media_payload
+    if video.media_content_hash is None:
+        return payload is None and video.handle is None and media.get("size_bytes") is None
+    return (
+        isinstance(payload, bytes)
+        and bool(payload)
+        and content_hash(payload) == video.media_content_hash
+        and media.get("size_bytes") == len(payload)
+        and video.handle is not None
+    )
+
+
 class EvaluationVideoRecorder:
     """Small Harness-owned frame-integrity and encoding boundary.
 
@@ -301,6 +416,7 @@ class EvaluationVideoRecorder:
 
         media_hash: str | None = None
         media_size: int | None = None
+        media_payload: bytes | None = None
         handle: OpaqueVideoHandle | None = None
         if self._frames:
             try:
@@ -314,6 +430,7 @@ class EvaluationVideoRecorder:
                     and partial.payload
                 ):
                     handle = partial.handle
+                    media_payload = partial.payload
                     media_size = len(partial.payload)
                     media_hash = content_hash(partial.payload)
                 self._failure(
@@ -338,6 +455,7 @@ class EvaluationVideoRecorder:
                     )
                 else:
                     handle = encoded.handle
+                    media_payload = encoded.payload
                     media_size = len(encoded.payload)
                     media_hash = content_hash(encoded.payload)
 
@@ -412,4 +530,5 @@ class EvaluationVideoRecorder:
             handle=handle,
             failures=tuple(self._failures),
         )
+        _register_closed_video(self._closed, media_payload)
         return self._closed

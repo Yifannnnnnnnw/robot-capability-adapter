@@ -1,0 +1,51 @@
+{
+  "artifact_type": "tasks_library_index",
+  "schema_version": "1.0.0",
+  "library_id": "autoadapter2-general-demo-tasks",
+  "library_version": "1.0.0",
+  "review_status": "HUMAN_APPROVED_CATALOGS_WITH_SEPARATE_REVIEW_QUEUE",
+  "approval_date": "2026-08-11",
+  "catalogs": [
+    {
+      "robot_configuration_id": "so-arm101-follower-stock-gripper",
+      "catalog_id": "so-arm101-follower-stock-gripper-tasks",
+      "catalog_version": "1.0.0",
+      "task_count": 28,
+      "human_approved_task_count": 28,
+      "candidate_task_count": 0,
+      "fixed_demo_task_count": 5,
+      "catalog_path": "so-arm101-follower-stock-gripper/1.0.0/catalog.json",
+      "demo_collection_path": "so-arm101-follower-stock-gripper/1.0.0/demo_collection.json",
+      "stage1_projection_path": "so-arm101-follower-stock-gripper/1.0.0/stage1_projection.json",
+      "evaluation_private_path": "so-arm101-follower-stock-gripper/1.0.0/evaluation_private.json"
+    },
+    {
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "catalog_id": "unitree-go2-stock-12dof-tasks",
+      "catalog_version": "1.0.0",
+      "task_count": 5,
+      "human_approved_task_count": 5,
+      "candidate_task_count": 21,
+      "total_researched_record_count": 26,
+      "fixed_demo_task_count": 5,
+      "catalog_path": "unitree-go2-stock-12dof/1.0.0/catalog.json",
+      "candidate_review_queue_path": "unitree-go2-stock-12dof/1.0.0/candidate_review_queue.json",
+      "demo_collection_path": "unitree-go2-stock-12dof/1.0.0/demo_collection.json",
+      "stage1_projection_path": "unitree-go2-stock-12dof/1.0.0/stage1_projection.json",
+      "evaluation_private_path": "unitree-go2-stock-12dof/1.0.0/evaluation_private.json"
+    }
+  ],
+  "information_flow": {
+    "stage1_template_artifact_type": "task_description_projection_template",
+    "stage1_runtime_artifact_type": "task_description_projection",
+    "stage1_allowed_fields_per_task": ["requirement_id", "description"],
+    "requirement_reference_rule": "The Framework derives a deterministic run-local opaque requirement_id from run_id and internal task identity; static task IDs never reach Stage 1.",
+    "evaluation_private_artifacts_must_not_reach": [
+      "stage1",
+      "stage2",
+      "generated_capability_layer",
+      "repair",
+      "demo_consumer"
+    ]
+  }
+}

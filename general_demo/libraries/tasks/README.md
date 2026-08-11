@@ -1,0 +1,166 @@
+# AutoAdapter 2.0 General Demo Tasks Library
+
+This directory is the canonical Tasks Library for the two-robot General Demo. The project authority
+is [`AUTOADAPTER_2_AUTHORITY.md`](../../../AUTOADAPTER_2_AUTHORITY.md); this Library owns downstream
+Demo tasks, not capability Validation B standards.
+
+## Information boundary
+
+Each robot package intentionally separates four artifacts:
+
+| Artifact | Contents | Permitted recipient |
+|---|---|---|
+| `catalog.json` | Approved task identity, description, type, provenance, and reviewed metadata | Researchers; Framework task selector |
+| `demo_collection.json` | The exact ordered five-task Demo subset | Framework run freezer |
+| `stage1_projection.json` | Internal fixed-five template (`task_id` + description); the Framework replaces `task_id` with a run-local opaque requirement ref | Framework run-input assembler only |
+| `evaluation_private.json` | Approved pass criteria, physical definitions, and guards | Trusted Demo Evaluation Harness only |
+
+The Go2 package additionally has `candidate_review_queue.json`. Its 21 researched candidates are
+not admitted tasks, must not reach Stage 1, and cannot enter a Demo run until human review freezes
+their applicability, difficulty, criterion, observations, and scene assets.
+
+The runtime Stage 1 projection contains exactly `requirement_id` and `description`; its opaque
+requirement IDs are derived for that run and do not reveal `T01`, `G01`, robot identity, source, or
+fixed-Demo membership. Private criteria are never inputs to Stage 1, Stage 2, generated `capability.py`, Repair, or the
+Demo Consumer. The Blue Line validation-reference library is also a different collection: it
+governs capability validation and neither owns nor replaces the downstream tasks here.
+
+## Current population
+
+| Exact robot configuration | Approved catalog | Fixed Demo set | Separate review queue |
+|---|---:|---:|---:|
+| `so-arm101-follower-stock-gripper` | 28 | 5 | 0 |
+| `unitree-go2-stock-12dof` | 5 | 5 | 21 |
+
+The two robots run separately, with one robot configuration and one five-task collection per run.
+All five selected tasks execute; none is described as held out.
+
+## SO-ARM101 approved catalog
+
+Configuration: fixed base, five arm joints, stock gripper, no assumed camera. Required target and
+scene facts must be supplied through the run's approved public observation interface. The full
+approved source metadata, difficulty rationale, and all 28 private criteria are in the versioned
+JSON package.
+
+| ID | Task description | Type | Difficulty | Fixed Demo |
+|---|---|---|---|---|
+| T01 | Move the gripper reference point to the specified 3-D target and stop. | Reach | D1 | Yes |
+| T02 | Touch the specified face of the target object without moving the object. | Controlled contact | D1 | Yes |
+| T03 | Push the cube into the specified planar goal region. | Planar pushing | D1 | Yes |
+| T04 | Push the cylinder laterally into the specified goal region while keeping it upright. | Oriented pushing | D2 | No |
+| T05 | Roll the ball into the specified circular goal region. | Dynamic planar manipulation | D2 | No |
+| T06 | Rotate the rectangular block to the specified planar orientation without moving it outside its local region. | Planar reorientation | D3 | No |
+| T07 | Push the T-shaped block until it matches the target silhouette. | Precision planar pose | D4 | No |
+| T08 | Grasp the target cube and hold it securely just above the table. | Grasp and hold | D2 | Yes |
+| T09 | Lift the target cube to the specified height and hold it there. | Lift | D2 | No |
+| T10 | Move the grasped cube to the specified 3-D goal and keep holding it. | Grasped transport | D3 | No |
+| T11 | Place the cube on the specified planar target and release it. | Pick and place | D3 | No |
+| T12 | Place the cube completely inside the shallow tray and release it. | Containment placement | D3 | No |
+| T13 | Place the sphere inside the shallow bin and release it. | Dynamic containment | D3 | No |
+| T14 | Place the cylinder upright on the specified target and release it. | Oriented placement | D3 | No |
+| T15 | Stack the target cube on top of the base cube and release it. | Stacking | D4 | No |
+| T16 | Raise the horizontal peg to an upright pose and release it on the table. | Object reorientation | D4 | No |
+| T17 | Place the square ring over the specified square peg and release it. | Peg-and-ring assembly | D4 | No |
+| T18 | Insert the specified end of the peg into the side hole. | Side insertion | D4 | No |
+| T19 | Put the specified shape into its matching sorter slot and release it. | Shape insertion | D4 | No |
+| T20 | Press the specified large button until it activates. | Button actuation | D2 | Yes |
+| T21 | Open the shallow drawer by its handle. | Articulated fixture | D4 | No |
+| T22 | Push the shallow drawer fully closed. | Articulated fixture | D2 | No |
+| T23 | Slide the tabletop door to its fully open position. | Sliding fixture | D3 | No |
+| T24 | Grasp the lid handle and remove the lid from the container. | Handle removal | D3 | No |
+| T25 | Place each of the two specified objects into its matching tray. | Two-object sorting | D4 | No |
+| T26 | Place object A into the tray, then place object B into the tray. | Ordered manipulation | D4 | No |
+| T27 | Put the specified object inside the open drawer and then close the drawer. | Compound fixture task | D4 | No |
+| T28 | Use the provided tool to pull the initially unreachable cube into the specified reachable region. | Tool use | D4 | No |
+
+SO task concepts were adapted from the [prior AutoAdapter benchmark](https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586),
+[RLBench](https://github.com/stepjam/RLBench/tree/master/rlbench/tasks),
+[ManiSkill](https://maniskill.readthedocs.io/en/latest/tasks/table_top_gripper/index.html),
+[LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO),
+[CALVIN](https://github.com/mees/calvin), and
+[RoboCasa](https://robocasa.ai/docs/build/html/tasks/atomic_tasks.html). Source provenance does not
+transfer an upstream difficulty or evaluation protocol.
+
+### SO-ARM101 fixed five and approved private criteria
+
+| ID | Harness-private success criterion |
+|---|---|
+| T01 | Tip-position error ≤ 20 mm and tip speed ≤ 10 mm/s continuously for 0.5 s. |
+| T02 | Intended tip-face contact lasts ≥ 0.3 s; target-object displacement ≤ 10 mm; no other object is contacted. |
+| T03 | Cube-center planar error ≤ 25 mm; cube remains table-supported; cube linear speed ≤ 0.010 m/s and angular speed ≤ 0.10 rad/s continuously for 1.0 s. |
+| T08 | Cube rises ≥ 20 mm; gripper-relative slip ≤ 5 mm over 1.0 s; cube remains held. |
+| T20 | Specified-button displacement ≥ 3 mm and activation lasts ≥ 0.25 s; no other button is activated. |
+
+## Unitree Go2 approved catalog and fixed Demo set
+
+Configuration: free base, stock 12-DoF Go2, joint/IMU state, no camera/depth/lidar. Official
+`SportClient` methods are task-concept provenance only. The AutoAdapter implementation must
+synthesize stand, sit, movement, and posture behavior from the admitted `LowCmd`/`LowState` route.
+No Go2 difficulty label is yet approved.
+
+| ID | Task description | Type |
+|---|---|---|
+| G01 | Stand up from the specified supported starting posture and hold a stable upright stance. | Posture transition |
+| G02 | Sit down from a stable standing posture and hold the supported sitting posture without falling. | Posture transition |
+| G03 | Maintain a stable upright stance at the current location for the requested interval. | State maintenance |
+| G04 | Move forward in the robot's initial heading direction, then stop in a stable upright stance. | Bounded locomotion |
+| G05 | Adjust the robot body to the specified target height and hold it upright at the current location. | Body-height control |
+
+Common private definitions: `upright_score` is body-z dot world-z; forward/lateral displacement is
+measured in the initial-body-yaw frame; `standing_height` is a trusted frozen reference captured
+before the trial; NaN/Inf, missing required physical state, or body/head floor contact fails; a
+model report or command receipt is never physical success evidence.
+
+| ID | Harness-private success criterion |
+|---|---|
+| G01 | Body height > 0.15 m, upright score ≥ 0.7, and planar speed ≤ 0.05 m/s continuously for 1.0 s; no body/head floor contact. |
+| G02 | Body height < 0.8 × frozen standing height, upright score ≥ 0.7, and planar speed ≤ 0.05 m/s continuously for 1.0 s; a fallen posture cannot pass. |
+| G03 | Body height > 0.15 m, upright score ≥ 0.7, and horizontal drift ≤ 0.05 m continuously over 2.0 s; no body/head floor contact. |
+| G04 | Forward displacement > 0.03 m; during motion body height > 0.12 m and upright score ≥ 0.7; absolute lateral displacement ≤ 0.05 m; final planar speed ≤ 0.05 m/s continuously for 0.5 s; no body/head floor contact. |
+| G05 | Absolute body-height error ≤ 0.03 m, upright score ≥ 0.7, and horizontal drift ≤ 0.05 m continuously for 1.0 s; no body/head floor contact. |
+
+## Go2 research queue — not admitted
+
+The 21 entries below satisfy the research-population target but remain outside the approved
+catalog and fixed Demo set. Their JSON records contain source-specific adaptation notes, a
+difficulty rationale without a guessed level, and a private criterion template whose numerical
+parameters are deliberately unset.
+
+| IDs | Candidate family | Primary source basis |
+|---|---|---|
+| G06–G09 | Backward/lateral bounded motion and yaw turning | Unitree SDK2 and Unitree RL Lab |
+| G10–G12 | Velocity tracking, waypoint following, and stopping | Unitree examples; Unitree RL Lab; ETH legged_gym |
+| G13–G16 | Roll/pitch attitude, fall recovery, and push recovery | Unitree SDK2; Unitree RL Lab; DeepMind Control Suite; ETH legged_gym |
+| G17–G21 | Rough terrain, slopes, stairs, and discrete box/step fields | Unitree RL Lab; Unitree MuJoCo; ETH legged_gym |
+| G22–G26 | Weave poles, A-frame, broad jump, high obstacle, and compound agility course | DeepMind Barkour; Extreme Parkour paper |
+
+Primary research links:
+
+- [Unitree SDK2 Python examples](https://github.com/unitreerobotics/unitree_sdk2_python/tree/65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5/example)
+- [Unitree Go2 SportClient interface](https://github.com/unitreerobotics/unitree_sdk2/blob/main/include/unitree/robot/go2/sport/sport_client.hpp)
+- [Unitree Go2 low-level stand example](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/go2/go2_stand_example.cpp)
+- [Unitree RL Lab Go2 velocity/terrain environment](https://github.com/unitreerobotics/unitree_rl_lab/blob/main/source/unitree_rl_lab/unitree_rl_lab/tasks/locomotion/robots/go2/velocity_env_cfg.py)
+- [Unitree MuJoCo](https://github.com/unitreerobotics/unitree_mujoco/tree/ae6a8403e272733e9996ef59990880330496177f)
+- [ETH legged_gym](https://github.com/leggedrobotics/legged_gym)
+- [DeepMind Control Suite quadruped tasks](https://github.com/google-deepmind/dm_control/blob/master/dm_control/suite/README.md)
+- [DeepMind Barkour repository](https://github.com/google-deepmind/barkour_robot) and [paper](https://arxiv.org/abs/2305.14654)
+- [Extreme Parkour paper](https://arxiv.org/abs/2309.14341)
+
+## Versioned files
+
+```text
+tasks/
+├── index.json
+├── README.md
+├── so-arm101-follower-stock-gripper/1.0.0/
+│   ├── catalog.json
+│   ├── demo_collection.json
+│   ├── stage1_projection.json                         # internal fixed-five projection template
+│   └── evaluation_private.json
+└── unitree-go2-stock-12dof/1.0.0/
+    ├── catalog.json
+    ├── candidate_review_queue.json
+    ├── demo_collection.json
+    ├── stage1_projection.json                         # internal fixed-five projection template
+    └── evaluation_private.json
+```

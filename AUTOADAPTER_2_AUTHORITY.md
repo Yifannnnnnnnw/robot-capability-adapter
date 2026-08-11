@@ -4,9 +4,9 @@
 > **Authority status:** `ACTIVE` — sole normative project document  
 > **Normative language:** English  
 > **Chinese text:** auxiliary reading support only  
-> **Document revision:** `0.15.0`
+> **Document revision:** `0.16.0`
 > **Effective date:** 2026-08-11
-> **Current project state:** experiment-grade two-robot General Demo implementation is authorized; exact robot/SDK/Translation facts and Readiness rules are frozen, while enterprise-style registry and attestation machinery is explicitly excluded
+> **Current project state:** experiment-grade two-robot General Demo implementation is authorized; exact robot/SDK/Translation facts, Readiness rules, and robot-scoped fixed Demo task collections and private criteria are frozen, while enterprise-style registry and attestation machinery is explicitly excluded
 
 This file is the sole authority for the current AutoAdapter 2.0 project description, research
 design, system boundaries, approved requirements, and implementation conformance. Its main body
@@ -123,7 +123,7 @@ than retained as a historical catalog.
 | downstream task utility | Task-level value after Validation; not synonymous with Validation |
 | agent-facing capability abstraction granularity | Framework representation variable associated with G1–G3 |
 | governed long-term experience memory | Cross-run Experience route with reviewed admission, recipient-specific declassification, immutable versions, and frozen future-run snapshots; exact schemas and authorities remain open |
-| Description-Visible, Criterion-Private Fixed Demo | Fixed Demo protocol in which task descriptions are visible but pass criteria and evaluation-only data remain private to an external harness |
+| Description-Visible, Criterion-Private Fixed Demo | Demo protocol in which each robot-scoped fixed collection exposes task descriptions while pass criteria and evaluation-only data remain private to an external harness |
 | Demo Consumer | Declared LLM or non-LLM task-executing component that operates through the typed Router view of the frozen generated capability layer |
 | Demo Evaluation Harness | Framework-side program external to the Consumer and generated artifact that collects evaluation evidence and owns the task verdict without exposing private criteria |
 | Framework Evaluation Video | Mandatory Harness-controlled, content-addressed external-view recording of every formal Validation B case/repetition and every Demo task trial/repetition; it is private audit evidence, not a robot sensor, model/Consumer input, or verdict source |
@@ -669,7 +669,7 @@ Blue Line status `READY` and continues through the complete downstream path.
 |---|---|---|
 | Morphology | Describe the selected robot's embodiment and simulation-relevant physical assets | Supplies robot/configuration and environment information |
 | SDKs | Maintain reproducible, evidence-backed dossiers for the real upstream SDK surfaces approved by the project | Resolves the admitted SDK Entry and derives recipient-specific public SDK projections without exposing integration or evaluation internals |
-| Tasks | Maintain downstream task descriptions, classifications, and private pass criteria | Supplies task context to Generation and the fixed Demo task set |
+| Tasks | Maintain downstream task descriptions, classifications, and private pass criteria | Supplies task context to Generation and the selected robot's fixed Demo task collection |
 | Experience | Maintain governed long-term experience accepted from prior runs | Supplies relevant prior experience to future run input |
 
 ##### General Demo experiment-grade integration contract
@@ -706,7 +706,7 @@ required. Compatibility and Readiness code must be source-driven and tested agai
 SO-ARM101 and Go2 records, not only against synthetic one-joint fixtures.
 
 Where later retained text uses `admitted` for a Morphology, SDK, Translation, runtime, or RIM
-record, revision 0.15.0 interprets it only as: its direct project checks passed and its containing
+record, revision 0.16.0 interprets it only as: its direct project checks passed and its containing
 integration manifest is `READY`. It never implies an external registry or event lifecycle.
 
 **中文辅助说明。** 这是一套实验项目合同，不是企业发布系统。每款机器人只有一份集成清单；
@@ -1027,12 +1027,30 @@ public research. The prior AutoAdapter benchmark is one permitted source where a
 Curation aims for more than 20 tasks per covered robot when public coverage and the robot's
 physical applicability support that target.
 
-The reviewed human-readable catalog is maintained in [`TASKS_LIBRARY.md`](TASKS_LIBRARY.md). Only
-task records explicitly approved by the user are admitted to that catalog. Because the catalog
-contains private criteria as well as descriptions, it is not exposed wholesale to Generation or
-the Demo Consumer; the Framework derives the permitted task view for each recipient. Its first
-admitted batch contains 28 reviewed tasks for the fixed-base SO-ARM101 configuration with the
-stock gripper.
+The Tasks Library is a first-class mainline Library under
+`general_demo/libraries/tasks/`, alongside the mainline Morphology, SDKs, and Experience Library
+families. Its versioned records, robot/configuration-scoped catalogs, fixed-collection manifests,
+human-review views, and private evaluation fields all remain below that directory. A former
+root-level `TASKS_LIBRARY.md` was only a temporary drafting aid: it is not a Library entry, run
+input, or authority source and must not be retained as a parallel catalog after migration. Only
+task records explicitly approved by the user enter the mainline Tasks Library. Because complete
+records contain private criteria as well as descriptions, the Framework derives recipient-specific
+views rather than exposing a full catalog to Generation or the Demo Consumer.
+
+The first mainline population contains the 28 reviewed tasks for
+`so-arm101-follower-stock-gripper` and the five reviewed locomotion/posture tasks needed for
+`unitree-go2-stock-12dof`. The generalized machine-readable record schema and future cross-robot
+catalog rules remain open, but that future work cannot move the Library back to a root document or
+change the frozen first-Demo task content below.
+
+The Go2 package now contains 26 researched task concepts: the five admitted records below plus 21
+additional candidates (`G06`–`G26`) gathered from official Unitree sources and public quadruped
+benchmarks/research. The additional candidates remain isolated in
+`candidate_review_queue.json`; they are not part of the admitted catalog, Stage 1 projection, or
+Demo collection. Research output is not admission: each candidate's description, exact
+configuration applicability, difficulty annotation, private criterion, required observations, and
+scene assets still require explicit user approval before promotion into the admitted catalog. The
+five frozen Go2 Demo tasks below therefore remain the only currently admitted Go2 tasks.
 
 Candidate tasks are adapted and normalized for the target robot, then organized by task type or
 family and by difficulty for the exact robot configuration. An upstream benchmark's difficulty
@@ -1049,21 +1067,67 @@ receives the current task description but not the criterion or evaluation-only d
 capability layer has passed the declared Validation-and-Repair protocol and is frozen, only the
 trusted external Demo Evaluation Harness may load those private fields and apply the criterion.
 
-A separately reviewed subset of five admitted tasks will be designated as the fixed `demo_tasks`
-collection. The Demo executes every task in that collection and does not select a subset at run
-time. When results from these tasks are accepted into Evolution/Experience, the same five tasks
-become a continuing regression suite and are not described as untouched evaluation.
+The first Demo has **two robot-scoped fixed `demo_tasks` collections**, not one global collection.
+The SO-ARM101 and Go2 routes are separate single-RIM runs. Each run loads exactly the five tasks for
+its selected robot configuration, executes all five, and performs no run-time subset selection.
+When results from a robot's collection are accepted into Evolution/Experience, that same
+robot-scoped collection becomes a continuing regression suite and is not described as untouched
+evaluation.
+
+##### First Demo fixed SO-ARM101 task collection
+
+The `so-arm101-follower-stock-gripper` run executes exactly `T01`, `T02`, `T03`, `T08`, and `T20`.
+Their Agent-visible descriptions and Harness-private pass criteria are frozen as follows. All
+positions, speeds, contacts, support relations, and activation state used in a verdict come from
+the trusted Demo Evaluation Harness rather than a Consumer, capability return value, or SDK command
+receipt.
+
+| Task | Agent-visible description | Harness-private pass criterion |
+|---|---|---|
+| `T01` | Move the gripper reference point to the specified 3-D target and stop. | Tip-position error is at most `0.020 m` and tip speed is at most `0.010 m/s`, both continuously for `0.5 s`. |
+| `T02` | Touch the specified face of the target object without moving the object. | Intended tip-to-face contact persists for at least `0.3 s`, target-object displacement is at most `0.010 m`, and no other object is contacted. |
+| `T03` | Push the cube into the specified planar goal region. | Planar cube-center error is at most `0.025 m`, the cube remains supported by the table, and cube linear speed is at most `0.010 m/s` while angular speed is at most `0.10 rad/s`, continuously for `1.0 s`. |
+| `T08` | Grasp the target cube and hold it securely just above the table. | The cube rises by at least `0.020 m`, gripper-relative slip is at most `0.005 m` over `1.0 s`, and the cube remains held throughout that interval. |
+| `T20` | Press the specified large button until it activates. | Specified-button displacement is at least `0.003 m`, its activation persists for at least `0.25 s`, and no other button is activated. |
+
+##### First Demo fixed Unitree Go2 task collection
+
+The `unitree-go2-stock-12dof` run executes exactly **Stand**, **Sit**, **Hold stable**, **Move
+forward**, and **Target body height**. For these five tasks, body height and orientation are read
+from trusted physical simulator state. `upright_score` is the dot product of the normalized body
+`z` axis and world `z` axis. Forward and lateral displacement are evaluated in the horizontal
+frame whose heading is the body's yaw at trial start. `standard_standing_height` is the private
+stable-standing reference bound by the versioned task asset before the run. Any required numeric
+state containing `NaN` or infinity fails, and any body or head contact with the ground fails. An
+SDK acknowledgement, submitted command, capability return, or Consumer self-report is never
+physical success evidence.
+
+| Task | Agent-visible description | Harness-private pass criterion |
+|---|---|---|
+| Stand | Stand upright and become stationary. | Body height is greater than `0.15 m`, `upright_score` is at least `0.7`, and planar body speed is at most `0.05 m/s`, continuously for `1.0 s`. |
+| Sit | Sit down without falling and become stationary. | Body height is less than `0.8 × standard_standing_height`, `upright_score` is at least `0.7`, and planar body speed is at most `0.05 m/s`, continuously for `1.0 s`; a fall cannot pass. |
+| Hold stable | Hold the current upright position without drifting. | Body height is greater than `0.15 m`, `upright_score` is at least `0.7`, and horizontal drift from the initial body position is at most `0.05 m` over `2.0 s`. |
+| Move forward | Move forward and stop while remaining upright. | Forward displacement is greater than `0.03 m`; throughout motion, body height is greater than `0.12 m` and `upright_score` is at least `0.7`; absolute lateral displacement is at most `0.05 m`; final planar speed is at most `0.05 m/s` continuously for `0.5 s`. |
+| Target body height | Reach the specified body height and hold it stably. | Absolute body-height error is at most `0.03 m`, `upright_score` is at least `0.7`, and horizontal drift from the initial body position is at most `0.05 m`, continuously for `1.0 s`. |
 
 The Tasks Library is a downstream application-task catalog, not the capability-validation suite.
-The separate capability-validation flow is defined in Section 4.2.2 and does not select, create,
-or replace the fixed Demo tasks.
+The exact task criteria above are downstream Demo standards owned by the Tasks Library and used
+only by the Demo Evaluation Harness. Their approval does **not** insert them into the Project
+Validation Standards Reference, expose them to the Blue Line, or make them capability-validation
+criteria. The separate capability-validation flow in Section 4.2.2 consumes the sealed Capability
+Design and its separately frozen capability-validation references; it does not select, create,
+replace, or automatically copy the fixed Demo tasks or their private criteria. Reusing a value in
+a future capability-validation reference would require a separate, explicit review for that
+capability/effect scope.
 
 **中文辅助说明。** Tasks Library 的建设链路是：从公开机器人 benchmark 和研究任务集中，
 按机器人收集候选任务（条件允许时目标超过 20 个），针对具体 robot configuration 适配和
-规范化，再按任务类型及机器人条件化难度分类。难度由 Codex 提议、用户人工复核；所有正式
-任务都有私有 pass criterion。Generation 与 Demo Consumer 只看任务 description，外部可信
-Harness 才读取 criterion。这个下游任务库不等同于 capability-validation suite；后者的完整
-输入、生成器与 Validation B 路由只在第 4.2.2 节定义。
+规范化，再按任务类型及机器人条件化难度分类。正式 Tasks Library 位于
+`general_demo/libraries/tasks/`；根目录旧文档只是临时草稿，不再作为平行任务库。第一轮中
+SO-ARM101 与 Go2 各有自己固定的五任务集合，并分别在单-RIM run 中全部执行。Generation 与
+Demo Consumer 只看任务 description，外部可信 Harness 才读取 criterion。这些 criterion 属于
+下游 Demo，而不是 Blue Line 的 capability-validation 参考标准；两者不能因为数值相似而自动
+互相复制。
 
 #### 4.1.3 Morphology Library
 
@@ -1597,11 +1661,11 @@ issuer, or `RIM_RESOLVED`/`INTEGRATION_READY` event exists.
 
 | Type | ID | State | Revision | Tracked scope |
 |---|---|---|---:|---|
-| Decision | `DEC-LIB-001` | `APPROVED` | 3 | Run-input assembly and the four top-level Library families |
+| Decision | `DEC-LIB-001` | `APPROVED` | 4 | Run-input assembly and the four first-class mainline Library families, including versioned Tasks records below `general_demo/libraries/tasks/` |
 | Decision | `DEC-RIM-001` | `FROZEN` | 3 | One direct content-addressed integration manifest for each exact v1 robot route; deterministic compatibility checks; no activation, revocation, or registry lifecycle |
-| Decision | `DEC-TASK-001` | `FROZEN` | 4 | Public benchmark/research sourcing, robot-specific curation, the 28-task SO-ARM101 batch, and its reviewed robot-conditioned D1–D4 scale |
-| Decision | `DEC-TASK-002` | `FROZEN` | 3 | Authored criteria, description-only visibility, fixed five-task designation, and separation from capability-validation tasks |
-| Decision | `DEC-TASK-003` | `FROZEN` | 1 | Reviewed-only human-readable Tasks Library catalog and recipient-specific projections |
+| Decision | `DEC-TASK-001` | `FROZEN` | 5 | Public benchmark/research sourcing, robot-specific curation, the 28-task SO-ARM101 admitted batch, the five-task Go2 admitted batch, and human review before any additional researched candidate is admitted |
+| Decision | `DEC-TASK-002` | `FROZEN` | 4 | Exact robot-scoped fixed five-task collections and private criteria for SO-ARM101 and Go2, description-only visibility, all-five execution, and strict separation from capability-validation standards and Blue Line |
+| Decision | `DEC-TASK-003` | `FROZEN` | 2 | Versioned mainline Tasks Library ownership below `general_demo/libraries/tasks/`, reviewed-only admission, human/private views, recipient-specific projections, and retirement of the root drafting catalog |
 | Decision | `DEC-MORPH-001` | `FROZEN` | 4 | Three-class layout plus exact SO-ARM101/Go2 v1 configurations, source/model pins, MuJoCo 3.3.6 realization, reset threshold and admission boundary |
 | Decision | `DEC-SDK-001` | `FROZEN` | 2 | Exact SO-ARM101/Go2 v1 SDK Entries and runtime coordinates, upstream/distribution pins, public surfaces, exclusions, projections and admission boundary |
 | Decision | `DEC-EXP-001` | `APPROVED` | 3 | Governed recipient-specific design/implementation Experience, immutable admitted versions, frozen future-run snapshots, no current-run feedback, and no direct Experience-to-Demo-Consumer route |
@@ -1610,7 +1674,7 @@ issuer, or `RIM_RESOLVED`/`INTEGRATION_READY` event exists.
 | Decision | `DEC-READY-001` | `FROZEN` | 3 | Exact Readiness profile, six checks, numerical/time limits, immutable content-addressed reports, and invalidation contract |
 | Decision | `DEC-INTEG-GATE-001` | `FROZEN` | 3 | Experiment-grade direct gate over one READY integration manifest, one matching PASS Readiness report, and one frozen run snapshot; enterprise registries and attestation machinery excluded |
 | Open question | `OQ-TASK-001` | `OPEN` | — | Cross-robot difficulty comparability, infeasible/inapplicable-task representation, machine-readable record schema, and review fields |
-| Open question | `OQ-TASK-002` | `OPEN` | — | Catalogs for the remaining robot configurations, cross-catalog type taxonomy, exact five SO-ARM101 Demo tasks, and executable pass-criterion schema |
+| Open question | `OQ-TASK-002` | `OPEN` | — | Human review and possible admission of the 21 researched Go2 candidates beyond its five admitted Demo tasks; catalogs for remaining robot configurations; cross-catalog type taxonomy; and executable pass-criterion schema |
 | Open question | `OQ-MORPH-001` | `OPEN` | — | Environment-composition rules beyond the two fixed v1 robot entries and future shared-component promotion criteria |
 
 ### 4.2 Capability-Layer Generation
@@ -1860,10 +1924,13 @@ and a new frozen Snapshot; the Blue Line is then run again from that Snapshot. R
 review leaves the result `NEEDS_REVIEW`. Neither the reviewer nor the LLM may change a standard
 after seeing the current candidate or its Validation, Repair, or Demo outcomes.
 
-`VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md` is the initial human-authored source for these
-project standards. Only reviewed records selected into the exact Frozen Validation Standards
-Snapshot govern a formal comparison; editing the source file later does not change an existing
-snapshot.
+The cleaned preparation catalog at
+`general_demo/private_governance/blue_line/standards/reference_candidates.json` is the mainline
+migration of the initial human-authored source for these project standards. The former root-level
+`VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md` was a temporary drafting source and is not a
+parallel live reference. Only reviewed records selected into the exact Frozen Validation Standards
+Snapshot govern a formal comparison; editing or adding preparation candidates later does not
+change an existing snapshot.
 
 ##### Bounded LLM loop and deterministic checks
 
@@ -2034,7 +2101,7 @@ working candidate capability
 
 Stage 2 never receives a MuJoCo handle or direct simulator API. The Sandbox uses a separate,
 public, versioned development-probe set owned by the Generation subsystem. These probes are not
-Tasks Library tasks or the fixed Demo set, and they do not reuse the Frozen Validation Standards
+Tasks Library tasks or either robot-scoped fixed Demo collection, and they do not reuse the Frozen Validation Standards
 Snapshot, Blue Line prompt outputs, Validation Spec, Blue Line Manifest, sealed Validation suite, or any of
 their private criteria, exact trials, or seeds.
 
@@ -2276,9 +2343,13 @@ retesting，而不是十次新的独立评测。Stage 1 Design 不再改，Repai
 ### 4.4 Description-Visible, Criterion-Private Fixed Demo
 
 A capability layer enters Demo only after it has passed Validation A and B and has been frozen for
-evaluation. The General Demo then executes one fixed set of five Tasks Library tasks. Every task in
-the `demo_tasks` collection runs; the Framework does not select a subset at run time and does not
-classify the five as visible or held-out.
+evaluation. The General Demo then executes the selected robot configuration's fixed five-task
+Tasks Library collection. These are two separate collections: SO-ARM101 executes `T01`, `T02`,
+`T03`, `T08`, and `T20`; Go2 executes Stand, Sit, Hold stable, Move forward, and Target body
+height. Each single-RIM run executes every task in its own `demo_tasks` collection; the Framework
+does not select a subset at run time, combine tasks from the two robot scopes, or classify the five
+as visible or held-out. The exact private criteria are frozen in Section 4.1.2 and remain Tasks
+Library/Demo Evaluation Harness material, not Blue Line capability-validation standards.
 
 The Consumer role supports both LLM-based Agents and non-LLM consumers, including scripted
 programs, planners, frozen learned policies, and other policy components. These are distinct
@@ -2336,8 +2407,8 @@ inside the Framework's trusted evaluation boundary. It does not require a cloud 
 party evaluator, separate machine, or separate operating-system process.
 
 Demo evidence flows to Evolution. It does not route directly back into current-run Repair. Once
-outcomes from the five tasks enter Evolution/Experience, the set is a continuing regression suite
-and is not reported as untouched evaluation.
+outcomes from a robot-scoped five-task collection enter Evolution/Experience, that collection is a
+continuing regression suite and is not reported as untouched evaluation.
 
 Demo measures the joint behavior of a frozen capability layer and a declared Consumer class. LLM
 and policy/program results are not pooled into a Consumer-independent layer-quality score; layer
@@ -2360,7 +2431,7 @@ Framework/Harness 的外部观察相机录像；录像仅供私有审计，不�
 | Type | ID | State | Revision | Tracked scope |
 |---|---|---|---:|---|
 | Decision | `DEC-DEMO-001` | `APPROVED` | 2 | Validated/frozen entry boundary and Demo-to-Evolution evidence route |
-| Decision | `DEC-DEMO-002` | `FROZEN` | 2 | Fixed five-task set, full execution, no visible/held-out classification, and regression status after reuse |
+| Decision | `DEC-DEMO-002` | `FROZEN` | 3 | Separate fixed five-task collections for the SO-ARM101 and Go2 single-RIM runs, exact private criteria by reference to Section 4.1.2, full execution, no visible/held-out classification, and regression status after reuse |
 | Decision | `DEC-DEMO-003` | `FROZEN` | 4 | SDK-grounded generated-layer execution, privileged-state isolation, external Harness verdict boundary, and mandatory private Framework Evaluation Video for every task trial/repetition |
 | Open question | `OQ-DEMO-001` | `OPEN` | — | Criterion schema, Harness adapters/data sources, sampling, reset/isolation, budgets, repetitions, evidence, metrics, aggregation, and Evaluation Video camera count/view/framing, renderer, frame rate, resolution, codec/container/encoder pin, pre/post-roll, simulation-time synchronization, dropped-frame and interval-completeness verification, capture-overhead/resource accounting, manifest, infrastructure-retry, private retention, and post-closure handoff to `OQ-EVO-001` consistent with the frozen mandatory-video boundary |
 
@@ -2531,12 +2602,15 @@ before Validation B. Candidate-attributable failure may produce at most ten impl
 `capability.py` Repair invocations under a separate budget. These choices do not become
 implementable requirements until their exact open schemas and accounting contracts are frozen.
 
-The Demo contains one fixed five-task `demo_tasks` set and executes all five tasks. Each admitted
-Tasks Library task has an authored criterion, but Generation and the Demo Consumer receive only
-task descriptions. Criterion and evaluation-only data remain private to the Demo Evaluation
-Harness after the capability layer has been validated and frozen. The Demo does not use a
-visible/held-out classification, and the five tasks are treated as regression tasks after their
-evidence enters Evolution/Experience.
+The Demo contains one robot-scoped fixed five-task `demo_tasks` collection for each of its two
+separate single-RIM runs and executes all five tasks in the applicable collection. SO-ARM101 uses
+`T01`, `T02`, `T03`, `T08`, and `T20`; Go2 uses Stand, Sit, Hold stable, Move forward, and Target
+body height. Their exact private Demo criteria are frozen in Section 4.1.2. Generation and the
+Demo Consumer receive only task descriptions; criteria and evaluation-only data remain private to
+the Demo Evaluation Harness after the capability layer has been validated and frozen. These
+downstream criteria are not Blue Line inputs or capability-validation standards. The Demo does not
+use a visible/held-out classification, and each robot-scoped collection is treated as a regression
+suite after its evidence enters Evolution/Experience.
 
 The executable route excludes any candidate-conditioned baseline comparison, discrepancy
 calibration, criterion adjustment, Blue Line regeneration, or selection, reconstruction, or
@@ -2590,8 +2664,8 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 | Requirement | `REQ-GD-004` | `FROZEN` | Mocks, including API-compatible SDK shims, limited to test fixtures and forbidden as the formal execution path | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-005` | `FROZEN` | No implicit legacy implementation invariants | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-006` | `FROZEN` | Implement only frozen component contracts | `NOT_STARTED` | `NONE` |
-| Requirement | `REQ-GD-007` | `FROZEN` | Fixed five-task set with full execution and no per-run task selection | `NOT_STARTED` | `NONE` |
-| Requirement | `REQ-GD-008` | `FROZEN` | Authored criteria with description-only Generation/Consumer visibility | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-007` | `FROZEN` | Separate robot-scoped fixed five-task collections with full execution and no per-run subset selection: SO-ARM101 `T01/T02/T03/T08/T20`; Go2 Stand/Sit/Hold stable/Move forward/Target body height | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-008` | `FROZEN` | Exact private Demo criteria from Section 4.1.2 with description-only Generation/Consumer visibility, Harness-only verdict use, and no automatic exposure or copying into Blue Line capability-validation standards | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-009` | `FROZEN` | No visible/held-out classification; regression status after evidence reuse | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-010` | `FROZEN` | No candidate-conditioned baseline/discrepancy calibration, criterion or threshold adjustment, Blue Line regeneration, or selection/reconstruction/refresh of the Project Validation Standards Reference or Frozen Validation Standards Snapshot, Private Measurement Catalog, Blue Line model/prompt/configuration, Generation Policy, Validation Spec, Blue Line Manifest, or sealed suite/cases/seeds/aggregation; pre-experiment human standard review and freezing are outside this prohibited route | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-011` | `FROZEN` | Consumer acts through the frozen generated capability layer | `NOT_STARTED` | `NONE` |
@@ -2625,7 +2699,9 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 | MuJoCo simulation and control reference | `https://mujoco.readthedocs.io/en/stable/programming/simulation.html` | Simulator-semantics reference for control, stepping, state, and reset |
 | Prior benchmark | repository `981526092/auto-adapter`, pinned audit commit `585eb1f1fde33f17f5f9a1e169a18dd41f97b586` | Prior-work evidence and permitted asset source |
 | High-level architecture image | `research_assets/autoadapter_high_level_framework_2026-08-08.png` | Confirmed architecture source |
-| Human capability-validation reference | `VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md` | Initial Project Validation Standards Reference; only reviewed records selected into a frozen comparison Snapshot govern formal Validation, and they are project standards rather than industry standards |
+| General Demo Tasks Library | `general_demo/libraries/tasks/**` | Formal mainline location for versioned robot-scoped task catalogs, fixed Demo collections, recipient views, and Harness-private criteria; no root-level drafting document is a parallel Library source |
+| Go2 task-candidate research registry | `general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/candidate_review_queue.json` | Primary-source-linked research record for `G06`–`G26`; these entries are review-only and neither source provenance nor location under the Tasks Library admits a task, difficulty, criterion, threshold, observation contract, or scene asset |
+| Human capability-validation preparation catalog | `general_demo/private_governance/blue_line/standards/reference_candidates.json` | Cleaned mainline migration of the initial Project Validation Standards Reference candidates; it is separate from Tasks Library content, and only reviewed records selected into a frozen comparison Snapshot govern formal Validation |
 
 ---
 
@@ -2641,13 +2717,13 @@ preserve obsolete questions.
 | RQ1 protocol | Exact producer endpoints; Consumer models/policies and training/freeze points; isolated-Stage-2 versus end-to-end allocation; fixed Capability Design/capability-set/suite selection; stage/Consumer budgets, repetitions, tasks, seeds, and frozen reference layer | `OQ-RQ1-001` |
 | RQ3 protocol | Robot sampling hierarchy, functionally matched task families, and frozen multi-robot Validation Standards Snapshot partitions | `OQ-RQ3-001` |
 | Structured observation | State schema, entities, frames/units, precision, timestamp, and deterministic update cadence | `OQ-OBS-001` |
-| Tasks Library | Cross-robot difficulty rules, inapplicable tasks, machine schema, remaining robot catalogs, type taxonomy, fixed five tasks, and criterion schema | `OQ-TASK-001`, `OQ-TASK-002` |
+| Tasks Library | Cross-robot difficulty rules, inapplicable tasks, generalized machine/executable criterion schema, human review and possible admission of the 21 researched Go2 candidates beyond the five admitted Demo tasks, remaining robot catalogs, and cross-catalog type taxonomy | `OQ-TASK-001`, `OQ-TASK-002` |
 | Future Morphology expansion | Environment composition beyond the two frozen v1 entries and later shared-component promotion rules | `OQ-MORPH-001` |
 | Generation | Exact Stage Bundle projections, Capability Design fields/JSON Schema/checker, Stage 1 Conformance Repair budget, Python Binding Contract/skeleton and Manifest schemas, Stage 1/Stage 2 prompts, dependency/isolation rules, inference retry/cache/token accounting, artifact binding, tuning/freeze, canonicalization, and reproducibility | `OQ-GEN-001` |
 | Development Sandbox | Probe suite, tool schema, feedback redaction, separate call/episode/simulated-time/control-step/output/wall-time caps, failure accounting, and audit evidence | `OQ-SANDBOX-001` |
 | Simplified Blue Line | Exact fixed model/prompt/decoding configuration; Project Validation Standards Reference and Frozen Validation Standards Snapshot, Private Measurement Catalog, Validation Spec, suite, Blue Line Manifest and Binding Overlay schemas; matching/adaptation format and machine enforcement of the approved material-review rule; case/trial limits; deterministic checker/compiler, privacy enforcement, review/version records, canonicalization, sealing, and provider accounting within the approved three-call ceiling | `OQ-BLUE-001` |
 | Validation and Repair | Exact Validation A checks/evidence; Validation B Harness/truth adapters/repetitions/aggregation/reset and failure taxonomy; mandatory Evaluation Video camera/view/renderer/encoding, simulation-time interval and dropped-frame completeness, overhead/resource accounting, manifest, infrastructure retry, private retention and post-closure handoff; Repair diagnostics, continued/fresh mechanics, per-attempt LLM/tool/Sandbox allocation across ten invocations, provider accounting, ledger, and early termination | `OQ-VAL-001`, `OQ-REPAIR-001` |
 | Consumer routing | Exact typed Router, LLM-tool and policy/program adapters, worker/IPC isolation, lifecycle, concurrency, and error propagation | `OQ-CONSUMER-001` |
-| Demo | Exact criteria, Harness adapters, sampling/reset, budgets, repetitions, evidence, metrics, aggregation, and mandatory Evaluation Video camera/view/renderer/encoding, simulation-time interval and dropped-frame completeness, overhead/resource accounting, manifest, infrastructure retry, private retention and post-closure handoff | `OQ-DEMO-001` |
+| Demo | Harness adapters, criterion implementation schema, sampling/reset, budgets, repetitions, evidence, metrics, aggregation, and mandatory Evaluation Video camera/view/renderer/encoding, simulation-time interval and dropped-frame completeness, overhead/resource accounting, manifest, infrastructure retry, private retention and post-closure handoff | `OQ-DEMO-001` |
 | Evolution and Experience | Exact record/compiler/review schemas, publication and evidence-sufficiency authority, declassification, retrieval/ranking, conflict/invalidation rules, and causal tests | `OQ-EVO-001` |
 | RQ2 granularity experiment | Exact G1/G3 profiles; selection of the already frozen first-Demo G2 version or admission of a separately versioned RQ2 G2 revision; matched-effect and semantic-coverage rules, interface/composition characterization, metrics, and minimum sufficient ablation protocol | `OQ-EXP-001` |

@@ -28,8 +28,10 @@ from ..foundation.hashing import content_hash, is_content_hash
 from ..foundation.seals import create_seal
 from ..generation import JsonGenerator, Stage1Config, Stage1Runner
 from ..implementation import CallbackSandbox, Stage2Config, Stage2Runner
+from ..implementation import validate_implementation_bundle
 from ..integration import ExperimentIntegrationGate, Stage1GateResult
 from ..integration.artifacts import load_json_artifact, load_run_snapshot, verify_file_reference
+from ..libraries import TasksLibrary
 from ..validation import (
     RepairCallback,
     RepairConfig,
@@ -41,7 +43,7 @@ from ..validation import (
 )
 
 
-_AUTHORITY_REVISION = "0.15.0"
+_AUTHORITY_REVISION = "0.16.0"
 _G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
 _SCALAR_TYPES = {"null", "boolean", "integer", "number", "string"}
 
@@ -72,6 +74,7 @@ class DemoRunPlan:
     standards_snapshot: Mapping[str, Any]
     measurement_catalog: Mapping[str, Any]
     blue_line_policy: Mapping[str, Any]
+    implementation_bundle: Mapping[str, Any]
     validation_a_profile: ValidationAProfile
     public_state_schema: Mapping[str, Any]
     validation_harness_config: Mapping[str, Any]
@@ -79,6 +82,7 @@ class DemoRunPlan:
     consumer_max_steps: int = 4
     consumer_seed: int = 0
     demo_repetitions: int = 1
+    task_catalog_version: str = "1.0.0"
     stage1_config: Stage1Config = Stage1Config()
     stage2_config: Stage2Config = Stage2Config()
     repair_config: RepairConfig = RepairConfig()
@@ -102,12 +106,15 @@ class DemoRunPlan:
             raise ContractError("consumer_seed must be non-negative")
         if isinstance(self.demo_repetitions, bool) or not isinstance(self.demo_repetitions, int) or self.demo_repetitions <= 0:
             raise ContractError("demo_repetitions must be a positive fixed integer")
+        if not isinstance(self.task_catalog_version, str) or not self.task_catalog_version.strip():
+            raise ContractError("task_catalog_version must be non-empty text")
         for field in (
             "robot_public_projection",
             "g2_profile",
             "standards_snapshot",
             "measurement_catalog",
             "blue_line_policy",
+            "implementation_bundle",
             "public_state_schema",
             "validation_harness_config",
         ):
@@ -243,6 +250,7 @@ class GeneralDemoRunner:
         manifest = manifest_artifact.value
         self._verify_robot_projection(manifest, plan.robot_public_projection)
         self._verify_robot_session(manifest)
+        self._verify_tasks_library(manifest, plan)
         self._verify_frozen_run_inputs(plan)
         route = EvaluationRoute(
             run_id=plan.run_id,
@@ -310,11 +318,19 @@ class GeneralDemoRunner:
             return self._finish("BLUE_LINE_NEEDS_REVIEW", base, stages, parents)
         parents.add(blue.suite_hash)
 
+        implementation_bundle = validate_implementation_bundle(plan.implementation_bundle)
+        parents.add(implementation_bundle.bundle_hash)
+
         stage2 = Stage2Runner(
             self._models.stage2,
             sandbox=self._models.sandbox,
             config=plan.stage2_config,
-        ).run(stage1.capability_design, stage1.seal, blue.stage2_authorization)
+        ).run(
+            stage1.capability_design,
+            stage1.seal,
+            blue.stage2_authorization,
+            implementation_bundle,
+        )
         stages.append({
             "stage": "stage2",
             "status": stage2.status,
@@ -352,6 +368,7 @@ class GeneralDemoRunner:
             manifest_seal=blue.manifest_seal,
             validation_suite=blue.validation_suite,
             suite_seal=blue.suite_seal,
+            blue_line_ready_bundle=blue.validation_authorization,
             run_snapshot={
                 "artifact_type": "validation_run_snapshot",
                 "schema_version": "1.0.0",
@@ -359,6 +376,7 @@ class GeneralDemoRunner:
                 "blue_line_spec_hash": blue.spec_hash,
                 "blue_line_manifest_hash": blue.manifest_hash,
                 "suite_hash": blue.suite_hash,
+                "implementation_bundle_hash": implementation_bundle.bundle_hash,
                 "rim_hash": route.integration_manifest_hash,
                 "sdk_entry_hash": route.sdk_entry_hash,
                 "runtime_hash": route.runtime_hash,
@@ -379,6 +397,7 @@ class GeneralDemoRunner:
             stage2.implementation_manifest,
             stage2.manifest_seal,
             validation_context,
+            implementation_bundle,
         )
         initial_b_status = (
             validation.initial_validation_b.status
@@ -395,6 +414,8 @@ class GeneralDemoRunner:
             "initial_validation_a": validation.initial_validation_a.status,
             "initial_validation_b": initial_b_status,
             "first_passing_repair_index": validation.first_passing_repair_index,
+            "repair_invocations_used": validation.repair_invocations_used,
+            "candidate_revisions_created": validation.candidate_revisions_created,
             "repairs_consumed": validation.repairs_consumed,
             "repair_llm_calls": validation.repair_llm_calls,
             "final_validation_a": validation.final_validation_a.status if validation.final_validation_a else None,
@@ -517,6 +538,33 @@ class GeneralDemoRunner:
         ):
             raise ContractError("robot session does not match the verified integration manifest")
 
+    def _verify_tasks_library(
+        self, manifest: Mapping[str, Any], plan: DemoRunPlan
+    ) -> None:
+        package = TasksLibrary(self._root / "general_demo/libraries/tasks").load(
+            str(manifest.get("robot_configuration_id")),
+            plan.task_catalog_version,
+        )
+        public_tasks = package.demo_public_tasks(plan.run_id)
+        private_criteria = package.demo_private_criteria()
+        if len(public_tasks) != len(plan.tasks) or len(private_criteria) != len(plan.tasks):
+            raise ContractError("DemoRunPlan does not match the selected Tasks Library collection")
+        for task, public, criterion in zip(
+            plan.tasks, public_tasks, private_criteria, strict=True
+        ):
+            if (
+                task.task_id != public["task_id"]
+                or task.requirement_id != public["requirement_id"]
+                or task.description != public["description"]
+            ):
+                raise ContractError(
+                    "DemoRunPlan public task view does not match the selected Tasks Library collection"
+                )
+            if dict(task.private_criterion) != criterion:
+                raise ContractError(
+                    "DemoRunPlan private criterion does not match the selected Tasks Library record"
+                )
+
     def _verify_frozen_run_inputs(self, plan: DemoRunPlan) -> None:
         snapshot_path = Path(plan.run_snapshot_path)
         if not snapshot_path.is_absolute():
@@ -542,6 +590,9 @@ class GeneralDemoRunner:
             dict(plan.blue_line_policy),
         ]:
             raise ContractError("Blue Line inputs do not match the frozen run input")
+        library_views = [value_for(reference) for reference in snapshot["library_view_refs"]]
+        if dict(plan.implementation_bundle) not in library_views:
+            raise ContractError("Stage 2 Implementation Bundle is not frozen in the run input")
 
     @staticmethod
     def _design_covers_tasks(

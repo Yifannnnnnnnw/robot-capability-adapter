@@ -188,8 +188,8 @@ def _close_recording(
         if isinstance(exc, HarnessInfrastructureError):
             raise
         raise HarnessInfrastructureError("evaluation video recording could not close") from exc
-    if not isinstance(closed, ClosedEvaluationVideo) or closed.is_infrastructure_error:
-        raise HarnessInfrastructureError("required evaluation video is incomplete")
+    if not isinstance(closed, ClosedEvaluationVideo):
+        raise HarnessInfrastructureError("evaluation video recorder returned an invalid result")
     return closed
 
 
@@ -256,10 +256,14 @@ class RecordingValidationHarness:
             raise ContractError("Validation Harness requires a typed invocation")
         identity = {
             "capability_id": invocation.capability_id,
+            "case_id": invocation.case_id,
             "inputs": invocation.inputs,
             "initial_state": invocation.initial_state,
             "repetition": invocation.repetition,
             "run_snapshot_hash": invocation.run_snapshot_hash,
+            "candidate_source_hash": invocation.candidate_source_hash,
+            "suite_hash": invocation.suite_hash,
+            "execution_attempt": invocation.execution_attempt,
         }
         execution_id = content_hash(canonical_bytes(identity)).split(":", 1)[1][:24]
         try:
@@ -280,8 +284,12 @@ class RecordingValidationHarness:
                     execution_id,
                     {
                         "capability_id": invocation.capability_id,
+                        "case_id": invocation.case_id,
                         "repetition": invocation.repetition,
                         "run_snapshot_hash": invocation.run_snapshot_hash,
+                        "candidate_source_hash": invocation.candidate_source_hash,
+                        "suite_hash": invocation.suite_hash,
+                        "execution_attempt": invocation.execution_attempt,
                     },
                 ),
             )
@@ -307,6 +315,10 @@ class RecordingValidationHarness:
             evidence_error = exc
         closed = _close_recording(self._robot_session, recorder)
         self._videos.append(closed)
+        if closed.is_infrastructure_error:
+            raise HarnessInfrastructureError(
+                "required Validation video is incomplete", video_evidence=closed
+            )
         if evidence_error is not None or evidence is None:
             raise HarnessInfrastructureError("Validation evidence acquisition failed") from evidence_error
         return HarnessMeasurement(
@@ -324,11 +336,7 @@ class RecordingValidationHarness:
                 "sdk_entry_hash": self._route.sdk_entry_hash,
                 "runtime_hash": self._route.runtime_hash,
             },
-            video_artifact_ref={
-                "artifact_id": closed.manifest["recording_id"],
-                "content_hash": closed.media_content_hash,
-                "complete": closed.completion_status == "COMPLETE",
-            },
+            video_evidence=closed,
         )
 
 
@@ -505,6 +513,11 @@ class DemoEvaluationHarness:
             consumer_failed = True
         try:
             closed = _close_recording(self._robot_session, recorder)
+            if closed.is_infrastructure_error:
+                return DemoTrialResult(
+                    task.task_id, repetition, "INFRASTRUCTURE_ERROR", consumer_result,
+                    criterion_hash, None, closed,
+                )
             evidence = copy.deepcopy(dict(self._robot_session.demo_evidence(task.task_id)))
             evidence_hash = content_hash(canonical_bytes(evidence))
             passed = not consumer_failed and bool(

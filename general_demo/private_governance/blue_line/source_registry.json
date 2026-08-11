@@ -1,0 +1,17 @@
+{
+  "artifact_type": "blue_line_preparation_source_registry",
+  "schema_version": "0.1.0",
+  "registry_id": "first-demo-blue-line-preparation-sources",
+  "formal_run_readable": false,
+  "sources": [
+    {
+      "source_id": "user-validation-task-generation-reference-2026-08-04",
+      "source_kind": "human_authored_historical_reference",
+      "migrated_artifact_path": "standards/reference_candidates.json",
+      "migrated_artifact_sha256": "ab417350a5bc336fe33fb87b554bc0d2bf9be881a91639c6a2d84f25dd6a4fd4",
+      "migration_status": "CLEANED_AND_MIGRATED",
+      "record_level_review_required": true,
+      "formal_use_requires_frozen_snapshot": true
+    }
+  ]
+}

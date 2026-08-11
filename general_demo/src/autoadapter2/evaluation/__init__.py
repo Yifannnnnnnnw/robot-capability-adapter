@@ -9,6 +9,7 @@ from .video import (
     VideoEncodingError,
     VideoInfraCode,
     VideoInfrastructureFailure,
+    verify_closed_evaluation_video,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "VideoEncodingError",
     "VideoInfraCode",
     "VideoInfrastructureFailure",
+    "verify_closed_evaluation_video",
 ]

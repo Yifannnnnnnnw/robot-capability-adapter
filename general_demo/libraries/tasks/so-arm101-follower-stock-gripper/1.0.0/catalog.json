@@ -1,0 +1,278 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "so-arm101-follower-stock-gripper-tasks",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "so-arm101",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "catalog_review_status": "HUMAN_APPROVED",
+  "approval_date": "2026-08-09",
+  "configuration_boundary": {
+    "base_type": "fixed",
+    "arm_joint_count": 5,
+    "end_effector": "stock_gripper",
+    "camera_assumed": false,
+    "scene_facts_requirement": "Targets, target regions, object identities, and other required scene facts must be supplied through the run's approved observation interface.",
+    "object_scope": "Small, lightweight tabletop objects and fixtures inside the admitted reachable workspace."
+  },
+  "difficulty_scale": {
+    "D1": "One direct motion or broad-tolerance contact; no stable grasp or multi-stage manipulation.",
+    "D2": "One controlled interaction, stable grasp, or simple fixture transition with generous tolerance.",
+    "D3": "Multiple manipulation phases, transport/release, pose maintenance, or moderately constrained geometry.",
+    "D4": "Tight alignment, constrained contact, articulated pulling, multi-object ordering, clutter, or tool use."
+  },
+  "tasks": [
+    {
+      "task_id": "T01",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Move the gripper reference point to the specified 3-D target and stop.",
+      "task_type": "reach",
+      "source_basis": ["RLBench ReachTarget", "prior AutoAdapter benchmark"],
+      "difficulty": "D1",
+      "difficulty_rationale": "Direct positioning with no grasp."
+    },
+    {
+      "task_id": "T02",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Touch the specified face of the target object without moving the object.",
+      "task_type": "controlled_contact",
+      "source_basis": ["RLBench reach/contact family"],
+      "difficulty": "D1",
+      "difficulty_rationale": "Short contact motion, but it requires contact evidence."
+    },
+    {
+      "task_id": "T03",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Push the cube into the specified planar goal region.",
+      "task_type": "planar_pushing",
+      "source_basis": ["RLBench SlideBlockToTarget", "ManiSkill PushCube", "prior AutoAdapter benchmark"],
+      "difficulty": "D1",
+      "difficulty_rationale": "Broad-tolerance planar motion without grasping."
+    },
+    {
+      "task_id": "T04",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Push the cylinder laterally into the specified goal region while keeping it upright.",
+      "task_type": "planar_pushing_with_orientation_constraint",
+      "source_basis": ["prior AutoAdapter lateral-cylinder task"],
+      "difficulty": "D2",
+      "difficulty_rationale": "Contact direction and cylinder stability must both be controlled."
+    },
+    {
+      "task_id": "T05",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Roll the ball into the specified circular goal region.",
+      "task_type": "dynamic_planar_manipulation",
+      "source_basis": ["ManiSkill RollBall"],
+      "difficulty": "D2",
+      "difficulty_rationale": "Object motion continues after contact, requiring anticipation."
+    },
+    {
+      "task_id": "T06",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Rotate the rectangular block to the specified planar orientation without moving it outside its local region.",
+      "task_type": "planar_reorientation",
+      "source_basis": ["ManiSkill planar-pose tasks"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Requires selecting contact points to control yaw."
+    },
+    {
+      "task_id": "T07",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Push the T-shaped block until it matches the target silhouette.",
+      "task_type": "precision_planar_pose_control",
+      "source_basis": ["ManiSkill PushT"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Translation and yaw must be controlled through repeated contact."
+    },
+    {
+      "task_id": "T08",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Grasp the target cube and hold it securely just above the table.",
+      "task_type": "grasp_and_hold",
+      "source_basis": ["prior AutoAdapter benchmark", "ManiSkill PickCubeSO100"],
+      "difficulty": "D2",
+      "difficulty_rationale": "Tests stable stock-gripper closure without long transport."
+    },
+    {
+      "task_id": "T09",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Lift the target cube to the specified height and hold it there.",
+      "task_type": "lift",
+      "source_basis": ["RLBench PickAndLiftSmall", "prior AutoAdapter benchmark"],
+      "difficulty": "D2",
+      "difficulty_rationale": "Stable grasp plus vertical motion."
+    },
+    {
+      "task_id": "T10",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Move the grasped cube to the specified 3-D goal and keep holding it.",
+      "task_type": "grasped_transport",
+      "source_basis": ["ManiSkill PickCubeSO100"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Combines grasp stability with multi-joint spatial transport."
+    },
+    {
+      "task_id": "T11",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Place the cube on the specified planar target and release it.",
+      "task_type": "pick_and_place",
+      "source_basis": ["prior AutoAdapter benchmark", "LIBERO goal tasks"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Requires transport, controlled descent, release, and settling."
+    },
+    {
+      "task_id": "T12",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Place the cube completely inside the shallow tray and release it.",
+      "task_type": "containment_placement",
+      "source_basis": ["prior AutoAdapter tray tasks", "LIBERO"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Requires clearance-aware placement and release."
+    },
+    {
+      "task_id": "T13",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Place the sphere inside the shallow bin and release it.",
+      "task_type": "dynamic_containment_placement",
+      "source_basis": ["ManiSkill PlaceSphere"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Release can cause rolling or escape."
+    },
+    {
+      "task_id": "T14",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Place the cylinder upright on the specified target and release it.",
+      "task_type": "orientation_constrained_placement",
+      "source_basis": ["prior AutoAdapter benchmark"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Position, symmetry-axis orientation, and release stability all matter."
+    },
+    {
+      "task_id": "T15",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Stack the target cube on top of the base cube and release it.",
+      "task_type": "stacking",
+      "source_basis": ["ManiSkill StackCube", "prior AutoAdapter benchmark"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Sensitive to depth error and release disturbance."
+    },
+    {
+      "task_id": "T16",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Raise the horizontal peg to an upright pose and release it on the table.",
+      "task_type": "object_reorientation",
+      "source_basis": ["ManiSkill LiftPegUpright"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Requires a large orientation change and stable release."
+    },
+    {
+      "task_id": "T17",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Place the square ring over the specified square peg and release it.",
+      "task_type": "peg_and_ring_assembly",
+      "source_basis": ["RLBench InsertOntoSquarePeg"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Position and yaw must align throughout insertion."
+    },
+    {
+      "task_id": "T18",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Insert the specified end of the peg into the side hole.",
+      "task_type": "side_insertion",
+      "source_basis": ["ManiSkill PegInsertionSide"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Contact-rich alignment is difficult for a five-DoF arm; pilot required."
+    },
+    {
+      "task_id": "T19",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Put the specified shape into its matching sorter slot and release it.",
+      "task_type": "shape_insertion",
+      "source_basis": ["RLBench PlaceShapeInShapeSorter"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Requires object selection, yaw alignment, and constrained insertion."
+    },
+    {
+      "task_id": "T20",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Press the specified large button until it activates.",
+      "task_type": "button_actuation",
+      "source_basis": ["RLBench PushButton"],
+      "difficulty": "D2",
+      "difficulty_rationale": "Short motion, but contact direction and target discrimination matter."
+    },
+    {
+      "task_id": "T21",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Open the shallow drawer by its handle.",
+      "task_type": "articulated_object_manipulation",
+      "source_basis": ["RLBench OpenDrawer", "CALVIN", "RoboCasa"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Handle acquisition and constrained pulling are workspace-sensitive; pilot required."
+    },
+    {
+      "task_id": "T22",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Push the shallow drawer fully closed.",
+      "task_type": "articulated_object_manipulation",
+      "source_basis": ["RLBench drawer tasks", "CALVIN drawer tasks", "RoboCasa drawer tasks"],
+      "difficulty": "D2",
+      "difficulty_rationale": "Broad frontal pushing is easier than handle-based opening."
+    },
+    {
+      "task_id": "T23",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Slide the tabletop door to its fully open position.",
+      "task_type": "sliding_fixture_manipulation",
+      "source_basis": ["CALVIN sliding-door tasks"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Requires sustained constrained contact along one axis."
+    },
+    {
+      "task_id": "T24",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Grasp the lid handle and remove the lid from the container.",
+      "task_type": "handle_grasp_and_removal",
+      "source_basis": ["RLBench TakeLidOffSaucepan", "RoboCasa"],
+      "difficulty": "D3",
+      "difficulty_rationale": "Requires stable handle grasp and vertical clearance."
+    },
+    {
+      "task_id": "T25",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Place each of the two specified objects into its matching tray.",
+      "task_type": "two_object_sorting",
+      "source_basis": ["prior AutoAdapter benchmark", "LIBERO", "RoboCasa"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Two complete pick-and-place cycles with distinct destinations."
+    },
+    {
+      "task_id": "T26",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Place object A into the tray, then place object B into the tray.",
+      "task_type": "ordered_multi_object_manipulation",
+      "source_basis": ["prior AutoAdapter benchmark", "CALVIN sequences"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Requires memory of task order and two reliable manipulation cycles."
+    },
+    {
+      "task_id": "T27",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Put the specified object inside the open drawer and then close the drawer.",
+      "task_type": "compound_fixture_task",
+      "source_basis": ["CALVIN", "RoboCasa"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Combines pick-and-place, containment, and articulated manipulation."
+    },
+    {
+      "task_id": "T28",
+      "task_review_status": "HUMAN_APPROVED",
+      "description": "Use the provided tool to pull the initially unreachable cube into the specified reachable region.",
+      "task_type": "tool_use",
+      "source_basis": ["ManiSkill PullCubeTool", "ManiSkill PokeCube"],
+      "difficulty": "D4",
+      "difficulty_rationale": "Requires tool grasp, indirect contact, and compound planning; pilot required."
+    }
+  ]
+}

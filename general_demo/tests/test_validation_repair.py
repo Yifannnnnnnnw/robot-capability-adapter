@@ -5,10 +5,18 @@ import copy
 import pytest
 
 from autoadapter2.blue_line import BlueLineRunner
+from autoadapter2.evaluation import (
+    ClosedEvaluationVideo,
+    EncodedVideo,
+    EvaluationVideoRecorder,
+    FrozenVideoProfile,
+    OpaqueVideoHandle,
+    RGBFrame,
+)
 from autoadapter2.foundation.canonical import canonical_bytes
 from autoadapter2.foundation.errors import ContractError
 from autoadapter2.foundation.hashing import content_hash
-from autoadapter2.foundation.seals import verify_seal
+from autoadapter2.foundation.seals import create_seal, verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
 from autoadapter2.implementation import Stage2Runner
 from autoadapter2.validation import (
@@ -146,7 +154,17 @@ class _FixedHarness:
             "sdk_entry_hash": self._snapshot["sdk_entry_hash"],
             "runtime_hash": self._snapshot["runtime_hash"],
         }
-        video = {"artifact_id": "eval-video", "content_hash": content_hash(b"video"), "complete": outcome != "video_fail"}
+        video = _video_evidence(invocation, complete=outcome != "video_fail")
+        if outcome == "forged_video":
+            video = ClosedEvaluationVideo(
+                completion_status=video.completion_status,
+                execution_disposition=video.execution_disposition,
+                media_content_hash=video.media_content_hash,
+                manifest_content_hash=video.manifest_content_hash,
+                manifest_bytes=video.manifest_bytes,
+                handle=video.handle,
+                failures=video.failures,
+            )
         observation = HarnessMeasurement(
             measurement_id=invocation.measurement["measurement_id"],
             metric=invocation.metric,
@@ -157,9 +175,54 @@ class _FixedHarness:
             elapsed_s=0.2,
             guard_results=guards,
             sdk_route_evidence=route,
-            video_artifact_ref=video,
+            video_evidence=video,
         )
         return _Session(observation)
+
+
+class _ValidationTestVideoEncoder:
+    def encode(self, _profile, frames):
+        payload = b"validation-test-video\0" + b"|".join(frame.rgb for frame in frames)
+        return EncodedVideo(OpaqueVideoHandle("validation-test-video"), payload)
+
+
+def _video_evidence(invocation, *, complete: bool) -> ClosedEvaluationVideo:
+    profile = FrozenVideoProfile(
+        profile_id="validation-test-video",
+        profile_version="1.0.0",
+        camera="external-evaluation",
+        view="robot-and-resource",
+        fps=10,
+        width=1,
+        height=1,
+        container="fake",
+        codec="fake-rgb",
+    )
+    recorder = EvaluationVideoRecorder(
+        recording_id=(
+            f"{invocation.capability_id}-{invocation.case_id}-"
+            f"{invocation.repetition}-{invocation.execution_attempt}"
+        ),
+        profile=profile,
+        encoder=_ValidationTestVideoEncoder(),
+        coverage_start_time_s=0.0,
+        bindings={
+            "phase": "VALIDATION_B",
+            "capability_id": invocation.capability_id,
+            "case_id": invocation.case_id,
+            "repetition": str(invocation.repetition),
+            "run_snapshot_hash": invocation.run_snapshot_hash,
+            "candidate_source_hash": invocation.candidate_source_hash,
+            "suite_hash": invocation.suite_hash,
+            "execution_attempt": str(invocation.execution_attempt),
+        },
+    )
+    if complete:
+        recorder.add_frame(RGBFrame(0.0, 1, 1, b"\x00\x00\x00"))
+        recorder.add_frame(RGBFrame(0.1, 1, 1, b"\x01\x01\x01"))
+    else:
+        recorder.add_frame(RGBFrame(0.1, 1, 1, b"\x01\x01\x01"))
+    return recorder.close(terminal_time_s=0.1)
 
 
 def _sealed_design() -> tuple[dict, dict]:
@@ -221,6 +284,7 @@ def _context(design: dict, design_seal: dict, blue) -> ValidationContext:
         manifest_seal=blue.manifest_seal,
         validation_suite=blue.validation_suite,
         suite_seal=blue.suite_seal,
+        blue_line_ready_bundle=blue.validation_authorization,
         run_snapshot=snapshot,
     )
 
@@ -298,10 +362,17 @@ def test_validation_b_evaluates_sealed_measurements_not_candidate_self_report() 
     route_or_video = ValidationBRunner(_FixedHarness(context.run_snapshot, ["route_fail", "video_fail"])).run(
         bind_candidate_to_suite(a_result, blue.suite_hash), context
     )
-    assert route_or_video.status == "FAIL"
-    assert {"SDK_ROUTE_EVIDENCE", "VIDEO_ARTIFACT"}.issubset(
+    assert route_or_video.status == "INFRASTRUCTURE_ERROR"
+    assert {"SDK_ROUTE_EVIDENCE", "HARNESS_INFRASTRUCTURE"}.issubset(
         {code for execution in route_or_video.executions for code in execution["failure_codes"]}
     )
+    forged_video = ValidationBRunner(_FixedHarness(context.run_snapshot, ["forged_video", "pass"])).run(
+        bind_candidate_to_suite(a_result, blue.suite_hash), context
+    )
+    assert forged_video.status == "INFRASTRUCTURE_ERROR"
+    assert "HARNESS_INFRASTRUCTURE" in {
+        code for execution in forged_video.executions for code in execution["failure_codes"]
+    }
     with pytest.raises(ContractError):
         ValidationBRunner(lambda _unused: None)  # type: ignore[arg-type]
 
@@ -329,6 +400,7 @@ def test_validation_b_requires_handle_lineage_sdk_video_and_candidate_exception_
         blue_line_spec=context.blue_line_spec, spec_seal=context.spec_seal,
         blue_line_manifest=tampered_manifest, manifest_seal=context.manifest_seal,
         validation_suite=context.validation_suite, suite_seal=context.suite_seal,
+        blue_line_ready_bundle=context.blue_line_ready_bundle,
         run_snapshot=context.run_snapshot,
     )
     with pytest.raises(ContractError):
@@ -336,8 +408,65 @@ def test_validation_b_requires_handle_lineage_sdk_video_and_candidate_exception_
     with pytest.raises(ContractError):
         runner.run(a_result.candidate_handle, context)  # type: ignore[arg-type]
     with pytest.raises(ContractError):
-        runner.run(a_result.candidate_handle._module, context)  # type: ignore[arg-type]
+        runner.run(object(), context)  # type: ignore[arg-type]
+    with pytest.raises(AttributeError):
+        a_result.candidate_handle._source = "replacement"  # type: ignore[attr-defined]
     assert tampered is not None
+
+
+def test_validation_b_rejects_self_resealed_rules_without_blue_line_ready_origin() -> None:
+    design, design_seal, _stage2, blue, a_result = _a_result(_source("PASS"))
+    context = _context(design, design_seal, blue)
+    forged_spec = copy.deepcopy(context.blue_line_spec)
+    forged_spec["capability_specs"][0]["threshold"]["value"] = 999.0
+    forged_spec_hash = content_hash(canonical_bytes(forged_spec))
+    forged_spec_seal = create_seal(
+        "blue_line_validation_spec", forged_spec_hash, list(context.spec_seal["parents"])
+    )
+
+    forged_suite = copy.deepcopy(context.validation_suite)
+    forged_suite["spec_hash"] = forged_spec_hash
+    forged_suite["capability_cases"][0]["threshold"]["value"] = 999.0
+    forged_suite_hash = content_hash(canonical_bytes(forged_suite))
+    forged_suite_parents = [
+        forged_spec_hash if parent == blue.spec_hash else parent
+        for parent in context.suite_seal["parents"]
+    ]
+    forged_suite_seal = create_seal(
+        "validation_b_suite", forged_suite_hash, forged_suite_parents
+    )
+
+    forged_manifest = copy.deepcopy(context.blue_line_manifest)
+    forged_manifest["spec_hash"] = forged_spec_hash
+    forged_manifest["suite_hash"] = forged_suite_hash
+    forged_manifest_hash = content_hash(canonical_bytes(forged_manifest))
+    forged_manifest_parents = [
+        forged_spec_hash if parent == blue.spec_hash else parent
+        for parent in context.manifest_seal["parents"]
+    ]
+    forged_manifest_seal = create_seal(
+        "blue_line_manifest", forged_manifest_hash, forged_manifest_parents
+    )
+    forged_snapshot = copy.deepcopy(context.run_snapshot)
+    forged_snapshot["blue_line_spec_hash"] = forged_spec_hash
+    forged_snapshot["blue_line_manifest_hash"] = forged_manifest_hash
+    forged_snapshot["suite_hash"] = forged_suite_hash
+    forged_context = ValidationContext(
+        capability_design=context.capability_design,
+        design_seal=context.design_seal,
+        blue_line_spec=forged_spec,
+        spec_seal=forged_spec_seal,
+        blue_line_manifest=forged_manifest,
+        manifest_seal=forged_manifest_seal,
+        validation_suite=forged_suite,
+        suite_seal=forged_suite_seal,
+        blue_line_ready_bundle=context.blue_line_ready_bundle,
+        run_snapshot=forged_snapshot,
+    )
+    with pytest.raises(ContractError, match="lineage is not sealed and READY"):
+        ValidationBRunner(_FixedHarness(forged_snapshot, ["pass", "pass"])).run(
+            bind_candidate_to_suite(a_result, forged_suite_hash), forged_context
+        )
 
 
 def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_frozen() -> None:
@@ -355,7 +484,8 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert no_change.status == "NO_CHANGE"
-    assert no_change.repairs_consumed == 0
+    assert no_change.repair_invocations_used == no_change.repairs_consumed == 1
+    assert no_change.candidate_revisions_created == 0
     assert len(no_change.run_ledger) == 1
     assert design == frozen_design
     assert stage2.binding_contract == frozen_binding
@@ -370,7 +500,8 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert repaired.status == "PASS"
-    assert repaired.first_passing_repair_index == repaired.repairs_consumed == 1
+    assert repaired.first_passing_repair_index == repaired.repair_invocations_used == repaired.repairs_consumed == 1
+    assert repaired.candidate_revisions_created == 1
     assert repaired.repair_llm_calls == 2
     assert repaired.run_snapshot_hash == content_hash(canonical_bytes(context.run_snapshot))
 
@@ -384,8 +515,23 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert historical.status == "NO_CHANGE"
-    assert historical.repairs_consumed == 1
+    assert historical.repair_invocations_used == historical.repairs_consumed == 2
+    assert historical.candidate_revisions_created == 1
     assert len(historical.run_ledger) == 2
+
+    comment_only = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail"])),
+        lambda _request: {"capability.py": stage2.capability_source + "\n# no executable change\n", "llm_calls": 1},
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+    assert comment_only.status == "NO_EXECUTABLE_CHANGE"
+    assert comment_only.repair_invocations_used == 1
+    assert comment_only.candidate_revisions_created == 0
+    assert len(comment_only.run_ledger) == 1
 
 
 def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_ten() -> None:
@@ -400,7 +546,8 @@ def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert result.status == "PASS"
-    assert result.repairs_consumed == 1
+    assert result.repair_invocations_used == result.repairs_consumed == 1
+    assert result.candidate_revisions_created == 1
     revision_one = [entry for entry in result.run_ledger if entry["revision_index"] == 1]
     assert [entry["b_status"] for entry in revision_one] == ["INFRASTRUCTURE_ERROR", "PASS"]
     assert revision_one[0]["source_hash"] == revision_one[1]["source_hash"]
@@ -419,7 +566,29 @@ def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert capped.status == "FAILED_AFTER_REPAIRS"
-    assert capped.repairs_consumed == capped.repair_llm_calls == calls == 10
+    assert capped.repair_invocations_used == capped.repairs_consumed == 10
+    assert capped.candidate_revisions_created == capped.repair_llm_calls == calls == 10
+
+
+def test_repair_invalid_source_consumes_invocation_but_not_revision() -> None:
+    design, design_seal, stage2, blue = _stage2_submission(_source("INITIAL"))
+    context = _context(design, design_seal, blue)
+    outputs = iter(["def broken(", _source("REPAIRED")])
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail", "pass", "pass"])),
+        lambda _request: {"capability.py": next(outputs), "llm_calls": 1},
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+    assert result.status == "PASS"
+    assert result.first_passing_repair_index == 2
+    assert result.repair_invocations_used == result.repairs_consumed == 2
+    assert result.candidate_revisions_created == 1
+    assert result.repair_log[0]["diagnostics"][0]["code"] == "REPAIR_SOURCE_SYNTAX"
+    assert [entry["repair_invocation_index"] for entry in result.run_ledger] == [0, 2]
 
 
 def test_repair_reuses_exact_bundle_and_rejects_manifest_or_snapshot_drift() -> None:

@@ -1,0 +1,97 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "unitree-go2-stock-12dof-tasks",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "unitree-go2",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "catalog_review_status": "HUMAN_APPROVED",
+  "approval_date": "2026-08-11",
+  "configuration_boundary": {
+    "base_type": "free",
+    "actuated_dof": 12,
+    "actuation_route": "LowCmd joint-level control synthesized by AutoAdapter capabilities",
+    "state_route": "LowState plus admitted physical-state observations",
+    "excluded_as_implementation_shortcuts": [
+      "SportClient.Sit",
+      "SportClient.StandUp",
+      "SportClient.Move",
+      "other high-level Sport requests"
+    ],
+    "source_interpretation": "Official high-level examples establish task concepts only. The General Demo must synthesize behavior through the admitted low-level SDK route."
+  },
+  "source_registry": [
+    {
+      "source_id": "unitree-sdk2py-go2-examples",
+      "kind": "official_robot_sdk_examples",
+      "url": "https://github.com/unitreerobotics/unitree_sdk2_python/tree/65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5/example",
+      "basis": "Official examples expose stand/lie, velocity movement, balance-attitude, trajectory-following, and special-motion task concepts."
+    },
+    {
+      "source_id": "unitree-sdk2-go2-sport-interface",
+      "kind": "official_robot_sdk_interface",
+      "url": "https://github.com/unitreerobotics/unitree_sdk2/blob/main/include/unitree/robot/go2/sport/sport_client.hpp",
+      "basis": "Official Go2 interface names stand, sit, stop, recovery, Euler attitude, planar move, and gait behaviors; these are provenance, not admitted simulator calls."
+    },
+    {
+      "source_id": "unitree-sdk2-go2-low-level-stand",
+      "kind": "official_low_level_example",
+      "url": "https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/go2/go2_stand_example.cpp",
+      "basis": "Official LowCmd/LowState example demonstrates that Go2 posture behavior can be driven through the low-level route."
+    },
+    {
+      "source_id": "unitree-rl-lab-go2-velocity",
+      "kind": "official_robot_benchmark_environment",
+      "url": "https://github.com/unitreerobotics/unitree_rl_lab/blob/main/source/unitree_rl_lab/unitree_rl_lab/tasks/locomotion/robots/go2/velocity_env_cfg.py",
+      "basis": "Official Go2 environment defines planar linear/yaw velocity commands, standing cases, disturbance pushes, and contact/orientation termination."
+    }
+  ],
+  "difficulty_policy": "No Go2 difficulty label is admitted yet. The human-readable rationale is retained for later review without assigning a level.",
+  "tasks": [
+    {
+      "task_id": "G01",
+      "description": "Stand up from the specified supported starting posture and hold a stable upright stance.",
+      "task_type": "posture_transition",
+      "source_ids": ["unitree-sdk2py-go2-examples", "unitree-sdk2-go2-sport-interface", "unitree-sdk2-go2-low-level-stand"],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "PROPOSED_REVIEW_REQUIRED",
+      "difficulty_rationale": "A single posture transition with a stationary terminal state."
+    },
+    {
+      "task_id": "G02",
+      "description": "Sit down from a stable standing posture and hold the supported sitting posture without falling.",
+      "task_type": "posture_transition",
+      "source_ids": ["unitree-sdk2py-go2-examples", "unitree-sdk2-go2-sport-interface"],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "PROPOSED_REVIEW_REQUIRED",
+      "difficulty_rationale": "A controlled lowering transition with a stationary terminal state."
+    },
+    {
+      "task_id": "G03",
+      "description": "Maintain a stable upright stance at the current location for the requested interval.",
+      "task_type": "state_maintenance",
+      "source_ids": ["unitree-sdk2-go2-sport-interface", "unitree-rl-lab-go2-velocity"],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "PROPOSED_REVIEW_REQUIRED",
+      "difficulty_rationale": "Stationary posture maintenance without a commanded displacement."
+    },
+    {
+      "task_id": "G04",
+      "description": "Move forward in the robot's initial heading direction, then stop in a stable upright stance.",
+      "task_type": "bounded_locomotion",
+      "source_ids": ["unitree-sdk2py-go2-examples", "unitree-sdk2-go2-sport-interface", "unitree-rl-lab-go2-velocity"],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "PROPOSED_REVIEW_REQUIRED",
+      "difficulty_rationale": "One straight translation followed by a controlled stop."
+    },
+    {
+      "task_id": "G05",
+      "description": "Adjust the robot body to the specified target height and hold it upright at the current location.",
+      "task_type": "body_height_control",
+      "source_ids": ["unitree-sdk2py-go2-examples", "unitree-sdk2-go2-sport-interface"],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "PROPOSED_REVIEW_REQUIRED",
+      "difficulty_rationale": "Requires coordinated whole-body posture adjustment while constraining orientation and drift."
+    }
+  ]
+}

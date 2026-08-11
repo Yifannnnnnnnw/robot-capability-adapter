@@ -3,12 +3,14 @@ from __future__ import annotations
 import pytest
 
 from autoadapter2.evaluation import (
+    ClosedEvaluationVideo,
     EncodedVideo,
     EvaluationVideoRecorder,
     FrozenVideoProfile,
     OpaqueVideoHandle,
     RGBFrame,
     VideoInfraCode,
+    verify_closed_evaluation_video,
 )
 from autoadapter2.foundation import ContractError, content_hash
 
@@ -74,6 +76,7 @@ def test_complete_video_hashes_media_and_closes_immutable_manifest():
     assert result.manifest["failures"] == []
     assert repr(result.handle) == "<OpaqueVideoHandle>"
     assert "FAKE" not in result.manifest_bytes.decode()
+    assert verify_closed_evaluation_video(result)
     assert recorder.close(terminal_time_s=99.0) is result
     with pytest.raises(ContractError):
         recorder.add_frame(_frame(0.3))
@@ -150,3 +153,21 @@ def test_terminal_before_start_is_contract_error():
     recorder = _recorder(start=1.0)
     with pytest.raises(ContractError):
         recorder.close(terminal_time_s=0.9)
+
+
+def test_handmade_or_mutated_video_closure_is_not_framework_evidence():
+    recorder = _recorder()
+    recorder.add_frame(_frame(0.0))
+    genuine = recorder.close(terminal_time_s=0.0)
+    forged = ClosedEvaluationVideo(
+        completion_status=genuine.completion_status,
+        execution_disposition=genuine.execution_disposition,
+        media_content_hash=genuine.media_content_hash,
+        manifest_content_hash=genuine.manifest_content_hash,
+        manifest_bytes=genuine.manifest_bytes,
+        handle=genuine.handle,
+        failures=genuine.failures,
+    )
+    assert not verify_closed_evaluation_video(forged)
+    object.__setattr__(genuine, "completion_status", "INCOMPLETE")
+    assert not verify_closed_evaluation_video(genuine)

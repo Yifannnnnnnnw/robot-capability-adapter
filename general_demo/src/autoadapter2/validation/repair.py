@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import copy
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -42,6 +43,8 @@ class RepairConfig:
 class RepairResult:
     status: str
     first_passing_repair_index: int | None
+    repair_invocations_used: int
+    candidate_revisions_created: int
     repairs_consumed: int
     repair_llm_calls: int
     repair_log: tuple[dict[str, Any], ...]
@@ -61,6 +64,17 @@ def _issue(code: str) -> dict[str, str]:
 def _submission_source(submission: Mapping[str, Any]) -> str:
     value = submission.get("capability.py") if isinstance(submission, Mapping) else None
     return value if isinstance(value, str) else ""
+
+
+def _executable_source_hash(source: str) -> str | None:
+    """Hash executable Python structure while ignoring comments and formatting."""
+
+    try:
+        tree = ast.parse(source, filename="capability.py", mode="exec")
+    except (SyntaxError, ValueError, TypeError):
+        return None
+    normalized = ast.dump(tree, annotate_fields=True, include_attributes=False)
+    return content_hash(normalized.encode("utf-8"))
 
 
 def _freeze_design(design: Mapping[str, Any], seal: Mapping[str, Any], binding_contract: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
@@ -170,18 +184,24 @@ class RepairRunner:
             copy.deepcopy(dict(initial_manifest_seal)),
             bundle.bundle_hash,
         )
-        initial_b = self._run_b(initial_a, frozen_context, 0, ledger)
+        initial_b = self._run_b(initial_a, frozen_context, 0, 0, ledger)
         if initial_b is not None and initial_b.status == "PASS":
-            return self._result("PASS", 0, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
+            return self._result("PASS", 0, 0, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
         if initial_b is not None and initial_b.status == "INFRASTRUCTURE_ERROR":
-            return self._result("INFRASTRUCTURE_ERROR", None, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
+            return self._result("INFRASTRUCTURE_ERROR", None, 0, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
 
         current_source = _submission_source(initial_submission)
         current_a = initial_a
         current_b = initial_b
         source_history = {source_hash for source_hash in [initial_a.source_hash] if source_hash}
+        executable_history = {
+            executable_hash
+            for executable_hash in [_executable_source_hash(current_source)]
+            if executable_hash is not None
+        }
         repair_log: list[dict[str, Any]] = []
-        repairs_consumed = 0
+        repair_invocations_used = 0
+        candidate_revisions_created = 0
         total_llm_calls = 0
         previous_source_hash = initial_a.source_hash
         for requested_index in range(1, self._config.max_repairs + 1):
@@ -194,26 +214,81 @@ class RepairRunner:
                 "design_hash": design_hash,
                 "run_snapshot_hash": frozen_context.run_snapshot_hash,
                 "diagnostics": _sanitized_diagnostics(current_a, current_b),
-                "ledger": {"repairs_consumed": repairs_consumed, "max_repairs": self._config.max_repairs},
+                "ledger": {
+                    "repair_invocations_used": repair_invocations_used,
+                    "candidate_revisions_created": candidate_revisions_created,
+                    "max_repair_invocations": self._config.max_repairs,
+                },
             }
+            repair_invocations_used += 1
             try:
                 raw = self._repair_callback(copy.deepcopy(request))
             except Exception:
-                repair_log.append({"repair_index": requested_index, "llm_calls": 0, "status": "INFRASTRUCTURE_ERROR", "consumed": False})
-                return self._result("INFRASTRUCTURE_ERROR", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                repair_log.append({
+                    "repair_index": requested_index,
+                    "candidate_revision_index": None,
+                    "llm_calls": 0,
+                    "status": "INFRASTRUCTURE_ERROR",
+                    "invocation_consumed": True,
+                    "candidate_revision_created": False,
+                })
+                return self._result("INFRASTRUCTURE_ERROR", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
             repaired_source, llm_calls, output_issue = _repair_output(raw)
             total_llm_calls += llm_calls
             if output_issue is not None:
-                repairs_consumed += 1
-                repair_log.append({"repair_index": requested_index, "llm_calls": llm_calls, "status": "FAIL", "diagnostics": [output_issue], "consumed": True})
+                repair_log.append({
+                    "repair_index": requested_index,
+                    "candidate_revision_index": None,
+                    "llm_calls": llm_calls,
+                    "status": "FAIL",
+                    "diagnostics": [output_issue],
+                    "invocation_consumed": True,
+                    "candidate_revision_created": False,
+                })
                 continue
             source_hash = content_hash(repaired_source.encode("utf-8"))
             if source_hash in source_history:
-                repair_log.append({"repair_index": requested_index, "llm_calls": llm_calls, "source_hash": source_hash, "status": "NO_CHANGE", "consumed": False})
-                return self._result("NO_CHANGE", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                repair_log.append({
+                    "repair_index": requested_index,
+                    "candidate_revision_index": None,
+                    "llm_calls": llm_calls,
+                    "source_hash": source_hash,
+                    "status": "NO_CHANGE",
+                    "invocation_consumed": True,
+                    "candidate_revision_created": False,
+                })
+                return self._result("NO_CHANGE", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
 
-            repairs_consumed += 1
+            executable_hash = _executable_source_hash(repaired_source)
+            if executable_hash is None:
+                repair_log.append({
+                    "repair_index": requested_index,
+                    "candidate_revision_index": None,
+                    "llm_calls": llm_calls,
+                    "source_hash": source_hash,
+                    "status": "FAIL",
+                    "diagnostics": [_issue("REPAIR_SOURCE_SYNTAX")],
+                    "invocation_consumed": True,
+                    "candidate_revision_created": False,
+                })
+                continue
+            if executable_hash is not None and executable_hash in executable_history:
+                repair_log.append({
+                    "repair_index": requested_index,
+                    "candidate_revision_index": None,
+                    "llm_calls": llm_calls,
+                    "source_hash": source_hash,
+                    "executable_source_hash": executable_hash,
+                    "status": "NO_EXECUTABLE_CHANGE",
+                    "invocation_consumed": True,
+                    "candidate_revision_created": False,
+                })
+                return self._result("NO_EXECUTABLE_CHANGE", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+
+            candidate_revisions_created += 1
             source_history.add(source_hash)
+            if executable_hash is not None:
+                executable_history.add(executable_hash)
             source_seal = create_seal(
                 "capability.py",
                 source_hash,
@@ -236,11 +311,19 @@ class RepairRunner:
                 manifest_seal,
                 bundle.bundle_hash,
             )
-            current_b = self._run_b(current_a, frozen_context, repairs_consumed, ledger)
+            current_b = self._run_b(
+                current_a,
+                frozen_context,
+                requested_index,
+                candidate_revisions_created,
+                ledger,
+            )
             repair_log.append({
-                "repair_index": repairs_consumed,
+                "repair_index": requested_index,
+                "candidate_revision_index": candidate_revisions_created,
                 "llm_calls": llm_calls,
                 "source_hash": source_hash,
+                "executable_source_hash": executable_hash,
                 "source_seal": source_seal,
                 "a_status": current_a.status,
                 "b_status": current_b.status if current_b is not None else None,
@@ -249,20 +332,22 @@ class RepairRunner:
                     else "INFRASTRUCTURE_ERROR" if current_b is not None and current_b.status == "INFRASTRUCTURE_ERROR"
                     else "FAIL"
                 ),
-                "consumed": True,
+                "invocation_consumed": True,
+                "candidate_revision_created": True,
             })
             if current_b is not None and current_b.status == "PASS":
-                return self._result("PASS", repairs_consumed, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                return self._result("PASS", requested_index, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
             if current_b is not None and current_b.status == "INFRASTRUCTURE_ERROR":
-                return self._result("INFRASTRUCTURE_ERROR", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                return self._result("INFRASTRUCTURE_ERROR", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
             current_source = repaired_source
             previous_source_hash = source_hash
-        return self._result("FAILED_AFTER_REPAIRS", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+        return self._result("FAILED_AFTER_REPAIRS", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
 
     def _run_b(
         self,
         validation_a: ValidationAResult,
         frozen: FrozenValidationContext,
+        repair_invocation_index: int,
         revision_index: int,
         ledger: list[dict[str, Any]],
     ) -> ValidationBResult | None:
@@ -273,6 +358,7 @@ class RepairRunner:
         for execution_attempt in range(1, self._config.max_infrastructure_retries + 2):
             result = self._validation_b.run(candidate, frozen.context)
             ledger.append({
+                "repair_invocation_index": repair_invocation_index,
                 "revision_index": revision_index,
                 "execution_attempt": execution_attempt,
                 "source_hash": candidate.source_hash,
@@ -291,7 +377,8 @@ class RepairRunner:
     def _result(
         status: str,
         first_passing_repair_index: int | None,
-        repairs_consumed: int,
+        repair_invocations_used: int,
+        candidate_revisions_created: int,
         repair_llm_calls: int,
         repair_log: list[dict[str, Any]],
         run_ledger: list[dict[str, Any]],
@@ -305,7 +392,9 @@ class RepairRunner:
         return RepairResult(
             status=status,
             first_passing_repair_index=first_passing_repair_index,
-            repairs_consumed=repairs_consumed,
+            repair_invocations_used=repair_invocations_used,
+            candidate_revisions_created=candidate_revisions_created,
+            repairs_consumed=repair_invocations_used,
             repair_llm_calls=repair_llm_calls,
             repair_log=tuple(copy.deepcopy(repair_log)),
             run_ledger=tuple(copy.deepcopy(run_ledger)),

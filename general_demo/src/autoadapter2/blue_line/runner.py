@@ -6,6 +6,7 @@ import copy
 import math
 from dataclasses import dataclass
 from typing import Any, Mapping
+from weakref import WeakKeyDictionary
 
 from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ContractError
@@ -21,26 +22,78 @@ BLUE_LINE_PROMPT = (
 )
 _FORBIDDEN_KEYS = ("candidate", "stage2", "sandbox", "repair", "validation_result", "demo_result")
 _AUTHORIZATION_TOKEN = object()
+_READY_BUNDLE_TOKEN = object()
 
 
 class Stage2Authorization:
     """Opaque, non-sensitive authorization issued only by a READY Blue Line run."""
 
-    __slots__ = ("_token", "_design_hash", "_receipt_id")
+    __slots__ = ("__weakref__",)
 
     def __init__(self, token: object, design_hash: str, manifest_hash: str):
         if token is not _AUTHORIZATION_TOKEN:
             raise ContractError("Stage2Authorization is Framework-created only")
-        self._token = token
-        self._design_hash = design_hash
-        self._receipt_id = content_hash(
-            canonical_bytes({"design_hash": design_hash, "blue_line_manifest_hash": manifest_hash})
+        _AUTHORIZATION_PAYLOADS[self] = (
+            design_hash,
+            content_hash(
+                canonical_bytes({"design_hash": design_hash, "blue_line_manifest_hash": manifest_hash})
+            ),
         )
 
+    def __copy__(self) -> "Stage2Authorization":
+        return self
+
+    def __deepcopy__(self, _memo: dict[int, Any]) -> "Stage2Authorization":
+        return self
+
     def _verified_payload(self, design_hash: str) -> dict[str, Any]:
-        if self._token is not _AUTHORIZATION_TOKEN or self._design_hash != design_hash:
+        payload = _AUTHORIZATION_PAYLOADS.get(self)
+        if payload is None or payload[0] != design_hash:
             raise ContractError("Blue Line authorization does not bind this Capability Design")
-        return {"status": "READY", "authorized": True, "receipt_id": self._receipt_id}
+        return {"status": "READY", "authorized": True, "receipt_id": payload[1]}
+
+
+class BlueLineReadyBundle:
+    """Framework-private proof that these exact artifacts came from one READY run."""
+
+    __slots__ = ("__weakref__",)
+
+    def __init__(
+        self,
+        token: object,
+        design_hash: str,
+        spec_hash: str,
+        manifest_hash: str,
+        suite_hash: str,
+    ) -> None:
+        if token is not _READY_BUNDLE_TOKEN:
+            raise ContractError("BlueLineReadyBundle is Framework-created only")
+        _READY_BUNDLE_PAYLOADS[self] = (design_hash, spec_hash, manifest_hash, suite_hash)
+
+    def __copy__(self) -> "BlueLineReadyBundle":
+        return self
+
+    def __deepcopy__(self, _memo: dict[int, Any]) -> "BlueLineReadyBundle":
+        return self
+
+    def _verified_payload(self, design_hash: str) -> dict[str, str]:
+        payload = _READY_BUNDLE_PAYLOADS.get(self)
+        if payload is None or payload[0] != design_hash:
+            raise ContractError("Blue Line READY bundle does not bind this Capability Design")
+        return {
+            "design_hash": payload[0],
+            "spec_hash": payload[1],
+            "manifest_hash": payload[2],
+            "suite_hash": payload[3],
+        }
+
+
+# The handles carry no authoritative fields themselves.  Their immutable payloads
+# live only as long as the corresponding Framework-created handle does.
+_AUTHORIZATION_PAYLOADS: WeakKeyDictionary[Stage2Authorization, tuple[str, str]] = WeakKeyDictionary()
+_READY_BUNDLE_PAYLOADS: WeakKeyDictionary[
+    BlueLineReadyBundle, tuple[str, str, str, str]
+] = WeakKeyDictionary()
 
 
 @dataclass(frozen=True)
@@ -56,6 +109,7 @@ class BlueLineResult:
     manifest_hash: str
     manifest_seal: dict[str, Any]
     stage2_authorization: Stage2Authorization | None
+    validation_authorization: BlueLineReadyBundle | None
     call_log: tuple[dict[str, Any], ...]
     diagnostics: tuple[dict[str, str], ...]
 
@@ -367,7 +421,8 @@ class BlueLineRunner:
             )
             return BlueLineResult(
                 "NEEDS_REVIEW", spec, spec_hash, spec_seal, None, None, None,
-                manifest, manifest_hash, manifest_seal, None, tuple(calls), tuple(diagnostics),
+                manifest, manifest_hash, manifest_seal, None, None,
+                tuple(calls), tuple(diagnostics),
             )
         suite = self._compile_suite(spec, design_hash, spec_hash, fixed_policy["repetitions"])
         suite_hash = content_hash(canonical_bytes(suite))
@@ -379,7 +434,11 @@ class BlueLineRunner:
         return BlueLineResult(
             "READY", spec, spec_hash, spec_seal, suite, suite_hash, suite_seal,
             manifest, manifest_hash, manifest_seal,
-            Stage2Authorization(_AUTHORIZATION_TOKEN, design_hash, manifest_hash), tuple(calls), (),
+            Stage2Authorization(_AUTHORIZATION_TOKEN, design_hash, manifest_hash),
+            BlueLineReadyBundle(
+                _READY_BUNDLE_TOKEN, design_hash, spec_hash, manifest_hash, suite_hash
+            ),
+            tuple(calls), (),
         )
 
     @staticmethod

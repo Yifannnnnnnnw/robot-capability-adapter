@@ -1,0 +1,109 @@
+{
+  "artifact_type": "task_evaluation_private",
+  "schema_version": "1.0.0",
+  "evaluation_id": "unitree-go2-stock-12dof-task-evaluation",
+  "evaluation_version": "1.0.0",
+  "catalog_id": "unitree-go2-stock-12dof-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+  "forbidden_recipients": [
+    "stage1",
+    "stage2",
+    "generated_capability_layer",
+    "repair",
+    "demo_consumer"
+  ],
+  "common_guards": [
+    {
+      "guard_id": "trusted-external-verdict",
+      "rule": "Only trusted physical state read by the Demo Evaluation Harness may support success; Consumer self-report, capability return values, and command or DDS receipts are not outcome evidence."
+    },
+    {
+      "guard_id": "finite-required-state",
+      "rule": "A NaN, infinity, missing required physical measurement, or unavailable required observation fails the trial."
+    },
+    {
+      "guard_id": "no-body-or-head-floor-contact",
+      "rule": "Any body or head contact with the floor fails the trial; a fallen low posture cannot count as standing or sitting success."
+    }
+  ],
+  "definitions": {
+    "upright_score": "Dot product of the robot body's positive z axis with the world positive z axis, computed from trusted body orientation.",
+    "initial_body_yaw_frame": "A horizontal frame fixed at reset whose forward axis is the body's initial yaw direction and whose lateral axis is the corresponding left direction.",
+    "forward_displacement": "Body horizontal displacement projected onto the forward axis of the initial-body-yaw frame.",
+    "lateral_displacement": "Body horizontal displacement projected onto the lateral axis of the initial-body-yaw frame.",
+    "horizontal_drift": "Euclidean norm of body horizontal displacement from the task's frozen starting position.",
+    "planar_speed": "Euclidean norm of trusted body horizontal linear velocity.",
+    "body_height": "Trusted body-frame origin height above the frozen floor reference.",
+    "standing_height": "Trusted body height in the frozen standing reference state for this exact robot and scene, captured before the trial and never candidate-conditioned.",
+    "continuous_dwell": "Every stated terminal check must hold at every required Harness sample throughout the interval.",
+    "task_instance_parameters": "Target height, initial posture, timeout, reset distribution, and scene-specific safety limits are frozen in the executable task instance before a trial."
+  },
+  "criteria": [
+    {
+      "task_id": "G01",
+      "criterion_status": "HUMAN_APPROVED",
+      "criterion_text": "Body height is greater than 0.15 m, upright score is at least 0.7, and planar speed is at most 0.05 m/s continuously for 1.0 s, with no body or head floor contact.",
+      "checks": [
+        {"metric": "body_height_m", "comparator": ">", "value": 0.15},
+        {"metric": "upright_score", "comparator": ">=", "value": 0.7},
+        {"metric": "planar_speed_m_s", "comparator": "<=", "value": 0.05}
+      ],
+      "continuous_dwell_s": 1.0,
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "no-body-or-head-floor-contact"]
+    },
+    {
+      "task_id": "G02",
+      "criterion_status": "HUMAN_APPROVED",
+      "criterion_text": "Body height is less than 0.8 times the frozen standing height, upright score is at least 0.7, and planar speed is at most 0.05 m/s continuously for 1.0 s; a fallen posture cannot pass.",
+      "checks": [
+        {"metric": "body_height_to_standing_height_ratio", "comparator": "<", "value": 0.8},
+        {"metric": "upright_score", "comparator": ">=", "value": 0.7},
+        {"metric": "planar_speed_m_s", "comparator": "<=", "value": 0.05}
+      ],
+      "continuous_dwell_s": 1.0,
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "no-body-or-head-floor-contact"]
+    },
+    {
+      "task_id": "G03",
+      "criterion_status": "HUMAN_APPROVED",
+      "criterion_text": "Body height remains greater than 0.15 m, upright score remains at least 0.7, and horizontal drift remains at most 0.05 m continuously over 2.0 s, with no body or head floor contact.",
+      "checks": [
+        {"metric": "body_height_m", "comparator": ">", "value": 0.15},
+        {"metric": "upright_score", "comparator": ">=", "value": 0.7},
+        {"metric": "horizontal_drift_m", "comparator": "<=", "value": 0.05}
+      ],
+      "continuous_dwell_s": 2.0,
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "no-body-or-head-floor-contact"]
+    },
+    {
+      "task_id": "G04",
+      "criterion_status": "HUMAN_APPROVED",
+      "criterion_text": "Forward displacement in the initial-body-yaw frame is greater than 0.03 m; during motion body height remains greater than 0.12 m and upright score remains at least 0.7; lateral displacement magnitude is at most 0.05 m; final planar speed is at most 0.05 m/s continuously for 0.5 s; no body or head floor contact occurs.",
+      "motion_checks": [
+        {"metric": "forward_displacement_m", "comparator": ">", "value": 0.03},
+        {"metric": "body_height_m", "comparator": ">", "value": 0.12},
+        {"metric": "upright_score", "comparator": ">=", "value": 0.7},
+        {"metric": "absolute_lateral_displacement_m", "comparator": "<=", "value": 0.05}
+      ],
+      "terminal_checks": [
+        {"metric": "planar_speed_m_s", "comparator": "<=", "value": 0.05}
+      ],
+      "terminal_continuous_dwell_s": 0.5,
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "no-body-or-head-floor-contact"]
+    },
+    {
+      "task_id": "G05",
+      "criterion_status": "HUMAN_APPROVED",
+      "criterion_text": "Absolute body-height error is at most 0.03 m, upright score is at least 0.7, and horizontal drift is at most 0.05 m continuously for 1.0 s, with no body or head floor contact.",
+      "checks": [
+        {"metric": "absolute_body_height_error_m", "comparator": "<=", "value": 0.03},
+        {"metric": "upright_score", "comparator": ">=", "value": 0.7},
+        {"metric": "horizontal_drift_m", "comparator": "<=", "value": 0.05}
+      ],
+      "continuous_dwell_s": 1.0,
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "no-body-or-head-floor-contact"]
+    }
+  ]
+}

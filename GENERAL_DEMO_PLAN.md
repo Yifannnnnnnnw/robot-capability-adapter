@@ -7,7 +7,7 @@
 | Status | `ACTIVE_NON_NORMATIVE_PLAN` |
 | Implementation authorization | `EXPERIMENT_GRADE_FULL_DEMO_AUTHORIZED` |
 | Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` |
-| Authority revision read for this plan | `0.15.0` |
+| Authority revision read for this plan | `0.16.0` |
 | Detailed Framework/file design | `GENERAL_DEMO_FRAMEWORK_DESIGN.md` |
 | Demo purpose | Discover architectural and contract problems before mainline construction |
 | Migration intent | If the Demo passes its migration gates, migrate its structure and files into the main Framework rather than reimplementing them; then document and exercise a repeatable one-robot-at-a-time onboarding process |
@@ -18,7 +18,7 @@
 
 This plan is non-normative. If it conflicts with `AUTOADAPTER_2_AUTHORITY.md`, the Authority wins.
 An exact schema, prompt, API, budget, threshold, directory contract, or experimental allocation that
-the Authority still marks `OPEN` remains open here. Authority revision `0.15.0` authorizes rapid
+the Authority still marks `OPEN` remains open here. Authority revision `0.16.0` authorizes rapid
 implementation of the complete two-robot G2 experimental path. The implementation must preserve
 experimental correctness and information isolation, but it must not build enterprise deployment,
 attestation, registry, activation/revocation, or distributed-governance machinery.
@@ -112,8 +112,9 @@ The Demo must implement the same four Library roles as the main Framework:
    reset facts; no behavior recipes, IK, or task strategy.
 2. `SDKs Library`: versioned dossiers and admitted projections for the actual upstream SDK; it is
    neither a wrapper library nor a copy of the SDK source tree.
-3. `Tasks Library`: reviewed task descriptions, private criteria separation, and a fixed five-task
-   Demo collection; it is not the Validation B suite.
+3. `Tasks Library`: versioned robot-scoped catalogs under `general_demo/libraries/tasks/`, private
+   criteria separation, and one fixed five-task Demo collection per robot run; it is not the
+   Validation B suite.
 4. `Experience Library`: governed, immutable, future-run Design and Implementation experience;
    current-run evidence cannot feed back directly.
 
@@ -121,12 +122,12 @@ Each active configuration is selected by a thin `Robot Integration Manifest` tha
 admitted Morphology, simulation profile, SDK Entry, and Translation Layer. The Manifest is not a
 fifth Library and cannot contain hidden behavior.
 
-`VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md` has a different role from the Tasks Library. It
-is the human-authored, Framework-private reference collection that the Blue Line LLM may consult
-when generating Validation B specifications. Its records illustrate complete or partial validation
-approaches: what to measure, how to define physical success, which cases and false-pass guards to
-include, and which threshold, temporal, repetition, and aggregation rules to use. It is not exposed
-to Stage 1, Stage 2, Repair, or Consumers, and it is not itself a fifth Generation Library.
+`general_demo/private_governance/blue_line/standards/reference_candidates.json` has a different
+role from the Tasks Library. It is the cleaned Framework-private migration of the initial
+human-authored capability-validation reference. Its records illustrate complete or partial
+Validation B approaches: what to measure, how to define physical success, and which false-pass
+guards and decision rules may be reviewed. It is not exposed to Stage 1, Stage 2, Repair, or
+Consumers, is not itself a fifth Generation Library, and does not contain the Go2 task catalog.
 
 The Demo population is:
 
@@ -257,11 +258,12 @@ facts, a private Measurement Catalog, a frozen project Validation Standards Snap
 Generation Policy. It does not receive Stage 2 code, candidate behavior, Sandbox results, Repair,
 or Demo outcomes, and it does not execute the robot.
 
-The initial human reference source for that Standards Snapshot is
-`VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md`. The Blue Line LLM uses its reviewed
-human-authored Validation B suite examples as in-context design references; it is not restricted to
-looking up a single numeric threshold. A raw Markdown edit does not change a formal run: only the
-exact reviewed records selected and frozen into that comparison's Snapshot are authoritative.
+The cleaned preparation source for that Standards Snapshot is
+`general_demo/private_governance/blue_line/standards/reference_candidates.json`. The Blue Line LLM
+uses only reviewed records projected from it as in-context capability-validation references; it is
+not restricted to looking up a single numeric threshold. Editing preparation candidates does not
+change a formal run: only the exact reviewed records selected and frozen into that comparison's
+Snapshot are authoritative.
 
 For every capability it must:
 
@@ -412,7 +414,7 @@ general_demo/
   libraries/
     morphology/                # Authority-defined robot/environment layout
     sdks/                      # Authority-defined SDK Entry layout
-    tasks/                     # proposed machine records
+    tasks/                     # implemented first-Demo robot-scoped records and projections
     experience/                # ADMITTED records only
   private_governance/          # explicitly not a fifth Library
     blue_line/                 # human standards records, measurements and policy
@@ -482,15 +484,18 @@ Exit: the generic core can load two distinct manifest families without robot-nam
 
 ### Wave 3 — two-robot governed-data population
 
-At Authority revision `0.14.0`, only the Morphology, SDK, runtime, RIM, exact-source/admission
-tooling subset of this wave is authorized. Tasks, Experience, Validation Standards, Measurement
-Catalog, and Demo criteria remain blocked by their owning open contracts.
+Authority revision `0.16.0` authorizes the experiment-grade two-robot data subset needed by the
+first G2 Demo. The two exact robot configurations, fixed Demo collections, private Demo criteria,
+integration records, and current Blue Line preparation boundary may therefore be implemented.
+Generalized schemas, future robot catalogs, Experience admission, and unapproved task/standard
+candidates remain governed by their owning open contracts.
 
 - build and review Morphology, SDK, Tasks, Experience snapshots, Validation Standards Snapshot,
   Measurement Catalog, and RIM records for both robots;
-- retain the reviewed 28-task SO-ARM101 catalog as source material and construct the Go2 catalog
-  under the Authority's more-than-20-tasks-per-robot rule when appropriate; do not include tasks
-  that the selected configuration cannot perform;
+- load the reviewed 28-task SO-ARM101 catalog and the five admitted Go2 records from the mainline
+  Tasks Library; retain the 21 additional researched Go2 concepts only in the isolated human-review
+  queue until their applicability, difficulty, criteria, observations, and scene assets are
+  explicitly approved;
 - treat an initially empty Experience snapshot as a valid frozen input only if the exact snapshot
   and retrieval route exist; do not omit the Library or the later admission path;
 - capture exact source/version/hash/probe evidence and keep discovery facts separate from admitted

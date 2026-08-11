@@ -6,7 +6,7 @@
 |---|---|
 | Status | `ACTIVE_NON_NORMATIVE_DESIGN` |
 | Implementation authorization | `EXPERIMENT_GRADE_FULL_DEMO_AUTHORIZED` |
-| Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` revision `0.15.0` |
+| Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` revision `0.16.0` |
 | Companion plan | `GENERAL_DEMO_PLAN.md` |
 | Initial robot scope | SO-ARM101 follower + stock gripper; Unitree Go2 |
 | Initial Demo Consumer | ReAct LLM Agent |
@@ -15,7 +15,7 @@
 This is a non-normative implementation design. Authority-defined names and layouts are preserved.
 Every additional filename, module split, schema name, and configuration path remains subordinate
 to the applicable frozen Authority contract. If this document and the Authority conflict, the
-Authority wins. Authority revision `0.15.0` authorizes the complete experiment-grade two-robot G2
+Authority wins. Authority revision `0.16.0` authorizes the complete experiment-grade two-robot G2
 Demo path. The implementation should be small enough to understand and change quickly.
 
 The integration core consists of one `integration_manifest.json` per robot, one
@@ -24,7 +24,7 @@ bootstrap admission, registry configs, trusted issuers, activation/revocation lo
 receipt/event chains. Any later tree or catalog entry in this document describing those withdrawn
 0.14.0 mechanisms is superseded and must not be implemented.
 
-The following user decisions are reflected here. Authority revision `0.15.0` freezes the two exact
+The following user decisions are reflected here. Authority revision `0.16.0` freezes the two exact
 robot configurations, SDK/runtime pins, integration manifests, Translation routes, six-check
 Readiness rules, and complete experiment-grade G2 path for implementation:
 
@@ -36,9 +36,9 @@ Readiness rules, and complete experiment-grade G2 path for implementation:
 - the first complete architecture Demo executes G2 only for both independent single-RIM robot runs;
   G2 is intended to synthesize reusable semantic capabilities above lower-level SDK primitives,
   including capability-scoped IK, feedback, trajectories, posture/gait logic, and composition;
-- `VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md` is the initial human-authored source for
-  Project Validation Standards Reference records; formal Blue Line runs consume only reviewed
-  records in a frozen snapshot, never the live Markdown;
+- `general_demo/private_governance/blue_line/standards/reference_candidates.json` is the cleaned
+  mainline migration of the initial human-authored capability-validation source; formal Blue Line
+  runs consume only reviewed records in a frozen snapshot, never live preparation candidates;
 - missing MuJoCo/integration material is researched first in the pinned AutoAdapter 1.0 repository
   and then in primary web sources, subject to new admission; and
 - after the Demo, the project writes and validates a robot-onboarding guide, then adds robots one
@@ -50,7 +50,7 @@ Readiness rules, and complete experiment-grade G2 path for implementation:
 |---|---|
 | `AUTHORITY-NAMED BASENAME` | The Authority fixes the basename but not this document's containing path or schema fields |
 | `AUTHORITY-NAMED RELATIVE LAYOUT` | The Authority fixes a relative subtree; `general_demo/` remains the proposed containing root |
-| `PROPOSED` | This design proposes the filename or split; it is blocked only while its owning Authority contract remains `OPEN`. Authority-0.14.0 integration homes may now be implemented; the marker continues to block unrelated open components |
+| `PROPOSED` | This design proposes the filename or split; it is blocked only while its owning Authority contract remains `OPEN`. Authority-0.16.0 frozen implementation homes may now be implemented; the marker continues to block unrelated open components |
 | `SOURCE` | Version-controlled human/framework-authored source or admitted data |
 | `DERIVED` | Reproducibly generated index/projection that does not become a second authority |
 | `RUNTIME` | Per-run or per-revision artifact stored outside the source tree |
@@ -165,8 +165,6 @@ Repair, or task semantics.
 ```text
 auto_adapter2.0/
 ├── AUTOADAPTER_2_AUTHORITY.md
-├── TASKS_LIBRARY.md
-├── VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md
 ├── GENERAL_DEMO_PLAN.md
 ├── GENERAL_DEMO_FRAMEWORK_DESIGN.md
 ├── research_assets/
@@ -225,11 +223,11 @@ auto_adapter2.0/
     ├── libraries/
     │   ├── morphology/                               # Authority-approved layout
     │   ├── sdks/                                     # Authority-approved layout
-    │   ├── tasks/                                    # proposed machine-readable layout
+    │   ├── tasks/                                    # implemented first-Demo task packages
     │   └── experience/                               # proposed machine-readable layout
     ├── private_governance/
     │   ├── blue_line/
-    │   │   ├── source_registry.yaml
+    │   │   ├── source_registry.json
     │   │   ├── standards/
     │   │   ├── measurement_catalog/
     │   │   └── generation_policy/
@@ -604,7 +602,7 @@ ReAct Agent use the same neutral model transport, not the Generation package or 
 
 | File | Single responsibility |
 |---|---|
-| `blue_line/source_registry.py` | Preparation-only ingestion registry for the root human reference and future approved human sources; never read during a formal run |
+| `blue_line/source_registry.py` | Preparation-only ingestion registry for the cleaned mainline candidate catalog and future approved human sources; never read during a formal run |
 | `blue_line/reference_loader.py` | Formal-run loader for exact reviewed records in the frozen Standards Snapshot only; it never reads live Markdown/source registries |
 | `blue_line/measurement_catalog.py` | Resolve trusted physical/interface measurements and applicability; never infer candidate behavior |
 | `blue_line/bundle_builder.py` | Build the private sealed-Design + facts + standards + measurement + policy request |
@@ -771,38 +769,44 @@ canonical files inside the Entry. The four formal JSON records, not the YAML rev
 identity, pins, API facts, and source lineage. Admission reports and events are owned by the
 external Framework-private Admission registry rather than written into the immutable SDK subject.
 
-### 6.3 Tasks Library (`PROPOSED` machine layout)
+### 6.3 Tasks Library (implemented first-Demo layout)
 
-The root `TASKS_LIBRARY.md` remains the reviewed human-readable catalog. The following future
-machine layout is proposed only after `OQ-TASK-001/002` are frozen:
+The canonical first-Demo Tasks Library is in the mainline tree below. The former root drafting
+document has been migrated and removed. This compact layout implements the two approved Demo
+robot scopes; a generalized future task-record schema remains owned by `OQ-TASK-001/002`.
 
 ```text
 general_demo/libraries/tasks/
-├── catalog.yaml                                      # DERIVED index
-└── robots/
-    └── <robot_configuration_id>/<catalog_version>/
-        ├── manifest.yaml
-        ├── records/
-        │   └── <task_record_id>.yaml                 # complete approved record
-        ├── collections/
-        │   └── <demo_collection_id>.yaml             # fixed five-task refs only
-        ├── provenance.yaml
-        └── admission/
-            └── report.json
+├── README.md                                          # human review view
+├── index.json                                         # two robot-scoped package refs/counts
+├── so-arm101-follower-stock-gripper/1.0.0/
+│   ├── catalog.json                                   # 28 approved task records
+│   ├── demo_collection.json                           # fixed T01/T02/T03/T08/T20
+│   ├── stage1_projection.json                         # internal fixed-five template; run assembler creates opaque refs
+│   └── evaluation_private.json                        # Harness-only 28 criteria
+└── unitree-go2-stock-12dof/1.0.0/
+    ├── catalog.json                                   # five approved task records
+    ├── candidate_review_queue.json                    # G06-G26; not admitted/loadable
+    ├── demo_collection.json                           # fixed G01-G05
+    ├── stage1_projection.json                         # internal fixed-five template; run assembler creates opaque refs
+    └── evaluation_private.json                        # Harness-only five criteria
 ```
 
-Each complete task record owns the description, robot-conditioned applicability/difficulty,
-source/adaptation, Harness-private pass criterion, evidence requirements, and review record. It
-does not own a capability-validation suite. `task_views.py` derives:
+Each approved catalog record owns the description, robot-conditioned applicability/difficulty,
+source/adaptation, and review state. The separate evaluation-private artifact owns the Demo
+criterion and evidence rules. Neither owns a capability-validation suite. The frozen projections
+implement these recipient views:
 
-- Stage 1 view: description + run-local opaque requirement ref only;
+- Stage 1 view: the run assembler replaces the template's internal task ID with a run-local opaque
+  requirement ref, then exposes only that ref plus the description;
 - ReAct view: current description only;
 - Demo Harness view: criterion + required evidence + executable asset refs;
 - human view: complete reviewed record.
 
-The SO-ARM101 source catalog currently contains 28 approved records with criteria but no selected
-fixed five. Go2 records, criteria, and the exact cross-robot meaning of the five-task collection
-remain to be reviewed.
+SO-ARM101 has 28 approved records and one exact fixed-five collection. Go2 currently has five
+approved records and one exact fixed-five collection; its additional 21 public-source research
+candidates remain isolated in the review queue with no approved numeric criteria or difficulty
+labels. They cannot enter Stage 1 or Demo until separately approved.
 
 ### 6.4 Experience Library (`PROPOSED` machine layout)
 
@@ -835,7 +839,7 @@ reviewed `ADMITTED` versions move into this Library.
 ```text
 general_demo/private_governance/
 ├── blue_line/
-│   ├── source_registry.yaml                         # preparation sources, versions, hashes
+│   ├── source_registry.json                         # preparation sources, versions, hashes
 │   ├── standards/
 │   │   └── records/<standard_id>/<version>/
 │   │       ├── record.yaml
@@ -862,12 +866,12 @@ general_demo/private_governance/
         └── tests/
 ```
 
-`source_registry.yaml` treats `VALIDATION_TASK_GENERATION_REFERENCE_LIBRARY.md` as the initial
-human-authored source of Validation B suite/reference examples from which reviewed project
-Validation Standards records may be selected. It is neither a live executable suite nor the only
-permanent possible source. The registry binds exact source bytes/hash and import/review lineage;
-formal Blue Line runs never read it or browse. Machine standard records are admitted extractions,
-approved adaptations, or new human-approved records originating from reviewed `PROPOSED` criteria.
+`source_registry.json` binds the cleaned
+`standards/reference_candidates.json` migration of the initial human-authored Validation B
+reference source. It is neither a live executable suite nor the only permanent possible source.
+The registry binds exact source bytes/hash and migration/review lineage; formal Blue Line runs
+never read it or browse. Machine standard records are reviewed extractions, approved adaptations,
+or new human-approved records originating from reviewed `PROPOSED` criteria.
 A comparison-specific Frozen Standards Snapshot, Measurement Catalog snapshot, and Blue Line
 policy selection are `RUNTIME PRIVATE` artifacts sealed before Blue Line; they do not live in the
 source tree. Approval always creates a new immutable record/snapshot and never retrofits the run
