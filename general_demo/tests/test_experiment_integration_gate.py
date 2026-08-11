@@ -262,6 +262,20 @@ def test_wrong_run_manifest_runtime_or_profile_binding_fails_closed(tmp_path: Pa
     with pytest.raises(GateError):
         _gate(material).verify("general_demo/integrations/so-arm101/integration_manifest.json", "general_demo/runs/run-1/run_snapshot.json", "general_demo/runs/run-1/readiness_report.json")
 
+
+def test_readiness_report_must_use_frozen_numerical_tolerances(tmp_path: Path) -> None:
+    material = _ready_so_run(tmp_path)
+    report = material["report"]
+    assert isinstance(report, dict)
+    report["numerical_tolerances"]["so"]["servo_tick"] = 2
+    _rewrite_report_snapshot(material)
+    with pytest.raises(GateError):
+        _gate(material).verify(
+            "general_demo/integrations/so-arm101/integration_manifest.json",
+            "general_demo/runs/run-1/run_snapshot.json",
+            "general_demo/runs/run-1/readiness_report.json",
+        )
+
     material = _ready_so_run(tmp_path / "manifest")
     report = material["report"]
     assert isinstance(report, dict)

@@ -101,6 +101,8 @@ class ExperimentIntegrationGate:
 
             if report.value["time_limits"] != profile.value["time_limits"]:
                 raise GateError("readiness report time limits do not match the frozen profile")
+            if report.value["numerical_tolerances"] != profile.value["numerical_tolerances"]:
+                raise GateError("readiness report numerical tolerances do not match the frozen profile")
             self._verify_dependency_hashes(manifest.value, report.value)
             self._verify_readiness_verdict(report.value)
 
