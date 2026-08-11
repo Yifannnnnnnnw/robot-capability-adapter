@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import Enum
 
 from typing import Any
 
@@ -12,7 +12,7 @@ from ..foundation.hashing import content_hash, is_content_hash
 _ADMISSION_TOKEN = object()
 
 
-class RunState(StrEnum):
+class RunState(str, Enum):
     CREATED = "CREATED"
     RIM_RESOLVED = "RIM_RESOLVED"
     READY_FOR_STAGE1 = "READY_FOR_STAGE1"
