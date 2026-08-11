@@ -76,14 +76,35 @@ def _forbidden_issues(value: Any, location: str = "$") -> list[dict[str, str]]:
     return issues
 
 
-def _standards(snapshot: Mapping[str, Any]) -> set[str]:
+def _standards(snapshot: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     records = snapshot.get("standards")
     if not isinstance(records, list):
         raise ContractError("standards snapshot needs a standards array")
-    ids = {item.get("standard_id") for item in records if isinstance(item, dict) and _text(item.get("standard_id"))}
-    if not ids or len(ids) != len(records):
-        raise ContractError("standards snapshot needs unique standard_id values")
-    return ids
+    required = {
+        "standard_id", "measurement_id", "metric", "comparator", "threshold_value",
+        "dwell_s", "timeout_s", "aggregation",
+    }
+    result: dict[str, dict[str, Any]] = {}
+    for item in records:
+        if not isinstance(item, dict) or set(item) != required or not _text(item.get("standard_id")):
+            raise ContractError("standards snapshot has an invalid standard")
+        if item["standard_id"] in result:
+            raise ContractError("standards snapshot needs unique standard_id values")
+        if (
+            not _text(item.get("measurement_id"))
+            or not _text(item.get("metric"))
+            or item.get("comparator") not in {"<", "<=", ">", ">=", "=="}
+            or not _finite(item.get("threshold_value"))
+            or not _finite(item.get("dwell_s"))
+            or item["dwell_s"] < 0
+            or not _finite(item.get("timeout_s"), positive=True)
+            or item.get("aggregation") not in {"ALL", "ANY", "MEAN"}
+        ):
+            raise ContractError("standards snapshot standard is incomplete")
+        result[item["standard_id"]] = item
+    if not result:
+        raise ContractError("standards snapshot must not be empty")
+    return result
 
 
 def _measurements(catalog: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
@@ -97,21 +118,41 @@ def _measurements(catalog: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
         identifier = item["measurement_id"]
         if identifier in result:
             raise ContractError("measurement catalog has duplicate measurement_id")
-        if not all(_text(item.get(field)) for field in ("entity", "unit", "frame", "truth_source")):
+        if not all(_text(item.get(field)) for field in ("entity", "unit", "frame", "adapter_id", "truth_source")):
             raise ContractError("measurement catalog measurement is incomplete")
+        metrics = item.get("metrics")
+        if not isinstance(metrics, list) or not metrics or not all(_text(metric) for metric in metrics):
+            raise ContractError("measurement catalog measurement needs metrics")
         result[identifier] = item
     if not result:
         raise ContractError("measurement catalog must not be empty")
     return result
 
 
+def _guards(catalog: Mapping[str, Any]) -> set[str]:
+    records = catalog.get("guards")
+    if not isinstance(records, list) or not records:
+        raise ContractError("measurement catalog needs a guards array")
+    result: set[str] = set()
+    for item in records:
+        if not isinstance(item, dict) or set(item) != {"guard_id", "adapter_id"}:
+            raise ContractError("measurement catalog has an invalid guard")
+        if not _text(item.get("guard_id")) or not _text(item.get("adapter_id")) or item["guard_id"] in result:
+            raise ContractError("measurement catalog guards need unique IDs and adapters")
+        result.add(item["guard_id"])
+    return result
+
+
 def _policy(policy: Mapping[str, Any]) -> dict[str, Any]:
-    required = {"policy_id", "model_id", "prompt_id", "max_cases_per_capability"}
+    required = {"policy_id", "model_id", "prompt_id", "max_cases_per_capability", "repetitions"}
     if set(policy) != required or not all(_text(policy.get(name)) for name in ("policy_id", "model_id", "prompt_id")):
         raise ContractError("Blue Line policy must be a closed fixed-model policy")
     maximum = policy.get("max_cases_per_capability")
     if not isinstance(maximum, int) or isinstance(maximum, bool) or not 1 <= maximum <= 8:
         raise ContractError("Blue Line policy max_cases_per_capability must be 1..8")
+    repetitions = policy.get("repetitions")
+    if not isinstance(repetitions, int) or isinstance(repetitions, bool) or not 1 <= repetitions <= 16:
+        raise ContractError("Blue Line policy repetitions must be 1..16")
     return dict(policy)
 
 
@@ -133,8 +174,9 @@ def check_validation_spec(
     expected_design_hash = content_hash(canonical_bytes(design))
     if artifact.get("design_hash") != expected_design_hash:
         issues.append(_issue("DESIGN_BINDING", "spec does not bind the sealed design"))
-    standard_ids = _standards(standards_snapshot)
+    standards = _standards(standards_snapshot)
     measurements = _measurements(measurement_catalog)
+    guards = _guards(measurement_catalog)
     fixed_policy = _policy(policy)
     capabilities = design.get("capabilities")
     design_ids = {item.get("capability_id") for item in capabilities if isinstance(item, dict)} if isinstance(capabilities, list) else set()
@@ -146,7 +188,7 @@ def check_validation_spec(
     for index, entry in enumerate(entries):
         fields = {
             "capability_id", "measurement", "threshold", "dwell_s", "timeout_s",
-            "aggregation", "false_pass_guard", "cases", "lineage",
+            "metric", "aggregation", "guard_ids", "cases", "lineage",
         }
         item = _closed(entry, fields, f"capability_specs[{index}]", issues)
         if item is None:
@@ -165,6 +207,10 @@ def check_validation_spec(
                 issues.append(_issue("MEASUREMENT_REFERENCE", f"capability_specs[{index}] does not resolve a catalog measurement"))
             elif catalogued.get("truth_source") in {"sdk_receipt", "candidate_self_report"}:
                 issues.append(_issue("PHYSICAL_TRUTH", f"capability_specs[{index}] uses an ineligible sole truth source"))
+            elif item.get("metric") not in catalogued.get("metrics", []):
+                issues.append(_issue("MEASUREMENT_METRIC", f"capability_specs[{index}] metric is not in the catalog"))
+        if not _text(item.get("metric")):
+            issues.append(_issue("MEASUREMENT_METRIC", f"capability_specs[{index}].metric is invalid"))
         threshold = _closed(item.get("threshold"), {"comparator", "value"}, f"capability_specs[{index}].threshold", issues)
         if threshold and (threshold.get("comparator") not in {"<", "<=", ">", ">=", "=="} or not _finite(threshold.get("value"))):
             issues.append(_issue("THRESHOLD", f"capability_specs[{index}] threshold is invalid"))
@@ -174,16 +220,23 @@ def check_validation_spec(
             issues.append(_issue("TEMPORAL_RULE", f"capability_specs[{index}].timeout_s is invalid"))
         if item.get("aggregation") not in {"ALL", "ANY", "MEAN"}:
             issues.append(_issue("AGGREGATION", f"capability_specs[{index}].aggregation is invalid"))
-        if not _text(item.get("false_pass_guard")):
-            issues.append(_issue("FALSE_PASS_GUARD", f"capability_specs[{index}] needs a false-pass guard"))
+        guard_ids = item.get("guard_ids")
+        if not isinstance(guard_ids, list) or not guard_ids or not all(_text(guard_id) for guard_id in guard_ids):
+            issues.append(_issue("FALSE_PASS_GUARD", f"capability_specs[{index}] needs guard_ids"))
+        elif len(set(guard_ids)) != len(guard_ids) or set(guard_ids) - guards:
+            issues.append(_issue("FALSE_PASS_GUARD", f"capability_specs[{index}] has unknown or duplicate guard_ids"))
         cases = item.get("cases")
         if not isinstance(cases, list) or not cases or len(cases) > fixed_policy["max_cases_per_capability"]:
             issues.append(_issue("CASES", f"capability_specs[{index}] violates case limits"))
         else:
             case_ids: set[str] = set()
             for case_index, case in enumerate(cases):
-                checked = _closed(case, {"case_id", "inputs"}, f"capability_specs[{index}].cases[{case_index}]", issues)
-                if checked and (not _text(checked.get("case_id")) or not isinstance(checked.get("inputs"), dict)):
+                checked = _closed(case, {"case_id", "initial_state", "inputs"}, f"capability_specs[{index}].cases[{case_index}]", issues)
+                if checked and (
+                    not _text(checked.get("case_id"))
+                    or not isinstance(checked.get("initial_state"), dict)
+                    or not isinstance(checked.get("inputs"), dict)
+                ):
                     issues.append(_issue("CASES", f"capability_specs[{index}].cases[{case_index}] is invalid"))
                 elif checked:
                     if checked["case_id"] in case_ids:
@@ -196,10 +249,23 @@ def check_validation_spec(
             material = lineage.get("material")
             if kind not in {"COPIED", "ADAPTED", "PROPOSED"} or not isinstance(material, bool):
                 issues.append(_issue("LINEAGE", f"capability_specs[{index}] lineage is invalid"))
-            elif kind in {"COPIED", "ADAPTED"} and standard_id not in standard_ids:
+            elif kind in {"COPIED", "ADAPTED"} and standard_id not in standards:
                 issues.append(_issue("STANDARD_REFERENCE", f"capability_specs[{index}] does not resolve a frozen standard"))
             elif kind == "PROPOSED" and standard_id is not None:
                 issues.append(_issue("LINEAGE", f"capability_specs[{index}] proposed lineage must not claim a standard"))
+            elif kind == "COPIED":
+                standard = standards[standard_id]
+                copied_values = {
+                    "measurement_id": item.get("measurement", {}).get("measurement_id") if isinstance(item.get("measurement"), dict) else None,
+                    "metric": item.get("metric"),
+                    "comparator": item.get("threshold", {}).get("comparator") if isinstance(item.get("threshold"), dict) else None,
+                    "threshold_value": item.get("threshold", {}).get("value") if isinstance(item.get("threshold"), dict) else None,
+                    "dwell_s": item.get("dwell_s"),
+                    "timeout_s": item.get("timeout_s"),
+                    "aggregation": item.get("aggregation"),
+                }
+                if material is not False or any(copied_values[key] != standard[key] for key in copied_values):
+                    issues.append(_issue("COPIED_STANDARD_BINDING", f"capability_specs[{index}] changes a copied frozen standard"))
     if seen != design_ids:
         issues.append(_issue("CAPABILITY_COVERAGE", "every sealed Design capability must have exactly one spec"))
     return issues
@@ -230,6 +296,7 @@ class BlueLineRunner:
             raise ContractError("Blue Line requires a valid sealed Capability Design") from exc
         _standards(standards_snapshot)
         _measurements(measurement_catalog)
+        _guards(measurement_catalog)
         fixed_policy = _policy(policy)
         base_inputs = {
             "capability_design": design,
@@ -280,7 +347,7 @@ class BlueLineRunner:
                 "NEEDS_REVIEW", spec, spec_hash, spec_seal, None, None, None,
                 manifest, manifest_hash, manifest_seal, tuple(calls), tuple(diagnostics),
             )
-        suite = self._compile_suite(spec, design_hash, spec_hash)
+        suite = self._compile_suite(spec, design_hash, spec_hash, fixed_policy["repetitions"])
         suite_hash = content_hash(canonical_bytes(suite))
         suite_seal = create_seal("validation_b_suite", suite_hash, [spec_hash, design_hash])
         manifest, manifest_hash, manifest_seal = self._manifest(
@@ -310,12 +377,13 @@ class BlueLineRunner:
         return "EXHAUSTED_CORRECTION"
 
     @staticmethod
-    def _compile_suite(spec: Mapping[str, Any], design_hash: str, spec_hash: str) -> dict[str, Any]:
+    def _compile_suite(spec: Mapping[str, Any], design_hash: str, spec_hash: str, repetitions: int) -> dict[str, Any]:
         return {
             "artifact_type": "validation_b_suite",
             "schema_version": "1.0.0",
             "design_hash": design_hash,
             "spec_hash": spec_hash,
+            "repetitions": repetitions,
             "capability_cases": [
                 {
                     "capability_id": item["capability_id"],
@@ -324,7 +392,8 @@ class BlueLineRunner:
                     "dwell_s": item["dwell_s"],
                     "timeout_s": item["timeout_s"],
                     "aggregation": item["aggregation"],
-                    "false_pass_guard": item["false_pass_guard"],
+                    "metric": item["metric"],
+                    "guard_ids": item["guard_ids"],
                     "cases": item["cases"],
                     "lineage": item["lineage"],
                 }

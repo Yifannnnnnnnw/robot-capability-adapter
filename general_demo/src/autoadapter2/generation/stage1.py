@@ -87,7 +87,13 @@ def _id(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-def _check_semantic_fields(value: Any, location: str, issues: list[dict[str, str]]) -> None:
+def _check_semantic_fields(
+    value: Any,
+    location: str,
+    issues: list[dict[str, str]],
+    allowed_units: set[str] | None,
+    allowed_frames: set[str] | None,
+) -> None:
     if not isinstance(value, list):
         issues.append(_issues("PUBLIC_INTERFACE", f"{location} must be an array"))
         return
@@ -105,6 +111,10 @@ def _check_semantic_fields(value: Any, location: str, issues: list[dict[str, str
             if field["name"] in names:
                 issues.append(_issues("DUPLICATE_PUBLIC_FIELD", f"{location} has duplicate {field['name']}"))
             names.add(field["name"])
+        if allowed_units is not None and field.get("unit") not in allowed_units:
+            issues.append(_issues("PUBLIC_UNIT", f"{location}[{index}].unit is not in the robot public allowlist"))
+        if allowed_frames is not None and field.get("frame") not in allowed_frames:
+            issues.append(_issues("PUBLIC_FRAME", f"{location}[{index}].frame is not in the robot public allowlist"))
 
 
 def _string_array(value: Any, location: str, issues: list[dict[str, str]]) -> None:
@@ -112,7 +122,16 @@ def _string_array(value: Any, location: str, issues: list[dict[str, str]]) -> No
         issues.append(_issues("SEMANTIC_FIELD", f"{location} must be a string array"))
 
 
-def _check_capability(value: Any, location: str, supplied_requirement_ids: set[str], issues: list[dict[str, str]]) -> set[str]:
+def _check_capability(
+    value: Any,
+    location: str,
+    supplied_requirement_ids: set[str],
+    action_affordances: set[str] | None,
+    observation_affordances: set[str] | None,
+    allowed_units: set[str] | None,
+    allowed_frames: set[str] | None,
+    issues: list[dict[str, str]],
+) -> set[str]:
     fields = {
         "capability_id", "kind", "requirement_ids", "inputs", "outputs", "effect",
         "preconditions", "invocation_semantics", "temporal_semantics", "invariants",
@@ -136,8 +155,8 @@ def _check_capability(value: Any, location: str, supplied_requirement_ids: set[s
         unknown = covered - supplied_requirement_ids
         if unknown:
             issues.append(_issues("UNKNOWN_REQUIREMENT", f"{location} covers unknown requirements {sorted(unknown)}"))
-    _check_semantic_fields(capability.get("inputs"), f"{location}.inputs", issues)
-    _check_semantic_fields(capability.get("outputs"), f"{location}.outputs", issues)
+    _check_semantic_fields(capability.get("inputs"), f"{location}.inputs", issues, allowed_units, allowed_frames)
+    _check_semantic_fields(capability.get("outputs"), f"{location}.outputs", issues, allowed_units, allowed_frames)
     if not _id(capability.get("effect")):
         issues.append(_issues("SEMANTIC_EFFECT", f"{location}.effect must be a public semantic statement"))
     if capability.get("kind") not in {"action", "observation", "state_maintenance", "composition"}:
@@ -151,6 +170,13 @@ def _check_capability(value: Any, location: str, supplied_requirement_ids: set[s
         "unsupported_scope",
     ):
         _string_array(capability.get(field), f"{location}.{field}", issues)
+    for field, allowed in (
+        ("required_action_affordances", action_affordances),
+        ("required_observation_affordances", observation_affordances),
+    ):
+        values = capability.get(field)
+        if allowed is not None and isinstance(values, list) and set(values) - allowed:
+            issues.append(_issues("PUBLIC_AFFORDANCE", f"{location}.{field} exceeds the robot public projection"))
     errors = capability.get("errors")
     if not isinstance(errors, list) or not errors:
         issues.append(_issues("ERRORS", f"{location}.errors must be a non-empty array"))
@@ -178,8 +204,14 @@ def check_capability_design(design: Mapping[str, Any]) -> list[dict[str, str]]:
         issues.append(_issues("ARTIFACT_IDENTITY", "capability design identity is invalid"))
     if not _id(artifact.get("run_id")):
         issues.append(_issues("RUN_ID", "capability design run_id is invalid"))
-    if not isinstance(artifact.get("robot_public_projection"), dict):
+    projection = artifact.get("robot_public_projection")
+    if not isinstance(projection, dict):
         issues.append(_issues("ROBOT_PROJECTION", "robot public projection must be an object"))
+        projection = {}
+    action_affordances = _projection_strings(projection, "action_affordances", issues, required=True)
+    observation_affordances = _projection_strings(projection, "observation_affordances", issues, required=True)
+    allowed_units = _projection_allowlist(projection, "unit_allowlist", "units", issues)
+    allowed_frames = _projection_allowlist(projection, "frame_allowlist", "frames", issues)
     profile = artifact.get("granularity_profile")
     if not isinstance(profile, dict) or profile != {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}:
         issues.append(_issues("GRANULARITY", "exactly one frozen G2 profile is required"))
@@ -202,7 +234,16 @@ def check_capability_design(design: Mapping[str, Any]) -> list[dict[str, str]]:
             if capability["capability_id"] in capability_ids:
                 issues.append(_issues("DUPLICATE_CAPABILITY", f"duplicate capability_id {capability['capability_id']}"))
             capability_ids.add(capability["capability_id"])
-        covered |= _check_capability(capability, f"capabilities[{index}]", supplied, issues)
+        covered |= _check_capability(
+            capability,
+            f"capabilities[{index}]",
+            supplied,
+            action_affordances,
+            observation_affordances,
+            allowed_units,
+            allowed_frames,
+            issues,
+        )
     declared: set[str] = set()
     for field in ("unsupported_requirement_ids", "blocking_requirement_ids"):
         values = artifact.get(field)
@@ -218,6 +259,35 @@ def check_capability_design(design: Mapping[str, Any]) -> list[dict[str, str]]:
     if supplied and covered | declared != supplied:
         issues.append(_issues("REQUIREMENT_COVERAGE", "every supplied requirement must be covered, unsupported, or blocked"))
     return issues
+
+
+def _projection_strings(
+    projection: Mapping[str, Any],
+    field: str,
+    issues: list[dict[str, str]],
+    *,
+    required: bool,
+) -> set[str] | None:
+    value = projection.get(field)
+    if value is None and not required:
+        return None
+    if not isinstance(value, list) or not all(_id(item) for item in value):
+        issues.append(_issues("ROBOT_PROJECTION", f"robot public projection {field} must be a string array"))
+        return None
+    return set(value)
+
+
+def _projection_allowlist(
+    projection: Mapping[str, Any],
+    primary: str,
+    legacy: str,
+    issues: list[dict[str, str]],
+) -> set[str] | None:
+    if primary in projection and legacy in projection:
+        issues.append(_issues("ROBOT_PROJECTION", f"robot public projection must not provide both {primary} and {legacy}"))
+        return None
+    field = primary if primary in projection else legacy
+    return _projection_strings(projection, field, issues, required=False)
 
 
 class Stage1Runner:
@@ -291,6 +361,8 @@ class Stage1Runner:
 
     @staticmethod
     def _requirements(tasks: list[Mapping[str, Any]]) -> list[str]:
+        if not all(set(task) == {"requirement_id", "description"} for task in tasks):
+            raise ContractError("each task description may contain only requirement_id and description")
         requirement_ids = [task.get("requirement_id") for task in tasks]
         if not requirement_ids or not all(_id(item) for item in requirement_ids) or len(set(requirement_ids)) != len(requirement_ids):
             raise ContractError("every public task description needs one unique requirement_id")

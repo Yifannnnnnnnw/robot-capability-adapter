@@ -11,17 +11,36 @@ from autoadapter2.generation import FixtureJsonGenerator, Stage1Config, Stage1Ru
 
 
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
-ROBOT = {"robot_model_id": "so-arm101", "robot_configuration_id": "so-arm101-follower-stock-gripper", "public_frames": ["base"]}
+ROBOT = {
+    "robot_model_id": "so-arm101",
+    "robot_configuration_id": "so-arm101-follower-stock-gripper",
+    "action_affordances": ["joint target command"],
+    "observation_affordances": ["joint position observation"],
+    "unit_allowlist": ["rad"],
+    "frame_allowlist": ["joint", "base"],
+}
 TASKS = [{"requirement_id": "req-reach", "description": "Reach a public joint target safely."}]
-STANDARDS = {"snapshot_id": "standards-1", "standards": [{"standard_id": "joint-arrival"}]}
+STANDARDS = {
+    "snapshot_id": "standards-1",
+    "standards": [{
+        "standard_id": "joint-arrival", "measurement_id": "joint-error", "metric": "max_joint_error",
+        "comparator": "<=", "threshold_value": 0.05, "dwell_s": 0.2,
+        "timeout_s": 2.0, "aggregation": "ALL",
+    }],
+}
 MEASUREMENTS = {
     "catalog_id": "measurements-1",
     "measurements": [{
         "measurement_id": "joint-error", "entity": "shoulder_pan", "unit": "rad",
-        "frame": "joint", "truth_source": "physical_state",
+        "frame": "joint", "adapter_id": "truth-joint-state", "truth_source": "physical_state",
+        "metrics": ["max_joint_error"],
     }],
+    "guards": [{"guard_id": "physical-state-not-command-receipt", "adapter_id": "truth-joint-state"}],
 }
-POLICY = {"policy_id": "blue-1", "model_id": "fixed-fixture", "prompt_id": "blue-prompt-1", "max_cases_per_capability": 2}
+POLICY = {
+    "policy_id": "blue-1", "model_id": "fixed-fixture", "prompt_id": "blue-prompt-1",
+    "max_cases_per_capability": 2, "repetitions": 3,
+}
 
 
 def _capability_body() -> dict:
@@ -58,12 +77,13 @@ def _valid_spec(lineage: dict | None = None) -> dict:
         "capability_specs": [{
             "capability_id": "reach-joint-target",
             "measurement": {"measurement_id": "joint-error", "entity": "shoulder_pan", "unit": "rad", "frame": "joint"},
+            "metric": "max_joint_error",
             "threshold": {"comparator": "<=", "value": 0.05},
             "dwell_s": 0.2,
             "timeout_s": 2.0,
             "aggregation": "ALL",
-            "false_pass_guard": "Use measured joint state, not a command receipt.",
-            "cases": [{"case_id": "nominal", "inputs": {"target": 0.2}}],
+            "guard_ids": ["physical-state-not-command-receipt"],
+            "cases": [{"case_id": "nominal", "initial_state": {"joint": 0.0}, "inputs": {"target": 0.2}}],
             "lineage": lineage or {"kind": "COPIED", "standard_id": "joint-arrival", "material": False},
         }],
     }
@@ -75,6 +95,21 @@ def test_stage1_rejects_private_input_before_any_model_call() -> None:
     with pytest.raises(ContractError):
         Stage1Runner(fixture).run("run-1", ROBOT, tasks, G2)
     assert fixture.calls == []
+
+
+def test_stage1_rejects_non_public_task_fields_and_projection_mismatches() -> None:
+    fixture = FixtureJsonGenerator([_capability_body()])
+    with pytest.raises(ContractError):
+        Stage1Runner(fixture).run("run-1", ROBOT, [{"requirement_id": "req", "description": "x", "label": "extra"}], G2)
+    assert fixture.calls == []
+
+    invalid = _capability_body()
+    invalid["capabilities"][0]["required_action_affordances"] = ["hidden action"]
+    invalid["capabilities"][0]["inputs"][0]["unit"] = "degree"
+    invalid["capabilities"][0]["inputs"][0]["frame"] = "hidden-frame"
+    result = Stage1Runner(FixtureJsonGenerator([invalid]), Stage1Config(max_correction_calls=0)).run("run-1", ROBOT, TASKS, G2)
+    assert result.status == "FAILED"
+    assert {issue["code"] for issue in result.diagnostics} >= {"PUBLIC_AFFORDANCE", "PUBLIC_UNIT", "PUBLIC_FRAME"}
 
 
 def test_stage1_rejects_framework_field_override_then_corrects_publicly() -> None:
@@ -122,6 +157,24 @@ def test_ready_suite_and_all_seals_are_deterministic() -> None:
     assert first.suite_hash == second.suite_hash
     assert first.manifest_hash == second.manifest_hash
     assert first.validation_suite == second.validation_suite
+    assert first.validation_suite["repetitions"] == 3
     assert verify_seal(first.spec_seal)
     assert verify_seal(first.suite_seal)
     assert verify_seal(first.manifest_seal)
+
+
+@pytest.mark.parametrize("mutation", ["threshold", "guard"])
+def test_copied_standard_cannot_change_a_threshold_or_use_an_unknown_guard(mutation: str) -> None:
+    design, seal = _sealed_design()
+    invalid = _valid_spec()
+    if mutation == "threshold":
+        invalid["capability_specs"][0]["threshold"]["value"] = 0.5
+    else:
+        invalid["capability_specs"][0]["guard_ids"] = ["unknown-guard"]
+    result = BlueLineRunner(FixtureJsonGenerator([invalid, copy.deepcopy(invalid), copy.deepcopy(invalid)])).run(
+        design, seal, STANDARDS, MEASUREMENTS, POLICY
+    )
+    assert result.status == "NEEDS_REVIEW"
+    assert result.validation_suite is None
+    expected = "COPIED_STANDARD_BINDING" if mutation == "threshold" else "FALSE_PASS_GUARD"
+    assert expected in {issue["code"] for issue in result.diagnostics}
