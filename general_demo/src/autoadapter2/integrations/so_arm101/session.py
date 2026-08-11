@@ -52,6 +52,24 @@ DEFAULT_VIDEO_PROFILE = FrozenVideoProfile(
     codec="ffv1",
 )
 
+_DEMO_METRIC_FIELDS = (
+    "tip_position_error_m",
+    "tip_speed_m_s",
+    "intended_tip_face_contact_dwell_s",
+    "target_object_displacement_m",
+    "other_object_contact_count",
+    "cube_center_planar_goal_error_m",
+    "cube_table_supported",
+    "cube_linear_speed_m_s",
+    "cube_angular_speed_rad_s",
+    "cube_height_increase_m",
+    "gripper_relative_cube_slip_m",
+    "cube_held",
+    "specified_button_displacement_m",
+    "specified_button_activation_dwell_s",
+    "other_button_activation_count",
+)
+
 
 class SOArm101SessionError(RuntimeError):
     """The private SO-ARM101 session could not open or collect evidence."""
@@ -144,10 +162,10 @@ def _load_frame_capture_factory() -> Callable[..., Any]:
     """Resolve the shared capture implementation without defining a duplicate."""
 
     try:
-        from ...evaluation.session_support import MuJoCoFrameCapture
+        from ...integrations.session_support import MuJoCoFrameCapture
     except ImportError as exc:  # pragma: no cover - shared integration commit supplies this
         raise SOArm101SessionError(
-            "the shared evaluation.session_support.MuJoCoFrameCapture is required"
+            "the shared integrations.session_support.MuJoCoFrameCapture is required"
         ) from exc
     return MuJoCoFrameCapture
 
@@ -676,7 +694,7 @@ class SOArm101EvaluationRobotSession:
             truth = self._sample_truth()
             self._episode_samples.append(copy.deepcopy(truth))
             if self._recording and self._capture is not None:
-                self._capture.on_step()
+                self._capture.on_step(self.simulation_time_s)
 
     def _wait_for_goal_traffic(self, before: int) -> None:
         if self._translation is None:
@@ -821,22 +839,19 @@ class SOArm101EvaluationRobotSession:
         if self._recording:
             raise SOArm101SessionError("an external recording is already active")
         factory = self._frame_capture_factory or _load_frame_capture_factory()
-        self._capture = factory(self._video_profile, self._render_rgb, self._simulation_time)
+        self._capture = factory(self._video_profile, self._render_rgb)
         if not callable(getattr(self._capture, "start", None)) or not callable(getattr(self._capture, "on_step", None)) or not callable(getattr(self._capture, "stop", None)):
             self._capture = None
             raise SOArm101SessionError("MuJoCoFrameCapture does not implement start/on_step/stop")
         capture = self._capture
         try:
-            capture.start()
+            capture.start(self.simulation_time_s)
             self._recording = True
-            # Coverage begins at the post-reset, pre-invocation state.  The
-            # subsequent on_step calls are synchronized to physics progress.
-            capture.on_step()
         except BaseException:
             self._recording = False
             self._capture = None
             try:
-                capture.stop()
+                capture.stop(self.simulation_time_s)
             except BaseException:
                 pass
             raise
@@ -848,15 +863,12 @@ class SOArm101EvaluationRobotSession:
         capture = self._capture
         self._capture = None
         self._recording = False
-        frames = capture.stop()
+        frames = capture.stop(self.simulation_time_s)
         if not isinstance(frames, tuple):
             frames = tuple(frames) if isinstance(frames, Sequence) else ()
         if not all(isinstance(frame, RGBFrame) for frame in frames):
             raise SOArm101SessionError("MuJoCoFrameCapture returned invalid RGB frames")
         return frames
-
-    def _simulation_time(self) -> float:
-        return self.simulation_time_s
 
     def _render_rgb(self, *_: Any, **__: Any) -> bytes:
         """Render only the private external evaluation camera as RGB bytes."""
@@ -1145,8 +1157,23 @@ class SOArm101EvaluationRobotSession:
         self._event_state["safety_violation"] = bool(self._event_state.get("safety_violation", False) or truth.get("safety_violation", False))
         if "baseline_cube_position" not in self._event_state and isinstance(truth.get("cube_center_m"), Sequence):
             self._event_state["baseline_cube_position"] = list(truth["cube_center_m"])
+        cube_center = truth.get("cube_center_m")
+        baseline_cube = self._event_state.get("baseline_cube_position")
+        if (
+            isinstance(cube_center, Sequence)
+            and len(cube_center) == 3
+            and isinstance(baseline_cube, Sequence)
+            and len(baseline_cube) == 3
+        ):
+            truth["target_object_displacement_m"] = _distance(cube_center, baseline_cube)
         if "baseline_button_qpos" not in self._event_state and _finite(truth.get("specified_button_displacement_m")):
             self._event_state["baseline_button_qpos"] = 0.0
+        truth["intended_tip_face_contact_dwell_s"] = float(
+            self._event_state.get("face_contact_max_dwell_s", 0.0)
+        )
+        truth["specified_button_activation_dwell_s"] = float(
+            self._event_state.get("button_activation_max_dwell_s", 0.0)
+        )
 
     def _guard_results(self) -> dict[str, bool]:
         finite_state = bool(self._episode_samples) and all(bool(item.get("finite_state", False)) for item in self._episode_samples)
@@ -1157,6 +1184,49 @@ class SOArm101EvaluationRobotSession:
             "finite-physical-state": finite_state,
         }
 
+    def _sanitize_demo_samples(self, samples: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+        """Project private MuJoCo truth into evaluator-safe scalar samples."""
+
+        if not samples:
+            return []
+        origin = samples[0].get("time_s")
+        if not _finite(origin):
+            raise SOArm101SessionError("demo truth has an invalid sample origin time")
+        result: list[dict[str, Any]] = []
+        previous = float(origin)
+        for raw in samples:
+            current = raw.get("time_s")
+            if not _finite(current) or float(current) < previous - 1e-12:
+                raise SOArm101SessionError("demo truth sample times are not finite and ordered")
+            metrics: dict[str, float | bool] = {}
+            for field in _DEMO_METRIC_FIELDS:
+                if field not in raw:
+                    continue
+                value = raw[field]
+                if isinstance(value, bool):
+                    metrics[field] = value
+                elif _finite(value):
+                    metrics[field] = float(value)
+            result.append({
+                "time_s": round(max(0.0, float(current) - float(origin)), 12),
+                "metrics": metrics,
+            })
+            previous = float(current)
+        return result
+
+    @staticmethod
+    def _finite_evidence_mapping(values: Mapping[str, Any]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in values.items():
+            if isinstance(value, bool) or _finite(value):
+                result[str(key)] = value
+            else:
+                # None is canonical JSON and lets the private evaluator fail
+                # a missing/non-finite measurement without an infrastructure
+                # hash failure.
+                result[str(key)] = None
+        return result
+
     def demo_evidence(self, task_id: str) -> Mapping[str, Any]:
         self._assert_open()
         task_id = _require_text(task_id, "task_id")
@@ -1165,8 +1235,15 @@ class SOArm101EvaluationRobotSession:
         if not self._episode_samples:
             self._last_truth = self._sample_truth()
             self._episode_samples.append(copy.deepcopy(self._last_truth))
-        terminal = copy.deepcopy(self._episode_samples[-1])
         samples = self._episode_samples
+        sanitized_samples = self._sanitize_demo_samples(samples)
+        if not sanitized_samples:
+            raise SOArm101SessionError("demo truth produced no evaluator samples")
+        duration_s = float(sanitized_samples[-1]["time_s"] - sanitized_samples[0]["time_s"])
+        terminal = {
+            "time_s": float(sanitized_samples[-1]["time_s"]),
+            **dict(sanitized_samples[-1]["metrics"]),
+        }
         event_metrics = {
             "intended_tip_face_contact_dwell_s": float(self._event_state.get("face_contact_max_dwell_s", 0.0)),
             "specified_button_activation_dwell_s": float(self._event_state.get("button_activation_max_dwell_s", 0.0)),
@@ -1197,14 +1274,18 @@ class SOArm101EvaluationRobotSession:
             "specified_button_displacement_m": max(float(item.get("specified_button_displacement_m", 0.0)) for item in samples),
         }
         measurements.update(event_metrics)
+        safe_measurements = self._finite_evidence_mapping(measurements)
         return {
             "task_id": task_id,
-            "samples": copy.deepcopy(samples),
+            "samples": sanitized_samples,
             "terminal_metrics": terminal,
             "event_metrics": event_metrics,
-            "measurements": measurements,
-            **measurements,
+            "measurements": safe_measurements,
+            **safe_measurements,
             "guard_results": self._guard_results(),
+            "duration_s": duration_s,
+            "sample_start_time_s": 0.0,
+            "sample_end_time_s": duration_s,
             "terminal_time_s": self.simulation_time_s,
         }
 
@@ -1241,7 +1322,7 @@ class SOArm101EvaluationRobotSession:
         errors: list[str] = []
         if self._recording and self._capture is not None:
             try:
-                self._capture.stop()
+                self._capture.stop(self.simulation_time_s)
             except BaseException as exc:
                 errors.append(f"capture: {exc}")
             self._capture = None

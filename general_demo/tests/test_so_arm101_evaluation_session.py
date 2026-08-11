@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+import copy
+import json
 from pathlib import Path
 from typing import Any
 
-from autoadapter2.demo import EvaluationRobotSession, ValidationEvidence
+import pytest
+
+from autoadapter2.demo import (
+    EvaluationRobotSession,
+    ValidationEvidence,
+    evaluate_fixed_demo_criterion,
+)
 from autoadapter2.evaluation import FrozenVideoProfile, RGBFrame
 from autoadapter2.integrations.so_arm101.session import (
     SOArm101EvaluationRobotSession,
+    _load_frame_capture_factory,
 )
 from autoadapter2.validation import HarnessInvocation
 
@@ -14,6 +23,18 @@ from autoadapter2.validation import HarnessInvocation
 ROOT = Path(__file__).resolve().parents[1]
 SCENE_CONFIG = ROOT / "libraries/morphology/so-arm101/1.0.0/private_demo_scene/scene_config.json"
 TASKS = ROOT / "libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/task_instances_private.json"
+PRIVATE_CRITERIA = {
+    task["task_id"]: task["criterion"]
+    for task in json.loads(TASKS.read_text(encoding="utf-8"))["tasks"]
+}
+DEMO_DURATIONS = {"T01": 0.5, "T02": 0.3, "T03": 1.0, "T08": 1.0, "T20": 0.25}
+DECISIVE_FAILURES = {
+    "T01": ("tip_position_error_m", 0.021),
+    "T02": ("target_object_displacement_m", 0.011),
+    "T03": ("cube_table_supported", False),
+    "T08": ("cube_held", False),
+    "T20": ("other_button_activation_count", 1),
+}
 
 
 class _Backend:
@@ -121,19 +142,18 @@ class _Candidate:
 
 
 class _Capture:
-    def __init__(self, profile: FrozenVideoProfile, render_rgb: object, simulation_time: object) -> None:
+    def __init__(self, profile: FrozenVideoProfile, render_rgb: object) -> None:
         assert profile.width == 2 and profile.height == 2
         assert callable(render_rgb)
-        assert callable(simulation_time)
         self.frames: list[str] = []
 
-    def start(self) -> None:
+    def start(self, _simulation_time_s: float) -> None:
         self.frames.append("start")
 
-    def on_step(self) -> None:
+    def on_step(self, _simulation_time_s: float) -> None:
         self.frames.append("step")
 
-    def stop(self) -> tuple[RGBFrame, ...]:
+    def stop(self, _simulation_time_s: float) -> tuple[RGBFrame, ...]:
         self.frames.append("stop")
         return (
             RGBFrame(0.0, 2, 2, b"\x00" * 12),
@@ -231,6 +251,52 @@ def _session(order: list[str]) -> SOArm101EvaluationRobotSession:
     )
     session._test_holder = holder  # type: ignore[attr-defined]
     return session
+
+
+def test_default_capture_factory_uses_shared_time_indexed_slots() -> None:
+    profile = FrozenVideoProfile(
+        profile_id="shared-capture-test",
+        profile_version="1.0.0",
+        camera="external-evaluation",
+        view="robot-and-task-scene",
+        fps=30,
+        width=2,
+        height=2,
+        container="matroska",
+        codec="ffv1",
+    )
+    factory = _load_frame_capture_factory()
+    capture = factory(profile, lambda: b"\x00" * 12)
+    capture.start(0.0)
+    for index in range(1, 21):
+        capture.on_step(index * 0.005)
+    frames = capture.stop(0.1)
+    timestamps = [round(frame.simulation_time_s, 12) for frame in frames]
+    assert timestamps == [0.0, round(1 / 30, 12), round(2 / 30, 12), 0.1]
+    assert len(timestamps) == len(set(timestamps))
+
+
+@pytest.mark.parametrize("task_id", ["T01", "T02", "T03", "T08", "T20"])
+def test_demo_evidence_passes_and_rejects_each_checked_in_fixed_criterion(task_id: str) -> None:
+    session = _session([])
+    try:
+        session.reset(
+            phase="DEMO",
+            execution_id=f"demo-{task_id}-criteria",
+            initial_state={"task_id": task_id},
+        )
+        session._advance(DEMO_DURATIONS[task_id])  # type: ignore[attr-defined]
+        evidence = dict(session.demo_evidence(task_id))
+        assert evidence["duration_s"] >= DEMO_DURATIONS[task_id]
+        assert evaluate_fixed_demo_criterion(PRIVATE_CRITERIA[task_id], evidence)
+
+        broken = copy.deepcopy(evidence)
+        metric, bad_value = DECISIVE_FAILURES[task_id]
+        for sample in broken["samples"]:
+            sample["metrics"][metric] = bad_value
+        assert not evaluate_fixed_demo_criterion(PRIVATE_CRITERIA[task_id], broken)
+    finally:
+        session.close()
 
 
 def test_protocol_reset_truth_and_route_require_real_session_traffic() -> None:
