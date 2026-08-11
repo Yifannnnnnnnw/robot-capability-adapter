@@ -2,20 +2,20 @@
   "schema_version": "1.0.0",
   "manifest_id": "unitree-go2-stock-12dof-mujoco",
   "version": "1.0.0",
-  "status": "DRAFT",
+  "status": "READY",
   "robot_model_id": "unitree-go2",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "morphology_ref": {
     "path": "general_demo/libraries/morphology/unitree-go2/1.0.0/record.json",
-    "sha256": "a16a27c59e57986339ba1241434f1eaee9a3885cc2b41d25d0c4baaa465f4428"
+    "sha256": "ea2e45ee12476fe3d22b6de1f6178219009ce2b7e6d9e259167b0cf5ea3b2d31"
   },
   "sdk_ref": {
     "path": "general_demo/libraries/sdks/unitree-sdk2-go2-lowlevel/1.0.0/record.json",
-    "sha256": "7298e172282190742e82de186a3e9ec48fbcb41032deb00c647e17edb99e22fb"
+    "sha256": "904c0fda7142dd20e572cba5b4b8f1cff2afd291571e461dd6f9585eac957ef3"
   },
   "translation_ref": {
     "path": "general_demo/integrations/unitree-go2/translation.json",
-    "sha256": "35343c7fc5913cc4b998b17ed571ee421b4bc23ba799c9cc17e059d4af6e25d7"
+    "sha256": "7034efe2c66053a0c224c2193a531bf029ad4c4016bdf6bd238c31c1331e6d44"
   },
   "readiness_profile_ref": {
     "path": "general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json",
@@ -29,7 +29,7 @@
     "python": "3.10",
     "mujoco": "3.3.6",
     "cyclonedds": "0.10.2",
-    "lock_sha256": null
+    "lock_sha256": "3e0282e2fef7ce8976de2e19af881a3f739dc8a621d0087e8d14d1683de8a6e7"
   },
   "compatibility_checks": [
     {"check_id": "robot_identity", "verdict": "PASS"},
@@ -37,14 +37,9 @@
     {"check_id": "dds_topics_and_message_width", "verdict": "PASS"},
     {"check_id": "active_and_inactive_slot_rules", "verdict": "PASS"},
     {"check_id": "crc_stale_and_error_rules", "verdict": "PASS"},
-    {"check_id": "mujoco_asset_closure", "verdict": "NOT_RUN"},
-    {"check_id": "runtime_lock", "verdict": "NOT_RUN"},
-    {"check_id": "real_sdk_dds_mujoco_roundtrip", "verdict": "NOT_RUN"}
+    {"check_id": "mujoco_asset_closure", "verdict": "PASS"},
+    {"check_id": "runtime_lock", "verdict": "PASS"},
+    {"check_id": "real_sdk_dds_mujoco_roundtrip", "verdict": "PASS"}
   ],
-  "unresolved_gaps": [
-    "capture and hash complete Go2 MJCF asset closure",
-    "build and freeze the Ubuntu 22.04 SDK2/CycloneDDS/MuJoCo runtime",
-    "replace the interactive upstream bridge shell with a headless Session-Runner-clocked implementation",
-    "run the six formal Readiness checks through real SDK2 DDS and MuJoCo"
-  ]
+  "unresolved_gaps": []
 }

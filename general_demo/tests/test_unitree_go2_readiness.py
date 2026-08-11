@@ -133,6 +133,10 @@ class Client:
                 slots.append(Slot(**INACTIVE_SAFE_FIELDS))
         self.transport.command = Command(slots)
 
+    def clear_observations(self):
+        self.transport.lowstate = None
+        self.transport.sportstate = None
+
     def wait_lowstate(self, timeout_s):
         assert isinstance(self.transport.lowstate, LowStateFrame)
         return self.transport.lowstate
@@ -266,7 +270,7 @@ def test_real_identity_rejects_non_linux_even_with_claimed_lock(monkeypatch) -> 
         _real_identity({"status": "FROZEN_FROM_VERIFIED_LINUX_BUILD"})
 
 
-def test_real_route_is_wired_to_pinned_official_scene_and_remains_draft() -> None:
+def test_real_route_is_wired_to_verified_pinned_official_scene() -> None:
     root = Path(__file__).resolve().parents[1]
     environment = root / "environments/unitree-go2-linux-amd64/1.0.0"
     dockerfile = (environment / "Dockerfile").read_text(encoding="utf-8")
@@ -280,13 +284,11 @@ def test_real_route_is_wired_to_pinned_official_scene_and_remains_draft() -> Non
     assert f"{scene_sha256}  {scene_path}" in dockerfile
     assert f"AUTOADAPTER_GO2_MODEL={scene_path}" in dockerfile
     assert f"--model {scene_path}" in launch_script
-    assert runtime_lock["status"] == "DRAFT_UNVERIFIED_LINUX_BUILD"
-    assert runtime_lock["mujoco_entrypoint"] == {
-        "path": "unitree_robots/go2/scene.xml",
-        "sha256": scene_sha256,
-        "included_robot_model_path": "unitree_robots/go2/go2.xml",
-        "included_robot_model_sha256": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b",
-        "floor_geom_name": "floor",
-        "floor_geom_type": "plane",
-        "complete_asset_closure_verified": False,
-    }
+    assert runtime_lock["status"] == "FROZEN_FROM_VERIFIED_LINUX_BUILD"
+    assert runtime_lock["oci_image_digest"].startswith("sha256:")
+    assert runtime_lock["mujoco_entrypoint"]["path"] == "unitree_robots/go2/scene.xml"
+    assert runtime_lock["mujoco_entrypoint"]["sha256"] == scene_sha256
+    assert runtime_lock["mujoco_entrypoint"]["complete_asset_closure_verified"] is True
+    assert runtime_lock["mujoco_entrypoint"]["reset_verification"]["qpos_length"] == 19
+    assert runtime_lock["mujoco_entrypoint"]["reset_verification"]["qvel_length"] == 18
+    assert runtime_lock["unresolved"] == []

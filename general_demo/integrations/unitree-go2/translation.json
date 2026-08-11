@@ -2,6 +2,9 @@
   "record_type": "translation",
   "id": "unitree-sdk2-go2-dds-mujoco",
   "version": "1.0.0",
+  "status": "READY",
+  "conformance_status": "PASS",
+  "unresolved": [],
   "route": [
     "ChannelPublisher/ChannelSubscriber",
     "CycloneDDS domain 1 loopback",
@@ -70,5 +73,29 @@
   },
   "normal_motion_writes": "actuator_control_only",
   "direct_qpos_qvel_write": "reset_only",
-  "forbidden_behavior": ["stand", "sit", "move", "IK", "trajectory", "gait", "balance", "recovery"]
+  "forbidden_behavior": ["stand", "sit", "move", "IK", "trajectory", "gait", "balance", "recovery"],
+  "runtime_lock_ref": {
+    "path": "general_demo/environments/unitree-go2-linux-amd64/1.0.0/runtime-lock.json",
+    "sha256": "3e0282e2fef7ce8976de2e19af881a3f739dc8a621d0087e8d14d1683de8a6e7"
+  },
+  "translation_qualification_ref": {
+    "path": "general_demo/run_artifacts/go2-translation-qualification-02/readiness_report.json",
+    "sha256": "83e1050ad5888dbeaee6200bf97a109d131266882df0520d51c4bc4064373eb1"
+  },
+  "implementation": {
+    "source_files": [
+      {
+        "path": "general_demo/src/autoadapter2/integrations/unitree_go2/bridge.py",
+        "sha256": "36ba1ddf163daa6fb22aca2e755d81bd9034e64ca00e6d6151283f5804ac7099"
+      },
+      {
+        "path": "general_demo/src/autoadapter2/integrations/unitree_go2/runtime_lock.py",
+        "sha256": "4c1a723443e3fb80305eb5901a3f9d8e8168c4c33da8e90ba9adf2a812e0ba11"
+      }
+    ],
+    "readiness_runner": {
+      "path": "general_demo/src/autoadapter2/integrations/unitree_go2/readiness.py",
+      "sha256": "14fb31e4a51b2541d770370f005e8c7b90aa81f8b3fa6cce376486a00895bb5f"
+    }
+  }
 }

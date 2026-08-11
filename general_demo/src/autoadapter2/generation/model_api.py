@@ -90,7 +90,8 @@ class ModelApiClient:
         if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
             raise ContractError("model API response lacks choices")
         message = choices[0].get("message")
-        text = message.get("content", "").strip() if isinstance(message, dict) else ""
+        content = message.get("content") if isinstance(message, dict) else None
+        text = content.strip() if isinstance(content, str) else ""
         if not text:
             raise ContractError("model API response lacks message content")
         if text.startswith("```"):

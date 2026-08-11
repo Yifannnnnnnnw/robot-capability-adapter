@@ -62,6 +62,7 @@ class WallTimeout(Go2ReadinessError):
 class Go2SDKProbeClient(Protocol):
     def start(self) -> None: ...
     def send_probe(self, state: MuJoCoSensorFrame) -> None: ...
+    def clear_observations(self) -> None: ...
     def wait_lowstate(self, timeout_s: float) -> LowStateFrame: ...
     def wait_sportmodestate(self, timeout_s: float) -> SportModeStateFrame: ...
     def close(self) -> None: ...
@@ -147,6 +148,12 @@ def _real_identity(runtime_lock: dict[str, Any]) -> dict[str, Any]:
         raise Go2ReadinessError("runtime lock lacks the verified OCI image digest")
     if not runtime_lock.get("complete_dependency_artifact_hashes"):
         raise Go2ReadinessError("runtime lock lacks the complete dependency artifact hashes")
+    try:
+        from .runtime_lock import RuntimeLockError, verify_runtime_lock
+
+        verify_runtime_lock(runtime_lock)
+    except RuntimeLockError as exc:
+        raise Go2ReadinessError(f"runtime lock does not match the live Linux runtime: {exc}") from exc
     return {
         "platform": "linux-amd64",
         "python": platform.python_version(),
@@ -220,7 +227,24 @@ class RealSDK2ProbeClient:
                 if remaining <= 0:
                     raise WallTimeout(f"timed out waiting for {field}")
                 self._condition.wait(remaining)
-            return getattr(self, field)
+            value = getattr(self, field)
+            setattr(self, field, None)
+            return value
+
+    def clear_observations(self) -> None:  # pragma: no cover - DDS route
+        """Discard state received before the readiness observation barrier.
+
+        The command-effect probe may publish several SDK state samples while it
+        advances MuJoCo.  Comparing one of those queued samples with a later
+        MuJoCo frame would manufacture a timing error.  The readiness runner
+        therefore clears the client cache, advances exactly one further
+        Session-Runner step, and compares the two SDK messages published by
+        that step with its post-step physical state.
+        """
+
+        with self._condition:
+            self._lowstate = None
+            self._sportstate = None
 
     def wait_lowstate(self, timeout_s: float) -> LowStateFrame:  # pragma: no cover - DDS route
         message = self._wait("_lowstate", timeout_s)
@@ -326,7 +350,7 @@ def run_readiness(
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     runtime_lock = json.loads(runtime_lock_path.read_text(encoding="utf-8"))
     if tuple(profile.get("check_ids", ())) != CHECK_IDS:
-        raise Go2ReadinessError("readiness profile check order does not match Authority 0.15.0")
+        raise Go2ReadinessError("readiness profile check order does not match Authority 0.16.1")
     limits = profile.get("time_limits", {})
     expected_limits = {
         "per_check_wall_s": 60,
@@ -337,7 +361,7 @@ def run_readiness(
         "hidden_retry_count": 0,
     }
     if limits != expected_limits:
-        raise Go2ReadinessError("readiness time limits differ from Authority 0.15.0")
+        raise Go2ReadinessError("readiness time limits differ from Authority 0.16.1")
 
     injected = any(value is not None for value in (identity_checker, backend_factory, transport_factory, sdk_factory))
     identity_checker = identity_checker or _real_identity
@@ -382,6 +406,19 @@ def run_readiness(
         with _wall_timeout(float(limits["attempt_wall_s"])):
             def identity() -> dict[str, Any]:
                 detail = identity_checker(runtime_lock)
+                if identity_checker is _real_identity:
+                    model_record = runtime_lock.get("mujoco_entrypoint")
+                    relative_model = model_record.get("path") if isinstance(model_record, dict) else None
+                    expected_model_hash = (
+                        model_record.get("sha256") if isinstance(model_record, dict) else None
+                    )
+                    if not isinstance(relative_model, str) or not isinstance(expected_model_hash, str):
+                        raise Go2ReadinessError("runtime lock does not bind the Go2 MJCF entrypoint")
+                    expected_model_path = (
+                        Path("/opt/unitree_mujoco") / relative_model
+                    ).resolve()
+                    if model_path != expected_model_path or _sha256(model_path) != expected_model_hash:
+                        raise Go2ReadinessError("supplied Go2 model does not match the runtime lock")
                 runtime_lock_sha256 = _sha256(runtime_lock_path)
                 expected_runtime_sha256 = manifest.get("runtime", {}).get("lock_sha256")
                 if expected_runtime_sha256 not in {None, runtime_lock_sha256}:
@@ -450,8 +487,11 @@ def run_readiness(
             check("sdk_to_mujoco_command", command_path)
 
             def observation_path() -> dict[str, Any]:
-                if backend is None or client is None:
+                if bridge is None or backend is None or client is None:
                     raise Go2ReadinessError("real SDK observation route is unavailable")
+                client.clear_observations()
+                publication = bridge.step()
+                expected = backend.sensors()
                 timeout = float(limits["transport_operation_wall_s"])
                 lowstate = client.wait_lowstate(timeout)
                 sportstate = client.wait_sportmodestate(timeout)
@@ -459,11 +499,16 @@ def run_readiness(
                 evidence = _compare_state(
                     lowstate,
                     sportstate,
-                    backend.sensors(),
+                    expected,
                     absolute=float(tolerance["absolute"]),
                     relative=float(tolerance["relative"]),
                 )
-                return {**evidence, "lowstate_slots": len(lowstate.motor_state), "sportmodestate_read_only": True}
+                return {
+                    **evidence,
+                    "publication_simulation_time": publication["simulation_time"],
+                    "lowstate_slots": len(lowstate.motor_state),
+                    "sportmodestate_read_only": True,
+                }
 
             check("mujoco_to_sdk_observation", observation_path)
 
@@ -472,22 +517,42 @@ def run_readiness(
                 if bridge is None or backend is None:
                     raise Go2ReadinessError("simulation route is unavailable")
                 bridge.reset()
-                first = backend.sensors()
+                full_state = getattr(backend, "full_state", None)
+                if callable(full_state):
+                    first_qpos, first_qvel = full_state()
+                elif injected:
+                    first = backend.sensors()
+                    first_qpos, first_qvel = tuple(first.q), tuple(first.dq)
+                else:
+                    raise Go2ReadinessError("formal Go2 backend does not expose complete qpos/qvel")
                 bridge.step()
                 bridge.reset()
-                second = backend.sensors()
+                if callable(full_state):
+                    second_qpos, second_qvel = full_state()
+                else:
+                    second = backend.sensors()
+                    second_qpos, second_qvel = tuple(second.q), tuple(second.dq)
                 qpos_tolerance = float(profile["numerical_tolerances"]["reset"]["qpos_absolute"])
                 qvel_tolerance = float(profile["numerical_tolerances"]["reset"]["qvel_absolute"])
-                if any(abs(a - b) > qpos_tolerance for a, b in zip(first.q, second.q)):
-                    raise Go2ReadinessError("two reset joint-position projections differ")
-                if any(abs(a - b) > qvel_tolerance for a, b in zip(first.dq, second.dq)):
-                    raise Go2ReadinessError("two reset joint-velocity projections differ")
+                if len(first_qpos) != len(second_qpos) or any(
+                    abs(a - b) > qpos_tolerance for a, b in zip(first_qpos, second_qpos)
+                ):
+                    raise Go2ReadinessError("two complete reset qpos vectors differ")
+                if len(first_qvel) != len(second_qvel) or any(
+                    abs(a - b) > qvel_tolerance for a, b in zip(first_qvel, second_qvel)
+                ):
+                    raise Go2ReadinessError("two complete reset qvel vectors differ")
                 if client is not None:
                     client.close()
                     client = None
                 bridge.close()
                 bridge = None
-                return {"two_resets_match": True, "closed": True}
+                return {
+                    "two_resets_match": True,
+                    "qpos_length": len(first_qpos),
+                    "qvel_length": len(first_qvel),
+                    "closed": True,
+                }
 
             check("reset_close", reset_close)
     except BaseException as exc:

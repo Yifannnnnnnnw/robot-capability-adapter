@@ -11,19 +11,26 @@
     "python": "3.10",
     "mujoco": "3.3.6",
     "cyclonedds": "0.10.2",
-    "container_digest_status": "PENDING_BUILD"
+    "container_digest_status": "VERIFIED",
+    "oci_image_digest": "sha256:5df95b706e24eaa3d60502e304d8e11bc234a5c1b933d1f60306bc9430bfdfe8",
+    "runtime_lock_ref": {
+      "path": "general_demo/environments/unitree-go2-linux-amd64/1.0.0/runtime-lock.json",
+      "sha256": "3e0282e2fef7ce8976de2e19af881a3f739dc8a621d0087e8d14d1683de8a6e7"
+    }
   },
   "packages": [
     {
       "name": "unitree_sdk2py",
       "version": "1.0.1",
       "commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
-      "artifact_hash_status": "PENDING_RUNTIME_CAPTURE",
+      "artifact_hash_status": "VERIFIED_RUNTIME_CAPTURE",
+      "artifact_sha256": "a0411f059d0f4909069b7ac490ef46d87b317cf7f4a2fff40a1f41817592d658",
       "license": "BSD-3-Clause"
     },
     {
       "name": "cyclonedds",
-      "version": "0.10.2"
+      "version": "0.10.2",
+      "artifact_sha256": "4c56bc7c94fb191641c7797fda48af9536b9d72b2e9135c178cddba16e141ec3"
     }
   ],
   "public_symbols": [

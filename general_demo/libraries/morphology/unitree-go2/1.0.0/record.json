@@ -57,7 +57,21 @@
     "entrypoint": "unitree_robots/go2/go2.xml",
     "source_sha256": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b",
     "reset_qpos_qvel_abs_tolerance": 1e-09,
-    "asset_closure_status": "PENDING_CAPTURE"
+    "asset_closure_status": "VERIFIED",
+    "simulation_entrypoint": "unitree_robots/go2/scene.xml",
+    "simulation_entrypoint_sha256": "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0",
+    "asset_closure_sha256": "f9966ae2644b65dd555cb6dde33fb0175bb5b3e18c3faf2a6f8ed95d5533e5f7",
+    "runtime_lock_ref": {
+      "path": "general_demo/environments/unitree-go2-linux-amd64/1.0.0/runtime-lock.json",
+      "sha256": "3e0282e2fef7ce8976de2e19af881a3f739dc8a621d0087e8d14d1683de8a6e7"
+    },
+    "reset_verification": {
+      "keyframe": "home",
+      "qpos_length": 19,
+      "qvel_length": 18,
+      "max_qpos_error": 0.0,
+      "max_qvel_error": 0.0
+    }
   },
   "source": {
     "repository": "https://github.com/unitreerobotics/unitree_mujoco",

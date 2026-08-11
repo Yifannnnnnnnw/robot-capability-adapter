@@ -36,12 +36,16 @@ def test_checked_in_robot_records_match_frozen_facts() -> None:
     validate_robot_facts(PROJECT_ROOT, _manifest("unitree-go2"))
 
 
-@pytest.mark.parametrize("robot", ["so-arm101", "unitree-go2"])
+@pytest.mark.parametrize("robot", ["so-arm101"])
 def test_top_level_ready_cannot_hide_pending_robot_dependencies(robot: str) -> None:
     manifest = _manifest(robot)
     manifest["status"] = "READY"
     with pytest.raises(ContractError):
         validate_robot_facts(PROJECT_ROOT, manifest)
+
+
+def test_go2_ready_dependencies_are_verified() -> None:
+    validate_robot_facts(PROJECT_ROOT, _manifest("unitree-go2"))
 
 
 @pytest.mark.parametrize(

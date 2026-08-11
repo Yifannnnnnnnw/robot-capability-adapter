@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM --platform=linux/amd64 ubuntu:22.04@sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -15,9 +15,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/autoadapter
-COPY general_demo /opt/autoadapter/general_demo
+RUN mkdir -p \
+      /opt/autoadapter/general_demo/src/autoadapter2/foundation \
+      /opt/autoadapter/general_demo/src/autoadapter2/integrations/unitree_go2 \
+      /opt/autoadapter/general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0 \
+      /opt/autoadapter/general_demo/integrations/unitree-go2 \
+      /opt/autoadapter/general_demo/scripts
+COPY general_demo/src/autoadapter2/__init__.py /opt/autoadapter/general_demo/src/autoadapter2/__init__.py
+COPY general_demo/src/autoadapter2/foundation /opt/autoadapter/general_demo/src/autoadapter2/foundation
+COPY general_demo/src/autoadapter2/integrations/__init__.py /opt/autoadapter/general_demo/src/autoadapter2/integrations/__init__.py
+COPY general_demo/src/autoadapter2/integrations/unitree_go2 /opt/autoadapter/general_demo/src/autoadapter2/integrations/unitree_go2
+COPY general_demo/scripts/run_unitree_go2_readiness.py general_demo/scripts/capture_unitree_go2_runtime_lock.py /opt/autoadapter/general_demo/scripts/
+COPY general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json /opt/autoadapter/general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json
+COPY general_demo/environments/unitree-go2-linux-amd64/1.0.0/python-requirements.lock /opt/autoadapter/python-requirements.lock
 
-# Source checkouts are fixed to the Authority 0.15.0 commits.  These key-file
+# Source checkouts are fixed to the Authority 0.16.1 commits.  These key-file
 # checks do not claim a complete artifact or MJCF asset closure; runtime-lock
 # remains DRAFT until a real amd64 build captures the full closure and digest.
 RUN git clone https://github.com/unitreerobotics/unitree_sdk2_python.git /opt/unitree_sdk2_python \
@@ -41,10 +53,11 @@ RUN git clone https://github.com/unitreerobotics/unitree_mujoco.git /opt/unitree
 # keeps that native CRC library at its expected source-relative path.  The
 # framework runner is deliberately loaded from PYTHONPATH because this Go2
 # Authority runtime is Python 3.10 while the wider Demo package targets 3.11+.
-RUN python3.10 -m pip install --no-cache-dir cyclonedds==0.10.2 mujoco==3.3.6 pytest==8.4.2 \
-    && python3.10 -m pip install --no-cache-dir -e /opt/unitree_sdk2_python \
+RUN python3.10 -m pip install --no-cache-dir -r /opt/autoadapter/python-requirements.lock \
+    && python3.10 -m pip install --no-cache-dir --no-deps -e /opt/unitree_sdk2_python \
     && python3.10 -c "from unitree_sdk2py.utils.crc import CRC; CRC()" \
-    && python3.10 -c "from autoadapter2.integrations.unitree_go2.readiness import run_readiness"
+    && python3.10 -c "from autoadapter2.integrations.unitree_go2.readiness import run_readiness" \
+    && python3.10 -c "from autoadapter2.integrations.unitree_go2.runtime_lock import capture_runtime_lock"
 
 ENV AUTOADAPTER_GO2_MODEL=/opt/unitree_mujoco/unitree_robots/go2/scene.xml
 WORKDIR /opt/autoadapter/general_demo

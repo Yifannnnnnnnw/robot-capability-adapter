@@ -155,6 +155,7 @@ class Go2Backend(Protocol):
     def simulation_time(self) -> float: ...
 
     def reset(self) -> None: ...
+    def full_state(self) -> tuple[tuple[float, ...], tuple[float, ...]]: ...
     def sensors(self) -> MuJoCoSensorFrame: ...
     def set_controls(self, controls: Sequence[Real]) -> None: ...
     def step(self) -> None: ...
@@ -444,6 +445,13 @@ class MuJoCoGo2Backend:
     def reset(self) -> None:
         self._mj.mj_resetDataKeyframe(self.model, self.data, self._home_keyframe_id)
         self._mj.mj_forward(self.model, self.data)
+
+    def full_state(self) -> tuple[tuple[float, ...], tuple[float, ...]]:
+        """Return the complete free-base plus joint state for reset qualification."""
+
+        return tuple(float(value) for value in self.data.qpos), tuple(
+            float(value) for value in self.data.qvel
+        )
 
     def sensors(self) -> MuJoCoSensorFrame:
         return MuJoCoSensorFrame(
