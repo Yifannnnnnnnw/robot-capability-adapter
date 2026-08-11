@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0-draft",
+  "runtime_id": "unitree-go2-linux-amd64",
+  "version": "1.0.0",
+  "status": "DRAFT_UNVERIFIED_LINUX_BUILD",
+  "platform": {
+    "os": "Ubuntu 22.04",
+    "architecture": "amd64",
+    "python": "3.10"
+  },
+  "packages": [
+    {
+      "name": "unitree_sdk2py",
+      "version": "1.0.1",
+      "source_commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
+      "artifact_kind": "verified-source-build",
+      "artifact_sha256": null
+    },
+    {
+      "name": "cyclonedds",
+      "version": "0.10.2",
+      "artifact_kind": "platform-distribution",
+      "artifact_sha256": null
+    },
+    {
+      "name": "mujoco",
+      "version": "3.3.6",
+      "artifact_kind": "platform-wheel",
+      "artifact_sha256": null
+    }
+  ],
+  "source_checkouts": [
+    {
+      "repository": "https://github.com/unitreerobotics/unitree_sdk2_python",
+      "commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5"
+    },
+    {
+      "repository": "https://github.com/unitreerobotics/unitree_mujoco",
+      "commit": "ae6a8403e272733e9996ef59990880330496177f"
+    }
+  ],
+  "oci_image_digest": null,
+  "complete_dependency_artifact_hashes": null,
+  "unresolved": [
+    "build has not been executed and verified on Linux amd64",
+    "exact SDK2 source-build, CycloneDDS, MuJoCo and transitive artifact hashes are not captured",
+    "complete Go2 MJCF asset-closure hashes are not captured",
+    "OCI image digest, CPython build identity and native-library fingerprints are not captured",
+    "real SDK2/CycloneDDS/MuJoCo six-check readiness has not run"
+  ]
+}
