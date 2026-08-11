@@ -4,22 +4,25 @@
 
 | Field | Value |
 |---|---|
-| Status | `DRAFT_FOR_USER_REVIEW` |
-| Implementation authorization | `NOT_GRANTED` |
-| Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` revision `0.13.4` |
+| Status | `ACTIVE_NON_NORMATIVE_DESIGN` |
+| Implementation authorization | `WAVES_3_AND_4_FROZEN_INTEGRATION_SCOPE_ONLY` |
+| Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` revision `0.14.0` |
 | Companion plan | `GENERAL_DEMO_PLAN.md` |
 | Initial robot scope | SO-ARM101 follower + stock gripper; Unitree Go2 |
 | Initial Demo Consumer | ReAct LLM Agent |
 | Purpose | Specify the intended repository, package, artifact, security, and test structure before any implementation files are scaffolded |
 
-This is a non-normative implementation design for review. Authority-defined names and layouts are
-preserved. Every additional filename, module split, schema name, and configuration path is a
-proposal until the applicable Authority contract is reviewed and frozen. If this document and the
-Authority conflict, the Authority wins.
+This is a non-normative implementation design. Authority-defined names and layouts are preserved.
+Every additional filename, module split, schema name, and configuration path remains subordinate
+to the applicable frozen Authority contract. If this document and the Authority conflict, the
+Authority wins. Authority revision `0.14.0` authorizes only the frozen integration-record subset of
+Construction Wave 3 and the frozen Translation/Readiness subset of Wave 4; all other components
+remain blocked by their owning open contracts.
 
-The following user decisions are reflected here. Authority revision `0.13.4` freezes the named
-two-robot, G2-only first architecture-Demo selection; the remaining exact robot, profile, Consumer,
-and implementation contracts still require their owning Authority decisions before construction:
+The following user decisions are reflected here. Authority revision `0.14.0` additionally freezes
+the two exact robot configurations, SDK/runtime pins, RIMs, Translation routes, and Readiness/formal
+gate for implementation. The exact G2 profile, Consumer, and later Framework contracts still
+require their owning Authority decisions before construction:
 
 - the first complete Demo covers exactly SO-ARM101 follower with stock gripper and Unitree Go2;
 - both robots must each complete at least one full `READY` downstream route before wholesale
@@ -43,7 +46,7 @@ and implementation contracts still require their owning Authority decisions befo
 |---|---|
 | `AUTHORITY-NAMED BASENAME` | The Authority fixes the basename but not this document's containing path or schema fields |
 | `AUTHORITY-NAMED RELATIVE LAYOUT` | The Authority fixes a relative subtree; `general_demo/` remains the proposed containing root |
-| `PROPOSED` | This design proposes the filename or split; it must not be implemented until its contract is frozen |
+| `PROPOSED` | This design proposes the filename or split; it is blocked only while its owning Authority contract remains `OPEN`. Authority-0.14.0 integration homes may now be implemented; the marker continues to block unrelated open components |
 | `SOURCE` | Version-controlled human/framework-authored source or admitted data |
 | `DERIVED` | Reproducibly generated index/projection that does not become a second authority |
 | `RUNTIME` | Per-run or per-revision artifact stored outside the source tree |
@@ -153,7 +156,7 @@ import `generation`, SDK integration, candidate source, or Harness modules. Robo
 packages can depend on the Translation/Runner contracts but not on Stage 1, Stage 2, Blue Line,
 Repair, or task semantics.
 
-## 3. Proposed repository tree
+## 3. Repository tree — frozen integration homes and proposed later components
 
 ```text
 auto_adapter2.0/
@@ -164,7 +167,7 @@ auto_adapter2.0/
 ├── GENERAL_DEMO_FRAMEWORK_DESIGN.md
 ├── research_assets/
 │   └── autoadapter_high_level_framework_2026-08-08.png
-└── general_demo/                                      # PROPOSED implementation root
+└── general_demo/                                      # implementation root; 0.14.0 subset authorized
     ├── README.md
     ├── pyproject.toml
     ├── dependency-lock.json
@@ -180,6 +183,8 @@ auto_adapter2.0/
     ├── design_proposals/
     │   └── <OQ-ID>/                                   # never loadable by production code
     ├── contracts/
+    │   ├── schema_packages/
+    │   │   └── general-demo-integration-schemas/1.0.0/ # Authority-frozen package home
     │   ├── schemas/                               # each family/schema-id/version is immutable
     │   │   ├── common/
     │   │   ├── evidence/
@@ -235,11 +240,14 @@ auto_adapter2.0/
     │   ├── manifests/
     │   ├── translations/
     │   ├── readiness/
+    │   ├── registry_configs/                         # five Authority-frozen trust anchors
     │   └── source_evidence/
     ├── environments/
     │   ├── framework/Containerfile
     │   ├── integrations/<runtime_profile_id>/Containerfile
-    │   └── runtime_profiles/<runtime_profile_id>.yaml
+    │   └── runtime_profiles/<runtime_profile_id>/<version>/
+    │       ├── record.json
+    │       └── profile.yaml
     ├── ci/
     │   ├── test_matrix.yaml
     │   ├── formal_integration_requirements.yaml
@@ -302,9 +310,11 @@ layout is defined in Section 9.
 - native source/build files: only inside a versioned Translation/runtime profile when an SDK seam
   requires them.
 
-This convention is proposed for auditability, not yet normative. Canonical hashes are always over
-declared exact bytes or a frozen canonical representation; converting YAML to JSON implicitly at
-hash time is forbidden unless the canonicalization contract explicitly defines it.
+Authority revision 0.14.0 now freezes one scoped exception to the otherwise open generic
+canonicalization policy: integration-v1 formal JSON records and schemas use RFC 8785 JCS UTF-8 and
+SHA-256, while non-JSON payloads use exact stored bytes. Human YAML remains a source/review view
+and never becomes a formal record through implicit conversion. Canonicalization for later
+Generation, Blue Line and full-run artifacts remains owned by its open contract.
 
 ## 4. Version-controlled file catalog
 
@@ -340,7 +350,7 @@ created until their exact content is approved and frozen.
 | `contracts/profiles/granularity/<profile_id>/<version>/{profile,manifest}.yaml` | Generic, robot-independent, exactly-one-profile-per-run envelope and allowed Design shape; the first campaign loads only its frozen G2 profile, while later campaigns may load separately frozen G1/G3 profiles through the same resolver | first-Demo G2 and generic envelope: `OQ-GRAN-001`; later G1/G3 and RQ2 protocol: `OQ-EXP-001` |
 | `contracts/profiles/observation/state_provided/<version>/{profile,manifest}.yaml` | Public entity/state schema, frame/unit rules, timestamps, precision, update cadence, noise/latency declaration | `OQ-OBS-001` |
 | `contracts/profiles/python_binding/one_file/<version>/{profile,manifest}.yaml` | Permitted Python binding/result envelope and one-file candidate profile | `OQ-GEN-001` |
-| `contracts/policies/canonicalization/<version>/{policy,manifest}.yaml` | Exact canonical JSON/YAML normalization and hash rules | `OQ-GEN-001`, `OQ-BLUE-001` |
+| `contracts/policies/canonicalization/<version>/{policy,manifest}.yaml` | Generic Generation/Blue Line/full-run normalization and hash rules; excludes the Authority-frozen integration-v1 JCS/raw-byte rule | `OQ-GEN-001`, `OQ-BLUE-001` |
 | `contracts/policies/dependency/<version>/{policy,manifest}.yaml` | Stage 2 and candidate dependency allowlist/denylist and environment pin rules | `OQ-GEN-001`, `OQ-VAL-001` |
 | `contracts/policies/recipient_visibility/<version>/{policy,manifest}.yaml` | File/field visibility for Stage 1, Blue Line, Stage 2, Repair, candidate, ReAct, Harness, and maintainers | multiple OQs |
 | `contracts/policies/candidate_isolation/<version>/{policy,manifest}.yaml` | Process, filesystem, import, network, hardware, resource, and IPC restrictions | `OQ-GEN-001`, `OQ-CONSUMER-001` |
@@ -410,9 +420,11 @@ MuJoCo truth, Translation internals, or an expected solution to Stage 1, Stage 2
 
 ## 5. Generic Framework source-file catalog
 
-All paths below are under `general_demo/src/autoadapter2/`. Every file is `PROPOSED SOURCE`; exact
-signatures remain open. The split is intentionally fine-grained so robot-specific behavior cannot
-hide in an omnibus runner.
+All paths below are under `general_demo/src/autoadapter2/`. They are implementation homes rather
+than independent authority: files that implement the Authority-0.14.0 frozen integration subset
+are authorized now, while files owned by an `OPEN` contract remain `PROPOSED SOURCE`. Exact
+signatures outside the frozen subset remain open. The split is intentionally fine-grained so
+robot-specific behavior cannot hide in an omnibus runner.
 
 ### 5.1 Package entry and foundation
 
@@ -477,20 +489,26 @@ capability implementation, interpret a task verdict, or invoke a robot outside t
 | `library_access/experience.py` | Resolve admitted Design/Implementation Experience by exact version and applicability |
 | `library_access/experience_views.py` | Produce distinct Stage 1 Design, Stage 2 Implementation, and future-recipient projections from one selected version set |
 | `library_access/snapshots.py` | Build and verify immutable run-specific Library/Experience snapshot manifests |
-| `library_access/admission.py` | Verify admission state and evidence closure; it does not perform human approval |
+| `library_access/admission.py` | Read-only resolution of effective admission state from the trusted append-only registry; never trusts subject status fields |
 | `library_access/catalog_builder.py` | Rebuild derived catalogs from manifests deterministically |
 
 ### 5.5 RIM, Translation contracts, and readiness
 
 | File | Single responsibility |
 |---|---|
+| `integration/schema_bootstrap.py` | Verify the Authority-frozen JCS schema package and bind its exact hash through the schema bootstrap trust anchor |
+| `integration/registry_config.py` | Load the five exact Authority-bound registry/trust-anchor configs; candidate callers cannot replace them |
+| `integration/event_log.py` | Append/verify JCS event chains with global and per-subject heads, sequence/fork/cycle/replay rejection |
+| `integration/admission_authority.py` | Sole Framework-private writer for admission, RIM activation, Readiness issuance and integration-gate logs |
+| `integration/state_reducer.py` | Compute effective admitted/revoked and active/inactive state from trusted chains |
 | `integration/rim.py` | Parse and validate a thin Robot Integration Manifest |
-| `integration/rim_resolver.py` | Resolve the exact fixed robot configuration, Morphology entry, simulation profile, SDK Entry, Translation, and their compatibility evidence; task environment is separate |
-| `integration/registry.py` | Discover installed integration packages by manifest, not robot-name conditionals |
+| `integration/rim_resolver.py` | Resolve the exact fixed robot configuration, Morphology entry, simulation profile, SDK Entry and Translation plus externally bound compatibility evidence; task environment is separate |
+| `integration/registry.py` | Discover installed integration packages by manifest; distinct from the trusted operational event logs |
 | `integration/translation_protocol.py` | Internal typed protocol a robot-specific Translation package must implement; never exposed to candidate/Consumer |
 | `integration/readiness_protocol.py` | Six required readiness probe contracts and evidence categories |
-| `integration/readiness_runner.py` | Execute the six checks via Session Runner and classify infrastructure failure |
-| `integration/readiness_receipt.py` | Produce the non-sensitive pass receipt and private full report references |
+| `integration/readiness_runner.py` | Execute the six checks via Session Runner, classify infrastructure failure and produce only the private immutable report |
+| `integration/readiness_issuer.py` | Trusted-authority append of a PASS receipt event after independently verifying the private report; ordinary callers cannot mint it |
+| `integration/formal_gate.py` | Issue trusted-log `RIM_RESOLVED` or `INTEGRATION_READY` events after recomputing exact refs and registry chains; never issues final `READY_FOR_STAGE1` |
 | `integration/environment_resolver.py` | Resolve task environment templates/assets without inserting goals or criteria into RIM |
 
 ### 5.6 Runtime and isolation
@@ -689,9 +707,14 @@ general_demo/libraries/morphology/
 ├── catalog.yaml                                      # DERIVED index
 ├── robots/
 │   └── <robot_model_id>/<morphology_version>/
-│       ├── manifest.yaml                             # owning entry manifest
-│       ├── morphology.yaml                           # physical facts only
-│       ├── simulation.yaml                           # canonical MuJoCo/reset/control facts
+│       ├── record.json                               # formal JCS morphology-entry subject
+│       ├── morphology_facts.json                     # formal typed physical facts
+│       ├── simulation/
+│       │   └── record.json                           # formal JCS simulation-profile subject
+│       ├── source_views/                             # review-only, never formal authority
+│       │   ├── manifest.yaml
+│       │   ├── morphology.yaml
+│       │   └── simulation.yaml
 │       ├── model/
 │       │   ├── robot.xml                             # canonical formal MJCF
 │       │   ├── source.urdf                           # optional provenance only
@@ -715,9 +738,13 @@ general_demo/libraries/morphology/
             └── provenance.yaml
 ```
 
-`morphology.yaml` never contains IK, gait, task logic, capability implementation, SDK mapping, or
-validation criteria. `simulation.yaml` names MuJoCo joints/actuators/sensors for private integration
-use, while Stage 1 receives a generated design projection without simulator-internal names.
+`record.json`, `morphology_facts.json`, and `simulation/record.json` are the formal machine inputs
+for the frozen v1 integration subset. The YAML files are generated or checked review views and
+cannot replace those JCS records. Morphology facts never contain IK, gait, task logic, capability
+implementation, SDK mapping, or validation criteria. The simulation profile names MuJoCo
+joints/actuators/sensors for private integration use, while Stage 1 receives a generated design
+projection without simulator-internal names. Effective admission is resolved from the external
+Admission registry and is not stored as mutable status in any subject.
 
 ### 6.2 SDKs Library (`AUTHORITY-NAMED RELATIVE LAYOUT`)
 
@@ -726,19 +753,25 @@ general_demo/libraries/sdks/
 ├── catalog.yaml                                      # DERIVED index
 └── entries/
     └── <sdk_entry_id>/<entry_version>/
-        ├── manifest.yaml
-        ├── artifact.yaml                             # exact real upstream pin/install
-        ├── public_api.yaml                           # admitted public semantics
-        ├── sources.yaml                              # claim-to-primary-evidence links
+        ├── record.json                               # formal JCS sdk-entry subject
+        ├── artifact.json                             # formal exact upstream pin/install record
+        ├── public_api.json                           # formal admitted public semantics record
+        ├── sources.json                              # formal claim-to-primary-evidence record
+        ├── source_views/                             # review-only YAML projections
+        │   ├── manifest.yaml
+        │   ├── artifact.yaml
+        │   ├── public_api.yaml
+        │   └── sources.yaml
         ├── examples/                                 # bounded checked examples
-        └── admission/
-            └── report.json
+        └── licenses/
 ```
 
 The real installed SDK, virtual environment, source checkout, build cache, device secrets, or an
-API-compatible facade is not stored in the SDK Library. `artifact.yaml` resolves the real artifact
+API-compatible facade is not stored in the SDK Library. Formal `artifact.json` resolves the real artifact
 into an isolated execution environment. Recipient projections are runtime artifacts, not extra
-canonical files inside the Entry.
+canonical files inside the Entry. The four formal JSON records, not the YAML review views, govern
+identity, pins, API facts, and source lineage. Admission reports and events are owned by the
+external Framework-private Admission registry rather than written into the immutable SDK subject.
 
 ### 6.3 Tasks Library (`PROPOSED` machine layout)
 
@@ -881,22 +914,34 @@ stored separately:
 general_demo/integrations/
 ├── manifests/
 │   └── <rim_id>/<rim_version>/
-│       ├── rim.yaml                                  # thin refs only
-│       ├── provenance.yaml
-│       └── admission.json
+│       ├── record.json                               # formal JCS thin RIM subject
+│       ├── rim.yaml                                  # generated/checkable review view only
+│       └── provenance.yaml
 ├── translations/
 │   └── <translation_id>/<translation_version>/
-│       ├── manifest.yaml
-│       ├── mapping.yaml                              # typed field/unit/time mapping
+│       ├── record.json                               # formal JCS translation-manifest subject
+│       ├── mapping.json                              # formal typed field/unit/time mapping
+│       ├── protocol.json                             # formal lifecycle/error/timing contract
+│       ├── source_views/
+│       │   ├── manifest.yaml
+│       │   ├── mapping.yaml
+│       │   └── protocol.yaml
 │       ├── pyproject.toml                            # when implemented in Python
 │       ├── src/                                      # hook + command/state mapping
 │       ├── native/                                   # optional C/C++ build, if required
 │       ├── provenance.yaml
 │       └── licenses/
 ├── readiness/
-│   └── probe_sets/<probe_set_id>/<version>/
-│       ├── manifest.yaml                             # definitions, not results
+│   └── profiles/<readiness_profile_id>/<version>/
+│       ├── record.json                               # formal JCS readiness-profile subject
+│       ├── profile.yaml                              # review view only
 │       └── probes/
+├── registry_configs/                                 # bootstrap trust anchors; private at install
+│   ├── schema/record.json
+│   ├── admission/record.json
+│   ├── rim_activation/record.json
+│   ├── readiness/record.json
+│   └── integration_gate/record.json
 └── source_evidence/
     └── <source_capture_id>/<version>/
         ├── manifest.yaml
@@ -908,9 +953,11 @@ Generation-owned Sandbox probes are stored separately at
 Demo adapters are stored under `private_governance/harness_adapters/`; neither class is part of a
 robot's thin RIM or Translation package.
 
-`rim.yaml` references exactly one fixed robot configuration, Morphology entry, simulation profile,
-SDK Entry, Translation version, and compatibility evidence. It contains no task, Experience,
-criterion, generated layer, controller, or secret.
+The formal RIM `record.json` references exactly one fixed robot configuration, Morphology entry,
+simulation profile, SDK Entry, Translation version, and runtime profile. Compatibility and
+Translation-conformance reports are external formal evidence consumed by Admission; neither is a
+field in the immutable RIM or Translation subject. A RIM contains no task, Experience, criterion,
+generated layer, controller, or secret. YAML is review material only.
 
 Each Translation package may contain only:
 
@@ -926,18 +973,46 @@ the generated `capability.py` when required by the sealed Design.
 Readiness execution reports, SDK probe outputs, simulator traces, and receipts are runtime
 artifacts. Only immutable probe definitions and their admitted evidence belong in source control.
 
+The append-only operational state is stored outside every model, candidate, Repair, and Consumer
+workspace in one Framework-private integration state root:
+
+```text
+$INTEGRATION_STATE_ROOT/
+├── schema_bootstrap/record.json                      # exact bootstrap record
+├── reports/                                          # immutable typed evidence records
+│   ├── admission/
+│   ├── compatibility/
+│   ├── translation_conformance/
+│   └── readiness/
+└── registries/
+    ├── admission/{events/,head.json}
+    ├── rim_activation/{events/,head.json}
+    ├── readiness/{events/,head.json}
+    └── integration_gate/{events/,head.json}
+```
+
+Only the configured local Integration Admission Authority may append. Gate and state-reducer code
+has read-only access and recomputes each canonical chain; run callers never supply trusted event or
+receipt payloads. Admission reports, RIM activation, private Readiness reports, trusted Readiness
+receipts, and `RIM_RESOLVED`/`INTEGRATION_READY` gate events therefore remain separate from source
+records and from ordinary run artifacts.
+
 ### 7.1 Two initial integration instances
 
-Exact IDs and versions are not selected here. After freeze, the generic pattern will be populated
-twice:
+Authority revision 0.14.0 freezes the following exact Wave 3/4 integration instances. Their
+records must still pass the formal admission, activation and Readiness lifecycle before a run may
+use them:
 
 | Required item | SO-ARM101 follower + stock gripper | Unitree Go2 |
 |---|---|---|
-| Morphology entry | fixed-base follower + stock gripper canonical MJCF | one fixed Go2 configuration canonical MJCF |
-| SDK Entry | exact admitted real robot-facing SDK surface | exact admitted real SDK surface, potentially lower-level command/state primitives |
-| RIM | one thin immutable ref set | one thin immutable ref set |
-| Translation | SDK/device mapping only | SDK/device/transport mapping only; no synthesized gait |
-| Readiness probes | six-part exact route checks | six-part exact route checks, including timing/reset/cross-talk risks |
+| Robot/configuration IDs | `so-arm101` / `so-arm101-follower-stock-gripper` | `unitree-go2` / `unitree-go2-stock-12dof` |
+| Morphology entry | `so-arm101-follower-stock-gripper@1.0.0`; pinned fixed-base canonical MJCF | `unitree-go2-stock-12dof@1.0.0`; pinned free-base stock-12-DoF canonical MJCF |
+| Simulation profile | `so-arm101-follower-stock-gripper-simulation@1.0.0` | `unitree-go2-stock-12dof-simulation@1.0.0` |
+| SDK Entry | `lerobot-so101-follower@1.0.0`; real LeRobot 0.6.0 + Feetech 1.0.0 | `unitree-sdk2-go2-lowlevel@1.0.0`; real SDK2Py 1.0.1 + CycloneDDS 0.10.2, low-level surface only |
+| RIM | `so-arm101-follower-stock-gripper-mujoco@1.0.0` | `unitree-go2-stock-12dof-mujoco@1.0.0` |
+| Translation | `lerobot-so101-feetech-pty-mujoco@1.0.0`; real serial path through project-owned PTY device boundary | `unitree-sdk2-go2-dds-mujoco@1.0.0`; DDS domain-1 low-command/state route; no synthesized gait |
+| Runtime | `so-arm101-linux-amd64@1.0.0`; Ubuntu 24.04, CPython 3.12, MuJoCo 3.3.6 | `unitree-go2-linux-amd64@1.0.0`; Ubuntu 22.04, CPython 3.10, MuJoCo 3.3.6, CycloneDDS 0.10.2 |
+| Readiness profile | `general-demo-integration-readiness@1.0.0`, six frozen checks | the same frozen profile, including DDS timing/reset/isolation checks |
 | Development probes | Generation-owned public capability-development facts, not Validation cases | Generation-owned public low-level/posture/motion facts, not Demo/Validation cases |
 | Private Harness adapters | arm/gripper state and task evidence | base/joint/contact/posture/motion evidence as required by approved criteria |
 | Task records | existing 28 reviewed records; select fixed collection later | new reviewed catalog and private criteria required |
@@ -955,22 +1030,29 @@ general_demo/environments/
 ├── integrations/
 │   └── <runtime_profile_id>/Containerfile
 └── runtime_profiles/
-    └── <runtime_profile_id>.yaml
+    └── <runtime_profile_id>/<version>/
+        ├── record.json                               # formal JCS runtime-profile subject
+        └── profile.yaml                              # review view only
 ```
 
-These are proposed reproducible build environments, not SDK evidence. A runtime profile records
-OS/architecture, Python/native toolchain, MuJoCo runtime, IPC/transport prerequisites, and exact
-container image digest. The SDK Entry still owns the upstream SDK pin and installation semantics.
-The build verifies that the installed bytes match the Entry. Robot/network/device secrets and host
-paths are injected externally and never written into Containerfiles, profiles, or artifacts.
+These are the construction locations for reproducible build environments, not SDK evidence. The
+two v1 runtime identities and required platforms are frozen by Authority 0.14.0, but their subject
+records remain unadmitted until an actual build captures non-placeholder OCI image, interpreter,
+dependency-lock, and platform-fingerprint hashes. The SDK Entry still owns the upstream SDK pin
+and installation semantics. The build verifies that the installed bytes match the Entry.
+Robot/network/device secrets and host paths are injected externally and never written into
+Containerfiles, profiles, or artifacts.
 
 Separate profiles are allowed when SDK platform requirements differ, but they must implement the
 same internal Runner/Translation protocols and cannot fork the generic Framework lifecycle.
 
-## 8. Proposed schema-file inventory
+## 8. Schema-file inventory
 
-The Authority names the basename `capability_design.schema.json`; every other schema basename/ID
-below is proposed. No schema is stored at a mutable flat path. Every logical table entry of the form
+Authority revision 0.14.0 freezes the integration-v1 schema contract below; its exact bytes and
+package hash are generated, independently checked, and bootstrapped before any formal record is
+admitted. Outside that explicitly listed subset, the Authority currently names only the basename
+`capability_design.schema.json`; every other schema basename/ID below remains proposed. No schema
+is stored at a mutable flat path. Every proposed logical table entry of the form
 `contracts/schemas/<family>/<basename>.schema.json` expands to this actual versioned layout:
 
 ```text
@@ -983,6 +1065,34 @@ The shorter paths in the inventory are logical schema-ID/basename notation, not 
 paths. The registry resolves only an exact family + schema ID + schema version + manifest/payload
 hash. It rejects flat/unversioned schema files, overwritten released versions, and all proposals
 until their owning OQ is frozen.
+
+### 8.0 Authority-frozen integration-v1 schema package
+
+```text
+contracts/schema_packages/general-demo-integration-schemas/1.0.0/
+├── package_manifest.json
+└── schemas/
+    └── <logical_schema_id>.schema.json
+```
+
+The package contains exactly one version-`1.0.0` member for each of these logical IDs and no other
+member:
+
+| Frozen logical schemas |
+|---|
+| `exact-reference`, `schema-bootstrap`, `subject-record` |
+| `admission-report`, `admission-event`, `rim-activation-event` |
+| `morphology-entry`, `morphology-facts`, `simulation-profile` |
+| `sdk-entry`, `sdk-artifact`, `sdk-public-api`, `sdk-sources` |
+| `translation-manifest`, `translation-mapping`, `translation-protocol`, `translation-conformance-report` |
+| `robot-integration-manifest`, `compatibility-report`, `runtime-profile` |
+| `readiness-profile`, `readiness-report`, `readiness-receipt` |
+| `registry-config`, `integration-selection`, `resolved-combination`, `integration-gate-receipt` |
+
+These schemas, package canonicalization, bootstrap sequence, exact references, event transitions,
+and acceptance vectors are governed directly by Authority 0.14.0. The implementation may not
+substitute the similarly named proposed schemas below, add mutable status to a subject, or treat a
+YAML review view as a formal record.
 
 ### 8.1 Common, orchestration, model-runtime, Library, integration, and public-state schemas
 
@@ -1003,24 +1113,12 @@ until their owning OQ is frozen.
 | `contracts/schemas/orchestration/run_closure.schema.json` | immutable terminal run boundary and all terminal artifact hashes, including every required video manifest and media blob |
 | `contracts/schemas/model_runtime/call_record.schema.json` | role/model/context/request/response/usage/retry/cache accounting |
 | `contracts/schemas/model_runtime/budget.schema.json` | versioned role-specific inference/tool/time/cost budget |
-| `contracts/schemas/libraries/morphology_manifest.schema.json` | Morphology entry manifest |
-| `contracts/schemas/libraries/morphology.schema.json` | robot-independent physical facts |
-| `contracts/schemas/libraries/simulation_profile.schema.json` | MuJoCo version/model/reset/timing/names |
 | `contracts/schemas/libraries/environment_asset.schema.json` | reusable environment assets |
 | `contracts/schemas/libraries/environment_template.schema.json` | layouts/frames without tasks/criteria |
-| `contracts/schemas/libraries/sdk_manifest.schema.json` | SDK Entry identity/version/status/payloads |
-| `contracts/schemas/libraries/sdk_artifact.schema.json` | exact upstream package/source/install pin |
-| `contracts/schemas/libraries/sdk_public_api.schema.json` | admitted public symbols/actions/observations/semantics |
-| `contracts/schemas/libraries/sdk_sources.schema.json` | API-claim evidence links |
-| `contracts/schemas/libraries/sdk_admission_report.schema.json` | installation/static/dynamic/probe evidence |
 | `contracts/schemas/libraries/task_record.schema.json` | complete approved task + private criterion |
 | `contracts/schemas/libraries/task_collection.schema.json` | immutable fixed task refs |
 | `contracts/schemas/libraries/experience_record.schema.json` | Design/Implementation Experience lifecycle |
 | `contracts/schemas/libraries/experience_snapshot.schema.json` | future-run exact admitted record versions |
-| `contracts/schemas/integration/rim.schema.json` | thin fixed integration refs |
-| `contracts/schemas/integration/translation_manifest.schema.json` | Translation identity/version/protocol/payloads |
-| `contracts/schemas/integration/readiness_report.schema.json` | six checks and private evidence refs |
-| `contracts/schemas/integration/readiness_receipt.schema.json` | non-sensitive pass receipt |
 | `contracts/schemas/public_state/profile.schema.json` | public entity/state/frame/unit/cadence/noise/latency contract |
 | `contracts/schemas/public_state/update.schema.json` | one timestamped structured-state delivery |
 | `contracts/schemas/public_state/trace.schema.json` | recipient-tagged ordered public deliveries for a Sandbox probe episode, Validation B case, or Demo task trial |
@@ -1127,10 +1225,13 @@ runs/<run_id>/
 │   │   └── stage2_implementation.json
 │   ├── observation_profile.json
 │   ├── granularity_profile.json
+│   ├── ready_for_stage1_receipt_ref.json             # later composite gate; schema still OPEN
 │   └── budget_and_model_config_manifest.json
 ├── 01_readiness/
-│   ├── readiness_report.json                         # PRIVATE
-│   ├── readiness_receipt.json                        # non-sensitive projection
+│   ├── readiness_report_ref.json                     # exact ref to PRIVATE immutable report
+│   ├── rim_resolved_receipt_ref.json                 # exact trusted gate-log event ref
+│   ├── readiness_receipt_ref.json                    # exact trusted readiness-log event ref
+│   ├── integration_ready_receipt_ref.json            # exact trusted gate-log event ref
 │   └── trace_refs.json
 ├── 02_stage1/
 │   ├── stage1_bundle.json
@@ -1284,7 +1385,8 @@ The audit module rejects any run violating these partial-order rules:
 
 1. selected Library, exactly one RIM, contracts, and config hashes precede readiness, and the same
    RIM hash persists through Sandbox, Validation B, and Demo;
-2. readiness pass precedes the first Stage 1 call;
+2. trusted `INTEGRATION_READY` and the later composite `READY_FOR_STAGE1` receipt both precede the
+   first Stage 1 call; Readiness alone is insufficient;
 3. Stage 1 conformance pass precedes Design seal;
 4. Design seal precedes the first Blue Line call;
 5. `READY` spec/suite/manifest seals precede Binding release and every Stage 2 call;
@@ -1445,6 +1547,17 @@ tests/libraries/
 
 ```text
 tests/integration/
+├── test_integration_schema_package_exact_members_and_jcs.py
+├── test_schema_bootstrap_and_registry_trust_anchors.py
+├── test_admission_and_activation_event_chains.py
+├── test_forged_caller_events_and_receipts_are_rejected.py
+├── test_registry_forks_cycles_stale_priors_and_replay_are_rejected.py
+├── test_revoked_or_deactivated_rim_is_rejected.py
+├── test_rim_resolved_must_precede_integration_ready.py
+├── test_readiness_report_and_receipt_require_prior_rim_resolved.py
+├── test_direct_duplicate_or_cross_selection_integration_ready_is_rejected.py
+├── test_readiness_profile_must_match_selection_report_and_receipt.py
+├── test_wrong_run_selection_combination_or_log_head_is_rejected.py
 ├── test_rim_is_thin_and_all_refs_resolve.py
 ├── test_one_run_resolves_exactly_one_rim.py
 ├── test_rim_hash_unchanged_readiness_sandbox_validation_demo.py
@@ -1737,10 +1850,9 @@ The following table distinguishes a recommendation from a silently frozen decisi
 
 ### 13.1 Exact items still requiring Authority freeze before their files are loadable
 
-- both robot coverage records and exact fixed configurations;
 - campaign/single-RIM run-profile schemas, governed run state machine/gates, artifact-store
-  immutability/permissions, closure, and structured logging contracts;
-- exact SDK Entries, device/transport hooks, Translation protocols, RIMs, and runtime profiles;
+  immutability/permissions, full-run closure, and structured logging contracts beyond the frozen
+  Wave 3/4 integration registry and gate;
 - State-Provided structured observation schema, projector/binding semantics, cadence, noise/latency,
   and Sandbox/Validation/Demo recipient rules;
 - task machine records, the two-robot interpretation of the fixed five-task requirement, and
@@ -1765,10 +1877,12 @@ The following table distinguishes a recommendation from a silently frozen decisi
 
 ## 14. Architecture review outcome
 
-Approval of this document means the proposed module/file relationships are suitable for the next
-contract-freeze phase. It does not authorize implementation of any `OPEN` contract. After approval,
-the next change is an Authority proposal that records the user decisions and freezes the minimum
-Wave 1 contracts. Scaffolding begins only after that Authority change is separately approved.
+The repository architecture remains the approved construction map. Authority revision 0.14.0 now
+authorizes implementation of the frozen Wave 3/4 two-robot integration subset: exact Morphology,
+SDK/runtime, RIM, Translation, admission/activation registries, Readiness and integration gate.
+That authorization does not extend to any `OPEN` later-wave contract. Work outside the frozen
+subset still requires its owning Authority decision and requirement to be frozen first.
 
 Rejection or modification should identify the section/path and the intended ownership or data-flow
-change. The directory/file catalog will be revised before any code is written.
+change. The directory/file catalog will be revised before code for the affected open contract is
+written.

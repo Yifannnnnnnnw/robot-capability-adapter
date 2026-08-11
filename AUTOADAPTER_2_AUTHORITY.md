@@ -4,9 +4,9 @@
 > **Authority status:** `ACTIVE` — sole normative project document  
 > **Normative language:** English  
 > **Chinese text:** auxiliary reading support only  
-> **Document revision:** `0.13.4`
+> **Document revision:** `0.14.0`
 > **Effective date:** 2026-08-11
-> **Current phase:** high-level architecture and RQs approved; component contracts under review; General Demo not yet implemented
+> **Current project state:** General Demo foundation implementation and source-evidence probes exist; two-robot integration contracts are frozen and authorized for implementation; formal Library/RIM admission and Readiness execution remain pending
 
 This file is the sole authority for the current AutoAdapter 2.0 project description, research
 design, system boundaries, approved requirements, and implementation conformance. Its main body
@@ -47,6 +47,25 @@ These state axes are independent.
 | Decision maturity | `OPEN → APPROVED → FROZEN` | `APPROVED` fixes intent; `FROZEN` is precise enough to implement and objectively accept |
 | Realization | `NOT_STARTED → IMPLEMENTED → VERIFIED` | Code existence and verification state; it does not change decision maturity |
 | Evidence level | `NONE → PILOT → INDEPENDENT_VALIDATION → FORMAL_EXPERIMENT` | Strength of evidence supporting an implementation or scientific claim |
+
+Formal integration records use additional operational states that are independent of document
+decision maturity:
+
+| Axis | States | Meaning |
+|---|---|---|
+| Record admission | `NOT_ADMITTED → ADMITTED → REVOKED` | Whether the exact immutable Library or integration record has passed its owning admission checks |
+| RIM activation | `INACTIVE ↔ ACTIVE` while admitted | Whether an admitted Robot Integration Manifest may be selected for a new run; admission `REVOKED` is a separate terminal state that takes precedence |
+| Readiness attempt | `NOT_RUN`, `FAIL`, or `PASS` | Result for one immutable attempt on one exact selected combination; it never changes the record's decision or admission state |
+
+Admission, activation, and revocation are effective states computed from Framework-owned,
+append-only event records; they are never trusted as mutable self-claims inside the subject
+record. `UNKNOWN` may appear only in source-probe metadata and is not a formal Readiness-attempt
+state. `FROZEN`, `ADMITTED`, `ACTIVE`, and Readiness `PASS` are not synonyms. Together they may
+produce an `INTEGRATION_READY` receipt for the selected route, but they are not by themselves
+sufficient to start Stage 1. The later composite run gate issues `READY_FOR_STAGE1` only after all
+other applicable frozen run-input, granularity, observation, Generation, and experiment-profile
+conditions also pass. `FROZEN_FIXTURE` is a test-only marker rather than a formal decision state;
+it can never satisfy a formal run gate.
 
 `validated` is reserved for a candidate capability layer that passes the applicable independent
 Validation gates. It is not a document-decision state.
@@ -656,6 +675,232 @@ Blue Line status `READY` and continues through the complete downstream path.
 | Tasks | Maintain downstream task descriptions, classifications, and private pass criteria | Supplies task context to Generation and the fixed Demo task set |
 | Experience | Maintain governed long-term experience accepted from prior runs | Supplies relevant prior experience to future run input |
 
+##### General Demo v1 integration-record contract
+
+This subsection freezes only the first General Demo's Morphology, SDK, Robot Integration Manifest,
+Translation, runtime, and Simulation Integration Readiness contracts. It does not freeze Tasks,
+the exact G2 profile, State-Provided observation, Generation, Blue Line, Validation, Repair,
+Consumer, Demo, or Evolution contracts.
+
+The finalized Authority document used by this integration version has external exact identity
+`kind: authority-document`, `id: autoadapter-2-authority`, and `version: 0.14.0`. Its
+`content_hash` is SHA-256 over the exact stored UTF-8 Markdown bytes after finalization; the
+document never embeds that hash in itself. Every `authority_document_ref` in the schema package,
+bootstrap, registry configs, subjects, and reports must use that identity and externally computed
+hash. A revision string without this exact-byte hash is not an Authority reference.
+
+Every formal cross-record reference is the exact tuple `kind`, `id`, `version`, and
+`content_hash`, where `version` is immutable SemVer and `content_hash` is
+`sha256:<64 lowercase hexadecimal characters>` over the owning canonical record. Floating
+versions, mutable branches, unresolved paths, path-only references, and omitted hashes are
+invalid.
+
+For this frozen integration-v1 scope, every formal subject record, event, receipt, schema-package
+manifest, and JSON schema is a JSON value serialized as UTF-8 without BOM using RFC 8785 JSON
+Canonicalization Scheme (JCS); its `content_hash` is the lowercase SHA-256 digest of those exact
+JCS bytes with the `sha256:` prefix. Boolean values are never accepted as numbers, and NaN,
+positive/negative infinity, duplicate object keys, and values outside the RFC 8785/I-JSON domain
+are rejected before hashing. Non-JSON payloads, including source YAML, MJCF, meshes, archives, and
+licence text, are hashed over their exact stored bytes and are referenced as payloads; they are
+never implicitly converted into formal JSON records. A source YAML view may aid review but cannot
+replace its formal `record.json` subject.
+
+The first integration schema package is `general-demo-integration-schemas@1.0.0`. It owns the
+version-`1.0.0` logical schemas `exact-reference`, `schema-bootstrap`, `subject-record`, `admission-report`,
+`admission-event`, `rim-activation-event`, `morphology-entry`, `sdk-entry`,
+`morphology-facts`, `simulation-profile`, `sdk-artifact`, `sdk-public-api`, `sdk-sources`,
+`translation-manifest`, `translation-mapping`, `translation-protocol`,
+`translation-conformance-report`, `robot-integration-manifest`, `compatibility-report`,
+`runtime-profile`, `readiness-profile`, `registry-config`, `integration-selection`,
+`resolved-combination`,
+`readiness-report`, `readiness-receipt`, and
+`integration-gate-receipt`. A `schema_ref` contains exactly an exact `schema_package_ref` plus
+`logical_schema_id`, `logical_schema_version`, and `logical_schema_content_hash`; all four values
+must match one member of that exact package manifest. The last schema covers only `RIM_RESOLVED` and
+`INTEGRATION_READY`; the later composite `READY_FOR_STAGE1` receipt remains owned by the still-open
+run-state contract. All frozen schemas use JSON
+Schema Draft 2020-12, close objects recursively with `additionalProperties: false`, reject Boolean
+values where numbers are required, reject non-finite numbers, and require every field described
+by its owning contract in this section. The implementation must produce canonical schema bytes,
+capture their package hash, pass schema contract tests, and admit that exact package before a
+formal loader may accept records; a `PROPOSED` schema or a schema with no admitted exact hash is
+never loadable. All ordinary formal records, including admission/event records, carry an exact
+reference to the registered package and logical schema.
+
+Authority revision 0.14.0 freezes the schema contract and acceptance rules, not imaginary schema
+bytes. Bootstrap order is exact: (1) finalize and externally hash this Authority document; (2)
+generate the schema package, the only artifact exempt from prior schema validation, and
+independently verify it against the field table and acceptance vectors below; (3) write one
+schema-bootstrap record containing its exact `schema_ref`, canonical identity, exact package ref,
+exact Authority-document ref, review-evidence refs, and trusted bootstrap issuer identity; (4) validate the five registry-config
+records with that now-admitted schema package and bind them directly to the exact Authority ref;
+and only then (5) create operational admission, activation, Readiness, and integration-gate logs.
+Registry configs are exempt only from admission through the log they govern, not from schema
+validation. The generated schema package remains `NOT_ADMITTED` until step 3 succeeds.
+
+The schemas are closed-world contracts with these required fields; an implementation may factor
+shared definitions through `$defs` but may not add an undeclared field or relax a type, enum, or
+transition:
+
+| Logical schema | Required content |
+|---|---|
+| `exact-reference` | strings `kind`, `id`, immutable SemVer `version`, and patterned `content_hash` |
+| `schema-bootstrap` | exact `schema_ref`; `kind: schema-bootstrap`, `id`, `version`; exact `schema_package_ref` and `authority_document_ref`; ordered non-empty `review_evidence_refs`; `issuer_id`; no self/package-hash field beyond the exact package ref |
+| `subject-record` | a discriminator `oneOf` union over the closed concrete subject schemas below, keyed by each schema's `kind: const`; every concrete schema fully expands exact `schema_ref`, `kind`, `id`, immutable SemVer `version`, enum `decision_state: FROZEN`, Boolean `fixture_only`, and object `authority_binding` containing exact `authority_document_ref` plus non-empty unique `requirement_ids`; no closed base-schema `allOf` trap and no second type-specific ID/version alias |
+| `admission-report` | exact `schema_ref`; `kind: admission-report`, `id`, `version`; enum `purpose: ADMISSION|REVOCATION`, `subject_ref`, `verifier_ref`; ordered non-empty `checks` of `{check_id, verdict: PASS|FAIL, evidence_refs}`; overall `verdict: PASS|FAIL`; conditionally required `reason_code` for revocation; `started_at`, `ended_at` RFC 3339 timestamps |
+| `admission-event` | exact `schema_ref`; `kind: admission-event`, `id`, `version`; `registry_id`, non-negative integer `sequence`, nullable exact `previous_registry_event_ref` and `previous_subject_event_ref`, exact `subject_ref` and `report_ref`, enum `action: ADMIT|REVOKE`, `issuer_id`, `issued_at` |
+| `rim-activation-event` | exact `schema_ref`; `kind: rim-activation-event`, `id`, `version`; `registry_id`, non-negative integer `sequence`, nullable exact `previous_registry_event_ref` and `previous_activation_event_ref`, exact `rim_ref` and `admission_event_ref`, enum `action: ACTIVATE|DEACTIVATE`, `issuer_id`, `issued_at` |
+| `morphology-entry` | common subject fields plus `robot_model_id`, `robot_configuration_id`, enum `base_type: fixed|free`, positive integer `actuated_dof`, exact `morphology_payload_ref`, `simulation_profile_ref`, `provenance_ref`, and non-empty unique `license_refs` |
+| `morphology-facts` | exact `schema_ref`; `kind/id/version`; `robot_model_id`, `robot_configuration_id`, base type; ordered body/joint groups; ordered joints with name/type/finite axis/unit/finite limits; ordered actuators, end effectors, sensors and public frames; canonical units; no SDK, behavior, task or criterion field |
+| `simulation-profile` | common subject fields plus `robot_configuration_id`, `mujoco_version: 3.3.6`, exact `mjcf_ref`, ordered exact `asset_refs`, finite positive `physics_timestep_s` and `control_period_s`, ordered unique `joint_names`, `actuator_names`, `sensor_names`, exact finite `reset_qpos/reset_qvel/reset_ctrl`, and `reset_abs_tolerance: 1e-9` |
+| `sdk-entry` | common subject fields plus exact `artifact_ref`, `public_api_ref`, `sources_ref`, and `runtime_profile_ref`; no admission status |
+| `sdk-artifact` | exact `schema_ref`; `kind/id/version`; upstream package/distribution/version/commit and exact artifact hashes; install/runtime constraints; source URL and licence; no mutable branch or placeholder hash |
+| `sdk-public-api` | exact `schema_ref`; `kind/id/version`; ordered canonical imports, types, constructors and operations with typed parameters/results/errors/lifecycle; ordered actions/observations with shapes, units, ranges, frames and freshness; explicit unsupported operations and recipient visibility tags |
+| `sdk-sources` | exact `schema_ref`; `kind/id/version`; unique claim records containing claim ID, exact source ref, locator, extracted fact, applicability and recipient tags; every admitted API fact has at least one matching claim |
+| `translation-manifest` | common subject fields plus exact `sdk_entry_ref`, `morphology_ref`, `simulation_profile_ref`, `runtime_profile_ref`, `implementation_ref`, `mapping_ref`, `protocol_ref`, and strings `entrypoint`, `hook_type`; no conformance-report ref |
+| `translation-mapping` | exact `schema_ref`; `kind/id/version`; ordered command and observation map entries with source field/index, destination name/index, source/destination unit, finite scale/offset, sign, clipping/quantization rule and timing/freshness; destinations are unique and dimensions exact |
+| `translation-protocol` | exact `schema_ref`; `kind/id/version`; lifecycle states/operations, hook type, accepted transport subset, input-validation/error behavior, apply-before-step rule, stale rule, reset-only state restoration and cleanup obligations; no capability behavior |
+| `translation-conformance-report` | exact `schema_ref`; `kind: translation-conformance-report`, `id`, `version`; exact final `translation_ref`, ordered non-empty typed checks/evidence, and overall `verdict: PASS|FAIL` |
+| `robot-integration-manifest` | the exact RIM fields enumerated in Section 4.1.1 and no compatibility/admission/activation field |
+| `compatibility-report` | exact `schema_ref`; `kind: compatibility-report`, `id`, `version`; exact final `rim_ref`, ordered non-empty `checks` of `{check_id, verdict: PASS|FAIL, evidence_refs}`, and overall `verdict: PASS|FAIL` |
+| `runtime-profile` | common subject fields plus enums/strings `os`, `architecture: amd64`, `python_version`, `mujoco_version: 3.3.6`, optional exact-version `cyclonedds_version`; exact non-placeholder `oci_image_ref`, `interpreter_build_ref`, `dependency_lock_ref`, and `platform_fingerprint_ref` |
+| `readiness-profile` | common subject fields with `id: general-demo-integration-readiness`, the six exact ordered `check_ids`, integer wall limits `60/180/2/5`, finite `max_probe_simulation_s: 1.0`, SO and Go2 tolerance objects, `reset_abs_tolerance: 1e-9`, and `hidden_retry_count: 0` |
+| `registry-config` | exact `schema_ref`; `kind/id/version`; enum `registry_type: schema|admission|rim_activation|readiness|integration_gate`, exact `authority_document_ref`, `issuer_id`, Framework-private storage class, append/write-owner policy, and recipient denylist; `registry_type: schema` additionally requires exact `schema_bootstrap_ref`; operational registry configs are bootstrap trust anchors and are never admitted through the registry they govern |
+| `integration-selection` | exact `schema_ref`; `kind/id/version`; `run_id`; exact `rim_ref`, `runtime_profile_ref`, and `readiness_profile_ref`; exact `admission_registry_config_ref`, `rim_activation_registry_config_ref`, `readiness_registry_config_ref`, and `integration_gate_registry_config_ref`; no later run-input/G2/observation claim |
+| `resolved-combination` | exact `schema_ref`; `kind/id/version`; exact `selection_ref`, `rim_ref`, ordered unique `dependency_refs`, external `compatibility_report_ref`, and exact admission/activation registry heads used for resolution |
+| `readiness-report` | exact `schema_ref`; `kind: readiness-report`, `id` equal to the attempt identity, `version`; `run_id`, exact `selection_ref`, `rim_ref`, `rim_resolved_receipt_ref`, `readiness_profile_ref`, ordered `resolved_refs`, exact `resolved_combination_ref`, `runtime_lock_ref`, `platform_fingerprint_ref`, copied limits, six ordered typed check results, evidence refs, `started_at`, `ended_at`, enum `overall_verdict: PASS|FAIL`, and typed `cleanup_result` |
+| `readiness-receipt` | an append-only Readiness-registry event containing exact `schema_ref`; `kind: readiness-receipt`, `id`, `version`; `registry_id`, non-negative integer `sequence`, nullable exact `previous_registry_event_ref`, `issuer_id`, `issued_at`, `run_id`, exact `selection_ref`, `rim_ref`, `rim_resolved_receipt_ref`, `resolved_combination_ref`, `runtime_lock_ref`, `readiness_profile_ref`, `private_report_ref`, and `verdict: PASS`; its external exact ref is the new log head and is never stored inside itself |
+| `integration-gate-receipt` | an append-only integration-gate-registry event containing exact `schema_ref`; `kind: integration-gate-receipt`, `id`, `version`; `registry_id`, exact `integration_gate_registry_config_ref`, non-negative integer `sequence`, nullable exact `previous_registry_event_ref`, enum `status: RIM_RESOLVED|INTEGRATION_READY`, `run_id`, exact `selection_ref`, `rim_ref`, `resolved_combination_ref`, exact admission/activation registry IDs and head refs, `issuer_id`, `issued_at`; `INTEGRATION_READY` additionally requires exact `rim_resolved_receipt_ref`, `readiness_receipt_ref`, and Readiness-registry head ref; its external exact ref is the new integration-gate log head |
+
+Every exact reference object is validated by `exact-reference`; all arrays above are fixed-order
+where order is semantic and duplicate-free where they are sets. `PASS` aggregation is strict
+conjunction. The detailed robot-specific values and Readiness checks later in this section further
+constrain these fields and are not optional defaults.
+
+For v1, an owning subject's typed child-record IDs are deterministic and all use version `1.0.0`:
+Morphology facts use `<morphology-entry-id>-facts`; SDK artifact/API/source records use
+`<sdk-entry-id>-artifact`, `<sdk-entry-id>-public-api`, and `<sdk-entry-id>-sources`; Translation
+mapping/protocol records use `<translation-id>-mapping` and `<translation-id>-protocol`.
+Compatibility and Translation-conformance report IDs use `<rim-id>-compatibility` and
+`<translation-id>-conformance` for their first report version. Implementations may not substitute
+an alias for these IDs. New evidence that changes a record creates a new immutable version rather
+than a second same-version identity.
+
+For every formal JCS record, `schema_ref.logical_schema_id` selects the same concrete schema as the
+record's `kind`, and an exact reference's `kind/id/version` must equal the referenced record's
+canonical identity. The formal compatibility checker reads only these typed JCS records; YAML
+review views are generated from or checked against them and are never its semantic authority.
+
+The schema-package root is itself a JCS JSON manifest containing exactly `kind: schema-package`,
+`id: general-demo-integration-schemas`, `version: 1.0.0`, exact `authority_document_ref`,
+`json_schema_draft`, and `members`. Its external exact reference therefore uses the same canonical
+`kind/id/version` identity as the root rather than a package-specific alias.
+`members` is sorted
+by `(logical_schema_id, schema_version)` and is an exact-set bijection with the logical-schema list
+frozen above: every listed schema occurs exactly once at version `1.0.0`, with no missing, extra,
+or duplicate member. Each member contains exactly
+`logical_schema_id`, `schema_version`, `relative_path`, and the member's JCS `content_hash`.
+Every `relative_path` is normalized, relative to the package root, contains no `..`, absolute path,
+symlink traversal, or duplicate resolved destination. The member JSON Schema's `$id`, logical ID,
+and version must equal its manifest row; swapping two schema payloads therefore fails even when
+both hashes are otherwise valid.
+The root manifest contains no self/package-hash field; the package hash is the SHA-256 of its JCS
+bytes, which already commit to every member hash. Registry and event records likewise contain no
+self-hash field: their external exact reference is computed from JCS bytes, and every event carries
+`sequence`, `previous_registry_event_ref` (null only for registry sequence zero), and `issuer_id`.
+Admission events additionally carry `previous_subject_event_ref`; RIM activation events carry
+`previous_activation_event_ref`; each is null only for that subject's first corresponding event. An append
+transaction accepts only the current canonical head, so forks, cycles, skipped sequence numbers,
+and replayed non-head events fail closed. A run configuration pins the registry identity and
+issuer/write-authority policy, not a pre-run content head that would make later Readiness append
+events invisible. Each gate receipt binds the exact event/log-head reference observed when it was
+issued and proves the chain from the pinned trust anchor to that head.
+
+Admission events, RIM activation events, Readiness receipts, and integration-gate receipts use
+four distinct append-only logs and therefore four distinct global sequences/heads. A
+`previous_registry_event_ref` always
+points within the same `registry_id`. `RIM_RESOLVED` binds the exact admission and activation heads
+used for resolution. For one exact `selection_ref`, the first and only initial gate event is
+`RIM_RESOLVED`; the only permitted successor is one `INTEGRATION_READY`, which binds that exact
+same-selection `RIM_RESOLVED` receipt through `rim_resolved_receipt_ref` and is terminal for that
+selection. Direct `INTEGRATION_READY`, duplicate status events, cross-selection predecessors, and
+post-ready events fail closed. `INTEGRATION_READY` additionally binds the exact Readiness receipt event and
+the Readiness-log head from which membership was verified; no single head is allowed to stand in
+for all three state axes.
+
+An immutable subject record contains an exact admitted `schema_ref`, canonical `kind`, `id`, and
+immutable SemVer `version`, `decision_state`, `fixture_only`, exact owned payload references and
+hashes, and an `authority_binding` with the exact finalized Authority-document reference and
+governing frozen requirement IDs. The Authority document is hashed externally after its bytes are
+finalized and never embeds its own hash. The subject does **not** contain a
+mutable admission or activation state, its own admission-report reference, or later
+supersession/revocation fields. Its content hash therefore never changes when its operational
+status changes and cannot participate in a report↔subject hash cycle.
+
+Admission and RIM activation are separate immutable records:
+
+- an `admission-report` binds the exact subject reference, verifier/configuration references,
+  evidence references, check results, and verdict;
+- an append-only `admission-event` binds that subject and report, an `ADMIT` or `REVOKE` action,
+  the prior event when present, and the trusted issuer identity; and
+- a RIM-only append-only `rim-activation-event` binds the exact admitted RIM, the effective
+  admission event, an `ACTIVATE` or `DEACTIVATE` action, the prior activation event when present,
+  and the trusted issuer identity.
+
+The first admission event for a subject must be `ADMIT` with no prior subject event and must refer
+to a same-subject `purpose: ADMISSION`, `verdict: PASS` report. The only subsequent admission
+action is terminal `REVOKE`, referencing that subject's current event and a same-subject
+`purpose: REVOCATION`, `verdict: PASS` report with a reason code. RIM
+activation begins effectively `INACTIVE`; `ACTIVATE` changes it to `ACTIVE`, `DEACTIVATE` changes
+it back to `INACTIVE`; `ACTIVATE` is legal only from `INACTIVE` and `DEACTIVATE` only from
+`ACTIVE`, always referencing the current activation head while the RIM remains admitted. Admission
+revocation takes precedence and prevents further
+activation events. The registry append transaction also enforces at most one effectively active
+RIM per `robot_model_id`.
+
+Formal gates resolve effective `ADMITTED`/`REVOKED` and `ACTIVE`/`INACTIVE` states only from the
+Framework-owned append-only registry whose identity and issuer policy are fixed in the run
+configuration. They verify the full
+event chain and issuer policy and never accept a caller-supplied event, seal, hash, or payload
+self-claim as proof of state. Formal run-selectable subjects require `decision_state: FROZEN`, an
+effective `ADMITTED` event, and `fixture_only: false`; the selected RIM additionally requires an
+effective `ACTIVE` event. A preparation record may remain unadmitted but cannot enter a formal
+selection. The existing source probes remain `SOURCE_EVIDENCE_ONLY` and `NOT_ADMITTED`; their
+`UNKNOWN` readiness metadata does not constitute a formal attempt.
+
+The schema-bootstrap record is itself a JCS JSON record with canonical `kind: schema-bootstrap`,
+`id`, and immutable `version`, no self-hash, and an external exact reference computed from its JCS
+bytes. The schema-registry configuration binds its exact `schema_bootstrap_ref`; changing the
+package or bootstrap evidence therefore requires a new bootstrap record and configuration version.
+
+Minimum schema-package acceptance vectors are frozen: semantically identical JSON objects with
+different input key order must produce identical JCS bytes/hash; duplicate keys, NaN/Infinity,
+Boolean-as-number, extra fields, wrong enum, wrong logical-schema member hash, and tampered package
+member hash must fail. Missing, extra, duplicate, path-traversing, and ID/version-swapped schema
+members must also fail. A report/subject mismatch, `ADMIT` from a failed report, registry fork,
+event cycle, skipped sequence, stale per-subject prior, replayed receipt, and caller-supplied
+untrusted issuer must fail. A Readiness report or receipt issued before its referenced
+same-selection `RIM_RESOLVED` event must fail. Direct or duplicate `INTEGRATION_READY`, a wrong-selection
+`rim_resolved_receipt_ref`, and a readiness profile mismatch among selection, private report, and
+receipt must fail. Positive tests must cover one complete admission/activation/deactivation chain
+and one matching `RIM_RESOLVED` then Readiness issuance then `INTEGRATION_READY` chain.
+
+For this Demo, registry trust is local and deliberately small: only the Framework-private
+Admission Authority process may append under the issuer ID pinned by the registry configuration;
+Stage 1, Blue Line, Stage 2, Sandbox, candidate code, Repair and Consumers have neither the registry
+path nor write capability. Gate callers provide only a run/selection request. The gate itself
+loads the pinned registry identity/trust anchor, resolves the current canonical head, and
+recomputes the chain; an `issuer_id` string in an unowned file is not a trust credential.
+
+The exact v1 registry identities are `general-demo-schema-registry@1.0.0`,
+`general-demo-admission-registry@1.0.0`, `general-demo-rim-activation-registry@1.0.0`, and
+`general-demo-readiness-registry@1.0.0`, plus
+`general-demo-integration-gate-registry@1.0.0`; their sole local issuer/write-authority identity is
+`general-demo-local-integration-authority@1.0.0`. Their bootstrap configurations are
+Framework-private trust anchors bound directly to Authority revision 0.14.0 and installed outside
+all model/candidate workspaces. Changing an identity, issuer policy, or bootstrap configuration
+requires a new version and invalidates receipts derived from the prior trust anchor.
+
 #### 4.1.1 Robot Integration Manifest
 
 For each covered `robot_model_id`, AutoAdapter maintains one active **Robot Integration Manifest**
@@ -670,10 +915,11 @@ The Manifest contains robot identity plus exact, versioned references to:
 - the compatible MuJoCo simulation profile;
 - the exact admitted SDK Entry in the SDKs Library;
 - the corresponding SDK-specific MuJoCo Translation Layer; and
-- a compatibility declaration for that bound combination.
+- the frozen runtime profile.
 
-The compatibility declaration makes the bound combination eligible to enter the Readiness Check;
-it is not proof that readiness has passed. The Manifest does not copy the referenced SDK,
+An external compatibility report and Admission evidence make the bound combination eligible to
+enter the Readiness Check; neither is a Manifest field and neither proves that readiness has
+passed. The Manifest does not copy the referenced SDK,
 MJCF/URDF, meshes, simulation assets, or Translation Layer implementation. Their owning Library or
 Framework integration location remains the sole source of their content. A run resolves the
 Manifest's references to exact versions and payload hashes, then applies the Simulation Integration
@@ -684,6 +930,43 @@ layer, Validation or Demo Harness logic, privileged simulator state, credentials
 randomized scene state. Tasks and accepted Experience are selected separately during run-input
 assembly. The Manifest exposes one fixed approved integration for a robot model; it is not a
 mechanism for dynamically combining grippers, sensors, actuators, or simulation backends.
+
+The first General Demo freezes these two RIM identities at version `1.0.0`:
+
+- `so-arm101-follower-stock-gripper-mujoco`; and
+- `unitree-go2-stock-12dof-mujoco`.
+
+Each RIM contains only `schema_ref`, `kind: robot-integration-manifest`, `id`, `version`, `robot_model_id`,
+`robot_configuration_id`, exact `morphology_ref`, exact `simulation_profile_ref`, exact
+`sdk_entry_ref`, exact `translation_layer_ref`, exact `runtime_profile_ref`, exact
+`decision_state`, `fixture_only`, and exact `authority_binding`. Admission, activation, and the compatibility report are
+external to the RIM subject. The compatibility report binds the final exact RIM subject reference
+and is included as evidence by the RIM's external admission report, which avoids a report↔RIM hash
+cycle and prevents reuse against another RIM. It passes only when every RIM reference resolves by
+exact hash; all dependencies are frozen and effectively admitted; robot/configuration and
+SDK/Translation identities agree; action, observation, joint, actuator, and sensor dimensions and
+units agree; and every Translation source and destination exists in the resolved records.
+
+Only an effectively `ADMITTED` RIM may receive an `ACTIVATE` event. Exactly one RIM may be
+effectively active for each of the two robot models in this Demo. Admission revocation and RIM
+activation/deactivation are append-only catalog events and never mutate a referenced version. A
+revoked or deactivated RIM cannot start a new run but remains resolvable for audit of old runs.
+
+Fixture and formal gates are separate. The fixture gate accepts only records with
+`decision_state: FROZEN` and `fixture_only: true` and can never issue a formal readiness receipt or formal
+`READY_FOR_STAGE1` admission. The formal selection gate rejects every fixture, requires a frozen,
+effectively admitted, active, non-fixture RIM and recursively verifies its exact dependencies and
+the compatibility evidence bound through its trusted admission event. Successful selection issues
+only `RIM_RESOLVED`. A separate formal
+readiness gate may issue only `INTEGRATION_READY` after resolving a Framework-issued receipt from
+the trusted Readiness registry and verifying its private report, issuer, `run_id`, exact
+integration-selection reference, exact RIM reference, exact resolved-combination reference,
+runtime lock, and Readiness profile against the
+current run. It never accepts an arbitrary receipt supplied by a caller. A later composite run
+gate may issue `READY_FOR_STAGE1` only after `INTEGRATION_READY` and every other applicable frozen
+run condition pass. A frozen but unadmitted record, inactive RIM, missing or stale receipt,
+wrong-run receipt, wrong payload hash, untrusted issuer, or fixture receipt terminates before
+Stage 1.
 
 **中文辅助说明。** Robot Integration Manifest 是一个很薄的绑定清单，而不是把机器人相关文件
 全部复制到一起的大包。它只说明本项目为某个 robot model 选定了哪一个固定 configuration，以及
@@ -749,9 +1032,14 @@ libraries/morphology/
 ├── catalog.yaml
 ├── robots/
 │   └── <robot_model_id>/<morphology_version>/
-│       ├── manifest.yaml
-│       ├── morphology.yaml
-│       ├── simulation.yaml
+│       ├── record.json              # formal JCS subject
+│       ├── morphology_facts.json    # formal typed physical facts
+│       ├── simulation/
+│       │   └── record.json          # formal JCS simulation-profile subject
+│       ├── source_views/            # review only; never formal authority
+│       │   ├── manifest.yaml
+│       │   ├── morphology.yaml
+│       │   └── simulation.yaml
 │       ├── model/
 │       │   ├── robot.xml
 │       │   ├── source.urdf          # optional source/interoperability evidence
@@ -775,14 +1063,58 @@ libraries/morphology/
             └── provenance.yaml
 ```
 
-`catalog.yaml` is a generated discovery index over entry identifiers, versions, status, and
-manifest locations. It is not a second metadata authority. Entry manifests and their referenced
-payloads own the content.
+`catalog.yaml` is a generated discovery index over entry identifiers, versions, effective status, and
+record locations. It is not a second metadata authority. For the frozen integration-v1 subset,
+`record.json`, `morphology_facts.json`, and `simulation/record.json` are the formal typed JCS inputs
+and bind non-JSON payloads by exact raw-byte hash. Files below `source_views/` aid human review but
+cannot replace formal records. Effective status is resolved from the external registry and is
+never copied into a subject or review view.
+
+##### First General Demo frozen robot entries
+
+The first General Demo freezes these exact identities:
+
+| Identity | SO-ARM101 | Unitree Go2 |
+|---|---|---|
+| `robot_model_id` | `so-arm101` | `unitree-go2` |
+| `robot_configuration_id` | `so-arm101-follower-stock-gripper` | `unitree-go2-stock-12dof` |
+| Morphology entry | `so-arm101-follower-stock-gripper@1.0.0` | `unitree-go2-stock-12dof@1.0.0` |
+| Simulation profile | `so-arm101-follower-stock-gripper-simulation@1.0.0` | `unitree-go2-stock-12dof-simulation@1.0.0` |
+
+Their fixed facts are:
+
+1. `so-arm101-follower-stock-gripper`: fixed base; five arm joints plus the stock actuated
+   gripper; no admitted camera, optional end effector, or payload. Its canonical upstream source is
+   TheRobotStudio `SO-ARM100` commit
+   `7629d2ad9853d10fb903093a33ef6114099d97e5`, path
+   `Simulation/SO101/so101_new_calib.xml`, source-file SHA-256
+   `d75253eb568e8a7214db9c631ab7bed4217f608a26f7276ebe9a7636cac82580`, plus the exact
+   resolved asset closure recorded at admission.
+2. `unitree-go2-stock-12dof`: free base; twelve stock actuated leg joints; joint position,
+   velocity and estimated-torque state plus body IMU state; no admitted arm, wheel, payload,
+   camera, depth sensor, or lidar. Its canonical upstream source is Unitree
+   `unitree_mujoco` commit `ae6a8403e272733e9996ef59990880330496177f`, path
+   `unitree_robots/go2/go2.xml`, source-file SHA-256
+   `2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b`, plus the exact
+   resolved asset closure recorded at admission. The upstream obstacle scene is source material,
+   not part of the fixed robot entry.
+
+Both formal simulation profiles pin `mujoco==3.3.6`. Formal `morphology_facts.json` records base type, body and
+joint groups, every joint name/type/axis/unit/limit, actuator groups, end effectors, admitted
+sensors, public physical frames, and canonical units. Formal `simulation/record.json` records the exact MuJoCo
+package pin, canonical MJCF entrypoint and complete asset hashes, resolved physics and control
+timesteps, exact reset keyframe or vectors, and required MuJoCo joint, actuator, and sensor names.
+
+Admission requires complete provenance and licence records, matching hashes, successful loading of
+the complete model closure under MuJoCo 3.3.6, exact declared/model name and dimension agreement,
+finite numeric data, and two consecutive resets whose qpos and qvel match the declared reset with
+absolute tolerance `1e-9`. This proves model integrity and repeatable reset only; it does not prove
+the real-SDK route.
 
 ##### Robot morphology entries
 
 One `robots/<robot_model_id>/<morphology_version>/` entry describes the single fixed embodiment
-currently approved for that robot model. `morphology.yaml` records form-independent physical facts,
+currently approved for that robot model. Formal `morphology_facts.json` records form-independent physical facts,
 including base or mobility type, body and joint groups, DoF and limits, coordinate frames and
 units, end effectors, onboard sensors, and the composition of multi-arm, multi-hand, mobile,
 legged, or aerial systems. It must not assume an arm-plus-gripper topology.
@@ -804,13 +1136,13 @@ upstream URDF may be retained as `source.urdf` for provenance or interoperabilit
 must not convert URDF or select between model formats at run time. Any conversion, repair, or
 parameter change is completed before admission and recorded in provenance.
 
-`simulation.yaml` records the MJCF entrypoint, tested MuJoCo version, physics and control timestep,
+Formal `simulation/record.json` records the MJCF entrypoint, tested MuJoCo version, physics and control timestep,
 default keyframe or reset, and the required MuJoCo joint, actuator, and sensor names. Mapping real
 SDK fields, units, commands, and observations to those MuJoCo names remains the responsibility of
 the SDK-specific MuJoCo Translation Layer and is not stored as Morphology behavior.
 
 The `morphology_ref` and `simulation_profile_ref` in a Robot Integration Manifest resolve,
-respectively, to the admitted robot entry and its `simulation.yaml`. The Manifest does not
+respectively, to the admitted robot entry and its formal simulation-profile record. The Manifest does not
 duplicate these assets or metadata.
 
 ##### Environment assets and templates
@@ -868,23 +1200,66 @@ libraries/sdks/
 ├── catalog.yaml
 └── entries/
     └── <sdk_entry_id>/<entry_version>/
-        ├── manifest.yaml
-        ├── artifact.yaml
-        ├── public_api.yaml
-        ├── sources.yaml
+        ├── record.json              # formal JCS subject
+        ├── artifact.json            # formal exact upstream artifact record
+        ├── public_api.json          # formal public API record
+        ├── sources.json             # formal claim/evidence record
+        ├── source_views/            # review only; never formal authority
+        │   ├── manifest.yaml
+        │   ├── artifact.yaml
+        │   ├── public_api.yaml
+        │   └── sources.yaml
         ├── examples/
-        └── admission/
-            └── report.json
+        └── licenses/
 ```
 
 `catalog.yaml` is a generated discovery index and must not duplicate the substantive metadata held
-by an Entry. `manifest.yaml` identifies the Entry, its immutable project version, admission status,
-schema version, and payload hashes. `artifact.yaml` pins the real upstream SDK using its package
+by an Entry. The formal immutable records are `record.json`, `artifact.json`, `public_api.json`,
+and `sources.json`; YAML files below `source_views/` are human-review projections and none contains
+admission status. `artifact.json` pins the real upstream SDK using its package
 ecosystem and distribution, exact version or release, commit or artifact hash, installation
-specification, supported runtime/platform constraints, source, and licence. `sources.yaml` links
+specification, supported runtime/platform constraints, source, and licence. `sources.json` links
 the admitted API facts to version-matched official documentation, package metadata, release
-material, or source. Minimal checked examples are stored under `examples/`, and the Framework-side
-admission evidence is stored under `admission/`.
+material, or source. Minimal checked examples are stored under `examples/`. A colocated
+admission report is forbidden as subject-owned state; admission authority and audit evidence come
+only from the external trusted report/event registry.
+
+##### First General Demo frozen SDK Entries and runtime profiles
+
+The SO-ARM101 Entry is `lerobot-so101-follower@1.0.0`. It pins:
+
+- `lerobot==0.6.0`, official source commit
+  `30da8e687a6dfc617fcd94afc367ac7071c376ce`, wheel SHA-256
+  `b38a564fbc441d98380576863bf68635dde5fc2c42ddc2a39d0486640dc9e9a8`;
+- `feetech-servo-sdk==1.0.0`, sdist SHA-256
+  `d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c`; and
+- runtime profile `so-arm101-linux-amd64@1.0.0`: Linux amd64, Ubuntu 24.04, CPython 3.12,
+  and MuJoCo 3.3.6.
+
+Its admitted application surface is the real `SO101Follower`/`SOFollower` implementation,
+including construction, connect/disconnect, `send_action`, `get_observation`, and the real
+`FeetechMotorsBus`. The admitted action and observation fields are `shoulder_pan.pos`,
+`shoulder_lift.pos`, `elbow_flex.pos`, `wrist_flex.pos`, `wrist_roll.pos`, and `gripper.pos`.
+Arm-joint values use the pinned SDK degree convention; gripper values use the pinned SDK normalized
+range `0..100`. Cameras are excluded.
+
+The Go2 Entry is `unitree-sdk2-go2-lowlevel@1.0.0`. It pins official
+`unitree_sdk2_python` commit `65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5`, distribution
+`unitree_sdk2py==1.0.1`, `cyclonedds==0.10.2`, and runtime profile
+`unitree-go2-linux-amd64@1.0.0`: Linux amd64, Ubuntu 22.04, CPython 3.10, MuJoCo 3.3.6, and
+CycloneDDS 0.10.2. Its admitted surface is the real SDK2 `ChannelPublisher` and
+`ChannelSubscriber`, publishing `LowCmd` and subscribing to `LowState` plus read-only
+`SportModeState`. The DDS message containers have twenty motor slots; the Go2 integration uses
+only the first twelve in the exact order frozen under Translation.
+
+`SportClient.Sit`, `SportClient.StandUp`, `SportClient.Move`, other high-level Sport request
+services, gait behavior, and posture behavior are not admitted simulator surfaces. Reusable G2
+behavior may later be synthesized in `capability.py`; it must not be added to the SDK Entry or
+Translation Layer.
+
+The runtime coordinates above are frozen, but an OCI image digest, CPython build identity, native
+library identity, and complete dependency artifact hashes are recorded only after the actual
+environment is built and verified. No placeholder or guessed digest may satisfy Admission.
 
 The SDK Entry version and upstream artifact version are separate identities. The Entry version
 tracks the project-authored dossier and may change when a unit, error condition, example, evidence
@@ -895,7 +1270,7 @@ version and a new Admission. Formal references pin both identities; floating ver
 
 ##### Canonical public API record
 
-`public_api.yaml` records only the approved public SDK surface, but it describes that surface with
+Formal `public_api.json` records only the approved public SDK surface, but it describes that surface with
 enough semantics to support correct implementation. For every applicable symbol or operation it
 may contain:
 
@@ -957,7 +1332,7 @@ reproducible and sufficiently supported. Admission checks, at minimum, that:
 
 1. upstream identity, source, licence, and payload hashes are complete;
 2. the exact real artifact installs in a clean, declared environment;
-3. the installed distribution, version, commit or artifact hash matches `artifact.yaml`;
+3. the installed distribution, version, commit or artifact hash matches formal `artifact.json`;
 4. declared imports and public symbols exist;
 5. recorded signatures and public types agree with version-matched evidence;
 6. consequential unit, return, clipping, lifecycle, and error semantics have documented,
@@ -969,7 +1344,7 @@ reproducible and sufficiently supported. Admission checks, at minimum, that:
 Only an admitted SDK Entry may be referenced by an active Robot Integration Manifest. SDK Entry
 Admission does not load a robot MJCF, install a Translation Layer, issue a MuJoCo command, or claim
 that a complete simulation route works. Those combination-level facts belong to the separate
-Simulation Integration Readiness Check in Section 4.1.6. An Admission failure is an SDK Library
+Simulation Integration Readiness Check in Section 4.1.7. An Admission failure is an SDK Library
 preparation failure; a Readiness failure is an integration-infrastructure failure. Neither is
 counted as an LLM synthesis or candidate-capability failure.
 
@@ -995,7 +1370,7 @@ semantic assistance that would let a generated capability bypass the pinned real
 
 **中文辅助说明。** SDKs Library 不是新的 wrapper，也不是把上游源码复制进项目，而是为正式
 执行的真实 SDK 建立一份可复现、可审核的档案。项目维护的 Entry version 与真实 SDK 的 upstream
-version 分开固定；`public_api.yaml` 中重要的 API 语义必须有官方文档、精确源码或运行 probe 证据。
+version 分开固定；`public_api.json` 中重要的 API 语义必须有官方文档、精确源码或运行 probe 证据。
 SDK Admission 只证明“SDK 与说明档案可信”，Simulation Readiness 才证明“该 SDK 与专用
 Translation Layer、MJCF/MuJoCo 的组合能双向运行”。Translation、MuJoCo 和私有评价数据都属于
 系统的其他边界，不进入 SDK Entry，也不会因为建立投影视图而暴露给 Generation。
@@ -1015,7 +1390,98 @@ observation condition. The selected snapshot is frozen before the run and cannot
 Generation, Validation, Repair, or Demo. Experience is therefore a governed cross-run route, not an
 unreviewed way to modify a current artifact or feed current-run evidence back into Repair.
 
-#### 4.1.6 Pre-Generation simulation-integration readiness
+#### 4.1.6 SDK-specific MuJoCo Translation v1
+
+A formal Translation package exposes only the Framework-private lifecycle and simulator-step
+protocol required to install its device or transport hook, start, validate transport input, map
+accepted input to MuJoCo actuator control, publish SDK-compatible state after physics stepping,
+reset, report route health/evidence, and close. It exposes no public robot-control API. Choosing
+targets, poses, trajectories, gaits, task actions, or recovery behavior is generated capability
+logic and is forbidden in Translation.
+
+The SO-ARM101 Translation is `lerobot-so101-feetech-pty-mujoco@1.0.0` and follows exactly:
+
+```text
+real SO101Follower
+  -> real FeetechMotorsBus
+  -> raw Feetech serial packets
+  -> Linux PTY virtual STS3215 boundary
+  -> MuJoCo position actuators and physics
+  -> Present_Position registers
+  -> the same FeetechMotorsBus and SO101Follower observation path
+```
+
+The admitted virtual-device subset is limited to the packet instructions and exact register widths
+exercised by the pinned application path, including ping, individual and sync read/write,
+checksum/error handling, model/firmware identity, calibration/homing/configuration,
+`Goal_Position`, and `Present_Position`. Bad checksums, unknown IDs, unsupported or read-only
+writes, unknown registers, wrong widths, and malformed packets do not alter actuator control.
+Motor IDs map exactly as follows: `1 shoulder_pan`, `2 shoulder_lift`, `3 elbow_flex`,
+`4 wrist_flex`, `5 wrist_roll`, and `6 gripper`. The simulation calibration uses drive mode zero,
+homing offset zero, and raw range `0..4095`. Arm ticks use the pinned LeRobot degree conversion and
+then radians at MuJoCo. The gripper uses one admission-time affine mapping between SDK `0..100` and
+the MJCF endpoints; endpoint jaw aperture determines and freezes its direction. A goal writes an
+actuator target, never simulated position directly; `Present_Position` derives from current
+MuJoCo state. The most recent valid target remains latched until reset or replacement.
+
+The Go2 Translation is `unitree-sdk2-go2-dds-mujoco@1.0.0` and follows exactly:
+
+```text
+real SDK2 ChannelPublisher/ChannelSubscriber
+  -> CycloneDDS domain 1 on loopback and rt/lowcmd
+  -> headless Session-Runner-clocked bridge derived from pinned unitree_mujoco
+  -> twelve MuJoCo actuators and physics
+  -> rt/lowstate and read-only rt/sportmodestate
+  -> the same real SDK2 subscriber path
+```
+
+The bridge source is derived from Unitree `unitree_mujoco` commit
+`ae6a8403e272733e9996ef59990880330496177f`, source path
+`simulate_python/unitree_sdk2py_bridge.py`, SHA-256
+`3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599`.
+The twelve active indices are, in order, FR hip/thigh/calf, FL hip/thigh/calf, RR hip/thigh/calf,
+and RL hip/thigh/calf. For each active motor, Translation applies only:
+
+```text
+ctrl = tau + kp * (q_target - sensed_q) + kd * (dq_target - sensed_dq)
+```
+
+using the valid `LowCmd`. `LowState` maps q, dq, estimated actuator torque, and available IMU
+quaternion/gyroscope/accelerometer. `SportModeState` maps only the MuJoCo IMU-site
+`frame_position` and `frame_linear_velocity`; these are not claimed as hardware COM or universal
+base truth, and the state topic does not imply simulated SportClient request support. The bridge is
+headless and has no viewer, keyboard, gamepad, standing/sitting pose, trajectory, phase scheduler,
+gait generator, balance controller, or task policy. One Go2 DDS integration session runs per
+process. The newest valid command is applied before the next physics step. After `0.100`
+simulation seconds without a valid `LowCmd`, all controls become zero and command health is
+`STALE` until a new valid command or reset.
+
+For this controlled route, a valid command is exactly the pinned Go2 DDS `LowCmd_` type with 20
+`motor_cmd` slots. The Translation manifest statically maps active indices exactly `0..11` to the
+frozen actuator order above; admission rejects a reordered, missing, duplicated, or unknown
+destination because the DDS array itself carries no motor identity at runtime. Each active slot
+requires `mode: 0x01`, and its `q`, `dq`, `kp`, `kd`, and `tau` fields must be finite real numbers.
+Slots `12..19` are never
+applied and must retain the pinned safe-stop initialization (`mode: 0x01`, `q: 2.146e9`,
+`dq: 16000.0`, `kp: 0`, `kd: 0`, `tau: 0`). The message CRC must match the pinned SDK2 CRC
+calculation. Wrong DDS type or width, wrong active mode, a changed inactive slot, invalid CRC, or
+any non-finite active field is rejected before actuator controls are computed. Rejection does not
+modify current controls and does not refresh the stale-command timer; the previous valid control
+remains in force only until replacement, reset, or the frozen stale limit. These checks are an
+AutoAdapter controlled-Translation safety boundary; they are not attributed to the upstream
+example bridge, which itself consumes only the five active motor fields in the equation above.
+
+Every Translation manifest binds its exact SDK Entry, Morphology, simulation and runtime profiles;
+implementation source hash; hook and entrypoint; complete command/state mapping; units, signs,
+clipping, quantization, timing, stale and reset rules; supported transport subset; and conformance
+obligations. Its external conformance report binds the final exact Translation-subject reference
+and is evidence of the external admission report; it is not a field or owned payload of the
+Translation subject. Admission requires complete one-to-one mapping, exact dimensions,
+malformed/stale-input tests, a real-SDK bidirectional round trip, clean closure, and evidence that
+ordinary stepping writes actuator control rather than qpos/qvel. Direct qpos/qvel restoration is
+permitted only for reset.
+
+#### 4.1.7 Pre-Generation simulation-integration readiness
 
 Before a Generation run is admitted for a selected robot, the Framework resolves the selected
 Robot Integration Manifest and performs a **Simulation Integration Readiness Check** on that exact
@@ -1046,32 +1512,69 @@ It must not provide IK, motion or trajectory planning, collision avoidance, task
 capability semantics, and it does not expose a universal robot-control interface to generated
 code.
 
+The frozen Readiness profile is `general-demo-integration-readiness@1.0.0`. It runs in a fresh
+process on the exact frozen Linux runtime profile; macOS and source-only probes can provide
+development evidence but cannot issue formal `PASS`. Its six ordered checks are:
+
+1. `sdk_identity_load`;
+2. `hook_install`;
+3. `real_sdk_application_execution`;
+4. `sdk_to_mujoco_command`;
+5. `mujoco_to_sdk_observation`; and
+6. `reset_close`.
+
+Each check has a 60-second wall-time limit; the full attempt has a 180-second wall-time limit; one
+blocking transport operation has a 2-second wall-time limit; the command/state probe advances no
+more than 1.0 simulation second; and cleanup has a 5-second wall-time limit. No hidden retry is
+permitted. SO-ARM101 serial values must round-trip within one servo tick and MuJoCo conversion
+within one tick-equivalent plus `1e-6` radians. Go2 q, dq, torque, quaternion, gyroscope,
+accelerometer, frame-position, and frame-linear-velocity mappings use absolute tolerance `1e-5`
+and relative tolerance `1e-6`; the commanded joint must change by at least `1e-5` radians during
+the effect probe. Reset qpos and qvel use absolute tolerance `1e-9`.
+
+The immutable private report binds its canonical attempt identity, `run_id`, exact selection
+reference, exact same-selection `RIM_RESOLVED` receipt reference, exact Readiness-profile
+reference, all resolved exact references, exact
+resolved-combination reference, runtime lock and
+platform fingerprint, deadlines, six
+ordered results, evidence references, start/end times, overall verdict, and cleanup result. Each
+failed check records one infrastructure category. A failed attempt remains immutable; a corrected
+rerun uses a new attempt ID. Only six checks plus cleanup all passing may produce a non-sensitive,
+sealed `PASS` receipt. The private report is the verdict source; the receipt binds its exact hash
+and is issued into the Framework-owned append-only Readiness registry by the configured trusted
+issuer. A hash or seal made outside that registry has no gate authority. Any change to RIM,
+Morphology, simulation profile, SDK Entry or installed artifact, Translation source/configuration,
+runtime lock, MuJoCo version, or Readiness profile invalidates that receipt.
+The trusted issuer and integration gate require the selection, private report, and receipt to bind
+the same exact Readiness-profile reference and require the private report, Readiness receipt, and
+`INTEGRATION_READY` event to bind the same prior `RIM_RESOLVED` receipt for the same run,
+selection, RIM, and resolved combination. Copied numeric limits or an unreferenced earlier event
+are not sufficient.
+
 **中文辅助说明。** Readiness Check 发生在 Generation 之前，但它不是能力验证。它只证明本次
 选定的真实 SDK、专用 Translation Layer 和 MuJoCo 基础路径可以双向运行，避免把集成故障错误
 计入 LLM 的合成失败。Simulation Session Runner 只是管理加载、reset、时钟、限制、日志和关闭；
 生成代码看到并调用的仍然是真实 SDK，而不是一个新的通用 Runtime API。
 
-#### 4.1.7 Section status and traceability
+#### 4.1.8 Section status and traceability
 
 | Type | ID | State | Revision | Tracked scope |
 |---|---|---|---:|---|
 | Decision | `DEC-LIB-001` | `APPROVED` | 3 | Run-input assembly and the four top-level Library families |
-| Decision | `DEC-RIM-001` | `APPROVED` | 1 | Thin reference-only integration binding, one active fixed configuration per robot model, compatibility declaration, and excluded content |
+| Decision | `DEC-RIM-001` | `FROZEN` | 2 | Exact v1 RIM identities and fields; exact-reference compatibility; admission, activation, supersession and revocation; one active fixed configuration per robot model |
 | Decision | `DEC-TASK-001` | `FROZEN` | 4 | Public benchmark/research sourcing, robot-specific curation, the 28-task SO-ARM101 batch, and its reviewed robot-conditioned D1–D4 scale |
 | Decision | `DEC-TASK-002` | `FROZEN` | 3 | Authored criteria, description-only visibility, fixed five-task designation, and separation from capability-validation tasks |
 | Decision | `DEC-TASK-003` | `FROZEN` | 1 | Reviewed-only human-readable Tasks Library catalog and recipient-specific projections |
-| Decision | `DEC-MORPH-001` | `APPROVED` | 3 | Three-class Morphology layout, fixed robot entries, canonical MJCF execution, environment boundary, provenance, immutable versioning, and admission policy |
-| Decision | `DEC-SDK-001` | `APPROVED` | 1 | Versioned SDK dossiers, dual Entry/upstream identity, canonical public API semantics, evidence policy, recipient projections, SDK Entry Admission, and exclusion boundary |
+| Decision | `DEC-MORPH-001` | `FROZEN` | 4 | Three-class layout plus exact SO-ARM101/Go2 v1 configurations, source/model pins, MuJoCo 3.3.6 realization, reset threshold and admission boundary |
+| Decision | `DEC-SDK-001` | `FROZEN` | 2 | Exact SO-ARM101/Go2 v1 SDK Entries and runtime coordinates, upstream/distribution pins, public surfaces, exclusions, projections and admission boundary |
 | Decision | `DEC-EXP-001` | `APPROVED` | 3 | Governed recipient-specific design/implementation Experience, immutable admitted versions, frozen future-run snapshots, no current-run feedback, and no direct Experience-to-Demo-Consumer route |
-| Decision | `DEC-SIM-002` | `FROZEN` | 1 | Minimal Framework-private Simulation Session Runner and prohibited semantic assistance |
-| Decision | `DEC-READY-001` | `FROZEN` | 1 | Pre-Generation infrastructure readiness boundary and six required checks |
+| Decision | `DEC-TRANS-001` | `FROZEN` | 1 | Exact SO Feetech-PTY and Go2 DDS Translation routes, command/state mappings, timing/stale/reset rules, and prohibition on capability behavior |
+| Decision | `DEC-SIM-002` | `FROZEN` | 2 | Minimal Framework-private Session Runner, fresh-process formal runtime, simulator stepping and prohibited semantic assistance |
+| Decision | `DEC-READY-001` | `FROZEN` | 2 | Exact Readiness profile, six checks, numerical/time limits, immutable attempts, receipt and invalidation contract |
+| Decision | `DEC-INTEG-GATE-001` | `FROZEN` | 2 | Immutable subjects plus trusted admission/activation/Readiness event registries; separate fixture and formal gates; `RIM_RESOLVED` before Readiness, `INTEGRATION_READY` from a matching trusted PASS receipt, and later composite `READY_FOR_STAGE1` only after all run gates pass |
 | Open question | `OQ-TASK-001` | `OPEN` | — | Cross-robot difficulty comparability, infeasible/inapplicable-task representation, machine-readable record schema, and review fields |
 | Open question | `OQ-TASK-002` | `OPEN` | — | Catalogs for the remaining robot configurations, cross-catalog type taxonomy, exact five SO-ARM101 Demo tasks, and executable pass-criterion schema |
-| Open question | `OQ-MORPH-001` | `OPEN` | — | Exact field and ID/reference schemas, environment composition rules, admission-evidence format, MuJoCo/reset thresholds, and future shared-component promotion criteria |
-| Open question | `OQ-RIM-001` | `OPEN` | — | Machine-readable Manifest schema, reference/version/hash resolution, admission/activation/supersession, and compatibility evidence link |
-| Open question | `OQ-SDK-001` | `OPEN` | — | Exact machine-readable field schemas, ID/reference/version syntax, projection-generation rules, evidence-link and probe format, Admission report contract, installation environment, and objective Admission thresholds |
-| Open question | `OQ-TRANS-001` | `OPEN` | — | Per-SDK device/transport seam, command/state mapping, unsupported integration behavior, timing semantics, and Translation Layer conformance evidence |
-| Open question | `OQ-READY-001` | `OPEN` | — | Readiness evidence artifact, exact probes and tolerances, timeout, rerun/invalidation policy, and failure record schema |
+| Open question | `OQ-MORPH-001` | `OPEN` | — | Environment-composition rules beyond the two fixed v1 robot entries and future shared-component promotion criteria |
 
 ### 4.2 Capability-Layer Generation
 
@@ -2052,6 +2555,12 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 | Requirement | `REQ-GD-018` | `FROZEN` | Normal robot motion uses MuJoCo actuator control and physics stepping rather than direct simulated-state overwrite | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-019` | `FROZEN` | Every formal Validation B case/repetition and Demo task trial/repetition produces private, content-addressed, simulation-time-linked Framework Evaluation Video from post-reset pre-invocation/task state through terminal observation/timeout; the recording and manifest remain inaccessible to the Blue Line, Stage 1, Stage 2, Sandbox model, generated candidate/layer, Repair, and Demo Consumer, and neither video content nor human viewing may supply or override the structured Harness verdict; missing/incomplete/integrity-failed video invalidates the execution as infrastructure/evidence failure rather than candidate/Consumer failure | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-020` | `FROZEN` | The first complete two-robot architecture Demo executes G2 only: one separate single-RIM run for SO-ARM101 and one for Unitree Go2, each exposing only its G2 layer to the Demo Consumer; the generic Framework retains profile selection for future separate G1/G2/G3 runs, and exact G2 semantics plus exactly-one-profile-per-run enforcement remain blocked on `OQ-GRAN-001` freeze | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-021` | `FROZEN` | Formal v1 integration records use the frozen `general-demo-integration-schemas@1.0.0` closed-world schema package, immutable semantic versions and exact `kind/id/version/content_hash` references; immutable subjects never self-claim admission/activation, and formal selection resolves trusted append-only events to require `FROZEN`, effectively `ADMITTED`, non-fixture records, an effectively `ACTIVE` exact RIM and mechanically verified compatibility | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-022` | `FROZEN` | The first Demo Morphology population is exactly the fixed-base five-arm-joint SO-ARM101 follower plus stock gripper and the free-base stock 12-DoF Go2 with joint/IMU state, using the pinned source files/closures and MuJoCo 3.3.6; reset qpos/qvel must reproduce within absolute `1e-9` | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-023` | `FROZEN` | The formal SO SDK Entry pins real LeRobot 0.6.0 plus Feetech SDK 1.0.0 on the frozen Linux runtime and the formal Go2 Entry pins real SDK2Py 1.0.1/CycloneDDS 0.10.2 on its frozen Linux runtime; Admission must verify actual environment/artifact identities and may not use placeholder hashes | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-024` | `FROZEN` | The two exact v1 Translation packages implement only the frozen real-SDK Feetech-PTY and SDK2-DDS bidirectional mappings, actuator-control/physics path, reset/stale/error/cleanup rules and no IK, trajectory, gait, posture, planning, recovery or task behavior | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-025` | `FROZEN` | Fixture and formal gates are disjoint; formal selection issues only `RIM_RESOLVED`; a trusted-registry PASS receipt matching the run, selection, RIM, resolved combination, runtime lock, Readiness profile, issuer and private report may issue only `INTEGRATION_READY`; the later composite gate alone may issue `READY_FOR_STAGE1` after every applicable frozen run condition passes | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-026` | `FROZEN` | `general-demo-integration-readiness@1.0.0` executes the six frozen checks in a fresh exact Linux runtime using the frozen per-check/attempt/transport/cleanup/simulation limits and numerical tolerances; no hidden retry or macOS/source-probe PASS is permitted, every dependency change invalidates the receipt, and only the Framework-owned trusted Readiness registry grants gate authority | `NOT_STARTED` | `NONE` |
 
 ---
 
@@ -2059,7 +2568,11 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 
 | Artifact | Reference | Authority role |
 |---|---|---|
-| LeRobot v0.6.0 SOFollower and motor-bus source | `https://github.com/huggingface/lerobot/tree/v0.6.0/src/lerobot` | SO-ARM101 integration-feasibility evidence only; not a Framework-wide interface |
+| LeRobot SO101Follower and motor-bus source | `https://github.com/huggingface/lerobot/commit/30da8e687a6dfc617fcd94afc367ac7071c376ce`; distribution `lerobot==0.6.0`, wheel SHA-256 `b38a564fbc441d98380576863bf68635dde5fc2c42ddc2a39d0486640dc9e9a8` | Frozen upstream identity for `lerobot-so101-follower@1.0.0`; admission still requires clean-environment verification |
+| Feetech Python runtime dependency | `https://pypi.org/project/feetech-servo-sdk/1.0.0/`; sdist SHA-256 `d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c` | Frozen third-party runtime dependency identity for the SO route; its provenance is recorded separately from official LeRobot and robot-model sources |
+| SO-ARM101 canonical MJCF source | `https://github.com/TheRobotStudio/SO-ARM100/commit/7629d2ad9853d10fb903093a33ef6114099d97e5`, `Simulation/SO101/so101_new_calib.xml`, SHA-256 `d75253eb568e8a7214db9c631ab7bed4217f608a26f7276ebe9a7636cac82580` | Frozen source identity for the fixed SO-ARM101 Morphology; complete asset closure remains an admission artifact |
+| Unitree SDK2Py source | `https://github.com/unitreerobotics/unitree_sdk2_python/commit/65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5`; distribution `unitree_sdk2py==1.0.1`; `cyclonedds==0.10.2` | Frozen low-level Go2 SDK identity; high-level SportClient requests are not an admitted simulator route |
+| Unitree Go2 MuJoCo source | `https://github.com/unitreerobotics/unitree_mujoco/commit/ae6a8403e272733e9996ef59990880330496177f`; `go2.xml` SHA-256 `2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b`; bridge SHA-256 `3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599` | Frozen source identities for the Go2 Morphology and low-level Translation; complete model/runtime admission and Readiness remain required |
 | MuJoCo simulation and control reference | `https://mujoco.readthedocs.io/en/stable/programming/simulation.html` | Simulator-semantics reference for control, stepping, state, and reset |
 | Prior benchmark | repository `981526092/auto-adapter`, pinned audit commit `585eb1f1fde33f17f5f9a1e169a18dd41f97b586` | Prior-work evidence and permitted asset source |
 | High-level architecture image | `research_assets/autoadapter_high_level_framework_2026-08-08.png` | Confirmed architecture source |
@@ -2081,10 +2594,7 @@ preserve obsolete questions.
 | First-Demo granularity | Generic granularity-profile ID/version/schema and resolver, exactly-one-profile-per-run enforcement, and exact robot-independent G2 semantics/composition boundary for the first two-robot architecture Demo | `OQ-GRAN-001` |
 | Structured observation | State schema, entities, frames/units, precision, timestamp, and deterministic update cadence | `OQ-OBS-001` |
 | Tasks Library | Cross-robot difficulty rules, inapplicable tasks, machine schema, remaining robot catalogs, type taxonomy, fixed five tasks, and criterion schema | `OQ-TASK-001`, `OQ-TASK-002` |
-| Morphology Library | Exact schemas, environment composition, admission evidence, MuJoCo/reset thresholds, and future shared-component rules | `OQ-MORPH-001` |
-| Robot Integration Manifest | Exact schema, reference/hash resolution, activation/supersession, and compatibility evidence | `OQ-RIM-001` |
-| SDKs Library | Exact schemas, reference/version syntax, projections, evidence/probes, installation environment, and Admission thresholds | `OQ-SDK-001` |
-| Translation and readiness | Per-SDK seam/mapping/timing/conformance plus Readiness probes, tolerances, invalidation, and failure records | `OQ-TRANS-001`, `OQ-READY-001` |
+| Future Morphology expansion | Environment composition beyond the two frozen v1 entries and later shared-component promotion rules | `OQ-MORPH-001` |
 | Generation | Exact Stage Bundle projections, Capability Design fields/JSON Schema/checker, Stage 1 Conformance Repair budget, Python Binding Contract/skeleton and Manifest schemas, Stage 1/Stage 2 prompts, dependency/isolation rules, inference retry/cache/token accounting, artifact binding, tuning/freeze, canonicalization, and reproducibility | `OQ-GEN-001` |
 | Development Sandbox | Probe suite, tool schema, feedback redaction, separate call/episode/simulated-time/control-step/output/wall-time caps, failure accounting, and audit evidence | `OQ-SANDBOX-001` |
 | Simplified Blue Line | Exact fixed model/prompt/decoding configuration; Project Validation Standards Reference and Frozen Validation Standards Snapshot, Private Measurement Catalog, Validation Spec, suite, Blue Line Manifest and Binding Overlay schemas; matching/adaptation format and machine enforcement of the approved material-review rule; case/trial limits; deterministic checker/compiler, privacy enforcement, review/version records, canonicalization, sealing, and provider accounting within the approved three-call ceiling | `OQ-BLUE-001` |

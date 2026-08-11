@@ -4,10 +4,10 @@
 
 | Field | Value |
 |---|---|
-| Status | `DRAFT_FOR_ALIGNMENT` |
-| Implementation authorization | `NOT_GRANTED` |
+| Status | `ACTIVE_NON_NORMATIVE_PLAN` |
+| Implementation authorization | `WAVES_3_AND_4_FROZEN_INTEGRATION_SCOPE_ONLY` |
 | Sole normative authority | `AUTOADAPTER_2_AUTHORITY.md` |
-| Authority revision read for this draft | `0.13.4` |
+| Authority revision read for this plan | `0.14.0` |
 | Detailed Framework/file design | `GENERAL_DEMO_FRAMEWORK_DESIGN.md` |
 | Demo purpose | Discover architectural and contract problems before mainline construction |
 | Migration intent | If the Demo passes its migration gates, migrate its structure and files into the main Framework rather than reimplementing them; then document and exercise a repeatable one-robot-at-a-time onboarding process |
@@ -18,12 +18,11 @@
 
 This plan is non-normative. If it conflicts with `AUTOADAPTER_2_AUTHORITY.md`, the Authority wins.
 An exact schema, prompt, API, budget, threshold, directory contract, or experimental allocation that
-the Authority still marks `OPEN` remains open here. It must be reviewed and frozen in the Authority
-before its component is implemented. This document does not authorize scaffolding or code work;
-implementation starts only after the user confirms that the system interpretation is aligned.
-Authority revision `0.13.4` adopts the two named robot routes and their G2-only first architecture
-Demo through `REQ-GD-020`. Their exact fixed-configuration boundaries, RIMs, and G2 profile content
-remain open and must be frozen before implementation.
+the Authority still marks `OPEN` remains open here. Authority revision `0.14.0` freezes and
+authorizes implementation of the two fixed Morphology/SDK/runtime/RIM/Translation routes and their
+Readiness/formal-gate contracts. It does not authorize implementation of later components whose
+owning contracts remain open, including the exact G2 profile, Stage 1, Blue Line, Stage 2,
+Validation, Repair, Consumer, Demo, or Evolution.
 
 ## 1. Purpose and scope
 
@@ -126,10 +125,10 @@ to Stage 1, Stage 2, Repair, or Consumers, and it is not itself a fifth Generati
 
 The Demo population is:
 
-| Robot | Fixed configuration boundary for this plan | Items still requiring exact freeze |
+| Robot | Frozen Wave 3/4 integration boundary | Remaining later-wave work |
 |---|---|---|
-| SO-ARM101 follower | Follower arm plus stock gripper | exact SDK Entry/pin, morphology and simulation versions, units, observation profile, Translation seam, readiness tolerances, tasks and criteria |
-| Unitree Go2 | One fixed quadruped configuration | exact SDK Entry/pin and admitted public surface, morphology and simulation versions, active sensors, units, Translation seam, readiness tolerances, tasks and criteria |
+| SO-ARM101 follower | `so-arm101-follower-stock-gripper@1.0.0`; fixed base, five arm joints plus stock gripper; pinned SO MJCF; real LeRobot 0.6.0 + Feetech 1.0.0; `lerobot-so101-feetech-pty-mujoco@1.0.0` | State-Provided observation, exact G2, Tasks/Demo criteria, Generation/Validation/Consumer contracts |
+| Unitree Go2 | `unitree-go2-stock-12dof@1.0.0`; free base, stock 12 DoF, joint/IMU state; pinned Unitree MJCF; real SDK2Py 1.0.1 + CycloneDDS 0.10.2; `unitree-sdk2-go2-dds-mujoco@1.0.0` | State-Provided observation, exact G2, Tasks/Demo criteria, Generation/Validation/Consumer contracts |
 
 Approving a robot model does not approve a guessed SDK surface or a high-level behavior service.
 Those facts must be established through the SDK/Morphology/RIM admission process.
@@ -190,6 +189,9 @@ The Demo implements the following lifecycle rather than a shortened happy-path s
 freeze applicable contracts and run inputs
   -> resolve RIM
   -> six-part Simulation Integration Readiness Check
+  -> trusted INTEGRATION_READY for the exact robot route
+  -> composite pre-Generation gate checks the frozen G2, observation, run-input, and experiment contracts
+  -> trusted READY_FOR_STAGE1
   -> Generation Stage 1 semantic design
   -> Stage 1 schema + semantic conformance loop
   -> seal capability_design.json
@@ -393,9 +395,11 @@ the record. Admission, declassification, conflict handling, versioning, applicab
 retrieval remain governed. Private thresholds, cases, seeds, privileged state, and winning task
 solutions cannot be copied into Experience.
 
-## 7. Proposed repository architecture
+## 7. Repository architecture
 
-The exact directory contract remains subject to review and freeze. The intended separation is:
+Authority 0.14.0 authorizes the listed implementation homes for its frozen integration subset;
+their exact machine records still require successful bootstrap/admission. Directory branches owned
+by later `OPEN` contracts remain proposed and unloadable. The intended separation is:
 
 ```text
 general_demo/
@@ -439,9 +443,13 @@ Blue Line standards/measurement applicability, Demo criterion assets, private Ha
 and admitted source/provenance records. They may not appear as robot-name branches in generic
 Framework source.
 
-## 8. Construction phases after alignment
+## 8. Construction waves after alignment
 
-### Phase 0 — contract decision and freeze
+Construction Wave 0 was the completed design-only activity that produced and aligned this plan.
+The remaining numbering below is canonical across this plan and
+`GENERAL_DEMO_FRAMEWORK_DESIGN.md`.
+
+### Wave 1 — normative freeze
 
 - record and freeze the user-approved two-robot Demo population in the sole Authority; the plan
   document is not a substitute for that normative adoption;
@@ -459,7 +467,7 @@ Framework source.
 Exit: an implementation checklist can map every module to a frozen Authority requirement and no
 module relies on an unreviewed legacy default.
 
-### Phase 1 — generic skeleton and contract tests
+### Wave 2 — foundation and contract tests
 
 - create the independent General Demo tree;
 - implement canonical serialization, content hashing, seals, artifact lineage, recipient
@@ -468,7 +476,11 @@ module relies on an unreviewed legacy default.
 
 Exit: the generic core can load two distinct manifest families without robot-name branches.
 
-### Phase 2 — two-robot Library population
+### Wave 3 — two-robot governed-data population
+
+At Authority revision `0.14.0`, only the Morphology, SDK, runtime, RIM, exact-source/admission
+tooling subset of this wave is authorized. Tasks, Experience, Validation Standards, Measurement
+Catalog, and Demo criteria remain blocked by their owning open contracts.
 
 - build and review Morphology, SDK, Tasks, Experience snapshots, Validation Standards Snapshot,
   Measurement Catalog, and RIM records for both robots;
@@ -483,7 +495,7 @@ Exit: the generic core can load two distinct manifest families without robot-nam
 
 Exit: both RIMs resolve without implicit paths or mutable external defaults.
 
-### Phase 3 — Translation, Session Runner, and readiness
+### Wave 4 — Translation, Session Runner, and Readiness
 
 - implement one robot/SDK-specific bidirectional Translation Layer per robot;
 - implement the generic minimal Session Runner for SDK lifecycle, reset, clock, limits, cleanup,
@@ -495,7 +507,7 @@ Exit: both RIMs resolve without implicit paths or mutable external defaults.
 Exit: both robots demonstrate real SDK application code -> Translation -> MuJoCo -> SDK state
 round trips without generated capability code.
 
-### Phase 4 — Generation Stage 1 and Blue Line
+### Wave 5 — Generation Stage 1 and Blue Line
 
 - implement the common Agent Scaffold and recipient-specific Stage 1 Bundle;
 - run Stage 1, deterministic conformance, bounded conformance repair, and sealing;
@@ -507,7 +519,7 @@ Exit: one sealed G2 Design per robot reaches `READY`, no G1/G3 artifact is gener
 campaign, and controlled missing-standard and invalid-reference fixtures correctly stop at
 `NEEDS_REVIEW`.
 
-### Phase 5 — Stage 2, Sandbox, Validation, and Repair
+### Wave 6 — Stage 2, Sandbox, Validation, and Repair
 
 - implement Binding Contract/skeleton generation and the isolated Stage 2 context;
 - implement SDK-grounded Sandbox access and redaction;
@@ -521,7 +533,7 @@ campaign, and controlled missing-standard and invalid-reference fixtures correct
 Exit: each robot has at least one validated/frozen layer, and controlled fixtures prove that
 Repair cannot alter Design, standards, suite, task data, or Framework code.
 
-### Phase 6 — Router, ReAct Consumer, fixed Demo, and Evolution
+### Wave 7 — Router, ReAct Consumer, fixed Demo, and Evolution
 
 - implement the typed Router, its robot-independent Consumer Adapter contract, and the first ReAct
   Agent adapter; reserve but do not fabricate policy/program/planner implementations;
@@ -533,7 +545,7 @@ Repair cannot alter Design, standards, suite, task data, or Framework code.
 Exit: both robots complete the full architectural route, including downstream consumption and the
 future-only evidence path.
 
-### Phase 7 — migration audit
+### Wave 8 — migration audit
 
 - rerun all contract, isolation, integration, cross-robot, and end-to-end tests from clean
   environments;
@@ -619,34 +631,34 @@ Migration is approved only if:
 If these conditions fail, the Demo remains a diagnostic branch. Its individual mechanisms may be
 reused only after the failure is understood; the structure is not migrated wholesale by default.
 
-## 12. Items to align before any construction
+## 12. Remaining alignment before later construction waves
 
-The following are discussion/freeze checkpoints, not permission to guess:
+The Authority has frozen and authorized the two exact robot configurations, SDK/runtime pins,
+RIM/Translation routes, integration schemas and formal admission/activation/Readiness gate for
+Waves 3 and 4. Their implementation may proceed. The following are the remaining
+discussion/freeze checkpoints for later waves and must not be guessed:
 
 1. confirm the proposed stricter requirement that both robots, not merely one, must complete a
    full run before migration;
-2. record the two covered robots in the Authority, then freeze one exact configuration and one RIM
-   target for each;
-3. freeze the exact SDK Entries and Translation seams after feasibility/admission work;
-4. decide and freeze the State-Provided structured observation contract;
-5. define/freeze the Stage 1 Design schema/checker and Stage 2 Binding/Manifest contracts;
-6. under `OQ-GRAN-001`, define and freeze the exact G2 profile selected for this architecture Demo
+2. decide and freeze the State-Provided structured observation contract;
+3. define/freeze the Stage 1 Design schema/checker and Stage 2 Binding/Manifest contracts;
+4. under `OQ-GRAN-001`, define and freeze the exact G2 profile selected for this architecture Demo
    and the generic exactly-one-profile-per-run envelope; retain the generic
    profile mechanism and leave exact G1/G3 profiles for later separate runs/RQ2 without requiring
    them for the first Demo;
-7. populate/freeze both task catalogs, the exact five-task Demo structure, and private criteria;
-8. freeze the fixed Blue Line model/prompt/configuration, standards snapshot, Measurement Catalog,
+5. populate/freeze both task catalogs, the exact five-task Demo structure, and private criteria;
+6. freeze the fixed Blue Line model/prompt/configuration, standards snapshot, Measurement Catalog,
    Generation Policy, exact artifacts/checker/compiler, and review flow;
-9. freeze Validation A/B, Repair, Router, Demo Harness, and Evolution minimum machine contracts;
-10. freeze the Evaluation Video recording/manifest/integrity/private-retention contracts and
+7. freeze Validation A/B, Repair, Router, Demo Harness, and Evolution minimum machine contracts;
+8. freeze the Evaluation Video recording/manifest/integrity/private-retention contracts and
     infrastructure rerun rule without turning video into an observation or verdict input;
-11. freeze exact LLM/tool/Sandbox/Repair/Consumer/Demo budgets and provider-failure accounting;
-12. freeze the first producer and ReAct Consumer model/prompt/tool/budget configuration without
+9. freeze exact LLM/tool/Sandbox/Repair/Consumer/Demo budgets and provider-failure accounting;
+10. freeze the first producer and ReAct Consumer model/prompt/tool/budget configuration without
     treating the architecture Demo as final RQ evidence;
-13. approve the proposed repository boundary or replace it before any files are scaffolded.
+11. approve the proposed repository boundary or replace it before later-wave files are scaffolded.
 
-Until these alignment and freeze steps are completed, the next authorized work is design review,
-not implementation.
+These remaining items do not block the currently authorized Wave 3/4 integration implementation;
+they do block the corresponding later components and the full end-to-end run.
 
 ## 13. Post-Demo robot onboarding
 
