@@ -37,26 +37,44 @@ The MuJoCo-like sensor parser checks the pinned sensor block: position
 gyro, accelerometer, frame position, and frame linear velocity. The resulting
 records only model the fields the bridge fills: LowState motor `q/dq/tau_est`
 and conditional IMU, plus SportModeState `position[0:3]` and
-`velocity[0:3]` on `rt/sportmodestate`. This is not complete SDK state
-fidelity.
+`velocity[0:3]` on `rt/sportmodestate`. The latter come from the MuJoCo IMU
+site's `framepos`/`framelinvel`; they are not asserted to be COM or hardware
+base truth. This is not complete SDK state fidelity.
 
-The optional real check lazily verifies `unitree_sdk2py==1.0.1`,
-`cyclonedds==0.10.2`, and the pinned import symbols without starting DDS. It
-requires Linux; missing packages or non-Linux are `UNAVAILABLE`. A caller may
-provide an already checked-out `unitree_mujoco` path to verify the bridge and
-`go2.xml` SHA256 values; the probe never downloads source. Since this worktree
-does not run a real Linux DDS + MuJoCo roundtrip, that status remains
-`NOT_RUN`/`UNKNOWN`.
+The optional real check lazily verifies the expected
+`unitree_sdk2py==1.0.1`/`cyclonedds==0.10.2` versions and low-level
+symbol-shape presence without starting DDS. It requires Linux; missing
+packages or non-Linux are `UNAVAILABLE`. The symbol probe checks the default
+factories, DDS classes, callable/type relationships, and 20-slot
+`LowCmd_.motor_cmd`/`LowState_.motor_state`; it does not import `SportClient`.
+A separate manifest entry records `SportClient` only as high-level source
+evidence and scope boundary.
+
+Callers may provide source directories to verify only the recorded key-file
+SHA256 values with `verify_unitree_sdk2py_key_files` and
+`verify_unitree_mujoco_key_files`. These functions do not claim a complete
+checkout or asset closure and never download source. Since this worktree does
+not run a real Linux DDS + MuJoCo roundtrip, both symbol-probe and roundtrip
+status remain `NOT_RUN`/`UNKNOWN`.
+
+The simulator retains the pinned bridge's `rt/sportmodestate` publisher. On
+real hardware, with the built-in motion service disabled, that message is
+unreadable; this does not mean the simulator supports
+`SportClient` request services.
 
 The SDK source also contains `SportClient` methods such as `StandUp` and
 `Move`; their presence is source evidence only. They are outside this
 low-level probe. The pinned SDK uses the default factories
-`unitree_go_msg_dds__LowCmd_()`/`LowState_()` and DDS types
+`unitree_go_msg_dds__LowCmd_()`/`LowState_()`/`SportModeState_()` and DDS types
 `unitree_go.msg.dds_.LowCmd_`/`LowState_`/`SportModeState_`; publishers and
 subscribers receive the type, and `Write` receives an instance. AutoAdapter
 `sit`/`stand`/`move` must be synthesized later in G2 `capability.py`, never
 inserted into Translation. No Go2 shim, gait, capability, simulator runner,
 or formal record is included here.
+
+`evaluate_source_bound_bridge_equation` is a source-equation probe helper and
+is forbidden for formal runtime imports. It is not a controller or a
+capability implementation.
 
 Run the unit tests from `general_demo/` with:
 

@@ -95,12 +95,33 @@ def test_probe_manifest_is_source_evidence_only_and_pinned():
         "RL_calf",
     ]
     assert go2_probe["real_linux_dds_mujoco_roundtrip"] == "NOT_RUN"
+    assert go2_probe["real_linux_symbol_probe"] == "NOT_RUN"
     assert go2_probe["readiness"] == "UNKNOWN"
     unitree_sdk = next(source for source in manifest["sources"] if source["name"] == "Unitree SDK2Py")
     assert unitree_sdk["distribution"] == {"name": "unitree_sdk2py", "version": "1.0.1"}
     assert unitree_sdk["pinned_runtime_dependency"] == {
         "name": "cyclonedds",
         "version": "0.10.2",
+    }
+    assert unitree_sdk["source_expected_symbols"] == [
+        "unitree_sdk2py.core.channel.ChannelFactoryInitialize",
+        "unitree_sdk2py.core.channel.ChannelPublisher",
+        "unitree_sdk2py.core.channel.ChannelSubscriber",
+        "unitree_sdk2py.idl.default.unitree_go_msg_dds__LowCmd_",
+        "unitree_sdk2py.idl.default.unitree_go_msg_dds__LowState_",
+        "unitree_sdk2py.idl.default.unitree_go_msg_dds__SportModeState_",
+        "unitree_sdk2py.idl.unitree_go.msg.dds_.LowCmd_",
+        "unitree_sdk2py.idl.unitree_go.msg.dds_.LowState_",
+        "unitree_sdk2py.idl.unitree_go.msg.dds_.SportModeState_",
+    ]
+    assert unitree_sdk["key_files"] == {
+        "setup.py": "f2c73b2981ee918dd8b3810267691d0294ebedf86d7897330819e8a5fefb19b5",
+        "example/go2/low_level/unitree_legged_const.py": "7685d8c384f268ebfebd569dea5b6f1e40ba6ec3ae29e8535334193f257d1034",
+        "unitree_sdk2py/idl/default.py": "b3101722e07534c667d4c673677a8a5d57643f307cfdeb11f4761ebc456b18ea",
+        "unitree_sdk2py/idl/unitree_go/msg/dds_/_LowCmd_.py": "5d0098eef648cf017267d105bde5407b40496cc0df791f15ed7a3e5e77981fe8",
+        "unitree_sdk2py/idl/unitree_go/msg/dds_/_LowState_.py": "0d370ae286a529f9f727519e1b6abfa9189595d78f2b29db3316886a5b1d51e4",
+        "unitree_sdk2py/idl/unitree_go/msg/dds_/_SportModeState_.py": "8f05eea51a6822727a14572e656bb59a84a899ac264c96c8c7104d2acccf5909",
+        "unitree_sdk2py/core/channel.py": "8a58eea2bc6bb8792e5b5fa76949407bd8c2ef8af07172d1a3a465bcc544e247",
     }
     mujoco = next(source for source in manifest["sources"] if source["name"] == "unitree_mujoco")
     assert mujoco["key_files"] == {

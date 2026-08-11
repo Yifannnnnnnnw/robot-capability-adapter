@@ -4,7 +4,7 @@
   "authority_class": "SOURCE_EVIDENCE_ONLY",
   "formal_schema": null,
   "formal_reference": null,
-  "purpose": "Technical feasibility probe for a real LeRobot SO-ARM101 follower serial path and source pins for later Go2 investigation.",
+  "purpose": "Dual-robot source-evidence probe for the LeRobot SO-ARM101 serial path and the Unitree Go2 low-level simulator boundary.",
   "scope": {
     "so_arm101": "raw Feetech Protocol 0 codec and optional Linux PTY peer",
     "go2": "low-level source-evidence route probe only; no shim, gait, capability, simulator runner, or formal record",
@@ -33,7 +33,10 @@
     "sport_mode_state_fields_mapped": ["position[0:3]", "velocity[0:3]"],
     "sport_mode_state_topic": "rt/sportmodestate",
     "translation_equation_only": "tau + kp * (q_target - q) + kd * (dq_target - dq)",
+    "formal_runtime_import_forbidden": true,
     "high_level_sport_client": "SOURCE_EVIDENCE_ONLY / OUT_OF_SCOPE",
+    "simulator_rt_sportmodestate_publisher": "SOURCE_EVIDENCE_ONLY",
+    "real_linux_symbol_probe": "NOT_RUN",
     "real_linux_dds_mujoco_roundtrip": "NOT_RUN",
     "readiness": "UNKNOWN"
   },
@@ -64,7 +67,7 @@
       "source_commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
       "source_url": "https://github.com/unitreerobotics/unitree_sdk2_python/commit/65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
       "license": "BSD-3-Clause",
-      "role": "Go2 low-level source pin and lazy symbol evidence; no DDS initialization",
+      "role": "Go2 low-level source evidence and caller-supplied key-file checks; no DDS initialization",
       "distribution": {
         "name": "unitree_sdk2py",
         "version": "1.0.1"
@@ -73,7 +76,8 @@
         "name": "cyclonedds",
         "version": "0.10.2"
       },
-      "verified_imports": [
+      "source_expected_symbols": [
+        "unitree_sdk2py.core.channel.ChannelFactoryInitialize",
         "unitree_sdk2py.core.channel.ChannelPublisher",
         "unitree_sdk2py.core.channel.ChannelSubscriber",
         "unitree_sdk2py.idl.default.unitree_go_msg_dds__LowCmd_",
@@ -82,7 +86,19 @@
         "unitree_sdk2py.idl.unitree_go.msg.dds_.LowCmd_",
         "unitree_sdk2py.idl.unitree_go.msg.dds_.LowState_",
         "unitree_sdk2py.idl.unitree_go.msg.dds_.SportModeState_"
-      ]
+      ],
+      "high_level_source_evidence": [
+        "unitree_sdk2py.go2.sport.sport_client.SportClient"
+      ],
+      "key_files": {
+        "setup.py": "f2c73b2981ee918dd8b3810267691d0294ebedf86d7897330819e8a5fefb19b5",
+        "example/go2/low_level/unitree_legged_const.py": "7685d8c384f268ebfebd569dea5b6f1e40ba6ec3ae29e8535334193f257d1034",
+        "unitree_sdk2py/idl/default.py": "b3101722e07534c667d4c673677a8a5d57643f307cfdeb11f4761ebc456b18ea",
+        "unitree_sdk2py/idl/unitree_go/msg/dds_/_LowCmd_.py": "5d0098eef648cf017267d105bde5407b40496cc0df791f15ed7a3e5e77981fe8",
+        "unitree_sdk2py/idl/unitree_go/msg/dds_/_LowState_.py": "0d370ae286a529f9f727519e1b6abfa9189595d78f2b29db3316886a5b1d51e4",
+        "unitree_sdk2py/idl/unitree_go/msg/dds_/_SportModeState_.py": "8f05eea51a6822727a14572e656bb59a84a899ac264c96c8c7104d2acccf5909",
+        "unitree_sdk2py/core/channel.py": "8a58eea2bc6bb8792e5b5fa76949407bd8c2ef8af07172d1a3a465bcc544e247"
+      }
     },
     {
       "name": "unitree_mujoco",
@@ -90,7 +106,7 @@
       "source_commit": "ae6a8403e272733e9996ef59990880330496177f",
       "source_url": "https://github.com/unitreerobotics/unitree_mujoco/commit/ae6a8403e272733e9996ef59990880330496177f",
       "license": "BSD-3-Clause",
-      "role": "Go2 bridge/MJCF source evidence; caller-provided checkout only",
+      "role": "Go2 bridge/MJCF key-file source evidence; caller-provided path only",
       "key_files": {
         "simulate_python/unitree_sdk2py_bridge.py": "3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599",
         "unitree_robots/go2/go2.xml": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b"

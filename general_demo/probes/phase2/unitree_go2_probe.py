@@ -1,6 +1,6 @@
 """Small Unitree Go2 low-level source-evidence probe.
 
-This module deliberately models only the boundary visible in the pinned
+This module deliberately models only the boundary visible in the recorded
 ``unitree_mujoco`` bridge.  It is not a controller, a robot shim, a
 capability implementation, or a DDS runner.  Normal tests use only the
 standard library; the optional symbol probe imports the real SDK lazily and
@@ -72,6 +72,16 @@ UNITREE_SDK2PY_VERSION = "1.0.1"  # setup.py at the pinned source commit
 CYCLONEDDS_DISTRIBUTION = "cyclonedds"
 CYCLONEDDS_VERSION = "0.10.2"
 
+UNITREE_SDK2PY_KEY_FILE_HASHES = {
+    "setup.py": "f2c73b2981ee918dd8b3810267691d0294ebedf86d7897330819e8a5fefb19b5",
+    "example/go2/low_level/unitree_legged_const.py": "7685d8c384f268ebfebd569dea5b6f1e40ba6ec3ae29e8535334193f257d1034",
+    "unitree_sdk2py/idl/default.py": "b3101722e07534c667d4c673677a8a5d57643f307cfdeb11f4761ebc456b18ea",
+    "unitree_sdk2py/idl/unitree_go/msg/dds_/_LowCmd_.py": "5d0098eef648cf017267d105bde5407b40496cc0df791f15ed7a3e5e77981fe8",
+    "unitree_sdk2py/idl/unitree_go/msg/dds_/_LowState_.py": "0d370ae286a529f9f727519e1b6abfa9189595d78f2b29db3316886a5b1d51e4",
+    "unitree_sdk2py/idl/unitree_go/msg/dds_/_SportModeState_.py": "8f05eea51a6822727a14572e656bb59a84a899ac264c96c8c7104d2acccf5909",
+    "unitree_sdk2py/core/channel.py": "8a58eea2bc6bb8792e5b5fa76949407bd8c2ef8af07172d1a3a465bcc544e247",
+}
+
 UNITREE_MUJOCO_KEY_FILE_HASHES = {
     "simulate_python/unitree_sdk2py_bridge.py":
     "3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599",
@@ -96,8 +106,15 @@ class Go2ProbeUnavailable(RuntimeError):
     """The optional real Linux SDK probe cannot run in this environment."""
 
 
-class Go2ProbeIdentityError(RuntimeError):
-    """An installed optional dependency or symbol does not match the pin."""
+class Go2ProbeVersionError(RuntimeError):
+    """An optional distribution has an unexpected version."""
+
+
+class Go2ProbeSymbolError(RuntimeError):
+    """An optional SDK symbol has the wrong shape or is missing."""
+
+
+SOURCE_EQUATION_PROBE_ONLY = True
 
 
 def _finite_vector(name: str, values: Sequence[Real], length: int) -> tuple[float, ...]:
@@ -197,17 +214,18 @@ class Go2LowCmdLike:
         object.__setattr__(self, "motor_indices", _validate_motor_indices(self.motor_indices))
 
 
-def translate_bridge_control_equation(
+def evaluate_source_bound_bridge_equation(
     command: Go2LowCmdLike,
     current_q: Sequence[Real],
     current_dq: Sequence[Real],
 ) -> tuple[float, ...]:
-    """Evaluate the pinned bridge boundary equation, without controller logic.
+    """Evaluate the source-bound equation for this probe only.
 
     ``ctrl = tau + kp * (q_target - q) + kd * (dq_target - dq)``
 
     No clipping, watchdog, trajectory generation, gain selection, CRC, or
-    command-header validation is added here.
+    command-header validation is added here.  This function is forbidden for
+    formal runtime imports; it is not a controller or a capability.
     """
 
     if not isinstance(command, Go2LowCmdLike):
@@ -238,8 +256,8 @@ class MuJoCoLikeState:
     imu_quaternion: Sequence[Real]
     imu_gyroscope: Sequence[Real]
     imu_accelerometer: Sequence[Real]
-    base_position: Sequence[Real]
-    base_velocity: Sequence[Real]
+    frame_position: Sequence[Real]
+    frame_linear_velocity: Sequence[Real]
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "q", _finite_vector("q", self.q, ACTIVE_MOTOR_COUNT))
@@ -261,9 +279,13 @@ class MuJoCoLikeState:
             _finite_vector("imu_accelerometer", self.imu_accelerometer, 3),
         )
         object.__setattr__(
-            self, "base_position", _finite_vector("base_position", self.base_position, 3)
+            self, "frame_position", _finite_vector("frame_position", self.frame_position, 3)
         )
-        object.__setattr__(self, "base_velocity", _finite_vector("base_velocity", self.base_velocity, 3))
+        object.__setattr__(
+            self,
+            "frame_linear_velocity",
+            _finite_vector("frame_linear_velocity", self.frame_linear_velocity, 3),
+        )
 
     @classmethod
     def from_sensor_data(cls, sensor_data: Sequence[Real]) -> "MuJoCoLikeState":
@@ -283,8 +305,8 @@ class MuJoCoLikeState:
             imu_quaternion=values[offset : offset + 4],
             imu_gyroscope=values[offset + 4 : offset + 7],
             imu_accelerometer=values[offset + 7 : offset + 10],
-            base_position=values[offset + 10 : offset + 13],
-            base_velocity=values[offset + 13 : offset + 16],
+            frame_position=values[offset + 10 : offset + 13],
+            frame_linear_velocity=values[offset + 13 : offset + 16],
         )
 
     @classmethod
@@ -296,8 +318,8 @@ class MuJoCoLikeState:
             "imu_quaternion",
             "imu_gyroscope",
             "imu_accelerometer",
-            "base_position",
-            "base_velocity",
+            "frame_position",
+            "frame_linear_velocity",
         }
         if not isinstance(state, Mapping):
             raise Go2ProbeError("MuJoCo state must be a mapping")
@@ -388,8 +410,8 @@ def map_mujoco_state_to_probe(
     return Go2MappedState(
         low_state=LowStateProbe(motor_state=motor_state, imu_state=imu_state),
         sport_mode_state=SportModeStateProbe(
-            position=state.base_position,
-            velocity=state.base_velocity,
+            position=state.frame_position,
+            velocity=state.frame_linear_velocity,
         ),
     )
 
@@ -402,28 +424,25 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def verify_pinned_unitree_mujoco_checkout(root: str | Path) -> dict[str, str]:
-    """Verify key files in a caller-provided, already checked-out source tree.
-
-    This function never downloads, runs the simulator, or follows a symlink.
-    The caller still supplies the exact pinned checkout; this check binds the
-    bridge and Go2 MJCF bytes to the recorded source evidence hashes.
-    """
-
+def _verify_key_files(
+    root: str | Path,
+    expected_hashes: Mapping[str, str],
+    source_name: str,
+) -> dict[str, str]:
     root_path = Path(root)
     if root_path.is_symlink() or not root_path.is_dir():
-        raise Go2SourceEvidenceError("unitree_mujoco root must be a real directory")
+        raise Go2SourceEvidenceError(f"{source_name} key-file root must be a real directory")
     root_path = root_path.resolve()
     verified: dict[str, str] = {}
-    for relative, expected in UNITREE_MUJOCO_KEY_FILE_HASHES.items():
+    for relative, expected in expected_hashes.items():
         path = root_path / relative
         if path.is_symlink():
             raise Go2SourceEvidenceError(f"source key file must not be a symlink: {relative}")
         resolved = path.resolve()
         if root_path != resolved and root_path not in resolved.parents:
-            raise Go2SourceEvidenceError(f"source key file escapes checkout: {relative}")
+            raise Go2SourceEvidenceError(f"source key file escapes root: {relative}")
         if not path.is_file():
-            raise Go2SourceEvidenceError(f"missing source key file: {relative}")
+            raise Go2SourceEvidenceError(f"missing {source_name} key file: {relative}")
         actual = _sha256_file(path)
         if actual != expected:
             raise Go2SourceEvidenceError(
@@ -433,8 +452,28 @@ def verify_pinned_unitree_mujoco_checkout(root: str | Path) -> dict[str, str]:
     return verified
 
 
-def verify_pinned_unitree_distribution_identity() -> dict[str, str]:
-    """Check the exact optional SDK and CycloneDDS distributions."""
+def verify_unitree_mujoco_key_files(root: str | Path) -> dict[str, str]:
+    """Verify only recorded MuJoCo bridge/MJCF key-file bytes.
+
+    This function never downloads, runs the simulator, or follows a symlink.
+    It does not claim a complete checkout or asset closure.
+    """
+
+    return _verify_key_files(root, UNITREE_MUJOCO_KEY_FILE_HASHES, "unitree_mujoco")
+
+
+def verify_unitree_sdk2py_key_files(root: str | Path) -> dict[str, str]:
+    """Verify only recorded SDK key-file bytes supplied by the caller.
+
+    This does not claim a complete checkout or asset closure and never
+    downloads source.
+    """
+
+    return _verify_key_files(root, UNITREE_SDK2PY_KEY_FILE_HASHES, "unitree_sdk2py")
+
+
+def verify_unitree_distribution_versions() -> dict[str, str]:
+    """Check optional distribution versions, not installed artifact bytes."""
 
     expected = {
         UNITREE_SDK2PY_DISTRIBUTION: UNITREE_SDK2PY_VERSION,
@@ -447,7 +486,7 @@ def verify_pinned_unitree_distribution_identity() -> dict[str, str]:
         except metadata.PackageNotFoundError as exc:
             raise Go2ProbeUnavailable(f"optional distribution is missing: {distribution}") from exc
         if installed != version:
-            raise Go2ProbeIdentityError(
+            raise Go2ProbeVersionError(
                 f"{distribution}=={version} is required, installed {installed!r}"
             )
         actual[distribution] = installed
@@ -460,18 +499,24 @@ _REAL_SYMBOLS = {
         "ChannelPublisher",
         "ChannelSubscriber",
     ),
-    "unitree_sdk2py.idl.default": (
-        "unitree_go_msg_dds__LowCmd_",
-        "unitree_go_msg_dds__LowState_",
-        "unitree_go_msg_dds__SportModeState_",
-    ),
-    "unitree_sdk2py.idl.unitree_go.msg.dds_": (
-        "LowCmd_",
-        "LowState_",
-        "SportModeState_",
-    ),
-    "unitree_sdk2py.go2.sport.sport_client": ("SportClient",),
 }
+_REAL_FACTORY_TYPES = (
+    (
+        "LowCmd_",
+        "unitree_go_msg_dds__LowCmd_",
+        "unitree_sdk2py.idl.unitree_go.msg.dds_.LowCmd_",
+    ),
+    (
+        "LowState_",
+        "unitree_go_msg_dds__LowState_",
+        "unitree_sdk2py.idl.unitree_go.msg.dds_.LowState_",
+    ),
+    (
+        "SportModeState_",
+        "unitree_go_msg_dds__SportModeState_",
+        "unitree_sdk2py.idl.unitree_go.msg.dds_.SportModeState_",
+    ),
+)
 
 
 def probe_real_unitree_sdk_symbols() -> dict[str, Any]:
@@ -482,7 +527,7 @@ def probe_real_unitree_sdk_symbols() -> dict[str, Any]:
 
     if sys.platform != "linux":
         raise Go2ProbeUnavailable("real Unitree SDK/DDS probe requires Linux")
-    versions = verify_pinned_unitree_distribution_identity()
+    versions = verify_unitree_distribution_versions()
     imported: list[str] = []
     for module_name, symbols in _REAL_SYMBOLS.items():
         try:
@@ -492,12 +537,56 @@ def probe_real_unitree_sdk_symbols() -> dict[str, Any]:
         imported.append(module_name)
         missing = [symbol for symbol in symbols if not hasattr(module, symbol)]
         if missing:
-            raise Go2ProbeIdentityError(
+            raise Go2ProbeSymbolError(
                 f"real Unitree module {module_name} is missing symbols: {', '.join(missing)}"
+            )
+
+    try:
+        default_module = importlib.import_module("unitree_sdk2py.idl.default")
+        dds_module = importlib.import_module("unitree_sdk2py.idl.unitree_go.msg.dds_")
+    except ImportError as exc:
+        raise Go2ProbeUnavailable("real Unitree IDL modules are unavailable") from exc
+    imported.extend(
+        [
+            "unitree_sdk2py.idl.default",
+            "unitree_sdk2py.idl.unitree_go.msg.dds_",
+        ]
+    )
+
+    instances: dict[str, Any] = {}
+    for label, factory_name, type_path in _REAL_FACTORY_TYPES:
+        type_name = type_path.rsplit(".", 1)[-1]
+        factory = getattr(default_module, factory_name, None)
+        dds_type = getattr(dds_module, type_name, None)
+        if not callable(factory):
+            raise Go2ProbeSymbolError(f"{factory_name} must be callable")
+        if not isinstance(dds_type, type):
+            raise Go2ProbeSymbolError(f"{type_path} must be a class")
+        try:
+            instance = factory()
+        except Exception as exc:
+            raise Go2ProbeSymbolError(f"{factory_name} could not construct its type") from exc
+        if not isinstance(instance, dds_type):
+            raise Go2ProbeSymbolError(
+                f"{factory_name} did not return an instance of {type_path}"
+            )
+        instances[label] = instance
+
+    for label, field in (("LowCmd_", "motor_cmd"), ("LowState_", "motor_state")):
+        try:
+            slot_count = len(getattr(instances[label], field))
+        except (AttributeError, TypeError) as exc:
+            raise Go2ProbeSymbolError(f"{label}.{field} is not a sized container") from exc
+        if slot_count != DDS_MOTOR_SLOT_COUNT:
+            raise Go2ProbeSymbolError(
+                f"{label}.{field} must contain {DDS_MOTOR_SLOT_COUNT} slots, got {slot_count}"
             )
     return {
         "distribution_versions": versions,
         "modules": tuple(imported),
+        "factories": tuple(label for label, _, _ in _REAL_FACTORY_TYPES),
+        "types": tuple(type_path for _, _, type_path in _REAL_FACTORY_TYPES),
+        "container_widths": {"LowCmd_.motor_cmd": 20, "LowState_.motor_state": 20},
         "dds_initialized": False,
         "route": "LOW_LEVEL_ONLY",
     }
