@@ -54,7 +54,7 @@
     "source_files": [
       {
         "path": "general_demo/src/autoadapter2/integrations/so_arm101/translation.py",
-        "sha256": "33c21fce08b1ec3b70d2ceeb4954309c6806d88debb9c75bd314f4f4cc026a56"
+        "sha256": "53e4e0aca94f11b308dab25ab567e52fc9e28e7be2300ea6339e5f9ce2263886"
       },
       {
         "path": "general_demo/src/autoadapter2/integrations/so_arm101/feetech_protocol.py",

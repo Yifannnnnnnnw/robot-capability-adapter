@@ -2,14 +2,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import select
+import time
 from pathlib import Path
 
 import pytest
 
 from autoadapter2.integrations.so_arm101.feetech_protocol import (
     GOAL_POSITION,
+    INST_PING,
+    INST_READ,
     INST_WRITE,
     MOTOR_IDS,
+    MODEL_NUMBER,
     PRESENT_POSITION,
     ChecksumError,
     ProtocolError,
@@ -17,6 +23,7 @@ from autoadapter2.integrations.so_arm101.feetech_protocol import (
     encode_packet,
     encode_sync_read,
     encode_sync_write,
+    pop_frames,
 )
 from autoadapter2.integrations.so_arm101.translation import FeetechPTYTranslation
 
@@ -121,6 +128,37 @@ def test_installed_pty_worker_closes_without_fd_race() -> None:
         assert translation.health()["thread_error"] is None
         assert translation.is_open is False
         assert backend.closed is True
+
+
+def test_installed_pty_answers_sequential_sdk_ping_and_model_reads() -> None:
+    backend = FakePositionBackend()
+    translation = FeetechPTYTranslation(backend)
+    port = translation.install()
+    fd = os.open(port, os.O_RDWR | os.O_NOCTTY)
+    buffer = bytearray()
+
+    def receive() -> bytes:
+        deadline = time.monotonic() + 0.1
+        while time.monotonic() < deadline:
+            readable, _, _ = select.select([fd], [], [], max(0.0, deadline - time.monotonic()))
+            if readable:
+                buffer.extend(os.read(fd, 4096))
+                frames = pop_frames(buffer)
+                if frames:
+                    return frames[0]
+        raise AssertionError("PTY did not answer the SDK-shaped request")
+
+    try:
+        for motor_id in MOTOR_IDS.values():
+            os.write(fd, encode_packet(motor_id, INST_PING))
+            assert decode_packet(receive()).motor_id == motor_id
+            os.write(fd, encode_packet(motor_id, INST_READ, MODEL_NUMBER))
+            response = decode_packet(receive())
+            assert response.motor_id == motor_id
+            assert int.from_bytes(response.params, "little") == 777
+    finally:
+        os.close(fd)
+        translation.close()
 
 
 def test_draft_records_bind_exact_implementation_and_runtime_bytes() -> None:

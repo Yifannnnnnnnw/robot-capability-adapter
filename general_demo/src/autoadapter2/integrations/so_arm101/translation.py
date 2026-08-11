@@ -220,6 +220,7 @@ class FeetechPTYTranslation:
         self._master_fd: int | None = None
         self._slave_fd: int | None = None
         self._stop = threading.Event()
+        self._worker_ready = threading.Event()
         self._thread: threading.Thread | None = None
         self._lock = threading.RLock()
         self._goal_condition = threading.Condition(self._lock)
@@ -280,9 +281,13 @@ class FeetechPTYTranslation:
             raise
         self._master_fd, self._slave_fd = master_fd, slave_fd
         self._stop.clear()
+        self._worker_ready.clear()
         self._thread_error = None
         self._thread = threading.Thread(target=self._serve, name="so101-feetech-pty", daemon=True)
         self._thread.start()
+        if not self._worker_ready.wait(timeout=1.0):
+            self.close()
+            raise RuntimeError("Feetech PTY worker did not become ready")
         return self.port
 
     def __enter__(self) -> "FeetechPTYTranslation":
@@ -394,8 +399,13 @@ class FeetechPTYTranslation:
         master_fd = self._master_fd
         buffer = bytearray()
         try:
+            self._worker_ready.set()
             while not self._stop.is_set():
-                readable, _, _ = select.select([master_fd], [], [], 0.05)
+                # The pinned Feetech SDK gives a 6-byte status response roughly
+                # 10 ms at 1 Mbaud.  A 50 ms polling interval made valid pings
+                # intermittently time out on Linux.  Poll below that transport
+                # deadline; this is response scheduling, not a hidden retry.
+                readable, _, _ = select.select([master_fd], [], [], 0.001)
                 if not readable:
                     continue
                 try:
