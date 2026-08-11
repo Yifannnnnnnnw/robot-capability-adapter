@@ -1,0 +1,64 @@
+{
+  "probe_status": "PROPOSED_SOURCE_EVIDENCE",
+  "admission_status": "NOT_ADMITTED",
+  "authority_class": "SOURCE_EVIDENCE_ONLY",
+  "formal_schema": null,
+  "formal_reference": null,
+  "purpose": "Technical feasibility probe for a real LeRobot SO-ARM101 follower serial path and source pins for later Go2 investigation.",
+  "scope": {
+    "so_arm101": "raw Feetech Protocol 0 codec and optional Linux PTY peer",
+    "go2": "source pins only; no shim, SDK adapter, simulator, or formal record",
+    "phase2_status": "probe_only"
+  },
+  "sources": [
+    {
+      "name": "LeRobot",
+      "version": "0.6.0",
+      "source_commit": "30da8e687a6dfc617fcd94afc367ac7071c376ce",
+      "source_url": "https://github.com/huggingface/lerobot/commit/30da8e687a6dfc617fcd94afc367ac7071c376ce",
+      "license": "Apache-2.0",
+      "role": "real SO101Follower and FeetechMotorsBus under test",
+      "distribution": {
+        "kind": "wheel",
+        "sha256": "b38a564fbc441d98380576863bf68635dde5fc2c42ddc2a39d0486640dc9e9a8"
+      }
+    },
+    {
+      "name": "SO-ARM100 official model repository",
+      "version": null,
+      "source_commit": "7629d2ad9853d10fb903093a33ef6114099d97e5",
+      "source_url": "https://github.com/TheRobotStudio/SO-ARM100/commit/7629d2ad9853d10fb903093a33ef6114099d97e5",
+      "license": "Apache-2.0",
+      "role": "official SO-ARM source pin only"
+    },
+    {
+      "name": "Unitree SDK2Py",
+      "version": null,
+      "source_commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
+      "source_url": "https://github.com/unitreerobotics/unitree_sdk2_python/commit/65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5",
+      "license": "BSD-3-Clause",
+      "role": "Go2 source pin only; not imported by this probe"
+    },
+    {
+      "name": "unitree_mujoco",
+      "version": null,
+      "source_commit": "ae6a8403e272733e9996ef59990880330496177f",
+      "source_url": "https://github.com/unitreerobotics/unitree_mujoco/commit/ae6a8403e272733e9996ef59990880330496177f",
+      "license": "BSD-3-Clause",
+      "role": "Go2 source pin only; not imported by this probe"
+    },
+    {
+      "name": "feetech-servo-sdk",
+      "version": "1.0.0",
+      "source_commit": null,
+      "source_url": "https://pypi.org/project/feetech-servo-sdk/1.0.0/",
+      "license": "Unlicense",
+      "role": "direct runtime dependency for the real Feetech path",
+      "distribution": {
+        "kind": "sdist",
+        "sha256": "d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c"
+      },
+      "provenance": "THIRD_PARTY_DISTRIBUTION_NOT_HF_OR_FEETECH_OFFICIAL"
+    }
+  ]
+}
