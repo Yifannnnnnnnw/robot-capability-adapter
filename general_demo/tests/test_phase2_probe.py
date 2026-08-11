@@ -24,7 +24,10 @@ from probes.phase2 import real_lerobot
 from probes.phase2.real_lerobot import (
     RealProbeIdentityError,
     RealProbeUnavailable,
+    SO101_PROBE_ACTION,
+    build_so101_calibration,
     run_real_so101_probe,
+    so101_action_to_raw_ticks,
 )
 from probes.phase2.virtual_feetech import VirtualFeetechDevice, VirtualFeetechPTY
 
@@ -139,6 +142,53 @@ def test_so101_mapping_is_six_named_motors_with_ids_one_through_six():
     assert SO101_MOTOR_IDS == {name: index for index, name in enumerate(SO101_MOTOR_NAMES, 1)}
 
 
+def test_real_probe_calibration_json_shape_is_explicit_for_all_six_motors():
+    calibration = build_so101_calibration()
+    assert set(calibration) == set(SO101_MOTOR_NAMES)
+    assert calibration == {
+        name: {
+            "id": index,
+            "drive_mode": 0,
+            "homing_offset": 0,
+            "range_min": 0,
+            "range_max": 4095,
+        }
+        for index, name in enumerate(SO101_MOTOR_NAMES, 1)
+    }
+
+
+def test_real_probe_action_maps_to_distinct_expected_raw_ticks():
+    assert len(set(SO101_PROBE_ACTION.values())) == 6
+    assert so101_action_to_raw_ticks(SO101_PROBE_ACTION) == {
+        1: 1706,
+        2: 1933,
+        3: 2161,
+        4: 2388,
+        5: 2616,
+        6: 1023,
+    }
+
+
+def test_real_probe_rejects_arbitrary_serial_string():
+    with pytest.raises(TypeError):
+        run_real_so101_probe("/dev/ttyUSB0")
+
+
+def test_real_probe_rejects_unopened_project_pty():
+    virtual_port = VirtualFeetechPTY()
+    assert not virtual_port.is_open
+    with pytest.raises(ValueError):
+        run_real_so101_probe(virtual_port)
+
+
+def test_project_owned_pty_is_open_only_inside_context():
+    virtual_port = VirtualFeetechPTY()
+    with virtual_port:
+        assert virtual_port.is_open
+        assert virtual_port.port
+    assert not virtual_port.is_open
+
+
 def test_real_probe_accepts_exact_distribution_versions_without_importing_optional_stack(monkeypatch):
     versions = {"lerobot": "0.6.0", "feetech-servo-sdk": "1.0.0"}
     monkeypatch.setattr(real_lerobot.metadata, "version", versions.__getitem__)
@@ -168,8 +218,14 @@ def test_real_probe_wrong_distribution_version_is_identity_error_not_skip(monkey
 def test_real_pinned_lerobot_so101_uses_real_bus_over_pty():
     try:
         with VirtualFeetechPTY() as virtual_port:
-            result = run_real_so101_probe(virtual_port.port)
+            result = run_real_so101_probe(virtual_port)
+            expected_raw = so101_action_to_raw_ticks(SO101_PROBE_ACTION)
+            assert result.sent_action == SO101_PROBE_ACTION
+            assert virtual_port.device.goal_positions == expected_raw
+            observed_raw = so101_action_to_raw_ticks(result.observation)
+            assert all(
+                abs(observed_raw[motor_id] - expected_tick) <= 1
+                for motor_id, expected_tick in expected_raw.items()
+            )
     except RealProbeUnavailable as exc:
         pytest.skip(str(exc))
-    assert set(result.sent_action) == {f"{name}.pos" for name in SO101_MOTOR_NAMES}
-    assert set(result.observation) == {f"{name}.pos" for name in SO101_MOTOR_NAMES}

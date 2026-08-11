@@ -15,7 +15,9 @@ and packet operations needed by the real LeRobot 0.6.0 follower path:
 
 `real_lerobot.py` lazily imports the pinned real `SO101Follower`,
 `FeetechMotorsBus`, and `scservo_sdk`; when the optional stack is available on
-Linux, the integration test connects the real classes to the PTY and performs
+Linux, the integration test passes the opened, project-owned
+`VirtualFeetechPTY` object to the runner. The runner rejects strings and
+external serial paths, then connects the real classes to that PTY and performs
 `connect(configure)`, `send_action`, and `get_observation`. On the current
 macOS environment that test is skipped explicitly because this probe's real
 PTY integration is Linux-only. Missing optional packages also cause a clear

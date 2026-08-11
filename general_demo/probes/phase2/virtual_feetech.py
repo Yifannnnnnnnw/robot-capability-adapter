@@ -190,6 +190,18 @@ class VirtualFeetechPTY:
             raise RuntimeError("PTY is not open")
         return os.ttyname(self._slave_fd)
 
+    @property
+    def is_open(self) -> bool:
+        if self._master_fd is None or self._slave_fd is None or self._stop.is_set():
+            return False
+        try:
+            os.fstat(self._master_fd)
+            os.fstat(self._slave_fd)
+            os.ttyname(self._slave_fd)
+        except OSError:
+            return False
+        return True
+
     def __enter__(self) -> "VirtualFeetechPTY":
         self._master_fd, self._slave_fd = pty.openpty()
         tty.setraw(self._slave_fd)
