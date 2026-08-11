@@ -1,5 +1,6 @@
 import json
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ from probes.phase2.feetech_wire import (
     SO101_MOTOR_IDS,
     SO101_MOTOR_NAMES,
     ChecksumError,
+    FeetechProtocolError,
     decode_packet,
     decode_status_packet,
     decode_sync_write,
@@ -19,12 +21,14 @@ from probes.phase2.feetech_wire import (
     encode_status_packet,
     encode_sync_read,
     encode_sync_write,
+    INST_WRITE,
 )
 from probes.phase2 import real_lerobot
 from probes.phase2.real_lerobot import (
     RealProbeIdentityError,
     RealProbeUnavailable,
     SO101_PROBE_ACTION,
+    _cleanup_real_follower,
     build_so101_calibration,
     run_real_so101_probe,
     so101_action_to_raw_ticks,
@@ -130,6 +134,28 @@ def test_sync_read_present_position_returns_six_status_packets():
     assert observed == positions
 
 
+def test_virtual_device_allows_explicit_configure_protection_registers():
+    device = VirtualFeetechDevice()
+    for address, width in ((16, 2), (28, 2), (36, 1)):
+        response = device.handle_frame(encode_packet(1, INST_WRITE, bytes((address,)) + bytes(width)))
+        assert decode_status_packet(response[0]).error == 0
+
+
+@pytest.mark.parametrize(
+    "instruction, params",
+    [
+        (INST_READ, bytes((99, 1))),  # unknown address
+        (INST_READ, bytes((GOAL_POSITION[0], 1))),  # known address, wrong width
+        (INST_WRITE, bytes((99, 0))),  # unknown address
+        (INST_WRITE, bytes((GOAL_POSITION[0], 0))),  # known address, wrong width
+    ],
+)
+def test_virtual_device_rejects_unknown_or_wrong_width_register_access(instruction, params):
+    device = VirtualFeetechDevice()
+    with pytest.raises(FeetechProtocolError):
+        device.handle_frame(encode_packet(1, instruction, params))
+
+
 def test_so101_mapping_is_six_named_motors_with_ids_one_through_six():
     assert SO101_MOTOR_NAMES == (
         "shoulder_pan",
@@ -187,6 +213,50 @@ def test_project_owned_pty_is_open_only_inside_context():
         assert virtual_port.is_open
         assert virtual_port.port
     assert not virtual_port.is_open
+
+
+class _CleanupFakeFollower:
+    def __init__(self, follower_connected, bus_connected, cleanup_error=None):
+        self.is_connected = follower_connected
+        self.bus = SimpleNamespace(is_connected=bus_connected)
+        self.cleanup_error = cleanup_error
+        self.disconnect_calls = 0
+
+    def disconnect(self):
+        self.disconnect_calls += 1
+        if self.cleanup_error is not None:
+            raise self.cleanup_error
+        self.is_connected = False
+        self.bus.is_connected = False
+
+
+def test_cleanup_uses_bus_state_when_connect_failed_before_connected_flag():
+    follower = _CleanupFakeFollower(follower_connected=False, bus_connected=True)
+    _cleanup_real_follower(follower, RuntimeError("primary connect failure"))
+    assert follower.disconnect_calls == 1
+
+
+def test_cleanup_failure_preserves_primary_and_exposes_without_primary():
+    primary = ValueError("primary failure")
+    with pytest.raises(ValueError, match="primary failure"):
+        follower = _CleanupFakeFollower(
+            follower_connected=False,
+            bus_connected=True,
+            cleanup_error=RuntimeError("cleanup failure"),
+        )
+        try:
+            raise primary
+        except BaseException as primary_error:
+            _cleanup_real_follower(follower, primary_error)
+            raise
+
+    follower = _CleanupFakeFollower(
+        follower_connected=False,
+        bus_connected=True,
+        cleanup_error=RuntimeError("cleanup failure"),
+    )
+    with pytest.raises(RuntimeError, match="cleanup failure"):
+        _cleanup_real_follower(follower, None)
 
 
 def test_real_probe_accepts_exact_distribution_versions_without_importing_optional_stack(monkeypatch):

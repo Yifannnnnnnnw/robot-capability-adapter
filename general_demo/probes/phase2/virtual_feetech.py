@@ -41,6 +41,46 @@ def _little_endian(value: int, width: int) -> bytes:
     return int(value).to_bytes(width, "little", signed=False)
 
 
+# Explicit STS3215 subset used by the real LeRobot 0.6.0 path.  Reads and
+# writes outside this table, or with a different width, are probe errors rather
+# than zero-filled/auto-created behavior.
+STS3215_REGISTER_WIDTHS = {
+    FIRMWARE_MAJOR_VERSION[0]: FIRMWARE_MAJOR_VERSION[1],
+    FIRMWARE_MINOR_VERSION[0]: FIRMWARE_MINOR_VERSION[1],
+    MODEL_NUMBER[0]: MODEL_NUMBER[1],
+    5: 1,
+    6: 1,
+    7: 1,
+    9: 2,
+    11: 2,
+    16: 2,  # Max_Torque_Limit
+    18: 1,
+    21: 1,
+    22: 1,
+    23: 1,
+    28: 2,  # Protection_Current
+    31: 2,
+    33: 1,
+    36: 1,  # Overload_Torque
+    40: 1,
+    41: 1,
+    GOAL_POSITION[0]: GOAL_POSITION[1],
+    44: 2,
+    46: 2,
+    48: 2,
+    55: 1,
+    PRESENT_POSITION[0]: PRESENT_POSITION[1],
+    58: 2,
+    60: 2,
+    62: 1,
+    63: 1,
+    65: 1,
+    66: 1,
+    69: 2,
+    85: 1,
+}
+
+
 class VirtualFeetechDevice:
     """Handle just enough STS3215 registers for connect/configure/read/write."""
 
@@ -62,6 +102,9 @@ class VirtualFeetechDevice:
             if not 0 <= position <= 4095:
                 raise ValueError("STS3215 positions must be in the 12-bit range")
             self._registers[motor_id] = {
+                address: bytes(width) for address, width in STS3215_REGISTER_WIDTHS.items()
+            }
+            self._registers[motor_id].update({
                 MODEL_NUMBER[0]: _little_endian(777, MODEL_NUMBER[1]),
                 FIRMWARE_MAJOR_VERSION[0]: b"\x01",
                 FIRMWARE_MINOR_VERSION[0]: b"\x01",
@@ -70,12 +113,15 @@ class VirtualFeetechDevice:
                 7: b"\x00",  # minimum return delay
                 9: _little_endian(0, 2),
                 11: _little_endian(4095, 2),
+                16: _little_endian(1000, 2),
                 18: b"\x00",  # phase
                 21: b"\x00",  # P
                 22: b"\x00",  # D
                 23: b"\x00",  # I
+                28: _little_endian(1000, 2),
                 31: _little_endian(0, 2),
                 33: b"\x00",  # position mode
+                36: b"\x00",
                 40: b"\x00",  # torque disabled while configuring
                 41: b"\x00",
                 GOAL_POSITION[0]: _little_endian(position, GOAL_POSITION[1]),
@@ -92,7 +138,7 @@ class VirtualFeetechDevice:
                 66: b"\x00",
                 69: _little_endian(0, 2),
                 85: b"\x00",
-            }
+            })
 
     @property
     def goal_positions(self) -> dict[int, int]:
@@ -106,13 +152,26 @@ class VirtualFeetechDevice:
         }
 
     def _read(self, motor_id: int, address: int, data_length: int) -> bytes:
-        value = self._registers[motor_id].get(address, b"")
-        return value[:data_length].ljust(data_length, b"\x00")
+        expected_width = STS3215_REGISTER_WIDTHS.get(address)
+        if expected_width is None:
+            raise FeetechProtocolError(f"unknown STS3215 register address {address}")
+        if data_length != expected_width:
+            raise FeetechProtocolError(
+                f"register {address} requires width {expected_width}, got {data_length}"
+            )
+        return self._registers[motor_id][address]
 
     def _read_int(self, motor_id: int, address: int, data_length: int) -> int:
         return int.from_bytes(self._read(motor_id, address, data_length), "little")
 
     def _write(self, motor_id: int, address: int, data: bytes) -> None:
+        expected_width = STS3215_REGISTER_WIDTHS.get(address)
+        if expected_width is None:
+            raise FeetechProtocolError(f"unknown STS3215 register address {address}")
+        if len(data) != expected_width:
+            raise FeetechProtocolError(
+                f"register {address} requires width {expected_width}, got {len(data)}"
+            )
         self._registers[motor_id][address] = bytes(data)
         if address == GOAL_POSITION[0] and len(data) == GOAL_POSITION[1]:
             # A deterministic wire probe has no dynamics; make the observed
@@ -131,8 +190,10 @@ class VirtualFeetechDevice:
             return ()
 
         if packet.instruction == INST_READ:
-            if packet.motor_id not in self._registers or len(packet.params) != 2:
+            if packet.motor_id not in self._registers:
                 return ()
+            if len(packet.params) != 2:
+                raise FeetechProtocolError("read packet needs address and exact register width")
             address, data_length = packet.params
             return (
                 encode_status_packet(
@@ -141,8 +202,10 @@ class VirtualFeetechDevice:
             )
 
         if packet.instruction == INST_WRITE:
-            if packet.motor_id not in self._registers or len(packet.params) < 2:
+            if packet.motor_id not in self._registers:
                 return ()
+            if len(packet.params) < 1:
+                raise FeetechProtocolError("write packet needs a register address")
             self._write(packet.motor_id, packet.params[0], packet.params[1:])
             return (encode_status_packet(packet.motor_id),)
 

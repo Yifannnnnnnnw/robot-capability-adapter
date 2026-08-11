@@ -135,6 +135,43 @@ def _load_real_symbols():
     return SO101Follower, SO101FollowerConfig, FeetechMotorsBus
 
 
+def _resource_is_connected(follower: Any) -> bool:
+    """Conservatively inspect both the follower and its underlying bus."""
+
+    state_error = False
+    try:
+        bus = follower.bus
+    except BaseException:
+        bus = None
+        state_error = True
+
+    for resource in (follower, bus):
+        if resource is None:
+            continue
+        try:
+            if bool(resource.is_connected):
+                return True
+        except BaseException:
+            state_error = True
+
+    # If state cannot be read, attempt cleanup rather than risk leaking an
+    # opened port.  A primary exception still controls propagation below.
+    return state_error
+
+
+def _cleanup_real_follower(follower: Any, primary_error: BaseException | None) -> None:
+    """Disconnect when resources may be open without masking a primary error."""
+
+    if not _resource_is_connected(follower):
+        return
+    try:
+        follower.disconnect()
+    except BaseException as cleanup_error:
+        if primary_error is None:
+            raise
+        primary_error.add_note(f"real probe cleanup failed: {cleanup_error!r}")
+
+
 def run_real_so101_probe(virtual_pty: VirtualFeetechPTY) -> RealProbeResult:
     """Run real LeRobot calls only against this project's opened virtual PTY."""
 
@@ -162,13 +199,14 @@ def run_real_so101_probe(virtual_pty: VirtualFeetechPTY) -> RealProbeResult:
         if not isinstance(follower.bus, FeetechMotorsBus):
             raise RuntimeError("SO101Follower did not construct the real FeetechMotorsBus")
 
-        connected = False
+        primary_error: BaseException | None = None
         try:
             follower.connect(calibrate=False)
-            connected = True
             sent_action = dict(follower.send_action(SO101_PROBE_ACTION))
             observation = dict(follower.get_observation())
             return RealProbeResult(sent_action=sent_action, observation=observation)
+        except BaseException as exc:
+            primary_error = exc
+            raise
         finally:
-            if connected:
-                follower.disconnect()
+            _cleanup_real_follower(follower, primary_error)
