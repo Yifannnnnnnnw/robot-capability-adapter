@@ -4,7 +4,7 @@
 > **Authority status:** `ACTIVE` — sole normative project document  
 > **Normative language:** English  
 > **Chinese text:** auxiliary reading support only  
-> **Document revision:** `0.16.0`
+> **Document revision:** `0.16.1`
 > **Effective date:** 2026-08-11
 > **Current project state:** experiment-grade two-robot General Demo implementation is authorized; exact robot/SDK/Translation facts, Readiness rules, and robot-scoped fixed Demo task collections and private criteria are frozen, while enterprise-style registry and attestation machinery is explicitly excluded
 
@@ -706,7 +706,7 @@ required. Compatibility and Readiness code must be source-driven and tested agai
 SO-ARM101 and Go2 records, not only against synthetic one-joint fixtures.
 
 Where later retained text uses `admitted` for a Morphology, SDK, Translation, runtime, or RIM
-record, revision 0.16.0 interprets it only as: its direct project checks passed and its containing
+record, revision 0.16.1 interprets it only as: its direct project checks passed and its containing
 integration manifest is `READY`. It never implies an external registry or event lifecycle.
 
 **中文辅助说明。** 这是一套实验项目合同，不是企业发布系统。每款机器人只有一份集成清单；
@@ -1037,20 +1037,21 @@ task records explicitly approved by the user enter the mainline Tasks Library. B
 records contain private criteria as well as descriptions, the Framework derives recipient-specific
 views rather than exposing a full catalog to Generation or the Demo Consumer.
 
-The first mainline population contains the 28 reviewed tasks for
-`so-arm101-follower-stock-gripper` and the five reviewed locomotion/posture tasks needed for
+The first mainline population contains 28 reviewed tasks for
+`so-arm101-follower-stock-gripper` and 26 reviewed tasks (`G01`–`G26`) for
 `unitree-go2-stock-12dof`. The generalized machine-readable record schema and future cross-robot
 catalog rules remain open, but that future work cannot move the Library back to a root document or
 change the frozen first-Demo task content below.
 
-The Go2 package now contains 26 researched task concepts: the five admitted records below plus 21
-additional candidates (`G06`–`G26`) gathered from official Unitree sources and public quadruped
-benchmarks/research. The additional candidates remain isolated in
-`candidate_review_queue.json`; they are not part of the admitted catalog, Stage 1 projection, or
-Demo collection. Research output is not admission: each candidate's description, exact
-configuration applicability, difficulty annotation, private criterion, required observations, and
-scene assets still require explicit user approval before promotion into the admitted catalog. The
-five frozen Go2 Demo tasks below therefore remain the only currently admitted Go2 tasks.
+All 26 Go2 task identities, descriptions, exact-configuration applicability records, source
+provenance, and robot-specific difficulty rationales are human-approved Library content. `G06`–
+`G26` were gathered from official Unitree sources and public quadruped benchmarks/research, then
+adapted for the exact admitted low-level Go2 configuration. Their private criteria are approved
+semantic templates, not executable formal criteria: numerical thresholds, observation and scene
+bindings, safety details, timing and aggregation remain unfrozen until one of those tasks is
+selected for a future executable collection. They therefore cannot enter a formal run merely by
+being present in the admitted catalog. The first Demo and its Stage 1 task projection remain fixed
+to `G01`–`G05`; admission of `G06`–`G26` does not expand or modify that collection.
 
 Candidate tasks are adapted and normalized for the target robot, then organized by task type or
 family and by difficulty for the exact robot configuration. An upstream benchmark's difficulty
@@ -1663,7 +1664,7 @@ issuer, or `RIM_RESOLVED`/`INTEGRATION_READY` event exists.
 |---|---|---|---:|---|
 | Decision | `DEC-LIB-001` | `APPROVED` | 4 | Run-input assembly and the four first-class mainline Library families, including versioned Tasks records below `general_demo/libraries/tasks/` |
 | Decision | `DEC-RIM-001` | `FROZEN` | 3 | One direct content-addressed integration manifest for each exact v1 robot route; deterministic compatibility checks; no activation, revocation, or registry lifecycle |
-| Decision | `DEC-TASK-001` | `FROZEN` | 5 | Public benchmark/research sourcing, robot-specific curation, the 28-task SO-ARM101 admitted batch, the five-task Go2 admitted batch, and human review before any additional researched candidate is admitted |
+| Decision | `DEC-TASK-001` | `FROZEN` | 6 | Public benchmark/research sourcing, robot-specific curation, the 28-task SO-ARM101 admitted batch, and the 26-task Go2 admitted batch; `G06`–`G26` have approved semantic templates but require separately frozen executable parameters before future formal selection |
 | Decision | `DEC-TASK-002` | `FROZEN` | 4 | Exact robot-scoped fixed five-task collections and private criteria for SO-ARM101 and Go2, description-only visibility, all-five execution, and strict separation from capability-validation standards and Blue Line |
 | Decision | `DEC-TASK-003` | `FROZEN` | 2 | Versioned mainline Tasks Library ownership below `general_demo/libraries/tasks/`, reviewed-only admission, human/private views, recipient-specific projections, and retirement of the root drafting catalog |
 | Decision | `DEC-MORPH-001` | `FROZEN` | 4 | Three-class layout plus exact SO-ARM101/Go2 v1 configurations, source/model pins, MuJoCo 3.3.6 realization, reset threshold and admission boundary |
@@ -1674,7 +1675,7 @@ issuer, or `RIM_RESOLVED`/`INTEGRATION_READY` event exists.
 | Decision | `DEC-READY-001` | `FROZEN` | 3 | Exact Readiness profile, six checks, numerical/time limits, immutable content-addressed reports, and invalidation contract |
 | Decision | `DEC-INTEG-GATE-001` | `FROZEN` | 3 | Experiment-grade direct gate over one READY integration manifest, one matching PASS Readiness report, and one frozen run snapshot; enterprise registries and attestation machinery excluded |
 | Open question | `OQ-TASK-001` | `OPEN` | — | Cross-robot difficulty comparability, infeasible/inapplicable-task representation, machine-readable record schema, and review fields |
-| Open question | `OQ-TASK-002` | `OPEN` | — | Human review and possible admission of the 21 researched Go2 candidates beyond its five admitted Demo tasks; catalogs for remaining robot configurations; cross-catalog type taxonomy; and executable pass-criterion schema |
+| Open question | `OQ-TASK-002` | `OPEN` | — | Executable numerical, observation, scene, safety, timing and aggregation parameters for Go2 `G06`–`G26` if selected in a future run; catalogs for remaining robot configurations; cross-catalog type taxonomy; and executable pass-criterion schema |
 | Open question | `OQ-MORPH-001` | `OPEN` | — | Environment-composition rules beyond the two fixed v1 robot entries and future shared-component promotion criteria |
 
 ### 4.2 Capability-Layer Generation
@@ -2700,7 +2701,7 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 | Prior benchmark | repository `981526092/auto-adapter`, pinned audit commit `585eb1f1fde33f17f5f9a1e169a18dd41f97b586` | Prior-work evidence and permitted asset source |
 | High-level architecture image | `research_assets/autoadapter_high_level_framework_2026-08-08.png` | Confirmed architecture source |
 | General Demo Tasks Library | `general_demo/libraries/tasks/**` | Formal mainline location for versioned robot-scoped task catalogs, fixed Demo collections, recipient views, and Harness-private criteria; no root-level drafting document is a parallel Library source |
-| Go2 task-candidate research registry | `general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/candidate_review_queue.json` | Primary-source-linked research record for `G06`–`G26`; these entries are review-only and neither source provenance nor location under the Tasks Library admits a task, difficulty, criterion, threshold, observation contract, or scene asset |
+| Go2 reviewed Tasks Library catalog | `general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/catalog.json` and `evaluation_private.json` | Primary-source-linked admitted task records for `G01`–`G26`; `G06`–`G26` have approved semantic private-criterion templates but no frozen numerical, observation, scene, safety, timing or aggregation parameters and are not in the fixed first-Demo collection |
 | Human capability-validation preparation catalog | `general_demo/private_governance/blue_line/standards/reference_candidates.json` | Cleaned mainline migration of the initial Project Validation Standards Reference candidates; it is separate from Tasks Library content, and only reviewed records selected into a frozen comparison Snapshot govern formal Validation |
 
 ---
@@ -2717,7 +2718,7 @@ preserve obsolete questions.
 | RQ1 protocol | Exact producer endpoints; Consumer models/policies and training/freeze points; isolated-Stage-2 versus end-to-end allocation; fixed Capability Design/capability-set/suite selection; stage/Consumer budgets, repetitions, tasks, seeds, and frozen reference layer | `OQ-RQ1-001` |
 | RQ3 protocol | Robot sampling hierarchy, functionally matched task families, and frozen multi-robot Validation Standards Snapshot partitions | `OQ-RQ3-001` |
 | Structured observation | State schema, entities, frames/units, precision, timestamp, and deterministic update cadence | `OQ-OBS-001` |
-| Tasks Library | Cross-robot difficulty rules, inapplicable tasks, generalized machine/executable criterion schema, human review and possible admission of the 21 researched Go2 candidates beyond the five admitted Demo tasks, remaining robot catalogs, and cross-catalog type taxonomy | `OQ-TASK-001`, `OQ-TASK-002` |
+| Tasks Library | Cross-robot difficulty rules, inapplicable tasks, generalized machine/executable criterion schema, executable parameters for Go2 `G06`–`G26` if later selected, remaining robot catalogs, and cross-catalog type taxonomy | `OQ-TASK-001`, `OQ-TASK-002` |
 | Future Morphology expansion | Environment composition beyond the two frozen v1 entries and later shared-component promotion rules | `OQ-MORPH-001` |
 | Generation | Exact Stage Bundle projections, Capability Design fields/JSON Schema/checker, Stage 1 Conformance Repair budget, Python Binding Contract/skeleton and Manifest schemas, Stage 1/Stage 2 prompts, dependency/isolation rules, inference retry/cache/token accounting, artifact binding, tuning/freeze, canonicalization, and reproducibility | `OQ-GEN-001` |
 | Development Sandbox | Probe suite, tool schema, feedback redaction, separate call/episode/simulated-time/control-step/output/wall-time caps, failure accounting, and audit evidence | `OQ-SANDBOX-001` |

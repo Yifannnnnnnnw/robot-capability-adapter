@@ -98,14 +98,56 @@ def test_projection_is_copied_and_can_be_consumed_by_stage1_without_private_data
     assert "criterion" not in json.dumps(fixture.calls[0]["inputs"]).lower()
 
 
-def test_go2_candidates_are_review_only_and_unknown_ids_fail_closed() -> None:
+def _contains_number(value) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return True
+    if isinstance(value, dict):
+        return any(_contains_number(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_number(item) for item in value)
+    return False
+
+
+def test_go2_expanded_catalog_is_approved_but_fixed_demo_remains_five() -> None:
     package = TasksLibrary(TASKS_ROOT).load("unitree-go2-stock-12dof", "1.0.0")
-    candidates = package.review_candidates()
-    assert len(candidates) == 21
-    assert {item["task_id"] for item in candidates} == {f"G{number:02d}" for number in range(6, 27)}
-    assert [item["task_id"] for item in package.review_candidates(["G06", "G26"])] == ["G06", "G26"]
+    catalog = json.loads(
+        (TASKS_ROOT / "unitree-go2-stock-12dof/1.0.0/catalog.json").read_text()
+    )
+    private = json.loads(
+        (TASKS_ROOT / "unitree-go2-stock-12dof/1.0.0/evaluation_private.json").read_text()
+    )
+
+    assert len(catalog["tasks"]) == len(private["criteria"]) == 26
+    assert {item["task_id"] for item in catalog["tasks"]} == {
+        f"G{number:02d}" for number in range(1, 27)
+    }
+    assert all(item["task_review_status"] == "HUMAN_APPROVED" for item in catalog["tasks"])
+    assert all(
+        item["applicability_status"] == "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+        for item in catalog["tasks"]
+    )
+    assert package.review_candidates() == []
     with pytest.raises(ContractError, match="unknown review candidate"):
-        package.review_candidates(["G01"])
+        package.review_candidates(["G06"])
+
+    public_ids = [item["task_id"] for item in package.demo_public_tasks("go2-approved-catalog")]
+    assert public_ids == ["G01", "G02", "G03", "G04", "G05"]
+    projection = json.dumps(package.stage1_projection("go2-approved-catalog"))
+    assert not any(task_id in projection for task_id in ("G06", "G26"))
+
+    expanded_criteria = [
+        item for item in private["criteria"] if item["task_id"] in {f"G{number:02d}" for number in range(6, 27)}
+    ]
+    assert len(expanded_criteria) == 21
+    assert all(
+        item["criterion_status"]
+        == "HUMAN_APPROVED_SEMANTIC_TEMPLATE_REQUIRES_EXECUTABLE_PARAMETERS"
+        and item["execution_status"] == "NOT_IN_FIXED_DEMO_PARAMETERS_UNFROZEN"
+        and not _contains_number(item)
+        for item in expanded_criteria
+    )
 
 
 @pytest.mark.parametrize(
@@ -119,8 +161,9 @@ def test_go2_candidates_are_review_only_and_unknown_ids_fail_closed() -> None:
         ("so-arm101-follower-stock-gripper/1.0.0/demo_collection.json", lambda value: value["task_ids"].__setitem__(0, "G01")),
         ("so-arm101-follower-stock-gripper/1.0.0/stage1_projection.json", lambda value: value["tasks"][0].__setitem__("private_criterion", "leak")),
         ("so-arm101-follower-stock-gripper/1.0.0/evaluation_private.json", lambda value: value["criteria"].__setitem__(0, {"task_id": "unknown", "criterion_status": "HUMAN_APPROVED"})),
-        ("unitree-go2-stock-12dof/1.0.0/candidate_review_queue.json", lambda value: value["candidates"].__setitem__(0, {"task_id": "G01", "requirement_id": "unitree-go2-g01", "description": "bad duplicate"})),
-        ("unitree-go2-stock-12dof/1.0.0/candidate_review_queue.json", lambda value: value["candidates"][0].__setitem__("private_criterion_status", "HUMAN_APPROVED")),
+        ("unitree-go2-stock-12dof/1.0.0/catalog.json", lambda value: value["tasks"][5].__setitem__("task_review_status", "PROPOSED_REVIEW_REQUIRED")),
+        ("unitree-go2-stock-12dof/1.0.0/evaluation_private.json", lambda value: value["criteria"][5].__setitem__("criterion_status", "PROPOSED_REVIEW_REQUIRED")),
+        ("unitree-go2-stock-12dof/1.0.0/demo_collection.json", lambda value: value["task_ids"].__setitem__(4, "G06")),
     ],
 )
 def test_rejects_tampering_cross_robot_mismatch_counts_and_private_leakage(tmp_path: Path, relative: str, mutate) -> None:

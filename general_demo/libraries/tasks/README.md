@@ -15,9 +15,11 @@ Each robot package intentionally separates four artifacts:
 | `stage1_projection.json` | Internal fixed-five template (`task_id` + description); the Framework replaces `task_id` with a run-local opaque requirement ref | Framework run-input assembler only |
 | `evaluation_private.json` | Approved pass criteria, physical definitions, and guards | Trusted Demo Evaluation Harness only |
 
-The Go2 package additionally has `candidate_review_queue.json`. Its 21 researched candidates are
-not admitted tasks, must not reach Stage 1, and cannot enter a Demo run until human review freezes
-their applicability, difficulty, criterion, observations, and scene assets.
+The Go2 catalog contains 26 human-approved task descriptions for the exact stock 12-DoF
+configuration. The first Demo collection remains an independent, frozen selection of only
+`G01`–`G05`; catalog approval does not add `G06`–`G26` to Stage 1 or the first Demo. Their approved
+semantic criterion templates remain non-executable until a future task selection separately
+freezes every required numerical parameter, scene asset, observation, safety rule, and aggregation.
 
 The runtime Stage 1 projection contains exactly `requirement_id` and `description`; its opaque
 requirement IDs are derived for that run and do not reveal `T01`, `G01`, robot identity, source, or
@@ -27,10 +29,10 @@ governs capability validation and neither owns nor replaces the downstream tasks
 
 ## Current population
 
-| Exact robot configuration | Approved catalog | Fixed Demo set | Separate review queue |
+| Exact robot configuration | Approved catalog | Fixed Demo set | Approved but outside fixed Demo |
 |---|---:|---:|---:|
-| `so-arm101-follower-stock-gripper` | 28 | 5 | 0 |
-| `unitree-go2-stock-12dof` | 5 | 5 | 21 |
+| `so-arm101-follower-stock-gripper` | 28 | 5 | 23 |
+| `unitree-go2-stock-12dof` | 26 | 5 | 21 |
 
 The two robots run separately, with one robot configuration and one five-task collection per run.
 All five selected tasks execute; none is described as held out.
@@ -91,12 +93,16 @@ transfer an upstream difficulty or evaluation protocol.
 | T08 | Cube rises ≥ 20 mm; gripper-relative slip ≤ 5 mm over 1.0 s; cube remains held. |
 | T20 | Specified-button displacement ≥ 3 mm and activation lasts ≥ 0.25 s; no other button is activated. |
 
-## Unitree Go2 approved catalog and fixed Demo set
+## Unitree Go2 approved catalog
 
 Configuration: free base, stock 12-DoF Go2, joint/IMU state, no camera/depth/lidar. Official
 `SportClient` methods are task-concept provenance only. The AutoAdapter implementation must
 synthesize stand, sit, movement, and posture behavior from the admitted `LowCmd`/`LowState` route.
-No Go2 difficulty label is yet approved.
+All task descriptions, exact-configuration applicability decisions, qualitative difficulty
+rationales, and semantic criterion templates are human approved. No ordinal Go2 difficulty level
+is assigned, and no absent numerical threshold is inferred.
+
+### Fixed first-Demo selection
 
 | ID | Task description | Type |
 |---|---|---|
@@ -119,20 +125,37 @@ model report or command receipt is never physical success evidence.
 | G04 | Forward displacement > 0.03 m; during motion body height > 0.12 m and upright score ≥ 0.7; absolute lateral displacement ≤ 0.05 m; final planar speed ≤ 0.05 m/s continuously for 0.5 s; no body/head floor contact. |
 | G05 | Absolute body-height error ≤ 0.03 m, upright score ≥ 0.7, and horizontal drift ≤ 0.05 m continuously for 1.0 s; no body/head floor contact. |
 
-## Go2 research queue — not admitted
+### Additional approved Go2 records — outside the first Demo
 
-The 21 entries below satisfy the research-population target but remain outside the approved
-catalog and fixed Demo set. Their JSON records contain source-specific adaptation notes, a
-difficulty rationale without a guessed level, and a private criterion template whose numerical
-parameters are deliberately unset.
+The 21 entries below are approved catalog records for the same Go2 configuration. They remain
+outside `demo_collection.json` and `stage1_projection.json`, so they cannot enter the first Demo.
+Their Harness-private semantic criteria are approved, but their numerical and executable scene
+parameters are deliberately unset; a future reviewed Demo collection must freeze those parameters
+before execution.
 
-| IDs | Candidate family | Primary source basis |
+| ID | Approved task description | Type |
 |---|---|---|
-| G06–G09 | Backward/lateral bounded motion and yaw turning | Unitree SDK2 and Unitree RL Lab |
-| G10–G12 | Velocity tracking, waypoint following, and stopping | Unitree examples; Unitree RL Lab; ETH legged_gym |
-| G13–G16 | Roll/pitch attitude, fall recovery, and push recovery | Unitree SDK2; Unitree RL Lab; DeepMind Control Suite; ETH legged_gym |
-| G17–G21 | Rough terrain, slopes, stairs, and discrete box/step fields | Unitree RL Lab; Unitree MuJoCo; ETH legged_gym |
-| G22–G26 | Weave poles, A-frame, broad jump, high obstacle, and compound agility course | DeepMind Barkour; Extreme Parkour paper |
+| G06 | Move backward in the robot's initial heading frame, then stop in a stable upright stance. | Bounded locomotion |
+| G07 | Move left in the robot's initial heading frame, then stop in a stable upright stance. | Bounded locomotion |
+| G08 | Move right in the robot's initial heading frame, then stop in a stable upright stance. | Bounded locomotion |
+| G09 | Turn in place to the specified yaw heading and stop upright. | Yaw control |
+| G10 | Track the specified forward, lateral, and yaw velocity command for the requested interval. | Velocity tracking |
+| G11 | Visit the specified ordered sequence of planar waypoints and finish upright at the final waypoint. | Waypoint following |
+| G12 | Stop from the specified ongoing planar motion and settle into a stable upright stance. | Motion arrest |
+| G13 | Adjust to the specified body roll while maintaining support and location. | Body-attitude control |
+| G14 | Adjust to the specified body pitch while maintaining support and location. | Body-attitude control |
+| G15 | Recover from the specified permitted fallen starting pose to a stable upright stance. | Fall recovery |
+| G16 | Maintain and recover the specified stance after the declared external planar disturbance. | Disturbance rejection |
+| G17 | Traverse the specified irregular rough-terrain segment and finish upright in the goal region. | Rough-terrain locomotion |
+| G18 | Ascend the specified slope and finish upright on its goal platform. | Slope traversal |
+| G19 | Descend the specified slope and finish upright on its goal platform. | Slope traversal |
+| G20 | Traverse the specified staircase and finish upright on its goal platform. | Stair traversal |
+| G21 | Traverse the specified sparse box-and-step field and finish upright in the goal region. | Discrete obstacle terrain |
+| G22 | Weave through the specified ordered poles and stop upright in the goal region. | Agility slalom |
+| G23 | Traverse the specified A-frame obstacle and stop upright in the goal region. | Agility ramp |
+| G24 | Cross the specified broad-jump obstacle and land in a stable upright state in the goal region. | Agility jump |
+| G25 | Cross the specified high obstacle and land in a stable upright state in the goal region. | Agility high obstacle |
+| G26 | Complete the specified ordered quadruped agility course and stop upright in the final goal region. | Compound agility course |
 
 Primary research links:
 
@@ -159,7 +182,6 @@ tasks/
 │   └── evaluation_private.json
 └── unitree-go2-stock-12dof/1.0.0/
     ├── catalog.json
-    ├── candidate_review_queue.json
     ├── demo_collection.json
     ├── stage1_projection.json                         # internal fixed-five projection template
     └── evaluation_private.json

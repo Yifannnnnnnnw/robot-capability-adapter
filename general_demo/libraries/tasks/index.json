@@ -3,7 +3,7 @@
   "schema_version": "1.0.0",
   "library_id": "autoadapter2-general-demo-tasks",
   "library_version": "1.0.0",
-  "review_status": "HUMAN_APPROVED_CATALOGS_WITH_SEPARATE_REVIEW_QUEUE",
+  "review_status": "HUMAN_APPROVED_CATALOGS",
   "approval_date": "2026-08-11",
   "catalogs": [
     {
@@ -23,13 +23,12 @@
       "robot_configuration_id": "unitree-go2-stock-12dof",
       "catalog_id": "unitree-go2-stock-12dof-tasks",
       "catalog_version": "1.0.0",
-      "task_count": 5,
-      "human_approved_task_count": 5,
-      "candidate_task_count": 21,
+      "task_count": 26,
+      "human_approved_task_count": 26,
+      "candidate_task_count": 0,
       "total_researched_record_count": 26,
       "fixed_demo_task_count": 5,
       "catalog_path": "unitree-go2-stock-12dof/1.0.0/catalog.json",
-      "candidate_review_queue_path": "unitree-go2-stock-12dof/1.0.0/candidate_review_queue.json",
       "demo_collection_path": "unitree-go2-stock-12dof/1.0.0/demo_collection.json",
       "stage1_projection_path": "unitree-go2-stock-12dof/1.0.0/stage1_projection.json",
       "evaluation_private_path": "unitree-go2-stock-12dof/1.0.0/evaluation_private.json"
