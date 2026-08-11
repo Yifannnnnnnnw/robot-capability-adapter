@@ -71,6 +71,7 @@ EXPECTED_SDK_PACKAGES = {
     },
 }
 EXPECTED_SO_SDK_FIELDS = [f"{name}.pos" for name in MOTOR_NAMES]
+VIRTUAL_PTY_EMPTY_READ_YIELD_S = 0.0005
 RUNTIME_SOURCE_PATHS = (
     "general_demo/src/autoadapter2/integrations/so_arm101/feetech_protocol.py",
     "general_demo/src/autoadapter2/integrations/so_arm101/translation.py",
@@ -559,6 +560,21 @@ def _real_sdk_factory(port: str, calibration_dir: Path) -> Any:
     follower = SO101Follower(config)
     if not isinstance(follower.bus, FeetechMotorsBus):
         raise ReadinessError("SO101Follower did not construct the real FeetechMotorsBus")
+    # The pinned serial SDK uses non-blocking reads.  Under the admitted amd64
+    # container on an arm64 DGX host, an empty-read spin can starve the sibling
+    # PTY responder even though the response is already schedulable.  Yielding
+    # only after an empty read preserves the exact SDK request/response and
+    # timeout semantics; it adds neither a retry nor a fabricated response.
+    port_handler = follower.bus.port_handler
+    original_read_port = port_handler.readPort
+
+    def cooperative_read_port(length: int) -> Any:
+        data = original_read_port(length)
+        if not data:
+            time.sleep(VIRTUAL_PTY_EMPTY_READ_YIELD_S)
+        return data
+
+    port_handler.readPort = cooperative_read_port
     return follower
 
 
