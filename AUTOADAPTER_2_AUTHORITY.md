@@ -4,8 +4,8 @@
 > **Authority status:** `ACTIVE` — sole normative project document  
 > **Normative language:** English  
 > **Chinese text:** auxiliary reading support only  
-> **Document revision:** `0.13.1`  
-> **Effective date:** 2026-08-10  
+> **Document revision:** `0.13.4`
+> **Effective date:** 2026-08-11
 > **Current phase:** high-level architecture and RQs approved; component contracts under review; General Demo not yet implemented
 
 This file is the sole authority for the current AutoAdapter 2.0 project description, research
@@ -110,6 +110,7 @@ than retained as a historical catalog.
 | Description-Visible, Criterion-Private Fixed Demo | Fixed Demo protocol in which task descriptions are visible but pass criteria and evaluation-only data remain private to an external harness |
 | Demo Consumer | Declared LLM or non-LLM task-executing component that operates through the typed Router view of the frozen generated capability layer |
 | Demo Evaluation Harness | Framework-side program external to the Consumer and generated artifact that collects evaluation evidence and owns the task verdict without exposing private criteria |
+| Framework Evaluation Video | Mandatory Harness-controlled, content-addressed external-view recording of every formal Validation B case/repetition and every Demo task trial/repetition; it is private audit evidence, not a robot sensor, model/Consumer input, or verdict source |
 | SDK Entry | Immutable, versioned project dossier for one approved robot-facing public surface of a real upstream SDK artifact |
 | SDK Entry version | Version of the project-authored dossier; it is distinct from the upstream package version and changes when the dossier or its admitted facts change |
 | pinned upstream SDK artifact | Exact external SDK distribution/release identified by package version plus commit or artifact hash and installed for real execution rather than reimplemented by the Framework |
@@ -538,7 +539,12 @@ Translation Layer cannot be selected independently within the run.
    implementation object nor SDK object to the Consumer.
 3. **Private Evaluation Path.** Trusted Validation and Demo evaluation code may acquire the
    privileged MuJoCo state and private evaluation data required for a verdict. That path is
-   inaccessible to Generation, the generated capability layer, and the task Consumer.
+   inaccessible to Stage 1, the Blue Line LLM, Stage 2, Sandbox model context, the generated
+   capability layer, Repair, and the task Consumer. Mandatory Framework Evaluation Video capture,
+   its external evaluation cameras, raw frames/media, and manifests belong to this path and are
+   Harness-owned evaluation infrastructure. They are not RIM content, a robot-mounted or admitted
+   sensor, an environment observation, an SDK output, a State-Provided value, or a Sensor-Grounded
+   perception path.
 
 The Frozen Validation Standards Snapshot, Private Measurement Catalog, Blue Line Generation Policy,
 Blue Line Validation Spec, Blue Line Manifest, sealed private suite, and Validation Execution Binding Overlay are
@@ -570,6 +576,9 @@ flowchart LR
     G2 --> C
     B -. sealed suite .-> H
     M -. privileged simulator state .-> H["Trusted Validation / Demo<br/>Evaluation Harness"]
+    M -. private external-view render .-> V["Framework Evaluation Video<br/>private recorder"]
+    H -. recorder lifecycle control .-> V
+    V -. content-addressed audit artifact;<br/>not verdict input .-> A["Private audit artifact store"]
 ```
 
 The selected robot morphology and simulation configuration instantiate the MuJoCo model and state
@@ -623,7 +632,7 @@ Translation Layer 提高的是 SDK 和软件调用路径的真实性，并不会
 | Type | ID | State | Revision | Tracked scope |
 |---|---|---|---:|---|
 | Decision | `DEC-FW-001` | `APPROVED` | 5 | High-level architecture, its interpretation boundary, exclusion of candidate-conditioned baseline/calibration feedback, and allowance for pre-experiment authoring and approval of project-scoped Validation Standards |
-| Decision | `DEC-FW-002` | `FROZEN` | 1 | Run Input, SDK-grounded Simulation Execution, and Private Evaluation paths with simulation-only scope |
+| Decision | `DEC-FW-002` | `FROZEN` | 2 | Run Input, SDK-grounded Simulation Execution, and Private Evaluation paths with simulation-only scope, including mandatory Harness-owned Evaluation Video infrastructure outside robot sensors, public observation, Generation, Repair, and Consumer paths |
 | Decision | `DEC-SIM-001` | `FROZEN` | 1 | Real-SDK execution, device/transport-level translation, bidirectional control/state mapping, and fidelity-claim boundary |
 | Decision | `DEC-OBS-001` | `APPROVED` | 2 | State-Provided Control Condition with exact structured pose, no added noise, zero latency, deterministic update, private-truth separation, and deferred Sensor-Grounded execution |
 | Open question | `OQ-OBS-001` | `OPEN` | — | Exact structured-state schema, entity selection, frames/units, numeric serialization and precision, snapshot timestamp, and frozen deterministic update cadence |
@@ -1136,6 +1145,11 @@ attribution also requires prespecified matching and matched semantic-effect cove
 conditions. The base Schema therefore does not hard-code G1/G2/G3 meanings, counts, arm-specific
 capability families, or robot-specific validation effects.
 
+`OQ-GRAN-001` owns the generic one-profile-per-run envelope/resolution contract and the exact G2
+profile required by the first architecture Demo. `OQ-EXP-001` does not block that first Demo: it
+owns the later G1/G3 profiles and the additional matching, coverage, metrics, and ablation contract
+needed for the formal RQ2 comparison.
+
 The Artifact is the explicit semantic interface between the stages. It freezes stable capability
 identities; language-independent public inputs and outputs with their logical types, shapes,
 units, frames, ranges, and required/optional semantics; invocation and temporal semantics;
@@ -1512,6 +1526,7 @@ probe 与独立 Validation、固定 Demo 完全分离；Sandbox 只帮助开发�
 | Decision | `DEC-GEN-005` | `APPROVED` | 3 | Robot-independent Capability Design Contract, one granularity condition per run, opaque requirement coverage, semantic-not-language interface, bounded pre-seal Conformance Repair, pre-Blue-Line sealing, and no downstream current-run Design Repair |
 | Decision | `DEC-GEN-006` | `APPROVED` | 1 | First-profile `capability.py` executable submission, Framework-generated Python Binding Contract and skeleton, Framework-derived non-heuristic Implementation Manifest, and Runner-injected SDK lifecycle |
 | Open question | `OQ-GEN-001` | `OPEN` | — | Exact Stage Bundle projections, complete Capability Design fields/JSON Schema and semantic checker, Stage 1 Conformance Repair budget, Python Binding Contract/skeleton and Implementation Manifest schemas, Stage 1/Stage 2 prompts, dependency/isolation policy, inference retry/cache/token accounting, artifact binding, exploratory tuning/freeze protocol, canonicalization, and byte-level reproducibility |
+| Open question | `OQ-GRAN-001` | `OPEN` | — | Generic granularity-profile ID/version/schema and resolver; exactly-one-profile-per-run enforcement; exact robot-independent G2 semantics, Design conformance and composition boundary for the first two-robot architecture Demo; campaign rejection of G1/G3 and multi-granularity layers while preserving the generic future profile extension point |
 | Open question | `OQ-SANDBOX-001` | `OPEN` | — | Development-probe manifest and selection, tool request/response schema, feedback declassification/redaction, Sandbox calls/episodes/simulated-time/control-step/output/wall-time caps distinct from the 30-inference ceiling, failure accounting, and audit evidence |
 | Open question | `OQ-BLUE-001` | `OPEN` | — | Exact Project Validation Standards Reference and Frozen Validation Standards Snapshot, Private Measurement Catalog, Validation Spec, suite, Blue Line Manifest, and Binding Overlay schemas; fixed model identifier, prompt and decoding configuration; reference matching, adaptation format, and machine-readable encoding/enforcement of the approved material-change review rule; exact case/trial/repetition limits; deterministic checker/compiler and privacy enforcement; machine-readable review/version records and workflow mechanics consistent with the approved pre-experiment review-and-freeze boundary; canonicalization, hashing, sealing, and provider retry/cache/token accounting within the approved three-accounted-call ceiling |
 
@@ -1572,6 +1587,40 @@ real SDK application layer and that command and observation traffic follows the 
 SDK-specific Translation route. Candidate self-reports or returned success statuses never replace
 the private Harness verdict.
 
+Every formal Validation B case execution and every repetition, for the initial candidate and all
+Repair revisions, must produce Framework Evaluation Video evidence. The trusted Harness activates
+and owns one or more Framework-controlled external evaluation cameras; candidate code cannot start,
+stop, configure, read, or suppress the recorder. At least one continuous recording must contain a
+post-reset pre-invocation view, the capability invocation and physical execution interval, and the
+terminal observation, timeout, candidate exception, or other declared trial termination. Recording
+must continue for every started case even when the candidate fails or times out. The frozen camera
+configuration must frame the evaluated robot and the physical resource or scene relevant to the
+case. The recorder must not alter simulator stepping, SDK/control ordering, candidate inputs, or
+verdict inputs. Each video manifest binds the run, candidate
+revision, case and repetition, sealed suite, resolved Robot Integration Manifest and simulation
+profile, camera configuration, simulation-time/frame timestamps, media content hash, and recorder
+completion status.
+
+Framework Evaluation Video is mandatory audit evidence but is not an assessment Oracle. Validation
+B still decides from the sealed criterion and trusted structured evidence; a human impression of a
+video cannot override the Harness verdict. The recording is not a robot camera, rendered-sensor
+observation, State-Provided public value, SDK observation, Stage 1/Stage 2/Repair input, or candidate
+feedback. It remains Framework-private by default; only a separately governed redacted or
+declassified derivative may be published. The recording must not embed criterion, threshold, score,
+expected solution, privileged numeric-state/debug overlays, or model reasoning. A missing,
+undecodable, hash-mismatched, truncated, or otherwise incomplete required recording invalidates that
+case execution as an infrastructure/evidence-acquisition failure. Any partial media is retained with
+an incomplete status when possible. The execution is neither a candidate pass nor a candidate
+failure, produces no candidate diagnostic, consumes no Repair invocation, and must be rerun under
+the frozen suite and infrastructure-failure policy. Each rerun is a new append-only infrastructure
+execution attempt under the same logical candidate revision, case, and repetition identity; it
+cannot overwrite the failed attempt's manifest, partial media, traces, or evidence.
+
+This mandatory-video scope begins with physical Validation B execution. Validation A performs
+static/dynamic contract and binding checks rather than a robot episode and therefore has no required
+evaluation video; a development or Sandbox recording cannot substitute for the required formal
+Validation B recording.
+
 #### 4.3.3 Dual-Gate Promotion and Failure Routing
 
 Both Validation A and B must pass before a validated robot-specific capability layer exists.
@@ -1596,6 +1645,11 @@ retrospectively “best” revision from several candidates.
 Validation and execution also produce Framework-private Failure Evidence for audit and Evolution.
 Runner, Translation, SDK-service, or simulator infrastructure failure follows its predeclared
 infrastructure retry/exclusion rule and does not become or consume a candidate Repair invocation.
+Framework Evaluation Video acquisition or integrity failure is one such infrastructure failure: the
+invalid execution is excluded from `pass@0`, `pass@k`, Repair-success, and candidate-failure counts,
+produces no candidate diagnostic, and reruns the same immutable candidate revision under the frozen
+infrastructure retry policy. The invalid execution itself contributes no metric observation; only a
+valid rerun may contribute at that same Repair index `k`.
 
 #### 4.3.4 Repair Inputs, Visibility, and Diagnostics
 
@@ -1662,9 +1716,9 @@ retesting，而不是十次新的独立评测。Stage 1 Design 不再改，Repai
 
 | Type | ID | State | Revision | Tracked scope |
 |---|---|---|---:|---|
-| Decision | `DEC-VAL-001` | `APPROVED` | 5 | Detailed Validation A boundary, candidate-specific non-mutating Execution Binding Overlay, A-to-B ordering, SDK-grounded sealed-suite Validation B, `pass@0`, adaptive same-suite retesting, first-complete-pass promotion, and no separate screening/final holdout |
+| Decision | `DEC-VAL-001` | `APPROVED` | 6 | Detailed Validation A boundary, candidate-specific non-mutating Execution Binding Overlay, A-to-B ordering, SDK-grounded sealed-suite Validation B, mandatory private Framework Evaluation Video for every B case/repetition, `pass@0`, adaptive same-suite retesting, first-complete-pass promotion, and no separate screening/final holdout |
 | Decision | `DEC-REPAIR-001` | `APPROVED` | 5 | Implementation-only Repair of `capability.py`, maximum ten invocations, immutable Stage 1 Design and sealed Frozen Validation Standards Snapshot/spec/Blue Line Manifest/suite artifacts with a new binding Overlay per revision, continued/fresh RQ2 modes, optional Sandbox, and a budget separate from Stage 2 |
-| Open question | `OQ-VAL-001` | `OPEN` | — | Exact Validation A AST/dynamic/import/dependency/serialization checks and evidence fields; Validation B Harness, truth adapters, repetitions, aggregation implementation, reset/seed behavior, and candidate-versus-infrastructure failure taxonomy |
+| Open question | `OQ-VAL-001` | `OPEN` | — | Exact Validation A AST/dynamic/import/dependency/serialization checks and evidence fields; Validation B Harness, truth adapters, repetitions, aggregation implementation, reset/seed behavior, candidate-versus-infrastructure failure taxonomy, and Evaluation Video camera count/view/framing, renderer, frame rate, resolution, codec/container/encoder pin, pre/post-roll, simulation-time synchronization, dropped-frame and interval-completeness verification, capture-overhead/resource accounting, manifest, infrastructure-retry, private retention, and post-closure handoff to `OQ-EVO-001` consistent with the frozen mandatory-video boundary |
 | Open question | `OQ-REPAIR-001` | `OPEN` | — | Exact Repair Diagnostic schema/redaction, continued/fresh implementation mechanics, per-attempt LLM/token/tool/Sandbox budgets, allocation across ten invocations, provider/infrastructure accounting, ledger schema, and early termination |
 
 ### 4.4 Description-Visible, Criterion-Private Fixed Demo
@@ -1699,6 +1753,32 @@ For each fixed task:
 6. the Harness verdict is authoritative for Demo pass/fail. Consumer self-reports, reasoning text,
    success claims, or capability-function success returns are not final verdicts.
 
+Every Demo task trial and every repetition must also produce Framework Evaluation Video evidence.
+The trusted Demo Evaluation Harness activates the Framework-controlled external evaluation camera
+before task execution and records from a post-reset pre-task view through the task's terminal
+observation or timeout. Its manifest binds the fixed Demo collection and task reference, trial and
+repetition, Consumer and frozen layer identities, resolved Robot Integration Manifest and
+simulation profile, camera configuration, simulation-time/frame timestamps, media content hash,
+and recorder completion
+status. The camera must frame the evaluated robot and task-relevant scene, and capture must not alter
+simulator stepping, SDK/control ordering, Consumer inputs, or verdict inputs. Recording continues
+through candidate/Consumer failure, exception, timeout, or other declared trial termination. The
+Consumer, generated layer, Stage 1, Stage 2, and Repair cannot access or control this recording.
+
+The Demo video is private audit evidence and does not replace the authored task criterion, trusted
+structured evidence, or Harness verdict. It is not part of the State-Provided Control Condition and
+does not turn the experiment into visual perception. Missing, undecodable, hash-mismatched,
+truncated, or incomplete required video invalidates the trial as an infrastructure/evidence-
+acquisition failure; it is not a task pass or failure and must be rerun under the frozen Demo
+protocol using the same immutable Consumer, layer, task, trial/repetition identity, reset/case, and
+other frozen inputs. The invalid trial contributes to no Demo metric denominator; only its valid
+rerun may contribute. Each rerun is a distinct append-only infrastructure execution attempt and
+cannot overwrite the invalid attempt's manifest, partial media, traces, or evidence. Partial media
+is retained with an incomplete status when possible. The
+recording must not embed criterion, threshold, score, expected solution, privileged numeric-state
+or debug overlays, or model reasoning. Publication requires a separately governed redacted or
+declassified derivative.
+
 Here, `external` means external to the Demo Consumer and generated capability layer while remaining
 inside the Framework's trusted evaluation boundary. It does not require a cloud service, third-
 party evaluator, separate machine, or separate operating-system process.
@@ -1719,7 +1799,9 @@ Consumer action/tool budgets are owned by `OQ-RQ1-001`; router adapters are owne
 typed Capability Router 使用 validated/frozen layer，看不到 `capability.py`、实现对象或 SDK 对象。
 Consumer 读取任务 description 和明确公开的结构化 task/world state；这项主实验测量 capability
 planning/control，不包含视觉感知。是否通过不由 Consumer 或生成代码自报；外部 Demo Evaluation
-Harness 独立读取私有 MuJoCo truth，使用私有 criterion 给出最终 verdict。
+Harness 独立读取私有 MuJoCo truth，使用私有 criterion 给出最终 verdict。每次 Demo trial 都必须由
+Framework/Harness 的外部观察相机录像；录像仅供私有审计，不提供给 Consumer，也不参与自动判定，
+因此不会把当前实验改成视觉感知实验。
 
 #### 4.4.1 Section status and traceability
 
@@ -1727,8 +1809,8 @@ Harness 独立读取私有 MuJoCo truth，使用私有 criterion 给出最终 ve
 |---|---|---|---:|---|
 | Decision | `DEC-DEMO-001` | `APPROVED` | 2 | Validated/frozen entry boundary and Demo-to-Evolution evidence route |
 | Decision | `DEC-DEMO-002` | `FROZEN` | 2 | Fixed five-task set, full execution, no visible/held-out classification, and regression status after reuse |
-| Decision | `DEC-DEMO-003` | `FROZEN` | 3 | SDK-grounded generated-layer execution, privileged-state isolation, and external Harness verdict boundary |
-| Open question | `OQ-DEMO-001` | `OPEN` | — | Criterion schema, Harness adapters/data sources, sampling, reset/isolation, budgets, repetitions, evidence, metrics, and aggregation |
+| Decision | `DEC-DEMO-003` | `FROZEN` | 4 | SDK-grounded generated-layer execution, privileged-state isolation, external Harness verdict boundary, and mandatory private Framework Evaluation Video for every task trial/repetition |
+| Open question | `OQ-DEMO-001` | `OPEN` | — | Criterion schema, Harness adapters/data sources, sampling, reset/isolation, budgets, repetitions, evidence, metrics, aggregation, and Evaluation Video camera count/view/framing, renderer, frame rate, resolution, codec/container/encoder pin, pre/post-roll, simulation-time synchronization, dropped-frame and interval-completeness verification, capture-overhead/resource accounting, manifest, infrastructure-retry, private retention, and post-closure handoff to `OQ-EVO-001` consistent with the frozen mandatory-video boundary |
 
 ### 4.5 Evidence-Driven Evolution and Experience Update
 
@@ -1761,6 +1843,11 @@ Quarantine is a review disposition of a Candidate, not an admitted lifecycle sta
 Before admission, a declassification check removes private Validation or Demo thresholds, cases,
 seeds, fixed-Demo membership, raw privileged MuJoCo state, Translation details, expected solutions,
 credentials, and any trace or full winning implementation that would reconstruct a private trial.
+Raw Evaluation Video, extracted frames, private camera configuration/metadata, and the unredacted
+video manifest are also private evidence. After run closure, authorized audit or Evolution review
+may reference them, but they cannot be embedded in Experience or published without a separate
+redaction/declassification decision that also checks whether the derivative reconstructs private
+cases, tasks, Oracles, scene secrets, or expected solutions.
 An admitted record must instead state a bounded reusable lesson, recipient class, applicability,
 provenance, evidence links, limitations, and invalidation conditions. Design Experience cannot carry
 implementation code or exact private criteria; implementation Experience cannot become a hidden
@@ -1782,8 +1869,8 @@ its source and version lineage.
 | Type | ID | State | Revision | Tracked scope |
 |---|---|---|---:|---|
 | Decision | `DEC-EVO-001` | `APPROVED` | 5 | Closed-run Validation/Repair/Demo evidence to future Experience or a separately human-reviewed future Project Validation Standards version, with no current-run Experience, Standards Snapshot, Validation Spec, Blue Line Manifest, or suite refresh |
-| Decision | `DEC-EVO-002` | `APPROVED` | 1 | OBSERVED/CANDIDATE/ADMITTED lifecycle, authorized admission, recipient-specific declassification, immutable versions, conflict quarantine, and applicability invalidation |
-| Open question | `OQ-EVO-001` | `OPEN` | — | Exact record schemas, compiler and review workflow, publication authority, evidence-sufficiency rules, declassification tests, retrieval/ranking, conflict resolution, invalidation triggers, and dedicated causal tests |
+| Decision | `DEC-EVO-002` | `APPROVED` | 2 | OBSERVED/CANDIDATE/ADMITTED lifecycle, authorized admission, recipient-specific declassification including raw Evaluation Video/frame/manifest protection, immutable versions, conflict quarantine, and applicability invalidation |
+| Open question | `OQ-EVO-001` | `OPEN` | — | Exact record schemas, compiler and review workflow, publication authority, evidence-sufficiency rules, Evaluation Video/frame/manifest redaction and declassification tests, retrieval/ranking, conflict resolution, invalidation triggers, and dedicated causal tests |
 
 ---
 
@@ -1838,8 +1925,9 @@ profile's capability count, semantic-effect coverage, public-interface surface, 
 depth. Auxiliary matched-effect analysis compares only capabilities that make the same semantic
 effect claim; different capabilities or effects are not treated as if one shared threshold made
 them directly interchangeable. Pure granularity attribution additionally requires matched
-semantic-effect coverage and prespecified matching rules. Exact G1/G2/G3 profiles, matching rules,
-and the final minimum RQ2 combination remain open.
+semantic-effect coverage and prespecified matching rules. The first architecture Demo's exact G2
+profile is owned separately by `OQ-GRAN-001`. Exact G1/G3 profiles, any separately versioned
+RQ2-specific G2 revision, matching rules, and the final minimum RQ2 combination remain open here.
 
 ### 5.1 Section status and traceability
 
@@ -1847,7 +1935,7 @@ and the final minimum RQ2 combination remain open.
 |---|---|---|---:|---|
 | Decision | `DEC-EXPDES-001` | `APPROVED` | 5 | RQ-aligned factors plus separate G1/G2/G3 runs, frozen simplified Blue Line inputs/policy, one layer visible per condition, granularity-profile outcome reporting, profile characterization, and matched-effect-only auxiliary comparison |
 | Decision | `DEC-EXPDES-002` | `APPROVED` | 2 | Separation of project-standard preparation, Stage 1, isolated Stage 2, and end-to-end studies; exact Design/spec/Blue Line Manifest/suite freeze for Stage 2 backbone comparisons; one shared Blue Line run in isolated Stage 2 comparisons; and no post-freeze condition-specific standard change |
-| Open question | `OQ-EXP-001` | `OPEN` | — | Exact G1–G3 profiles, capability/effect matching and semantic-coverage rules, interface/composition characterization, metrics, and minimum sufficient RQ2 ablation protocol |
+| Open question | `OQ-EXP-001` | `OPEN` | — | Exact G1/G3 profiles; selection of the `OQ-GRAN-001`-frozen G2 version or admission of a separately versioned RQ2 G2 revision; capability/effect matching and semantic-coverage rules; interface/composition characterization; metrics; and minimum sufficient RQ2 ablation protocol |
 
 ---
 
@@ -1866,6 +1954,15 @@ termination does not authorize removal of Stage 2, Validation, Repair, Demo, or 
 implemented Framework. The full-path General Demo may preselect a covered task scope and
 human-reviewed project standards, but verification succeeds only when at least one actual Stage 1
 Design reaches Blue Line status `READY` and continues through every required downstream component.
+
+The first complete two-robot architecture Demo uses **G2 only**. The SO-ARM101 and Unitree Go2
+routes remain separate single-RIM runs, and each run selects the same frozen G2 granularity-profile
+identity applicable to its robot/configuration. Neither run also produces a G1 or G3 layer, and the
+Demo Consumer sees only its run's G2 layer. This selection reduces the first architecture rehearsal;
+it does not delete G1/G3 support from the generic profile mechanism, redefine the later RQ2
+comparison, or make the architecture Demo final granularity evidence. The exact robot-independent
+G2 profile and the generic one-profile-per-run contract must still be reviewed and frozen under
+`OQ-GRAN-001` before either run is implementable.
 
 Legacy schemas, prompts, names, constants, and defaults do not become General Demo design unless
 the current authority explicitly adopts them. Component implementation begins only after its
@@ -1903,6 +2000,13 @@ acquires outcome evidence, applies the private criterion, and issues the authori
 model self-reports, reasoning text, capability-function returns, and success claims are not the
 final verdict.
 
+Every formal Validation B case/repetition and every Demo task trial/repetition records mandatory
+Framework Evaluation Video under the trusted Harness boundary. The recorder is external to the
+generated layer and Consumer, its artifact and manifest remain private by default, and the video is
+mandatory non-verdict audit evidence rather than a verdict source. A required-video acquisition or integrity
+failure invalidates the affected execution as infrastructure failure and cannot be charged to the
+candidate or Consumer.
+
 For every admitted Robot Integration Manifest, formal simulation execution follows the same
 system-wide route: generated capability layer → pinned real robot SDK → robot- and SDK-specific MuJoCo
 Translation Layer → MuJoCo control and state. The reverse observation path returns through the
@@ -1920,6 +2024,9 @@ Measurement Catalog、Blue Line 配置、Validation Spec、Blue Line Manifest �
 人工标准审核和冻结不属于该禁令。
 所有机器人共用同一条抽象执行规则：生成物调用该机器人的真实 SDK，再由该机器人专用的
 Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Framework 的特殊默认设计。
+第一轮两机器人架构 Demo 只跑 G2：SO-ARM101 和 Go2 各自是独立单-RIM run，每个 run 只生成并
+向 Consumer 暴露该 run 的 G2 能力层。Framework 仍保留以后分别运行 G1/G2/G3 的通用选择机制；
+本次 G2-only 结果不当作最终 RQ2 粒度比较。
 
 ### 6.1 Section status and traceability
 
@@ -1943,6 +2050,8 @@ Translation Layer 驱动 MuJoCo；SO-ARM101 只是首个可用实例，不是 Fr
 | Requirement | `REQ-GD-016` | `FROZEN` | Six-part Simulation Integration Readiness Check blocks Generation on infrastructure failure | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-017` | `FROZEN` | Minimal private Session Runner with lifecycle/clock/limits/traces but no public robot API or capability semantics | `NOT_STARTED` | `NONE` |
 | Requirement | `REQ-GD-018` | `FROZEN` | Normal robot motion uses MuJoCo actuator control and physics stepping rather than direct simulated-state overwrite | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-019` | `FROZEN` | Every formal Validation B case/repetition and Demo task trial/repetition produces private, content-addressed, simulation-time-linked Framework Evaluation Video from post-reset pre-invocation/task state through terminal observation/timeout; the recording and manifest remain inaccessible to the Blue Line, Stage 1, Stage 2, Sandbox model, generated candidate/layer, Repair, and Demo Consumer, and neither video content nor human viewing may supply or override the structured Harness verdict; missing/incomplete/integrity-failed video invalidates the execution as infrastructure/evidence failure rather than candidate/Consumer failure | `NOT_STARTED` | `NONE` |
+| Requirement | `REQ-GD-020` | `FROZEN` | The first complete two-robot architecture Demo executes G2 only: one separate single-RIM run for SO-ARM101 and one for Unitree Go2, each exposing only its G2 layer to the Demo Consumer; the generic Framework retains profile selection for future separate G1/G2/G3 runs, and exact G2 semantics plus exactly-one-profile-per-run enforcement remain blocked on `OQ-GRAN-001` freeze | `NOT_STARTED` | `NONE` |
 
 ---
 
@@ -1969,6 +2078,7 @@ preserve obsolete questions.
 | Coverage inventory | Classify source assets and confirm the unique covered-robot count | `OQ-COV-001` |
 | RQ1 protocol | Exact producer endpoints; Consumer models/policies and training/freeze points; isolated-Stage-2 versus end-to-end allocation; fixed Capability Design/capability-set/suite selection; stage/Consumer budgets, repetitions, tasks, seeds, and frozen reference layer | `OQ-RQ1-001` |
 | RQ3 protocol | Robot sampling hierarchy, functionally matched task families, and frozen multi-robot Validation Standards Snapshot partitions | `OQ-RQ3-001` |
+| First-Demo granularity | Generic granularity-profile ID/version/schema and resolver, exactly-one-profile-per-run enforcement, and exact robot-independent G2 semantics/composition boundary for the first two-robot architecture Demo | `OQ-GRAN-001` |
 | Structured observation | State schema, entities, frames/units, precision, timestamp, and deterministic update cadence | `OQ-OBS-001` |
 | Tasks Library | Cross-robot difficulty rules, inapplicable tasks, machine schema, remaining robot catalogs, type taxonomy, fixed five tasks, and criterion schema | `OQ-TASK-001`, `OQ-TASK-002` |
 | Morphology Library | Exact schemas, environment composition, admission evidence, MuJoCo/reset thresholds, and future shared-component rules | `OQ-MORPH-001` |
@@ -1978,8 +2088,8 @@ preserve obsolete questions.
 | Generation | Exact Stage Bundle projections, Capability Design fields/JSON Schema/checker, Stage 1 Conformance Repair budget, Python Binding Contract/skeleton and Manifest schemas, Stage 1/Stage 2 prompts, dependency/isolation rules, inference retry/cache/token accounting, artifact binding, tuning/freeze, canonicalization, and reproducibility | `OQ-GEN-001` |
 | Development Sandbox | Probe suite, tool schema, feedback redaction, separate call/episode/simulated-time/control-step/output/wall-time caps, failure accounting, and audit evidence | `OQ-SANDBOX-001` |
 | Simplified Blue Line | Exact fixed model/prompt/decoding configuration; Project Validation Standards Reference and Frozen Validation Standards Snapshot, Private Measurement Catalog, Validation Spec, suite, Blue Line Manifest and Binding Overlay schemas; matching/adaptation format and machine enforcement of the approved material-review rule; case/trial limits; deterministic checker/compiler, privacy enforcement, review/version records, canonicalization, sealing, and provider accounting within the approved three-call ceiling | `OQ-BLUE-001` |
-| Validation and Repair | Exact Validation A checks/evidence; Validation B Harness/truth adapters/repetitions/aggregation/reset and failure taxonomy; Repair diagnostics, continued/fresh mechanics, per-attempt LLM/tool/Sandbox allocation across ten invocations, provider accounting, ledger, and early termination | `OQ-VAL-001`, `OQ-REPAIR-001` |
+| Validation and Repair | Exact Validation A checks/evidence; Validation B Harness/truth adapters/repetitions/aggregation/reset and failure taxonomy; mandatory Evaluation Video camera/view/renderer/encoding, simulation-time interval and dropped-frame completeness, overhead/resource accounting, manifest, infrastructure retry, private retention and post-closure handoff; Repair diagnostics, continued/fresh mechanics, per-attempt LLM/tool/Sandbox allocation across ten invocations, provider accounting, ledger, and early termination | `OQ-VAL-001`, `OQ-REPAIR-001` |
 | Consumer routing | Exact typed Router, LLM-tool and policy/program adapters, worker/IPC isolation, lifecycle, concurrency, and error propagation | `OQ-CONSUMER-001` |
-| Demo | Exact criteria, Harness adapters, sampling/reset, budgets, repetitions, evidence, metrics, and aggregation | `OQ-DEMO-001` |
+| Demo | Exact criteria, Harness adapters, sampling/reset, budgets, repetitions, evidence, metrics, aggregation, and mandatory Evaluation Video camera/view/renderer/encoding, simulation-time interval and dropped-frame completeness, overhead/resource accounting, manifest, infrastructure retry, private retention and post-closure handoff | `OQ-DEMO-001` |
 | Evolution and Experience | Exact record/compiler/review schemas, publication and evidence-sufficiency authority, declassification, retrieval/ranking, conflict/invalidation rules, and causal tests | `OQ-EVO-001` |
-| RQ2 granularity experiment | Exact G1–G3 profiles, matched-effect and semantic-coverage rules, interface/composition characterization, metrics, and minimum sufficient ablation protocol | `OQ-EXP-001` |
+| RQ2 granularity experiment | Exact G1/G3 profiles; selection of the already frozen first-Demo G2 version or admission of a separately versioned RQ2 G2 revision; matched-effect and semantic-coverage rules, interface/composition characterization, metrics, and minimum sufficient ablation protocol | `OQ-EXP-001` |
