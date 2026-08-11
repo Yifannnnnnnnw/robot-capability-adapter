@@ -5,7 +5,7 @@ from typing import Any
 
 from ..contracts.registry import ProfileRegistry, RecordRegistry, RegistryEntry
 from ..foundation.errors import ContractError, GateError
-from ..foundation.identifiers import ExactReference
+from ..foundation.identifiers import ExactReference, _id
 from .state import GateReceipt
 
 
@@ -35,13 +35,18 @@ class RunSelection:
             raise ContractError(f"unexpected run selection fields: {sorted(extra)}")
         if isinstance(value["rim_ref"], list) or isinstance(value["granularity_profile_ref"], list):
             raise ContractError("a run must contain exactly one RIM and one profile")
+        _id(value["run_id"], "run_id")
+        campaign = value.get("campaign", "first")
+        _id(campaign, "campaign")
+        if campaign != "first":
+            raise GateError("only the first campaign is admitted")
         return cls(
             run_id=value["run_id"],
             rim_ref=ExactReference.from_value(value["rim_ref"], expected_kind="rim"),
             granularity_profile_ref=ExactReference.from_value(
                 value["granularity_profile_ref"], expected_kind="profile"
             ),
-            campaign=value.get("campaign", "first"),
+            campaign=campaign,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -61,12 +66,18 @@ class RunSelectionGate:
     def admit(self, selection: RunSelection | dict[str, Any]) -> tuple[RegistryEntry, RegistryEntry]:
         if not isinstance(selection, RunSelection):
             selection = RunSelection.from_mapping(selection)
+        if selection.campaign != "first":
+            raise GateError("only the first campaign is admitted")
         rim = self.rim_registry.resolve(selection.rim_ref, require_frozen=True)
         profile = self.profile_registry.resolve(
             selection.granularity_profile_ref, require_frozen=True
         )
         if profile.status != "FROZEN_FIXTURE":
             raise GateError("first campaign requires a FROZEN_FIXTURE profile")
+        if rim.status != "FROZEN_FIXTURE":
+            raise GateError("first campaign requires a FROZEN_FIXTURE RIM")
+        if not rim.payload.get("fixture_only") or rim.payload.get("authority_status") != "OPEN":
+            raise GateError("first campaign RIM must remain explicitly synthetic")
         payload = profile.payload
         if payload.get("profile_family") != "granularity" or payload.get("granularity") != "G2":
             raise GateError("first campaign accepts only the frozen G2 fixture")

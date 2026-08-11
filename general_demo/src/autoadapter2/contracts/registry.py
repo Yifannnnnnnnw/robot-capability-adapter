@@ -21,6 +21,7 @@ class RegistryEntry:
     content_hash: str
     status: str
     payload: dict[str, Any]
+    payload_hash: str
 
     @property
     def ref(self) -> ExactReference:
@@ -43,6 +44,11 @@ class VersionedRegistry:
             raise ImmutableError("registry path escapes its root") from exc
         return directory
 
+    @staticmethod
+    def _reject_symlinks(*paths: Path) -> None:
+        if any(path.is_symlink() for path in paths):
+            raise ImmutableError("registry directory or payload path cannot be a symlink")
+
     def publish(
         self,
         id: str,
@@ -54,10 +60,12 @@ class VersionedRegistry:
         _version(version)
         if not isinstance(payload, dict):
             raise TypeError("registry payload must be a JSON object")
-        digest = content_hash(canonical_bytes(payload))
+        payload_hash = content_hash(canonical_bytes(payload))
         directory = self._safe_directory(id, version)
+        id_directory = directory.parent
         payload_path = directory / "payload.json"
         manifest_path = directory / "manifest.json"
+        self._reject_symlinks(id_directory, directory, payload_path, manifest_path)
         freeze_record = {
             "status": status,
             "authority_status": payload.get("authority_status", "OPEN"),
@@ -67,16 +75,18 @@ class VersionedRegistry:
             "id": id,
             "version": version,
             "status": status,
-            "payload_hash": digest,
+            "payload_hash": payload_hash,
             "freeze_record": freeze_record,
         }
+        record_hash = content_hash(canonical_bytes(manifest_core))
         manifest = {
             **manifest_core,
-            "manifest_hash": content_hash(canonical_bytes(manifest_core)),
+            "record_hash": record_hash,
+            "manifest_hash": record_hash,
             "seal": create_seal(
                 "registry.manifest",
-                content_hash(canonical_bytes(manifest_core)),
-                parents=[digest],
+                record_hash,
+                parents=[payload_hash],
             ),
         }
         if directory.exists():
@@ -84,15 +94,20 @@ class VersionedRegistry:
                 raise ImmutableError("registry version is partially published")
             old_manifest = json.loads(manifest_path.read_text())
             old_payload = json.loads(payload_path.read_text())
-            if old_manifest != manifest or content_hash(canonical_bytes(old_payload)) != digest:
+            if (
+                old_manifest != manifest
+                or content_hash(canonical_bytes(old_payload)) != payload_hash
+            ):
                 raise ImmutableError("released version cannot be overwritten")
-            return RegistryEntry(self.kind, id, version, digest, status, old_payload)
-        if directory.is_symlink():
-            raise ImmutableError("registry version path cannot be a symlink")
+            return RegistryEntry(
+                self.kind, id, version, record_hash, status, old_payload, payload_hash
+            )
         directory.mkdir(parents=True)
         payload_path.write_bytes(canonical_bytes(payload))
         manifest_path.write_bytes(canonical_bytes(manifest))
-        return RegistryEntry(self.kind, id, version, digest, status, payload)
+        return RegistryEntry(
+            self.kind, id, version, record_hash, status, payload, payload_hash
+        )
 
     def resolve(
         self,
@@ -104,26 +119,28 @@ class VersionedRegistry:
             directory = self._safe_directory(exact.id, exact.version)
             manifest_path = directory / "manifest.json"
             payload_path = directory / "payload.json"
+            self._reject_symlinks(directory.parent, directory, payload_path, manifest_path)
             manifest = json.loads(manifest_path.read_text())
             payload = json.loads(payload_path.read_text())
         except Exception as exc:
             raise ReferenceResolutionError("exact reference cannot be resolved") from exc
-        actual = content_hash(canonical_bytes(payload))
+        payload_hash = content_hash(canonical_bytes(payload))
         expected_core = {
             "kind": exact.kind,
             "id": exact.id,
             "version": exact.version,
             "status": manifest.get("status"),
-            "payload_hash": actual,
+            "payload_hash": payload_hash,
             "freeze_record": manifest.get("freeze_record"),
         }
-        expected_manifest_hash = content_hash(canonical_bytes(expected_core))
+        expected_record_hash = content_hash(canonical_bytes(expected_core))
         if (
-            actual != exact.content_hash
-            or manifest.get("payload_hash") != actual
-            or manifest.get("manifest_hash") != expected_manifest_hash
+            exact.content_hash != expected_record_hash
+            or manifest.get("payload_hash") != payload_hash
+            or manifest.get("record_hash") != expected_record_hash
+            or manifest.get("manifest_hash") != expected_record_hash
         ):
-            raise ReferenceResolutionError("reference hash does not match payload")
+            raise ReferenceResolutionError("reference hash does not match registry record")
         if (
             manifest.get("kind") != self.kind
             or manifest.get("id") != exact.id
@@ -135,21 +152,39 @@ class VersionedRegistry:
             verify_seal(manifest["seal"])
         except Exception as exc:
             raise ReferenceResolutionError("registry manifest seal is invalid") from exc
-        if manifest["seal"].get("artifact_hash") != manifest["manifest_hash"]:
+        if manifest["seal"].get("artifact_hash") != expected_record_hash:
             raise ReferenceResolutionError("registry manifest seal does not bind manifest")
         if require_frozen and manifest.get("status") not in {"FROZEN", "FROZEN_FIXTURE"}:
             raise ReferenceResolutionError("reference is not frozen")
-        return RegistryEntry(self.kind, exact.id, exact.version, actual, manifest["status"], payload)
+        return RegistryEntry(
+            self.kind,
+            exact.id,
+            exact.version,
+            expected_record_hash,
+            manifest["status"],
+            payload,
+            payload_hash,
+        )
 
     def reference(self, id: str, version: str) -> ExactReference:
         _id(id)
         _version(version)
-        manifest_path = self._safe_directory(id, version) / "manifest.json"
+        directory = self._safe_directory(id, version)
+        manifest_path = directory / "manifest.json"
+        self._reject_symlinks(
+            directory.parent, directory, directory / "payload.json", manifest_path
+        )
         try:
             manifest = json.loads(manifest_path.read_text())
         except Exception as exc:
             raise ReferenceResolutionError("version is not published") from exc
-        return ExactReference(self.kind, id, version, manifest["payload_hash"])
+        try:
+            candidate = ExactReference(
+                self.kind, id, version, manifest["record_hash"]
+            )
+            return self.resolve(candidate).ref
+        except Exception as exc:
+            raise ReferenceResolutionError("registry manifest cannot produce a reference") from exc
 
 
 class SchemaRegistry(VersionedRegistry):

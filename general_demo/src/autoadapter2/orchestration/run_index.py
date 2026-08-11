@@ -27,15 +27,23 @@ class RunIndex:
         })
 
     def append_event(self, run_id: str, event: dict[str, Any]) -> None:
-        if any(item.get("run_id") == run_id for item in self.log.records()
+        events = self.log.records()
+        if not any(item.get("run_id") == run_id for item in events
+                   if item.get("type") == "run_registered"):
+            raise KeyError(run_id)
+        if any(item.get("run_id") == run_id for item in events
                if item.get("type") == "run_closed"):
             raise ImmutableError(f"closed run {run_id!r} rejects new events")
         self.log.append({"type": "run_event", "run_id": run_id, "event": event})
 
     def close(self, run_id: str) -> None:
-        if not any(item.get("run_id") == run_id for item in self.log.records()
+        events = self.log.records()
+        if not any(item.get("run_id") == run_id for item in events
                    if item.get("type") == "run_registered"):
             raise KeyError(run_id)
+        if any(item.get("run_id") == run_id for item in events
+               if item.get("type") == "run_closed"):
+            raise ImmutableError(f"run {run_id!r} is already closed")
         self.append_event(run_id, {"closed": True})
         self.log.append({"type": "run_closed", "run_id": run_id})
 

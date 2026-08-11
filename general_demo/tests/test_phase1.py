@@ -75,6 +75,62 @@ def test_registry_manifest_status_or_version_tamper_is_rejected(tmp_path, field,
         registry.resolve(entry.ref)
 
 
+def test_registry_record_hash_rejects_recomputed_manifest_tamper(tmp_path):
+    registry = RecordRegistry(tmp_path / "records", "rim")
+    entry = registry.publish(
+        "fixture-alpha", "1.0.0",
+        {"fixture_only": True, "authority_status": "OPEN"},
+    )
+    manifest_path = registry.root / "fixture-alpha" / "1.0.0" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["status"] = "FROZEN"
+    core = {
+        "kind": manifest["kind"],
+        "id": manifest["id"],
+        "version": manifest["version"],
+        "status": manifest["status"],
+        "payload_hash": manifest["payload_hash"],
+        "freeze_record": {**manifest["freeze_record"], "status": "FROZEN"},
+    }
+    manifest["record_hash"] = content_hash(canonical_bytes(core))
+    manifest["manifest_hash"] = manifest["record_hash"]
+    manifest["seal"] = create_seal(
+        "registry.manifest", manifest["record_hash"], [manifest["payload_hash"]]
+    )
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(ReferenceResolutionError):
+        registry.resolve(entry.ref, require_frozen=True)
+    with pytest.raises(ReferenceResolutionError):
+        registry.reference("fixture-alpha", "1.0.0")
+
+
+def test_registry_rejects_directory_payload_and_manifest_symlinks(tmp_path):
+    registry = RecordRegistry(tmp_path / "records", "rim")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "payload.json").write_text("{}")
+    (outside / "manifest.json").write_text("{}")
+    registry.root.mkdir(parents=True)
+    (registry.root / "escape").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(Exception):
+        registry.publish("escape", "1.0.0", {"value": 1})
+
+    entry = registry.publish("fixture-alpha", "1.0.0", {"value": 1})
+    payload_path = registry.root / "fixture-alpha" / "1.0.0" / "payload.json"
+    payload_path.unlink()
+    payload_path.symlink_to(outside / "payload.json")
+    with pytest.raises(Exception):
+        registry.resolve(entry.ref)
+
+    payload_path.unlink()
+    payload_path.write_text("{}")
+    manifest_path = registry.root / "fixture-alpha" / "1.0.0" / "manifest.json"
+    manifest_path.unlink()
+    manifest_path.symlink_to(outside / "manifest.json")
+    with pytest.raises(Exception):
+        registry.reference("fixture-alpha", "1.0.0")
+
+
 @pytest.mark.parametrize("bad_id", ["../escape", "nested/../../escape", "bad id", ""])
 def test_publish_rejects_path_traversal_and_invalid_ids(tmp_path, bad_id):
     registry = RecordRegistry(tmp_path / "records", "rim")
@@ -169,6 +225,30 @@ def test_first_campaign_accepts_only_frozen_g2_fixture(tmp_path):
             })
     with pytest.raises(Exception):
         gate.admit({
+            "run_id": "run-1",
+            "campaign": "arbitrary",
+            "rim_ref": rim.ref,
+            "granularity_profile_ref": g2.ref,
+        })
+    for bad_run_id in ["../escape", "run/id", ""]:
+        with pytest.raises(Exception):
+            gate.admit({
+                "run_id": bad_run_id,
+                "rim_ref": rim.ref,
+                "granularity_profile_ref": g2.ref,
+            })
+    draft_rim_registry = RecordRegistry(tmp_path / "draft-rims", "rim")
+    draft_rim = draft_rim_registry.publish(
+        "fixture-draft", "1.0.0",
+        {"fixture_only": True, "authority_status": "OPEN"},
+        "DRAFT",
+    )
+    with pytest.raises(Exception):
+        RunSelectionGate(draft_rim_registry, registry).admit(
+            RunSelection("run-1", draft_rim.ref, g2.ref)
+        )
+    with pytest.raises(Exception):
+        gate.admit({
             "run_id": "bad",
             "rim_refs": [rim.ref.to_dict(), rim.ref.to_dict()],
             "granularity_profile_ref": g2.ref,
@@ -224,7 +304,11 @@ def test_closed_run_index_rejects_new_events(tmp_path):
         "granularity_profile_ref": "profile:g2@1.0.0#" + "sha256:" + "2" * 64,
     }
     index.register(selection)
+    with pytest.raises(KeyError):
+        index.append_event("unregistered", {"late": True})
     index.close("run-1")
+    with pytest.raises(ImmutableError):
+        index.close("run-1")
     with pytest.raises(ImmutableError):
         index.append_event("run-1", {"late": True})
 
