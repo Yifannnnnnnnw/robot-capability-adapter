@@ -5,6 +5,23 @@ Ubuntu 22.04, CPython 3.10, `unitree_sdk2py==1.0.1` at commit
 `65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5`, `cyclonedds==0.10.2`, and
 `mujoco==3.3.6`.
 
+The real-route model entrypoint is the pinned official
+`unitree_robots/go2/scene.xml` at commit
+`ae6a8403e272733e9996ef59990880330496177f`, SHA-256
+`6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0`.
+It includes the already pinned `go2.xml` unchanged and adds the official plane
+geom named `floor`, so Stand, Sit, and the minimal Move task do not run against
+a floorless robot-only model. Because the include does not add actuators or
+sensors, the frozen twelve-actuator and forty-one-sensor names/order remain
+those of `go2.xml`.
+
+The same upstream scene also contains non-task obstacle geoms beginning well
+away from the origin. Their presence is recorded here but does not admit them
+as task assets or authorize obstacle/gait evaluation; first-Demo posture and
+short-motion assets must stay in the reviewed local flat-ground region. The
+complete scene/model/mesh closure is still unverified, so this entrypoint pin
+does not make the runtime READY.
+
 It is not yet a frozen runtime. `runtime-lock.json` deliberately remains
 `DRAFT_UNVERIFIED_LINUX_BUILD`: the complete dependency and Go2 MJCF asset
 closures have not been hashed, and the real DDS/MuJoCo readiness route has not

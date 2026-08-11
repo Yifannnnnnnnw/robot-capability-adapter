@@ -264,3 +264,29 @@ def test_real_identity_rejects_non_linux_even_with_claimed_lock(monkeypatch) -> 
     monkeypatch.setattr("sys.platform", "darwin")
     with pytest.raises(Go2ReadinessError, match="Linux amd64"):
         _real_identity({"status": "FROZEN_FROM_VERIFIED_LINUX_BUILD"})
+
+
+def test_real_route_is_wired_to_pinned_official_scene_and_remains_draft() -> None:
+    root = Path(__file__).resolve().parents[1]
+    environment = root / "environments/unitree-go2-linux-amd64/1.0.0"
+    dockerfile = (environment / "Dockerfile").read_text(encoding="utf-8")
+    launch_script = (root / "scripts/run_unitree_go2_readiness_linux.sh").read_text(
+        encoding="utf-8"
+    )
+    runtime_lock = json.loads((environment / "runtime-lock.json").read_text(encoding="utf-8"))
+
+    scene_path = "/opt/unitree_mujoco/unitree_robots/go2/scene.xml"
+    scene_sha256 = "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0"
+    assert f"{scene_sha256}  {scene_path}" in dockerfile
+    assert f"AUTOADAPTER_GO2_MODEL={scene_path}" in dockerfile
+    assert f"--model {scene_path}" in launch_script
+    assert runtime_lock["status"] == "DRAFT_UNVERIFIED_LINUX_BUILD"
+    assert runtime_lock["mujoco_entrypoint"] == {
+        "path": "unitree_robots/go2/scene.xml",
+        "sha256": scene_sha256,
+        "included_robot_model_path": "unitree_robots/go2/go2.xml",
+        "included_robot_model_sha256": "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b",
+        "floor_geom_name": "floor",
+        "floor_geom_type": "plane",
+        "complete_asset_closure_verified": False,
+    }

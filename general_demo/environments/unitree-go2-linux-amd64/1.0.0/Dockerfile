@@ -33,7 +33,8 @@ RUN git clone https://github.com/unitreerobotics/unitree_sdk2_python.git /opt/un
 RUN git clone https://github.com/unitreerobotics/unitree_mujoco.git /opt/unitree_mujoco \
     && git -C /opt/unitree_mujoco checkout ae6a8403e272733e9996ef59990880330496177f \
     && echo "3ddb54ddddc6a20255e9bb77760537774b2eb77ce50073bf1f4a69bfaa77b599  /opt/unitree_mujoco/simulate_python/unitree_sdk2py_bridge.py" | sha256sum -c - \
-    && echo "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b  /opt/unitree_mujoco/unitree_robots/go2/go2.xml" | sha256sum -c -
+    && echo "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b  /opt/unitree_mujoco/unitree_robots/go2/go2.xml" | sha256sum -c - \
+    && echo "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0  /opt/unitree_mujoco/unitree_robots/go2/scene.xml" | sha256sum -c -
 
 # SDK2's setup.py does not include utils/lib/crc_amd64.so in a built wheel.
 # The pinned editable checkout is the upstream-supported Demo installation and
@@ -45,5 +46,5 @@ RUN python3.10 -m pip install --no-cache-dir cyclonedds==0.10.2 mujoco==3.3.6 py
     && python3.10 -c "from unitree_sdk2py.utils.crc import CRC; CRC()" \
     && python3.10 -c "from autoadapter2.integrations.unitree_go2.readiness import run_readiness"
 
-ENV AUTOADAPTER_GO2_MODEL=/opt/unitree_mujoco/unitree_robots/go2/go2.xml
+ENV AUTOADAPTER_GO2_MODEL=/opt/unitree_mujoco/unitree_robots/go2/scene.xml
 WORKDIR /opt/autoadapter/general_demo

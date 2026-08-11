@@ -26,6 +26,6 @@ docker run --rm --platform linux/amd64 --network none \
     --manifest integrations/unitree-go2/integration_manifest.json \
     --profile contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json \
     --runtime-lock /run/autoadapter/runtime-lock.json \
-    --model /opt/unitree_mujoco/unitree_robots/go2/go2.xml \
+    --model /opt/unitree_mujoco/unitree_robots/go2/scene.xml \
     --report /opt/autoadapter/general_demo/readiness_output/readiness_report.json \
     --reference-root /opt/autoadapter
