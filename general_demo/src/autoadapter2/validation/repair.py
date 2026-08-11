@@ -1,4 +1,4 @@
-"""Bounded implementation-only Repair over the same sealed A/B inputs."""
+"""Bounded implementation-only Repair with immutable revision and run ledgers."""
 
 from __future__ import annotations
 
@@ -12,12 +12,29 @@ from ..foundation.errors import ContractError
 from ..foundation.hashing import content_hash
 from ..foundation.seals import create_seal, verify_seal
 from ..implementation.binding import derive_implementation_manifest
-from .validation_a import ValidationAResult, ValidationARunner, create_execution_binding_overlay
-from .validation_b import ValidationBResult, ValidationBRunner, verify_validation_suite
+from .validation_a import ValidationAResult, ValidationARunner, bind_candidate_to_suite
+from .validation_b import (
+    FrozenValidationContext,
+    ValidationBResult,
+    ValidationBRunner,
+    ValidationContext,
+    freeze_validation_context,
+)
 
 
 RepairCallback = Callable[[Mapping[str, Any]], Mapping[str, Any]]
-_MAX_REPAIRS = 10
+
+
+@dataclass(frozen=True)
+class RepairConfig:
+    max_repairs: int = 10
+    max_infrastructure_retries: int = 1
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.max_repairs, int) or isinstance(self.max_repairs, bool) or not 1 <= self.max_repairs <= 10:
+            raise ContractError("Repair max_repairs must be 1..10")
+        if not isinstance(self.max_infrastructure_retries, int) or isinstance(self.max_infrastructure_retries, bool) or self.max_infrastructure_retries < 0:
+            raise ContractError("Repair infrastructure retries must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -27,6 +44,8 @@ class RepairResult:
     repairs_consumed: int
     repair_llm_calls: int
     repair_log: tuple[dict[str, Any], ...]
+    run_ledger: tuple[dict[str, Any], ...]
+    run_snapshot_hash: str
     initial_validation_a: ValidationAResult
     initial_validation_b: ValidationBResult | None
     final_validation_a: ValidationAResult | None
@@ -38,40 +57,27 @@ def _issue(code: str) -> dict[str, str]:
     return {"code": code, "message": code.replace("_", " ").lower()}
 
 
-def _source(submission: Mapping[str, Any]) -> str:
+def _submission_source(submission: Mapping[str, Any]) -> str:
     value = submission.get("capability.py") if isinstance(submission, Mapping) else None
     return value if isinstance(value, str) else ""
 
 
-def _freeze_design(
-    binding_contract: Mapping[str, Any],
-    capability_design: Mapping[str, Any] | None,
-    design_seal: Mapping[str, Any] | None,
-) -> str:
-    design_hash = binding_contract.get("design_hash")
-    if not isinstance(design_hash, str):
-        raise ContractError("Repair requires a Python Binding Contract with a design hash")
-    if capability_design is None and design_seal is None:
-        return design_hash
-    if not isinstance(capability_design, Mapping) or not isinstance(design_seal, Mapping):
-        raise ContractError("Repair must receive both the sealed Design and its seal")
-    frozen_design = copy.deepcopy(dict(capability_design))
-    actual_hash = content_hash(canonical_bytes(frozen_design))
+def _freeze_design(design: Mapping[str, Any], seal: Mapping[str, Any], binding_contract: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
+    frozen = copy.deepcopy(dict(design))
+    design_hash = content_hash(canonical_bytes(frozen))
     try:
-        if not verify_seal(dict(design_seal)) or design_seal.get("artifact_type") != "capability_design" or design_seal.get("artifact_hash") != actual_hash:
+        if not verify_seal(dict(seal)) or seal.get("artifact_type") != "capability_design" or seal.get("artifact_hash") != design_hash:
             raise ContractError("Repair requires the exact sealed Capability Design")
     except Exception as exc:
         if isinstance(exc, ContractError):
             raise
         raise ContractError("Repair requires the exact sealed Capability Design") from exc
-    if actual_hash != design_hash:
-        raise ContractError("Repair Design does not match the frozen Python Binding")
-    return design_hash
+    if binding_contract.get("design_hash") != design_hash:
+        raise ContractError("Repair Design does not match the sealed Binding")
+    return frozen, design_hash
 
 
 def _sanitized_diagnostics(validation_a: ValidationAResult, validation_b: ValidationBResult | None) -> list[dict[str, str]]:
-    """Keep gate/category information while withholding cases, scores, and criteria."""
-
     if validation_a.status != "PASS":
         return [{"gate": "A", "code": item["code"]} for item in validation_a.diagnostics]
     if validation_b is not None and validation_b.status == "FAIL":
@@ -83,12 +89,12 @@ def _repair_output(value: Any) -> tuple[str | None, int, dict[str, str] | None]:
     if not isinstance(value, Mapping):
         return None, 0, _issue("REPAIR_OUTPUT")
     output = dict(value)
-    llm_calls = output.get("llm_calls")
-    if not isinstance(llm_calls, int) or isinstance(llm_calls, bool) or llm_calls < 0:
+    calls = output.get("llm_calls")
+    if not isinstance(calls, int) or isinstance(calls, bool) or calls < 0:
         return None, 0, _issue("REPAIR_ACCOUNTING")
     if set(output) != {"capability.py", "llm_calls"} or not isinstance(output.get("capability.py"), str) or not output["capability.py"].strip():
-        return None, llm_calls, _issue("REPAIR_OUTPUT")
-    return output["capability.py"], llm_calls, None
+        return None, calls, _issue("REPAIR_OUTPUT")
+    return output["capability.py"], calls, None
 
 
 def _expected_symbols(binding_contract: Mapping[str, Any]) -> list[dict[str, str]]:
@@ -104,99 +110,103 @@ def _expected_symbols(binding_contract: Mapping[str, Any]) -> list[dict[str, str
 
 
 class RepairRunner:
-    """Run the initial candidate and at most ten immutable-input repair revisions."""
-
-    def __init__(self, validation_a: ValidationARunner, validation_b: ValidationBRunner, repair_callback: RepairCallback):
+    def __init__(
+        self,
+        validation_a: ValidationARunner,
+        validation_b: ValidationBRunner,
+        repair_callback: RepairCallback,
+        config: RepairConfig = RepairConfig(),
+    ):
         if not callable(repair_callback):
             raise ContractError("Repair requires a callback")
         self._validation_a = validation_a
         self._validation_b = validation_b
         self._repair_callback = repair_callback
+        self._config = config
 
     def run(
         self,
+        capability_design: Mapping[str, Any],
+        design_seal: Mapping[str, Any],
         binding_contract: Mapping[str, Any],
         binding_seal: Mapping[str, Any],
         initial_submission: Mapping[str, Any],
         initial_manifest: Mapping[str, Any],
         initial_manifest_seal: Mapping[str, Any],
-        validation_suite: Mapping[str, Any],
-        suite_seal: Mapping[str, Any],
-        *,
-        capability_design: Mapping[str, Any] | None = None,
-        design_seal: Mapping[str, Any] | None = None,
+        context: ValidationContext,
     ) -> RepairResult:
+        frozen_design, design_hash = _freeze_design(capability_design, design_seal, binding_contract)
         frozen_binding = copy.deepcopy(dict(binding_contract))
         frozen_binding_seal = copy.deepcopy(dict(binding_seal))
-        frozen_suite, suite_hash = verify_validation_suite(validation_suite, suite_seal)
-        frozen_suite_seal = copy.deepcopy(dict(suite_seal))
-        design_hash = _freeze_design(frozen_binding, capability_design, design_seal)
+        frozen_context = freeze_validation_context(context)
+        if frozen_context.design_hash != design_hash:
+            raise ContractError("Repair run_snapshot does not bind the sealed Design")
         binding_hash = content_hash(canonical_bytes(frozen_binding))
-        frozen_hashes = {
+        hashes = {
             "design_hash": design_hash,
             "binding_contract_hash": binding_hash,
-            "suite_hash": suite_hash,
+            "blue_line_spec_hash": frozen_context.spec_hash,
+            "blue_line_manifest_hash": frozen_context.manifest_hash,
+            "suite_hash": frozen_context.suite_hash,
+            "run_snapshot_hash": frozen_context.run_snapshot_hash,
         }
-
+        ledger: list[dict[str, Any]] = []
         initial_a = self._validation_a.run(
+            frozen_design,
+            design_seal,
             frozen_binding,
             frozen_binding_seal,
             copy.deepcopy(dict(initial_submission)),
             copy.deepcopy(dict(initial_manifest)),
             copy.deepcopy(dict(initial_manifest_seal)),
         )
-        initial_b = self._run_b_if_ready(initial_a, frozen_suite, frozen_suite_seal, suite_hash)
+        initial_b = self._run_b(initial_a, frozen_context, 0, ledger)
         if initial_b is not None and initial_b.status == "PASS":
-            return self._result("PASS", 0, 0, 0, [], initial_a, initial_b, initial_a, initial_b, frozen_hashes)
+            return self._result("PASS", 0, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
         if initial_b is not None and initial_b.status == "INFRASTRUCTURE_ERROR":
-            return self._result("INFRASTRUCTURE_ERROR", None, 0, 0, [], initial_a, initial_b, initial_a, initial_b, frozen_hashes)
+            return self._result("INFRASTRUCTURE_ERROR", None, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
 
-        current_source = _source(initial_submission)
+        current_source = _submission_source(initial_submission)
         current_a = initial_a
         current_b = initial_b
+        source_history = {source_hash for source_hash in [initial_a.source_hash] if source_hash}
         repair_log: list[dict[str, Any]] = []
         repairs_consumed = 0
         total_llm_calls = 0
         previous_source_hash = initial_a.source_hash
-        for repair_index in range(1, _MAX_REPAIRS + 1):
+        for requested_index in range(1, self._config.max_repairs + 1):
             request = {
-                "repair_index": repair_index,
+                "repair_index": requested_index,
                 "capability.py": current_source,
                 "binding_contract": copy.deepcopy(frozen_binding),
                 "design_hash": design_hash,
+                "run_snapshot_hash": frozen_context.run_snapshot_hash,
                 "diagnostics": _sanitized_diagnostics(current_a, current_b),
-                "ledger": {"repairs_consumed": repairs_consumed, "max_repairs": _MAX_REPAIRS},
+                "ledger": {"repairs_consumed": repairs_consumed, "max_repairs": self._config.max_repairs},
             }
             try:
-                raw_output = self._repair_callback(copy.deepcopy(request))
+                raw = self._repair_callback(copy.deepcopy(request))
             except Exception:
-                repair_log.append({
-                    "repair_index": repair_index,
-                    "llm_calls": 0,
-                    "status": "INFRASTRUCTURE_ERROR",
-                    "consumed": False,
-                })
-                return self._result(
-                    "INFRASTRUCTURE_ERROR", None, repairs_consumed, total_llm_calls, repair_log,
-                    initial_a, initial_b, current_a, current_b, frozen_hashes,
-                )
-            repaired_source, llm_calls, output_issue = _repair_output(raw_output)
+                repair_log.append({"repair_index": requested_index, "llm_calls": 0, "status": "INFRASTRUCTURE_ERROR", "consumed": False})
+                return self._result("INFRASTRUCTURE_ERROR", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+            repaired_source, llm_calls, output_issue = _repair_output(raw)
             total_llm_calls += llm_calls
             if output_issue is not None:
                 repairs_consumed += 1
-                repair_log.append({
-                    "repair_index": repair_index,
-                    "llm_calls": llm_calls,
-                    "status": "FAIL",
-                    "diagnostics": [output_issue],
-                    "consumed": True,
-                })
-                current_b = None
+                repair_log.append({"repair_index": requested_index, "llm_calls": llm_calls, "status": "FAIL", "diagnostics": [output_issue], "consumed": True})
                 continue
-
             source_hash = content_hash(repaired_source.encode("utf-8"))
-            source_parents = [binding_hash, design_hash] + ([previous_source_hash] if previous_source_hash else [])
-            source_seal = create_seal("capability.py", source_hash, source_parents)
+            if source_hash in source_history:
+                repair_log.append({"repair_index": requested_index, "llm_calls": llm_calls, "source_hash": source_hash, "status": "NO_CHANGE", "consumed": False})
+                return self._result("NO_CHANGE", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+
+            repairs_consumed += 1
+            source_history.add(source_hash)
+            source_seal = create_seal(
+                "capability.py",
+                source_hash,
+                [binding_hash, design_hash] + ([previous_source_hash] if previous_source_hash else []),
+            )
             manifest, _manifest_hash, manifest_seal = derive_implementation_manifest(
                 design_hash=design_hash,
                 binding_hash=binding_hash,
@@ -204,62 +214,63 @@ class RepairRunner:
                 symbols=_expected_symbols(frozen_binding),
             )
             current_a = self._validation_a.run(
+                frozen_design,
+                design_seal,
                 frozen_binding,
                 frozen_binding_seal,
                 {"capability.py": repaired_source},
                 manifest,
                 manifest_seal,
             )
-            current_b = self._run_b_if_ready(current_a, frozen_suite, frozen_suite_seal, suite_hash)
-            if current_b is not None and current_b.status == "INFRASTRUCTURE_ERROR":
-                repair_log.append({
-                    "repair_index": repair_index,
-                    "llm_calls": llm_calls,
-                    "source_hash": source_hash,
-                    "source_seal": source_seal,
-                    "a_status": current_a.status,
-                    "b_status": current_b.status,
-                    "status": "INFRASTRUCTURE_ERROR",
-                    "consumed": False,
-                })
-                return self._result(
-                    "INFRASTRUCTURE_ERROR", None, repairs_consumed, total_llm_calls, repair_log,
-                    initial_a, initial_b, current_a, current_b, frozen_hashes,
-                )
-            repairs_consumed += 1
+            current_b = self._run_b(current_a, frozen_context, repairs_consumed, ledger)
             repair_log.append({
-                "repair_index": repair_index,
+                "repair_index": repairs_consumed,
                 "llm_calls": llm_calls,
                 "source_hash": source_hash,
                 "source_seal": source_seal,
                 "a_status": current_a.status,
                 "b_status": current_b.status if current_b is not None else None,
-                "status": "PASS" if current_b is not None and current_b.status == "PASS" else "FAIL",
+                "status": (
+                    "PASS" if current_b is not None and current_b.status == "PASS"
+                    else "INFRASTRUCTURE_ERROR" if current_b is not None and current_b.status == "INFRASTRUCTURE_ERROR"
+                    else "FAIL"
+                ),
                 "consumed": True,
             })
             if current_b is not None and current_b.status == "PASS":
-                return self._result(
-                    "PASS", repair_index, repairs_consumed, total_llm_calls, repair_log,
-                    initial_a, initial_b, current_a, current_b, frozen_hashes,
-                )
+                return self._result("PASS", repairs_consumed, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+            if current_b is not None and current_b.status == "INFRASTRUCTURE_ERROR":
+                return self._result("INFRASTRUCTURE_ERROR", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
             current_source = repaired_source
             previous_source_hash = source_hash
-        return self._result(
-            "FAILED_AFTER_REPAIRS", None, repairs_consumed, total_llm_calls, repair_log,
-            initial_a, initial_b, current_a, current_b, frozen_hashes,
-        )
+        return self._result("FAILED_AFTER_REPAIRS", None, repairs_consumed, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
 
-    def _run_b_if_ready(
+    def _run_b(
         self,
         validation_a: ValidationAResult,
-        suite: Mapping[str, Any],
-        suite_seal: Mapping[str, Any],
-        suite_hash: str,
+        frozen: FrozenValidationContext,
+        revision_index: int,
+        ledger: list[dict[str, Any]],
     ) -> ValidationBResult | None:
-        if validation_a.status != "PASS" or validation_a.candidate_module is None:
+        if validation_a.status != "PASS" or validation_a.candidate_handle is None:
             return None
-        overlay = create_execution_binding_overlay(validation_a, suite_hash)
-        return self._validation_b.run(copy.deepcopy(dict(suite)), copy.deepcopy(dict(suite_seal)), overlay, validation_a.candidate_module)
+        candidate = bind_candidate_to_suite(validation_a, frozen.suite_hash)
+        result: ValidationBResult | None = None
+        for execution_attempt in range(1, self._config.max_infrastructure_retries + 2):
+            result = self._validation_b.run(candidate, frozen.context)
+            ledger.append({
+                "revision_index": revision_index,
+                "execution_attempt": execution_attempt,
+                "source_hash": candidate.source_hash,
+                "implementation_manifest_hash": candidate.implementation_manifest_hash,
+                "overlay_hash": candidate.overlay_hash,
+                "run_snapshot_hash": frozen.run_snapshot_hash,
+                "b_status": result.status,
+                "b_report_hash": result.report_hash,
+            })
+            if result.status != "INFRASTRUCTURE_ERROR":
+                return result
+        return result
 
     @staticmethod
     def _result(
@@ -268,11 +279,13 @@ class RepairRunner:
         repairs_consumed: int,
         repair_llm_calls: int,
         repair_log: list[dict[str, Any]],
+        run_ledger: list[dict[str, Any]],
+        frozen: FrozenValidationContext,
         initial_a: ValidationAResult,
         initial_b: ValidationBResult | None,
         final_a: ValidationAResult | None,
         final_b: ValidationBResult | None,
-        frozen_hashes: dict[str, str],
+        hashes: dict[str, str],
     ) -> RepairResult:
         return RepairResult(
             status=status,
@@ -280,9 +293,11 @@ class RepairRunner:
             repairs_consumed=repairs_consumed,
             repair_llm_calls=repair_llm_calls,
             repair_log=tuple(copy.deepcopy(repair_log)),
+            run_ledger=tuple(copy.deepcopy(run_ledger)),
+            run_snapshot_hash=frozen.run_snapshot_hash,
             initial_validation_a=initial_a,
             initial_validation_b=initial_b,
             final_validation_a=final_a,
             final_validation_b=final_b,
-            frozen_artifact_hashes=copy.deepcopy(frozen_hashes),
+            frozen_artifact_hashes=copy.deepcopy(hashes),
         )
