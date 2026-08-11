@@ -15,7 +15,7 @@
   },
   "translation_ref": {
     "path": "general_demo/integrations/so-arm101/translation.json",
-    "sha256": "28c63b19ed248fb5886095e1ba1ba87d1c1f132952fc8c3ff673def087609a03"
+    "sha256": "988c657a2ab58d24a258756875eef3ebe86f9650e7ad911a7574f98aacae0cb7"
   },
   "readiness_profile_ref": {
     "path": "general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json",

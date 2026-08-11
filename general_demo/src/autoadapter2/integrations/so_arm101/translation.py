@@ -11,9 +11,11 @@ import math
 import os
 import pty
 import select
+import sys
 import threading
 import time
 import tty
+from errno import EIO
 from pathlib import Path
 from typing import Iterable, Protocol
 
@@ -254,7 +256,10 @@ class FeetechPTYTranslation:
     def port(self) -> str:
         if self._slave_fd is None:
             raise RuntimeError("PTY hook is not installed")
-        return os.ttyname(self._slave_fd)
+        port = os.ttyname(self._slave_fd)
+        if sys.platform == "linux" and not port.startswith("/dev/pts/"):
+            raise RuntimeError(f"translation did not create a Linux PTY: {port}")
+        return port
 
     @property
     def is_open(self) -> bool:
@@ -265,9 +270,15 @@ class FeetechPTYTranslation:
             raise RuntimeError("closed PTY translation instances cannot be reused")
         if self.is_open:
             raise RuntimeError("PTY hook is already installed")
-        self._master_fd, self._slave_fd = pty.openpty()
-        tty.setraw(self._slave_fd)
-        os.set_blocking(self._master_fd, False)
+        master_fd, slave_fd = pty.openpty()
+        try:
+            tty.setraw(slave_fd)
+            os.set_blocking(master_fd, False)
+        except BaseException:
+            os.close(slave_fd)
+            os.close(master_fd)
+            raise
+        self._master_fd, self._slave_fd = master_fd, slave_fd
         self._stop.clear()
         self._thread_error = None
         self._thread = threading.Thread(target=self._serve, name="so101-feetech-pty", daemon=True)
@@ -391,6 +402,10 @@ class FeetechPTYTranslation:
                     chunk = os.read(master_fd, 4096)
                 except BlockingIOError:
                     continue
+                except OSError as exc:
+                    if self._stop.is_set() or exc.errno == EIO:
+                        return
+                    raise
                 if not chunk:
                     return
                 buffer.extend(chunk)
@@ -413,10 +428,11 @@ class FeetechPTYTranslation:
             return
         self._closed = True
         self._stop.set()
+        worker = self._thread
         try:
-            if self._thread is not None:
-                self._thread.join(timeout=5.0)
-                if self._thread.is_alive():
+            if worker is not None:
+                worker.join(timeout=5.0)
+                if worker.is_alive():
                     raise RuntimeError("Feetech PTY worker did not stop within 5 seconds")
         finally:
             self._thread = None

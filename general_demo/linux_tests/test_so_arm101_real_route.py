@@ -15,18 +15,34 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_real_lerobot_feetech_pty_mujoco_six_check_route(tmp_path: Path) -> None:
     assert sys.platform == "linux", "formal readiness must run on Linux"
     runtime_lock = Path(os.environ["AUTOADAPTER_RUNTIME_LOCK"])
-    model = Path(os.environ["AUTOADAPTER_SO101_MODEL"])
-    direction = os.environ["AUTOADAPTER_GRIPPER_DIRECTION"]
+    model = Path(os.environ.get("AUTOADAPTER_SO101_MODEL", "/opt/SO-ARM100/Simulation/SO101/so101_new_calib.xml"))
+    direction = os.environ.get("AUTOADAPTER_GRIPPER_DIRECTION", "tick-increases-qpos")
     assert direction in {"tick-increases-qpos", "tick-decreases-qpos"}
-    # The report and its evidence must share one content-addressed artifact root
-    # with the pinned manifest/profile files.  Pytest's /tmp directory is outside
-    # that root, so use its unique basename under the disposable container copy.
-    reference_root = ROOT.parent
-    report_path = reference_root / "run_artifacts" / tmp_path.name / "readiness_report.json"
+    reference_root = Path(os.environ.get("AUTOADAPTER_REFERENCE_ROOT", ROOT.parent))
+    manifest = Path(
+        os.environ.get(
+            "AUTOADAPTER_MANIFEST",
+            str(ROOT / "integrations/so-arm101/integration_manifest.json"),
+        )
+    )
+    profile = Path(
+        os.environ.get(
+            "AUTOADAPTER_PROFILE",
+            str(ROOT / "contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json"),
+        )
+    )
+    attempt_root = Path(
+        os.environ.get(
+            "AUTOADAPTER_OUTPUT_DIRECTORY",
+            str(reference_root / "run_artifacts" / tmp_path.name),
+        )
+    )
+    attempt_root.mkdir(parents=True, exist_ok=False)
+    report_path = attempt_root / "readiness_report.json"
     report = run_readiness(
         run_id="linux-real-so101-route",
-        manifest_path=ROOT / "integrations/so-arm101/integration_manifest.json",
-        profile_path=ROOT / "contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json",
+        manifest_path=manifest,
+        profile_path=profile,
         runtime_lock_path=runtime_lock,
         model_path=model,
         gripper_tick_increases_qpos=direction == "tick-increases-qpos",

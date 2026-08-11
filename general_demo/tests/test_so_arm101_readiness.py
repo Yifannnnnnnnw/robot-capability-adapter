@@ -5,6 +5,8 @@ import select
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from autoadapter2.integrations.so_arm101.feetech_protocol import (
     INST_PING,
     MOTOR_IDS,
@@ -18,6 +20,7 @@ from autoadapter2.integrations.so_arm101.feetech_protocol import (
 )
 from autoadapter2.integrations.so_arm101.readiness import (
     CHECK_IDS,
+    ReadinessError,
     public_positions_to_ticks,
     run_readiness,
 )
@@ -183,3 +186,20 @@ def test_public_position_conversion_requires_exact_six_finite_fields() -> None:
         assert "exactly match" in str(exc)
     else:
         raise AssertionError("missing SDK field was accepted")
+
+
+def test_readiness_refuses_to_reuse_an_attempt_artifact(tmp_path: Path) -> None:
+    report_path = tmp_path / "attempt" / "readiness_report.json"
+    report_path.parent.mkdir()
+    report_path.write_text("immutable", encoding="utf-8")
+    with pytest.raises(ReadinessError, match="already contains artifacts"):
+        run_readiness(
+            run_id="reused-attempt",
+            manifest_path=ROOT / "integrations/so-arm101/integration_manifest.json",
+            profile_path=ROOT / "contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json",
+            runtime_lock_path=ROOT / "environments/so-arm101-linux-amd64/1.0.0/runtime-lock.json",
+            model_path=tmp_path / "model.xml",
+            gripper_tick_increases_qpos=True,
+            report_path=report_path,
+            reference_root=tmp_path,
+        )

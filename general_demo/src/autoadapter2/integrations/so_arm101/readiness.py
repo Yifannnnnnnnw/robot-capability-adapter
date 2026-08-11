@@ -7,6 +7,7 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import os
 import platform
 import signal
 import sys
@@ -36,6 +37,24 @@ PROBE_ACTION = {
     "wrist_roll.pos": 50.0,
     "gripper.pos": 25.0,
 }
+EXPECTED_SDK_COMMIT = "30da8e687a6dfc617fcd94afc367ac7071c376ce"
+EXPECTED_PACKAGE_ARTIFACTS = {
+    "lerobot": {
+        "version": "0.6.0",
+        "artifact_sha256": "b38a564fbc441d98380576863bf68635dde5fc2c42ddc2a39d0486640dc9e9a8",
+    },
+    "feetech-servo-sdk": {
+        "version": "1.0.0",
+        "artifact_sha256": "d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c",
+    },
+    "mujoco": {"version": "3.3.6"},
+}
+RUNTIME_SOURCE_PATHS = (
+    "general_demo/src/autoadapter2/integrations/so_arm101/feetech_protocol.py",
+    "general_demo/src/autoadapter2/integrations/so_arm101/translation.py",
+    "general_demo/src/autoadapter2/integrations/so_arm101/readiness.py",
+    "general_demo/scripts/run_so_arm101_readiness.py",
+)
 
 
 class ReadinessError(RuntimeError):
@@ -56,6 +75,10 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _write_evidence(path: Path, value: dict[str, Any]) -> str:
@@ -96,6 +119,189 @@ def _resolve_reference(root: Path, reference: dict[str, Any], *, label: str) -> 
     if _sha256(resolved) != expected_sha256:
         raise ReadinessError(f"{label} hash does not match the integration manifest")
     return resolved
+
+
+def _normalise_distribution_name(name: str) -> str:
+    return name.replace("_", "-").replace(".", "-").lower()
+
+
+def _installed_distribution_fingerprint(
+    distribution: importlib.metadata.Distribution,
+) -> dict[str, Any]:
+    """Hash the files actually installed in this runtime, not a copied lock claim."""
+    files: list[dict[str, str]] = []
+    record_sha256: str | None = None
+    for entry in distribution.files or ():
+        path = distribution.locate_file(entry)
+        if not path.is_file() or path.is_symlink():
+            continue
+        digest = _sha256(path)
+        relative = entry.as_posix()
+        files.append({"path": relative, "sha256": digest})
+        if relative.endswith("/RECORD") or relative == "RECORD":
+            record_sha256 = digest
+    files.sort(key=lambda item: item["path"])
+    if record_sha256 is None:
+        raise ReadinessError(
+            f"installed distribution {distribution.metadata['Name']!r} has no regular RECORD file"
+        )
+    return {
+        "version": distribution.version,
+        "installed_files_sha256": _sha256_bytes(canonical_bytes(files)),
+        "record_sha256": record_sha256,
+        "file_count": len(files),
+    }
+
+
+def _installed_distributions() -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for distribution in importlib.metadata.distributions():
+        name = distribution.metadata.get("Name")
+        if not name:
+            continue
+        normalised = _normalise_distribution_name(name)
+        result[normalised] = {
+            "name": name,
+            **_installed_distribution_fingerprint(distribution),
+        }
+    return dict(sorted(result.items()))
+
+
+def _report_artifact_hashes() -> dict[str, dict[str, str]]:
+    """Read the hashes emitted by pip's build-time install reports."""
+    build_root = Path(os.environ.get("AUTOADAPTER_RUNTIME_BUILD", "/opt/autoadapter/runtime-build"))
+    result: dict[str, dict[str, str]] = {}
+    for report_path in sorted(build_root.glob("*-install-report.json")):
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        for item in report.get("install", []):
+            metadata = item.get("metadata", {})
+            name = metadata.get("name")
+            version = metadata.get("version")
+            hashes = item.get("download_info", {}).get("archive_info", {}).get("hashes", {})
+            digest = hashes.get("sha256")
+            if not name or not version or not digest:
+                continue
+            result[_normalise_distribution_name(name)] = {
+                "version": version,
+                "artifact_sha256": digest,
+            }
+    pins_path = build_root / "artifact-sha256.txt"
+    if pins_path.is_file():
+        for line in pins_path.read_text(encoding="utf-8").splitlines():
+            parts = line.split()
+            if len(parts) != 2:
+                continue
+            digest, filename = parts
+            stem = filename.rsplit("/", 1)[-1].lower()
+            for name, expected in EXPECTED_PACKAGE_ARTIFACTS.items():
+                package_prefix = name.replace("-", "_")
+                if stem.replace("-", "_").startswith(package_prefix + "_"):
+                    result.setdefault(name, {"version": expected["version"]})[
+                        "artifact_sha256"
+                    ] = digest
+    return result
+
+
+def capture_verified_runtime_lock(
+    *,
+    output_path: str | Path,
+    model_path: str | Path,
+    reference_root: str | Path,
+) -> dict[str, Any]:
+    """Capture a deterministic lock from the running Linux image.
+
+    The image digest is supplied by the container launcher because an OCI digest is
+    only known after the image has been exported.  All other values are measured from
+    the running interpreter/filesystem and are never copied from the draft lock.
+    """
+    output_path = Path(output_path).resolve()
+    model_path = Path(model_path).resolve()
+    reference_root = Path(reference_root).resolve()
+    image_digest = os.environ.get("AUTOADAPTER_IMAGE_DIGEST", "")
+    if not image_digest.startswith("sha256:") or len(image_digest) != 71:
+        raise ReadinessError("AUTOADAPTER_IMAGE_DIGEST must contain the verified OCI image digest")
+    if sys.platform != "linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        raise ReadinessError("runtime capture requires Linux amd64")
+    if sys.version_info[:2] != (3, 12):
+        raise ReadinessError("runtime capture requires CPython 3.12")
+
+    installed = _installed_distributions()
+    artifact_hashes = _report_artifact_hashes()
+    packages: list[dict[str, Any]] = []
+    for name, expected in EXPECTED_PACKAGE_ARTIFACTS.items():
+        actual = installed.get(name)
+        if actual is None or actual["version"] != expected["version"]:
+            raise ReadinessError(f"required distribution {name}=={expected['version']} is not installed")
+        artifact = artifact_hashes.get(name, {})
+        digest = artifact.get("artifact_sha256")
+        if name in {"lerobot", "feetech-servo-sdk"} and digest != expected["artifact_sha256"]:
+            raise ReadinessError(f"build report does not verify the pinned {name} artifact")
+        if not digest:
+            raise ReadinessError(f"build report does not contain an artifact hash for {name}")
+        packages.append(
+            {
+                "name": name,
+                "version": actual["version"],
+                "artifact_kind": "sdist" if name == "feetech-servo-sdk" else "wheel",
+                "artifact_sha256": digest,
+                "installed_files_sha256": actual["installed_files_sha256"],
+                "record_sha256": actual["record_sha256"],
+                "file_count": actual["file_count"],
+                **({"source_commit": EXPECTED_SDK_COMMIT} if name == "lerobot" else {}),
+            }
+        )
+
+    complete: dict[str, dict[str, Any]] = {}
+    for name, actual in installed.items():
+        artifact = artifact_hashes.get(name)
+        if artifact is None:
+            continue
+        complete[name] = {
+            "version": actual["version"],
+            "artifact_sha256": artifact["artifact_sha256"],
+            "installed_files_sha256": actual["installed_files_sha256"],
+            "record_sha256": actual["record_sha256"],
+            "file_count": actual["file_count"],
+        }
+    if set(EXPECTED_PACKAGE_ARTIFACTS) - set(complete):
+        raise ReadinessError("complete dependency artifact capture is missing a required distribution")
+
+    source_hashes: dict[str, str] = {}
+    for relative in RUNTIME_SOURCE_PATHS:
+        source = reference_root / relative
+        if not source.is_file() or source.is_symlink():
+            raise ReadinessError(f"runtime source is unavailable for capture: {relative}")
+        source_hashes[relative] = _sha256(source)
+    model_sha256 = _sha256(model_path)
+    mujoco_module = importlib.import_module("mujoco")
+    mujoco_module_path = Path(mujoco_module.__file__).resolve()
+    python_path = Path(sys.executable).resolve()
+    lock = {
+        "schema_version": "1.0.0",
+        "runtime_id": "so-arm101-linux-amd64",
+        "version": "1.0.0",
+        "status": "FROZEN_FROM_VERIFIED_LINUX_BUILD",
+        "platform": {
+            "os": "Ubuntu 24.04",
+            "architecture": "amd64",
+            "python": platform.python_version(),
+            "machine": platform.machine(),
+        },
+        "oci_image_digest": image_digest,
+        "python": {"executable": str(python_path), "sha256": _sha256(python_path)},
+        "packages": packages,
+        "complete_dependency_artifact_hashes": complete,
+        "sdk_source_commit": EXPECTED_SDK_COMMIT,
+        "model": {"path": str(model_path), "sha256": model_sha256},
+        "source_hashes": source_hashes,
+        "mujoco_module": {
+            "version": mujoco_module.__version__,
+            "file": str(mujoco_module_path),
+            "sha256": _sha256(mujoco_module_path),
+        },
+    }
+    _write_evidence(output_path, lock)
+    return lock
 
 
 def _category(exc: BaseException) -> str:
@@ -152,21 +358,72 @@ def _real_identity(runtime_lock: dict[str, Any]) -> dict[str, Any]:
         raise ReadinessError("formal SO-ARM101 readiness requires Linux amd64")
     if sys.version_info[:2] != (3, 12):
         raise ReadinessError(f"formal runtime requires CPython 3.12, found {platform.python_version()}")
-    expected_versions = {"lerobot": "0.6.0", "feetech-servo-sdk": "1.0.0", "mujoco": "3.3.6"}
-    installed = {name: importlib.metadata.version(name) for name in expected_versions}
-    if installed != expected_versions:
-        raise ReadinessError(f"distribution mismatch: expected {expected_versions}, got {installed}")
     if runtime_lock.get("status") != "FROZEN_FROM_VERIFIED_LINUX_BUILD":
         raise ReadinessError("runtime lock is DRAFT; no verified Linux build may claim sdk_identity_load PASS")
-    expected_artifacts = {
-        "lerobot": "b38a564fbc441d98380576863bf68635dde5fc2c42ddc2a39d0486640dc9e9a8",
-        "feetech-servo-sdk": "d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c",
-    }
-    locked = {item["name"]: item.get("artifact_sha256") for item in runtime_lock.get("packages", [])}
-    for name, expected_hash in expected_artifacts.items():
-        if locked.get(name) != expected_hash:
+    image_record = runtime_lock.get("image")
+    expected_image_digest = runtime_lock.get("oci_image_digest")
+    if expected_image_digest is None and isinstance(image_record, dict):
+        expected_image_digest = image_record.get("oci_digest")
+    actual_image_digest = os.environ.get("AUTOADAPTER_IMAGE_DIGEST")
+    if expected_image_digest != actual_image_digest:
+        raise ReadinessError("runtime lock image digest does not match the launched image")
+    installed = _installed_distributions()
+    reported_artifacts = _report_artifact_hashes()
+    locked = {item.get("name"): item for item in runtime_lock.get("packages", [])}
+    for name, expected in EXPECTED_PACKAGE_ARTIFACTS.items():
+        actual = installed.get(name)
+        locked_item = locked.get(name)
+        if actual is None or actual.get("version") != expected["version"]:
+            raise ReadinessError(f"installed distribution mismatch for {name}=={expected['version']}")
+        if not isinstance(locked_item, dict):
+            raise ReadinessError(f"runtime lock lacks the pinned {name} distribution")
+        if locked_item.get("version") != actual["version"]:
+            raise ReadinessError(f"runtime lock version mismatch for {name}")
+        if not isinstance(locked_item.get("artifact_sha256"), str):
+            raise ReadinessError(f"runtime lock lacks the measured {name} artifact hash")
+        reported = reported_artifacts.get(name, {}).get("artifact_sha256")
+        if reported != locked_item["artifact_sha256"]:
+            raise ReadinessError(f"runtime lock artifact hash does not match the image build report for {name}")
+        if name in {"lerobot", "feetech-servo-sdk"} and locked_item.get("artifact_sha256") != expected[
+            "artifact_sha256"
+        ]:
             raise ReadinessError(f"runtime lock does not bind the pinned {name} artifact")
-    return {"platform": "linux-amd64", "python": platform.python_version(), "packages": installed}
+        for field in ("installed_files_sha256", "record_sha256"):
+            if locked_item.get(field) != actual.get(field):
+                raise ReadinessError(f"installed {name} {field} does not match the runtime lock")
+    complete = runtime_lock.get("complete_dependency_artifact_hashes")
+    if not isinstance(complete, dict) or any(
+        name not in complete for name in EXPECTED_PACKAGE_ARTIFACTS
+    ):
+        raise ReadinessError("runtime lock lacks complete dependency artifact hashes")
+    for name, locked_item in complete.items():
+        actual = installed.get(name)
+        if actual is None or locked_item.get("version") != actual.get("version"):
+            raise ReadinessError(f"installed dependency identity mismatch for {name}")
+        if locked_item.get("artifact_sha256") != reported_artifacts.get(name, {}).get("artifact_sha256"):
+            raise ReadinessError(f"installed dependency artifact does not match the image build report for {name}")
+        if locked_item.get("installed_files_sha256") != actual.get("installed_files_sha256"):
+            raise ReadinessError(f"installed dependency files do not match the runtime lock for {name}")
+    if runtime_lock.get("sdk_source_commit") != EXPECTED_SDK_COMMIT:
+        raise ReadinessError("runtime lock does not bind the pinned LeRobot source commit")
+    python_record = runtime_lock.get("python")
+    if not isinstance(python_record, dict) or python_record.get("sha256") != _sha256(Path(sys.executable).resolve()):
+        raise ReadinessError("runtime lock does not bind the running CPython executable")
+    mujoco_module = importlib.import_module("mujoco")
+    mujoco_record = runtime_lock.get("mujoco_module")
+    if (
+        not isinstance(mujoco_record, dict)
+        or mujoco_record.get("version") != mujoco_module.__version__
+        or mujoco_record.get("sha256") != _sha256(Path(mujoco_module.__file__).resolve())
+    ):
+        raise ReadinessError("runtime lock does not bind the running MuJoCo module")
+    return {
+        "platform": "linux-amd64",
+        "python": platform.python_version(),
+        "image_digest": actual_image_digest,
+        "packages": {name: installed[name]["version"] for name in EXPECTED_PACKAGE_ARTIFACTS},
+        "installed_distribution_count": len(installed),
+    }
 
 
 def _write_calibration(directory: Path) -> None:
@@ -186,6 +443,8 @@ def _write_calibration(directory: Path) -> None:
 
 
 def _real_sdk_factory(port: str, calibration_dir: Path) -> Any:
+    if sys.platform == "linux" and not port.startswith("/dev/pts/"):
+        raise ReadinessError(f"physical serial paths are forbidden; expected a project PTY, got {port}")
     try:
         from lerobot.motors.feetech import FeetechMotorsBus
         try:
@@ -260,6 +519,28 @@ def _verify_model_closure(model_path: Path, morphology: dict[str, Any]) -> None:
             raise ReadinessError(f"MuJoCo asset closure mismatch: {relative}")
 
 
+def _verify_runtime_measurements(
+    runtime_lock: dict[str, Any], *, model_path: Path, reference_root: Path
+) -> None:
+    """Verify the measured model/source bytes bound by a captured runtime lock."""
+    model = runtime_lock.get("model")
+    if not isinstance(model, dict) or model.get("sha256") != _sha256(model_path):
+        raise ReadinessError("runtime lock model hash does not match the loaded model bytes")
+    source_hashes = runtime_lock.get("source_hashes")
+    if not isinstance(source_hashes, dict) or not source_hashes:
+        raise ReadinessError("runtime lock does not contain measured source hashes")
+    for relative, expected in source_hashes.items():
+        if not isinstance(relative, str) or Path(relative).is_absolute() or ".." in Path(relative).parts:
+            raise ReadinessError("runtime lock contains an unsafe source path")
+        source = (reference_root / relative).resolve()
+        try:
+            source.relative_to(reference_root.resolve())
+        except ValueError as exc:
+            raise ReadinessError("runtime lock source path escapes the reference root") from exc
+        if not source.is_file() or source.is_symlink() or _sha256(source) != expected:
+            raise ReadinessError(f"runtime lock source hash mismatch: {relative}")
+
+
 def _call_with_timeout(seconds: float, operation: Callable[[], Any]) -> Any:
     with _wall_timeout(seconds):
         return operation()
@@ -290,12 +571,25 @@ def run_readiness(
         if reference_root is not None
         else manifest_path.parents[3]
     )
+    evidence_dir = report_path.parent / f"{report_path.stem}.evidence"
+    if report_path.exists() or evidence_dir.exists():
+        raise ReadinessError(f"readiness attempt directory already contains artifacts: {report_path.parent}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
     runtime_lock = json.loads(runtime_lock_path.read_text(encoding="utf-8"))
     if tuple(profile.get("check_ids", ())) != CHECK_IDS:
-        raise ReadinessError("readiness profile check order does not match Authority 0.15.0")
+        raise ReadinessError("readiness profile check order does not match the frozen Authority")
     limits = profile["time_limits"]
+    expected_limits = {
+        "per_check_wall_s": 60,
+        "attempt_wall_s": 180,
+        "transport_operation_wall_s": 2,
+        "max_probe_simulation_s": 1.0,
+        "cleanup_wall_s": 5,
+        "hidden_retry_count": 0,
+    }
+    if limits != expected_limits:
+        raise ReadinessError("readiness profile time limits do not match the frozen Authority")
     if limits.get("hidden_retry_count") != 0:
         raise ReadinessError("hidden retries are forbidden")
     injected = any(value is not None for value in (identity_checker, backend_factory, sdk_factory))
@@ -316,6 +610,10 @@ def run_readiness(
         if _sha256(model_path) != morphology["mujoco"]["source_sha256"]:
             raise ReadinessError("MuJoCo model bytes do not match the selected morphology")
         _verify_model_closure(model_path, morphology)
+        if runtime_lock.get("status") == "FROZEN_FROM_VERIFIED_LINUX_BUILD":
+            _verify_runtime_measurements(
+                runtime_lock, model_path=model_path, reference_root=reference_root
+            )
         translation_path = _resolve_reference(
             reference_root, manifest["translation_ref"], label="translation_ref"
         )
@@ -342,11 +640,23 @@ def run_readiness(
     started_at = _utc_now()
     attempt_start = time.monotonic()
     checks: list[dict[str, Any]] = []
-    evidence: dict[str, Any] = {}
+    image_record = runtime_lock.get("image")
+    evidence_image_digest = runtime_lock.get("oci_image_digest")
+    if evidence_image_digest is None and isinstance(image_record, dict):
+        evidence_image_digest = image_record.get("oci_digest")
+    evidence: dict[str, Any] = {
+        "bindings": {
+            "runtime_lock_sha256": _sha256(runtime_lock_path),
+            "model_sha256": _sha256(model_path),
+            "source_hashes": runtime_lock.get("source_hashes", {}),
+            "image_digest": evidence_image_digest,
+        }
+    }
     backend: PositionBackend | None = None
     translation: FeetechPTYTranslation | None = None
     follower: Any | None = None
     cleanup = {"verdict": "FAIL", "detail": "cleanup not reached"}
+    identity_evidence: dict[str, Any] = {}
 
     def check(check_id: str, operation: Callable[[], dict[str, Any]]) -> None:
         check_start = time.monotonic()
@@ -374,7 +684,12 @@ def run_readiness(
 
     try:
         with _wall_timeout(float(limits["attempt_wall_s"])):
-            check("sdk_identity_load", lambda: identity_checker(runtime_lock))
+            def sdk_identity() -> dict[str, Any]:
+                detail = dict(identity_checker(runtime_lock))
+                identity_evidence.update(detail)
+                return detail
+
+            check("sdk_identity_load", sdk_identity)
 
             def hook_install() -> dict[str, Any]:
                 nonlocal backend, translation
@@ -602,7 +917,6 @@ def run_readiness(
     formal_pass = (
         all(item["verdict"] == "PASS" for item in contract_checks)
         and cleanup["verdict"] == "PASS"
-        and manifest.get("status") == "READY"
     )
     runtime_sha256 = hashlib.sha256(canonical_bytes(manifest["runtime"])).hexdigest()
     environment_fingerprint = {
@@ -610,6 +924,9 @@ def run_readiness(
         "machine": platform.machine(),
         "python": platform.python_version(),
         "injected_test_dependencies": injected,
+        "image_digest": identity_evidence.get("image_digest"),
+        "installed_distribution_count": identity_evidence.get("installed_distribution_count"),
+        "model_sha256": _sha256(model_path),
     }
     report = {
         "schema_version": "1.0.0",

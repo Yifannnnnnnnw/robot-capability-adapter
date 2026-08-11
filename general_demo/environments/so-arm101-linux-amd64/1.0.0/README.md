@@ -1,14 +1,13 @@
 # SO-ARM101 Linux amd64 readiness environment
 
-This is a minimal development image for the Authority 0.15.0 route:
+This is the pinned Linux/amd64 image for the SO-ARM101 readiness route:
 
 `real SO101Follower → real FeetechMotorsBus → PTY STS3215 → MuJoCo 3.3.6`.
 
-The checked-in runtime lock is deliberately `DRAFT_UNVERIFIED_BUILD`. The
-image therefore cannot issue formal `sdk_identity_load: PASS` yet. A real
-amd64 build must capture the MuJoCo wheel, complete dependency artifacts,
-CPython/native identities, and OCI digest into a separate lock whose status is
-`FROZEN_FROM_VERIFIED_LINUX_BUILD`. No placeholder or guessed hash is accepted.
+The mutable manifest, readiness profile, and runtime lock are mounted into a
+unique attempt directory. This keeps the measured OCI digest independent from
+the records that bind it. A verified lock is captured from the running image;
+no placeholder or copied hash is accepted.
 
 Build from the repository root:
 
@@ -18,18 +17,37 @@ docker build --platform linux/amd64 \
   -t autoadapter-so101-readiness:dev .
 ```
 
-Run the explicit Linux integration test with a build-produced frozen lock:
+Capture the lock from that exact image, supplying the digest reported by the
+container runtime:
 
 ```bash
-docker run --rm \
-  -e AUTOADAPTER_RUNTIME_LOCK=/evidence/runtime-lock.frozen.json \
-  -e AUTOADAPTER_GRIPPER_DIRECTION=tick-increases-qpos \
+docker image inspect autoadapter-so101-readiness:dev \
+  --format '{{.Descriptor.Digest}}'
+docker run --rm --platform linux/amd64 --network none \
+  -e AUTOADAPTER_IMAGE_DIGEST=sha256:<digest> \
+  -v "$PWD/general_demo/environments/so-arm101-linux-amd64/1.0.0:/run/autoadapter:ro" \
+  -v "$PWD/general_demo:/opt/autoadapter/general_demo:ro" \
   -v "$PWD/evidence:/evidence" \
   autoadapter-so101-readiness:dev \
-  python3.12 -m pytest -q linux_tests/test_so_arm101_real_route.py
+  python3.12 scripts/run_so_arm101_readiness.py --capture-runtime-lock \
+    --model /opt/SO-ARM100/Simulation/SO101/so101_new_calib.xml \
+    --reference-root /opt/autoadapter \
+    --report /evidence/runtime-lock.frozen.json
 ```
 
-This test does not skip. Missing Linux identity, dependencies, frozen lock,
-model closure, PTY route, or any of the six checks is a failure. A passing
-report is evidence for a later reviewed manifest update; the runner never
-promotes `integration_manifest.json` itself.
+Run one explicit Linux attempt with the verified lock, manifest, and profile:
+
+```bash
+general_demo/scripts/run_so_arm101_readiness_linux.sh \
+  autoadapter-so101-readiness:dev \
+  /absolute/path/to/runtime-lock.frozen.json \
+  /absolute/path/to/integration_manifest.json \
+  /absolute/path/to/readiness-profile.json \
+  /absolute/path/to/new-attempt-directory
+```
+
+The runner refuses an existing attempt directory, uses only a project-created
+PTY, records one immutable report plus seven evidence files, and never edits or
+promotes `integration_manifest.json`. The report is `PASS` only when the six
+ordered checks and cleanup pass; the manifest may remain `DRAFT` pending the
+separate project review gate.
