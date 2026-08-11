@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -17,6 +19,7 @@ from autoadapter2.integrations.so_arm101.session import (
     SOArm101EvaluationRobotSession,
     _load_frame_capture_factory,
 )
+from autoadapter2.integrations.so_arm101 import session as so_session
 from autoadapter2.validation import HarnessInvocation
 
 
@@ -274,6 +277,202 @@ def test_default_capture_factory_uses_shared_time_indexed_slots() -> None:
     timestamps = [round(frame.simulation_time_s, 12) for frame in frames]
     assert timestamps == [0.0, round(1 / 30, 12), round(2 / 30, 12), 0.1]
     assert len(timestamps) == len(set(timestamps))
+
+
+def test_sample_truth_uses_mujoco_object_velocity_not_site_xvelp() -> None:
+    object_types = SimpleNamespace(
+        mjOBJ_SITE="site",
+        mjOBJ_BODY="body",
+        mjOBJ_JOINT="joint",
+        mjOBJ_GEOM="geom",
+    )
+
+    class _MuJoCo:
+        mjtObj = object_types
+
+        @staticmethod
+        def mj_name2id(_model: object, object_type: str, name: str) -> int:
+            return {
+                ("site", "gripperframe"): 0,
+                ("body", "demo_cube"): 1,
+                ("joint", "demo_button_slide"): 2,
+                ("joint", "demo_cube_free"): 3,
+            }.get((object_type, name), -1)
+
+        @staticmethod
+        def mj_objectVelocity(
+            _model: object,
+            _data: object,
+            object_type: str,
+            object_id: int,
+            result: list[float],
+            flg_local: int,
+        ) -> None:
+            assert object_type == "site"
+            assert object_id == 0
+            assert flg_local == 0
+            result[:] = [1.0, 2.0, 3.0, 0.1, 0.2, 0.3]
+
+    model = SimpleNamespace(
+        jnt_dofadr=[0, 0, 0, 0],
+        jnt_qposadr=[0, 0, 0, 0],
+        njnt=0,
+        jnt_limited=[],
+    )
+    # Deliberately omit site_xvelp: a regression to the removed non-existent
+    # MjData field must fail this test with AttributeError.
+    data = SimpleNamespace(
+        site_xpos=[[0.30, -0.04, 0.18]],
+        xpos=[[0.0, 0.0, 0.0], [0.33, 0.04, 0.037]],
+        qpos=[0.0],
+        qvel=[0.0] * 6,
+        ctrl=[0.0],
+        ncon=0,
+        contact=[],
+        time=0.0,
+    )
+    session = object.__new__(SOArm101EvaluationRobotSession)
+    session._truth_provider = None
+    session._backend = SimpleNamespace(_mj=_MuJoCo(), model=model, data=data)
+    session._simulation_time_s = 0.0
+    session._scene_config = {
+        "table_surface_z_m": 0.02,
+        "cube_half_height_m": 0.017,
+        "workspace_bounds_m": {
+            "x": [0.0, 1.0],
+            "y": [-1.0, 1.0],
+            "z": [0.0, 1.0],
+        },
+    }
+    session._current_task = {
+        "target": {
+            "tip_position_m": [0.30, -0.04, 0.18],
+            "cube_goal_center_m": [0.33, 0.04],
+        }
+    }
+    session._event_state = {}
+    session._episode_samples = []
+    session._last_truth = None
+
+    truth = session._sample_truth()  # type: ignore[attr-defined]
+    assert truth["tip_speed_m_s"] == pytest.approx((0.1**2 + 0.2**2 + 0.3**2) ** 0.5)
+
+
+def _write_json_artifact(path: Path, value: dict[str, Any]) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _factory_fixture(tmp_path: Path) -> tuple[Path, Path, Path, dict[str, Any]]:
+    root = tmp_path / "run-pack"
+    manifest_path = root / "general_demo/integrations/so-arm101/integration_manifest.json"
+    morphology_path = root / "general_demo/libraries/morphology/so-arm101/1.0.0/record.json"
+    translation_path = root / "general_demo/integrations/so-arm101/translation.json"
+    model_path = tmp_path / "official/SO-ARM100/Simulation/SO101/so101_new_calib.xml"
+    model_bytes = b"<mujoco model='factory-test'/ >"
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    model_path.write_bytes(model_bytes)
+
+    morphology = json.loads(
+        (ROOT / "libraries/morphology/so-arm101/1.0.0/record.json").read_text(encoding="utf-8")
+    )
+    morphology["mujoco"]["source_sha256"] = hashlib.sha256(model_bytes).hexdigest()
+    morphology_hash = _write_json_artifact(morphology_path, morphology)
+    translation = json.loads(
+        (ROOT / "integrations/so-arm101/translation.json").read_text(encoding="utf-8")
+    )
+    translation_hash = _write_json_artifact(translation_path, translation)
+    manifest = json.loads(
+        (ROOT / "integrations/so-arm101/integration_manifest.json").read_text(encoding="utf-8")
+    )
+    manifest["morphology_ref"]["sha256"] = morphology_hash
+    manifest["translation_ref"]["sha256"] = translation_hash
+    _write_json_artifact(manifest_path, manifest)
+    return manifest_path, model_path, root / "runs/run-1", manifest
+
+
+def test_factory_verifies_records_and_derives_direction_before_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path, model_path, run_path, _manifest = _factory_fixture(tmp_path)
+    constructed: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    class _Session:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            constructed.append((args, kwargs))
+
+    monkeypatch.setattr(so_session, "SOArm101EvaluationRobotSession", _Session)
+    monkeypatch.setenv("AUTOADAPTER_SO101_MODEL", str(model_path))
+    monkeypatch.delenv("AUTOADAPTER_GRIPPER_DIRECTION", raising=False)
+
+    result = so_session.create_so_arm101_evaluation_session(
+        "so-arm101", manifest_path, run_path
+    )
+    assert result is not None
+    assert len(constructed) == 1
+    assert constructed[0][0] == (model_path.resolve(),)
+    assert constructed[0][1]["gripper_tick_increases_qpos"] is True
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        "model-bytes",
+        "model-path",
+        "morphology-record",
+        "morphology-hash",
+        "translation-record",
+        "translation-hash",
+        "direction",
+    ],
+)
+def test_factory_rejects_unverified_model_records_and_direction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tamper: str
+) -> None:
+    manifest_path, model_path, run_path, manifest = _factory_fixture(tmp_path)
+    constructed: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    class _Session:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            constructed.append((args, kwargs))
+
+    monkeypatch.setattr(so_session, "SOArm101EvaluationRobotSession", _Session)
+    monkeypatch.setenv("AUTOADAPTER_SO101_MODEL", str(model_path))
+    monkeypatch.delenv("AUTOADAPTER_GRIPPER_DIRECTION", raising=False)
+
+    if tamper == "model-bytes":
+        model_path.write_bytes(b"wrong-model")
+    elif tamper == "model-path":
+        wrong_model = tmp_path / "wrong-model.xml"
+        wrong_model.write_bytes(model_path.read_bytes())
+        monkeypatch.setenv("AUTOADAPTER_SO101_MODEL", str(wrong_model))
+    elif tamper == "morphology-record":
+        morphology_path = manifest_path.parents[3] / manifest["morphology_ref"]["path"]
+        morphology = json.loads(morphology_path.read_text(encoding="utf-8"))
+        morphology["id"] = "wrong-morphology"
+        manifest["morphology_ref"]["sha256"] = _write_json_artifact(morphology_path, morphology)
+        _write_json_artifact(manifest_path, manifest)
+    elif tamper == "morphology-hash":
+        manifest["morphology_ref"]["sha256"] = "0" * 64
+        _write_json_artifact(manifest_path, manifest)
+    elif tamper == "translation-record":
+        translation_path = manifest_path.parents[3] / manifest["translation_ref"]["path"]
+        translation = json.loads(translation_path.read_text(encoding="utf-8"))
+        translation["id"] = "wrong-translation"
+        manifest["translation_ref"]["sha256"] = _write_json_artifact(translation_path, translation)
+        _write_json_artifact(manifest_path, manifest)
+    elif tamper == "translation-hash":
+        manifest["translation_ref"]["sha256"] = "0" * 64
+        _write_json_artifact(manifest_path, manifest)
+    else:
+        monkeypatch.setenv("AUTOADAPTER_GRIPPER_DIRECTION", "tick-decreases-qpos")
+
+    with pytest.raises(so_session.SOArm101SessionError):
+        so_session.create_so_arm101_evaluation_session("so-arm101", manifest_path, run_path)
+    assert not constructed
+    assert not run_path.exists()
 
 
 @pytest.mark.parametrize("task_id", ["T01", "T02", "T03", "T08", "T20"])

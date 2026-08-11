@@ -16,6 +16,7 @@ the existing translation; qpos/qvel/mocap/object writes are confined to
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import math
 import os
@@ -147,6 +148,175 @@ def _read_json(path: str | Path, label: str) -> dict[str, Any]:
     except (OSError, json.JSONDecodeError) as exc:
         raise SOArm101SessionError(f"could not read {label}: {resolved}") from exc
     return _deepcopy_mapping(value, label)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise SOArm101SessionError(f"could not hash file: {path}") from exc
+    return digest.hexdigest()
+
+
+def _safe_manifest_reference_path(root: Path, reference: Any, label: str) -> Path:
+    if not isinstance(reference, Mapping):
+        raise SOArm101SessionError(f"{label} is not a file reference")
+    raw_path = reference.get("path")
+    expected_hash = reference.get("sha256")
+    if (
+        not isinstance(raw_path, str)
+        or not raw_path
+        or "\\" in raw_path
+        or not isinstance(expected_hash, str)
+        or len(expected_hash) != 64
+        or any(character not in "0123456789abcdef" for character in expected_hash)
+    ):
+        raise SOArm101SessionError(f"{label} is not a normalized path/hash reference")
+    relative = Path(raw_path)
+    if relative.is_absolute() or ".." in relative.parts or any(part in {"", "."} for part in relative.parts):
+        raise SOArm101SessionError(f"{label} escapes the repository/run-pack root")
+    candidate = root / relative
+    resolved = candidate.resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError as exc:
+        raise SOArm101SessionError(f"{label} escapes the repository/run-pack root") from exc
+    if candidate.is_symlink() or not resolved.is_file():
+        raise SOArm101SessionError(f"{label} is not a regular file: {candidate}")
+    if _sha256(resolved) != expected_hash:
+        raise SOArm101SessionError(f"{label} hash does not match the integration manifest")
+    return resolved
+
+
+def _reference_root(manifest_path: Path, run_path: Path, manifest: Mapping[str, Any]) -> Path:
+    references = (manifest.get("morphology_ref"), manifest.get("translation_ref"))
+    candidates: list[Path] = []
+    seen: set[Path] = set()
+    for starting_point in (run_path, manifest_path.parent, _repo_general_demo_root().parent):
+        for candidate in (starting_point, *starting_point.parents):
+            resolved = candidate.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            candidates.append(resolved)
+    for candidate in candidates:
+        try:
+            raw_paths = []
+            for reference in references:
+                if not isinstance(reference, Mapping) or not isinstance(reference.get("path"), str):
+                    raise SOArm101SessionError("integration manifest has invalid private record references")
+                relative = Path(reference["path"])
+                if relative.is_absolute() or ".." in relative.parts or "\\" in reference["path"]:
+                    raise SOArm101SessionError("integration manifest has an unsafe private record path")
+                raw_paths.append(candidate / relative)
+            if all(path.is_file() and not path.is_symlink() for path in raw_paths):
+                return candidate
+        except OSError:
+            continue
+    raise SOArm101SessionError(
+        "could not resolve SO-ARM101 morphology_ref and translation_ref under the repository/run-pack root"
+    )
+
+
+def _verify_selected_robot_records(
+    manifest_path: str | Path,
+    run_path: Path,
+    manifest: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], Path]:
+    resolved_manifest = Path(manifest_path).resolve()
+    root = _reference_root(resolved_manifest, run_path, manifest)
+    morphology_path = _safe_manifest_reference_path(root, manifest.get("morphology_ref"), "morphology_ref")
+    translation_path = _safe_manifest_reference_path(root, manifest.get("translation_ref"), "translation_ref")
+    morphology = _read_json(morphology_path, "SO-ARM101 morphology record")
+    translation = _read_json(translation_path, "SO-ARM101 Translation record")
+    if (
+        morphology.get("record_type") != "morphology"
+        or morphology.get("robot_model_id") != ROBOT_MODEL_ID
+        or morphology.get("robot_configuration_id") != ROBOT_CONFIGURATION_ID
+        or morphology.get("id") != ROBOT_CONFIGURATION_ID
+    ):
+        raise SOArm101SessionError("selected morphology record is not the SO-ARM101 stock-gripper record")
+    mujoco_record = morphology.get("mujoco")
+    if not isinstance(mujoco_record, Mapping):
+        raise SOArm101SessionError("selected morphology record has no MuJoCo record")
+    entrypoint = mujoco_record.get("entrypoint")
+    source_sha256 = mujoco_record.get("source_sha256")
+    if (
+        not isinstance(entrypoint, str)
+        or not entrypoint
+        or not isinstance(source_sha256, str)
+        or len(source_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in source_sha256)
+    ):
+        raise SOArm101SessionError("selected morphology record has an invalid MuJoCo entrypoint/hash")
+    source = morphology.get("source")
+    if not isinstance(source, Mapping) or source.get("path") != entrypoint:
+        raise SOArm101SessionError("selected morphology source path does not match its MuJoCo entrypoint")
+    if (
+        not isinstance(translation.get("record_type"), str)
+        or translation.get("record_type") != "translation"
+        or translation.get("id") != "lerobot-so101-feetech-pty-mujoco"
+    ):
+        raise SOArm101SessionError("selected Translation record is not the SO-ARM101 PTY Translation")
+    conversion = translation.get("conversion")
+    if not isinstance(conversion, Mapping) or not isinstance(
+        conversion.get("gripper_tick_increases_qpos"), bool
+    ):
+        raise SOArm101SessionError("selected Translation has no frozen gripper direction")
+    implementation = translation.get("implementation")
+    if not isinstance(implementation, Mapping) or implementation.get("entrypoint") != (
+        "autoadapter2.integrations.so_arm101.translation:FeetechPTYTranslation"
+    ):
+        raise SOArm101SessionError("selected Translation implementation entrypoint is invalid")
+    return morphology, translation, root
+
+
+def _verify_external_model(model_raw: str, morphology: Mapping[str, Any]) -> Path:
+    selected_path = Path(model_raw).expanduser()
+    model_path = selected_path.resolve()
+    if selected_path.is_symlink() or not model_path.is_file():
+        raise SOArm101SessionError(f"selected SO-ARM101 model is not a regular file: {model_path}")
+    mujoco_record = morphology.get("mujoco")
+    if not isinstance(mujoco_record, Mapping):
+        raise SOArm101SessionError("selected morphology record has no MuJoCo record")
+    entrypoint = mujoco_record.get("entrypoint")
+    expected_hash = mujoco_record.get("source_sha256")
+    if not isinstance(entrypoint, str) or not isinstance(expected_hash, str):
+        raise SOArm101SessionError("selected morphology record has an invalid model binding")
+    expected_parts = Path(entrypoint).parts
+    if (
+        Path(entrypoint).is_absolute()
+        or "\\" in entrypoint
+        or ".." in expected_parts
+        or not expected_parts
+        or tuple(model_path.parts[-len(expected_parts) :]) != expected_parts
+    ):
+        raise SOArm101SessionError(
+            f"selected model path must end with the morphology entrypoint {entrypoint!r}"
+        )
+    if _sha256(model_path) != expected_hash:
+        raise SOArm101SessionError("selected SO-ARM101 model bytes do not match morphology.mujoco.source_sha256")
+    return model_path
+
+
+def _site_linear_velocity(mj: Any, model: Any, data: Any, site_id: int) -> list[float]:
+    """Return a site's world-frame linear velocity from MuJoCo's public API."""
+
+    spatial_velocity = [0.0] * 6
+    mj.mj_objectVelocity(
+        model,
+        data,
+        mj.mjtObj.mjOBJ_SITE,
+        site_id,
+        spatial_velocity,
+        0,
+    )
+    # mj_objectVelocity returns the object-centered spatial vector as
+    # [angular_world(3), linear_world(3)]; flg_local=0 requests world axes.
+    return [float(value) for value in spatial_velocity[3:6]]
 
 
 def _default_follower_factory(port: str, calibration_dir: Path) -> Any:
@@ -950,7 +1120,7 @@ class SOArm101EvaluationRobotSession:
         cube_body = self._first_id(mj, model, mj.mjtObj.mjOBJ_BODY, ("demo_cube",))
         button_joint = self._first_id(mj, model, mj.mjtObj.mjOBJ_JOINT, ("demo_button_slide",))
         tip_position = [float(value) for value in data.site_xpos[tip_site]]
-        tip_velocity = [float(value) for value in data.site_xvelp[tip_site]]
+        tip_velocity = _site_linear_velocity(mj, model, data, tip_site)
         cube_position = [float(value) for value in data.xpos[cube_body]]
         cube_joint = self._first_id(mj, model, mj.mjtObj.mjOBJ_JOINT, ("demo_cube_free",))
         cube_qvel_address = int(model.jnt_dofadr[cube_joint])
@@ -1382,18 +1552,32 @@ def create_so_arm101_evaluation_session(
     manifest = _read_json(manifest_path, "SO-ARM101 integration manifest")
     if manifest.get("robot_model_id") != ROBOT_MODEL_ID or manifest.get("robot_configuration_id") != ROBOT_CONFIGURATION_ID:
         raise SOArm101SessionError("selected integration manifest is not the SO-ARM101 stock-gripper manifest")
+    run_path = Path(run_directory).resolve()
+    morphology, translation, _reference_root_path = _verify_selected_robot_records(
+        manifest_path,
+        run_path,
+        manifest,
+    )
     model_raw = os.environ.get("AUTOADAPTER_SO101_MODEL")
     if not model_raw:
         raise SOArm101SessionError("AUTOADAPTER_SO101_MODEL must select the pinned official SO-ARM101 MJCF")
-    direction = os.environ.get("AUTOADAPTER_GRIPPER_DIRECTION")
-    if direction not in {"tick-increases-qpos", "tick-decreases-qpos"}:
-        raise SOArm101SessionError("AUTOADAPTER_GRIPPER_DIRECTION must be explicitly selected")
-    run_path = Path(run_directory).resolve()
+    model_path = _verify_external_model(model_raw, morphology)
+    conversion = translation["conversion"]
+    gripper_tick_increases_qpos = bool(conversion["gripper_tick_increases_qpos"])
+    compatibility_direction = os.environ.get("AUTOADAPTER_GRIPPER_DIRECTION")
+    if compatibility_direction is not None:
+        expected_direction = (
+            "tick-increases-qpos" if gripper_tick_increases_qpos else "tick-decreases-qpos"
+        )
+        if compatibility_direction != expected_direction:
+            raise SOArm101SessionError(
+                "AUTOADAPTER_GRIPPER_DIRECTION conflicts with the verified Translation record"
+            )
     run_path.mkdir(parents=True, exist_ok=True)
     return SOArm101EvaluationRobotSession(
-        model_raw,
+        model_path,
         run_directory=run_path,
-        gripper_tick_increases_qpos=direction == "tick-increases-qpos",
+        gripper_tick_increases_qpos=gripper_tick_increases_qpos,
     )
 
 
