@@ -228,13 +228,30 @@ def test_first_campaign_accepts_only_frozen_g2_fixture(tmp_path):
     selection = RunSelection("run-1", rim.ref, g2.ref)
     run_index = RunIndex(tmp_path / "runs.jsonl")
     selection_hash = run_index.register(selection)
-    gate = RunSelectionGate(rim_registry, registry, run_index)
+    gate = RunSelectionGate(rim_registry, registry, run_index, g2.ref)
     assert gate.admit(selection)[1].payload["granularity"] == "G2"
     receipts = gate.receipts(selection)
     assert receipts[0].selection_hash == selection_hash
     machine = RunStateMachine(selection.run_id, selection_hash)
     assert machine.transition(RunState.RIM_RESOLVED, receipts[0]) == RunState.RIM_RESOLVED
     assert machine.transition(RunState.READY_FOR_STAGE1, receipts[1]) == RunState.READY_FOR_STAGE1
+    second_rim = rim_registry.publish(
+        "fixture-beta", "1.0.0",
+        {"fixture_only": True, "authority_status": "OPEN"},
+    )
+    second_selection = RunSelection("run-2", second_rim.ref, g2.ref)
+    run_index.register(second_selection)
+    assert gate.admit(second_selection)[1].ref == g2.ref
+    alternate_g2 = registry.publish(
+        "g2-alt", "1.0.0",
+        {"profile_family": "granularity", "granularity": "G2",
+         "fixture_only": True, "authority_status": "OPEN", "variant": "different"},
+        "FROZEN_FIXTURE",
+    )
+    alternate_selection = RunSelection("run-3", rim.ref, alternate_g2.ref)
+    run_index.register(alternate_selection)
+    with pytest.raises(Exception):
+        gate.admit(alternate_selection)
     for bad_profile in [
         g1.ref,
         g3.ref,
@@ -270,7 +287,9 @@ def test_first_campaign_accepts_only_frozen_g2_fixture(tmp_path):
     draft_selection = RunSelection("run-1", draft_rim.ref, g2.ref)
     draft_index.register(draft_selection)
     with pytest.raises(Exception):
-        RunSelectionGate(draft_rim_registry, registry, draft_index).admit(draft_selection)
+        RunSelectionGate(
+            draft_rim_registry, registry, draft_index, g2.ref
+        ).admit(draft_selection)
     with pytest.raises(Exception):
         gate.admit({
             "run_id": "bad",
@@ -328,6 +347,7 @@ def test_future_synthetic_campaign_can_use_configured_g1_gate_without_artifact(t
         rim_registry,
         profile_registry,
         run_index,
+        g1.ref,
         campaign_id="future-g1",
         allowed_granularity="G1",
     )

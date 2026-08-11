@@ -76,9 +76,15 @@ class RunSelectionGate:
         rim_registry: RecordRegistry,
         profile_registry: ProfileRegistry,
         run_index: "RunIndex",
+        pinned_granularity_profile_ref: ExactReference,
         campaign_id: str = "first",
         allowed_granularity: str = "G2",
     ):
+        if (
+            not isinstance(pinned_granularity_profile_ref, ExactReference)
+            or pinned_granularity_profile_ref.kind != "profile"
+        ):
+            raise ContractError("gate requires one exact pinned profile reference")
         _id(campaign_id, "campaign_id")
         if (
             not isinstance(allowed_granularity, str)
@@ -90,6 +96,7 @@ class RunSelectionGate:
         self.rim_registry = rim_registry
         self.profile_registry = profile_registry
         self.run_index = run_index
+        self.pinned_granularity_profile_ref = pinned_granularity_profile_ref
         self.campaign_id = campaign_id
         self.allowed_granularity = allowed_granularity
 
@@ -99,6 +106,8 @@ class RunSelectionGate:
         selection_hash = self.run_index.selection_hash(selection)
         if selection.campaign != self.campaign_id:
             raise GateError(f"campaign {selection.campaign!r} is not admitted by this gate")
+        if selection.granularity_profile_ref != self.pinned_granularity_profile_ref:
+            raise GateError("selection profile does not equal the gate's pinned profile")
         rim = self.rim_registry.resolve(selection.rim_ref, require_frozen=True)
         profile = self.profile_registry.resolve(
             selection.granularity_profile_ref, require_frozen=True
