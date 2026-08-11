@@ -4,6 +4,7 @@ import copy
 
 import pytest
 
+from autoadapter2.blue_line import BlueLineRunner
 from autoadapter2.foundation.errors import ContractError
 from autoadapter2.foundation.seals import verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
@@ -20,6 +21,27 @@ ROBOT = {
     "frame_allowlist": ["joint"],
 }
 TASKS = [{"requirement_id": "req-reach", "description": "Reach a public joint target safely."}]
+STANDARDS = {
+    "snapshot_id": "standards-stage2",
+    "standards": [{
+        "standard_id": "joint-arrival", "measurement_id": "joint-error",
+        "metric": "max_joint_error", "comparator": "<=", "threshold_value": 0.05,
+        "dwell_s": 0.2, "timeout_s": 2.0, "aggregation": "ALL",
+    }],
+}
+MEASUREMENTS = {
+    "catalog_id": "measurements-stage2",
+    "measurements": [{
+        "measurement_id": "joint-error", "entity": "shoulder_pan", "unit": "rad",
+        "frame": "joint", "adapter_id": "truth-joint-state",
+        "truth_source": "physical_state", "metrics": ["max_joint_error"],
+    }],
+    "guards": [{"guard_id": "physical-state-not-command-receipt", "adapter_id": "truth-joint-state"}],
+}
+POLICY = {
+    "policy_id": "blue-stage2", "model_id": "fixed-fixture", "prompt_id": "blue-prompt-1",
+    "max_cases_per_capability": 1, "repetitions": 1,
+}
 
 
 def _design_body() -> dict:
@@ -45,10 +67,32 @@ def _design_body() -> dict:
     }
 
 
-def _sealed_design() -> tuple[dict, dict]:
-    result = Stage1Runner(FixtureJsonGenerator([_design_body()])).run("run-stage2", ROBOT, TASKS, G2)
+def _sealed_design(run_id: str = "run-stage2") -> tuple[dict, dict]:
+    result = Stage1Runner(FixtureJsonGenerator([_design_body()])).run(run_id, ROBOT, TASKS, G2)
     assert result.status == "SEALED" and result.capability_design and result.seal
     return result.capability_design, result.seal
+
+
+def _authorization(design: dict, seal: dict):
+    spec = {
+        "capability_specs": [{
+            "capability_id": "reach-joint-target",
+            "measurement": {"measurement_id": "joint-error", "entity": "shoulder_pan", "unit": "rad", "frame": "joint"},
+            "metric": "max_joint_error",
+            "threshold": {"comparator": "<=", "value": 0.05},
+            "dwell_s": 0.2,
+            "timeout_s": 2.0,
+            "aggregation": "ALL",
+            "guard_ids": ["physical-state-not-command-receipt"],
+            "cases": [{"case_id": "nominal", "initial_state": {"joint": 0.0}, "inputs": {"target": 0.2}}],
+            "lineage": {"kind": "COPIED", "standard_id": "joint-arrival", "material": False},
+        }],
+    }
+    result = BlueLineRunner(FixtureJsonGenerator([spec])).run(
+        design, seal, STANDARDS, MEASUREMENTS, POLICY
+    )
+    assert result.status == "READY" and result.stage2_authorization is not None
+    return result.stage2_authorization
 
 
 def test_binding_is_deterministic_and_one_to_one() -> None:
@@ -78,7 +122,10 @@ def test_stage2_requires_non_sensitive_ready_authorization() -> None:
         Stage2Runner(fixture).run(design, seal, {"authorized": True, "suite_hash": "sha256:" + "0" * 64})
     assert fixture.calls == []
 
-    result = Stage2Runner(fixture).run(design, seal, {"status": "READY", "authorized": True, "receipt_id": "stage2-1"})
+    other_design, other_seal = _sealed_design("other-run")
+    with pytest.raises(ContractError):
+        Stage2Runner(fixture).run(design, seal, _authorization(other_design, other_seal))
+    result = Stage2Runner(fixture).run(design, seal, _authorization(design, seal))
     assert result.status == "IMPLEMENTATION_BLOCKED"
     assert result.blocked_reason == "The public SDK method is unavailable."
     assert set(fixture.calls[0]["inputs"]) == {
@@ -89,7 +136,7 @@ def test_stage2_requires_non_sensitive_ready_authorization() -> None:
 def test_stage2_caps_accounted_llm_calls_at_thirty() -> None:
     design, seal = _sealed_design()
     fixture = FixtureJsonGenerator(lambda _stage, _prompt, _inputs: {"action": "not-an-action"})
-    result = Stage2Runner(fixture).run(design, seal, True)
+    result = Stage2Runner(fixture).run(design, seal, _authorization(design, seal))
 
     assert result.status == "CALL_LIMIT_EXHAUSTED"
     assert result.llm_calls == len(result.call_log) == len(fixture.calls) == 30
@@ -109,7 +156,9 @@ def test_sandbox_is_callback_only_and_is_not_an_extra_llm_call() -> None:
         {"action": "sandbox", "capability.py": binding.starter_skeleton, "probe": {"target": 0.2}},
         {"action": "submit", "capability.py": binding.starter_skeleton},
     ])
-    result = Stage2Runner(fixture, sandbox=CallbackSandbox(callback)).run(design, seal, True)
+    result = Stage2Runner(fixture, sandbox=CallbackSandbox(callback)).run(
+        design, seal, _authorization(design, seal)
+    )
 
     assert result.status == "SUBMITTED"
     assert result.llm_calls == 2
@@ -127,7 +176,7 @@ def test_submit_seals_exact_source_and_framework_derives_manifest() -> None:
     binding = derive_python_binding(design, seal)
     result = Stage2Runner(FixtureJsonGenerator([
         {"action": "submit", "capability.py": binding.starter_skeleton},
-    ])).run(design, seal, True)
+    ])).run(design, seal, _authorization(design, seal))
 
     assert result.status == "SUBMITTED"
     assert result.capability_source == binding.starter_skeleton
@@ -143,7 +192,7 @@ def test_submit_seals_exact_source_and_framework_derives_manifest() -> None:
 
     blocked = Stage2Runner(FixtureJsonGenerator([
         {"action": "blocked", "reason": "The public SDK method is unavailable."},
-    ])).run(design, seal, True)
+    ])).run(design, seal, _authorization(design, seal))
     assert blocked.status == "IMPLEMENTATION_BLOCKED"
     assert blocked.capability_source is None
 
@@ -153,7 +202,9 @@ def test_model_cannot_submit_extra_files_or_a_manifest(extra: str) -> None:
     design, seal = _sealed_design()
     source = derive_python_binding(design, seal).starter_skeleton
     response = {"action": "submit", "capability.py": source, extra: {"not": "accepted"}}
-    result = Stage2Runner(FixtureJsonGenerator([response]), config=Stage2Config(max_llm_calls=1)).run(design, seal, True)
+    result = Stage2Runner(FixtureJsonGenerator([response]), config=Stage2Config(max_llm_calls=1)).run(
+        design, seal, _authorization(design, seal)
+    )
 
     assert result.status == "CALL_LIMIT_EXHAUSTED"
     assert result.capability_source is None

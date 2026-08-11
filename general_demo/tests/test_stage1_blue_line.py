@@ -142,6 +142,7 @@ def test_proposed_or_materially_adapted_lineage_needs_review_without_suite() -> 
     assert result.manifest["reason_code"] == "PENDING_STANDARD_REVIEW"
     assert result.manifest["suite_hash"] is None
     assert result.validation_suite is None
+    assert result.stage2_authorization is None
 
     adapted = _valid_spec({"kind": "ADAPTED", "standard_id": "joint-arrival", "material": True})
     result = BlueLineRunner(FixtureJsonGenerator([adapted])).run(design, seal, STANDARDS, MEASUREMENTS, POLICY)
@@ -157,6 +158,7 @@ def test_ready_suite_and_all_seals_are_deterministic() -> None:
     assert first.suite_hash == second.suite_hash
     assert first.manifest_hash == second.manifest_hash
     assert first.validation_suite == second.validation_suite
+    assert first.stage2_authorization is not None
     assert first.validation_suite["repetitions"] == 3
     assert verify_seal(first.spec_seal)
     assert verify_seal(first.suite_seal)

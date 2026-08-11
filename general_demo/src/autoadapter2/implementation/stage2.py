@@ -11,6 +11,7 @@ import copy
 from dataclasses import dataclass
 from typing import Any, Mapping
 
+from ..blue_line import Stage2Authorization
 from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ContractError
 from ..foundation.hashing import content_hash
@@ -25,7 +26,6 @@ STAGE2_PROMPT = (
     "or blocked. A submit contains only action and capability.py; never return a manifest, "
     "additional file, validation content, or private evaluation information."
 )
-_RECEIPT_FIELDS = {"status", "authorized", "receipt_id"}
 _ACTION_FIELDS = {
     "sandbox": {"action", "capability.py", "probe"},
     "submit": {"action", "capability.py"},
@@ -73,23 +73,12 @@ def _public_reason(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip()) and not any(term in value.lower() for term in _PRIVATE_TERMS)
 
 
-def _authorization(value: Any) -> dict[str, Any]:
-    """Accept only a non-sensitive true flag or a deliberately tiny READY receipt."""
+def _authorization(value: Any, design_hash: str) -> dict[str, Any]:
+    """Accept only the opaque handle issued by the READY Blue Line branch."""
 
-    if value is True:
-        return {"authorized": True}
-    if not isinstance(value, Mapping):
+    if not isinstance(value, Stage2Authorization):
         raise ContractError("Stage 2 requires a READY Blue Line authorization")
-    receipt = dict(value)
-    if set(receipt) - _RECEIPT_FIELDS:
-        raise ContractError("Stage 2 authorization receipt may not contain suite, hash, or contents")
-    if receipt.get("authorized") is not True:
-        raise ContractError("Stage 2 requires a READY Blue Line authorization")
-    if "status" in receipt and receipt["status"] != "READY":
-        raise ContractError("Stage 2 authorization receipt must be READY")
-    if "receipt_id" in receipt and (not isinstance(receipt["receipt_id"], str) or not receipt["receipt_id"].strip()):
-        raise ContractError("Stage 2 authorization receipt_id must be public text")
-    return {key: receipt[key] for key in ("status", "authorized", "receipt_id") if key in receipt}
+    return value._verified_payload(design_hash)
 
 
 def _action_issues(output: Mapping[str, Any]) -> list[dict[str, str]]:
@@ -122,10 +111,12 @@ class Stage2Runner:
         self,
         capability_design: Mapping[str, Any],
         design_seal: Mapping[str, Any],
-        blue_line_authorization: bool | Mapping[str, Any],
+        blue_line_authorization: Stage2Authorization,
     ) -> Stage2Result:
-        authorization = _authorization(blue_line_authorization)
         binding = derive_python_binding(capability_design, design_seal)
+        authorization = _authorization(
+            blue_line_authorization, binding.contract["design_hash"]
+        )
         design = copy.deepcopy(dict(capability_design))
         base_inputs = {
             "capability_design": design,

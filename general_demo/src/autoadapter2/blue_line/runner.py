@@ -20,6 +20,27 @@ BLUE_LINE_PROMPT = (
     "candidate, Stage 2, Sandbox, Repair, or execution outcomes."
 )
 _FORBIDDEN_KEYS = ("candidate", "stage2", "sandbox", "repair", "validation_result", "demo_result")
+_AUTHORIZATION_TOKEN = object()
+
+
+class Stage2Authorization:
+    """Opaque, non-sensitive authorization issued only by a READY Blue Line run."""
+
+    __slots__ = ("_token", "_design_hash", "_receipt_id")
+
+    def __init__(self, token: object, design_hash: str, manifest_hash: str):
+        if token is not _AUTHORIZATION_TOKEN:
+            raise ContractError("Stage2Authorization is Framework-created only")
+        self._token = token
+        self._design_hash = design_hash
+        self._receipt_id = content_hash(
+            canonical_bytes({"design_hash": design_hash, "blue_line_manifest_hash": manifest_hash})
+        )
+
+    def _verified_payload(self, design_hash: str) -> dict[str, Any]:
+        if self._token is not _AUTHORIZATION_TOKEN or self._design_hash != design_hash:
+            raise ContractError("Blue Line authorization does not bind this Capability Design")
+        return {"status": "READY", "authorized": True, "receipt_id": self._receipt_id}
 
 
 @dataclass(frozen=True)
@@ -34,6 +55,7 @@ class BlueLineResult:
     manifest: dict[str, Any]
     manifest_hash: str
     manifest_seal: dict[str, Any]
+    stage2_authorization: Stage2Authorization | None
     call_log: tuple[dict[str, Any], ...]
     diagnostics: tuple[dict[str, str], ...]
 
@@ -345,7 +367,7 @@ class BlueLineRunner:
             )
             return BlueLineResult(
                 "NEEDS_REVIEW", spec, spec_hash, spec_seal, None, None, None,
-                manifest, manifest_hash, manifest_seal, tuple(calls), tuple(diagnostics),
+                manifest, manifest_hash, manifest_seal, None, tuple(calls), tuple(diagnostics),
             )
         suite = self._compile_suite(spec, design_hash, spec_hash, fixed_policy["repetitions"])
         suite_hash = content_hash(canonical_bytes(suite))
@@ -356,7 +378,8 @@ class BlueLineRunner:
         )
         return BlueLineResult(
             "READY", spec, spec_hash, spec_seal, suite, suite_hash, suite_seal,
-            manifest, manifest_hash, manifest_seal, tuple(calls), (),
+            manifest, manifest_hash, manifest_seal,
+            Stage2Authorization(_AUTHORIZATION_TOKEN, design_hash, manifest_hash), tuple(calls), (),
         )
 
     @staticmethod

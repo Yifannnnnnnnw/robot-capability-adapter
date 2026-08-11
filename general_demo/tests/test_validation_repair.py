@@ -178,9 +178,11 @@ def _blue_ready(design: dict, design_seal: dict):
 
 def _stage2_submission(source: str = _source()):
     design, design_seal = _sealed_design()
-    stage2 = Stage2Runner(FixtureJsonGenerator([{"action": "submit", "capability.py": source}])).run(design, design_seal, True)
-    assert stage2.status == "SUBMITTED"
     blue = _blue_ready(design, design_seal)
+    stage2 = Stage2Runner(FixtureJsonGenerator([{"action": "submit", "capability.py": source}])).run(
+        design, design_seal, blue.stage2_authorization
+    )
+    assert stage2.status == "SUBMITTED"
     return design, design_seal, stage2, blue
 
 
