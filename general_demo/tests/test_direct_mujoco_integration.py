@@ -47,6 +47,31 @@ def _write_mini_mjcf(root: Path, *, include_camera: bool = True) -> Path:
     return model_path
 
 
+def _write_body_actuator_mjcf(root: Path) -> Path:
+    model_path = root / "migrated_1_0" / "robot.xml"
+    model_path.parent.mkdir()
+    model_path.write_text(
+        """
+<mujoco model="direct-mujoco-body-actuator">
+  <option timestep="0.01" gravity="0 0 0"/>
+  <worldbody>
+    <light name="key" pos="0 0 1"/>
+    <body name="base" pos="0 0 0">
+      <geom name="link" type="sphere" size="0.05"/>
+      <site name="tip" pos="0 0 0.05" size="0.01"/>
+    </body>
+    <camera name="external" pos="0.8 -0.8 0.8" xyaxes="1 1 0 -1 1 0"/>
+  </worldbody>
+  <actuator>
+    <motor name="body_motor" site="tip" gear="1 0 0 0 0 0"/>
+  </actuator>
+</mujoco>
+""".strip(),
+        encoding="utf-8",
+    )
+    return model_path
+
+
 def _migrated_record(
     root: Path,
     *,
@@ -71,12 +96,38 @@ def _migrated_record(
     return record
 
 
-def test_invalid_library_mapping_fails_before_opening_mujoco(tmp_path: Path) -> None:
+def test_empty_actuator_mapping_fails_before_opening_mujoco(tmp_path: Path) -> None:
     record = _migrated_record(tmp_path)
-    record["actuator_names"] = ["hinge_motor", "extra_motor"]
+    record["actuator_names"] = []
 
-    with pytest.raises(DirectMuJoCoConfigurationError, match="actuator_names"):
+    with pytest.raises(DirectMuJoCoConfigurationError, match="actuator_names.*empty"):
         DirectMuJoCoLibraryConfig.from_record(record, asset_root=tmp_path)
+
+
+def test_zero_joint_record_resolves_actuator_independently(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    record = _migrated_record(tmp_path, reset={"policy": "model_default"})
+    record["joint_names"] = []
+    record["actuator_names"] = ["body_motor"]
+    config = DirectMuJoCoLibraryConfig.from_record(record, asset_root=tmp_path)
+    assert config.joint_names == ()
+    assert config.actuator_names == ("body_motor",)
+
+    pytest.importorskip("mujoco")
+    monkeypatch.setenv("MUJOCO_GL", "egl")
+    _write_body_actuator_mjcf(tmp_path)
+    session = DirectMuJoCoEvaluationRobotSession(record, asset_root=tmp_path)
+    try:
+        assert session.state()["joints"] == {}
+        assert session.state()["joint_positions"] == {}
+        assert session.state()["joint_velocities"] == {}
+        with pytest.raises(Exception, match="unknown actuator"):
+            session.send_action({"missing_motor": 0.2})
+        session.send_action({"body_motor": 0.2})
+        session.step(0.1)
+        assert session.accepted_action_count == 1
+        assert session.physics_step_count > 0
+    finally:
+        session.close()
 
 
 def test_missing_library_render_camera_reports_the_specific_field(tmp_path: Path) -> None:

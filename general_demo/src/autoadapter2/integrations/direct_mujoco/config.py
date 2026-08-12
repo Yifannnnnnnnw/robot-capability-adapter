@@ -121,12 +121,12 @@ class DirectMuJoCoLibraryConfig:
             record.get("robot_configuration_id"),
             "morphology.robot_configuration_id",
         )
-        joint_names = _names(record.get("joint_names"), "morphology.joint_names")
+        joint_names = _names(
+            record.get("joint_names"),
+            "morphology.joint_names",
+            allow_empty=True,
+        )
         actuator_names = _names(record.get("actuator_names"), "morphology.actuator_names")
-        if len(joint_names) != len(actuator_names):
-            raise DirectMuJoCoConfigurationError(
-                "morphology.actuator_names must have the same length as morphology.joint_names"
-            )
 
         mujoco = _required_mapping(record.get("mujoco"), "morphology.mujoco")
         entrypoint = _required_text(mujoco.get("entrypoint"), "morphology.mujoco.entrypoint")
