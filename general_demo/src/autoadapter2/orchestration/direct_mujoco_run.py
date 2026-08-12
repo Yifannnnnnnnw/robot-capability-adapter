@@ -23,6 +23,10 @@ from ..integrations.direct_mujoco import (
     create_direct_mujoco_session,
     load_morphology_record,
 )
+from ..libraries.no_sdk_direct_mujoco import (
+    NoSDKDirectMuJoCoRecord,
+    load_no_sdk_direct_mujoco_record,
+)
 
 
 DIRECT_MUJOCO_EXPERIMENTAL = "DIRECT_MUJOCO_EXPERIMENTAL"
@@ -62,6 +66,7 @@ class ResolvedDirectMuJoCoPackage:
     asset_cache_root: Path
     record: Mapping[str, Any]
     config: DirectMuJoCoLibraryConfig
+    sdk_record: NoSDKDirectMuJoCoRecord
 
 
 def resolve_morphology_record(
@@ -98,6 +103,8 @@ def resolve_morphology_record(
             f"{record_path}"
         )
 
+    sdk_record = load_no_sdk_direct_mujoco_record(root)
+
     cache_root = Path(asset_cache_root).expanduser().resolve()
     if not cache_root.is_dir():
         raise DirectMuJoCoRunResolutionError(
@@ -133,6 +140,7 @@ def resolve_morphology_record(
         asset_cache_root=cache_root,
         record=record,
         config=config,
+        sdk_record=sdk_record,
     )
 
 
@@ -162,6 +170,7 @@ class DirectMuJoCoExperiment:
             "version": self.package.version,
             "record_path": str(self.package.record_path),
             "asset_cache_root": str(self.package.asset_cache_root),
+            "sdk_record_path": str(self.package.sdk_record.record_path),
             **values,
         }
 

@@ -1,0 +1,14 @@
+{
+  "record_type": "sdk",
+  "id": "no-sdk-direct-mujoco",
+  "version": "1.0.0",
+  "execution_mode": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "sdk_status": "NOT_APPLICABLE",
+  "transport": "NONE",
+  "packages": [],
+  "dependencies": [],
+  "public_symbols": [],
+  "operations": [],
+  "action_fields": [],
+  "observation_fields": []
+}
