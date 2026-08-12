@@ -33,16 +33,19 @@ CANDIDATE_STATUS = "PROPOSED_REVIEW_REQUIRED"
 # may appear in the digest, while their raw payload and all categories below
 # remain excluded from the proposed record.
 EXCLUDED_EVIDENCE_CATEGORIES = (
-    "raw_stage_artifacts",
-    "candidate_source",
-    "private_diagnostics",
-    "criteria_cases_thresholds_seeds",
+    "private_validation_criteria",
+    "private_cases",
+    "thresholds",
+    "seeds",
     "mujoco_truth",
-    "translation_detail",
+    "translation_details",
+    "candidate_source",
     "consumer_trace",
-    "video_frames_manifest_camera_metadata",
+    "raw_video",
+    "video_frames",
+    "video_manifests",
+    "model_prompts",
     "credentials",
-    "model_prompt_output",
 )
 
 _SEMANTIC_FIELDS = frozenset({
@@ -88,13 +91,13 @@ _REPORT_FIELDS = frozenset({
     "excluded_categories",
     "checks",
 })
-_CHECK_FIELDS = frozenset({
+_CHECK_FIELDS = (
     "closure_verified_before_evidence_read",
     "sanitized_digest_only",
     "candidate_fields_declassified",
     "current_run_unchanged",
     "experience_library_unchanged",
-})
+)
 _CASE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _PUBLIC_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
@@ -357,6 +360,44 @@ def _validate_semantic_fields(
     }
     _assert_json_value(normalized, "candidate semantic fields")
     return normalized
+
+
+def validate_declassification_report(
+    value: Mapping[str, Any],
+    *,
+    candidate_id: str | None = None,
+    evidence_digest_hash: str | None = None,
+) -> dict[str, Any]:
+    """Validate the fixed experimental declassification report contract."""
+
+    if not isinstance(value, Mapping) or set(value) != _REPORT_FIELDS:
+        raise ContractError("declassification report fields are not closed")
+    if value["artifact_type"] != DECLASSIFICATION_REPORT_ARTIFACT_TYPE:
+        raise ContractError("declassification report artifact_type is invalid")
+    if value["format_version"] != CANDIDATE_FORMAT_VERSION:
+        raise ContractError("declassification report format_version is invalid")
+    if value["status"] != "PASS":
+        raise ContractError("declassification report status must be PASS")
+    report_candidate_id = value["candidate_id"]
+    if not isinstance(report_candidate_id, str) or not report_candidate_id.strip():
+        raise ContractError("declassification report candidate_id is invalid")
+    if candidate_id is not None and report_candidate_id != candidate_id:
+        raise ContractError("declassification report candidate_id does not match")
+    report_digest_hash = value["evidence_digest_hash"]
+    if not is_content_hash(report_digest_hash):
+        raise ContractError("declassification report evidence_digest_hash is invalid")
+    if evidence_digest_hash is not None and report_digest_hash != evidence_digest_hash:
+        raise ContractError("declassification report evidence digest does not match")
+    if value["excluded_categories"] != list(EXCLUDED_EVIDENCE_CATEGORIES):
+        raise ContractError("declassification report excluded_categories are not exact")
+    checks = value["checks"]
+    if (
+        not isinstance(checks, Mapping)
+        or set(checks) != set(_CHECK_FIELDS)
+        or any(type(item) is not bool or item is not True for item in checks.values())
+    ):
+        raise ContractError("declassification report checks must be closed and all true")
+    return dict(value)
 
 
 def _safe_status(value: Any, label: str) -> str:
@@ -727,8 +768,11 @@ def propose_experience_candidate(
         raise ContractError("compiled candidate fields are not closed")
     if set(candidate["provenance"]) != _PROVENANCE_FIELDS:
         raise ContractError("compiled candidate provenance fields are not closed")
-    if set(report) != _REPORT_FIELDS or set(report["checks"]) != _CHECK_FIELDS:
-        raise ContractError("compiled declassification report fields are not closed")
+    validate_declassification_report(
+        report,
+        candidate_id=case_id,
+        evidence_digest_hash=evidence_digest_hash,
+    )
 
     candidate_path = case_directory / "experience_candidate.json"
     report_path = case_directory / "declassification_report.json"
@@ -784,4 +828,5 @@ __all__ = [
     "ExperienceCandidateResult",
     "build_sanitized_evidence_digest",
     "propose_experience_candidate",
+    "validate_declassification_report",
 ]

@@ -9,6 +9,7 @@ from .candidate import (
     ExperienceCandidateResult,
     build_sanitized_evidence_digest,
     propose_experience_candidate,
+    validate_declassification_report,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "ExperienceCandidateResult",
     "build_sanitized_evidence_digest",
     "propose_experience_candidate",
+    "validate_declassification_report",
 ]

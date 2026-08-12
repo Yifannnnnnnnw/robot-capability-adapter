@@ -13,6 +13,7 @@ from autoadapter2.evolution import (
     CANDIDATE_FORMAT_VERSION,
     EXCLUDED_EVIDENCE_CATEGORIES,
     propose_experience_candidate,
+    validate_declassification_report,
 )
 from autoadapter2.foundation.canonical import canonical_bytes
 from autoadapter2.foundation.errors import ContractError
@@ -227,8 +228,23 @@ def test_candidate_and_report_have_exact_shapes_canonical_hashes_and_immutable_s
         "evidence_digest_hash", "excluded_categories", "checks",
     }
     assert report["status"] == "PASS"
+    assert report["excluded_categories"] == [
+        "private_validation_criteria",
+        "private_cases",
+        "thresholds",
+        "seeds",
+        "mujoco_truth",
+        "translation_details",
+        "candidate_source",
+        "consumer_trace",
+        "raw_video",
+        "video_frames",
+        "video_manifests",
+        "model_prompts",
+        "credentials",
+    ]
     assert report["excluded_categories"] == list(EXCLUDED_EVIDENCE_CATEGORIES)
-    assert all(isinstance(value, bool) for value in report["checks"].values())
+    assert all(type(value) is bool and value is True for value in report["checks"].values())
     assert result.candidate_hash == content_hash(result.candidate_path.read_bytes())
     assert result.declassification_report_hash == content_hash(
         result.declassification_report_path.read_bytes()
@@ -259,6 +275,57 @@ def test_candidate_and_report_have_exact_shapes_canonical_hashes_and_immutable_s
         for path in result.candidate_path.parent.iterdir()
         if path.is_file()
     } == before
+
+
+def test_declassification_contract_rejects_false_non_boolean_missing_reordered_and_extra(
+    tmp_path: Path,
+) -> None:
+    root, closure_path, closure_seal_path = _make_closed_run(tmp_path)
+    result = propose_experience_candidate(
+        root,
+        closure_path,
+        closure_seal_path,
+        "report-contract",
+        evolution_cases_root=root / "evolution_cases",
+        candidate_fields=_semantic_fields(),
+    )
+    report = json.loads(result.declassification_report_path.read_text(encoding="utf-8"))
+    validate_declassification_report(
+        report,
+        candidate_id="report-contract",
+        evidence_digest_hash=result.evidence_digest_hash,
+    )
+    invalid_reports: list[dict[str, object]] = []
+
+    false_check = copy.deepcopy(report)
+    false_check["checks"]["sanitized_digest_only"] = False
+    invalid_reports.append(false_check)
+
+    non_boolean_check = copy.deepcopy(report)
+    non_boolean_check["checks"]["sanitized_digest_only"] = "true"
+    invalid_reports.append(non_boolean_check)
+
+    missing_check = copy.deepcopy(report)
+    del missing_check["checks"]["sanitized_digest_only"]
+    invalid_reports.append(missing_check)
+
+    extra_check = copy.deepcopy(report)
+    extra_check["checks"]["extra"] = True
+    invalid_reports.append(extra_check)
+
+    reordered_categories = copy.deepcopy(report)
+    reordered_categories["excluded_categories"] = list(
+        reversed(reordered_categories["excluded_categories"])
+    )
+    invalid_reports.append(reordered_categories)
+
+    for invalid_report in invalid_reports:
+        with pytest.raises(ContractError):
+            validate_declassification_report(
+                invalid_report,
+                candidate_id="report-contract",
+                evidence_digest_hash=result.evidence_digest_hash,
+            )
 
 
 @pytest.mark.parametrize("mutation", ["missing", "tampered", "unsealed"])
