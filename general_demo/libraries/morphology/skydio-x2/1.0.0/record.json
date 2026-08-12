@@ -85,31 +85,7 @@
     "asset_closure_sha256": "sha256:12318ace99e640879e21f6d9116387b1533d63b237372c6fe8f636f5461eb25b",
     "asset_manifest_ref": "general_demo/libraries/assets/skydio-x2/1.0.0/asset_manifest.json",
     "reset": {
-      "keyframe": "hover",
-      "policy": "mj_resetDataKeyframe",
-      "qpos": [
-        0,
-        0,
-        0.3,
-        1,
-        0,
-        0,
-        0
-      ],
-      "qvel": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-      ],
-      "ctrl": [
-        3.2495625,
-        3.2495625,
-        3.2495625,
-        3.2495625
-      ]
+      "keyframe": "hover"
     }
   },
   "source": {

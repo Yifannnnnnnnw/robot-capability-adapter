@@ -93,8 +93,15 @@ def test_morphology_record_and_manifest_are_pinned_and_closed(robot_id: str) -> 
     actual_bodies, actual_sites = _named_frames(local_model)
     assert set(frames["body_names"]) <= actual_bodies
     assert set(frames["site_names"]) <= actual_sites
-    if robot_id == "anybotics-anymal-c":
-        assert record["mujoco"]["reset"] == {"policy": "model_default"}
+    accepted_resets = {
+        "anybotics-anymal-c": {"policy": "model_default"},
+        "h1": {"keyframe": "home"},
+        "skydio-x2": {"keyframe": "hover"},
+        "unitree-a1": {"keyframe": "home"},
+    }
+    reset = record["mujoco"]["reset"]
+    assert reset == accepted_resets[robot_id]
+    assert set(reset) in ({"policy"}, {"keyframe"})
     assert hashlib.sha256(local_scene.read_bytes()).hexdigest() == manifest["entrypoint"]["sha256"]
     assert hashlib.sha256(local_model.read_bytes()).hexdigest() == next(
         row["sha256"]
