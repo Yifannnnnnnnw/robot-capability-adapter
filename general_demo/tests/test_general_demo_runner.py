@@ -17,8 +17,9 @@ from autoadapter2.evaluation import (
     OpaqueVideoHandle,
     RGBFrame,
 )
+from autoadapter2.foundation.canonical import canonical_bytes
 from autoadapter2.foundation.errors import ContractError
-from autoadapter2.foundation.hashing import sha256_bytes
+from autoadapter2.foundation.hashing import content_hash, sha256_bytes
 from autoadapter2.generation import FixtureJsonGenerator
 from autoadapter2.integration import (
     READINESS_CHECK_IDS,
@@ -586,6 +587,12 @@ def test_same_g2_runner_completes_two_robot_shaped_runs(
     assert all(trial.status == "PASS" for trial in result.demo_trials)
     assert result.summary["robot"]["robot_model_id"] == robot
     assert result.summary["granularity_profile"]["granularity"] == "G2"
+    repair_artifact = result.artifacts["stages"]["validation_and_repair"]["repair"]
+    assert len(repair_artifact["validation_b_attempts"]) == 1
+    attempt = repair_artifact["validation_b_attempts"][0]
+    assert attempt["report_hash"] == repair_artifact["run_ledger"][0]["b_report_hash"]
+    assert attempt["report_hash"] == content_hash(canonical_bytes(attempt["report"]))
+    assert "validation_b_attempts" not in result.summary
 
 
 def test_frozen_experience_reaches_only_its_recipient_stage_and_shares_bundle(

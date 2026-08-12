@@ -344,6 +344,7 @@ def _repair_artifact(result: Any) -> dict[str, Any]:
         "initial_validation_b": _validation_b_artifact(result.initial_validation_b),
         "final_validation_a": _validation_a_artifact(result.final_validation_a),
         "final_validation_b": _validation_b_artifact(result.final_validation_b),
+        "validation_b_attempts": copy.deepcopy(list(result.validation_b_attempts)),
     }
 
 

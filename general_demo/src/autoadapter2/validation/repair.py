@@ -55,6 +55,7 @@ class RepairResult:
     final_validation_a: ValidationAResult | None
     final_validation_b: ValidationBResult | None
     frozen_artifact_hashes: dict[str, str]
+    validation_b_attempts: tuple[dict[str, Any], ...] = ()
 
 
 def _issue(code: str) -> dict[str, str]:
@@ -225,6 +226,7 @@ class RepairRunner:
             "run_snapshot_hash": frozen_context.run_snapshot_hash,
         }
         ledger: list[dict[str, Any]] = []
+        validation_b_attempts: list[dict[str, Any]] = []
         initial_a = self._validation_a.run(
             frozen_design,
             design_seal,
@@ -235,11 +237,26 @@ class RepairRunner:
             copy.deepcopy(dict(initial_manifest_seal)),
             bundle.bundle_hash,
         )
-        initial_b = self._run_b(initial_a, frozen_context, 0, 0, ledger)
+        initial_b = self._run_b(
+            initial_a,
+            frozen_context,
+            0,
+            0,
+            ledger,
+            validation_b_attempts,
+        )
         if initial_b is not None and initial_b.status == "PASS":
-            return self._result("PASS", 0, 0, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
+            return self._result(
+                "PASS", 0, 0, 0, 0, [], ledger, frozen_context,
+                initial_a, initial_b, initial_a, initial_b, hashes,
+                validation_b_attempts=validation_b_attempts,
+            )
         if initial_b is not None and initial_b.status == "INFRASTRUCTURE_ERROR":
-            return self._result("INFRASTRUCTURE_ERROR", None, 0, 0, 0, [], ledger, frozen_context, initial_a, initial_b, initial_a, initial_b, hashes)
+            return self._result(
+                "INFRASTRUCTURE_ERROR", None, 0, 0, 0, [], ledger, frozen_context,
+                initial_a, initial_b, initial_a, initial_b, hashes,
+                validation_b_attempts=validation_b_attempts,
+            )
 
         current_source = _submission_source(initial_submission)
         current_a = initial_a
@@ -283,7 +300,12 @@ class RepairRunner:
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
                 })
-                return self._result("INFRASTRUCTURE_ERROR", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                return self._result(
+                    "INFRASTRUCTURE_ERROR", None, repair_invocations_used,
+                    candidate_revisions_created, total_llm_calls, repair_log, ledger,
+                    frozen_context, initial_a, initial_b, current_a, current_b, hashes,
+                    validation_b_attempts=validation_b_attempts,
+                )
             repaired_source, llm_calls, output_issue = _repair_output(raw)
             total_llm_calls += llm_calls
             if output_issue is not None:
@@ -368,6 +390,7 @@ class RepairRunner:
                 requested_index,
                 candidate_revisions_created,
                 ledger,
+                validation_b_attempts,
             )
             repair_log.append({
                 "repair_index": requested_index,
@@ -388,12 +411,27 @@ class RepairRunner:
                 "candidate_revision_created": True,
             })
             if current_b is not None and current_b.status == "PASS":
-                return self._result("PASS", requested_index, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                return self._result(
+                    "PASS", requested_index, repair_invocations_used,
+                    candidate_revisions_created, total_llm_calls, repair_log, ledger,
+                    frozen_context, initial_a, initial_b, current_a, current_b, hashes,
+                    validation_b_attempts=validation_b_attempts,
+                )
             if current_b is not None and current_b.status == "INFRASTRUCTURE_ERROR":
-                return self._result("INFRASTRUCTURE_ERROR", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                return self._result(
+                    "INFRASTRUCTURE_ERROR", None, repair_invocations_used,
+                    candidate_revisions_created, total_llm_calls, repair_log, ledger,
+                    frozen_context, initial_a, initial_b, current_a, current_b, hashes,
+                    validation_b_attempts=validation_b_attempts,
+                )
             current_source = repaired_source
             previous_source_hash = source_hash
-        return self._result("FAILED_AFTER_REPAIRS", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+        return self._result(
+            "FAILED_AFTER_REPAIRS", None, repair_invocations_used,
+            candidate_revisions_created, total_llm_calls, repair_log, ledger,
+            frozen_context, initial_a, initial_b, current_a, current_b, hashes,
+            validation_b_attempts=validation_b_attempts,
+        )
 
     def _run_b(
         self,
@@ -402,6 +440,7 @@ class RepairRunner:
         repair_invocation_index: int,
         revision_index: int,
         ledger: list[dict[str, Any]],
+        validation_b_attempts: list[dict[str, Any]],
     ) -> ValidationBResult | None:
         if validation_a.status != "PASS" or validation_a.candidate_handle is None:
             return None
@@ -420,6 +459,13 @@ class RepairRunner:
                 "run_snapshot_hash": frozen.run_snapshot_hash,
                 "b_status": result.status,
                 "b_report_hash": result.report_hash,
+            })
+            validation_b_attempts.append({
+                "repair_invocation_index": repair_invocation_index,
+                "candidate_revision_index": revision_index,
+                "execution_attempt": execution_attempt,
+                "report_hash": result.report_hash,
+                "report": copy.deepcopy(result.report),
             })
             if result.status != "INFRASTRUCTURE_ERROR":
                 return result
@@ -440,6 +486,8 @@ class RepairRunner:
         final_a: ValidationAResult | None,
         final_b: ValidationBResult | None,
         hashes: dict[str, str],
+        *,
+        validation_b_attempts: list[dict[str, Any]] | None = None,
     ) -> RepairResult:
         return RepairResult(
             status=status,
@@ -456,4 +504,5 @@ class RepairRunner:
             final_validation_a=final_a,
             final_validation_b=final_b,
             frozen_artifact_hashes=copy.deepcopy(hashes),
+            validation_b_attempts=tuple(copy.deepcopy(validation_b_attempts or [])),
         )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import json
 from pathlib import Path
 
 import pytest
@@ -23,6 +24,7 @@ from autoadapter2.foundation.seals import create_seal, verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
 from autoadapter2.implementation import Stage2Runner
 from autoadapter2.integrations.unitree_go2.session import Go2CandidateError
+from autoadapter2.orchestration.demo_runner import _repair_artifact
 from autoadapter2.validation import (
     HarnessCriterionMeasurement,
     HarnessInfrastructureError,
@@ -659,7 +661,7 @@ def _multi_submission():
         stage2.manifest_seal, stage2.implementation_bundle_hash,
     )
     assert a_result.status == "PASS"
-    return design, design_seal, blue, a_result
+    return design, design_seal, blue, stage2, a_result
 
 
 def _stage2_submission(source: str = _source()):
@@ -1730,7 +1732,7 @@ def test_repair_exposes_only_safe_candidate_sdk_validation_detail() -> None:
     [("pass", "PASS"), ("second_fail", "FAIL")],
 )
 def test_validation_b_runs_all_criteria_in_one_episode(outcome: str, expected_status: str) -> None:
-    design, design_seal, blue, a_result = _multi_submission()
+    design, design_seal, blue, _stage2, a_result = _multi_submission()
     context = _context(design, design_seal, blue)
     harness = _FixedHarness(context.run_snapshot, [outcome, outcome])
     result = ValidationBRunner(harness).run(
@@ -2036,6 +2038,18 @@ def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_
     revision_one = [entry for entry in result.run_ledger if entry["revision_index"] == 1]
     assert [entry["b_status"] for entry in revision_one] == ["INFRASTRUCTURE_ERROR", "PASS"]
     assert revision_one[0]["source_hash"] == revision_one[1]["source_hash"]
+    retry_attempts = [
+        item for item in result.validation_b_attempts
+        if item["candidate_revision_index"] == 1
+    ]
+    assert [item["execution_attempt"] for item in retry_attempts] == [1, 2]
+    assert [item["report_hash"] for item in retry_attempts] == [
+        entry["b_report_hash"] for entry in revision_one
+    ]
+    assert all(
+        item["report_hash"] == content_hash(canonical_bytes(item["report"]))
+        for item in retry_attempts
+    )
     assert result.repair_llm_calls == 1
 
     calls = 0
@@ -2053,6 +2067,65 @@ def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_
     assert capped.status == "FAILED_AFTER_REPAIRS"
     assert capped.repair_invocations_used == capped.repairs_consumed == 10
     assert capped.candidate_revisions_created == capped.repair_llm_calls == calls == 10
+
+
+def test_repair_persists_every_b_report_with_canonical_hash_and_private_attempt_metadata() -> None:
+    design, design_seal, stage2, blue = _stage2_submission(_source("INITIAL"))
+    context = _context(design, design_seal, blue)
+    outputs = iter([_source("REPAIRED_1"), _source("REPAIRED_2")])
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(
+            _FixedHarness(
+                context.run_snapshot,
+                ["fail", "fail", "fail", "fail", "pass", "pass"],
+            )
+        ),
+        lambda _request: {"capability.py": next(outputs), "llm_calls": 1},
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+
+    assert result.status == "PASS"
+    assert [
+        (item["repair_invocation_index"], item["candidate_revision_index"], item["execution_attempt"])
+        for item in result.validation_b_attempts
+    ] == [(0, 0, 1), (1, 1, 1), (2, 2, 1)]
+    assert [item["report"]["status"] for item in result.validation_b_attempts] == [
+        "FAIL", "FAIL", "PASS",
+    ]
+    assert [item["b_report_hash"] for item in result.run_ledger] == [
+        item["report_hash"] for item in result.validation_b_attempts
+    ]
+    for item in result.validation_b_attempts:
+        assert item["report_hash"] == content_hash(canonical_bytes(item["report"]))
+
+    private_artifact = _repair_artifact(result)
+    serialized_artifact = json.loads(canonical_bytes(private_artifact))
+    assert serialized_artifact["validation_b_attempts"] == private_artifact["validation_b_attempts"]
+
+
+def test_repair_attempt_report_keeps_all_criterion_results_after_canonical_serialization() -> None:
+    design, design_seal, blue, stage2, _a_result = _multi_submission()
+    context = _context(design, design_seal, blue)
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["pass", "pass"])),
+        lambda _request: pytest.fail("Repair must not run on the passing path"),
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+
+    assert result.status == "PASS"
+    report = result.validation_b_attempts[0]["report"]
+    serialized_report = json.loads(canonical_bytes(report))
+    criterion_results = serialized_report["executions"][0]["criterion_results"]
+    assert len(criterion_results) == 2
+    assert criterion_results == report["executions"][0]["criterion_results"]
 
 
 def test_repair_invalid_source_consumes_invocation_but_not_revision() -> None:
