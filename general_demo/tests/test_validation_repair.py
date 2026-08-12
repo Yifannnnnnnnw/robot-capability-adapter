@@ -37,6 +37,7 @@ from autoadapter2.validation import (
     bind_candidate_to_suite,
 )
 from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
+from autoadapter2.validation.repair import _candidate_owned_error
 from autoadapter2.validation.validation_a import (
     _capability_contracts,
     _descriptor_match,
