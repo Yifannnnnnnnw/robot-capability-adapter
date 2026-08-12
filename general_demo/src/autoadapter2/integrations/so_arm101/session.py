@@ -475,7 +475,10 @@ class SOArm101EvaluationRobotSession:
                 "PTY translation",
             )(self._backend)
             port = self._translation.install()
-            calibration = Path(calibration_dir or (Path(run_directory or tempfile.gettempdir()) / "so101-calibration"))
+            calibration = Path(
+                calibration_dir or (Path(run_directory or tempfile.gettempdir()) / "so101-calibration")
+            ).resolve()
+            calibration.mkdir(parents=True, exist_ok=True)
             self._follower = _callable_factory(
                 follower_factory or _default_follower_factory,
                 "SO101Follower",

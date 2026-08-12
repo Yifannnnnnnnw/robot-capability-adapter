@@ -287,6 +287,38 @@ def _session(
     return session
 
 
+def test_session_creates_calibration_directory_before_follower_factory(tmp_path: Path) -> None:
+    order: list[str] = []
+    backend = _Backend(order)
+    run_directory = tmp_path / "attempt"
+    expected_calibration = (run_directory / "so101-calibration").resolve()
+    holder: dict[str, Any] = {}
+
+    def backend_factory(_path: Path, **_kwargs: Any) -> _Backend:
+        return backend
+
+    def translation_factory(value: _Backend) -> _Translation:
+        translation = _Translation(value, order)
+        holder["translation"] = translation
+        return translation
+
+    def follower_factory(_port: str, calibration_dir: Path) -> _Follower:
+        assert calibration_dir == expected_calibration
+        assert calibration_dir.is_dir()
+        return _Follower(holder["translation"], order)
+
+    session = SOArm101EvaluationRobotSession(
+        "not-used-by-injected-backend.xml",
+        scene_config_path=SCENE_CONFIG,
+        task_instances_path=TASKS,
+        run_directory=run_directory,
+        backend_factory=backend_factory,
+        translation_factory=translation_factory,
+        follower_factory=follower_factory,
+    )
+    session.close()
+
+
 def test_default_capture_factory_uses_shared_time_indexed_slots() -> None:
     profile = FrozenVideoProfile(
         profile_id="shared-capture-test",
