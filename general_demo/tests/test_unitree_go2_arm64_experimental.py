@@ -30,9 +30,9 @@ def test_experimental_arm64_image_is_native_and_smokes_the_renderer() -> None:
         and "ln -s /usr/include /opt/cyclonedds-system/include" in dockerfile
         and "/usr/lib/aarch64-linux-gnu/libddsc.so" in dockerfile
     )
-    assert "cyclonedds==0.10.2" in (ENVIRONMENT / "python-requirements.lock").read_text(
-        encoding="utf-8"
-    )
+    requirements = (ENVIRONMENT / "python-requirements.lock").read_text(encoding="utf-8")
+    assert "cyclonedds==0.10.2" in requirements
+    assert "mdurl==0.1.2" in requirements
     assert "--platform=linux/amd64" not in dockerfile
     assert "crc_amd64.so" not in dockerfile
 
