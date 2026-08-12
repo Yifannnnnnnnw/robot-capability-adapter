@@ -36,7 +36,7 @@ def _semantic_fields(*, recipient_class: str = "design") -> dict[str, object]:
                 if recipient_class == "design"
                 else "unitree-sdk2-go2-lowlevel@1.0.0"
             ),
-            "granularity_condition": "G2 reusable effect",
+            "granularity_condition": "G2",
             "capability_effect_scope": ["bounded locomotion effect"],
             "observation_condition": "State-provided public robot observation is available.",
         },
@@ -63,6 +63,11 @@ def _make_closed_run(
         "robot": {
             "robot_model_id": "unitree-go2",
             "robot_configuration_id": "unitree-go2-stock-12dof",
+        },
+        "granularity_profile": {
+            "profile_id": "g2-reusable-effect",
+            "version": "1.0.0",
+            "granularity": "G2",
         },
         "stages": [
             {"stage": "integration_gate", "status": "READY"},
@@ -242,6 +247,7 @@ def test_complete_and_terminal_failed_runs_propose_outside_run_without_mutation(
     assert _run_bytes(root) == before
     assert len(seen) == 1
     assert seen[0]["robot"]["sdk_entry_id"] == "unitree-sdk2-go2-lowlevel@1.0.0"
+    assert seen[0]["robot"]["granularity_condition"] == "G2"
     callback_text = canonical_bytes(seen[0]).decode("utf-8").casefold()
     for forbidden in ("threshold", "qpos", "winning", "trace", "video", "prompt", "credential"):
         assert forbidden not in callback_text
@@ -280,6 +286,7 @@ def test_candidate_and_report_have_exact_shapes_canonical_hashes_and_immutable_s
         "granularity_condition", "capability_effect_scope", "observation_condition",
     }
     assert candidate["applicability"]["sdk_entry_id"] == "unitree-sdk2-go2-lowlevel@1.0.0"
+    assert candidate["applicability"]["granularity_condition"] == "G2"
     assert set(candidate["provenance"]) == {
         "closure_hash", "summary_ref", "stage_artifacts_ref", "evidence_digest_hash",
     }
@@ -467,6 +474,22 @@ def test_implementation_sdk_entry_must_match_verified_stage1_projection(
         )
 
 
+def test_granularity_condition_must_match_verified_closed_run(tmp_path: Path) -> None:
+    root, closure_path, closure_seal_path = _make_closed_run(tmp_path)
+    fields = _semantic_fields()
+    fields["applicability"]["granularity_condition"] = "G2 reusable effect"
+    with pytest.raises(ContractError, match="granularity"):
+        propose_experience_candidate(
+            root,
+            closure_path,
+            closure_seal_path,
+            "wrong-granularity",
+            evolution_cases_root=root / "evolution_cases",
+            candidate_fields=fields,
+        )
+    assert not (root / "evolution_cases").exists()
+
+
 def test_implementation_sdk_entry_is_required_when_stage1_projection_is_absent(
     tmp_path: Path,
 ) -> None:
@@ -588,5 +611,7 @@ def test_model_api_evolution_prompt_declares_exact_json_types() -> None:
         "observation_condition: a JSON string.",
         "limitations: a JSON array of nonempty JSON strings.",
         "invalidation_conditions: a nonempty JSON array of nonempty JSON strings.",
+        "Copy robot_model_id, robot_configuration_id, sdk_entry_id, and granularity_condition\nexactly",
+        "Keep capability_effect_scope and\nobservation_condition model-authored",
     ):
         assert requirement in client.prompt

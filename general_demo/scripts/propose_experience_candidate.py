@@ -33,6 +33,10 @@ JSON value types:
 - limitations: a JSON array of nonempty JSON strings.
 - invalidation_conditions: a nonempty JSON array of nonempty JSON strings.
 Use only a bounded public lesson supported by the supplied sanitized evidence digest.
+Copy robot_model_id, robot_configuration_id, sdk_entry_id, and granularity_condition
+exactly from the supplied sanitized evidence digest. Do not paraphrase, normalize, infer,
+or invent these applicability identity values. Keep capability_effect_scope and
+observation_condition model-authored from the supplied public evidence.
 Do not include source code, private evaluation details, diagnostics payloads, traces,
 video or camera details, simulator truth, credentials, prompts, or model output.
 For design recipients sdk_entry_id must be null; for implementation recipients it must

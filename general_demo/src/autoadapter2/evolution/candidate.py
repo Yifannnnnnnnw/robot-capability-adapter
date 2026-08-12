@@ -357,6 +357,13 @@ def _validate_semantic_fields(
             != expected_robot["robot_configuration_id"]
         ):
             raise ContractError("candidate applicability does not match the closed run robot")
+        if (
+            normalized_applicability["granularity_condition"]
+            != expected_robot["granularity_condition"]
+        ):
+            raise ContractError(
+                "candidate applicability granularity does not match the closed run"
+            )
 
     normalized = {
         "recipient_class": recipient_class,
@@ -558,6 +565,13 @@ def build_sanitized_evidence_digest(
     robot_configuration_id = _public_identifier(
         robot.get("robot_configuration_id"), "summary robot configuration"
     )
+    granularity_profile = summary.get("granularity_profile")
+    if not isinstance(granularity_profile, Mapping):
+        raise ContractError("closed run summary granularity profile is missing")
+    granularity_condition = _public_identifier(
+        granularity_profile.get("granularity"),
+        "summary granularity",
+    )
     summary_ref = closure.get("files", {}).get("summary")
     stage_ref = closure.get("files", {}).get("stage_artifacts")
     if not isinstance(summary_ref, Mapping) or not isinstance(stage_ref, Mapping):
@@ -617,6 +631,7 @@ def build_sanitized_evidence_digest(
         "robot": {
             "robot_model_id": robot_model_id,
             "robot_configuration_id": robot_configuration_id,
+            "granularity_condition": granularity_condition,
         },
         "stage_statuses": stages,
         "counts": counts,
