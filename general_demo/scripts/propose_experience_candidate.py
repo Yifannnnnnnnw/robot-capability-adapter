@@ -37,6 +37,9 @@ Copy robot_model_id, robot_configuration_id, sdk_entry_id, and granularity_condi
 exactly from the supplied sanitized evidence digest. Do not paraphrase, normalize, infer,
 or invent these applicability identity values. Keep capability_effect_scope and
 observation_condition model-authored from the supplied public evidence.
+All free-text fields must be plain prose only. Do not use code fences, assignments,
+function signatures or call expressions, braces, semicolons, arrows, filenames, or
+source snippets. Refer to API concepts in ordinary prose rather than reproducing syntax.
 Do not include source code, private evaluation details, diagnostics payloads, traces,
 video or camera details, simulator truth, credentials, prompts, or model output.
 For design recipients sdk_entry_id must be null; for implementation recipients it must
