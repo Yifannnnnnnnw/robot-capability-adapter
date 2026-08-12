@@ -685,18 +685,27 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
     def _bind_destructured_assignment(self, target: ast.AST, value: ast.AST) -> bool:
         if not isinstance(target, (ast.Tuple, ast.List)):
             return False
-        if not isinstance(value, (ast.Tuple, ast.List)) or len(target.elts) != len(value.elts):
-            self._assignment_issue("destructuring requires a same-shape approved tuple or list")
-            return True
         names = [element.id if isinstance(element, ast.Name) else None for element in target.elts]
         if any(name is None for name in names) or len(set(names)) != len(names):
             self._assignment_issue("destructuring targets must be unique non-dunder local names")
             return True
-        classifications = [self._classify_expression(element) for element in value.elts]
+        if isinstance(value, (ast.Tuple, ast.List)):
+            if len(target.elts) != len(value.elts):
+                self._assignment_issue("destructuring requires a same-shape approved tuple or list")
+                return True
+            values = list(value.elts)
+            classifications = [self._classify_expression(element) for element in values]
+        else:
+            classification = self._classify_expression(value)
+            if not classification[0]:
+                self._assignment_issue("destructuring RHS must be fully approved by the expression policy")
+                return True
+            values = [value] * len(target.elts)
+            classifications = [classification] * len(target.elts)
         if not all(classification[0] for classification in classifications):
             self._assignment_issue("destructuring RHS must be fully approved by the expression policy")
             return True
-        for name, element, classification in zip(names, value.elts, classifications, strict=True):
+        for name, element, classification in zip(names, values, classifications, strict=True):
             assert name is not None
             self._bind_local_name(name, element, classification)
         return True

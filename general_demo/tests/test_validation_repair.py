@@ -721,6 +721,40 @@ def test_validation_a_accepts_math_conversion_constants_with_forwarded_helpers()
     assert result.candidate_handle is not None
 
 
+def test_validation_a_accepts_helper_call_destructuring_from_forwarded_sdk() -> None:
+    source = '''def _get_state(sdk):
+    observation = sdk.get_observation()
+    return observation, None
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    low_state, _ = _get_state(_sdk)
+    _sdk.send_action({"target": arg_target})
+    return {"reported_status": "PASS"}
+'''
+    result, _stage2 = _helper_a_result(source)
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+
+def test_validation_a_rejects_invalid_helper_call_destructuring_targets() -> None:
+    base = '''def _get_state(sdk):
+    observation = sdk.get_observation()
+    return observation, None
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    low_state, _ = _get_state(_sdk)
+    _sdk.send_action({"target": arg_target})
+    return {"reported_status": "PASS"}
+'''
+    for source in (
+        base.replace("low_state, _ =", "low_state[0], _ ="),
+        base.replace("low_state, _ =", "low_state, low_state ="),
+        base.replace("_get_state(_sdk)", "arg_target.execute()"),
+    ):
+        result, _stage2 = _helper_a_result(source)
+        assert result.status == "FAIL"
+
+
 def test_validation_a_rejects_dynamic_or_nonconstant_module_expressions() -> None:
     for prefix in ("import time\nBAD = time.time()\n", "import math\nBAD = math.sin\n"):
         result, _stage2 = _helper_a_result(prefix + _helper_source())
