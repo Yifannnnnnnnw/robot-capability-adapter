@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import math
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping, Protocol, runtime_checkable
 
@@ -17,6 +18,16 @@ from .validation_a import ValidatedCandidateHandle
 
 
 _SCHEMA_VERSION = "1.0.0"
+_INFRASTRUCTURE_ERROR_MAX_LENGTH = 320
+_INFRASTRUCTURE_PATH_RE = re.compile(
+    r"(?:(?:[A-Za-z]:)?[\\/])(?:[^\\/\s,;:'\"]+[\\/])*[^\\/\s,;:'\"]+"
+)
+_INFRASTRUCTURE_SENSITIVE_RE = re.compile(
+    r"(?i)\b((?:candidate(?:[_ -]?source)?|capability\.py|criterion(?:[_ -]?id)?|"
+    r"threshold|seed|inputs?|api[_ -]?key|authorization|bearer|password|passwd|"
+    r"secret|token|credential))\b\s*[:=]\s*(?:'[^']*'|\"[^\"]*\"|\S+)"
+)
+_INFRASTRUCTURE_OBJECT_RE = re.compile(r"<[^>\n]{1,160} object at 0x[0-9A-Fa-f]+>")
 
 
 class HarnessInfrastructureError(Exception):
@@ -170,6 +181,42 @@ def _candidate_error_detail(error: BaseException | None) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
     return " ".join(value.split())[:320]
+
+
+def _infrastructure_error_detail(error: BaseException | None) -> str | None:
+    """Return one bounded, operator-facing detail for a framework error."""
+
+    if error is None:
+        return None
+    current = error
+    seen: set[int] = set()
+    while id(current) not in seen:
+        seen.add(id(current))
+        cause = current.__cause__
+        context = None if current.__suppress_context__ else current.__context__
+        next_error = cause if isinstance(cause, BaseException) else None
+        if (
+            next_error is None
+            and isinstance(context, BaseException)
+            and getattr(context, "candidate_owned", False) is not True
+        ):
+            next_error = context
+        if next_error is None or id(next_error) in seen:
+            break
+        current = next_error
+
+    try:
+        message = str(current)
+    except Exception:
+        message = ""
+    message = "".join(character if character.isprintable() else " " for character in message)
+    message = " ".join(message.split())
+    message = _INFRASTRUCTURE_PATH_RE.sub("<path>", message)
+    message = _INFRASTRUCTURE_SENSITIVE_RE.sub(r"\1=<redacted>", message)
+    message = _INFRASTRUCTURE_OBJECT_RE.sub("<object>", message)
+    if not message:
+        message = "unspecified infrastructure failure"
+    return f"{type(current).__name__}: {message}"[:_INFRASTRUCTURE_ERROR_MAX_LENGTH]
 
 
 def _sealed_hash(value: Mapping[str, Any], seal: Mapping[str, Any], artifact_type: str) -> tuple[dict[str, Any], str]:
@@ -917,6 +964,7 @@ class ValidationBRunner:
                             group["capability_id"], criterion_ids[0], case["case_id"], repetition,
                             "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence,
                             criterion_ids=criterion_ids,
+                            infrastructure_error=_infrastructure_error_detail(exc),
                         ))
                         infrastructure_error = True
                         break
@@ -950,6 +998,7 @@ class ValidationBRunner:
                                     "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"],
                                     evidence_exc.video_evidence,
                                     criterion_ids=criterion_ids,
+                                    infrastructure_error=_infrastructure_error_detail(evidence_exc),
                                 ))
                                 infrastructure_error = True
                                 break
@@ -972,19 +1021,26 @@ class ValidationBRunner:
                             ))
                             candidate_failure = True
                             continue
+                        infrastructure_cause = (
+                            candidate_infrastructure_error
+                            if candidate_infrastructure_error is not None
+                            else exc
+                        )
                         executions.append(_execution(
                             group["capability_id"], criterion_ids[0], case["case_id"], repetition,
                             "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence,
                             criterion_ids=criterion_ids,
+                            infrastructure_error=_infrastructure_error_detail(infrastructure_cause),
                         ))
                         infrastructure_error = True
                         break
-                    except Exception:
+                    except Exception as exc:
                         if candidate_exception is not None:
                             executions.append(_execution(
                                 group["capability_id"], criterion_ids[0], case["case_id"], repetition,
                                 "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"],
                                 criterion_ids=criterion_ids,
+                                infrastructure_error=_infrastructure_error_detail(exc),
                             ))
                             infrastructure_error = True
                             break
@@ -1005,6 +1061,7 @@ class ValidationBRunner:
                             observation.video_evidence if isinstance(observation, HarnessMeasurement) else getattr(candidate_infrastructure_error, "video_evidence", None),
                             observation.sdk_route_evidence if isinstance(observation, HarnessMeasurement) else None,
                             criterion_ids=criterion_ids,
+                            infrastructure_error=_infrastructure_error_detail(candidate_infrastructure_error),
                         ))
                         infrastructure_error = True
                         break
@@ -1041,6 +1098,7 @@ class ValidationBRunner:
                                 exc.video_evidence,
                                 observation.sdk_route_evidence,
                                 criterion_ids=criterion_ids,
+                                infrastructure_error=_infrastructure_error_detail(exc),
                             ))
                             infrastructure_error = True
                             break
@@ -1147,6 +1205,7 @@ def _execution(
     criterion_ids: tuple[str, ...] = (),
     criterion_results: list[dict[str, Any]] | None = None,
     candidate_error: str | None = None,
+    infrastructure_error: str | None = None,
 ) -> dict[str, Any]:
     all_criterion_ids = criterion_ids or ((criterion_id,) if criterion_id else ())
     execution = {
@@ -1164,4 +1223,6 @@ def _execution(
     }
     if isinstance(candidate_error, str) and candidate_error:
         execution["candidate_error"] = candidate_error
+    if isinstance(infrastructure_error, str) and infrastructure_error:
+        execution["infrastructure_error"] = infrastructure_error
     return execution

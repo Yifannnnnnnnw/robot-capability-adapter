@@ -288,17 +288,34 @@ class _Session:
         return self._observation
 
 
+class _FrameworkInfrastructureError(RuntimeError):
+    framework_infrastructure = True
+
+
 class _FixedHarness:
     """Tests-only typed Harness; production B receives the TypedHarness protocol."""
 
-    def __init__(self, snapshot: dict, outcomes: list[str]):
+    def __init__(
+        self,
+        snapshot: dict,
+        outcomes: list[str],
+        *,
+        open_error: Exception | None = None,
+        invoke_error: Exception | None = None,
+        collect_error: Exception | None = None,
+    ):
         self._snapshot = snapshot
         self._outcomes = list(outcomes)
+        self._open_error = open_error
+        self._invoke_error = invoke_error
+        self._collect_error = collect_error
         self.invocations = []
         self.sessions = []
         self.config_hash = snapshot["harness_config_hash"]
 
     def open(self, invocation):
+        if self._open_error is not None:
+            raise self._open_error
         self.invocations.append(invocation)
         outcome = self._outcomes.pop(0)
         if outcome == "infra":
@@ -376,9 +393,12 @@ class _FixedHarness:
         session = _Session(
             observation,
             invoke_error=(
-                HarnessInfrastructureError("translation failed")
+                self._invoke_error
+                if self._invoke_error is not None
+                else HarnessInfrastructureError("translation failed")
                 if outcome == "invoke_infra" else None
             ),
+            collect_error=self._collect_error,
         )
         self.sessions.append(session)
         return session
@@ -1442,6 +1462,7 @@ def test_validation_b_evaluates_sealed_measurements_not_candidate_self_report() 
         bind_candidate_to_suite(a_result, blue.suite_hash), context
     )
     assert route_or_video.status == "INFRASTRUCTURE_ERROR"
+    assert "infrastructure_error" not in route_or_video.executions[0]
     assert {"SDK_ROUTE_EVIDENCE", "HARNESS_INFRASTRUCTURE"}.issubset(
         {code for execution in route_or_video.executions for code in execution["failure_codes"]}
     )
@@ -1501,7 +1522,92 @@ def test_validation_b_typed_session_infrastructure_is_not_candidate_failure() ->
     )
     assert result.status == "INFRASTRUCTURE_ERROR"
     assert result.executions[0]["failure_codes"] == ["HARNESS_INFRASTRUCTURE"]
+    assert result.executions[0]["infrastructure_error"] == (
+        "HarnessInfrastructureError: translation failed"
+    )
     assert "CANDIDATE_EXCEPTION" not in result.executions[0]["failure_codes"]
+
+
+def test_validation_b_persists_leaf_framework_cause_and_prefers_invoke_failure() -> None:
+    design, design_seal, _stage2, blue, a_result = _a_result(_source("PASS"))
+    context = _context(design, design_seal, blue)
+    root_cause = RuntimeError(
+        "DDS transport failed\n/private/criterion-value token=secret " + "x" * 500
+    )
+    invoke_error = _FrameworkInfrastructureError("candidate invocation wrapper")
+    invoke_error.__cause__ = root_cause
+    result = ValidationBRunner(
+        _FixedHarness(
+            context.run_snapshot,
+            ["pass"],
+            invoke_error=invoke_error,
+            collect_error=HarnessInfrastructureError("collection also failed"),
+        )
+    ).run(bind_candidate_to_suite(a_result, blue.suite_hash), context)
+
+    execution = result.executions[0]
+    assert result.status == "INFRASTRUCTURE_ERROR"
+    assert execution["verdict"] == "INFRASTRUCTURE_ERROR"
+    assert execution["failure_codes"] == ["HARNESS_INFRASTRUCTURE"]
+    assert execution["infrastructure_error"] == (
+        "RuntimeError: DDS transport failed <path> token=<redacted> " + "x" * 261
+    )
+    assert len(execution["infrastructure_error"]) <= 320
+    assert result.diagnostics == ({
+        "code": "HARNESS_INFRASTRUCTURE",
+        "message": "harness infrastructure",
+    },)
+    assert result.report["status"] == "INFRASTRUCTURE_ERROR"
+    assert result.report_hash == content_hash(canonical_bytes(result.report))
+    assert verify_seal(result.report_seal)
+
+
+def test_validation_b_open_failure_and_infrastructure_repair_detail_stay_framework_owned() -> None:
+    design, design_seal, stage2, blue = _stage2_submission()
+    context = _context(design, design_seal, blue)
+    a_result = ValidationARunner(PROFILE).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": _source("PASS")}, stage2.implementation_manifest,
+        stage2.manifest_seal, stage2.implementation_bundle_hash,
+    )
+    assert a_result.status == "PASS"
+    open_failure = HarnessInfrastructureError("open failed")
+    direct = ValidationBRunner(
+        _FixedHarness(context.run_snapshot, ["pass"], open_error=open_failure)
+    ).run(bind_candidate_to_suite(a_result, blue.suite_hash), context)
+    assert direct.status == "INFRASTRUCTURE_ERROR"
+    assert direct.executions[0]["infrastructure_error"] == (
+        "HarnessInfrastructureError: open failed"
+    )
+
+    requests: list[dict] = []
+
+    def repair(request):
+        requests.append(request)
+        return {"capability.py": request["capability.py"], "llm_calls": 0}
+
+    retryable = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(
+            _FixedHarness(
+                context.run_snapshot,
+                ["pass", "pass"],
+                invoke_error=_FrameworkInfrastructureError("framework outage"),
+            )
+        ),
+        repair,
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": _source("PASS")}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+    assert retryable.status == "INFRASTRUCTURE_ERROR"
+    assert requests == []
+    assert retryable.initial_validation_b is not None
+    assert all(
+        "infrastructure_error" in execution
+        for execution in retryable.initial_validation_b.executions
+    )
 
 
 def test_validation_b_preserves_candidate_error_when_collection_lacks_route() -> None:
@@ -1517,6 +1623,8 @@ def test_validation_b_preserves_candidate_error_when_collection_lacks_route() ->
     assert execution["failure_codes"] == ["CANDIDATE_EXCEPTION"]
     assert execution["video_manifest_hash"] is not None
     assert execution["candidate_error"] == _CandidateOwnedError.candidate_error
+    assert "infrastructure_error" not in execution
+    assert result.report["status"] == "FAIL"
     diagnostic = next(item for item in result.diagnostics if item["code"] == "CANDIDATE_EXCEPTION")
     assert diagnostic["candidate_error"] == _CandidateOwnedError.candidate_error
 
