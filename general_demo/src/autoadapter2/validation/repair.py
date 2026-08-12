@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -60,6 +61,25 @@ class RepairResult:
 
 def _issue(code: str) -> dict[str, str]:
     return {"code": code, "message": code.replace("_", " ").lower()}
+
+
+def _safe_infrastructure_error(exc: Exception) -> str:
+    """Keep provider/framework failure evidence bounded and non-sensitive."""
+
+    text = " ".join(str(exc).split())
+    text = re.sub(r"https?://\S+", "<url>", text)
+    text = re.sub(
+        r"(?i)(api[_ -]?key|authorization|bearer|token|secret|password)\s*[:=]\s*\S+",
+        r"\1=<redacted>",
+        text,
+    )
+    lowered = text.lower()
+    if any(marker in lowered for marker in ("input_json", "request body", "payload", "messages", "capability.py")):
+        text = "<redacted provider/framework detail>"
+    if any(character in text for character in "{}[]"):
+        text = "<redacted provider/framework detail>"
+    detail = text[:260] or "<no provider detail>"
+    return f"{type(exc).__name__}: {detail}"[:320]
 
 
 _CANDIDATE_VALIDATION_A_CODES = frozenset({
@@ -310,12 +330,13 @@ class RepairRunner:
             repair_invocations_used += 1
             try:
                 raw = self._repair_callback(copy.deepcopy(request))
-            except Exception:
+            except Exception as exc:
                 repair_log.append({
                     "repair_index": requested_index,
                     "candidate_revision_index": None,
                     "llm_calls": 0,
                     "status": "INFRASTRUCTURE_ERROR",
+                    "infrastructure_error": _safe_infrastructure_error(exc),
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
                 })

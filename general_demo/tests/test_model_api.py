@@ -269,6 +269,87 @@ def test_implementation_agent_replays_public_stage2_and_repair_history(monkeypat
     assert repair_one_source not in fresh_body["messages"][-1]["content"]  # type: ignore[index]
 
 
+def test_implementation_history_is_bounded_but_keeps_initial_and_current_state(monkeypatch):
+    sources = [f"def capability_example():\n    return {index}\n" for index in range(8)]
+    responses = iter(
+        [{"action": "submit", "capability.py": sources[0]}]
+        + [{"capability.py": source, "llm_calls": 1} for source in sources[1:]]
+    )
+    captured: list[dict[str, object]] = []
+
+    def urlopen(request, **_kwargs):
+        captured.append(json.loads(request.data.decode("utf-8")))
+        return _Response({"choices": [{"message": {"content": json.dumps(next(responses))}}]})
+
+    monkeypatch.setattr(model_api.urllib.request, "urlopen", urlopen)
+    client = ModelApiClient(ModelApiConfig(api_key="test-only"))
+    bundle = {"sdk_implementation_projection": {"sdk_entry_id": "public-test"}}
+    client.generate_json(
+        "stage2",
+        "STAGE2_INITIAL_PUBLIC_CONTEXT",
+        {"implementation_bundle": bundle, "capability_design": {"public": "design"}},
+    )
+    for index in range(1, 8):
+        client.repair({
+            "repair_index": index,
+            "capability.py": sources[index - 1],
+            "implementation_bundle": bundle,
+            "diagnostics": [{"code": "PUBLIC", "message": f"diag-{index}"}],
+        })
+
+    assert len(client._implementation_history) == 2 + 2 * model_api._IMPLEMENTATION_HISTORY_TURN_PAIRS
+    final_body = captured[-1]
+    assert len(final_body["messages"]) == 1 + len(client._implementation_history) + 1  # type: ignore[arg-type]
+    final_text = final_body["messages"][-1]["content"]  # type: ignore[index]
+    final_inputs = json.loads(final_text.split("INPUT_JSON:\n", 1)[1])
+    assert final_inputs["capability.py"] == sources[-2]
+    assert final_inputs["diagnostics"] == [{"code": "PUBLIC", "message": "diag-7"}]
+    body_text = json.dumps(final_body, sort_keys=True)
+    assert "STAGE2_INITIAL_PUBLIC_CONTEXT" in body_text
+    assert "return 2" not in body_text
+    assert "return 4" in body_text and "return 5" in body_text and "return 6" in body_text
+
+
+def test_model_api_retries_one_transient_transport_failure_without_duplicate_history(monkeypatch):
+    source = "def capability_example():\n    return 1\n"
+    payload = {"choices": [{"message": {"content": json.dumps({"capability.py": source, "llm_calls": 1})}}]}
+    attempts: list[bytes] = []
+
+    def urlopen(request, **_kwargs):
+        attempts.append(request.data)
+        if len(attempts) == 1:
+            raise OSError("temporary transport")
+        return _Response(payload)
+
+    monkeypatch.setattr(model_api.urllib.request, "urlopen", urlopen)
+    client = ModelApiClient(ModelApiConfig(api_key="test-only"))
+    assert client.repair({"capability.py": source, "diagnostics": []}) == {
+        "capability.py": source,
+        "llm_calls": 1,
+    }
+    assert len(attempts) == 2
+    assert attempts[0] == attempts[1]
+    assert len(client.calls) == 1
+    assert len(client._implementation_history) == 2
+
+
+def test_model_api_does_not_retry_semantic_non_json_model_content(monkeypatch):
+    attempts = 0
+
+    def urlopen(_request, **_kwargs):
+        nonlocal attempts
+        attempts += 1
+        return _Response({"choices": [{"message": {"content": "not JSON"}}]})
+
+    monkeypatch.setattr(model_api.urllib.request, "urlopen", urlopen)
+    client = ModelApiClient(ModelApiConfig(api_key="test-only"))
+    with pytest.raises(ContractError, match="non-JSON"):
+        client.repair({"capability.py": "def capability_example():\n    return 1\n", "diagnostics": []})
+    assert attempts == 1
+    assert client.calls == []
+    assert client._implementation_history == []
+
+
 def test_stage1_blue_and_react_are_isolated_from_implementation_conversation(monkeypatch):
     responses = iter([
         {"stage": "stage1"},

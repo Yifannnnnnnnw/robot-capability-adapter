@@ -790,6 +790,34 @@ def test_codeact_repair_without_sandbox_ok_is_exhausted_without_a_or_b_revision(
     )
 
 
+def test_repair_callback_exception_is_auditable_without_revision() -> None:
+    design, design_seal, stage2, blue = _stage2_submission(_source("INITIAL"))
+    context = _context(design, design_seal, blue)
+
+    def failing_callback(_request):
+        raise RuntimeError("provider failed token=SECRET_VALUE {request-body}")
+
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail"])),
+        failing_callback,
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+
+    assert result.status == "INFRASTRUCTURE_ERROR"
+    assert result.repair_invocations_used == result.repairs_consumed == 1
+    assert result.candidate_revisions_created == 0
+    assert result.repair_llm_calls == 0
+    error = result.repair_log[0]["infrastructure_error"]
+    assert "RuntimeError" in error
+    assert len(error) <= 320
+    assert "SECRET_VALUE" not in error
+    assert "request-body" not in error
+
+
 def test_codeact_blocked_repair_episode_exhausts_at_twenty_without_revision() -> None:
     design, design_seal = _sealed_design()
     blue = _blue_ready(design, design_seal)

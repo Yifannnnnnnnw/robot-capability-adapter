@@ -6,6 +6,7 @@ import ast
 import copy
 import json
 import os
+import re
 import ssl
 import urllib.error
 import urllib.request
@@ -81,6 +82,34 @@ _IMPLEMENTATION_DELTA_INPUTS = {
         "design_hash",
     }),
 }
+_IMPLEMENTATION_HISTORY_TURN_PAIRS = 3
+
+
+def _safe_exception_text(value: Any, *, limit: int = 160) -> str:
+    """Normalize provider text without carrying request or secret material."""
+
+    text = " ".join(str(value).split())
+    text = re.sub(r"https?://\S+", "<url>", text)
+    text = re.sub(
+        r"(?i)(api[_ -]?key|authorization|bearer|token|secret|password)\s*[:=]\s*\S+",
+        r"\1=<redacted>",
+        text,
+    )
+    lowered = text.lower()
+    if any(marker in lowered for marker in ("input_json", "request body", "payload", "messages", "capability.py")):
+        text = "<redacted provider/framework detail>"
+    if any(character in text for character in "{}[]"):
+        text = "<redacted provider/framework detail>"
+    return text[:limit] or "<no provider detail>"
+
+
+def _compact_implementation_history(history: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Keep the initial public turn and the latest bounded implementation turns."""
+
+    max_messages = 2 + 2 * _IMPLEMENTATION_HISTORY_TURN_PAIRS
+    if len(history) <= max_messages:
+        return copy.deepcopy(history)
+    return copy.deepcopy(history[:2] + history[-2 * _IMPLEMENTATION_HISTORY_TURN_PAIRS:])
 
 
 def _render_public_implementation_bundle(bundle: Any) -> str:
@@ -226,13 +255,20 @@ class ModelApiClient:
             if ca_file
             else ssl.create_default_context()
         )
-        try:
-            with urllib.request.urlopen(
-                request, timeout=self.config.timeout_s, context=ssl_context
-            ) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-        except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
-            raise ContractError(f"model API call failed for {stage}") from exc
+        payload: Any = None
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(
+                    request, timeout=self.config.timeout_s, context=ssl_context
+                ) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                break
+            except (OSError, urllib.error.URLError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                if attempt == 1:
+                    detail = _safe_exception_text(exc)
+                    raise ContractError(
+                        f"model API call failed for {stage}: {type(exc).__name__}: {detail}"
+                    ) from exc
         choices = payload.get("choices") if isinstance(payload, dict) else None
         if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
             raise ContractError("model API response lacks choices")
@@ -280,6 +316,9 @@ class ModelApiClient:
                     ),
                 },
             ])
+            self._implementation_history = _compact_implementation_history(
+                self._implementation_history
+            )
         self.calls.append(
             {
                 "stage": stage,
