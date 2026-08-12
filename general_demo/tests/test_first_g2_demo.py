@@ -565,6 +565,7 @@ def test_validation_a_materialization_uses_each_sealed_capability_descriptor() -
                 "capability_id": "cap-scalar-v2",
                 "inputs": [
                     {"name": "enabled", "type": "boolean", "shape": "scalar", "unit": "none", "frame": "joint"},
+                    {"name": "duration", "type": "float", "shape": "scalar", "unit": "s", "frame": "world"},
                     {"name": "label", "type": "string", "shape": "scalar", "unit": "none", "frame": "world"},
                 ],
             },
@@ -580,6 +581,7 @@ def test_validation_a_materialization_uses_each_sealed_capability_descriptor() -
     assert set(profile.fixture_probes) == {"cap-scalar-v2", "cap-vector-v9"}
     assert profile.fixture_probes["cap-scalar-v2"]["inputs"] == {
         "enabled": {"value": False, "type": "boolean", "shape": "scalar", "unit": "none", "frame": "joint"},
+        "duration": {"value": 0.0, "type": "float", "shape": "scalar", "unit": "s", "frame": "world"},
         "label": {"value": "fixture", "type": "string", "shape": "scalar", "unit": "none", "frame": "world"},
     }
     vector = profile.fixture_probes["cap-vector-v9"]["inputs"]["target"]

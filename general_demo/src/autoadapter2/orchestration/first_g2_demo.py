@@ -914,6 +914,8 @@ def _probe_value(field: Mapping[str, Any], policy: Mapping[str, Any]) -> Any:
         if not length_text.isdigit() or int(length_text) <= 0:
             raise ContractError("sealed Stage 1 vector shape is invalid")
         return [copy.deepcopy(policy["number"])] * int(length_text)
+    if field_type == "float" and shape == "scalar":
+        return copy.deepcopy(policy["number"])
     if field_type in {"number", "integer", "boolean", "string", "object", "array"} and shape == "scalar":
         return copy.deepcopy(policy[field_type])
     if field_type == "object" and shape == "mapping":
