@@ -401,6 +401,8 @@ _ALLOWED_NUMPY_PATHS = frozenset({
     ("linalg", "solve"),
     ("linalg", "lstsq"),
 })
+_ALLOWED_DERIVED_OBJECT_MEMBERS = frozenset({"Init", "Read", "Write", "Crc"})
+_ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({"mode", "q", "dq", "kp", "kd", "tau", "motor_cmd", "crc"})
 
 
 def _module_path(value: ast.AST, aliases: Mapping[str, str]) -> tuple[str, tuple[str | None, ...]] | None:
@@ -440,8 +442,19 @@ def _expression_root(value: ast.AST) -> str | None:
     return current.id if isinstance(current, ast.Name) else None
 
 
-def _sdk_path_root(value: ast.AST) -> tuple[bool, str | None]:
-    """Return whether an expression is rooted at ``_sdk`` and its first member."""
+def _sdk_path_root(value: ast.AST, roots: set[str] | frozenset[str] = frozenset({"_sdk"})) -> tuple[bool, str | None]:
+    """Return whether an expression is rooted at an injected SDK name."""
+
+    path = _sdk_member_path(value, roots)
+    if path is None:
+        return False, None
+    if not path or path[0] is None:
+        return True, None
+    return True, path[0]
+
+
+def _sdk_member_path(value: ast.AST, roots: set[str] | frozenset[str]) -> tuple[str | None, ...] | None:
+    """Return the attribute/subscript path after an injected SDK name."""
 
     segments: list[tuple[str, str | None]] = []
     current = value
@@ -451,12 +464,10 @@ def _sdk_path_root(value: ast.AST) -> tuple[bool, str | None]:
         else:
             segments.append(("subscript", None))
         current = current.value
-    if not isinstance(current, ast.Name) or current.id != "_sdk":
-        return False, None
+    if not isinstance(current, ast.Name) or current.id not in roots:
+        return None
     segments.reverse()
-    if not segments or segments[0][0] != "attribute":
-        return True, None
-    return True, segments[0][1]
+    return tuple(segment for _kind, segment in segments)
 
 
 class _SdkStaticAnalyzer(ast.NodeVisitor):
@@ -470,6 +481,8 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         module_aliases: Mapping[str, str],
         module_constants: set[str],
         local_functions: set[str],
+        sdk_names: set[str] | frozenset[str],
+        sdk_forwarded_helpers: set[str],
         expected_result_names: set[str] | None = None,
     ):
         self.function = function
@@ -478,13 +491,17 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self.module_aliases = dict(module_aliases)
         self.module_constants = set(module_constants)
         self.local_functions = set(local_functions)
+        self.sdk_names = set(sdk_names)
+        self.sdk_forwarded_targets = set(sdk_forwarded_helpers)
         self.expected_result_names = expected_result_names
         self.sdk_readable_locals: set[str] = set()
         self.mutable_sdk_locals: set[str] = set()
+        self.derived_sdk_locals: set[str] = set()
         self.safe_locals: set[str] = set()
         self.issues: list[dict[str, str]] = []
         self._issue_keys: set[tuple[str, str]] = set()
         self.approved_sdk_use = False
+        self.forwarded_sdk_helpers: set[str] = set()
 
     def _add_issue(self, code: str, message: str) -> None:
         key = (code, message)
@@ -497,10 +514,29 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             self.visit(statement)
         return self.issues
 
+    def _sdk_expression_allowed(self, value: ast.AST) -> bool:
+        path = _sdk_member_path(value, self.sdk_names)
+        if path is None or not path or any(segment is None for segment in path):
+            return False
+        if path[0] not in self.members:
+            return False
+        return len(path) == 1 or (len(path) == 2 and path[1] in _ALLOWED_DERIVED_OBJECT_MEMBERS)
+
+    def _derived_expression_allowed(self, value: ast.AST) -> bool:
+        path = _sdk_member_path(value, self.derived_sdk_locals)
+        if path is None:
+            return True
+        return all(
+            segment is None
+            or segment in _ALLOWED_DERIVED_OBJECT_FIELDS
+            or segment in _ALLOWED_DERIVED_OBJECT_MEMBERS
+            for segment in path
+        )
+
     def _call_origin(self, function: ast.AST) -> str | None:
-        sdk_root, member = _sdk_path_root(function)
+        sdk_root, member = _sdk_path_root(function, self.sdk_names)
         if sdk_root:
-            if member in self.members:
+            if self._sdk_expression_allowed(function):
                 return "sdk-root"
             return None
         module_path = _module_path(function, self.module_aliases)
@@ -510,8 +546,12 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
                 return "module"
             return None
         root = _expression_root(function)
-        if root in self.sdk_readable_locals | self.mutable_sdk_locals:
+        if root in self.derived_sdk_locals and isinstance(function, ast.Attribute) and function.attr in _ALLOWED_DERIVED_OBJECT_MEMBERS:
+            return "sdk-derived-method"
+        if root in self.sdk_readable_locals | self.mutable_sdk_locals and isinstance(function, ast.Attribute) and function.attr == "get":
             return "sdk-local"
+        if isinstance(function, ast.Attribute) and function.attr in {"append", "get"} and root in self.safe_locals | self.public_inputs:
+            return "local-container"
         if root in self.local_functions or root in _SAFE_BUILTIN_NAMES:
             return "local-function"
         return None
@@ -522,6 +562,8 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         if isinstance(value, ast.Constant):
             return True, False, False
         if isinstance(value, ast.Name):
+            if value.id in self.sdk_names:
+                return True, True, True
             if (
                 value.id in self.public_inputs
                 or value.id in self.safe_locals
@@ -540,9 +582,10 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if module_path is not None:
                 module, path = module_path
                 return _module_member_allowed(module, path), False, False
-            sdk_root, member = _sdk_path_root(value)
+            sdk_root, member = _sdk_path_root(value, self.sdk_names)
             if sdk_root:
-                return member in self.members, member in self.members, False
+                allowed = self._sdk_expression_allowed(value)
+                return allowed, allowed, allowed
             root = _expression_root(value)
             if root in self.mutable_sdk_locals:
                 return True, True, True
@@ -555,7 +598,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             origin = self._call_origin(value.func)
             if origin is None:
                 return False, False, False
-            sdk_derived = origin in {"sdk-root", "sdk-local"}
+            sdk_derived = origin in {"sdk-root", "sdk-local", "sdk-derived-method"}
             return True, sdk_derived, sdk_derived
         if isinstance(value, ast.Starred):
             return self._classify_expression(value.value)
@@ -565,6 +608,20 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         if isinstance(value, ast.Dict):
             results = [self._classify_expression(item) for item in [*value.keys, *value.values] if item is not None]
             return all(item[0] for item in results), False, False
+        if isinstance(value, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+            saved_locals = set(self.safe_locals)
+            expressions: list[ast.AST] = []
+            for generator in value.generators:
+                expressions.append(generator.iter)
+                expressions.extend(generator.ifs)
+                self._bind_safe_target(generator.target)
+            if isinstance(value, ast.DictComp):
+                expressions.extend((value.key, value.value))
+            else:
+                expressions.append(value.elt)
+            allowed = all(self._classify_expression(expression)[0] for expression in expressions)
+            self.safe_locals = saved_locals
+            return allowed, False, False
         if isinstance(value, ast.UnaryOp):
             return self._classify_expression(value.operand)[0], False, False
         if isinstance(value, ast.BinOp):
@@ -608,19 +665,33 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if mutable:
                 self.mutable_sdk_locals.add(target.id)
                 self.sdk_readable_locals.discard(target.id)
+                derived_value = (
+                    (isinstance(node.value, ast.Call) and self._call_origin(node.value.func) == "sdk-root")
+                    or (not isinstance(node.value, ast.Call) and self._sdk_expression_allowed(node.value))
+                )
+                if derived_value:
+                    self.derived_sdk_locals.add(target.id)
+                elif isinstance(node.value, ast.Name) and node.value.id in self.derived_sdk_locals:
+                    self.derived_sdk_locals.add(target.id)
+                else:
+                    self.derived_sdk_locals.discard(target.id)
                 self.safe_locals.discard(target.id)
             elif sdk_derived:
                 self.sdk_readable_locals.add(target.id)
                 self.mutable_sdk_locals.discard(target.id)
+                self.derived_sdk_locals.discard(target.id)
                 self.safe_locals.discard(target.id)
             else:
                 self.safe_locals.add(target.id)
                 self.sdk_readable_locals.discard(target.id)
                 self.mutable_sdk_locals.discard(target.id)
+                self.derived_sdk_locals.discard(target.id)
+            if isinstance(node.value, ast.Name) and node.value.id in self.sdk_names:
+                self.sdk_names.add(target.id)
             return
         self.visit(target)
         root = _expression_root(target)
-        if root not in self.mutable_sdk_locals:
+        if root not in self.mutable_sdk_locals and root not in self.safe_locals | self.public_inputs:
             self._assignment_issue("only a local value derived from the injected SDK may be mutated")
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
@@ -632,7 +703,8 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
                 self._assignment_issue("augmented assignment requires an approved local")
             return
         self.visit(node.target)
-        if _expression_root(node.target) not in self.mutable_sdk_locals:
+        root = _expression_root(node.target)
+        if root not in self.mutable_sdk_locals and root not in self.safe_locals | self.public_inputs:
             self._assignment_issue("only a local value derived from the injected SDK may be mutated")
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
@@ -672,10 +744,12 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             self.visit(statement)
 
     def visit_Call(self, node: ast.Call) -> None:
-        sdk_root, member = _sdk_path_root(node.func)
+        sdk_root, member = _sdk_path_root(node.func, self.sdk_names)
         origin = self._call_origin(node.func)
-        if origin in {"sdk-root", "sdk-local"}:
+        if origin in {"sdk-root", "sdk-local", "sdk-derived-method"}:
             self.approved_sdk_use = True
+        elif origin == "local-function" and isinstance(node.func, ast.Name) and node.func.id in self.sdk_forwarded_targets:
+            self.forwarded_sdk_helpers.add(node.func.id)
         elif origin is None and sdk_root:
             self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
         elif origin is None:
@@ -698,26 +772,30 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         module_path = _module_path(node, self.module_aliases)
         if module_path is not None and not _module_member_allowed(*module_path):
             self._add_issue("MODULE_MEMBER", "module member is not in the approved runtime allowlist")
-        sdk_root, member = _sdk_path_root(node)
+        sdk_root, member = _sdk_path_root(node, self.sdk_names)
         if sdk_root:
-            if member in self.members:
+            if self._sdk_expression_allowed(node):
                 self.approved_sdk_use = True
             else:
                 self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
         if _dunder(node.attr):
             self._add_issue("FORBIDDEN_DUNDER", "dunder attributes are forbidden in the experimental profile")
+        if not self._derived_expression_allowed(node):
+            self._add_issue("SDK_DERIVED_MEMBER", "SDK-derived object member is not in the approved object surface")
         self.generic_visit(node)
 
     def visit_Subscript(self, node: ast.Subscript) -> None:
         module_path = _module_path(node, self.module_aliases)
         if module_path is not None and not _module_member_allowed(*module_path):
             self._add_issue("MODULE_MEMBER", "module member is not in the approved runtime allowlist")
-        sdk_root, member = _sdk_path_root(node)
+        sdk_root, member = _sdk_path_root(node, self.sdk_names)
         if sdk_root:
-            if member in self.members:
+            if self._sdk_expression_allowed(node):
                 self.approved_sdk_use = True
             else:
                 self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
+        if not self._derived_expression_allowed(node):
+            self._add_issue("SDK_DERIVED_MEMBER", "SDK-derived object member is not in the approved object surface")
         self.generic_visit(node)
 
     def visit_Name(self, node: ast.Name) -> None:
@@ -807,14 +885,106 @@ def _function_shape_issues(function: ast.FunctionDef, *, public: bool, symbol: s
         function.decorator_list
         or function.returns is not None
         or any(argument.annotation is not None for argument in all_arguments)
-        or arguments.defaults
-        or any(default is not None for default in arguments.kw_defaults)
+        or any(not _safe_literal_ast(default) for default in arguments.defaults)
+        or any(default is not None and not _safe_literal_ast(default) for default in arguments.kw_defaults)
         or arguments.posonlyargs
         or arguments.vararg is not None
         or arguments.kwarg is not None
     ):
         return [_issue("EXPERIMENTAL_PROFILE", f"private helper {symbol} has an unsupported signature")]
     return []
+
+
+def _function_parameters(function: ast.FunctionDef) -> list[str]:
+    return [
+        argument.arg
+        for argument in [*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs]
+    ]
+
+
+def _call_parameter_values(call: ast.Call, function: ast.FunctionDef) -> list[tuple[str, ast.AST]]:
+    positional_parameters = [*function.args.posonlyargs, *function.args.args]
+    values: list[tuple[str, ast.AST]] = [
+        (parameter.arg, value)
+        for parameter, value in zip(positional_parameters, call.args)
+    ]
+    parameter_names = {argument.arg for argument in [*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs]}
+    values.extend(
+        (keyword.arg, keyword.value)
+        for keyword in call.keywords
+        if keyword.arg is not None and keyword.arg in parameter_names
+    )
+    return values
+
+
+def _sdk_alias_names(function: ast.FunctionDef, initial: set[str]) -> set[str]:
+    aliases = set(initial)
+    changed = True
+    while changed:
+        changed = False
+        for node in ast.walk(function):
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Name) and node.value.id in aliases:
+                targets = node.targets
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.value, ast.Name) and node.value.id in aliases:
+                targets = [node.target]
+            else:
+                continue
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id not in aliases:
+                    aliases.add(target.id)
+                    changed = True
+    return aliases
+
+
+def _sdk_parameter_names(
+    functions: Mapping[str, list[ast.FunctionDef]],
+    public_symbols: set[str],
+) -> dict[str, set[str]]:
+    parameters = {
+        symbol: ({"_sdk"} if symbol in public_symbols else set())
+        for symbol in functions
+    }
+    changed = True
+    while changed:
+        changed = False
+        for caller, nodes in functions.items():
+            if len(nodes) != 1:
+                continue
+            caller_aliases = _sdk_alias_names(nodes[0], parameters[caller])
+            for call in ast.walk(nodes[0]):
+                if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
+                    continue
+                target = functions.get(call.func.id)
+                if target is None or len(target) != 1:
+                    continue
+                for parameter, value in _call_parameter_values(call, target[0]):
+                    if isinstance(value, ast.Name) and value.id in caller_aliases and parameter not in parameters[call.func.id]:
+                        parameters[call.func.id].add(parameter)
+                        changed = True
+    return parameters
+
+
+def _sdk_forwarded_calls(
+    functions: Mapping[str, list[ast.FunctionDef]],
+    sdk_parameters: Mapping[str, set[str]],
+) -> dict[str, set[str]]:
+    forwarded: dict[str, set[str]] = {symbol: set() for symbol in functions}
+    for caller, nodes in functions.items():
+        if len(nodes) != 1:
+            continue
+        caller_aliases = _sdk_alias_names(nodes[0], sdk_parameters.get(caller, set()))
+        for call in ast.walk(nodes[0]):
+            if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
+                continue
+            target = functions.get(call.func.id)
+            if target is None or len(target) != 1:
+                continue
+            if any(
+                isinstance(value, ast.Name) and value.id in caller_aliases
+                for _parameter, value in _call_parameter_values(call, target[0])
+            ):
+                forwarded[caller].add(call.func.id)
+    return forwarded
 
 
 def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]], profile: ValidationAProfile) -> list[dict[str, str]]:
@@ -874,6 +1044,14 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
     if any(not name.startswith("_") or _dunder(name) for name in helper_names):
         issues.append(_issue("PUBLIC_SYMBOLS", "extra functions must be private non-dunder helpers"))
     symbol_to_capability = {item["function_name"]: capability_id for capability_id, item in contracts.items()}
+    sdk_parameter_names = _sdk_parameter_names(functions, public_symbols)
+    sdk_forwarded_calls = _sdk_forwarded_calls(functions, sdk_parameter_names)
+    all_sdk_members = frozenset(
+        member
+        for members in profile.sdk_facade_members.values()
+        for member in members
+    )
+    analyzers: dict[str, _SdkStaticAnalyzer] = {}
     for symbol, nodes in functions.items():
         public = symbol in symbol_to_capability
         capability_id = symbol_to_capability.get(symbol)
@@ -883,37 +1061,59 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
         function = nodes[0]
         issues.extend(_function_shape_issues(function, public=public, symbol=symbol))
         if not public:
-            analyzer = _SdkStaticAnalyzer(function, [argument.arg for argument in [*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs]], (), module_aliases, module_constants, set(functions))
-            issues.extend(analyzer.analyze())
-            continue
-        assert capability_id is not None
-        arguments = function.args
-        expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
-        if (
-            function.decorator_list
-            or function.returns is not None
-            or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
-            or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
-            or arguments.defaults
-            or any(default is not None for default in arguments.kw_defaults)
-            or arguments.posonlyargs
-            or [argument.arg for argument in arguments.args] != expected_parameters
-            or [argument.arg for argument in arguments.kwonlyargs] != ["_sdk"]
-            or arguments.vararg is not None
-            or arguments.kwarg is not None
-        ):
-            issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
-        analyzer = _SdkStaticAnalyzer(
-            function,
-            expected_parameters,
-            profile.sdk_facade_members[capability_id],
-            module_aliases,
-            module_constants,
-            set(functions),
-            {field["name"] for field in contracts[capability_id]["outputs"]},
-        )
+            analyzer = _SdkStaticAnalyzer(
+                function,
+                _function_parameters(function),
+                all_sdk_members,
+                module_aliases,
+                module_constants,
+                set(functions),
+                sdk_parameter_names.get(symbol, set()),
+                sdk_forwarded_calls.get(symbol, set()),
+            )
+        else:
+            assert capability_id is not None
+            arguments = function.args
+            expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
+            if (
+                function.decorator_list
+                or function.returns is not None
+                or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
+                or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
+                or arguments.defaults
+                or any(default is not None for default in arguments.kw_defaults)
+                or arguments.posonlyargs
+                or [argument.arg for argument in arguments.args] != expected_parameters
+                or [argument.arg for argument in arguments.kwonlyargs] != ["_sdk"]
+                or arguments.vararg is not None
+                or arguments.kwarg is not None
+            ):
+                issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
+            analyzer = _SdkStaticAnalyzer(
+                function,
+                expected_parameters,
+                profile.sdk_facade_members[capability_id],
+                module_aliases,
+                module_constants,
+                set(functions),
+                sdk_parameter_names.get(symbol, {"_sdk"}),
+                sdk_forwarded_calls.get(symbol, set()),
+                {field["name"] for field in contracts[capability_id]["outputs"]},
+            )
         issues.extend(analyzer.analyze())
-        if not analyzer.approved_sdk_use:
+        analyzers[symbol] = analyzer
+    verified_sdk_functions: set[str] = set()
+    changed = True
+    while changed:
+        changed = False
+        for symbol, analyzer in analyzers.items():
+            children = analyzer.forwarded_sdk_helpers
+            if not analyzer.issues and (analyzer.approved_sdk_use or children) and all(child in verified_sdk_functions for child in children):
+                if symbol not in verified_sdk_functions:
+                    verified_sdk_functions.add(symbol)
+                    changed = True
+    for symbol in symbol_to_capability:
+        if symbol in analyzers and symbol not in verified_sdk_functions:
             issues.append(_issue("SDK_INJECTION", f"{symbol} must call the injected _sdk facade"))
     return issues
 

@@ -97,6 +97,10 @@ PROFILE = ValidationAProfile(
         },
     },
 )
+HELPER_PROFILE = ValidationAProfile(
+    sdk_facade_members={"reach-joint-target": ("get_observation", "send_action")},
+    fixture_probes=copy.deepcopy(PROFILE.fixture_probes),
+)
 GO2_PROFILE = ValidationAProfile(
     sdk_facade_members={"reach-joint-target": ("LowCmd_", "CRC", "publisher")},
     fixture_probes={
@@ -123,6 +127,28 @@ def _source(status: str = "PASS") -> str:
     return f'''def capability_reach_joint_target(arg_target, *, _sdk):
     _sdk.command(arg_target)
     return {{"reported_status": "{status}"}}
+'''
+
+
+def _helper_source() -> str:
+    return '''def _get_current_joint_positions(sdk):
+    observation = sdk.get_observation()
+    return [observation.get(name, 0.0) for name in ("joint_0", "joint_1")]
+
+def _send_joint_command(sdk, target_q, kp, kd, tau=None):
+    action = {"q": target_q, "kp": kp, "kd": kd}
+    if tau is not None:
+        action["tau"] = tau
+    sdk.send_action(action)
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    current = _get_current_joint_positions(_sdk)
+    target_q = [arg_target, arg_target]
+    target_q.append(current[0])
+    for index, value in enumerate(item for item in current):
+        target_q[index] = value
+    _send_joint_command(_sdk, target_q, 1.0, 0.1)
+    return {"reported_status": "PASS"}
 '''
 
 
@@ -530,6 +556,16 @@ def _stage2_submission(source: str = _source()):
     return design, design_seal, stage2, blue
 
 
+def _helper_a_result(source: str = _helper_source()):
+    design, design_seal, stage2, blue = _stage2_submission(source)
+    result = ValidationARunner(HELPER_PROFILE).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": source}, stage2.implementation_manifest, stage2.manifest_seal,
+        stage2.implementation_bundle_hash,
+    )
+    return result, stage2
+
+
 def _go2_a_result(source: str | None = None):
     body = copy.deepcopy(_design_body())
     body["capabilities"][0]["inputs"] = [{
@@ -665,6 +701,29 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     _design, _seal, _stage2, _blue, result = _a_result(source)
     assert result.status == "PASS"
     assert result.candidate_handle is not None
+
+
+def test_validation_a_accepts_forwarded_sdk_helpers_and_observed_local_containers() -> None:
+    result, _stage2 = _helper_a_result()
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+
+def test_validation_a_rejects_unapproved_forwarded_helper_and_arbitrary_method() -> None:
+    cases = [
+        _helper_source().replace("sdk.send_action(action)", "sdk.private_state(action)"),
+        _helper_source().replace("target_q.append(current[0])", "target_q.extend([current[0]])"),
+        _helper_source().replace(
+            "def capability_reach_joint_target(arg_target, *, _sdk):",
+            "def _unverified(sdk):\n    return 1\n\ndef capability_reach_joint_target(arg_target, *, _sdk):",
+        ).replace(
+            "current = _get_current_joint_positions(_sdk)",
+            "current = _unverified(_sdk)\n    current = _get_current_joint_positions(_sdk)",
+        ),
+    ]
+    for source in cases:
+        result, _stage2 = _helper_a_result(source)
+        assert result.status == "FAIL"
 
 
 def test_validation_a_accepts_float_as_finite_numeric_scalar_alias() -> None:
