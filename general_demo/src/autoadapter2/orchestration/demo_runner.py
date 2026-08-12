@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -155,6 +156,17 @@ def _field_schema(field: Mapping[str, Any]) -> dict[str, Any]:
     shape = field.get("shape")
     if shape == "scalar" and field_type in _SCALAR_TYPES:
         return {"type": field_type}
+    if field_type == "array" and isinstance(shape, str):
+        match = re.fullmatch(r"\[([0-9]+)\]", shape)
+        if match is not None:
+            length = int(match.group(1))
+            if length > 0:
+                return {
+                    "type": "array",
+                    "items": {"type": "number"},
+                    "minItems": length,
+                    "maxItems": length,
+                }
     if (
         isinstance(shape, str)
         and shape.startswith("vector:")
@@ -171,7 +183,7 @@ def _field_schema(field: Mapping[str, Any]) -> dict[str, Any]:
         }
     raise ContractError(
         "experimental PromotedTool conversion supports scalar fields and exact "
-        "numeric vector:<positive-length> fields"
+        "numeric vector:<positive-length> and array [<positive-length>] fields"
     )
 
 

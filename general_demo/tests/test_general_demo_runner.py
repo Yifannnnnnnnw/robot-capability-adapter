@@ -15,6 +15,7 @@ from autoadapter2.evaluation import (
     OpaqueVideoHandle,
     RGBFrame,
 )
+from autoadapter2.foundation.errors import ContractError
 from autoadapter2.foundation.hashing import sha256_bytes
 from autoadapter2.generation import FixtureJsonGenerator
 from autoadapter2.integration import (
@@ -24,11 +25,26 @@ from autoadapter2.integration import (
 )
 from autoadapter2.libraries import TasksLibrary
 from autoadapter2.orchestration import DemoModelAdapters, DemoRunPlan, GeneralDemoRunner
+from autoadapter2.orchestration.demo_runner import _field_schema
 from autoadapter2.validation import MeasurementSample, RepairConfig, ValidationAProfile
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
+
+
+def test_field_schema_accepts_fixed_length_arrays_and_rejects_invalid_shapes() -> None:
+    for shape, length in (("[2]", 2), ("[3]", 3)):
+        assert _field_schema({"type": "array", "shape": shape}) == {
+            "type": "array",
+            "items": {"type": "number"},
+            "minItems": length,
+            "maxItems": length,
+    }
+
+    for shape in ("[]", "[0]", "[-1]", "[3", "3]", "[3.0]", "[abc]"):
+        with pytest.raises(ContractError):
+            _field_schema({"type": "array", "shape": shape})
 
 
 def _copy(root: Path, relative: str) -> None:
