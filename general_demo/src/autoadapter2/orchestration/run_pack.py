@@ -12,6 +12,7 @@ import copy
 import json
 import math
 import os
+import re
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -1225,6 +1226,12 @@ def _probe_value(field: Mapping[str, Any], policy: Mapping[str, Any]) -> Any:
         if isinstance(shape, str) and shape.startswith("vector:") and shape.removeprefix("vector:").isdigit():
             return [copy.deepcopy(policy["number"])] * int(shape.removeprefix("vector:"))
         return copy.deepcopy(policy["number"])
+    if field_type == "array" and isinstance(shape, str):
+        match = re.fullmatch(r"\[([0-9]+)\]", shape)
+        if match is not None:
+            length = int(match.group(1))
+            if length > 0:
+                return [copy.deepcopy(policy["number"]) for _ in range(length)]
     if field_type in {"integer", "boolean", "string", "object", "array"} and shape == "scalar":
         return copy.deepcopy(policy[field_type])
     if field_type == "object" and shape == "mapping":

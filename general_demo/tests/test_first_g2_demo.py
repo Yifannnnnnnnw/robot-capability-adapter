@@ -25,6 +25,7 @@ from autoadapter2.orchestration.first_g2_demo import (
     run_first_g2_demo,
     verify_first_g2_run_closure,
 )
+from autoadapter2.validation.validation_a import _descriptor_match
 
 from test_general_demo_runner import _RobotSession, _plan
 
@@ -585,6 +586,59 @@ def test_validation_a_materialization_uses_each_sealed_capability_descriptor() -
     assert vector["value"] == [0.0, 0.0, 0.0, 0.0]
     assert vector["unit"] == "m"
     assert vector["frame"] == "base"
+
+
+def test_validation_a_materializes_fixed_length_array_and_descriptor_matches() -> None:
+    template = ValidationAProfileTemplate(
+        profile_id="experimental-python-a-v1",
+        facade_members=("send_action", "get_observation"),
+        input_value_policy={
+            "number": 1.25,
+            "integer": 0,
+            "boolean": False,
+            "string": "fixture",
+            "object": {},
+            "array": ["unused-array-policy"],
+        },
+    )
+    field = {"name": "samples", "type": "array", "shape": "[3]", "unit": "m", "frame": "world"}
+    design = {
+        "capabilities": [{"capability_id": "cap-array-v3", "inputs": [field]}]
+    }
+
+    profile = materialize_validation_a_profile(template, design)
+    probe = profile.fixture_probes["cap-array-v3"]["inputs"]["samples"]
+    assert probe["value"] == [1.25, 1.25, 1.25]
+    assert probe["type"] == field["type"]
+    assert probe["shape"] == field["shape"]
+    assert _descriptor_match(probe["value"], field)
+    assert not _descriptor_match([1.25, 1.25], field)
+    assert not _descriptor_match([1.25, 1.25, 1.25, 1.25], field)
+
+
+@pytest.mark.parametrize("shape", ["[]", "[0]", "[-1]", "[3", "3]", "[3.0]", "[abc]"])
+def test_validation_a_rejects_malformed_fixed_length_array_shapes(shape: str) -> None:
+    template = ValidationAProfileTemplate(
+        profile_id="experimental-python-a-v1",
+        facade_members=("send_action",),
+        input_value_policy={
+            "number": 0.0,
+            "integer": 0,
+            "boolean": False,
+            "string": "fixture",
+            "object": {},
+            "array": [],
+        },
+    )
+    design = {
+        "capabilities": [{
+            "capability_id": "cap-array-invalid",
+            "inputs": [{"name": "samples", "type": "array", "shape": shape, "unit": "m", "frame": "world"}],
+        }]
+    }
+
+    with pytest.raises(ContractError, match="cannot be materialized"):
+        materialize_validation_a_profile(template, design)
 
 
 def _frozen_model_config() -> dict:

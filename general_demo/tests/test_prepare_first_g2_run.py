@@ -462,6 +462,23 @@ def test_validation_a_template_materializes_only_after_valid_sealed_design(tmp_p
         materialize_validation_a_profile(template, design, bad_seal)
 
 
+def test_validation_a_run_pack_materializes_fixed_length_array_probe(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    pack = _build_pack(tmp_path, "go2-first-g2-array-materialize")
+    template = json.loads(pack.path("validation_a_template").read_text(encoding="utf-8"))
+    design, _original_seal = _sealed_design(pack)
+    design["capabilities"][0]["inputs"][0].update(type="array", shape="[3]")
+    seal = create_seal("capability_design", content_hash(canonical_bytes(design)))
+    design_before = copy.deepcopy(design)
+    seal_before = copy.deepcopy(seal)
+
+    profile = materialize_validation_a_profile(template, design, seal)
+
+    assert profile.fixture_probes["opaque-capability-17"]["inputs"]["target"]["value"] == [0.0, 0.0, 0.0]
+    assert design == design_before
+    assert seal == seal_before
+
+
 def test_robot_projection_is_accepted_as_stage1_public_input(tmp_path: Path) -> None:
     _copy_project(tmp_path)
     pack = _build_pack(tmp_path, "go2-first-g2-stage1-input")

@@ -903,6 +903,12 @@ def _template_from_mapping(
 def _probe_value(field: Mapping[str, Any], policy: Mapping[str, Any]) -> Any:
     field_type = field.get("type")
     shape = field.get("shape")
+    if field_type == "array" and isinstance(shape, str):
+        match = re.fullmatch(r"\[([0-9]+)\]", shape)
+        if match is not None:
+            length = int(match.group(1))
+            if length > 0:
+                return [copy.deepcopy(policy["number"]) for _ in range(length)]
     if field_type == "number" and isinstance(shape, str) and shape.startswith("vector:"):
         length_text = shape.removeprefix("vector:")
         if not length_text.isdigit() or int(length_text) <= 0:

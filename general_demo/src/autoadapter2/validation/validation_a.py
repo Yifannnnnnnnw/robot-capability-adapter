@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import copy
 import math
+import re
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Any, Mapping
@@ -658,6 +659,7 @@ def _descriptor_match(value: Any, field: Mapping[str, Any]) -> bool:
     field_type = field["type"]
     shape = field["shape"]
     vector_length: int | None = None
+    array_length: int | None = None
     if (
         isinstance(shape, str)
         and shape.startswith("vector:")
@@ -665,6 +667,12 @@ def _descriptor_match(value: Any, field: Mapping[str, Any]) -> bool:
         and int(shape.removeprefix("vector:")) > 0
     ):
         vector_length = int(shape.removeprefix("vector:"))
+    if isinstance(shape, str):
+        match = re.fullmatch(r"\[([0-9]+)\]", shape)
+        if match is not None:
+            length = int(match.group(1))
+            if length > 0:
+                array_length = length
     if vector_length is not None and field_type == "number":
         type_ok = isinstance(value, list) and all(
             isinstance(item, (int, float))
@@ -690,6 +698,8 @@ def _descriptor_match(value: Any, field: Mapping[str, Any]) -> bool:
         shape_ok = not isinstance(value, (list, tuple, Mapping))
     elif shape == "vector":
         shape_ok = isinstance(value, list)
+    elif array_length is not None:
+        shape_ok = field_type == "array" and isinstance(value, list) and len(value) == array_length
     elif vector_length is not None:
         shape_ok = isinstance(value, list) and len(value) == vector_length
     elif shape == "mapping":
