@@ -74,7 +74,7 @@
     "profile_id": "experimental-python-a-v1",
     "robot_model_id": "unitree-go2",
     "robot_configuration_id": "unitree-go2-stock-12dof",
-    "facade": {"members": ["LowCmd_", "CRC", "publisher"], "lifecycle": "framework_injected_unitree_low_level_sdk_lifecycle"},
+    "facade": {"members": ["ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_"], "lifecycle": "framework_injected_unitree_low_level_sdk_lifecycle"},
     "probe": {
       "input_value_policy": {"number": 0.0, "integer": 0, "boolean": false, "string": "fixture", "object": {}, "array": []},
       "metadata_policy": "copy sealed design field metadata exactly"

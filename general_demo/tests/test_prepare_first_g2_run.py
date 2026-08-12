@@ -353,6 +353,17 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     validate_implementation_bundle(bundle)
 
     validation_template = json.loads(first.path("validation_a_template").read_text(encoding="utf-8"))
+    facade_members = set(validation_template["facade"]["members"])
+    permitted_types = set(bundle["sdk_implementation_projection"]["permitted_types"])
+    assert facade_members == {
+        "ChannelPublisher",
+        "ChannelSubscriber",
+        "LowCmd_",
+        "LowState_",
+        "SportModeState_",
+    }
+    assert facade_members <= permitted_types
+    assert "publisher" not in facade_members
     assert "capability_id" not in json.dumps(validation_template)
     assert "constructor" not in json.dumps(validation_template).lower()
     harness = json.loads(first.path("validation_harness_config").read_text(encoding="utf-8"))
