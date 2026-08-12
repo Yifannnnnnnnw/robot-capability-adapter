@@ -141,6 +141,22 @@
               "rt/sportmodestate": "SportModeState_"
             }
           }
+        },
+        {
+          "object_type": "CRC",
+          "constructor": {
+            "parameters": []
+          },
+          "operations": ["Crc"],
+          "operation_contract": {
+            "parameters": ["message"],
+            "accepted_message_types": ["LowCmd_"],
+            "returns": "uint32_checksum",
+            "returned_value_assignment": {
+              "target": "message.crc",
+              "required_before": "ChannelPublisher.Write"
+            }
+          }
         }
       ],
       "topics": {"command": "rt/lowcmd", "state": "rt/lowstate", "sport_state_read_only": "rt/sportmodestate"},

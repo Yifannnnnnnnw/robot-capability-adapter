@@ -1206,6 +1206,22 @@ def _implementation_projection_from_records(
                     }
                 },
             },
+            {
+                "object_type": "CRC",
+                "constructor": {
+                    "parameters": [],
+                },
+                "operations": ["Crc"],
+                "operation_contract": {
+                    "parameters": ["message"],
+                    "accepted_message_types": ["LowCmd_"],
+                    "returns": "uint32_checksum",
+                    "returned_value_assignment": {
+                        "target": "message.crc",
+                        "required_before": "ChannelPublisher.Write",
+                    },
+                },
+            },
         ],
         "topics": copy.deepcopy(sdk["topics"]),
         "command": {

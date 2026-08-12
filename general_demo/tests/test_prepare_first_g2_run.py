@@ -16,6 +16,7 @@ from autoadapter2.foundation.errors import GateError
 from autoadapter2.foundation.hashing import content_hash, sha256_bytes
 from autoadapter2.foundation.seals import create_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
+from autoadapter2.generation.model_api import _render_public_implementation_bundle
 from autoadapter2.integration import (
     FROZEN_READINESS_LIMITS,
     READINESS_CHECK_IDS,
@@ -557,6 +558,56 @@ def test_go2_bundle_derivation_appends_injected_sdk_surface_without_mutating_sdk
     assert derived["sdk_implementation_projection"]["permitted_types"] == template[
         "implementation_projection"
     ]["sdk_implementation_projection"]["permitted_types"]
+    assert derived["sdk_implementation_projection"]["permitted_objects"][2] == {
+        "object_type": "CRC",
+        "constructor": {"parameters": []},
+        "operations": ["Crc"],
+        "operation_contract": {
+            "parameters": ["message"],
+            "accepted_message_types": ["LowCmd_"],
+            "returns": "uint32_checksum",
+            "returned_value_assignment": {
+                "target": "message.crc",
+                "required_before": "ChannelPublisher.Write",
+            },
+        },
+    }
+    assert derived["sdk_implementation_projection"]["permitted_objects"][2] == template[
+        "implementation_projection"
+    ]["sdk_implementation_projection"]["permitted_objects"][2]
+    public_bundle = _render_public_implementation_bundle(derived)
+    assert '"object_type": "CRC"' in public_bundle
+    assert '"operation_contract": {' in public_bundle
+    assert '"operations": [' in public_bundle and '"Crc"' in public_bundle
+    assert '"accepted_message_types": [' in public_bundle and '"LowCmd_"' in public_bundle
+    assert '"returns": "uint32_checksum"' in public_bundle
+    assert '"target": "message.crc"' in public_bundle
+    assert '"required_before": "ChannelPublisher.Write"' in public_bundle
+
+
+@pytest.mark.parametrize("drift", ["constructor", "operation"])
+def test_go2_crc_contract_template_drift_is_rejected(tmp_path: Path, drift: str) -> None:
+    _copy_project(tmp_path)
+    template_path = tmp_path / "general_demo/config/first_g2_demo/robots/unitree-go2.json"
+    template = json.loads(template_path.read_text(encoding="utf-8"))
+    crc_object = template["implementation_projection"]["sdk_implementation_projection"]["permitted_objects"][2]
+    if drift == "constructor":
+        crc_object["constructor"]["parameters"] = ["message"]
+    else:
+        crc_object["operations"] = []
+    write_stable_json(template_path, template)
+
+    report = _readiness_report(tmp_path, "unitree-go2", f"go2-first-g2-crc-drift-{drift}")
+    standards, measurements = _reviewed_blue_inputs(tmp_path, "unitree-go2")
+    with pytest.raises(RunPackError, match="implementation projection"):
+        build_first_g2_run_pack(
+            tmp_path,
+            f"go2-first-g2-crc-drift-{drift}",
+            "unitree-go2",
+            readiness_report_path=report,
+            standards_snapshot_path=standards,
+            measurement_catalog_path=measurements,
+        )
 
 
 def test_validation_a_accepts_the_canonical_go2_default_message_factory() -> None:
