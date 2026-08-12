@@ -186,6 +186,16 @@
   "route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "mujoco": {
     "version": "3.3.6",
+    "frames": {
+      "body_names": ["pelvis"],
+      "site_names": ["imu"]
+    },
+    "render": {
+      "camera": "free",
+      "width": 640,
+      "height": 480,
+      "fps": 30
+    },
     "entrypoint": "assets/mjcf/h1/scene.xml",
     "local_entrypoint": "general_demo/libraries/assets/h1/1.0.0/scene.xml",
     "source_sha256": "7d8b24f1148af2f3c5cf32975dbd84d6ca3b726f2d308047f8c4e67ed3e6689d",

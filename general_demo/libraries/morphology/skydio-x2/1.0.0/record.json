@@ -65,6 +65,16 @@
   "route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "mujoco": {
     "version": "3.3.6",
+    "frames": {
+      "body_names": ["x2"],
+      "site_names": ["imu", "thrust1", "thrust2", "thrust3", "thrust4"]
+    },
+    "render": {
+      "camera": "free",
+      "width": 640,
+      "height": 480,
+      "fps": 30
+    },
     "entrypoint": "assets/mjcf/skydio_x2/scene.xml",
     "local_entrypoint": "general_demo/libraries/assets/skydio-x2/1.0.0/scene.xml",
     "source_sha256": "29ef5acc89483d95759a9b72d305948261f77ae698fa6196071b539859b092ab",

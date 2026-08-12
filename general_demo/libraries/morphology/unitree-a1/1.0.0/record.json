@@ -138,6 +138,16 @@
   "route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "mujoco": {
     "version": "3.3.6",
+    "frames": {
+      "body_names": ["trunk"],
+      "site_names": []
+    },
+    "render": {
+      "camera": "free",
+      "width": 640,
+      "height": 480,
+      "fps": 30
+    },
     "entrypoint": "assets/mjcf/unitree_a1/scene.xml",
     "local_entrypoint": "general_demo/libraries/assets/unitree-a1/1.0.0/scene.xml",
     "source_sha256": "8126875ffc731834b97b31f8b90921727a57fc3e8d944cd72c587f63522a195e",

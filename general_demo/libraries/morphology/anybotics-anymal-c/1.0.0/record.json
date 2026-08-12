@@ -140,6 +140,16 @@
   "route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "mujoco": {
     "version": "3.3.6",
+    "frames": {
+      "body_names": ["base"],
+      "site_names": []
+    },
+    "render": {
+      "camera": "free",
+      "width": 640,
+      "height": 480,
+      "fps": 30
+    },
     "entrypoint": "assets/mjcf/anybotics_anymal_c/scene.xml",
     "local_entrypoint": "general_demo/libraries/assets/anybotics-anymal-c/1.0.0/scene.xml",
     "source_sha256": "f5f2ee05cc6fb47a1816fb1d3cebad92532b3c13da66f86a8d6c39ecbf1dde97",
@@ -150,9 +160,7 @@
     "asset_closure_sha256": "sha256:89417a035f015490864bd39ae2e1ae96c06a8ce9e654777656aad95bf53cb8b3",
     "asset_manifest_ref": "general_demo/libraries/assets/anybotics-anymal-c/1.0.0/asset_manifest.json",
     "reset": {
-      "keyframe": null,
-      "policy": "controller_initializes_home_then_mj_forward",
-      "qpos_qvel_source": "DIRECT_MUJOCO_EXPERIMENTAL"
+      "policy": "model_default"
     }
   },
   "source": {

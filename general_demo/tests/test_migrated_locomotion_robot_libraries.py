@@ -44,6 +44,21 @@ def _xml_file_refs(path: Path) -> list[str]:
     return refs
 
 
+def _named_frames(path: Path) -> tuple[set[str], set[str]]:
+    root = ET.parse(path).getroot()
+    bodies = {
+        element.get("name", "")
+        for element in root.iter("body")
+        if element.get("name")
+    }
+    sites = {
+        element.get("name", "")
+        for element in root.iter("site")
+        if element.get("name")
+    }
+    return bodies, sites
+
+
 @pytest.mark.parametrize("robot_id", ROBOTS)
 def test_morphology_record_and_manifest_are_pinned_and_closed(robot_id: str) -> None:
     record = _json(MORPH_ROOT / robot_id / "1.0.0" / "record.json")
@@ -51,6 +66,15 @@ def test_morphology_record_and_manifest_are_pinned_and_closed(robot_id: str) -> 
 
     assert record["route"] == "DIRECT_MUJOCO_EXPERIMENTAL"
     assert record["mujoco"]["version"] == "3.3.6"
+    frames = record["mujoco"]["frames"]
+    assert frames["body_names"]
+    assert set(frames) == {"body_names", "site_names"}
+    assert record["mujoco"]["render"] == {
+        "camera": "free",
+        "width": 640,
+        "height": 480,
+        "fps": 30,
+    }
     assert record["source"]["commit"] == SOURCE_COMMIT
     assert record["source"]["path"].endswith("/scene.xml")
     assert record["mujoco"]["asset_closure_status"] == "MANIFEST_VERIFIED_NOT_VENDORED"
@@ -66,6 +90,11 @@ def test_morphology_record_and_manifest_are_pinned_and_closed(robot_id: str) -> 
     ).name
     assert local_scene.exists()
     assert local_model.exists()
+    actual_bodies, actual_sites = _named_frames(local_model)
+    assert set(frames["body_names"]) <= actual_bodies
+    assert set(frames["site_names"]) <= actual_sites
+    if robot_id == "anybotics-anymal-c":
+        assert record["mujoco"]["reset"] == {"policy": "model_default"}
     assert hashlib.sha256(local_scene.read_bytes()).hexdigest() == manifest["entrypoint"]["sha256"]
     assert hashlib.sha256(local_model.read_bytes()).hexdigest() == next(
         row["sha256"]
