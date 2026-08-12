@@ -47,6 +47,10 @@ G2_PROFILE_RELATIVE_PATH = (
     "g2-reusable-effect/1.0.0/profile.json"
 )
 TASK_LIBRARY_RELATIVE_PATH = "general_demo/libraries/tasks"
+TASK_INSTANCE_SOURCE_RELATIVE_PATH = {
+    "so-arm101": "general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/task_instances_private.json",
+    "unitree-go2": "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json",
+}
 DEFAULT_MANIFESTS = {
     "so-arm101": "general_demo/integrations/so-arm101/integration_manifest.json",
     "unitree-go2": "general_demo/integrations/unitree-go2/integration_manifest.json",
@@ -329,7 +333,7 @@ def _validate_robot_template(template: Mapping[str, Any], robot: str, configurat
     value = _as_object(template, "robot template")
     required_fields = {
         "artifact_type", "schema_version", "robot_model_id", "robot_configuration_id",
-        "public_projection", "public_state_schema", "public_task_states", "task_instances",
+        "public_projection", "public_state_schema", "task_instance_source",
         "blue_line_policy", "validation_a_template", "validation_harness_config",
         "implementation_projection", "implementation_experience",
     }
@@ -340,7 +344,7 @@ def _validate_robot_template(template: Mapping[str, Any], robot: str, configurat
     if value.get("robot_model_id") != robot or value.get("robot_configuration_id") != configuration:
         raise RunPackError("robot template does not match the selected configuration")
     for field in (
-        "public_projection", "public_state_schema", "public_task_states", "task_instances",
+        "public_projection", "public_state_schema", "task_instance_source",
         "blue_line_policy", "validation_a_template", "validation_harness_config",
         "implementation_projection", "implementation_experience",
     ):
@@ -349,8 +353,8 @@ def _validate_robot_template(template: Mapping[str, Any], robot: str, configurat
     if "standards_snapshot" in value or "measurement_catalog" in value:
         raise RunPackError("robot template must not self-assert reviewed Blue Line inputs")
     _assert_closed_public_schema(value["public_state_schema"])
-    if not isinstance(value["public_task_states"], Mapping):
-        raise RunPackError("robot template public_task_states must be an object")
+    if value["task_instance_source"] != TASK_INSTANCE_SOURCE_RELATIVE_PATH[robot]:
+        raise RunPackError("robot template task_instance_source is not the checked-in Session source")
     if not isinstance(value["implementation_experience"], list) or not value["implementation_experience"]:
         raise RunPackError("robot template implementation_experience must be non-empty factual guidance")
     return value
@@ -403,6 +407,10 @@ def _validate_public_projection_template(template: Mapping[str, Any], robot: str
             raise RunPackError(f"public_projection.{field} must be a non-empty string array")
     if projection["effect_allowlist"] != PUBLIC_EFFECT_ALLOWLIST[robot]:
         raise RunPackError("public_projection effect_allowlist is not the exact first-G2 public allowlist")
+    if robot == "unitree-go2" and any(
+        item in projection["unsupported_behavior"] for item in ("stand", "sit", "move")
+    ):
+        raise RunPackError("Go2 unsupported_behavior must not contradict its public semantic effect allowlist")
     units = projection["units"]
     if not isinstance(units, Mapping) or not units or not all(isinstance(key, str) and key.strip() for key in units) or not all(isinstance(item, str) and item.strip() for item in units.values()):
         raise RunPackError("public_projection.units is malformed")
@@ -483,43 +491,144 @@ def _build_robot_projection(
     return projection
 
 
-def _validate_task_instances(
-    template: Mapping[str, Any],
+def _validate_session_task_instances(
+    value: Mapping[str, Any],
     robot: str,
     configuration: str,
 ) -> dict[str, Any]:
-    value = _as_object(template["task_instances"], "task_instances")
-    required = {
-        "artifact_type", "schema_version", "robot_model_id", "robot_configuration_id",
-        "task_catalog_version", "instances",
+    """Validate the exact private task artifact consumed by the production Session."""
+
+    source = _as_object(value, "Session task instances")
+    expected_ids = {"T01", "T02", "T03", "T08", "T20"} if robot == "so-arm101" else {
+        "G01", "G02", "G03", "G04", "G05"
     }
-    if set(value) != required or value["artifact_type"] != "first_g2_task_instances" or value["schema_version"] != SCHEMA_VERSION:
-        raise RunPackError("task_instances identity or fields are invalid")
-    if value["robot_model_id"] != robot or value["robot_configuration_id"] != configuration or value["task_catalog_version"] != "1.0.0":
-        raise RunPackError("task_instances robot or catalog binding is invalid")
-    instances = value["instances"]
-    if not isinstance(instances, list) or len(instances) != 5:
-        raise RunPackError("each first-G2 pack requires exactly five task instances")
+    if source.get("schema_version") != SCHEMA_VERSION or source.get("robot_configuration_id") != configuration:
+        raise RunPackError("Session task instances are bound to the wrong configuration or schema")
+    if robot == "so-arm101":
+        required = {
+            "artifact_type", "schema_version", "visibility", "robot_configuration_id",
+            "scene_config_ref", "selection_policy", "tasks",
+        }
+        if set(source) != required or source["artifact_type"] != "so_arm101_private_task_instances":
+            raise RunPackError("SO Session task instances are not the checked-in private artifact")
+        records = source.get("tasks")
+    else:
+        required = {
+            "artifact_type", "schema_version", "instance_set_id", "instance_set_version",
+            "robot_configuration_id", "visibility", "forbidden_recipients", "reset_contract", "instances",
+        }
+        if set(source) != required or source["artifact_type"] != "task_instances_private":
+            raise RunPackError("Go2 Session task instances are not the checked-in private artifact")
+        if source["visibility"] != "DEMO_EVALUATION_HARNESS_ONLY":
+            raise RunPackError("Go2 Session task instances must remain Harness-private")
+        forbidden = source["forbidden_recipients"]
+        if not isinstance(forbidden, list) or not {"stage1", "stage2", "generated_capability_layer", "repair", "demo_consumer"}.issubset(forbidden):
+            raise RunPackError("Go2 Session task instances have an incomplete recipient exclusion")
+        reset_contract = source["reset_contract"]
+        if not isinstance(reset_contract, Mapping) or not reset_contract:
+            raise RunPackError("Go2 Session task instances have no reset contract")
+        records = source.get("instances")
+    if not isinstance(records, list) or len(records) != 5:
+        raise RunPackError("the checked-in Session task instances must contain exactly five records")
     seen: set[str] = set()
-    for index, raw in enumerate(instances):
-        item = _as_object(raw, f"task_instances.instances[{index}]")
-        if set(item) != {"task_id", "instance_version", "public_state", "private_binding"}:
-            raise RunPackError(f"task instance {index} fields are not closed")
-        task_id = _nonempty_text(item["task_id"], f"task instance {index}.task_id")
+    for index, raw in enumerate(records):
+        item = _as_object(raw, f"Session task instance {index}")
+        task_id = _nonempty_text(item.get("task_id"), f"Session task instance {index}.task_id")
         if task_id in seen:
-            raise RunPackError("task instance IDs must be unique")
+            raise RunPackError("Session task instance IDs must be unique")
         seen.add(task_id)
-        if item["instance_version"] != "1.0.0":
-            raise RunPackError(f"task instance {task_id} version is not frozen")
-        public_state = _as_object(item["public_state"], f"task instance {task_id}.public_state")
-        private_binding = _as_object(item["private_binding"], f"task instance {task_id}.private_binding")
-        if set(private_binding) != {"reset", "evaluation"}:
-            raise RunPackError(f"task instance {task_id} must split reset and evaluation binding")
-        if not private_binding["reset"] or not private_binding["evaluation"]:
-            raise RunPackError(f"task instance {task_id} has an empty private binding section")
-        if any(term in json.dumps(public_state, sort_keys=True).lower() for term in ("private", "criterion", "evaluation", "reset")):
-            raise RunPackError(f"task instance {task_id}.public_state contains private binding text")
-    return value
+        if robot == "so-arm101":
+            required_item = {"task_id", "instance_id", "public_state", "target", "reset_state", "criterion"}
+            if set(item) != required_item:
+                raise RunPackError(f"SO Session task instance {task_id} fields are not closed")
+            public_state = item["public_state"]
+            if not isinstance(public_state, Mapping) or public_state.get("task_id") != task_id:
+                raise RunPackError(f"SO public_state for {task_id} must bind its exact task_id")
+            if any(term in json.dumps(public_state, sort_keys=True).lower() for term in ("private", "criterion", "evaluation", "reset")):
+                raise RunPackError(f"SO public_state for {task_id} contains private binding text")
+            for field in ("target", "reset_state", "criterion"):
+                if not isinstance(item[field], Mapping) or not item[field]:
+                    raise RunPackError(f"SO Session task instance {task_id}.{field} is empty")
+        else:
+            if set(item) != {"task_id", "parameters"} or not isinstance(item["parameters"], Mapping) or not item["parameters"]:
+                raise RunPackError(f"Go2 Session task instance {task_id} fields are not closed")
+    if seen != expected_ids:
+        raise RunPackError("Session task instances do not cover the fixed five task IDs")
+    return source
+
+
+def _load_session_task_instances(
+    root: Path,
+    template: Mapping[str, Any],
+    robot: str,
+    configuration: str,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    source_path = _resolve_input(root, template["task_instance_source"], None, "task_instance_source")
+    try:
+        source_artifact = load_json_artifact(source_path)
+    except (OSError, ContractError) as exc:
+        raise RunPackError("task_instance_source must be the exact checked-in Session JSON artifact") from exc
+    source = _validate_session_task_instances(source_artifact.value, robot, configuration)
+    return source, _relative_artifact_ref(root, source_artifact)
+
+
+def _go2_public_state(instance: Mapping[str, Any]) -> dict[str, Any]:
+    """Expose only the task identity unless the Session artifact declares public state."""
+
+    task_id = _nonempty_text(instance.get("task_id"), "Go2 task_id")
+    declared = instance.get("public_state")
+    if declared is None:
+        return {"task_id": task_id}
+    state = _as_object(declared, f"Go2 public_state {task_id}")
+    if state.get("task_id") != task_id:
+        raise RunPackError(f"Go2 public_state for {task_id} must bind its exact task_id")
+    if any(term in json.dumps(state, sort_keys=True).lower() for term in ("private", "criterion", "evaluation", "reset")):
+        raise RunPackError(f"Go2 public_state for {task_id} contains private binding text")
+    return state
+
+
+def _go2_private_binding(source: Mapping[str, Any], instance: Mapping[str, Any]) -> dict[str, Any]:
+    """Project private reset/evaluation bindings without changing source parameters."""
+
+    task_id = str(instance["task_id"])
+    parameters = copy.deepcopy(dict(instance["parameters"]))
+    contract = copy.deepcopy(dict(source["reset_contract"]))
+    reset: dict[str, Any] = {
+        "reset_contract": contract,
+        "initial_posture": contract["initial_posture"],
+        "floor_z_m": contract["floor_z_m"],
+        "initial_position_m": copy.deepcopy(parameters.get("initial_position_m", [0.0, 0.0, 0.0])),
+        "initial_position_frame": parameters.get("initial_position_frame", "world"),
+    }
+    if task_id in {"G02", "G03", "G04", "G05"}:
+        reset["standing_height_m"] = parameters["standing_height_m"]
+    if task_id in {"G03", "G04"}:
+        reset["initial_heading_frame"] = parameters.get("initial_heading_frame", "initial_body_yaw")
+    if task_id == "G04":
+        reset["initial_heading_yaw_rad"] = parameters.get("initial_heading_yaw_rad", 0.0)
+    if task_id == "G05":
+        reset["target_height_m"] = parameters["target_body_height_m"]
+        reset["target_height_frame"] = parameters.get("target_height_frame", "world")
+    timeout = parameters.get("timeout_s")
+    evaluation = {
+        "truth_source": "trusted_harness_physical_state",
+        "timeout_s": timeout,
+        "horizon_s": timeout,
+        "parameters": parameters,
+    }
+    return {"reset": reset, "evaluation": evaluation}
+
+
+def _private_binding(source: Mapping[str, Any], instance: Mapping[str, Any], robot: str) -> dict[str, Any]:
+    if robot == "unitree-go2":
+        return _go2_private_binding(source, instance)
+    return {
+        "reset": {
+            "target": copy.deepcopy(instance["target"]),
+            "scene_reset_state": copy.deepcopy(instance["reset_state"]),
+        },
+        "evaluation": copy.deepcopy(instance["criterion"]),
+    }
 
 
 def _build_task_set(
@@ -527,17 +636,18 @@ def _build_task_set(
     run_id: str,
     configuration: str,
     template: Mapping[str, Any],
-) -> tuple[dict[str, Any], list[dict[str, str]], dict[str, Any]]:
+) -> tuple[dict[str, Any], list[dict[str, str]], dict[str, Any], dict[str, str]]:
     package = TasksLibrary(root / TASK_LIBRARY_RELATIVE_PATH).load(configuration, "1.0.0")
     public_tasks = package.demo_public_tasks(run_id)
     stage1_tasks = package.stage1_projection(run_id)
     private_criteria = package.demo_private_criteria()
     if len(public_tasks) != 5 or len(stage1_tasks) != 5 or len(private_criteria) != 5:
         raise RunPackError("first G2 Tasks Library selection must contain exactly five tasks")
-    states = template["public_task_states"]
     schema = validate_closed_object_schema(template["public_state_schema"], label="public_state_schema")
-    raw_instances = _validate_task_instances(template, str(template["robot_model_id"]), configuration)
-    instances_by_id = {item["task_id"]: item for item in raw_instances["instances"]}
+    robot = str(template["robot_model_id"])
+    source, source_ref = _load_session_task_instances(root, template, robot, configuration)
+    source_records = source["tasks"] if robot == "so-arm101" else source["instances"]
+    instances_by_id = {item["task_id"]: item for item in source_records}
     tasks: list[dict[str, Any]] = []
     packed_instances: list[dict[str, Any]] = []
     for public, stage1, criterion in zip(public_tasks, stage1_tasks, private_criteria, strict=True):
@@ -547,17 +657,22 @@ def _build_task_set(
         }:
             raise RunPackError("Tasks Library Stage 1 projection is not the exact public task view")
         task_id = public["task_id"]
-        if task_id not in states or task_id not in instances_by_id:
+        if task_id not in instances_by_id:
             raise RunPackError(f"robot template is missing task instance state for {task_id}")
+        instance = instances_by_id[task_id]
+        state = (
+            copy.deepcopy(instance["public_state"])
+            if robot == "so-arm101"
+            else _go2_public_state(instance)
+        )
         try:
-            state = validate_json_object(copy.deepcopy(states[task_id]), schema, label=f"public_state.{task_id}")
+            state = validate_json_object(state, schema, label=f"public_state.{task_id}")
         except Exception as exc:
             if isinstance(exc, RunPackError):
                 raise
             raise RunPackError(f"public_state.{task_id} does not match the closed schema") from exc
-        instance = instances_by_id[task_id]
-        if instance["public_state"] != state:
-            raise RunPackError(f"task instance public_state does not match public_task_states for {task_id}")
+        if state.get("task_id") != task_id:
+            raise RunPackError(f"public_state for {task_id} does not bind the exact Session task_id")
         tasks.append({
             "requirement_id": public["requirement_id"],
             "task_id": task_id,
@@ -567,10 +682,10 @@ def _build_task_set(
         })
         packed_instances.append({
             "task_id": task_id,
-            "instance_version": instance["instance_version"],
+            "instance_version": source.get("instance_set_version", "1.0.0"),
             "requirement_id": public["requirement_id"],
             "public_state": state,
-            "private_binding": copy.deepcopy(instance["private_binding"]),
+            "private_binding": _private_binding(source, instance, robot),
         })
     if set(instances_by_id) != {item["task_id"] for item in public_tasks}:
         raise RunPackError("task_instances must cover exactly the fixed five Tasks Library records")
@@ -580,45 +695,160 @@ def _build_task_set(
         "robot_model_id": template["robot_model_id"],
         "robot_configuration_id": configuration,
         "task_catalog_version": "1.0.0",
+        "source_private_instance_ref": copy.deepcopy(source_ref),
         "instances": packed_instances,
     }
-    return {"tasks": tasks}, stage1_tasks, task_instances
+    return {"tasks": tasks}, stage1_tasks, task_instances, source_ref
+
+
+def _text_list(value: Any, label: str) -> list[str]:
+    if not isinstance(value, list) or not value or not all(isinstance(item, str) and item.strip() for item in value):
+        raise RunPackError(f"{label} must be a non-empty unique text array")
+    if len(set(value)) != len(value):
+        raise RunPackError(f"{label} must not contain duplicates")
+    return [str(item) for item in value]
+
+
+def _validate_project_standard(
+    item: Mapping[str, Any],
+    index: int,
+    robot: str,
+    configuration: str,
+) -> dict[str, Any]:
+    location = f"standards_snapshot.standards[{index}]"
+    value = _as_object(item, location)
+    required = {
+        "artifact_type", "schema_version", "standard_id", "version", "record_status",
+        "intended_use", "robot_configuration_id", "effect_id", "criteria",
+        "required_guard_ids", "false_pass_requirements", "approval_lineage",
+    }
+    if not required.issubset(value):
+        raise RunPackError(f"{location} is not a complete approved project-validation standard")
+    if value["artifact_type"] != "project_validation_standard" or value["schema_version"] != SCHEMA_VERSION:
+        raise RunPackError(f"{location} identity is invalid")
+    if value["record_status"] != "APPROVED" or value["intended_use"] != "capability_validation_b":
+        raise RunPackError(f"{location} is not approved for capability_validation_b")
+    if value["robot_configuration_id"] != configuration:
+        raise RunPackError(f"{location} robot scope does not match the selected robot")
+    if "robot_model_id" in value and value["robot_model_id"] != robot:
+        raise RunPackError(f"{location} robot_model_id scope does not match the selected robot")
+    robot_scope = value.get("robot_scope")
+    if robot_scope is not None:
+        if isinstance(robot_scope, Mapping):
+            if robot_scope.get("robot_model_id") not in {None, robot} or robot_scope.get("robot_configuration_id") != configuration:
+                raise RunPackError(f"{location} robot_scope is not exact")
+        elif robot_scope != configuration:
+            raise RunPackError(f"{location} robot_scope is not exact")
+    effect_id = _nonempty_text(value["effect_id"], f"{location}.effect_id")
+    if effect_id not in PUBLIC_EFFECT_ALLOWLIST[robot]:
+        raise RunPackError(f"{location} effect scope is outside the selected public effect allowlist")
+    effect_scope = value.get("effect_scope")
+    if effect_scope is not None:
+        if isinstance(effect_scope, list):
+            if effect_scope != [effect_id]:
+                raise RunPackError(f"{location} effect_scope is not exact")
+        elif effect_scope != effect_id:
+            raise RunPackError(f"{location} effect_scope is not exact")
+    _nonempty_text(value["standard_id"], f"{location}.standard_id")
+    _nonempty_text(value["version"], f"{location}.version")
+    required_guards = _text_list(value["required_guard_ids"], f"{location}.required_guard_ids")
+    false_pass_requirements = _text_list(value["false_pass_requirements"], f"{location}.false_pass_requirements")
+    if set(required_guards) != set(false_pass_requirements):
+        raise RunPackError(f"{location} false-pass requirements must bind exactly to required guards")
+    lineage = value["approval_lineage"]
+    if not isinstance(lineage, Mapping) or not lineage or any(
+        not isinstance(key, str) or not key.strip() or item_value is None or (isinstance(item_value, str) and not item_value.strip())
+        for key, item_value in lineage.items()
+    ):
+        raise RunPackError(f"{location}.approval_lineage is invalid")
+    review_status = value.get("review_status", lineage.get("review_status"))
+    if review_status != "HUMAN_APPROVED" or lineage.get("review_status") != "HUMAN_APPROVED":
+        raise RunPackError(f"{location} requires HUMAN_APPROVED review_status")
+    criteria = value["criteria"]
+    if not isinstance(criteria, list) or not criteria:
+        raise RunPackError(f"{location}.criteria must be non-empty")
+    criterion_ids: set[str] = set()
+    normalized_criteria: list[dict[str, Any]] = []
+    criterion_fields = {
+        "criterion_id", "measurement_id", "metric", "comparator", "threshold_value",
+        "dwell_s", "timeout_s", "aggregation",
+    }
+    for criterion_index, raw_criterion in enumerate(criteria):
+        criterion_location = f"{location}.criteria[{criterion_index}]"
+        criterion = _as_object(raw_criterion, criterion_location)
+        if not criterion_fields.issubset(criterion):
+            raise RunPackError(f"{criterion_location} is incomplete")
+        criterion_id = _nonempty_text(criterion["criterion_id"], f"{criterion_location}.criterion_id")
+        if criterion_id in criterion_ids:
+            raise RunPackError(f"{location} criterion IDs must be unique")
+        criterion_ids.add(criterion_id)
+        _nonempty_text(criterion["measurement_id"], f"{criterion_location}.measurement_id")
+        _nonempty_text(criterion["metric"], f"{criterion_location}.metric")
+        if criterion["comparator"] not in {"<", "<=", ">", ">=", "=="}:
+            raise RunPackError(f"{criterion_location}.comparator is invalid")
+        _finite_number(criterion["threshold_value"], f"{criterion_location}.threshold_value")
+        dwell = _finite_number(criterion["dwell_s"], f"{criterion_location}.dwell_s")
+        timeout = _finite_number(criterion["timeout_s"], f"{criterion_location}.timeout_s", positive=True)
+        if dwell < 0 or timeout <= dwell:
+            raise RunPackError(f"{criterion_location} dwell/timeout is invalid")
+        if criterion["aggregation"] not in {"ALL", "ANY", "MEAN"}:
+            raise RunPackError(f"{criterion_location}.aggregation is invalid")
+        if "guard_ids" in criterion and set(_text_list(criterion["guard_ids"], f"{criterion_location}.guard_ids")) != set(required_guards):
+            raise RunPackError(f"{criterion_location}.guard_ids do not bind the approved guards")
+        normalized_criteria.append(criterion)
+    false_pass_analysis = value.get("false_pass_analysis")
+    if false_pass_analysis is not None:
+        if not isinstance(false_pass_analysis, list) or not false_pass_analysis:
+            raise RunPackError(f"{location}.false_pass_analysis must be non-empty")
+        mappings: dict[str, str] = {}
+        for analysis in false_pass_analysis:
+            if not isinstance(analysis, Mapping):
+                raise RunPackError(f"{location}.false_pass_analysis contains an invalid mapping")
+            risk_id = analysis.get("risk_id", analysis.get("risk"))
+            guard_id = analysis.get("guard_id", analysis.get("guard"))
+            if not isinstance(risk_id, str) or not risk_id.strip() or not isinstance(guard_id, str) or not guard_id.strip() or risk_id in mappings:
+                raise RunPackError(f"{location}.false_pass_analysis contains an invalid mapping")
+            mappings[risk_id] = guard_id
+        if set(mappings) != set(false_pass_requirements) or set(mappings.values()) != set(required_guards):
+            raise RunPackError(f"{location}.false_pass_analysis does not cover the approved risks and guards")
+    false_pass_risks = value.get("false_pass_risks")
+    if false_pass_risks is not None:
+        _text_list(false_pass_risks, f"{location}.false_pass_risks")
+    checked = copy.deepcopy(value)
+    checked["criteria"] = normalized_criteria
+    return checked
 
 
 def _validate_standards(snapshot: Mapping[str, Any], robot: str, configuration: str) -> dict[str, Any]:
     value = _as_object(snapshot, "standards_snapshot")
-    if value.get("artifact_type") != "standards_snapshot" or value.get("schema_version") != SCHEMA_VERSION:
-        raise RunPackError("standards_snapshot identity is invalid")
-    if value.get("robot_model_id") != robot or value.get("robot_configuration_id") != configuration or value.get("intended_use") != "capability_validation_b":
-        raise RunPackError("reviewed standards_snapshot robot, configuration, or intended use is invalid")
-    if value.get("demo_criteria_import_policy") not in {None, "NOT_AUTOMATIC"}:
-        raise RunPackError("reviewed Blue Line standards must not become Demo criteria automatically")
-    standards = value.get("standards")
-    if not isinstance(standards, list) or not standards:
-        raise RunPackError("standards_snapshot must contain standards")
     required = {
-        "standard_id", "measurement_id", "metric", "comparator", "threshold_value",
-        "dwell_s", "timeout_s", "aggregation",
+        "artifact_type", "schema_version", "snapshot_id", "snapshot_version", "robot_model_id",
+        "robot_configuration_id", "review_status", "intended_use", "demo_criteria_import_policy", "standards",
     }
+    if value.get("artifact_type") != "standards_snapshot" or value.get("schema_version") != SCHEMA_VERSION or not required.issubset(value):
+        raise RunPackError("standards_snapshot is not the closed reviewed multi-criterion input")
+    if value["robot_model_id"] != robot or value["robot_configuration_id"] != configuration:
+        raise RunPackError("reviewed standards_snapshot robot scope is invalid")
+    if value["review_status"] != "HUMAN_APPROVED" or value["intended_use"] != "capability_validation_b":
+        raise RunPackError("reviewed standards_snapshot requires HUMAN_APPROVED capability_validation_b input")
+    if value["demo_criteria_import_policy"] != "NOT_AUTOMATIC":
+        raise RunPackError("reviewed Blue Line standards must remain separate from Demo criteria")
+    standards = value["standards"]
+    if not isinstance(standards, list) or len(standards) != len(PUBLIC_EFFECT_ALLOWLIST[robot]):
+        raise RunPackError("standards_snapshot must contain exactly the five approved effect records")
     identifiers: set[str] = set()
+    effects: set[str] = set()
+    checked: list[dict[str, Any]] = []
     for index, item in enumerate(standards):
-        if not isinstance(item, Mapping) or set(item) != required:
-            raise RunPackError(f"standards_snapshot.standard[{index}] is not the closed reviewed Blue Line record")
-        standard_id = _nonempty_text(item["standard_id"], f"standards_snapshot.standard[{index}].standard_id")
-        _nonempty_text(item["measurement_id"], f"standards_snapshot.standard[{index}].measurement_id")
-        _nonempty_text(item["metric"], f"standards_snapshot.standard[{index}].metric")
-        if standard_id in identifiers:
-            raise RunPackError("standards_snapshot standard IDs must be unique")
-        identifiers.add(standard_id)
-        if item["comparator"] not in {"<", "<=", ">", ">=", "=="}:
-            raise RunPackError(f"standards_snapshot.standard[{index}] has an invalid comparator")
-        if item["aggregation"] not in {"ALL", "ANY", "MEAN"}:
-            raise RunPackError(f"standards_snapshot.standard[{index}] has an invalid aggregation")
-        _finite_number(item["threshold_value"], f"standards_snapshot.standard[{index}].threshold_value")
-        dwell = _finite_number(item["dwell_s"], f"standards_snapshot.standard[{index}].dwell_s")
-        timeout = _finite_number(item["timeout_s"], f"standards_snapshot.standard[{index}].timeout_s", positive=True)
-        if dwell < 0 or timeout <= dwell:
-            raise RunPackError(f"standards_snapshot.standard[{index}] has an invalid dwell/timeout")
+        record = _validate_project_standard(item, index, robot, configuration)
+        if record["standard_id"] in identifiers or record["effect_id"] in effects:
+            raise RunPackError("standards_snapshot standard and effect IDs must be unique")
+        identifiers.add(record["standard_id"])
+        effects.add(record["effect_id"])
+        checked.append(record)
+    if effects != set(PUBLIC_EFFECT_ALLOWLIST[robot]):
+        raise RunPackError("standards_snapshot effect scope must exactly match the public effect allowlist")
+    value["standards"] = checked
     return value
 
 
@@ -689,11 +919,42 @@ def _load_reviewed_blue_inputs(
         measurement_artifact = load_json_artifact(measurement_path)
     except (OSError, ContractError) as exc:
         raise RunPackError("reviewed Blue Line inputs must be valid JSON artifacts") from exc
-    standards = _validate_standards(standards_artifact.value, robot, configuration)
+    raw_standards = _as_object(standards_artifact.value, "reviewed standards_snapshot")
+    record_refs = raw_standards.get("record_refs")
+    if record_refs is not None:
+        if "standards" in raw_standards or "records" in raw_standards:
+            raise RunPackError("reviewed standards_snapshot must use either inline approved records or exact record_refs")
+        if not isinstance(record_refs, list) or len(record_refs) != len(PUBLIC_EFFECT_ALLOWLIST[robot]):
+            raise RunPackError("reviewed standards_snapshot record_refs must cover exactly five approved records")
+        records: list[dict[str, Any]] = []
+        normalized_refs: list[dict[str, str]] = []
+        for reference in record_refs:
+            if not isinstance(reference, Mapping) or set(reference) != {"path", "sha256"}:
+                raise RunPackError("reviewed standards_snapshot record_refs must contain exact {path,sha256} objects")
+            normalized = {"path": str(reference["path"]), "sha256": str(reference["sha256"])}
+            try:
+                record_artifact = load_json_artifact(verify_file_reference(root, normalized))
+            except (OSError, ContractError, IntegrityError) as exc:
+                raise RunPackError("reviewed standards_snapshot record_ref is not exact") from exc
+            records.append(record_artifact.value)
+            normalized_refs.append(normalized)
+        raw_standards["standards"] = records
+        raw_standards.pop("record_refs", None)
+        raw_standards["source_record_refs"] = normalized_refs
+    elif "records" in raw_standards and "standards" not in raw_standards:
+        raw_standards["standards"] = raw_standards.pop("records")
+    standards = _validate_standards(raw_standards, robot, configuration)
+    standards["source_snapshot_ref"] = _relative_artifact_ref(root, standards_artifact)
     measurement_catalog = _validate_measurement_catalog(measurement_artifact.value, robot, configuration)
-    measurement_ids = {item["measurement_id"] for item in measurement_catalog["measurements"]}
-    if any(item["measurement_id"] not in measurement_ids for item in standards["standards"]):
-        raise RunPackError("standards_snapshot references a measurement absent from the reviewed catalog")
+    measurement_by_id = {item["measurement_id"]: item for item in measurement_catalog["measurements"]}
+    catalog_guard_ids = {item["guard_id"] for item in measurement_catalog["guards"]}
+    for standard in standards["standards"]:
+        if not set(standard["required_guard_ids"]).issubset(catalog_guard_ids):
+            raise RunPackError("standards_snapshot references a guard absent from the reviewed catalog")
+        for criterion in standard["criteria"]:
+            measurement = measurement_by_id.get(criterion["measurement_id"])
+            if measurement is None or criterion["metric"] not in measurement["metrics"]:
+                raise RunPackError("standards_snapshot references an unbound measurement or metric")
     return (
         standards,
         measurement_catalog,
@@ -766,6 +1027,19 @@ def _validate_harness_config(config: Mapping[str, Any], robot: str) -> dict[str,
 
 def _public_effects(robot: str) -> list[str]:
     return copy.deepcopy(PUBLIC_EFFECT_ALLOWLIST[robot])
+
+
+def _go2_unsupported_behavior(sdk: Mapping[str, Any], translation: Mapping[str, Any]) -> list[str]:
+    """Name unavailable Go2 APIs without contradicting public semantic effects."""
+
+    values = [*sdk.get("excluded", []), *translation.get("forbidden_behavior", [])]
+    normalized: list[str] = ["prebuilt_high_level_sport_api_unavailable"]
+    for value in values:
+        if value in {"stand", "sit", "move", "high_level_sport_requests"}:
+            continue
+        if value not in normalized:
+            normalized.append(value)
+    return normalized
 
 
 def _implementation_projection_from_records(
@@ -886,7 +1160,7 @@ def _implementation_projection_from_records(
             "stale_rule": copy.deepcopy(translation["stale_rule"]),
             "rejection_rule": translation["rejection_rule"],
         },
-        "unsupported_behavior": list(dict.fromkeys([*sdk["excluded"], *translation["forbidden_behavior"]])),
+        "unsupported_behavior": _go2_unsupported_behavior(sdk, translation),
     }
     return {
         "sdk_implementation_projection": sdk_projection,
@@ -911,6 +1185,10 @@ def _validate_implementation_bundle_contents(bundle: Mapping[str, Any], robot: s
             raise RunPackError(f"Implementation Bundle robot fact section {field} is empty")
     if robot_facts["effect_allowlist"] != PUBLIC_EFFECT_ALLOWLIST[robot]:
         raise RunPackError("Implementation Bundle effect_allowlist does not match the public projection")
+    if robot == "unitree-go2":
+        for section in (sdk_projection, robot_facts):
+            if any(item in section["unsupported_behavior"] for item in ("stand", "sit", "move")):
+                raise RunPackError("Go2 Implementation Bundle unsupported_behavior contradicts the public effect allowlist")
 
 
 def _build_implementation_bundle(
@@ -1127,7 +1405,9 @@ def build_first_g2_run_pack(
     validation_a_template = _validate_validation_a_template(template["validation_a_template"], exact_robot)
     harness_config = _validate_harness_config(template["validation_harness_config"], exact_robot)
     robot_projection = _build_robot_projection(manifest.value, morphology, sdk, template)
-    task_set, stage1_tasks, task_instances = _build_task_set(project_root, selected_run_id, configuration, template)
+    task_set, stage1_tasks, task_instances, task_instance_source_ref = _build_task_set(
+        project_root, selected_run_id, configuration, template
+    )
     implementation_bundle = _build_implementation_bundle(exact_robot, morphology, sdk, translation, robot_projection, template)
 
     if output_dir is None:
@@ -1180,8 +1460,8 @@ def build_first_g2_run_pack(
 
     runtime_sha256 = stable_json_sha256(manifest.value["runtime"])
     blue_line_input_refs = (
-        standards_ref,
-        measurement_ref,
+        artifact_refs["standards_snapshot"],
+        artifact_refs["measurement_catalog"],
         artifact_refs["blue_line_policy"],
     )
     snapshot = {
@@ -1196,6 +1476,7 @@ def build_first_g2_run_pack(
             artifact_refs["validation_a_template"],
             artifact_refs["validation_harness_config"],
             artifact_refs["task_instances"],
+            task_instance_source_ref,
         ],
         "task_set_ref": artifact_refs["task_set"],
         "g2_profile_ref": artifact_refs["g2_profile"],

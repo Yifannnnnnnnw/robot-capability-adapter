@@ -39,8 +39,37 @@ from autoadapter2.orchestration.run_pack import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
+_GO2_TASK_INSTANCES = {
+    "artifact_type": "task_instances_private",
+    "schema_version": "1.0.0",
+    "instance_set_id": "unitree-go2-stock-12dof-demo-instances",
+    "instance_set_version": "1.0.0",
+    "robot_configuration_id": "unitree-go2-stock-12dof",
+    "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+    "forbidden_recipients": ["stage1", "stage2", "generated_capability_layer", "repair", "demo_consumer"],
+    "reset_contract": {
+        "keyframe": "home",
+        "initial_posture": "frozen_home_keyframe",
+        "reset_distribution": "fixed_home_keyframe",
+        "floor_z_m": 0.0,
+        "body_geom_name_patterns": ["base", "body", "trunk", "chest"],
+        "head_geom_name_patterns": ["head", "neck"],
+    },
+    "instances": [
+        {"task_id": "G01", "parameters": {"timeout_s": 8.0, "dwell_s": 1.0, "standing_height_m": 0.34, "floor_z_m": 0.0, "safety_body_height_min_m": 0.15, "safety_upright_min": 0.7, "safety_planar_speed_max_m_s": 0.05}},
+        {"task_id": "G02", "parameters": {"timeout_s": 8.0, "dwell_s": 1.0, "standing_height_m": 0.34, "floor_z_m": 0.0, "safety_upright_min": 0.7, "safety_planar_speed_max_m_s": 0.05}},
+        {"task_id": "G03", "parameters": {"timeout_s": 8.0, "dwell_s": 2.0, "standing_height_m": 0.34, "floor_z_m": 0.0, "safety_body_height_min_m": 0.15, "safety_upright_min": 0.7, "safety_horizontal_drift_max_m": 0.05}},
+        {"task_id": "G04", "parameters": {"timeout_s": 8.0, "motion_timeout_s": 6.0, "final_stop_dwell_s": 0.5, "standing_height_m": 0.34, "floor_z_m": 0.0, "safety_forward_displacement_min_m": 0.03, "safety_body_height_min_m": 0.12, "safety_upright_min": 0.7, "safety_absolute_lateral_displacement_max_m": 0.05, "safety_final_planar_speed_max_m_s": 0.05}},
+        {"task_id": "G05", "parameters": {"timeout_s": 8.0, "dwell_s": 1.0, "standing_height_m": 0.34, "target_body_height_m": 0.30, "floor_z_m": 0.0, "safety_absolute_body_height_error_max_m": 0.03, "safety_upright_min": 0.7, "safety_horizontal_drift_max_m": 0.05}},
+    ],
+}
+
+
 def _copy_project(root: Path) -> None:
     shutil.copytree(PROJECT_ROOT / "general_demo", root / "general_demo")
+    go2_source = root / "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
+    go2_source.parent.mkdir(parents=True, exist_ok=True)
+    write_stable_json(go2_source, _GO2_TASK_INSTANCES)
 
 
 def _ref(root: Path, relative: str, value: Any) -> dict[str, str]:
@@ -116,7 +145,71 @@ def _reviewed_blue_inputs(
     namespace: str | None = None,
 ) -> tuple[str, str]:
     configuration = "so-arm101-follower-stock-gripper" if robot == "so-arm101" else "unitree-go2-stock-12dof"
-    measurement_id = f"{robot}.joint_state"
+    effects = (
+        ["move_end_effector_to_target", "establish_target_contact", "move_object_to_region", "grasp_and_lift_object", "actuate_target_button"]
+        if robot == "so-arm101"
+        else ["stand", "sit", "hold_stable", "move_forward", "target_body_height"]
+    )
+    if robot == "so-arm101":
+        criteria_by_effect = {
+            "move_end_effector_to_target": [("tip-position", "so-ee-position-error", "tip_position_error_m", "<=", 0.02, 0.5, 8.0), ("tip-speed", "so-ee-tip-speed", "tip_speed_m_s", "<=", 0.01, 0.5, 8.0)],
+            "establish_target_contact": [("target-contact", "so-target-contact", "target_contact_truth", "==", 1, 0.3, 8.0), ("target-displacement", "so-target-object-displacement", "target_object_displacement_m", "<=", 0.01, 0.0, 8.0)],
+            "move_object_to_region": [("region-error", "so-region-error", "cube_center_planar_goal_error_m", "<=", 0.025, 1.0, 8.0)],
+            "grasp_and_lift_object": [("lift", "so-lift", "cube_height_increase_m", ">=", 0.02, 1.0, 8.0), ("slip", "so-slip", "gripper_relative_cube_slip_m", "<=", 0.005, 1.0, 8.0)],
+            "actuate_target_button": [("button-displacement", "so-button-displacement", "specified_button_displacement_m", ">=", 0.003, 0.25, 8.0)],
+        }
+        guards = ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_forbidden_collision_or_safety_violation"]
+    else:
+        criteria_by_effect = {
+            "stand": [("body-height", "go2-body-height", "body_height_m", ">", 0.15, 1.0, 8.0), ("upright", "go2-upright", "upright_score", ">=", 0.7, 1.0, 8.0), ("planar-speed", "go2-planar-speed", "planar_speed_m_s", "<=", 0.05, 1.0, 8.0)],
+            "sit": [("height-ratio", "go2-body-height-ratio", "body_height_to_standing_height_ratio", "<", 0.8, 1.0, 8.0), ("upright", "go2-upright", "upright_score", ">=", 0.7, 1.0, 8.0), ("planar-speed", "go2-planar-speed", "planar_speed_m_s", "<=", 0.05, 1.0, 8.0)],
+            "hold_stable": [("body-height", "go2-body-height", "body_height_m", ">", 0.15, 2.0, 8.0), ("upright", "go2-upright", "upright_score", ">=", 0.7, 2.0, 8.0), ("drift", "go2-horizontal-drift", "horizontal_drift_m", "<=", 0.05, 2.0, 8.0)],
+            "move_forward": [("forward", "go2-forward-displacement", "forward_displacement_m", ">", 0.03, 0.0, 10.0), ("height", "go2-body-height", "body_height_m", ">", 0.12, 0.0, 10.0), ("upright", "go2-upright", "upright_score", ">=", 0.7, 0.0, 10.0), ("lateral", "go2-lateral-displacement", "absolute_lateral_displacement_m", "<=", 0.05, 0.0, 10.0), ("terminal-speed", "go2-planar-speed", "planar_speed_m_s", "<=", 0.05, 0.5, 10.0)],
+            "target_body_height": [("height-error", "go2-body-height-error", "absolute_body_height_error_m", "<=", 0.03, 1.0, 8.0), ("upright", "go2-upright", "upright_score", ">=", 0.7, 1.0, 8.0), ("drift", "go2-horizontal-drift", "horizontal_drift_m", "<=", 0.05, 1.0, 8.0)],
+        }
+        guards = ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_body_or_head_ground_contact"]
+    records: list[dict[str, Any]] = []
+    measurements_by_id: dict[str, dict[str, Any]] = {}
+    for effect in effects:
+        criteria: list[dict[str, Any]] = []
+        for criterion_id, measurement_id, metric, comparator, threshold, dwell, timeout in criteria_by_effect[effect]:
+            criteria.append({
+                "criterion_id": f"{robot}-{effect}-{criterion_id}",
+                "measurement_id": measurement_id,
+                "metric": metric,
+                "comparator": comparator,
+                "threshold_value": threshold,
+                "dwell_s": dwell,
+                "timeout_s": timeout,
+                "aggregation": "ALL",
+            })
+            measurements_by_id.setdefault(measurement_id, {
+                "measurement_id": measurement_id,
+                "entity": "robot_physical_state",
+                "unit": "unitless",
+                "frame": "world",
+                "adapter_id": f"{robot}.trusted_state",
+                "truth_source": "trusted_harness_physical_state",
+                "metrics": [],
+            })["metrics"].append(metric)
+        records.append({
+            "artifact_type": "project_validation_standard",
+            "schema_version": "1.0.0",
+            "standard_id": f"{robot}-{effect}-v1",
+            "version": "1.0.0",
+            "record_status": "APPROVED",
+            "review_status": "HUMAN_APPROVED",
+            "intended_use": "capability_validation_b",
+            "robot_model_id": robot,
+            "robot_configuration_id": configuration,
+            "effect_id": effect,
+            "criteria": criteria,
+            "required_guard_ids": guards,
+            "false_pass_requirements": guards,
+            "false_pass_risks": guards,
+            "false_pass_analysis": [{"risk_id": guard, "guard_id": guard} for guard in guards],
+            "approval_lineage": {"review_status": "HUMAN_APPROVED", "reviewed_by": "sol-5.6-ultra", "approval_id": f"approved-{robot}-{effect}", "reviewed_at": "2026-08-12"},
+        })
     standards = {
         "artifact_type": "standards_snapshot",
         "schema_version": "1.0.0",
@@ -124,19 +217,9 @@ def _reviewed_blue_inputs(
         "snapshot_version": "1.0.0",
         "robot_model_id": robot,
         "robot_configuration_id": configuration,
-        "review_status": "REVIEWED_EXTERNAL_INPUT",
+        "review_status": "HUMAN_APPROVED",
         "intended_use": "capability_validation_b",
         "demo_criteria_import_policy": "NOT_AUTOMATIC",
-        "standards": [{
-            "standard_id": f"{robot}-joint-state",
-            "measurement_id": measurement_id,
-            "metric": "finite_joint_state",
-            "comparator": "==",
-            "threshold_value": 1,
-            "dwell_s": 0.2,
-            "timeout_s": 2.0,
-            "aggregation": "ALL",
-        }],
     }
     catalog = {
         "artifact_type": "measurement_catalog",
@@ -153,18 +236,12 @@ def _reviewed_blue_inputs(
             "truth_source": "trusted_harness_physical_state",
             "session_task": "first_g2_capability_validation_b",
         }],
-        "measurements": [{
-            "measurement_id": measurement_id,
-            "entity": "robot_joint_state",
-            "unit": "none",
-            "frame": "joint",
-            "adapter_id": f"{robot}.trusted_state",
-            "truth_source": "trusted_harness_physical_state",
-            "metrics": ["finite_joint_state"],
-        }],
-        "guards": [{"guard_id": f"{robot}.trusted-physical-state", "adapter_id": f"{robot}.trusted_state"}],
+        "measurements": list(measurements_by_id.values()),
+        "guards": [{"guard_id": guard, "adapter_id": f"{robot}.trusted_state"} for guard in guards],
     }
     base = namespace or f"general_demo/external-reviewed-blue/{robot}"
+    refs = [_ref(root, f"{base}/records/{record['standard_id']}.json", record) for record in records]
+    standards["record_refs"] = refs
     _ref(root, f"{base}/standards_snapshot.json", standards)
     _ref(root, f"{base}/measurement_catalog.json", catalog)
     return f"{base}/standards_snapshot.json", f"{base}/measurement_catalog.json"
@@ -235,6 +312,7 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
 
     task_set = json.loads(first.task_set_path.read_text(encoding="utf-8"))
     assert [item["task_id"] for item in task_set["tasks"]] == ["G01", "G02", "G03", "G04", "G05"]
+    assert [item["public_state"] for item in task_set["tasks"]] == [{"task_id": f"G0{index}"} for index in range(1, 6)]
     assert all(item["requirement_id"].startswith("req-") for item in task_set["tasks"])
     assert all(set(item) == {"requirement_id", "description"} for item in first.stage1_task_projection)
     assert all("private_criterion" not in item for item in first.stage1_task_projection)
@@ -246,10 +324,10 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     instances = json.loads(first.path("task_instances").read_text(encoding="utf-8"))["instances"]
     assert len(instances) == 5
     assert all({"public_state", "private_binding", "requirement_id"} <= set(item) for item in instances)
-    assert instances[1]["private_binding"]["reset"]["standing_height_m"] == 0.24
+    assert instances[1]["private_binding"]["reset"]["standing_height_m"] == 0.34
     assert instances[2]["private_binding"]["reset"]["initial_position_m"] == [0.0, 0.0, 0.0]
     assert instances[3]["private_binding"]["reset"]["initial_heading_frame"] == "initial_body_yaw"
-    assert instances[4]["private_binding"]["reset"]["target_height_m"] == 0.24
+    assert instances[4]["private_binding"]["reset"]["target_height_m"] == 0.30
 
     projection = json.loads(first.path("robot_projection").read_text(encoding="utf-8"))
     assert projection["robot_model_id"] == "unitree-go2"
@@ -283,9 +361,88 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert snapshot["readiness_report_ref"] == first.readiness_report_ref
     assert snapshot["integration_manifest_ref"] == first.integration_manifest_ref
     assert first.artifact_refs["validation_harness_config"] in snapshot["library_view_refs"]
-    assert first.blue_line_input_refs[0]["path"].startswith("general_demo/external-reviewed-blue/")
+    assert first.artifact_refs["standards_snapshot"] in snapshot["blue_line_input_refs"]
+    source_ref = json.loads(first.path("task_instances").read_text(encoding="utf-8"))["source_private_instance_ref"]
+    assert source_ref in snapshot["library_view_refs"]
     gate = ExperimentIntegrationGate(tmp_path).verify(first.integration_manifest_ref["path"], first.run_snapshot_path, first.readiness_report_ref["path"])
     assert gate.run_id == run_id
+
+
+def test_session_task_bindings_pin_exact_values_and_source_bytes(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    pack = _build_pack(tmp_path, "go2-first-g2-session-binding")
+    task_set = json.loads(pack.task_set_path.read_text(encoding="utf-8"))
+    assert [task["public_state"]["task_id"] for task in task_set["tasks"]] == ["G01", "G02", "G03", "G04", "G05"]
+    instances = json.loads(pack.path("task_instances").read_text(encoding="utf-8"))["instances"]
+    assert instances[1]["private_binding"]["reset"]["standing_height_m"] == 0.34
+    assert instances[4]["private_binding"]["reset"]["target_height_m"] == 0.30
+    source_ref = json.loads(pack.path("task_instances").read_text(encoding="utf-8"))["source_private_instance_ref"]
+    source_path = tmp_path / source_ref["path"]
+    source = json.loads(source_path.read_text(encoding="utf-8"))
+    source["instances"][1]["parameters"]["standing_height_m"] = 0.99
+    write_stable_json(source_path, source)
+    with pytest.raises(GateError):
+        ExperimentIntegrationGate(tmp_path).verify(pack.integration_manifest_ref["path"], pack.run_snapshot_path, pack.readiness_report_ref["path"])
+
+
+def test_go2_unsupported_semantic_conflict_rejects(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    template_path = tmp_path / "general_demo/config/first_g2_demo/robots/unitree-go2.json"
+    template = json.loads(template_path.read_text(encoding="utf-8"))
+    template["public_projection"]["unsupported_behavior"].append("stand")
+    write_stable_json(template_path, template)
+    report = _readiness_report(tmp_path, "unitree-go2", "go2-first-g2-unsupported-conflict")
+    standards, measurements = _reviewed_blue_inputs(tmp_path, "unitree-go2")
+    with pytest.raises(RunPackError, match="contradict"):
+        build_first_g2_run_pack(
+            tmp_path,
+            "go2-first-g2-unsupported-conflict",
+            "unitree-go2",
+            readiness_report_path=report,
+            standards_snapshot_path=standards,
+            measurement_catalog_path=measurements,
+        )
+
+
+def test_unapproved_or_malformed_blue_standard_rejects(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    report = _readiness_report(tmp_path, "unitree-go2", "go2-first-g2-blue-rejection")
+    standards, measurements = _reviewed_blue_inputs(tmp_path, "unitree-go2")
+    standards_path = tmp_path / standards
+    snapshot = json.loads(standards_path.read_text(encoding="utf-8"))
+    snapshot["review_status"] = "REVIEWED_EXTERNAL_INPUT"
+    write_stable_json(standards_path, snapshot)
+    with pytest.raises(RunPackError, match="HUMAN_APPROVED"):
+        build_first_g2_run_pack(
+            tmp_path,
+            "go2-first-g2-blue-rejection",
+            "unitree-go2",
+            readiness_report_path=report,
+            standards_snapshot_path=standards,
+            measurement_catalog_path=measurements,
+        )
+
+    malformed_root = tmp_path / "malformed"
+    _copy_project(malformed_root)
+    malformed_report = _readiness_report(malformed_root, "unitree-go2", "go2-first-g2-blue-malformed")
+    malformed_standards, malformed_measurements = _reviewed_blue_inputs(malformed_root, "unitree-go2")
+    malformed_path = malformed_root / malformed_standards
+    malformed_snapshot = json.loads(malformed_path.read_text(encoding="utf-8"))
+    record_ref = malformed_snapshot["record_refs"][0]
+    record_path = malformed_root / record_ref["path"]
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    record["criteria"] = []
+    record_ref["sha256"] = write_stable_json(record_path, record)
+    write_stable_json(malformed_path, malformed_snapshot)
+    with pytest.raises(RunPackError, match="criteria"):
+        build_first_g2_run_pack(
+            malformed_root,
+            "go2-first-g2-blue-malformed",
+            "unitree-go2",
+            readiness_report_path=malformed_report,
+            standards_snapshot_path=malformed_standards,
+            measurement_catalog_path=malformed_measurements,
+        )
 
 
 def test_validation_a_template_materializes_only_after_valid_sealed_design(tmp_path: Path) -> None:
@@ -358,9 +515,9 @@ def test_missing_external_blue_inputs_empty_bundle_and_public_private_split_reje
     split_standards, split_measurements = _reviewed_blue_inputs(split_root, "unitree-go2")
     split_template_path = split_root / "general_demo/config/first_g2_demo/robots/unitree-go2.json"
     split_template = json.loads(split_template_path.read_text(encoding="utf-8"))
-    split_template["public_task_states"]["G03"]["task_parameters"]["private_reset"] = True
+    split_template["task_instance_source"] = "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/evaluation_private.json"
     write_stable_json(split_template_path, split_template)
-    with pytest.raises(RunPackError, match="public_state|private"):
+    with pytest.raises(RunPackError, match="public_state|private|checked-in Session source"):
         build_first_g2_run_pack(split_root, "go2-first-g2-split", "unitree-go2", readiness_report_path=split_report, standards_snapshot_path=split_standards, measurement_catalog_path=split_measurements)
 
 
@@ -472,6 +629,9 @@ def test_default_cli_smoke_uses_repository_root_without_root_flag() -> None:
         standards_arg = standards
         measurements_arg = measurements
         output_arg = output.relative_to(PROJECT_ROOT).as_posix()
+        task_source = PROJECT_ROOT / "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
+        previous_source = task_source.read_bytes() if task_source.exists() else None
+        write_stable_json(task_source, _GO2_TASK_INSTANCES)
         try:
             result = subprocess.run(
                 [
@@ -494,3 +654,7 @@ def test_default_cli_smoke_uses_repository_root_without_root_flag() -> None:
             assert paths["run_snapshot"].endswith("run_snapshot.json")
         finally:
             shutil.rmtree(PROJECT_ROOT / namespace, ignore_errors=True)
+            if previous_source is None:
+                task_source.unlink(missing_ok=True)
+            else:
+                task_source.write_bytes(previous_source)

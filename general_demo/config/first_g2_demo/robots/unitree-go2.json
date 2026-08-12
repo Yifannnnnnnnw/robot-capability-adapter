@@ -50,87 +50,17 @@
       "normal_motion_write_scope": "actuator_control_only",
       "reset_write_scope": "reset_only"
     },
-    "unsupported_behavior": ["SportClient.Sit", "SportClient.StandUp", "SportClient.Move", "high_level_sport_requests", "stand", "sit", "move", "IK", "trajectory", "gait", "balance", "recovery"]
+    "unsupported_behavior": ["prebuilt_high_level_sport_api_unavailable", "SportClient.Sit", "SportClient.StandUp", "SportClient.Move", "IK", "trajectory", "gait", "balance", "recovery"]
   },
   "public_state_schema": {
     "type": "object",
     "properties": {
-      "task_parameters": {
-        "type": "object",
-        "properties": {
-          "direction": {"type": "string", "enum": ["forward"]},
-          "reference_frame": {"type": "string", "enum": ["world", "initial_body_yaw"]},
-          "target_height_m": {"type": "number", "minimum": 0},
-          "requested_interval_s": {"type": "number", "minimum": 0}
-        },
-        "required": [],
-        "additionalProperties": false
-      }
+      "task_id": {"type": "string", "enum": ["G01", "G02", "G03", "G04", "G05"]}
     },
-    "required": ["task_parameters"],
+    "required": ["task_id"],
     "additionalProperties": false
   },
-  "public_task_states": {
-    "G01": {"task_parameters": {}},
-    "G02": {"task_parameters": {}},
-    "G03": {"task_parameters": {"reference_frame": "world", "requested_interval_s": 2.0}},
-    "G04": {"task_parameters": {"direction": "forward", "reference_frame": "initial_body_yaw"}},
-    "G05": {"task_parameters": {"target_height_m": 0.24, "reference_frame": "world"}}
-  },
-  "task_instances": {
-    "artifact_type": "first_g2_task_instances",
-    "schema_version": "1.0.0",
-    "robot_model_id": "unitree-go2",
-    "robot_configuration_id": "unitree-go2-stock-12dof",
-    "task_catalog_version": "1.0.0",
-    "instances": [
-      {
-        "task_id": "G01",
-        "instance_version": "1.0.0",
-        "public_state": {"task_parameters": {}},
-        "private_binding": {
-          "reset": {"reset_mode": "framework_reset", "initial_posture": "supported_starting_posture", "initial_position_m": [0.0, 0.0, 0.0], "initial_position_frame": "world", "initial_heading_frame": "initial_body_yaw"},
-          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:G01", "truth_source": "trusted_harness_physical_state", "timeout_s": 10.0, "horizon_s": 10.0, "settle_s": 1.0}
-        }
-      },
-      {
-        "task_id": "G02",
-        "instance_version": "1.0.0",
-        "public_state": {"task_parameters": {}},
-        "private_binding": {
-          "reset": {"reset_mode": "framework_reset", "initial_posture": "stable_standing_posture", "standing_height_m": 0.24, "standing_height_status": "frozen_before_trial", "initial_position_m": [0.0, 0.0, 0.0], "initial_position_frame": "world"},
-          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:G02", "truth_source": "trusted_harness_physical_state", "timeout_s": 10.0, "horizon_s": 10.0, "settle_s": 1.0}
-        }
-      },
-      {
-        "task_id": "G03",
-        "instance_version": "1.0.0",
-        "public_state": {"task_parameters": {"reference_frame": "world", "requested_interval_s": 2.0}},
-        "private_binding": {
-          "reset": {"reset_mode": "framework_reset", "initial_posture": "stable_standing_posture", "initial_position_m": [0.0, 0.0, 0.0], "initial_position_frame": "world", "initial_heading_frame": "initial_body_yaw"},
-          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:G03", "truth_source": "trusted_harness_physical_state", "timeout_s": 4.0, "horizon_s": 4.0, "requested_interval_s": 2.0}
-        }
-      },
-      {
-        "task_id": "G04",
-        "instance_version": "1.0.0",
-        "public_state": {"task_parameters": {"direction": "forward", "reference_frame": "initial_body_yaw"}},
-        "private_binding": {
-          "reset": {"reset_mode": "framework_reset", "initial_posture": "stable_standing_posture", "initial_position_m": [0.0, 0.0, 0.0], "initial_position_frame": "world", "initial_heading_frame": "initial_body_yaw", "initial_heading_yaw_rad": 0.0},
-          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:G04", "truth_source": "trusted_harness_physical_state", "timeout_s": 15.0, "horizon_s": 15.0, "direction": "forward", "measurement_frame": "initial_body_yaw"}
-        }
-      },
-      {
-        "task_id": "G05",
-        "instance_version": "1.0.0",
-        "public_state": {"task_parameters": {"target_height_m": 0.24, "reference_frame": "world"}},
-        "private_binding": {
-          "reset": {"reset_mode": "framework_reset", "initial_posture": "stable_standing_posture", "initial_position_m": [0.0, 0.0, 0.0], "initial_position_frame": "world", "target_height_m": 0.24, "target_height_frame": "world"},
-          "evaluation": {"criteria_ref": "tasks_library:evaluation_private:G05", "truth_source": "trusted_harness_physical_state", "timeout_s": 10.0, "horizon_s": 10.0, "target_height_m": 0.24, "settle_s": 1.0}
-        }
-      }
-    ]
-  },
+  "task_instance_source": "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json",
   "blue_line_policy": {
     "policy_id": "first-g2-unitree-go2-blue-line-v1",
     "model_id": "anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -226,7 +156,7 @@
         "stale_rule": {"clock": "simulation_time", "limit_s": 0.1, "action": "zero_all_controls_and_mark_STALE"},
         "rejection_rule": "wrong type/width/order/mode/inactive slot/CRC or non-finite active field does not modify controls or refresh stale timer"
       },
-      "unsupported_behavior": ["SportClient.Sit", "SportClient.StandUp", "SportClient.Move", "high_level_sport_requests", "stand", "sit", "move", "IK", "trajectory", "gait", "balance", "recovery"]
+      "unsupported_behavior": ["prebuilt_high_level_sport_api_unavailable", "SportClient.Sit", "SportClient.StandUp", "SportClient.Move", "IK", "trajectory", "gait", "balance", "recovery"]
     },
     "robot_implementation_facts": {
       "robot_model_id": "unitree-go2",
@@ -248,7 +178,7 @@
       "ranges": {"joint_position": {"unit": "rad", "domain": "finite"}, "joint_velocity": {"unit": "rad/s", "domain": "finite"}, "estimated_torque": {"unit": "torque", "domain": "finite"}, "body_position": {"unit": "m", "dimension": 3}, "body_linear_velocity": {"unit": "m/s", "dimension": 3}},
       "limits": {"motor_slot_count": 20, "active_motor_count": 12, "active_mode": 1, "finite_command_fields": ["q", "dq", "kp", "kd", "tau"], "stale_limit_s": 0.1, "stale_action": "zero_all_controls_and_mark_STALE", "normal_motion_write_scope": "actuator_control_only", "reset_write_scope": "reset_only"},
       "effect_allowlist": ["stand", "sit", "hold_stable", "move_forward", "target_body_height"],
-      "unsupported_behavior": ["SportClient.Sit", "SportClient.StandUp", "SportClient.Move", "high_level_sport_requests", "stand", "sit", "move", "IK", "trajectory", "gait", "balance", "recovery"]
+      "unsupported_behavior": ["prebuilt_high_level_sport_api_unavailable", "SportClient.Sit", "SportClient.StandUp", "SportClient.Move", "IK", "trajectory", "gait", "balance", "recovery"]
     }
   },
   "implementation_experience": [
