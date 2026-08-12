@@ -1943,6 +1943,8 @@ def _factory_selected_path(
     value: str | Path | None,
     default_relative_path: str,
     label: str,
+    *,
+    require_under_root: bool = False,
 ) -> Path:
     """Resolve a launcher-selected regular file without trusting env paths."""
 
@@ -1951,7 +1953,13 @@ def _factory_selected_path(
         candidate = root / candidate
     if candidate.is_symlink() or not candidate.is_file():
         raise Go2SessionError(f"{label} is not a regular selected file: {candidate}")
-    return candidate.resolve()
+    resolved = candidate.resolve()
+    if require_under_root:
+        try:
+            resolved.relative_to(root.resolve())
+        except ValueError as exc:
+            raise Go2SessionError(f"{label} escapes the Go2 project root") from exc
+    return resolved
 
 
 def _factory_hash_argument(value: str | None, label: str) -> str | None:
@@ -2117,6 +2125,41 @@ def _factory_runner_inputs(
                 selected_lock = candidate
                 break
     if selected_lock is None:
+        translation_ref = manifest_value.get("translation_ref")
+        if translation_ref is not None:
+            translation = _factory_json_reference(
+                root,
+                translation_ref,
+                label="selected Go2 Translation record",
+                require_under_root=True,
+            )
+            translation_lock_ref = translation.get("runtime_lock_ref")
+            if translation_lock_ref is not None:
+                if not isinstance(translation_lock_ref, Mapping):
+                    raise Go2SessionError(
+                        "selected Go2 Translation runtime lock reference is malformed"
+                    )
+                translation_lock_path = translation_lock_ref.get("path")
+                translation_lock_hash = _factory_hash_argument(
+                    translation_lock_ref.get("sha256"),
+                    "selected Go2 Translation runtime lock hash",
+                )
+                if not isinstance(translation_lock_path, str) or translation_lock_hash is None:
+                    raise Go2SessionError(
+                        "selected Go2 Translation runtime lock reference is incomplete"
+                    )
+                if translation_lock_hash != manifest_lock_hash:
+                    raise Go2SessionError(
+                        "selected Go2 Translation runtime lock hash does not match the manifest runtime lock reference"
+                    )
+                selected_lock = _factory_selected_path(
+                    root,
+                    translation_lock_path,
+                    translation_lock_path,
+                    "selected Go2 Translation runtime lock",
+                    require_under_root=True,
+                )
+    if selected_lock is None:
         runtime_id = runtime_value.get("id")
         runtime_version = runtime_value.get("version")
         if not isinstance(runtime_id, str) or not isinstance(runtime_version, str):
@@ -2141,6 +2184,7 @@ def _factory_json_reference(
     reference: Any,
     *,
     label: str,
+    require_under_root: bool = False,
 ) -> dict[str, Any]:
     from ...integration.artifacts import load_json_artifact
 
@@ -2150,7 +2194,13 @@ def _factory_json_reference(
     expected_sha256 = _factory_hash_argument(reference.get("sha256"), f"{label} hash")
     if not isinstance(reference_path, str) or expected_sha256 is None:
         raise Go2SessionError(f"{label} is not a complete selected file reference")
-    path = _factory_selected_path(root, reference_path, reference_path, label)
+    path = _factory_selected_path(
+        root,
+        reference_path,
+        reference_path,
+        label,
+        require_under_root=require_under_root,
+    )
     try:
         artifact = load_json_artifact(path)
     except Exception as exc:

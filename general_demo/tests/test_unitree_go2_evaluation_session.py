@@ -1028,6 +1028,96 @@ def test_factory_accepts_first_g2_runner_positional_contract(monkeypatch, tmp_pa
     assert isinstance(calls["runtime_lock_sha256"], str)
 
 
+def test_factory_uses_selected_translation_runtime_lock_for_first_g2_runner(
+    monkeypatch, tmp_path: Path
+) -> None:
+    project_root = tmp_path / "project"
+    artifact_root = project_root / "general_demo/run_artifacts/go2-ready"
+    manifest_path = artifact_root / "integration_manifest.json"
+    translation_path = artifact_root / "translation.json"
+    runtime_lock_path = artifact_root / "runtime-lock.json"
+    fallback_lock_path = (
+        project_root
+        / "general_demo/environments/unitree-go2-linux-amd64/1.0.0/runtime-lock.json"
+    )
+    run_directory = artifact_root / "run"
+    run_directory.mkdir(parents=True)
+    fallback_lock_path.parent.mkdir(parents=True)
+
+    runtime_lock_path.write_text(
+        json.dumps(
+            {
+                "runtime_id": "unitree-go2-linux-amd64",
+                "version": "1.0.0",
+                "selected_from": "run_artifacts",
+            }
+        ),
+        encoding="utf-8",
+    )
+    runtime_lock_sha256 = hashlib.sha256(runtime_lock_path.read_bytes()).hexdigest()
+    fallback_lock_path.write_text(
+        json.dumps({"selected_from": "checked-in-environment"}),
+        encoding="utf-8",
+    )
+    translation_path.write_text(
+        json.dumps(
+            {
+                "record_type": "translation",
+                "runtime_lock_ref": {
+                    "path": runtime_lock_path.relative_to(project_root).as_posix(),
+                    "sha256": runtime_lock_sha256,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    translation_sha256 = hashlib.sha256(translation_path.read_bytes()).hexdigest()
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "translation_ref": {
+                    "path": translation_path.relative_to(project_root).as_posix(),
+                    "sha256": translation_sha256,
+                },
+                "runtime": {
+                    "id": "unitree-go2-linux-amd64",
+                    "version": "1.0.0",
+                    "lock_sha256": runtime_lock_sha256,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    profile = go2_session_module._profile(None)
+    calls: dict[str, object] = {}
+
+    def verified_inputs(**kwargs):
+        calls.update(kwargs)
+        return project_root / "verified-scene.xml", project_root / "tasks.json", profile
+
+    class ProductionSession:
+        evidence_scope = "SDK_GROUNDED_SIMULATION"
+
+        def __init__(self, model_path, *, task_instances_path, video_profile):
+            self.model_path = model_path
+            self.task_instances_path = task_instances_path
+            self.video_profile = video_profile
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(go2_session_module, "_verify_production_inputs", verified_inputs)
+    monkeypatch.setattr(go2_session_module, "UnitreeGo2EvaluationRobotSession", ProductionSession)
+
+    result = create_evaluation_robot_session("unitree-go2", manifest_path, run_directory)
+
+    assert result.evidence_scope == "SDK_GROUNDED_SIMULATION"
+    assert calls["root"] == project_root.resolve()
+    assert calls["runtime_lock_path"] == runtime_lock_path.resolve()
+    assert calls["runtime_lock_sha256"] == runtime_lock_sha256
+
+
 def test_real_shaped_session_initializes_channel_factory_exactly_once(monkeypatch) -> None:
     factory_calls: list[tuple[int, str]] = []
 
