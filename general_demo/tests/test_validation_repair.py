@@ -40,7 +40,7 @@ from autoadapter2.validation import (
     bind_candidate_to_suite,
 )
 from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
-from autoadapter2.validation.repair import _candidate_owned_error, _sanitized_diagnostics
+from autoadapter2.validation.repair import RepairConfig, _candidate_owned_error, _sanitized_diagnostics
 from autoadapter2.validation.validation_a import (
     _capability_contracts,
     _descriptor_match,
@@ -788,6 +788,45 @@ def test_codeact_repair_without_sandbox_ok_is_exhausted_without_a_or_b_revision(
         ))
         for call in generator.calls[1:]
     )
+
+
+def test_codeact_blocked_repair_episode_exhausts_at_twenty_without_revision() -> None:
+    design, design_seal = _sealed_design()
+    blue = _blue_ready(design, design_seal)
+    source = _source("INITIAL")
+    generator = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": source},
+        *[
+            {"action": "blocked", "reason": "The public implementation route is unavailable."}
+            for _ in range(20)
+        ],
+    ])
+    stage2_runner = Stage2Runner(
+        generator,
+        sandbox=CallbackSandbox(lambda _source, _probe: {
+            "status": "OK", "summary": "unexpected", "observations": {},
+        }),
+    )
+    stage2 = stage2_runner.run(design, design_seal, blue.stage2_authorization, _bundle())
+    assert stage2.status == "SUBMITTED"
+    context = _context(design, design_seal, blue)
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail"])),
+        stage2_runner.repair_episode,
+        config=RepairConfig(max_repairs=1),
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+
+    assert result.repair_llm_calls == 20
+    assert result.candidate_revisions_created == 0
+    assert result.repair_invocations_used == result.repairs_consumed == 1
+    assert result.repair_log[0]["status"] == "EPISODE_EXHAUSTED"
+    assert result.repair_log[0]["episode_trace"]["status"] == "CALL_LIMIT_EXHAUSTED"
+    assert len(result.repair_log[0]["episode_trace"]["call_log"]) == 20
 
 
 def test_codeact_repair_submits_only_after_public_sandbox_ok_then_retests_ab() -> None:

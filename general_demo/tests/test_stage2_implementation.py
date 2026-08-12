@@ -317,6 +317,104 @@ def test_repair_episode_exhausts_without_sandbox_ok_and_never_submits() -> None:
     assert sandbox_calls == []
 
 
+def test_repair_episode_continues_after_blocked_until_distinct_source_submits() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    repaired_source = source + "\nREPAIR_MARKER = 1\n"
+    generator = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": source},
+        {"action": "blocked", "reason": "The public implementation route is temporarily unavailable."},
+        {"action": "sandbox", "capability.py": repaired_source, "probe": {"probe_id": "repair-1", "capability_id": "reach-joint-target"}},
+        {"action": "submit", "capability.py": repaired_source},
+    ])
+    runner = Stage2Runner(
+        generator,
+        sandbox=CallbackSandbox(lambda _source, _probe: {
+            "status": "OK", "summary": "public probe completed", "observations": {},
+        }),
+        config=Stage2Config(max_llm_calls=1),
+    )
+    assert runner.run(design, seal, _authorization(design, seal), _bundle()).status == "SUBMITTED"
+
+    repaired = runner.repair_episode({"capability.py": source, "diagnostics": []})
+
+    assert repaired == {"capability.py": repaired_source, "llm_calls": 3}
+    trace = runner.last_repair_trace
+    assert trace is not None and trace["submitted"] is True
+    assert trace["call_log"][0]["diagnostics"] == [{
+        "code": "REPAIR_CONTINUE_REQUIRED",
+        "message": "Repair episode remains open; continue from the retained working source.",
+    }]
+
+
+def test_repair_episode_rejects_known_source_then_accepts_distinct_source() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    repaired_source = source + "\nREPAIR_MARKER = 2\n"
+    generator = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": source},
+        {"action": "sandbox", "capability.py": source, "probe": {"probe_id": "repair-old", "capability_id": "reach-joint-target"}},
+        {"action": "submit", "capability.py": source},
+        {"action": "sandbox", "capability.py": repaired_source, "probe": {"probe_id": "repair-new", "capability_id": "reach-joint-target"}},
+        {"action": "submit", "capability.py": repaired_source},
+    ])
+    runner = Stage2Runner(
+        generator,
+        sandbox=CallbackSandbox(lambda _source, _probe: {
+            "status": "OK", "summary": "public probe completed", "observations": {},
+        }),
+        config=Stage2Config(max_llm_calls=1),
+    )
+    assert runner.run(design, seal, _authorization(design, seal), _bundle()).status == "SUBMITTED"
+
+    repaired = runner.repair_episode({"capability.py": source, "diagnostics": []})
+
+    assert repaired == {"capability.py": repaired_source, "llm_calls": 4}
+    trace = runner.last_repair_trace
+    assert trace is not None and trace["submitted"] is True
+    assert trace["call_log"][1]["diagnostics"] == [{
+        "code": "NO_CHANGE_SUBMISSION",
+        "message": "Repair submission matches a known source; continue with a distinct source.",
+    }]
+    assert [item["status"] for item in trace["sandbox_log"]] == ["OK", "OK"]
+
+
+def test_repair_episode_exhausts_exactly_twenty_blocked_actions() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    generator = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": source},
+        *[
+            {"action": "blocked", "reason": "The public implementation route is unavailable."}
+            for _ in range(20)
+        ],
+    ])
+    runner = Stage2Runner(
+        generator,
+        sandbox=CallbackSandbox(lambda _source, _probe: {
+            "status": "OK", "summary": "unexpected", "observations": {},
+        }),
+        config=Stage2Config(max_llm_calls=1),
+    )
+    assert runner.run(design, seal, _authorization(design, seal), _bundle()).status == "SUBMITTED"
+
+    repaired = runner.repair_episode({"capability.py": source, "diagnostics": []})
+
+    assert repaired == {"capability.py": source, "llm_calls": 20}
+    trace = runner.last_repair_trace
+    assert trace is not None
+    assert trace["submitted"] is False
+    assert trace["status"] == "CALL_LIMIT_EXHAUSTED"
+    assert len(trace["call_log"]) == 20
+    assert trace["diagnostics"] == [{
+        "code": "CALL_LIMIT_EXHAUSTED",
+        "message": "Repair episode reached its call limit without a distinct submission.",
+    }]
+
+
 def test_sandbox_contract_is_closed_and_feedback_redacts_private_fields() -> None:
     sandbox = CallbackSandbox(
         lambda _source, _probe: {

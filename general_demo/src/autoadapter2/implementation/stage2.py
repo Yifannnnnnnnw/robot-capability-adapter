@@ -7,6 +7,7 @@ seals only a submitted ``capability.py`` source artifact.
 
 from __future__ import annotations
 
+import ast
 import copy
 from dataclasses import dataclass
 from typing import Any, Mapping
@@ -223,6 +224,17 @@ def _action_issues(output: Mapping[str, Any]) -> list[dict[str, str]]:
     if action == "blocked" and not _public_reason(output.get("reason")):
         return [_issue("BLOCKED_REASON", "blocked action needs one public reason")]
     return []
+
+
+def _executable_source_hash(source: str) -> str | None:
+    """Hash executable Python structure while ignoring comments and formatting."""
+
+    try:
+        tree = ast.parse(source, filename="capability.py", mode="exec")
+    except (SyntaxError, ValueError, TypeError):
+        return None
+    normalized = ast.dump(tree, annotate_fields=True, include_attributes=False)
+    return content_hash(normalized.encode("utf-8"))
 
 
 def _submission_requirements(
@@ -515,6 +527,13 @@ class Stage2Runner:
         successful_sandbox_calls = 0
         covered_capability_ids: set[str] = set()
         blocked_reason: str | None = None
+        known_source_hashes: set[str] = set()
+        known_executable_hashes: set[str] = set()
+        if episode == "repair" and working_source is not None:
+            known_source_hashes.add(content_hash(working_source.encode("utf-8")))
+            executable_hash = _executable_source_hash(working_source)
+            if executable_hash is not None:
+                known_executable_hashes.add(executable_hash)
         for attempt in range(config.max_llm_calls):
             inputs: dict[str, Any] = copy.deepcopy(dict(base_inputs))
             inputs["sandbox_contract"] = copy.deepcopy(dict(sandbox_contract))
@@ -597,6 +616,13 @@ class Stage2Runner:
                 continue
             if action == "blocked":
                 blocked_reason = output_dict["reason"]
+                if episode == "repair":
+                    diagnostics = [_issue(
+                        "REPAIR_CONTINUE_REQUIRED",
+                        "Repair episode remains open; continue from the retained working source.",
+                    )]
+                    calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
+                    continue
                 return _ActionLoopResult(
                     status="IMPLEMENTATION_BLOCKED",
                     source=working_source,
@@ -628,6 +654,19 @@ class Stage2Runner:
                 diagnostics = [_issue("SOURCE_BINDING", str(exc))]
                 calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
                 continue
+            if episode == "repair":
+                source_hash = content_hash(source.encode("utf-8"))
+                executable_hash = _executable_source_hash(source)
+                if (
+                    source_hash in known_source_hashes
+                    or executable_hash is not None and executable_hash in known_executable_hashes
+                ):
+                    diagnostics = [_issue(
+                        "NO_CHANGE_SUBMISSION",
+                        "Repair submission matches a known source; continue with a distinct source.",
+                    )]
+                    calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
+                    continue
             return _ActionLoopResult(
                 status="SUBMITTED",
                 source=source,
@@ -639,6 +678,13 @@ class Stage2Runner:
                 blocked_reason=None,
                 submitted=True,
             )
+        if episode == "repair":
+            diagnostics = [_issue(
+                "CALL_LIMIT_EXHAUSTED",
+                "Repair episode reached its call limit without a distinct submission.",
+            )]
+            if calls:
+                calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
         return _ActionLoopResult(
             status="CALL_LIMIT_EXHAUSTED",
             source=working_source,
