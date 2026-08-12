@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import json
 import os
 import ssl
@@ -30,66 +31,63 @@ listed `Read()`/`Write()` operations. Such local endpoints are not a second SDK
 connection. Keep examples to SDK wiring and message-field shapes only.
 """.strip()
 
-_UNITREE_GO2_SDK_GUIDANCE = """
-This implementation_bundle is the Unitree/Go2 low-level projection. Use this exact
-public SDK shape, and no other facade attributes:
-- `_sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)`, then call `Init()` on the
-  local publisher;
-- `_sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)` and
-  `_sdk.ChannelSubscriber("rt/sportmodestate", _sdk.SportModeState_)`, then call
-  `Init()` on each local subscriber;
-- pass `_sdk.LowState_` and `_sdk.SportModeState_` as IDL type classes, not strings;
-- create a command message with `_sdk.unitree_go_msg_dds__LowCmd_()`, assign its
-  `motor_cmd` fields, and pass that message instance to publisher `Write()`;
-- pass `_sdk` or these local endpoint/message objects explicitly into helpers. Do not
-  use `_sdk.low_cmd_publisher`, `_sdk.low_state_subscriber`, or
-  `_sdk.sport_state_subscriber`.
-Do not call `ChannelFactoryInitialize`; the framework owns global SDK setup. This is
-only the allowed SDK wiring shape, not a fixed robot behavior implementation.
-""".strip()
+_IMPLEMENTATION_AGENT_SYSTEM_IDENTITY = (
+    "You are the isolated AutoAdapter Implementation Agent. Return exactly one JSON "
+    "object and no Markdown. Stage 2 implementation and Repair are one continuous "
+    "public implementation conversation. Use only the supplied public implementation "
+    "state and the public SDK bundle facts."
+)
+_IMPLEMENTATION_AGENT_STAGES = frozenset({"stage2", "repair"})
+_PUBLIC_IMPLEMENTATION_INPUTS = {
+    "stage2": frozenset({
+        "capability_design",
+        "binding_contract",
+        "starter_skeleton",
+        "blue_line_authorization",
+        "implementation_bundle",
+        "working_capability.py",
+        "sandbox_feedback",
+        "public_diagnostics",
+    }),
+    "repair": frozenset({
+        "repair_index",
+        "capability.py",
+        "binding_contract",
+        "implementation_bundle",
+        "implementation_bundle_hash",
+        "design_hash",
+        "run_snapshot_hash",
+        "diagnostics",
+        "ledger",
+    }),
+}
 
-_SO_ARM101_SDK_GUIDANCE = """
-This implementation_bundle is the SO-ARM101 direct-facade projection. `_sdk` is the
-already-open injected SO facade. Call `_sdk.get_observation()` and
-`_sdk.send_action({...six fields...})` directly. The action object uses exactly these
-six ordered fields: `shoulder_pan.pos`, `shoulder_lift.pos`, `elbow_flex.pos`,
-`wrist_flex.pos`, `wrist_roll.pos`, and `gripper.pos`; the arm fields use degree and
-`gripper.pos` uses normalized_0_100. The observation contains those same six fields,
-and `public_task_state` is returned inside the observation. Do not construct
-`SO101Follower`, `SOFollower`, or `FeetechMotorsBus`; do not call `connect` or
-`disconnect`. Opening and closing are Framework session lifecycle. This is API wiring only, not IK/control behavior.
-""".strip()
+
+def _render_public_implementation_bundle(bundle: Any) -> str:
+    """Render only public bundle facts, deterministically, for the implementation agent."""
+
+    sections: dict[str, Any] = {}
+    if isinstance(bundle, Mapping):
+        for name in ("sdk_implementation_projection", "robot_implementation_facts"):
+            value = bundle.get(name)
+            if isinstance(value, Mapping):
+                sections[name] = dict(value)
+    rendered = json.dumps(sections, ensure_ascii=False, indent=2, sort_keys=True)
+    return (
+        "PUBLIC IMPLEMENTATION BUNDLE (authoritative; do not invent absent facts):\n"
+        f"{rendered}\n\n"
+        "GENERAL SDK BOUNDARY RULES:\n"
+        f"{_GENERIC_SDK_GUIDANCE}"
+    )
 
 
-def _is_unitree_sdk_bundle(value: Any) -> bool:
-    if not isinstance(value, Mapping):
-        return False
-    projection = value.get("sdk_implementation_projection")
-    if not isinstance(projection, Mapping):
-        return False
-    permitted_types = projection.get("permitted_types")
-    if not isinstance(permitted_types, (list, tuple)):
-        return False
+def _public_implementation_inputs(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
+    allowed = _PUBLIC_IMPLEMENTATION_INPUTS[stage]
     return {
-        "ChannelPublisher",
-        "ChannelSubscriber",
-        "LowCmd_",
-        "LowState_",
-        "SportModeState_",
-    }.issubset(permitted_types)
-
-
-def _is_so_sdk_bundle(value: Any) -> bool:
-    if not isinstance(value, Mapping):
-        return False
-    projection = value.get("sdk_implementation_projection")
-    if not isinstance(projection, Mapping):
-        return False
-    entry_id = projection.get("sdk_entry_id")
-    if entry_id in {"lerobot-so101-follower", "lerobot-so-arm101"}:
-        return True
-    operations = projection.get("permitted_operations")
-    return operations == ["send_action", "get_observation"]
+        key: copy.deepcopy(value)
+        for key, value in inputs.items()
+        if key in allowed
+    }
 
 
 def _repair_instruction(request: Mapping[str, Any]) -> str:
@@ -104,12 +102,7 @@ def _repair_instruction(request: Mapping[str, Any]) -> str:
         "members only. No dynamic import, eval, exec, open, dunder access, extra public "
         "symbols. Do not alter the supplied candidate except to return the complete corrected source."
     )
-    guidance = _GENERIC_SDK_GUIDANCE
-    if _is_unitree_sdk_bundle(request.get("implementation_bundle")):
-        guidance += "\n\n" + _UNITREE_GO2_SDK_GUIDANCE
-    elif _is_so_sdk_bundle(request.get("implementation_bundle")):
-        guidance += "\n\n" + _SO_ARM101_SDK_GUIDANCE
-    return instruction + "\n\nFRAMEWORK SDK RULES:\n" + guidance
+    return instruction
 
 
 @dataclass(frozen=True)
@@ -137,11 +130,30 @@ class ModelApiClient:
             raise ContractError("ModelApiClient requires ModelApiConfig")
         self.config = config
         self.calls: list[dict[str, Any]] = []
+        self._implementation_history: list[dict[str, str]] = []
 
     def _complete_json(self, *, stage: str, instruction: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
-        request_body = {
-            "model": self.config.model,
-            "messages": [
+        implementation_agent = stage in _IMPLEMENTATION_AGENT_STAGES
+        request_inputs = (
+            _public_implementation_inputs(stage, inputs)
+            if implementation_agent
+            else dict(inputs)
+        )
+        if implementation_agent:
+            instruction = instruction.rstrip() + "\n\n" + _render_public_implementation_bundle(
+                request_inputs.get("implementation_bundle")
+            )
+        user_content = instruction + "\n\nINPUT_JSON:\n" + json.dumps(
+            request_inputs, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
+        if implementation_agent:
+            messages = [
+                {"role": "system", "content": _IMPLEMENTATION_AGENT_SYSTEM_IDENTITY},
+                *copy.deepcopy(self._implementation_history),
+                {"role": "user", "content": user_content},
+            ]
+        else:
+            messages = [
                 {
                     "role": "system",
                     "content": (
@@ -149,13 +161,11 @@ class ModelApiClient:
                         f"You are the isolated AutoAdapter stage: {stage}."
                     ),
                 },
-                {
-                    "role": "user",
-                    "content": instruction + "\n\nINPUT_JSON:\n" + json.dumps(
-                        dict(inputs), sort_keys=True, separators=(",", ":"), ensure_ascii=False
-                    ),
-                },
-            ],
+                {"role": "user", "content": user_content},
+            ]
+        request_body = {
+            "model": self.config.model,
+            "messages": messages,
             "max_tokens": self.config.max_tokens,
             "temperature": self.config.temperature,
         }
@@ -218,6 +228,16 @@ class ModelApiClient:
             raise ContractError(f"model API returned non-JSON output for {stage}") from exc
         if not isinstance(result, dict):
             raise ContractError("model API must return one JSON object")
+        if implementation_agent:
+            self._implementation_history.extend([
+                {"role": "user", "content": user_content},
+                {
+                    "role": "assistant",
+                    "content": json.dumps(
+                        result, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+                    ),
+                },
+            ])
         self.calls.append(
             {
                 "stage": stage,
