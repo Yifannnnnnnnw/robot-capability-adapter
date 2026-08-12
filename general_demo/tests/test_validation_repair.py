@@ -709,6 +709,39 @@ def test_validation_a_accepts_forwarded_sdk_helpers_and_observed_local_container
     assert result.candidate_handle is not None
 
 
+def test_validation_a_accepts_safe_tuple_destructuring() -> None:
+    source = '''def capability_reach_joint_target(arg_target, *, _sdk):
+    joint_angles_rad = [arg_target, arg_target, arg_target, arg_target, arg_target]
+    q1, q2, q3, q4, q5 = joint_angles_rad[0], joint_angles_rad[1], joint_angles_rad[2], joint_angles_rad[3], joint_angles_rad[4]
+    target_pos = [arg_target, arg_target, arg_target]
+    x, y, z = target_pos[0], target_pos[1], target_pos[2]
+    _sdk.command(q1 + q2 + q3 + q4 + q5 + x + y + z)
+    return {"reported_status": "PASS"}
+'''
+    _design, _seal, _stage2, _blue, result = _a_result(source)
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+
+def test_validation_a_rejects_destructive_or_unsafe_destructuring_targets() -> None:
+    sources = [
+        '''def capability_reach_joint_target(arg_target, *, _sdk):
+    values = [arg_target, arg_target]
+    values[0], q2 = values[0], values[1]
+    _sdk.command(q2)
+    return {"reported_status": "PASS"}
+''',
+        '''def capability_reach_joint_target(arg_target, *, _sdk):
+    q1, q2 = arg_target, arg_target.execute()
+    _sdk.command(q1 + q2)
+    return {"reported_status": "PASS"}
+''',
+    ]
+    for source in sources:
+        _design, _seal, _stage2, _blue, result = _a_result(source)
+        assert result.status == "FAIL"
+
+
 def test_validation_a_rejects_unapproved_forwarded_helper_and_arbitrary_method() -> None:
     cases = [
         _helper_source().replace("sdk.send_action(action)", "sdk.private_state(action)"),

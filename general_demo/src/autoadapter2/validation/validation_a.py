@@ -648,6 +648,59 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
     def _assignment_issue(self, message: str = "only approved local assignments and SDK-derived mutations are allowed") -> None:
         self._add_issue("EXPERIMENTAL_PROFILE", message)
 
+    def _bind_local_name(self, name: str, value: ast.AST, classification: tuple[bool, bool, bool] | None = None) -> bool:
+        if _dunder(name) or name == "_sdk":
+            self._assignment_issue("assignment to a reserved or dunder name is forbidden")
+            return False
+        allowed, sdk_derived, mutable = classification or self._classify_expression(value)
+        if not allowed:
+            self._assignment_issue()
+            return False
+        if mutable:
+            self.mutable_sdk_locals.add(name)
+            self.sdk_readable_locals.discard(name)
+            derived_value = (
+                (isinstance(value, ast.Call) and self._call_origin(value.func) == "sdk-root")
+                or (not isinstance(value, ast.Call) and self._sdk_expression_allowed(value))
+            )
+            if derived_value or (isinstance(value, ast.Name) and value.id in self.derived_sdk_locals):
+                self.derived_sdk_locals.add(name)
+            else:
+                self.derived_sdk_locals.discard(name)
+            self.safe_locals.discard(name)
+        elif sdk_derived:
+            self.sdk_readable_locals.add(name)
+            self.mutable_sdk_locals.discard(name)
+            self.derived_sdk_locals.discard(name)
+            self.safe_locals.discard(name)
+        else:
+            self.safe_locals.add(name)
+            self.sdk_readable_locals.discard(name)
+            self.mutable_sdk_locals.discard(name)
+            self.derived_sdk_locals.discard(name)
+        if isinstance(value, ast.Name) and value.id in self.sdk_names:
+            self.sdk_names.add(name)
+        return True
+
+    def _bind_destructured_assignment(self, target: ast.AST, value: ast.AST) -> bool:
+        if not isinstance(target, (ast.Tuple, ast.List)):
+            return False
+        if not isinstance(value, (ast.Tuple, ast.List)) or len(target.elts) != len(value.elts):
+            self._assignment_issue("destructuring requires a same-shape approved tuple or list")
+            return True
+        names = [element.id if isinstance(element, ast.Name) else None for element in target.elts]
+        if any(name is None for name in names) or len(set(names)) != len(names):
+            self._assignment_issue("destructuring targets must be unique non-dunder local names")
+            return True
+        classifications = [self._classify_expression(element) for element in value.elts]
+        if not all(classification[0] for classification in classifications):
+            self._assignment_issue("destructuring RHS must be fully approved by the expression policy")
+            return True
+        for name, element, classification in zip(names, value.elts, classifications, strict=True):
+            assert name is not None
+            self._bind_local_name(name, element, classification)
+        return True
+
     def visit_Assign(self, node: ast.Assign) -> None:
         self.visit(node.value)
         if len(node.targets) != 1:
@@ -655,39 +708,9 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return
         target = node.targets[0]
         if isinstance(target, ast.Name):
-            if _dunder(target.id) or target.id == "_sdk":
-                self._assignment_issue("assignment to a reserved or dunder name is forbidden")
-                return
-            allowed, sdk_derived, mutable = self._classify_expression(node.value)
-            if not allowed:
-                self._assignment_issue()
-                return
-            if mutable:
-                self.mutable_sdk_locals.add(target.id)
-                self.sdk_readable_locals.discard(target.id)
-                derived_value = (
-                    (isinstance(node.value, ast.Call) and self._call_origin(node.value.func) == "sdk-root")
-                    or (not isinstance(node.value, ast.Call) and self._sdk_expression_allowed(node.value))
-                )
-                if derived_value:
-                    self.derived_sdk_locals.add(target.id)
-                elif isinstance(node.value, ast.Name) and node.value.id in self.derived_sdk_locals:
-                    self.derived_sdk_locals.add(target.id)
-                else:
-                    self.derived_sdk_locals.discard(target.id)
-                self.safe_locals.discard(target.id)
-            elif sdk_derived:
-                self.sdk_readable_locals.add(target.id)
-                self.mutable_sdk_locals.discard(target.id)
-                self.derived_sdk_locals.discard(target.id)
-                self.safe_locals.discard(target.id)
-            else:
-                self.safe_locals.add(target.id)
-                self.sdk_readable_locals.discard(target.id)
-                self.mutable_sdk_locals.discard(target.id)
-                self.derived_sdk_locals.discard(target.id)
-            if isinstance(node.value, ast.Name) and node.value.id in self.sdk_names:
-                self.sdk_names.add(target.id)
+            self._bind_local_name(target.id, node.value)
+            return
+        if self._bind_destructured_assignment(target, node.value):
             return
         self.visit(target)
         root = _expression_root(target)
