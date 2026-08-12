@@ -22,6 +22,7 @@ from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.foundation.seals import create_seal, verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
 from autoadapter2.implementation import Stage2Runner
+from autoadapter2.integrations.unitree_go2.session import Go2CandidateError
 from autoadapter2.validation import (
     HarnessCriterionMeasurement,
     HarnessInfrastructureError,
@@ -1652,6 +1653,26 @@ def test_validation_b_preserves_candidate_error_when_collection_lacks_route() ->
         "code": "CANDIDATE_EXCEPTION",
         "candidate_error": _CandidateOwnedError.candidate_error,
     }] * 2
+
+
+def test_validation_b_classifies_go2_candidate_timeout_as_candidate_failure() -> None:
+    design, design_seal, _stage2, blue, a_result = _a_result(_source("PASS"))
+    context = _context(design, design_seal, blue)
+    timeout_error = Go2CandidateError(
+        "TimeoutError", "candidate invocation exceeded its bounded clock window"
+    )
+    result = ValidationBRunner(
+        _FixedHarness(context.run_snapshot, ["pass", "pass"], invoke_error=timeout_error)
+    ).run(bind_candidate_to_suite(a_result, blue.suite_hash), context)
+
+    assert result.status == "FAIL"
+    assert all(execution["verdict"] == "FAIL" for execution in result.executions)
+    assert all(execution["failure_codes"] == ["CANDIDATE_EXCEPTION"] for execution in result.executions)
+    assert all("infrastructure_error" not in execution for execution in result.executions)
+    assert all(
+        execution["candidate_error"] == timeout_error.candidate_error
+        for execution in result.executions
+    )
 
 
 def test_repair_exposes_only_safe_candidate_sdk_validation_detail() -> None:

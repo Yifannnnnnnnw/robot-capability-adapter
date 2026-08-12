@@ -880,11 +880,19 @@ def test_candidate_polls_successive_lowstates_and_publishes_feedback_commands() 
 
 def test_candidate_timeout_terminates_worker_and_allows_a_clean_next_trial(monkeypatch) -> None:
     session, backend, transport, sdk, _capture_count = _session(rollout_steps=1)
-    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 0.01)
+    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 1.0)
 
     session.reset(phase="DEMO", execution_id="timeout", initial_state={"task_id": "G01"})
-    with pytest.raises(Go2SessionError, match="bounded clock window"):
+    with pytest.raises(
+        Go2CandidateError,
+        match="candidate invocation failed: TimeoutError: candidate invocation exceeded its bounded clock window",
+    ) as error_info:
         session.invoke(InfiniteCandidate(), "low-level-command", {})
+    assert error_info.value.framework_infrastructure is False
+    assert error_info.value.candidate_owned is True
+    assert error_info.value.candidate_error == (
+        "TimeoutError: candidate invocation exceeded its bounded clock window"
+    )
     assert session.evidence_scope == "TEST_FIXTURE_ONLY"
     assert backend.closed is False
     assert transport.closed is False

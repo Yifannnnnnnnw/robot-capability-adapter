@@ -1417,11 +1417,19 @@ class UnitreeGo2EvaluationRobotSession:
         if runner_error is not None:
             raise runner_error
         if timed_out:
+            if candidate_ready:
+                raise Go2CandidateError(
+                    "TimeoutError", "candidate invocation exceeded its bounded clock window"
+                )
             raise Go2SessionError("candidate invocation exceeded its bounded clock window")
         if payload is None:
             raise Go2SessionError("candidate worker exited without a result")
         finished_at = payload.get("finished_at")
         if isinstance(finished_at, (int, float)) and finished_at > deadline:
+            if candidate_ready:
+                raise Go2CandidateError(
+                    "TimeoutError", "candidate invocation exceeded its bounded clock window"
+                )
             raise Go2SessionError("candidate invocation exceeded its bounded clock window")
         if payload.get("ok") is not True:
             error_type = payload.get("error_type", "candidate error")
