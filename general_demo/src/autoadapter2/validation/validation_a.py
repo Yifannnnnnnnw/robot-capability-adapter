@@ -403,9 +403,6 @@ _ALLOWED_NUMPY_PATHS = frozenset({
 })
 _ALLOWED_DERIVED_OBJECT_MEMBERS = frozenset({"Init", "Read", "Write", "Crc", "get"})
 _ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({"mode", "q", "dq", "kp", "kd", "tau", "motor_cmd", "crc"})
-_ALLOWED_LOCAL_TRANSFORM_METHODS = frozenset({
-    "copy", "reshape", "astype", "tolist", "flatten", "ravel", "squeeze", "transpose",
-})
 _ALLOWED_LOCAL_ARRAY_ATTRIBUTES = frozenset({"T"})
 
 
@@ -556,13 +553,6 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return "sdk-local"
         if isinstance(function, ast.Attribute) and function.attr in {"append", "get"} and root in self.safe_locals | self.public_inputs:
             return "local-container"
-        if isinstance(function, ast.Attribute) and function.attr in _ALLOWED_LOCAL_TRANSFORM_METHODS:
-            if root in self.safe_locals | self.public_inputs:
-                return "local-transform"
-            if isinstance(function.value, ast.Call):
-                base_origin = self._call_origin(function.value.func)
-                if base_origin in {"module", "local-container", "local-transform"}:
-                    return "local-transform"
         if root in self.local_functions or root in _SAFE_BUILTIN_NAMES:
             return "local-function"
         return None
@@ -603,7 +593,13 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if root in self.sdk_readable_locals:
                 return True, True, False
             if root in self.public_inputs or root in self.safe_locals:
-                return True, False, False
+                if isinstance(value, ast.Subscript):
+                    return True, False, False
+                if isinstance(value, ast.Attribute) and value.attr in _ALLOWED_LOCAL_ARRAY_ATTRIBUTES:
+                    base_allowed, base_sdk_derived, _base_mutable = self._classify_expression(value.value)
+                    if base_allowed and not base_sdk_derived:
+                        return True, False, False
+                return False, False, False
             if isinstance(value, ast.Attribute) and value.attr in _ALLOWED_LOCAL_ARRAY_ATTRIBUTES:
                 base_allowed, base_sdk_derived, _base_mutable = self._classify_expression(value.value)
                 if base_allowed and not base_sdk_derived:
