@@ -35,6 +35,7 @@ from autoadapter2.validation import (
     bind_candidate_to_suite,
 )
 from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
+from autoadapter2.validation.validation_a import _descriptor_match
 
 
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
@@ -611,7 +612,7 @@ def test_validation_a_profile_checks_facade_envelopes_and_opaque_handle() -> Non
     extra_output = _source().replace('"reported_status": "PASS"', '"reported_status": "PASS", "extra": "attack"')
     _design, _seal, _stage2, _blue, envelope_result = _a_result(extra_output)
     assert envelope_result.status == "FAIL"
-    assert "FIXTURE_PROBE" in {item["code"] for item in envelope_result.diagnostics}
+    assert "RESULT_FIELDS" in {item["code"] for item in envelope_result.diagnostics}
 
     wrong_bundle_hash = content_hash(b"wrong-implementation-bundle")
     wrong_bundle_result = ValidationARunner(PROFILE).run(
@@ -628,6 +629,10 @@ def test_validation_a_profile_checks_facade_envelopes_and_opaque_handle() -> Non
 def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> None:
     cases = [
         "import os\n\n" + _source(),
+        "import typing\n\n" + _source(),
+        _source().replace("    _sdk.command", "    __import__('os')\n    _sdk.command"),
+        _source().replace("    _sdk.command", "    eval('1')\n    _sdk.command"),
+        "def extra_public():\n    return 1\n\n" + _source(),
         "@x\n" + _source(),
         _source().replace("arg_target, *, _sdk", "arg_target=0.2, *, _sdk"),
         _source().replace("arg_target, *, _sdk", "arg_target: float, *, _sdk"),
@@ -636,6 +641,39 @@ def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> N
     for source in cases:
         _design, _seal, _stage2, _blue, result = _a_result(source)
         assert result.status == "FAIL"
+
+
+def test_validation_a_accepts_experiment_grade_imports_constants_and_private_helpers() -> None:
+    pytest.importorskip("numpy", exc_type=ImportError)
+    source = '''"""One bounded numeric capability."""
+import math
+import time
+import numpy as np
+
+CONTROL_STEP = 0.01
+
+def _bounded_target(value):
+    values = np.asarray([value])
+    clipped = np.clip(values, -1.0, 1.0)
+    return float(clipped[0]) + math.sin(value) * CONTROL_STEP + time.monotonic() * 0.0
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    target = _bounded_target(arg_target)
+    _sdk.command(target)
+    return {"reported_status": "PASS"}
+'''
+    _design, _seal, _stage2, _blue, result = _a_result(source)
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+
+def test_validation_a_accepts_float_as_finite_numeric_scalar_alias() -> None:
+    field = {"type": "float", "shape": "scalar", "unit": "s", "frame": "world"}
+    assert _descriptor_match(1, field)
+    assert _descriptor_match(1.25, field)
+    assert not _descriptor_match(True, field)
+    assert not _descriptor_match(float("inf"), field)
+    assert not _descriptor_match([1.0], field)
 
 
 def test_validation_a_accepts_real_shaped_go2_construction_and_sdk_derived_mutations() -> None:

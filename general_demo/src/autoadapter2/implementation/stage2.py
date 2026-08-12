@@ -22,11 +22,28 @@ from .bundle import ImplementationBundle, validate_implementation_bundle
 from .sandbox import CallbackSandbox
 
 
-STAGE2_PROMPT = (
-    "Return exactly one Stage 2 action object. Allowed actions are sandbox, submit, "
-    "or blocked. A submit contains only action and capability.py; never return a manifest, "
-    "additional file, validation content, or private evaluation information."
-)
+STAGE2_PROMPT = """
+Return exactly one JSON action object and no Markdown or prose. The action must be one of:
+{"action":"sandbox","capability.py":"<complete raw Python>","probe":<public object>},
+{"action":"submit","capability.py":"<complete raw Python>"}, or
+{"action":"blocked","reason":"<public reason>"}. Use exactly the fields shown for the
+selected action. Never return a manifest, another file, diagnostics, private evaluation
+data, or execution outcomes.
+
+The capability.py string is one complete parseable Python module, with no Markdown fences,
+backticks, explanation, or omission. It may contain an optional module docstring, safe
+literal/numeric module constants, imports only `math`, `time`, and `numpy` (optionally as
+`np`), private non-dunder helper functions, and exactly the bound public functions with
+the signatures in binding_contract (`..., *, _sdk`). Do not add public functions/classes,
+decorators, dynamic imports, eval/exec/open, dunder access, or another SDK/connection.
+
+Calls may use only approved math/time/numpy members, the small safe numeric builtins
+(`range`, `len`, `min`, `max`, `abs`, `sum`, `enumerate`, `zip`, `float`, `int`, `bool`,
+`str`, `list`, `tuple`, `dict`, `RuntimeError`, and related safe numeric helpers), module-local
+helpers/bound functions, and the exact `_sdk` members listed in the implementation profile.
+Keep the one-file binding contract and public result fields exactly as supplied; physical
+behavior is assessed after submission.
+""".strip()
 _ACTION_FIELDS = {
     "sandbox": {"action", "capability.py", "probe"},
     "submit": {"action", "capability.py"},

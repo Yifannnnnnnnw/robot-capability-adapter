@@ -14,6 +14,7 @@ from autoadapter2.implementation import (
     CallbackSandbox,
     Stage2Config,
     Stage2Runner,
+    STAGE2_PROMPT,
     derive_python_binding,
     validate_implementation_bundle,
 )
@@ -98,6 +99,22 @@ def _sealed_design(run_id: str = "run-stage2") -> tuple[dict, dict]:
     result = Stage1Runner(FixtureJsonGenerator([_design_body()])).run(run_id, ROBOT, TASKS, G2)
     assert result.status == "SEALED" and result.capability_design and result.seal
     return result.capability_design, result.seal
+
+
+def test_stage2_prompt_describes_the_validation_a_source_contract() -> None:
+    assert "exactly one JSON action object" in STAGE2_PROMPT
+    assert '"action":"sandbox"' in STAGE2_PROMPT
+    assert '"action":"submit"' in STAGE2_PROMPT
+    assert '"action":"blocked"' in STAGE2_PROMPT
+    assert "complete parseable Python module" in STAGE2_PROMPT
+    for import_name in ("math", "time", "numpy"):
+        assert import_name in STAGE2_PROMPT
+    assert "private non-dunder helper functions" in STAGE2_PROMPT
+    assert "exactly the bound public functions" in STAGE2_PROMPT
+    assert "approved math/time/numpy members" in STAGE2_PROMPT
+    assert "exact `_sdk` members" in STAGE2_PROMPT
+    for forbidden in ("Markdown fences", "dynamic imports", "eval/exec/open", "another SDK/connection"):
+        assert forbidden in STAGE2_PROMPT
 
 
 def _authorization(design: dict, seal: dict):

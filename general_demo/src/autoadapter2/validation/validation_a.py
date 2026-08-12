@@ -1,15 +1,17 @@
-"""Minimal experimental Validation A and opaque candidate handles.
+"""Experimental Validation A and opaque candidate handles.
 
-The profile intentionally admits a tiny Python subset.  It is a contract
-checker plus a Framework-owned fixture probe, not a process sandbox.
+The profile checks one-file source structure, importability, and the narrow
+injected SDK boundary.  Robot-specific physical behavior remains Validation B.
 """
 
 from __future__ import annotations
 
 import ast
+import builtins
 import copy
 import math
 import re
+import time
 from dataclasses import dataclass
 from types import ModuleType
 from typing import Any, Mapping
@@ -378,6 +380,59 @@ def _dunder(value: str) -> bool:
     return "__" in value
 
 
+_SAFE_BUILTIN_NAMES = frozenset({
+    "range", "len", "min", "max", "abs", "sum", "enumerate", "zip",
+    "float", "int", "bool", "str", "list", "tuple", "dict", "set",
+    "round", "all", "any", "isinstance", "RuntimeError", "ValueError",
+    "TypeError", "IndexError",
+})
+_SAFE_BUILTINS = {name: getattr(builtins, name) for name in _SAFE_BUILTIN_NAMES}
+_ALLOWED_MODULE_IMPORTS = frozenset({"math", "time", "numpy"})
+_ALLOWED_TIME_MEMBERS = frozenset({"monotonic", "perf_counter", "process_time", "sleep", "time"})
+_ALLOWED_NUMPY_MEMBERS = frozenset({
+    "abs", "absolute", "arange", "array", "asarray", "clip", "concatenate", "cos",
+    "dot", "empty", "exp", "eye", "float32", "float64", "hstack", "isfinite", "isnan",
+    "linalg", "linspace", "maximum", "mean", "minimum", "nan_to_num", "ndarray", "ones",
+    "ones_like", "pi", "reshape", "sin", "sqrt", "stack", "sum", "tan", "transpose",
+    "vstack", "where", "zeros", "zeros_like",
+})
+_ALLOWED_NUMPY_PATHS = frozenset({
+    ("linalg", "norm"),
+    ("linalg", "solve"),
+    ("linalg", "lstsq"),
+})
+
+
+def _module_path(value: ast.AST, aliases: Mapping[str, str]) -> tuple[str, tuple[str | None, ...]] | None:
+    segments: list[str | None] = []
+    current = value
+    while isinstance(current, (ast.Attribute, ast.Subscript)):
+        if isinstance(current, ast.Attribute):
+            segments.append(current.attr)
+        else:
+            segments.append(None)
+        current = current.value
+    if not isinstance(current, ast.Name) or current.id not in aliases:
+        return None
+    segments.reverse()
+    return aliases[current.id], tuple(segments)
+
+
+def _module_member_allowed(module: str, path: tuple[str | None, ...]) -> bool:
+    if not path or any(segment is None for segment in path):
+        return False
+    if module == "math":
+        return len(path) == 1 and path[0] in {name for name in dir(math) if not name.startswith("_")}
+    if module == "time":
+        return len(path) == 1 and path[0] in _ALLOWED_TIME_MEMBERS
+    if module == "numpy":
+        return (
+            (len(path) == 1 and path[0] in _ALLOWED_NUMPY_MEMBERS)
+            or path in _ALLOWED_NUMPY_PATHS
+        )
+    return False
+
+
 def _expression_root(value: ast.AST) -> str | None:
     current = value
     while isinstance(current, (ast.Attribute, ast.Subscript)):
@@ -405,12 +460,25 @@ def _sdk_path_root(value: ast.AST) -> tuple[bool, str | None]:
 
 
 class _SdkStaticAnalyzer(ast.NodeVisitor):
-    """Small ordered analysis for approved SDK locals and call-result mutability."""
+    """Ordered analysis for approved modules, helpers, and SDK locals."""
 
-    def __init__(self, function: ast.FunctionDef, public_inputs: list[str], members: tuple[str, ...] | list[str]):
+    def __init__(
+        self,
+        function: ast.FunctionDef,
+        public_inputs: list[str],
+        members: tuple[str, ...] | list[str],
+        module_aliases: Mapping[str, str],
+        module_constants: set[str],
+        local_functions: set[str],
+        expected_result_names: set[str] | None = None,
+    ):
         self.function = function
         self.public_inputs = set(public_inputs)
         self.members = set(members)
+        self.module_aliases = dict(module_aliases)
+        self.module_constants = set(module_constants)
+        self.local_functions = set(local_functions)
+        self.expected_result_names = expected_result_names
         self.sdk_readable_locals: set[str] = set()
         self.mutable_sdk_locals: set[str] = set()
         self.safe_locals: set[str] = set()
@@ -435,8 +503,18 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if member in self.members:
                 return "sdk-root"
             return None
+        module_path = _module_path(function, self.module_aliases)
+        if module_path is not None:
+            module, path = module_path
+            if _module_member_allowed(module, path):
+                return "module"
+            return None
         root = _expression_root(function)
-        return "sdk-local" if root in self.sdk_readable_locals | self.mutable_sdk_locals else None
+        if root in self.sdk_readable_locals | self.mutable_sdk_locals:
+            return "sdk-local"
+        if root in self.local_functions or root in _SAFE_BUILTIN_NAMES:
+            return "local-function"
+        return None
 
     def _classify_expression(self, value: ast.AST) -> tuple[bool, bool, bool]:
         """Return ``(allowed, sdk_derived, mutable)`` without widening the language."""
@@ -444,7 +522,13 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         if isinstance(value, ast.Constant):
             return True, False, False
         if isinstance(value, ast.Name):
-            if value.id in self.public_inputs or value.id in self.safe_locals:
+            if (
+                value.id in self.public_inputs
+                or value.id in self.safe_locals
+                or value.id in self.module_aliases
+                or value.id in self.module_constants
+                or value.id in _SAFE_BUILTIN_NAMES
+            ):
                 return True, False, False
             if value.id in self.mutable_sdk_locals:
                 return True, True, True
@@ -452,6 +536,10 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
                 return True, True, False
             return False, False, False
         if isinstance(value, (ast.Attribute, ast.Subscript)):
+            module_path = _module_path(value, self.module_aliases)
+            if module_path is not None:
+                module, path = module_path
+                return _module_member_allowed(module, path), False, False
             sdk_root, member = _sdk_path_root(value)
             if sdk_root:
                 return member in self.members, member in self.members, False
@@ -464,8 +552,11 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
                 return True, False, False
             return False, False, False
         if isinstance(value, ast.Call):
-            allowed = self._call_origin(value.func) is not None
-            return allowed, allowed, allowed
+            origin = self._call_origin(value.func)
+            if origin is None:
+                return False, False, False
+            sdk_derived = origin in {"sdk-root", "sdk-local"}
+            return True, sdk_derived, sdk_derived
         if isinstance(value, ast.Starred):
             return self._classify_expression(value.value)
         if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
@@ -533,8 +624,16 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             self._assignment_issue("only a local value derived from the injected SDK may be mutated")
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        self._assignment_issue("augmented assignment is forbidden")
-        self.generic_visit(node)
+        self.visit(node.value)
+        if isinstance(node.target, ast.Name):
+            if _dunder(node.target.id) or node.target.id == "_sdk":
+                self._assignment_issue("assignment to a reserved or dunder name is forbidden")
+            elif node.target.id not in self.safe_locals and node.target.id not in self.mutable_sdk_locals:
+                self._assignment_issue("augmented assignment requires an approved local")
+            return
+        self.visit(node.target)
+        if _expression_root(node.target) not in self.mutable_sdk_locals:
+            self._assignment_issue("only a local value derived from the injected SDK may be mutated")
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         self._assignment_issue("annotated assignment is forbidden")
@@ -548,18 +647,57 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self._assignment_issue("deletion is forbidden")
         self.generic_visit(node)
 
+    def _bind_safe_target(self, target: ast.AST) -> None:
+        if isinstance(target, ast.Name):
+            if _dunder(target.id) or target.id == "_sdk":
+                self._assignment_issue("assignment to a reserved or dunder name is forbidden")
+            else:
+                self.safe_locals.add(target.id)
+            return
+        if isinstance(target, (ast.Tuple, ast.List)):
+            for element in target.elts:
+                self._bind_safe_target(element)
+            return
+        self._assignment_issue("loop targets must be local names")
+
+    def visit_For(self, node: ast.For) -> None:
+        self.visit(node.iter)
+        self._bind_safe_target(node.target)
+        for statement in [*node.body, *node.orelse]:
+            self.visit(statement)
+
+    def visit_While(self, node: ast.While) -> None:
+        self.visit(node.test)
+        for statement in [*node.body, *node.orelse]:
+            self.visit(statement)
+
     def visit_Call(self, node: ast.Call) -> None:
         sdk_root, member = _sdk_path_root(node.func)
         origin = self._call_origin(node.func)
-        if origin is not None:
+        if origin in {"sdk-root", "sdk-local"}:
             self.approved_sdk_use = True
-        elif sdk_root:
+        elif origin is None and sdk_root:
             self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
-        else:
+        elif origin is None:
             self._add_issue("FORBIDDEN_CALL", "only calls rooted in the injected _sdk facade are allowed")
         self.generic_visit(node)
 
+    def visit_Return(self, node: ast.Return) -> None:
+        if self.expected_result_names is not None and isinstance(node.value, ast.Dict):
+            names: list[str] = []
+            for key in node.value.keys:
+                if not isinstance(key, ast.Constant) or not isinstance(key.value, str):
+                    names.append("")
+                else:
+                    names.append(key.value)
+            if len(names) != len(set(names)) or set(names) != self.expected_result_names:
+                self._add_issue("RESULT_FIELDS", "literal result mapping does not match the sealed output fields")
+        self.generic_visit(node)
+
     def visit_Attribute(self, node: ast.Attribute) -> None:
+        module_path = _module_path(node, self.module_aliases)
+        if module_path is not None and not _module_member_allowed(*module_path):
+            self._add_issue("MODULE_MEMBER", "module member is not in the approved runtime allowlist")
         sdk_root, member = _sdk_path_root(node)
         if sdk_root:
             if member in self.members:
@@ -571,6 +709,9 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Subscript(self, node: ast.Subscript) -> None:
+        module_path = _module_path(node, self.module_aliases)
+        if module_path is not None and not _module_member_allowed(*module_path):
+            self._add_issue("MODULE_MEMBER", "module member is not in the approved runtime allowlist")
         sdk_root, member = _sdk_path_root(node)
         if sdk_root:
             if member in self.members:
@@ -589,7 +730,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Import(self, node: ast.Import) -> None:
-        self._add_issue("FORBIDDEN_IMPORT", "imports are forbidden in the experimental profile")
+        self._add_issue("FORBIDDEN_IMPORT", "imports are allowed only at module scope")
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         self._add_issue("FORBIDDEN_IMPORT", "imports are forbidden in the experimental profile")
@@ -613,25 +754,139 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self._add_issue("EXPERIMENTAL_PROFILE", "nested functions are forbidden")
 
 
+def _safe_literal_ast(value: ast.AST) -> bool:
+    if isinstance(value, ast.Constant):
+        return value.value is None or isinstance(value.value, (bool, int, float, str, bytes))
+    if isinstance(value, (ast.Tuple, ast.List, ast.Set)):
+        return all(_safe_literal_ast(item) for item in value.elts)
+    if isinstance(value, ast.Dict):
+        return all(
+            key is not None and _safe_literal_ast(key) and _safe_literal_ast(item)
+            for key, item in zip(value.keys, value.values, strict=True)
+        )
+    if isinstance(value, ast.UnaryOp) and isinstance(value.op, (ast.UAdd, ast.USub)):
+        return _safe_literal_ast(value.operand)
+    if isinstance(value, ast.BinOp) and isinstance(value.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow)):
+        return _safe_literal_ast(value.left) and _safe_literal_ast(value.right)
+    return False
+
+
+def _module_import_issues(
+    node: ast.Import,
+    aliases: dict[str, str],
+    symbols: set[str],
+    issues: list[dict[str, str]],
+) -> None:
+    for imported in node.names:
+        module_name = imported.name
+        binding_name = imported.asname or module_name
+        if module_name not in _ALLOWED_MODULE_IMPORTS or "." in module_name:
+            issues.append(_issue("FORBIDDEN_IMPORT", f"{module_name} is not an approved absolute import"))
+            continue
+        expected_alias = {
+            "math": {None, "math"},
+            "time": {None, "time"},
+            "numpy": {None, "np"},
+        }[module_name]
+        if imported.asname not in expected_alias:
+            issues.append(_issue("FORBIDDEN_IMPORT", f"{module_name} has an unapproved alias"))
+        if _dunder(binding_name) or binding_name in symbols:
+            issues.append(_issue("EXPERIMENTAL_PROFILE", "module imports must bind unique non-dunder names"))
+        symbols.add(binding_name)
+        aliases[binding_name] = module_name
+
+
+def _function_shape_issues(function: ast.FunctionDef, *, public: bool, symbol: str) -> list[dict[str, str]]:
+    arguments = function.args
+    all_arguments = [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs]
+    if any(_dunder(argument.arg) and argument.arg != "_sdk" for argument in all_arguments):
+        return [_issue("PUBLIC_SIGNATURE", f"{symbol} has a dunder parameter")]
+    if public:
+        return []
+    if (
+        function.decorator_list
+        or function.returns is not None
+        or any(argument.annotation is not None for argument in all_arguments)
+        or arguments.defaults
+        or any(default is not None for default in arguments.kw_defaults)
+        or arguments.posonlyargs
+        or arguments.vararg is not None
+        or arguments.kwarg is not None
+    ):
+        return [_issue("EXPERIMENTAL_PROFILE", f"private helper {symbol} has an unsupported signature")]
+    return []
+
+
 def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]], profile: ValidationAProfile) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
     functions: dict[str, list[ast.FunctionDef]] = {}
     expected_symbols = {item["function_name"] for item in contracts.values()}
+    module_aliases: dict[str, str] = {}
+    module_constants: set[str] = set()
+    module_symbols: set[str] = set()
     for node in tree.body:
-        if not isinstance(node, ast.FunctionDef):
-            issues.append(_issue("EXPERIMENTAL_PROFILE", "only bound function definitions are allowed at module scope"))
+        if (
+            node is tree.body[0]
+            and isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
             continue
-        if _dunder(node.name):
-            issues.append(_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile"))
-        functions.setdefault(node.name, []).append(node)
-    if any(len(nodes) != 1 for nodes in functions.values()) or set(functions) != expected_symbols:
+        if isinstance(node, ast.Import):
+            _module_import_issues(node, module_aliases, module_symbols, issues)
+            continue
+        if isinstance(node, ast.ImportFrom):
+            issues.append(_issue("FORBIDDEN_IMPORT", "relative, star, and from-imports are not allowed"))
+            continue
+        if isinstance(node, ast.FunctionDef):
+            if _dunder(node.name):
+                issues.append(_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile"))
+            if node.name in module_symbols:
+                issues.append(_issue("PUBLIC_SYMBOLS", "module symbols must not be redefined"))
+            functions.setdefault(node.name, []).append(node)
+            module_symbols.add(node.name)
+            continue
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            value = node.value if isinstance(node, (ast.Assign, ast.AnnAssign)) else None
+            if (
+                len(targets) != 1
+                or not isinstance(targets[0], ast.Name)
+                or _dunder(targets[0].id)
+                or targets[0].id in module_symbols
+                or value is None
+                or not _safe_literal_ast(value)
+                or (isinstance(node, ast.AnnAssign) and node.annotation is not None)
+            ):
+                issues.append(_issue("EXPERIMENTAL_PROFILE", "module scope allows only safe literal constants"))
+            else:
+                module_symbols.add(targets[0].id)
+                module_constants.add(targets[0].id)
+            continue
+        if isinstance(node, ast.ClassDef):
+            issues.append(_issue("PUBLIC_SYMBOLS", "classes are not allowed in capability.py"))
+            continue
+        issues.append(_issue("EXPERIMENTAL_PROFILE", "module scope allows only a docstring, approved imports, constants, and functions"))
+    public_symbols = {name for name in functions if name in expected_symbols}
+    if any(len(nodes) != 1 for nodes in functions.values()) or public_symbols != expected_symbols:
         issues.append(_issue("PUBLIC_SYMBOLS", "capability.py must define exactly the bound public functions"))
+    helper_names = {name for name in functions if name not in expected_symbols}
+    if any(not name.startswith("_") or _dunder(name) for name in helper_names):
+        issues.append(_issue("PUBLIC_SYMBOLS", "extra functions must be private non-dunder helpers"))
     symbol_to_capability = {item["function_name"]: capability_id for capability_id, item in contracts.items()}
-    for symbol, capability_id in symbol_to_capability.items():
+    for symbol, nodes in functions.items():
+        public = symbol in symbol_to_capability
+        capability_id = symbol_to_capability.get(symbol)
         nodes = functions.get(symbol, [])
         if len(nodes) != 1:
             continue
         function = nodes[0]
+        issues.extend(_function_shape_issues(function, public=public, symbol=symbol))
+        if not public:
+            analyzer = _SdkStaticAnalyzer(function, [argument.arg for argument in [*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs]], (), module_aliases, module_constants, set(functions))
+            issues.extend(analyzer.analyze())
+            continue
+        assert capability_id is not None
         arguments = function.args
         expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
         if (
@@ -648,7 +903,15 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
             or arguments.kwarg is not None
         ):
             issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
-        analyzer = _SdkStaticAnalyzer(function, expected_parameters, profile.sdk_facade_members[capability_id])
+        analyzer = _SdkStaticAnalyzer(
+            function,
+            expected_parameters,
+            profile.sdk_facade_members[capability_id],
+            module_aliases,
+            module_constants,
+            set(functions),
+            {field["name"] for field in contracts[capability_id]["outputs"]},
+        )
         issues.extend(analyzer.analyze())
         if not analyzer.approved_sdk_use:
             issues.append(_issue("SDK_INJECTION", f"{symbol} must call the injected _sdk facade"))
@@ -680,7 +943,7 @@ def _descriptor_match(value: Any, field: Mapping[str, Any]) -> bool:
             and math.isfinite(float(item))
             for item in value
         )
-    elif field_type == "number":
+    elif field_type in {"number", "float"}:
         type_ok = isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
     elif field_type == "integer":
         type_ok = isinstance(value, int) and not isinstance(value, bool)
@@ -789,9 +1052,31 @@ class _FixtureSdkFacade:
         return _FixtureSdkProxy(self, name)
 
 
+def _allowed_import(
+    name: str,
+    _globals: Mapping[str, Any] | None = None,
+    _locals: Mapping[str, Any] | None = None,
+    fromlist: tuple[str, ...] | list[str] = (),
+    level: int = 0,
+) -> ModuleType:
+    if level != 0 or name not in _ALLOWED_MODULE_IMPORTS or fromlist:
+        raise ImportError(f"candidate import is not allowed: {name}")
+    if name == "math":
+        return math
+    if name == "time":
+        return time
+    try:
+        import numpy as np
+    except Exception as exc:
+        raise ImportError("approved numpy dependency is unavailable") from exc
+    return np
+
+
 def _isolated_module(source: str) -> ModuleType:
     module = ModuleType("validated_capability")
-    module.__dict__.update({"__name__": module.__name__, "__builtins__": {}})
+    safe_builtins = dict(_SAFE_BUILTINS)
+    safe_builtins["__import__"] = _allowed_import
+    module.__dict__.update({"__name__": module.__name__, "__builtins__": safe_builtins})
     exec(compile(source, "capability.py", "exec"), module.__dict__, module.__dict__)
     return module
 
@@ -831,6 +1116,13 @@ class ValidationARunner:
         diagnostics.extend(_profile_issues(self.profile, contracts))
         module: ModuleType | None = None
         if source is not None and not diagnostics:
+            for capability_id, item in contracts.items():
+                try:
+                    _fixture_inputs(self.profile.fixture_probes[capability_id], item["inputs"])
+                except ContractError as exc:
+                    diagnostics.append(_issue("A_PROFILE_PROBE", str(exc)))
+
+        if source is not None and not diagnostics:
             try:
                 tree = ast.parse(source, filename="capability.py")
             except SyntaxError as exc:
@@ -840,17 +1132,12 @@ class ValidationARunner:
                 if not diagnostics:
                     try:
                         module = _isolated_module(source)
-                        for capability_id, item in contracts.items():
-                            fixture_values = _fixture_inputs(self.profile.fixture_probes[capability_id], item["inputs"])
-                            facade = _FixtureSdkFacade(self.profile.sdk_facade_members[capability_id])
-                            function = getattr(module, item["function_name"])
-                            arguments = {
-                                parameter["parameter"]: fixture_values[parameter["public_name"]]
-                                for parameter in item["parameters"]
-                            }
-                            _runtime_result(function(**arguments, _sdk=facade), item["outputs"])
+                        for item in contracts.values():
+                            function = getattr(module, item["function_name"], None)
+                            if not callable(function):
+                                raise ContractError("bound capability symbol is not callable")
                     except Exception as exc:
-                        diagnostics.append(_issue("FIXTURE_PROBE", f"Framework fixture probe failed: {type(exc).__name__}"))
+                        diagnostics.append(_issue("IMPORTABILITY", f"capability.py import or binding failed: {type(exc).__name__}"))
         symbols = [
             {
                 "capability_id": capability_id,

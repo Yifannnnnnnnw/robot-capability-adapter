@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 import ssl
@@ -142,11 +143,29 @@ class ModelApiClient:
             stage="repair",
             instruction=(
                 "Repair only capability.py using the supplied public diagnostics and binding. "
-                "Return exactly {\"capability.py\": <complete source>, \"llm_calls\": 1}."
+                "Return exactly {\"capability.py\": <complete raw parseable Python source>, "
+                "\"llm_calls\": 1}. The capability.py string must contain the complete one-file "
+                "source with no Markdown fences, backticks, explanation, or omitted code. Follow "
+                "the same Validation A grammar: imports only math, time, or numpy (optionally as np); "
+                "safe literal constants; private non-dunder helpers; exact bound functions and "
+                "signatures; approved math/time/numpy members, safe numeric builtins, and bound _sdk "
+                "members only. No dynamic import, eval, exec, open, dunder access, extra public "
+                "symbols, or second SDK connection. Do not alter the supplied candidate except to "
+                "return the complete corrected source."
             ),
             inputs=request,
         )
-        result["llm_calls"] = 1
+        if set(result) != {"capability.py", "llm_calls"}:
+            raise ContractError("repair response must contain exactly capability.py and llm_calls")
+        if result.get("llm_calls") != 1:
+            raise ContractError("repair response llm_calls must be exactly 1")
+        source = result.get("capability.py")
+        if not isinstance(source, str) or not source.strip() or "```" in source or "`" in source:
+            raise ContractError("repair capability.py must be complete raw source without Markdown")
+        try:
+            ast.parse(source, filename="capability.py")
+        except SyntaxError as exc:
+            raise ContractError("repair capability.py must be parseable Python") from exc
         return result
 
     def react(self, request: Mapping[str, Any]) -> dict[str, Any]:
