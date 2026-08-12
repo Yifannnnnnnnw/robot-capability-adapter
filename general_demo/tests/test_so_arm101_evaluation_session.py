@@ -169,6 +169,38 @@ class _Candidate:
         return {"accepted": True}
 
 
+class _TaskStateCandidate:
+    """Matches the observed repair-source pattern of reading public task state."""
+
+    def __init__(self, capability_id: str, arguments: dict[str, Any], cube_position: list[float]) -> None:
+        self.capability_id = capability_id
+        self.arguments = arguments
+        self.cube_position = cube_position
+        self.observation: dict[str, Any] | None = None
+
+    def _invoke(self, capability_id: str, arguments: dict[str, Any], sdk: Any) -> dict[str, bool]:
+        assert capability_id == self.capability_id
+        assert arguments == self.arguments
+        observation = sdk.get_observation()
+        self.observation = observation
+        state = observation.get("public_task_state", {})
+        accepted = isinstance(state, dict)
+        if capability_id in {"establish_target_contact", "move_object_to_region", "grasp_and_lift_object"}:
+            accepted = accepted and state.get("target_object_id") == arguments["target_object_id"]
+            accepted = accepted and state.get("target_object_position") == self.cube_position
+        if capability_id == "establish_target_contact":
+            accepted = accepted and state.get("target_face") == arguments["target_face"]
+        if capability_id == "move_object_to_region":
+            accepted = accepted and state.get("goal_center_m") == arguments["goal_center"]
+        if capability_id == "grasp_and_lift_object":
+            accepted = accepted and state.get("hold_height_delta_m") == arguments["hold_height_delta"]
+        if capability_id == "actuate_target_button":
+            accepted = accepted and state.get("specified_button_id") == arguments["button_id"]
+            accepted = accepted and state.get("button_position") == [0.43, -0.10, 0.080]
+        sdk.send_action({"shoulder_pan.pos": 1.0})
+        return {"accepted": accepted}
+
+
 class _Capture:
     def __init__(self, profile: FrozenVideoProfile, render_rgb: object) -> None:
         assert profile.width == 2 and profile.height == 2
@@ -440,6 +472,61 @@ def test_validation_evidence_resolves_t02_non_target_contact_metric() -> None:
         evidence = session.validation_evidence(_invocation("non_target_contact_count"))
         assert evidence.samples
         assert all(sample.value == 0.0 for sample in evidence.samples)
+    finally:
+        session.close()
+
+
+@pytest.mark.parametrize(
+    ("capability_id", "initial_state", "arguments"),
+    [
+        (
+            "establish_target_contact",
+            {"arm_position": "home", "cube_position": [0.30, 0.0, 0.05], "gripper_state": "open"},
+            {"target_face": "top", "target_object_id": "red_cube"},
+        ),
+        (
+            "move_object_to_region",
+            {"arm_position": "home", "cube_position": [0.25, 0.10, 0.05], "gripper_state": "open"},
+            {"goal_center": [0.30, 0.0], "target_object_id": "red_cube"},
+        ),
+        (
+            "grasp_and_lift_object",
+            {"arm_position": "home", "cube_position": [0.30, 0.0, 0.05], "gripper_state": "open"},
+            {"hold_height_delta": 0.05, "target_object_id": "red_cube"},
+        ),
+        (
+            "actuate_target_button",
+            {"arm_position": "home", "gripper_state": "open"},
+            {"button_id": "button_a"},
+        ),
+    ],
+)
+def test_validation_b_candidate_facade_projects_case_state_and_preserves_sdk_route(
+    capability_id: str,
+    initial_state: dict[str, Any],
+    arguments: dict[str, Any],
+) -> None:
+    cube_position = list(initial_state.get("cube_position", [0.33, 0.04, 0.037]))
+    session = _session([])
+    candidate = _TaskStateCandidate(capability_id, arguments, cube_position)
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id=f"validation-public-state-{capability_id}",
+            initial_state=initial_state,
+        )
+        result = session.invoke(candidate, capability_id, arguments)
+        assert result == {"accepted": True}
+        assert candidate.observation is not None
+        assert set(MOTOR_NAMES).issubset({key.removesuffix(".pos") for key in candidate.observation})
+        assert candidate.observation["public_task_state"]["task_id"] in {"T02", "T03", "T08", "T20"}
+        if "cube_position" in initial_state:
+            assert session._current_task["reset_state"]["cube"]["position_m"] == cube_position  # type: ignore[index]
+        if capability_id == "move_object_to_region":
+            assert session._current_task["target"]["cube_goal_center_m"] == arguments["goal_center"]  # type: ignore[index]
+        evidence = session.validation_evidence(_invocation())
+        assert evidence.sdk_route_verified is True
+        assert evidence.guard_results["sdk-route-verified"] is True
     finally:
         session.close()
 

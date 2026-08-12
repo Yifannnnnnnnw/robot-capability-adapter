@@ -84,6 +84,14 @@ _DEMO_METRIC_FIELDS = (
     "other_button_activation_count",
 )
 
+_CAPABILITY_TASK_IDS = {
+    "move_end_effector_to_target": "T01",
+    "establish_target_contact": "T02",
+    "move_object_to_region": "T03",
+    "grasp_and_lift_object": "T08",
+    "actuate_target_button": "T20",
+}
+
 
 class SOArm101SessionError(RuntimeError):
     """The private SO-ARM101 session could not open or collect evidence."""
@@ -102,6 +110,29 @@ class _SOArm101ValidationEvidence(ValidationEvidence):
             or content_hash(canonical_bytes(self.route_evidence)) != self.route_evidence_hash
         ):
             raise ContractError("SO-ARM101 route evidence hash does not match detail")
+
+
+class _SOArm101CandidateFacade:
+    """Candidate-facing SO surface with the current public task projection."""
+
+    def __init__(
+        self,
+        follower: Any,
+        public_state: Callable[[], Mapping[str, Any]],
+    ) -> None:
+        self._follower = follower
+        self._public_state = public_state
+
+    def send_action(self, action: Mapping[str, Any]) -> Any:
+        return self._follower.send_action(action)
+
+    def get_observation(self) -> dict[str, Any]:
+        raw = self._follower.get_observation()
+        if not isinstance(raw, Mapping):
+            raise SOArm101SessionError("SO101Follower returned an invalid observation")
+        observation = copy.deepcopy(dict(raw))
+        observation["public_task_state"] = copy.deepcopy(dict(self._public_state()))
+        return observation
 
 
 def _repo_general_demo_root() -> Path:
@@ -445,6 +476,10 @@ class SOArm101EvaluationRobotSession:
         self._physics_steps = 0
         self._current_task_id: str | None = None
         self._current_task: dict[str, Any] | None = None
+        self._reset_task: dict[str, Any] | None = None
+        self._reset_initial_state: dict[str, Any] = {}
+        self._public_task_state: dict[str, Any] = {}
+        self._candidate_sdk: _SOArm101CandidateFacade | None = None
         self._episode_samples: list[dict[str, Any]] = []
         self._event_state: dict[str, Any] = {}
         self._reset_snapshot: dict[str, Any] = {"qpos": [], "qvel": [], "ctrl": []}
@@ -487,6 +522,10 @@ class SOArm101EvaluationRobotSession:
             )(port, calibration)
             self._validate_follower_surface(self._follower)
             self._follower.connect(calibrate=False)
+            self._candidate_sdk = _SOArm101CandidateFacade(
+                self._follower,
+                lambda: self._public_task_state,
+            )
             self._opened = True
         except BaseException:
             try:
@@ -539,10 +578,10 @@ class SOArm101EvaluationRobotSession:
 
     @property
     def sdk(self) -> object:
-        if not self._opened or self._follower is None:
+        if not self._opened or self._candidate_sdk is None:
             raise SOArm101SessionError("the real SO101Follower is not open")
         self._record_candidate_invocation(source="direct_sdk_binding")
-        return self._follower
+        return self._candidate_sdk
 
     @property
     def route_evidence(self) -> Mapping[str, Any]:
@@ -667,6 +706,105 @@ class SOArm101EvaluationRobotSession:
         ET.ElementTree(robot_root).write(composed, encoding="utf-8", xml_declaration=True)
         return composed
 
+    @staticmethod
+    def _reset_task_for_case(
+        task: Mapping[str, Any] | None,
+        initial_state: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        result = copy.deepcopy(dict(task)) if isinstance(task, Mapping) else {}
+        reset_state = result.get("reset_state")
+        reset_state = copy.deepcopy(dict(reset_state)) if isinstance(reset_state, Mapping) else {}
+        cube_position = initial_state.get("cube_position")
+        if cube_position is not None:
+            cube = reset_state.get("cube")
+            cube = copy.deepcopy(dict(cube)) if isinstance(cube, Mapping) else {}
+            cube["position_m"] = _vector(cube_position, 3, "initial_state.cube_position")
+            cube.setdefault("quaternion_wxyz", [1.0, 0.0, 0.0, 0.0])
+            cube.setdefault("qvel", [0.0] * 6)
+            reset_state["cube"] = cube
+        result["reset_state"] = reset_state
+        return result
+
+    def _public_task_state_for_context(
+        self,
+        task: Mapping[str, Any] | None,
+        initial_state: Mapping[str, Any],
+        arguments: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        raw_public = task.get("public_state", {}) if isinstance(task, Mapping) else {}
+        state = copy.deepcopy(dict(raw_public)) if isinstance(raw_public, Mapping) else {}
+
+        task_id = task.get("task_id") if isinstance(task, Mapping) else None
+        if isinstance(task_id, str) and task_id:
+            state["task_id"] = task_id
+
+        cube_position = initial_state.get("cube_position")
+        if cube_position is None and isinstance(task, Mapping):
+            reset_state = task.get("reset_state")
+            cube = reset_state.get("cube") if isinstance(reset_state, Mapping) else None
+            cube_position = cube.get("position_m") if isinstance(cube, Mapping) else None
+        if cube_position is not None:
+            state["target_object_position"] = _vector(
+                cube_position,
+                3,
+                "public task target_object_position",
+            )
+
+        if "target_position" in arguments:
+            state["tip_target_m"] = _vector(arguments["target_position"], 3, "arguments.target_position")
+        if "target_object_id" in arguments:
+            state["target_object_id"] = _require_text(
+                arguments["target_object_id"],
+                "arguments.target_object_id",
+            )
+        if "target_face" in arguments:
+            state["target_face"] = _require_text(arguments["target_face"], "arguments.target_face")
+        if "goal_center" in arguments:
+            state["goal_center_m"] = _vector(arguments["goal_center"], 2, "arguments.goal_center")
+        if "hold_height_delta" in arguments:
+            state["hold_height_delta_m"] = _number(
+                arguments["hold_height_delta"],
+                "arguments.hold_height_delta",
+            )
+        if "button_id" in arguments:
+            state["specified_button_id"] = _require_text(arguments["button_id"], "arguments.button_id")
+
+        target = task.get("target") if isinstance(task, Mapping) else None
+        if task_id == "T20" and isinstance(target, Mapping):
+            button_position = target.get("tip_position_m")
+            if isinstance(button_position, Sequence) and not isinstance(button_position, (str, bytes)):
+                state["button_position"] = _vector(button_position, 3, "public task button_position")
+        return state
+
+    def _activate_task_context(
+        self,
+        capability_id: str,
+        arguments: Mapping[str, Any],
+    ) -> None:
+        task_id = _CAPABILITY_TASK_IDS.get(capability_id)
+        if task_id is None:
+            return
+        task = self._task_records.get(task_id)
+        if task is None:
+            raise SOArm101SessionError(f"no frozen SO-ARM101 task is bound to {capability_id!r}")
+        active = copy.deepcopy(task)
+        if self._reset_task is not None:
+            active["reset_state"] = copy.deepcopy(self._reset_task.get("reset_state", {}))
+        target = active.get("target")
+        target = copy.deepcopy(dict(target)) if isinstance(target, Mapping) else {}
+        if "target_position" in arguments:
+            target["tip_position_m"] = _vector(arguments["target_position"], 3, "arguments.target_position")
+        if "goal_center" in arguments:
+            target["cube_goal_center_m"] = _vector(arguments["goal_center"], 2, "arguments.goal_center")
+        active["target"] = target
+        self._current_task_id = task_id
+        self._current_task = active
+        self._public_task_state = self._public_task_state_for_context(
+            active,
+            self._reset_initial_state,
+            arguments,
+        )
+
     def reset(
         self,
         *,
@@ -686,13 +824,21 @@ class SOArm101EvaluationRobotSession:
         self._present_position_read_count = 0
         self._last_route_evidence = {}
         self._last_route_evidence_hash = None
+        self._reset_initial_state = copy.deepcopy(state)
         task_id = state.get("task_id") or state.get("task_instance_id")
         if task_id is not None:
             task_id = _require_text(task_id, "initial_state.task_id")
         if phase == "DEMO" and task_id not in self._task_records:
             raise SOArm101SessionError("Demo reset must select one of the five frozen private task instances")
         self._current_task_id = task_id if task_id in self._task_records else None
-        self._current_task = copy.deepcopy(self._task_records.get(task_id)) if self._current_task_id else None
+        selected_task = self._task_records.get(task_id) if self._current_task_id else None
+        self._reset_task = self._reset_task_for_case(selected_task, state)
+        self._current_task = copy.deepcopy(self._reset_task)
+        self._public_task_state = self._public_task_state_for_context(
+            self._current_task,
+            state,
+            {},
+        )
 
         self._translation.reset()
         self._reset_scene_state(self._current_task)
@@ -971,6 +1117,9 @@ class SOArm101EvaluationRobotSession:
         invoke_method = getattr(candidate, "_invoke", None)
         if not callable(invoke_method):
             raise SOArm101SessionError("candidate is not a Framework-validated candidate handle")
+        self._activate_task_context(capability_id, arguments)
+        if self._candidate_sdk is None:
+            raise SOArm101SessionError("candidate-facing SO-ARM101 facade is unavailable")
         self._record_candidate_invocation(
             source="session.invoke",
             capability_id=capability_id,
@@ -980,7 +1129,7 @@ class SOArm101EvaluationRobotSession:
         self._candidate_invocation_observed = True
         candidate_error: Exception | None = None
         try:
-            result = invoke_method(capability_id, copy.deepcopy(dict(arguments)), self._follower)
+            result = invoke_method(capability_id, copy.deepcopy(dict(arguments)), self._candidate_sdk)
         except Exception as exc:
             candidate_error = exc
         try:
