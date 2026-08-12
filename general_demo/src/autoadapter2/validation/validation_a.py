@@ -678,6 +678,11 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
                 return True, True, True
             if root in self.sdk_readable_locals:
                 return True, True, False
+            if root in self.module_constants:
+                if isinstance(value, ast.Subscript):
+                    allowed, sdk_derived, _mutable = self._classify_expression(value.slice)
+                    return allowed and not sdk_derived, False, False
+                return False, False, False
             if root in self.public_inputs or root in self.safe_locals:
                 if isinstance(value, ast.Subscript):
                     return True, False, False

@@ -798,6 +798,48 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     assert result.candidate_handle is not None
 
 
+def test_validation_a_accepts_indexed_module_constants_but_rejects_mutation_and_attributes() -> None:
+    source = '''"""Observed Go2 list arithmetic over fixed posture constants."""
+_STAND_POSITIONS = [0.0, 0.9, -1.8, 0.0]
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    hip_swing = float(arg_target) * 0.1
+    positions = [
+        _STAND_POSITIONS[0] + hip_swing,
+        _STAND_POSITIONS[1],
+        _STAND_POSITIONS[2] - hip_swing,
+        _STAND_POSITIONS[3],
+    ]
+    target_positions = [
+        _STAND_POSITIONS[0],
+        _STAND_POSITIONS[1],
+        _STAND_POSITIONS[2],
+        _STAND_POSITIONS[3],
+    ]
+    _sdk.command(positions[0] + target_positions[0])
+    return {"reported_status": "PASS"}
+'''
+    _design, _seal, _stage2, _blue, result = _a_result(source)
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+    mutated = source.replace(
+        "    positions = [\n",
+        "    _STAND_POSITIONS[0] = hip_swing\n    positions = [\n",
+        1,
+    )
+    _design, _seal, _stage2, _blue, mutation_result = _a_result(mutated)
+    assert mutation_result.status == "FAIL"
+
+    arbitrary_attribute = source.replace(
+        "        _STAND_POSITIONS[0] + hip_swing,",
+        "        _STAND_POSITIONS.real,",
+        1,
+    )
+    _design, _seal, _stage2, _blue, attribute_result = _a_result(arbitrary_attribute)
+    assert attribute_result.status == "FAIL"
+
+
 def test_validation_a_accepts_observed_safe_unpack_builtins_and_loop_locals() -> None:
     source = '''"""Bounded observed Go2 control subset."""
 def capability_reach_joint_target(arg_target, *, _sdk):
