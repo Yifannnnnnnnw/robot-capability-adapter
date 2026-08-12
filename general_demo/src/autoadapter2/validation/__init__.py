@@ -13,6 +13,7 @@ from .validation_a import (
 from .validation_b import (
     FrozenValidationContext,
     HarnessInfrastructureError,
+    HarnessCriterionMeasurement,
     HarnessInvocation,
     HarnessMeasurement,
     MeasurementSample,
@@ -28,6 +29,7 @@ __all__ = [
     "BindingOverlay",
     "FrozenValidationContext",
     "HarnessInfrastructureError",
+    "HarnessCriterionMeasurement",
     "HarnessInvocation",
     "HarnessMeasurement",
     "MeasurementSample",

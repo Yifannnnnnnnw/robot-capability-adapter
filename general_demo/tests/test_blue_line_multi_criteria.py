@@ -202,3 +202,5 @@ def test_all_first_demo_records_are_approved_and_versioned() -> None:
         assert record["required_guard_ids"]
         assert record["false_pass_requirements"]
         assert record["approval_lineage"]["approval_id"]
+        assert record["approval_lineage"]["reviewed_by"] == "project_owner"
+        assert "direct project-owner blanket approval" in record["approval_lineage"]["approval_basis"]

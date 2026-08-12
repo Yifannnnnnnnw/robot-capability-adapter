@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from autoadapter2.blue_line import BlueLineRunner
+from autoadapter2.demo import EvaluationRoute, RecordingValidationHarness, ValidationEvidence
 from autoadapter2.evaluation import (
     ClosedEvaluationVideo,
     EncodedVideo,
@@ -20,7 +21,9 @@ from autoadapter2.foundation.seals import create_seal, verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
 from autoadapter2.implementation import Stage2Runner
 from autoadapter2.validation import (
+    HarnessCriterionMeasurement,
     HarnessInfrastructureError,
+    HarnessInvocation,
     HarnessMeasurement,
     MeasurementSample,
     RepairRunner,
@@ -31,6 +34,7 @@ from autoadapter2.validation import (
     ValidationContext,
     bind_candidate_to_suite,
 )
+from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
 
 
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
@@ -60,6 +64,16 @@ MEASUREMENTS = {
     }],
     "guards": [{"guard_id": "physical-state-not-command-receipt", "adapter_id": "truth-joint-state"}],
 }
+MULTI_MEASUREMENTS = copy.deepcopy(MEASUREMENTS)
+MULTI_MEASUREMENTS["measurements"].append({
+    "measurement_id": "joint-speed",
+    "entity": "shoulder_pan",
+    "unit": "rad",
+    "frame": "joint",
+    "adapter_id": "truth-joint-state",
+    "truth_source": "physical_state",
+    "metrics": ["max_joint_speed"],
+})
 POLICY = {
     "policy_id": "blue-1", "model_id": "fixed-fixture", "prompt_id": "blue-prompt-1",
     "max_cases_per_capability": 2, "repetitions": 2,
@@ -152,13 +166,16 @@ class _Sdk:
 
 
 class _Session:
-    def __init__(self, observation: HarnessMeasurement):
+    def __init__(self, observation: HarnessMeasurement, *, invoke_error: Exception | None = None):
         self.sdk = _Sdk()
         self._observation = observation
+        self._invoke_error = invoke_error
         self.invoke_calls = []
 
     def invoke(self, candidate, capability_id, inputs):
         self.invoke_calls.append((candidate, capability_id, copy.deepcopy(dict(inputs))))
+        if self._invoke_error is not None:
+            raise self._invoke_error
         return candidate._invoke(capability_id, inputs, self.sdk)
 
     def collect(self) -> HarnessMeasurement:
@@ -188,6 +205,17 @@ class _FixedHarness:
             "sdk_entry_hash": self._snapshot["sdk_entry_hash"],
             "runtime_hash": self._snapshot["runtime_hash"],
         }
+        route_detail = {
+            "detail_level": "fixture",
+            "candidate_invocation_observed": True,
+            "accepted_command_count": 1,
+            "simulation_time_progressed": True,
+            "state_route_observed": True,
+            "verified": outcome != "route_fail",
+            "physics_progress": outcome != "route_fail",
+        }
+        route["route_evidence"] = route_detail
+        route["route_evidence_hash"] = content_hash(canonical_bytes(route_detail))
         video = _video_evidence(invocation, complete=outcome != "video_fail")
         if outcome == "forged_video":
             video = ClosedEvaluationVideo(
@@ -210,8 +238,42 @@ class _FixedHarness:
             guard_results=guards,
             sdk_route_evidence=route,
             video_evidence=video,
+            criterion_measurements=(
+                {
+                    criterion["criterion_id"]: HarnessCriterionMeasurement(
+                        measurement_id=criterion["measurement"]["measurement_id"],
+                        metric=criterion["metric"],
+                        entity=criterion["measurement"]["entity"],
+                        unit=criterion["measurement"]["unit"],
+                        frame=criterion["measurement"]["frame"],
+                        samples=(
+                            MeasurementSample(
+                                0.0,
+                                0.5
+                                if outcome == "second_fail" and index == 1
+                                else value,
+                            ),
+                            MeasurementSample(
+                                0.2,
+                                0.5
+                                if outcome == "second_fail" and index == 1
+                                else value,
+                            ),
+                        ),
+                        elapsed_s=0.2,
+                    )
+                    for index, criterion in enumerate(invocation.criteria)
+                }
+                if len(invocation.criteria) > 1 else None
+            ),
         )
-        session = _Session(observation)
+        session = _Session(
+            observation,
+            invoke_error=(
+                HarnessInfrastructureError("translation failed")
+                if outcome == "invoke_infra" else None
+            ),
+        )
         self.sessions.append(session)
         return session
 
@@ -220,6 +282,115 @@ class _ValidationTestVideoEncoder:
     def encode(self, _profile, frames):
         payload = b"validation-test-video\0" + b"|".join(frame.rgb for frame in frames)
         return EncodedVideo(OpaqueVideoHandle("validation-test-video"), payload)
+
+
+class _RouteRecordingSession:
+    evidence_scope = "TEST_FIXTURE_ONLY"
+    robot_model_id = "fixture-robot"
+    robot_configuration_id = "fixture-configuration"
+
+    def __init__(self, evidence: ValidationEvidence):
+        self._evidence = evidence
+        self.stop_calls = 0
+
+    @property
+    def sdk(self):
+        return object()
+
+    @property
+    def simulation_time_s(self):
+        return 0.1
+
+    def reset(self, *, phase, execution_id, initial_state):
+        return None
+
+    def start_external_recording(self, *, phase, execution_id):
+        return None
+
+    def stop_external_recording(self):
+        self.stop_calls += 1
+        return (
+            RGBFrame(0.0, 1, 1, b"\x00\x00\x00"),
+            RGBFrame(0.1, 1, 1, b"\x01\x01\x01"),
+        )
+
+    def validation_evidence(self, invocation):
+        return self._evidence
+
+    def demo_evidence(self, task_id):
+        return {}
+
+    def invoke(self, candidate, capability_id, arguments):
+        return {}
+
+
+def _recording_route() -> EvaluationRoute:
+    route_hash = content_hash(b"route-evidence-fixture")
+    return EvaluationRoute(
+        run_id="route-evidence-run",
+        integration_manifest_hash=route_hash,
+        sdk_entry_hash=content_hash(b"route-evidence-sdk"),
+        runtime_hash=content_hash(b"route-evidence-runtime"),
+        simulation_profile_hash=content_hash(b"route-evidence-profile"),
+    )
+
+
+def _recording_invocation() -> HarnessInvocation:
+    return HarnessInvocation(
+        capability_id="fixture-capability",
+        criterion_id="fixture-criterion",
+        case_id="fixture-case",
+        inputs={},
+        initial_state={},
+        repetition=1,
+        measurement={
+            "measurement_id": "fixture-measurement",
+            "entity": "fixture-entity",
+            "unit": "none",
+            "frame": "none",
+        },
+        metric="fixture-metric",
+        threshold={"comparator": "<=", "value": 1.0},
+        dwell_s=0.1,
+        timeout_s=1.0,
+        aggregation="ALL",
+        guard_ids=(),
+        run_snapshot_hash=content_hash(b"route-evidence-snapshot"),
+        candidate_source_hash=content_hash(b"route-evidence-candidate"),
+        suite_hash=content_hash(b"route-evidence-suite"),
+        execution_attempt=1,
+    )
+
+
+def _recording_harness(session: _RouteRecordingSession, route: EvaluationRoute) -> RecordingValidationHarness:
+    profile = FrozenVideoProfile(
+        profile_id="route-evidence-video",
+        profile_version="1.0.0",
+        camera="external-evaluation",
+        view="robot-and-resource",
+        fps=10,
+        width=1,
+        height=1,
+        container="fake",
+        codec="fake-rgb",
+    )
+    return RecordingValidationHarness(
+        session,
+        profile,
+        lambda _phase, _execution_id: _ValidationTestVideoEncoder(),
+        route,
+        {},
+    )
+
+
+def _route_validation_evidence(route_detail) -> ValidationEvidence:
+    return ValidationEvidence(
+        samples=(MeasurementSample(0.0, 0.1), MeasurementSample(0.1, 0.1)),
+        elapsed_s=0.1,
+        guard_results={},
+        sdk_route_verified=True,
+        route_evidence=route_detail,
+    )
 
 
 def _video_evidence(invocation, *, complete: bool) -> ClosedEvaluationVideo:
@@ -246,6 +417,10 @@ def _video_evidence(invocation, *, complete: bool) -> ClosedEvaluationVideo:
             "phase": "VALIDATION_B",
             "capability_id": invocation.capability_id,
             "criterion_id": invocation.criterion_id,
+            **(
+                {"criterion_ids": "|".join(invocation.criterion_ids)}
+                if len(invocation.criterion_ids) > 1 else {}
+            ),
             "case_id": invocation.case_id,
             "repetition": str(invocation.repetition),
             "run_snapshot_hash": invocation.run_snapshot_hash,
@@ -286,6 +461,62 @@ def _blue_ready(design: dict, design_seal: dict, *, input_name: str = "target", 
     result = BlueLineRunner(FixtureJsonGenerator([spec])).run(design, design_seal, STANDARDS, MEASUREMENTS, POLICY)
     assert result.status == "READY" and result.validation_suite and result.suite_seal
     return result
+
+
+def _multi_blue_ready(design: dict, design_seal: dict):
+    spec = {
+        "capability_specs": [{
+            "capability_id": "reach-joint-target",
+            "criteria": [
+                {
+                    "criterion_id": "joint-arrival",
+                    "measurement_id": "joint-error",
+                    "metric": "max_joint_error",
+                    "comparator": "<=",
+                    "threshold_value": 0.05,
+                    "dwell_s": 0.2,
+                    "timeout_s": 2.0,
+                    "aggregation": "ALL",
+                },
+                {
+                    "criterion_id": "joint-speed",
+                    "measurement_id": "joint-speed",
+                    "metric": "max_joint_speed",
+                    "comparator": "<=",
+                    "threshold_value": 0.1,
+                    "dwell_s": 0.2,
+                    "timeout_s": 2.0,
+                    "aggregation": "ALL",
+                },
+            ],
+            "cases": [{"case_id": "nominal", "initial_state": {"joint": 0.0}, "inputs": {"target": 0.3}}],
+            "lineage": {"kind": "COPIED", "standard_id": "joint-arrival", "material": False},
+            "false_pass_analysis": [
+                {"risk_id": "physical-state-not-command-receipt", "guard_id": "physical-state-not-command-receipt"}
+            ],
+        }],
+    }
+    result = BlueLineRunner(FixtureJsonGenerator([spec, copy.deepcopy(spec), copy.deepcopy(spec)])).run(
+        design, design_seal, STANDARDS, MULTI_MEASUREMENTS, POLICY
+    )
+    assert result.status == "READY" and result.validation_spec and result.validation_suite
+    return result
+
+
+def _multi_submission():
+    design, design_seal = _sealed_design()
+    blue = _multi_blue_ready(design, design_seal)
+    stage2 = Stage2Runner(FixtureJsonGenerator([{"action": "submit", "capability.py": _source()}])).run(
+        design, design_seal, blue.stage2_authorization, _bundle()
+    )
+    assert stage2.status == "SUBMITTED"
+    a_result = ValidationARunner(PROFILE).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, stage2.implementation_bundle_hash,
+    )
+    assert a_result.status == "PASS"
+    return design, design_seal, blue, a_result
 
 
 def _stage2_submission(source: str = _source()):
@@ -507,6 +738,42 @@ def test_validation_b_requires_handle_lineage_sdk_video_and_candidate_exception_
     assert tampered is not None
 
 
+def test_validation_b_typed_session_infrastructure_is_not_candidate_failure() -> None:
+    design, design_seal, _stage2, blue, a_result = _a_result(_source("PASS"))
+    context = _context(design, design_seal, blue)
+    result = ValidationBRunner(_FixedHarness(context.run_snapshot, ["invoke_infra", "pass"])).run(
+        bind_candidate_to_suite(a_result, blue.suite_hash), context
+    )
+    assert result.status == "INFRASTRUCTURE_ERROR"
+    assert result.executions[0]["failure_codes"] == ["HARNESS_INFRASTRUCTURE"]
+    assert "CANDIDATE_EXCEPTION" not in result.executions[0]["failure_codes"]
+
+
+@pytest.mark.parametrize(
+    ("outcome", "expected_status"),
+    [("pass", "PASS"), ("second_fail", "FAIL")],
+)
+def test_validation_b_runs_all_criteria_in_one_episode(outcome: str, expected_status: str) -> None:
+    design, design_seal, blue, a_result = _multi_submission()
+    context = _context(design, design_seal, blue)
+    harness = _FixedHarness(context.run_snapshot, [outcome, outcome])
+    result = ValidationBRunner(harness).run(
+        bind_candidate_to_suite(a_result, blue.suite_hash), context
+    )
+    assert result.status == expected_status
+    assert len(harness.sessions) == 2
+    assert all(len(session.invoke_calls) == 1 for session in harness.sessions)
+    assert all(len(invocation.criteria) == 2 for invocation in harness.invocations)
+    assert len(result.executions) == 2
+    assert all(execution["criterion_ids"] == ["joint-arrival", "joint-speed"] for execution in result.executions)
+    if expected_status == "FAIL":
+        assert all(
+            "THRESHOLD" in execution["failure_codes"]
+            and execution["criterion_results"][1]["verdict"] == "FAIL"
+            for execution in result.executions
+        )
+
+
 def test_validation_b_routes_candidate_execution_through_typed_session() -> None:
     design, design_seal, _stage2, blue, a_result = _a_result(_source("PASS"))
     context = _context(design, design_seal, blue)
@@ -517,6 +784,134 @@ def test_validation_b_routes_candidate_execution_through_typed_session() -> None
     assert result.status == "PASS"
     assert len(harness.sessions) == 2
     assert all(len(session.invoke_calls) == 1 for session in harness.sessions)
+    route = result.executions[0]["sdk_route_evidence"]
+    assert route["route_evidence"] == {
+        "detail_level": "fixture",
+        "candidate_invocation_observed": True,
+        "accepted_command_count": 1,
+        "simulation_time_progressed": True,
+        "state_route_observed": True,
+        "verified": True,
+        "physics_progress": True,
+    }
+    assert route["route_evidence_hash"] == content_hash(canonical_bytes(route["route_evidence"]))
+    tampered_report = copy.deepcopy(result.report)
+    tampered_report["executions"][0]["sdk_route_evidence"]["route_evidence"]["physics_progress"] = False
+    assert content_hash(canonical_bytes(tampered_report)) != result.report_hash
+
+
+def test_validation_b_maps_real_so_guard_shape_to_canonical_guards() -> None:
+    snapshot = {
+        "rim_hash": content_hash(b"so-rim"),
+        "sdk_entry_hash": content_hash(b"so-sdk"),
+        "runtime_hash": content_hash(b"so-runtime"),
+    }
+    route_detail = {
+        "candidate_invocation_observed": True,
+        "accepted_command_count": 1,
+        "simulation_time_progressed": True,
+        "state_route_observed": True,
+        "verified": True,
+    }
+    observation = HarnessMeasurement(
+        measurement_id="so-ee-position-error",
+        metric="tip_position_error_m",
+        entity="gripper",
+        unit="m",
+        frame="robot_base",
+        samples=(MeasurementSample(0.0, 0.01), MeasurementSample(0.5, 0.01)),
+        elapsed_s=0.5,
+        guard_results={
+            "trusted-external-verdict": True,
+            "so-safety-gate": True,
+            "finite-physical-state": True,
+            "sdk-route-verified": True,
+            "sdk-readback-observed": True,
+            "physics-progress-observed": True,
+        },
+        sdk_route_evidence={
+            "verified": True,
+            "rim_hash": snapshot["rim_hash"],
+            "sdk_entry_hash": snapshot["sdk_entry_hash"],
+            "runtime_hash": snapshot["runtime_hash"],
+            "route_evidence": route_detail,
+            "route_evidence_hash": content_hash(canonical_bytes(route_detail)),
+        },
+        video_evidence=_video_evidence(_recording_invocation(), complete=True),
+    )
+    passed, failures = _evaluate_measurement(
+        observation,
+        {
+            "criterion_id": "t01-position-error",
+            "measurement": {
+                "measurement_id": "so-ee-position-error",
+                "entity": "gripper",
+                "unit": "m",
+                "frame": "robot_base",
+            },
+            "metric": "tip_position_error_m",
+            "threshold": {"comparator": "<=", "value": 0.02},
+            "dwell_s": 0.5,
+            "timeout_s": 8.0,
+            "aggregation": "ALL",
+            "guard_ids": [
+                "sdk_receipt_not_completion",
+                "candidate_self_report_not_truth",
+                "finite_fresh_physical_state",
+                "entity_unit_frame_match",
+                "no_forbidden_collision_or_safety_violation",
+            ],
+        },
+        snapshot,
+    )
+    assert passed
+    assert failures == []
+
+
+def test_recording_validation_harness_retains_private_route_detail_and_detects_tamper() -> None:
+    expected_detail = {
+        "detail_level": "session-json",
+        "candidate_invocation_observed": True,
+        "accepted_command_count": 1,
+        "simulation_time_progressed": True,
+        "state_route_observed": True,
+        "verified": True,
+        "goal_writes_observed": 1,
+        "physics_steps": 2,
+        "physics_progress": True,
+    }
+    source_detail = copy.deepcopy(expected_detail)
+    evidence = _route_validation_evidence(source_detail)
+    source_detail["physics_steps"] = 99
+    session = _RouteRecordingSession(evidence)
+    route = _recording_route()
+    measurement = _recording_harness(session, route).open(_recording_invocation()).collect()
+
+    sdk_route = measurement.sdk_route_evidence
+    assert sdk_route["route_evidence"] == expected_detail
+    assert sdk_route["route_evidence_hash"] == content_hash(canonical_bytes(expected_detail))
+    assert session.stop_calls == 1
+    tampered = copy.deepcopy(dict(sdk_route))
+    tampered["route_evidence"]["physics_steps"] = 99
+    assert tampered["route_evidence_hash"] != content_hash(canonical_bytes(tampered["route_evidence"]))
+    assert not _route_evidence_is_valid(
+        tampered,
+        {
+            "rim_hash": route.integration_manifest_hash,
+            "sdk_entry_hash": route.sdk_entry_hash,
+            "runtime_hash": route.runtime_hash,
+        },
+    )
+
+
+@pytest.mark.parametrize("route_detail", [None, {}, {"physics_progress": False}])
+def test_recording_validation_harness_rejects_verified_incomplete_route_detail(route_detail) -> None:
+    session = _RouteRecordingSession(_route_validation_evidence(route_detail))
+    harness = _recording_harness(session, _recording_route())
+    with pytest.raises(HarnessInfrastructureError) as error:
+        harness.open(_recording_invocation()).collect()
+    assert error.value.video_evidence is not None
+    assert session.stop_calls == 1
 
 
 def test_validation_b_rejects_self_resealed_rules_without_blue_line_ready_origin() -> None:

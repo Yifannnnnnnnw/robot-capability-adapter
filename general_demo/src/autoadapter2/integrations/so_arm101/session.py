@@ -28,9 +28,14 @@ from xml.etree import ElementTree as ET
 
 from ...demo import ValidationEvidence
 from ...evaluation import FrozenVideoProfile, RGBFrame
-from ...validation import HarnessInvocation, MeasurementSample
+from ...validation import HarnessInfrastructureError, HarnessInvocation, MeasurementSample
 from .feetech_protocol import MOTOR_NAMES
-from .readiness import ReadinessError, _real_sdk_factory
+from .readiness import (
+    ReadinessError,
+    _expected_ticks_from_named_qpos,
+    _real_sdk_factory,
+    public_positions_to_ticks,
+)
 from .translation import FeetechPTYTranslation, MuJoCoSO101Backend
 
 
@@ -61,13 +66,16 @@ _DEMO_METRIC_FIELDS = (
     "other_object_contact_count",
     "cube_center_planar_goal_error_m",
     "cube_table_supported",
+    "target_contact_truth",
     "cube_linear_speed_m_s",
     "cube_angular_speed_rad_s",
     "cube_height_increase_m",
     "gripper_relative_cube_slip_m",
     "cube_held",
+    "cube_held_truth",
     "specified_button_displacement_m",
     "specified_button_activation_dwell_s",
+    "specified_button_activation_truth",
     "other_button_activation_count",
 )
 
@@ -421,6 +429,7 @@ class SOArm101EvaluationRobotSession:
         self._reset_goal_writes = 0
         self._last_invocation_start_s = 0.0
         self._last_truth: dict[str, Any] | None = None
+        self._candidate_invocation_observed = False
 
         try:
             if backend_factory is None:
@@ -634,6 +643,7 @@ class SOArm101EvaluationRobotSession:
             "other_button_activation_count": 0,
         }
         self._last_invocation_start_s = self._simulation_time_s
+        self._candidate_invocation_observed = False
         self._last_truth = self._sample_truth()
         self._episode_samples.append(copy.deepcopy(self._last_truth))
         self._reset_goal_writes = self._goal_writes()
@@ -839,6 +849,12 @@ class SOArm101EvaluationRobotSession:
                     str(name): _number(value, f"backend state {field}.{name}")
                     for name, value in raw_named.items()
                 }
+        raw_gripper_range = state.get("gripper_control_range")
+        if isinstance(raw_gripper_range, Sequence) and len(raw_gripper_range) == 2:
+            result["gripper_control_range"] = [
+                _number(value, f"backend state gripper_control_range[{index}]")
+                for index, value in enumerate(raw_gripper_range)
+            ]
         return result
 
     def _goal_writes(self) -> int:
@@ -887,17 +903,28 @@ class SOArm101EvaluationRobotSession:
         if not callable(invoke_method):
             raise SOArm101SessionError("candidate is not a Framework-validated candidate handle")
         before_goal = self._goal_writes()
+        self._candidate_invocation_observed = True
+        candidate_error: Exception | None = None
         try:
             result = invoke_method(capability_id, copy.deepcopy(dict(arguments)), self.sdk)
-        finally:
+        except Exception as exc:
+            candidate_error = exc
+        try:
             # Candidate exceptions still receive a terminal physics/capture
             # boundary.  The candidate itself gets no backend or MuJoCo handle.
-            self._wait_for_goal_traffic(before_goal)
+            if candidate_error is None or self._goal_writes() > before_goal:
+                self._wait_for_goal_traffic(before_goal)
             self._advance(self._invocation_window_s)
             # Validation B collects the post-invocation observation window.  A
             # direct Harness call starts at the current time; a session.invoke
             # call has already consumed its bounded command/physics window.
             self._last_invocation_start_s = self.simulation_time_s
+        except Exception as exc:
+            raise HarnessInfrastructureError(
+                "SO-ARM101 Translation/MuJoCo execution failed",
+            ) from exc
+        if candidate_error is not None:
+            raise candidate_error
         if not isinstance(result, Mapping):
             raise SOArm101SessionError("candidate result must be a mapping")
         return copy.deepcopy(dict(result))
@@ -907,14 +934,19 @@ class SOArm101EvaluationRobotSession:
         if not isinstance(invocation, HarnessInvocation):
             raise SOArm101SessionError("validation evidence requires a typed HarnessInvocation")
         start = self._last_invocation_start_s if self._last_invocation_start_s <= self.simulation_time_s else self.simulation_time_s
-        duration = max(self._invocation_window_s, float(invocation.dwell_s))
-        duration = min(duration, float(invocation.timeout_s))
+        criteria = tuple(invocation.criteria)
+        if not criteria:
+            criteria = ({"metric": invocation.metric, "dwell_s": invocation.dwell_s, "timeout_s": invocation.timeout_s},)
+        dwell_s = max(float(item.get("dwell_s", invocation.dwell_s)) for item in criteria)
+        timeout_s = min(float(item.get("timeout_s", invocation.timeout_s)) for item in criteria)
+        duration = max(self._invocation_window_s, dwell_s)
+        duration = min(duration, timeout_s)
         if duration < 0:
             raise SOArm101SessionError("validation timeout/dwell is invalid")
-        # Validation B invokes the candidate directly with ``session.sdk``;
-        # collect must therefore establish the same PTY boundary before it
-        # advances physics and evaluates the route proof.
-        self._wait_for_goal_traffic(self._reset_goal_writes)
+        # The typed Session invocation owns the SDK/PTY boundary; collect only
+        # advances the shared post-invocation observation window.
+        if self._goal_writes() > self._reset_goal_writes:
+            self._wait_for_goal_traffic(self._reset_goal_writes)
         self._advance(duration)
         try:
             observation = self._follower.get_observation() if self._follower is not None else None
@@ -924,11 +956,33 @@ class SOArm101EvaluationRobotSession:
         selected = [item for item in self._episode_samples if float(item.get("time_s", 0.0)) >= start - 1e-12]
         if not selected:
             selected = [self._last_truth or self._sample_truth()]
-        samples: list[MeasurementSample] = []
-        for item in selected:
-            value = self._metric_value(item, invocation.metric)
-            samples.append(MeasurementSample(max(0.0, float(item["time_s"]) - start), value))
+        samples_by_criterion: dict[str, tuple[MeasurementSample, ...]] = {}
+        for criterion in criteria:
+            criterion_id = str(criterion.get("criterion_id", invocation.criterion_id))
+            metric = str(criterion.get("metric", invocation.metric))
+            samples_by_criterion[criterion_id] = tuple(
+                MeasurementSample(
+                    max(0.0, float(item["time_s"]) - start),
+                    self._metric_value(item, metric),
+                )
+                for item in selected
+            )
+        primary_id = str(criteria[0].get("criterion_id", invocation.criterion_id))
+        samples = samples_by_criterion[primary_id]
         route_verified, route_detail = self._route_verification()
+        present_position_consistent, max_tick_error = self._present_position_qpos_consistency(observation)
+        route_verified = bool(route_verified and present_position_consistent)
+        route_detail.update({
+            "candidate_invocation_observed": self._candidate_invocation_observed,
+            "accepted_command_count": route_detail["goal_writes_observed"],
+            "simulation_time_progressed": self.simulation_time_s > start,
+            "state_route_observed": bool(sdk_readback_observed and present_position_consistent),
+            "present_position_qpos_consistent": present_position_consistent,
+            "present_position_qpos_max_error_ticks": (
+                max_tick_error if math.isfinite(max_tick_error) else None
+            ),
+            "verified": route_verified,
+        })
         guards = self._guard_results()
         guards["sdk-route-verified"] = route_verified
         guards["sdk-readback-observed"] = sdk_readback_observed
@@ -938,11 +992,21 @@ class SOArm101EvaluationRobotSession:
             elapsed_s=max(0.0, self.simulation_time_s - start),
             guard_results=guards,
             sdk_route_verified=route_verified,
+            route_evidence=route_detail,
+            criterion_samples=(
+                samples_by_criterion
+                if invocation.criteria or invocation.criterion_id
+                else None
+            ),
         )
 
     def _metric_value(self, truth: Mapping[str, Any], metric: str) -> float:
-        if metric in truth and _finite(truth[metric]):
-            return float(truth[metric])
+        if metric in truth:
+            value = truth[metric]
+            if metric == "cube_table_supported" and isinstance(value, bool):
+                return 1.0 if value else 0.0
+            if _finite(value):
+                return float(value)
         measurements = truth.get("measurements")
         if isinstance(measurements, Mapping) and metric in measurements and _finite(measurements[metric]):
             return float(measurements[metric])
@@ -957,6 +1021,33 @@ class SOArm101EvaluationRobotSession:
         if alias and alias in truth and _finite(truth[alias]):
             return float(truth[alias])
         raise SOArm101SessionError(f"independent MuJoCo truth does not provide metric {metric!r}")
+
+    def _present_position_qpos_consistency(
+        self,
+        observation: Mapping[str, Any] | None,
+    ) -> tuple[bool, float]:
+        if not isinstance(observation, Mapping):
+            return False, math.inf
+        try:
+            state = self._numeric_backend_snapshot()
+            named_qpos = state.get("named_qpos")
+            gripper_range = state.get("gripper_control_range")
+            if not isinstance(named_qpos, Mapping) or not isinstance(gripper_range, Sequence):
+                return False, math.inf
+            sdk_ticks = public_positions_to_ticks(dict(observation))
+            private_ticks = _expected_ticks_from_named_qpos(
+                {str(name): float(value) for name, value in named_qpos.items()},
+                gripper_range=(float(gripper_range[0]), float(gripper_range[1])),
+                gripper_tick_increases_qpos=self._gripper_tick_increases_qpos,
+            )
+            errors = [
+                abs(sdk_ticks[motor_id] - private_ticks[motor_id])
+                for motor_id in private_ticks
+            ]
+            maximum = float(max(errors, default=math.inf))
+            return maximum <= 1, maximum
+        except Exception:
+            return False, math.inf
 
     def _route_verification(self) -> tuple[bool, dict[str, Any]]:
         current = self._numeric_backend_snapshot()
@@ -1077,6 +1168,13 @@ class SOArm101EvaluationRobotSession:
         if self._truth_provider is not None:
             raw = self._truth_provider(self)
             truth = _deepcopy_mapping(raw, "injected truth")
+            for target, source in (
+                ("target_contact_truth", "intended_tip_face_contact"),
+                ("cube_held_truth", "cube_held"),
+                ("specified_button_activation_truth", "specified_button_active"),
+            ):
+                if target not in truth and source in truth:
+                    truth[target] = 1.0 if bool(truth[source]) else 0.0
             truth.setdefault("time_s", self.simulation_time_s)
             truth.setdefault(
                 "finite_state",
@@ -1166,6 +1264,10 @@ class SOArm101EvaluationRobotSession:
             else 0.0
         )
         cube_held = bool(cube_contact and cube_position[2] > cube_table_z + cube_half_height + 0.01 and slip <= 0.005)
+        cube_table_supported = bool(
+            table_support or abs(cube_position[2] - (cube_table_z + cube_half_height)) <= 0.004
+        )
+        specified_button_active = button_displacement >= 0.003
         qpos_state = [float(value) for value in data.qpos]
         qvel_state = [float(value) for value in data.qvel]
         ctrl_state = [float(value) for value in data.ctrl]
@@ -1193,10 +1295,13 @@ class SOArm101EvaluationRobotSession:
             "cube_height_increase_m": cube_height_increase,
             "gripper_relative_cube_slip_m": slip,
             "cube_held": cube_held,
-            "cube_table_supported": table_support or abs(cube_position[2] - (cube_table_z + cube_half_height)) <= 0.004,
+            "cube_held_truth": 1.0 if cube_held else 0.0,
+            "cube_table_supported": cube_table_supported,
+            "target_contact_truth": 1.0 if face_contact else 0.0,
             "intended_tip_face_contact": face_contact,
             "specified_button_displacement_m": button_displacement,
-            "specified_button_active": button_displacement >= 0.003,
+            "specified_button_active": specified_button_active,
+            "specified_button_activation_truth": 1.0 if specified_button_active else 0.0,
             "other_button_activation_count": 0,
             "other_object_contact_count": other_object_contacts,
             "contacts": contacts,

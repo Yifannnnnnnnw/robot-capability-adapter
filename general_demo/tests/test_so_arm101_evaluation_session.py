@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -19,6 +20,7 @@ from autoadapter2.integrations.so_arm101.session import (
     SOArm101EvaluationRobotSession,
     _load_frame_capture_factory,
 )
+from autoadapter2.integrations.so_arm101.feetech_protocol import MOTOR_NAMES
 from autoadapter2.integrations.so_arm101 import session as so_session
 from autoadapter2.validation import HarnessInvocation
 
@@ -46,18 +48,18 @@ class _Backend:
     def __init__(self, order: list[str]) -> None:
         self.order = order
         self.time = 0.0
-        self.qpos = [0.0, 0.0]
-        self.qvel = [0.0, 0.0]
-        self.ctrl = [0.0, 0.0]
+        self.qpos = [0.0] * len(MOTOR_NAMES)
+        self.qvel = [0.0] * len(MOTOR_NAMES)
+        self.ctrl = [0.0] * len(MOTOR_NAMES)
         self.reset_count = 0
         self.closed = False
 
     def reset(self) -> None:
         self.reset_count += 1
         self.time = 0.0
-        self.qpos[:] = [0.0, 0.0]
-        self.qvel[:] = [0.0, 0.0]
-        self.ctrl[:] = [0.0, 0.0]
+        self.qpos[:] = [0.0] * len(MOTOR_NAMES)
+        self.qvel[:] = [0.0] * len(MOTOR_NAMES)
+        self.ctrl[:] = [0.0] * len(MOTOR_NAMES)
 
     def set_goal_ticks(self, _values: dict[int, int]) -> None:
         raise AssertionError("unit backend must not receive direct tick goals")
@@ -75,6 +77,9 @@ class _Backend:
             "qpos": list(self.qpos),
             "qvel": list(self.qvel),
             "ctrl": list(self.ctrl),
+            "named_qpos": dict(zip(MOTOR_NAMES, self.qpos, strict=True)),
+            "named_ctrl": dict(zip(MOTOR_NAMES, self.ctrl, strict=True)),
+            "gripper_control_range": [0.0, 1.0],
             "time": self.time,
         }
 
@@ -131,7 +136,14 @@ class _Follower:
         return dict(action)
 
     def get_observation(self) -> dict[str, float]:
-        return {"shoulder_pan.pos": self.translation.backend.qpos[0]}
+        return {
+            f"{name}.pos": (
+                math.degrees(self.translation.backend.qpos[index])
+                if name != "gripper"
+                else self.translation.backend.qpos[index] * 100.0
+            )
+            for index, name in enumerate(MOTOR_NAMES)
+        }
 
 
 class _Candidate:

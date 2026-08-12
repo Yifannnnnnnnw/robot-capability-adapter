@@ -20,6 +20,7 @@ from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ContractError
 from ..foundation.hashing import content_hash, is_content_hash
 from ..validation import (
+    HarnessCriterionMeasurement,
     HarnessInfrastructureError,
     HarnessInvocation,
     HarnessMeasurement,
@@ -75,6 +76,8 @@ class ValidationEvidence:
     elapsed_s: float
     guard_results: Mapping[str, bool]
     sdk_route_verified: bool
+    route_evidence: Mapping[str, Any] | None = None
+    criterion_samples: Mapping[str, tuple[MeasurementSample, ...]] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.samples, tuple) or not all(
@@ -95,6 +98,28 @@ class ValidationEvidence:
             raise ContractError("validation guard_results must be a boolean mapping")
         if not isinstance(self.sdk_route_verified, bool):
             raise ContractError("sdk_route_verified must be boolean")
+        if self.route_evidence is not None:
+            if not isinstance(self.route_evidence, Mapping):
+                raise ContractError("route_evidence must be a JSON object")
+            detail = copy.deepcopy(dict(self.route_evidence))
+            try:
+                canonical_bytes(detail)
+            except Exception as exc:
+                raise ContractError("route_evidence must be canonical JSON") from exc
+            object.__setattr__(self, "route_evidence", detail)
+        if self.criterion_samples is not None:
+            if not isinstance(self.criterion_samples, Mapping):
+                raise ContractError("criterion_samples must be a mapping")
+            samples_by_criterion = copy.deepcopy(dict(self.criterion_samples))
+            if any(
+                not isinstance(key, str)
+                or not key.strip()
+                or not isinstance(value, tuple)
+                or not all(isinstance(item, MeasurementSample) for item in value)
+                for key, value in samples_by_criterion.items()
+            ):
+                raise ContractError("criterion_samples must map IDs to MeasurementSample tuples")
+            object.__setattr__(self, "criterion_samples", samples_by_criterion)
 
 
 @runtime_checkable
@@ -173,6 +198,18 @@ def _recording_bindings(
     return result
 
 
+def _invocation_criterion_ids(invocation: HarnessInvocation) -> tuple[str, ...]:
+    if invocation.criterion_ids:
+        return tuple(invocation.criterion_ids)
+    if invocation.criteria:
+        return tuple(
+            str(item["criterion_id"])
+            for item in invocation.criteria
+            if isinstance(item, Mapping) and isinstance(item.get("criterion_id"), str)
+        )
+    return (invocation.criterion_id,) if invocation.criterion_id else ()
+
+
 def _close_recording(
     session: EvaluationRobotSession,
     recorder: EvaluationVideoRecorder,
@@ -191,6 +228,100 @@ def _close_recording(
     if not isinstance(closed, ClosedEvaluationVideo):
         raise HarnessInfrastructureError("evaluation video recorder returned an invalid result")
     return closed
+
+
+def _route_evidence(
+    evidence: ValidationEvidence,
+    route: EvaluationRoute,
+) -> dict[str, Any]:
+    """Retain session route JSON while binding known lineage fields to this run."""
+
+    if evidence.route_evidence is None:
+        if evidence.sdk_route_verified:
+            raise ContractError("verified SDK route evidence is missing route detail")
+        return {
+            "detail_level": "minimal",
+            "run_id": route.run_id,
+            "integration_manifest_hash": route.integration_manifest_hash,
+            "sdk_entry_hash": route.sdk_entry_hash,
+            "runtime_hash": route.runtime_hash,
+            "simulation_profile_hash": route.simulation_profile_hash,
+        }
+    detail = copy.deepcopy(dict(evidence.route_evidence))
+    if evidence.sdk_route_verified and not detail:
+        raise ContractError("verified SDK route evidence is missing route detail")
+    expected = {
+        "run_id": route.run_id,
+        "rim_hash": route.integration_manifest_hash,
+        "integration_manifest_hash": route.integration_manifest_hash,
+        "sdk_entry_hash": route.sdk_entry_hash,
+        "runtime_hash": route.runtime_hash,
+        "simulation_profile_hash": route.simulation_profile_hash,
+    }
+    for key, expected_value in expected.items():
+        if key in detail and detail[key] != expected_value:
+            raise ContractError(f"route_evidence {key} does not match the EvaluationRoute")
+    if "verified" in detail and detail["verified"] is not evidence.sdk_route_verified:
+        raise ContractError("route_evidence verified status is inconsistent")
+    if evidence.sdk_route_verified:
+        required_detail = {
+            "candidate_invocation_observed",
+            "accepted_command_count",
+            "simulation_time_progressed",
+            "state_route_observed",
+            "verified",
+        }
+        if not required_detail.issubset(detail):
+            raise ContractError("verified SDK route evidence lacks required route detail")
+        if any(
+            not isinstance(detail[key], bool) or detail[key] is not True
+            for key in (
+                "candidate_invocation_observed",
+                "simulation_time_progressed",
+                "state_route_observed",
+                "verified",
+            )
+        ):
+            raise ContractError("verified SDK route evidence has an invalid route status")
+        accepted_command_count = detail["accepted_command_count"]
+        if (
+            isinstance(accepted_command_count, bool)
+            or not isinstance(accepted_command_count, (int, float))
+            or not math.isfinite(accepted_command_count)
+            or accepted_command_count <= 0
+        ):
+            raise ContractError("verified SDK route evidence has no accepted command")
+    if "physics_progress" in detail:
+        if not isinstance(detail["physics_progress"], bool):
+            raise ContractError("route_evidence physics_progress must be boolean")
+        if evidence.sdk_route_verified and not detail["physics_progress"]:
+            raise ContractError("verified SDK route evidence lacks physics progress")
+    for key in ("goal_writes_observed", "physics_steps"):
+        if key in detail:
+            value = detail[key]
+            if (
+                not isinstance(value, (int, float))
+                or isinstance(value, bool)
+                or not math.isfinite(value)
+                or value < 0
+            ):
+                raise ContractError(f"route_evidence {key} is invalid")
+            if evidence.sdk_route_verified and value <= 0:
+                raise ContractError(f"verified SDK route evidence has no {key}")
+    if evidence.sdk_route_verified and (any(
+        str(detail.get(key, "")).startswith("so-arm101")
+        for key in ("robot_model_id", "robot_configuration_id")
+    ) or "present_position_qpos_consistent" in detail):
+        max_error = detail.get("present_position_qpos_max_error_ticks")
+        if (
+            detail.get("present_position_qpos_consistent") is not True
+            or isinstance(max_error, bool)
+            or not isinstance(max_error, (int, float))
+            or not math.isfinite(max_error)
+            or max_error > 1
+        ):
+            raise ContractError("SO route evidence does not bind Present_Position to MuJoCo qpos")
+    return detail
 
 
 class _ValidationSession:
@@ -261,6 +392,7 @@ class RecordingValidationHarness:
         identity = {
             "capability_id": invocation.capability_id,
             "criterion_id": invocation.criterion_id,
+            "criterion_ids": list(_invocation_criterion_ids(invocation)),
             "case_id": invocation.case_id,
             "inputs": invocation.inputs,
             "initial_state": invocation.initial_state,
@@ -290,6 +422,7 @@ class RecordingValidationHarness:
                     {
                         "capability_id": invocation.capability_id,
                         "criterion_id": invocation.criterion_id,
+                        "criterion_ids": "|".join(_invocation_criterion_ids(invocation)),
                         "case_id": invocation.case_id,
                         "repetition": invocation.repetition,
                         "run_snapshot_hash": invocation.run_snapshot_hash,
@@ -327,22 +460,83 @@ class RecordingValidationHarness:
             )
         if evidence_error is not None or evidence is None:
             raise HarnessInfrastructureError("Validation evidence acquisition failed") from evidence_error
+        try:
+            route_evidence = _route_evidence(evidence, self._route)
+        except Exception as exc:
+            raise HarnessInfrastructureError("Validation route evidence is incomplete", video_evidence=closed) from exc
+        criteria = tuple(invocation.criteria)
+        if not criteria:
+            criteria = ({
+                "criterion_id": invocation.criterion_id,
+                "measurement": invocation.measurement,
+                "metric": invocation.metric,
+            },)
+        criterion_measurements: dict[str, HarnessCriterionMeasurement] = {}
+        for criterion in criteria:
+            if not isinstance(criterion, Mapping):
+                raise HarnessInfrastructureError(
+                    "Validation criterion evidence is invalid", video_evidence=closed
+                )
+            criterion_id = criterion.get("criterion_id")
+            measurement = criterion.get("measurement")
+            if (
+                not isinstance(criterion_id, str)
+                or not criterion_id
+                or not isinstance(criterion.get("metric"), str)
+                or not isinstance(measurement, Mapping)
+                or not all(
+                    isinstance(measurement.get(field), str)
+                    for field in ("measurement_id", "entity", "unit", "frame")
+                )
+            ):
+                raise HarnessInfrastructureError(
+                    "Validation criterion evidence is incomplete", video_evidence=closed
+                )
+            if evidence.criterion_samples is None:
+                if len(criteria) != 1:
+                    raise HarnessInfrastructureError(
+                        "multi-criterion validation evidence is missing per-criterion samples",
+                        video_evidence=closed,
+                    )
+                samples = evidence.samples
+            else:
+                samples = evidence.criterion_samples.get(criterion_id)
+            if not isinstance(samples, tuple) or not all(
+                isinstance(item, MeasurementSample) for item in samples
+            ):
+                raise HarnessInfrastructureError(
+                    "Validation criterion evidence has invalid samples", video_evidence=closed
+                )
+            criterion_measurements[criterion_id] = HarnessCriterionMeasurement(
+                measurement_id=measurement["measurement_id"],
+                metric=criterion["metric"],
+                entity=measurement["entity"],
+                unit=measurement["unit"],
+                frame=measurement["frame"],
+                samples=samples,
+                elapsed_s=evidence.elapsed_s,
+            )
+        primary_id = criteria[0]["criterion_id"]
+        primary = criterion_measurements[primary_id]
         return HarnessMeasurement(
-            measurement_id=invocation.measurement["measurement_id"],
-            metric=invocation.metric,
-            entity=invocation.measurement["entity"],
-            unit=invocation.measurement["unit"],
-            frame=invocation.measurement["frame"],
-            samples=evidence.samples,
-            elapsed_s=evidence.elapsed_s,
+            measurement_id=primary.measurement_id,
+            metric=primary.metric,
+            entity=primary.entity,
+            unit=primary.unit,
+            frame=primary.frame,
+            samples=primary.samples,
+            elapsed_s=primary.elapsed_s,
             guard_results=copy.deepcopy(dict(evidence.guard_results)),
             sdk_route_evidence={
                 "verified": evidence.sdk_route_verified,
                 "rim_hash": self._route.integration_manifest_hash,
                 "sdk_entry_hash": self._route.sdk_entry_hash,
                 "runtime_hash": self._route.runtime_hash,
+                "route_evidence": route_evidence,
+                "route_evidence_hash": content_hash(canonical_bytes(route_evidence)),
             },
             video_evidence=closed,
+            criterion_measurements=criterion_measurements,
         )
 
 

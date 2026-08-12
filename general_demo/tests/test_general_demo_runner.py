@@ -229,12 +229,35 @@ class _RobotSession:
         rgb = b"\x00" * (2 * 2 * 3)
         return (RGBFrame(0.0, 2, 2, rgb), RGBFrame(0.2, 2, 2, rgb))
 
-    def validation_evidence(self, _invocation) -> ValidationEvidence:
+    def validation_evidence(self, invocation) -> ValidationEvidence:
+        samples = (MeasurementSample(0.0, 0.01), MeasurementSample(0.2, 0.01))
+        criteria = tuple(getattr(invocation, "criteria", ()))
+        criterion_samples = {
+            criterion["criterion_id"]: samples
+            for criterion in criteria
+            if isinstance(criterion, dict)
+            and isinstance(criterion.get("criterion_id"), str)
+        } or None
+        route_detail = {
+            "robot_model_id": self.robot_model_id,
+            "candidate_invocation_observed": True,
+            "accepted_command_count": 1,
+            "simulation_time_progressed": True,
+            "state_route_observed": True,
+            "verified": True,
+        }
+        if self.robot_model_id == "so-arm101":
+            route_detail.update({
+                "present_position_qpos_consistent": True,
+                "present_position_qpos_max_error_ticks": 0,
+            })
         return ValidationEvidence(
-            samples=(MeasurementSample(0.0, 0.01), MeasurementSample(0.2, 0.01)),
+            samples=samples,
             elapsed_s=0.2,
             guard_results={"physical-state-not-command-receipt": True},
             sdk_route_verified=True,
+            route_evidence=route_detail,
+            criterion_samples=criterion_samples,
         )
 
     def demo_evidence(self, _task_id: str) -> dict[str, bool]:

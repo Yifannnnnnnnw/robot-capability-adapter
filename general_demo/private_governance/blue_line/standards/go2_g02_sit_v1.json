@@ -14,5 +14,5 @@
   ],
   "required_guard_ids": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_body_or_head_ground_contact"],
   "false_pass_requirements": ["sdk_receipt_not_completion", "candidate_self_report_not_truth", "finite_fresh_physical_state", "entity_unit_frame_match", "no_body_or_head_ground_contact"],
-  "approval_lineage": {"review_status": "HUMAN_APPROVED", "reviewed_by": "sol-5.6-ultra", "approval_id": "pvstd-go2-g02-sit-2026-08-12", "reviewed_at": "2026-08-12"}
+  "approval_lineage": {"review_status": "HUMAN_APPROVED", "reviewed_by": "project_owner", "approval_id": "pvstd-go2-g02-sit-2026-08-12", "reviewed_at": "2026-08-12", "approval_basis": "direct project-owner blanket approval in task thread 019fec37-f7e0-7cc0-b6df-243f33668c15 for the previously approved first-demo capability-validation threshold set."}
 }

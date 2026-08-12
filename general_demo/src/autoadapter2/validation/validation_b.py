@@ -39,6 +39,19 @@ class MeasurementSample:
 
 
 @dataclass(frozen=True)
+class HarnessCriterionMeasurement:
+    """One criterion's private scalar trace from a shared execution episode."""
+
+    measurement_id: str
+    metric: str
+    entity: str
+    unit: str
+    frame: str
+    samples: tuple[MeasurementSample, ...]
+    elapsed_s: float
+
+
+@dataclass(frozen=True)
 class HarnessMeasurement:
     measurement_id: str
     metric: str
@@ -50,6 +63,7 @@ class HarnessMeasurement:
     guard_results: Mapping[str, bool]
     sdk_route_evidence: Mapping[str, Any]
     video_evidence: ClosedEvaluationVideo
+    criterion_measurements: Mapping[str, HarnessCriterionMeasurement] | None = None
 
 
 @dataclass(frozen=True)
@@ -71,6 +85,8 @@ class HarnessInvocation:
     suite_hash: str
     execution_attempt: int
     criterion_id: str = ""
+    criterion_ids: tuple[str, ...] = ()
+    criteria: tuple[Mapping[str, Any], ...] = ()
 
 
 @runtime_checkable
@@ -525,30 +541,164 @@ def _comparison(value: float, comparator: str, threshold: float) -> bool:
     }[comparator]
 
 
-def _evaluate_measurement(
+def _route_evidence_is_valid(
+    route: Any,
+    snapshot: Mapping[str, Any],
+) -> bool:
+    if not isinstance(route, Mapping):
+        return False
+    expected = {
+        "verified": True,
+        "rim_hash": snapshot["rim_hash"],
+        "sdk_entry_hash": snapshot["sdk_entry_hash"],
+        "runtime_hash": snapshot["runtime_hash"],
+    }
+    if any(route.get(key) != value for key, value in expected.items()):
+        return False
+    detail = route.get("route_evidence")
+    if not isinstance(detail, Mapping) or not detail:
+        return False
+    try:
+        if route.get("route_evidence_hash") != content_hash(canonical_bytes(detail)):
+            return False
+    except Exception:
+        return False
+    detail_expected = {
+        "rim_hash": snapshot["rim_hash"],
+        "integration_manifest_hash": snapshot["rim_hash"],
+        "sdk_entry_hash": snapshot["sdk_entry_hash"],
+        "runtime_hash": snapshot["runtime_hash"],
+    }
+    if any(key in detail and detail[key] != value for key, value in detail_expected.items()):
+        return False
+    required_detail = {
+        "candidate_invocation_observed",
+        "accepted_command_count",
+        "simulation_time_progressed",
+        "state_route_observed",
+        "verified",
+    }
+    if not required_detail.issubset(detail):
+        return False
+    if any(
+        not isinstance(detail[key], bool) or detail[key] is not True
+        for key in (
+            "candidate_invocation_observed",
+            "simulation_time_progressed",
+            "state_route_observed",
+            "verified",
+        )
+    ):
+        return False
+    accepted_command_count = detail["accepted_command_count"]
+    if (
+        isinstance(accepted_command_count, bool)
+        or not isinstance(accepted_command_count, (int, float))
+        or not math.isfinite(accepted_command_count)
+        or accepted_command_count <= 0
+    ):
+        return False
+    if "physics_progress" in detail and detail["physics_progress"] is not True:
+        return False
+    is_so_route = any(
+        str(detail.get(key, "")).startswith("so-arm101")
+        for key in ("robot_model_id", "robot_configuration_id")
+    ) or "present_position_qpos_consistent" in detail
+    if is_so_route:
+        max_error = detail.get("present_position_qpos_max_error_ticks")
+        if (
+            detail.get("present_position_qpos_consistent") is not True
+            or isinstance(max_error, bool)
+            or not isinstance(max_error, (int, float))
+            or not math.isfinite(max_error)
+            or max_error > 1
+        ):
+            return False
+    if detail.get("verified") is not True:
+        return False
+    return True
+
+
+_CANONICAL_GUARD_ALIASES: dict[str, tuple[str, ...]] = {
+    "sdk_receipt_not_completion": ("sdk-route-verified",),
+    "candidate_self_report_not_truth": ("trusted-external-verdict",),
+    "finite_fresh_physical_state": ("finite-physical-state",),
+    "no_forbidden_collision_or_safety_violation": ("so-safety-gate",),
+    "no_body_or_head_ground_contact": (
+        "no-body-or-head-ground-contact",
+        "go2-ground-contact-free",
+        "ground-contact-free",
+    ),
+}
+
+
+def _measurement_for_criterion(
     observation: HarnessMeasurement,
     rule: Mapping[str, Any],
-    snapshot: Mapping[str, Any],
-) -> tuple[bool, list[str]]:
+) -> HarnessCriterionMeasurement | None:
+    criterion_measurements = observation.criterion_measurements
+    if isinstance(criterion_measurements, Mapping):
+        measurement = criterion_measurements.get(rule["criterion_id"])
+        return measurement if isinstance(measurement, HarnessCriterionMeasurement) else None
+    return HarnessCriterionMeasurement(
+        measurement_id=observation.measurement_id,
+        metric=observation.metric,
+        entity=observation.entity,
+        unit=observation.unit,
+        frame=observation.frame,
+        samples=observation.samples,
+        elapsed_s=observation.elapsed_s,
+    )
+
+
+def _guard_passes(
+    guard_id: str,
+    guard_results: Mapping[str, bool],
+    *,
+    measurement_reference_ok: bool,
+) -> bool:
+    if guard_id == "entity_unit_frame_match":
+        if guard_id in guard_results:
+            return guard_results[guard_id] is True and measurement_reference_ok
+        return measurement_reference_ok
+    if guard_id in guard_results:
+        return guard_results[guard_id] is True
+    aliases = _CANONICAL_GUARD_ALIASES.get(guard_id, ())
+    return bool(aliases) and all(guard_results.get(alias) is True for alias in aliases)
+
+
+def _evaluate_criterion(
+    observation: HarnessMeasurement,
+    rule: Mapping[str, Any],
+) -> tuple[bool, list[str], bool]:
     failures: list[str] = []
     measurement = rule["measurement"]
+    criterion_measurement = _measurement_for_criterion(observation, rule)
     if (
-        observation.measurement_id != measurement["measurement_id"]
-        or observation.metric != rule["metric"]
-        or observation.entity != measurement["entity"]
-        or observation.unit != measurement["unit"]
-        or observation.frame != measurement["frame"]
+        criterion_measurement is None
+        or criterion_measurement.measurement_id != measurement["measurement_id"]
+        or criterion_measurement.metric != rule["metric"]
+        or criterion_measurement.entity != measurement["entity"]
+        or criterion_measurement.unit != measurement["unit"]
+        or criterion_measurement.frame != measurement["frame"]
     ):
         failures.append("MEASUREMENT_REFERENCE")
-    if not _finite(observation.elapsed_s) or observation.elapsed_s > rule["timeout_s"]:
+    measurement_reference_ok = "MEASUREMENT_REFERENCE" not in failures
+    if criterion_measurement is None or not _finite(criterion_measurement.elapsed_s) or criterion_measurement.elapsed_s > rule["timeout_s"]:
         failures.append("TIMEOUT")
-    samples = observation.samples
+    samples = () if criterion_measurement is None else criterion_measurement.samples
     if not isinstance(samples, tuple) or not samples:
         failures.append("MEASUREMENT_SAMPLES")
         checked: list[MeasurementSample] = []
     else:
         checked = list(samples)
-        if any(not isinstance(sample, MeasurementSample) or not _finite(sample.time_s) or sample.time_s < 0 or not _finite(sample.value) for sample in checked):
+        if any(
+            not isinstance(sample, MeasurementSample)
+            or not _finite(sample.time_s)
+            or sample.time_s < 0
+            or not _finite(sample.value)
+            for sample in checked
+        ):
             failures.append("MEASUREMENT_SAMPLES")
         checked.sort(key=lambda item: item.time_s)
     if checked:
@@ -568,19 +718,50 @@ def _evaluate_measurement(
             failures.append("THRESHOLD")
         if not dwell_ok:
             failures.append("DWELL")
-    guards = observation.guard_results
-    if not isinstance(guards, Mapping) or any(guards.get(guard_id) is not True for guard_id in rule["guard_ids"]):
-        failures.append("FALSE_PASS_GUARD")
-    route = observation.sdk_route_evidence
-    expected_route = {
-        "verified": True,
-        "rim_hash": snapshot["rim_hash"],
-        "sdk_entry_hash": snapshot["sdk_entry_hash"],
-        "runtime_hash": snapshot["runtime_hash"],
-    }
-    if not isinstance(route, Mapping) or dict(route) != expected_route:
-        failures.append("SDK_ROUTE_EVIDENCE")
-    return not failures, failures
+    return not failures, failures, measurement_reference_ok
+
+
+def _evaluate_episode(
+    observation: HarnessMeasurement,
+    rules: tuple[Mapping[str, Any], ...],
+    snapshot: Mapping[str, Any],
+) -> tuple[bool, list[str], list[dict[str, Any]]]:
+    route_ok = _route_evidence_is_valid(observation.sdk_route_evidence, snapshot)
+    guards = observation.guard_results if isinstance(observation.guard_results, Mapping) else {}
+    overall_failures: list[str] = []
+    criterion_results: list[dict[str, Any]] = []
+    for rule in rules:
+        _passed, failures, measurement_reference_ok = _evaluate_criterion(observation, rule)
+        if any(
+            not _guard_passes(
+                guard_id,
+                guards,
+                measurement_reference_ok=measurement_reference_ok,
+            )
+            for guard_id in rule["guard_ids"]
+        ):
+            failures.append("FALSE_PASS_GUARD")
+        if not route_ok:
+            failures.append("SDK_ROUTE_EVIDENCE")
+        criterion_failures = list(dict.fromkeys(failures))
+        criterion_results.append({
+            "criterion_id": rule["criterion_id"],
+            "verdict": "PASS" if not criterion_failures else "FAIL",
+            "failure_codes": criterion_failures,
+        })
+        for code in criterion_failures:
+            if code not in overall_failures:
+                overall_failures.append(code)
+    return not overall_failures, overall_failures, criterion_results
+
+
+def _evaluate_measurement(
+    observation: HarnessMeasurement,
+    rule: Mapping[str, Any],
+    snapshot: Mapping[str, Any],
+) -> tuple[bool, list[str]]:
+    passed, failures, _criterion_results = _evaluate_episode(observation, (rule,), snapshot)
+    return passed, failures
 
 
 def _verify_video_evidence(
@@ -623,6 +804,13 @@ def _verify_video_evidence(
         "suite_hash": invocation.suite_hash,
         "execution_attempt": str(invocation.execution_attempt),
     }
+    criterion_ids = invocation.criterion_ids or tuple(
+        item["criterion_id"]
+        for item in invocation.criteria
+        if isinstance(item, Mapping) and isinstance(item.get("criterion_id"), str)
+    )
+    if len(criterion_ids) > 1:
+        expected_bindings["criterion_ids"] = "|".join(criterion_ids)
     bindings = manifest.get("bindings")
     if (
         manifest.get("manifest_type") != "framework_evaluation_video"
@@ -635,6 +823,30 @@ def _verify_video_evidence(
         raise HarnessInfrastructureError(
             "Validation B video lineage is invalid", video_evidence=video
         )
+
+
+def _episode_groups(
+    suite_entries: tuple[dict[str, Any], ...],
+) -> tuple[dict[str, Any], ...]:
+    groups: list[dict[str, Any]] = []
+    by_capability: dict[str, dict[str, Any]] = {}
+    for rule in suite_entries:
+        capability_id = rule["capability_id"]
+        group = by_capability.get(capability_id)
+        if group is None:
+            group = {
+                "capability_id": capability_id,
+                "rules": [],
+                "cases": copy.deepcopy(rule["cases"]),
+            }
+            by_capability[capability_id] = group
+            groups.append(group)
+        elif group["cases"] != rule["cases"]:
+            raise ContractError(
+                "Validation B criteria for one capability must share the same cases"
+            )
+        group["rules"].append(rule)
+    return tuple(groups)
 
 
 class ValidationBRunner:
@@ -657,44 +869,57 @@ class ValidationBRunner:
         diagnostics: list[dict[str, str]] = []
         infrastructure_error = False
         candidate_failure = False
-        for rule in frozen.suite_entries:
-            for case in rule["cases"]:
+        episode_groups = _episode_groups(frozen.suite_entries)
+        for group in episode_groups:
+            rules = tuple(group["rules"])
+            primary_rule = rules[0]
+            criterion_ids = tuple(rule["criterion_id"] for rule in rules)
+            for case in group["cases"]:
                 for repetition in range(1, frozen.repetitions + 1):
                     invocation = HarnessInvocation(
-                        capability_id=rule["capability_id"],
-                        criterion_id=rule["criterion_id"],
+                        capability_id=group["capability_id"],
+                        criterion_id=criterion_ids[0],
                         case_id=case["case_id"],
                         inputs=copy.deepcopy(case["inputs"]),
                         initial_state=copy.deepcopy(case["initial_state"]),
                         repetition=repetition,
-                        measurement=copy.deepcopy(rule["measurement"]),
-                        metric=rule["metric"],
-                        threshold=copy.deepcopy(rule["threshold"]),
-                        dwell_s=rule["dwell_s"],
-                        timeout_s=rule["timeout_s"],
-                        aggregation=rule["aggregation"],
-                        guard_ids=tuple(rule["guard_ids"]),
+                        measurement=copy.deepcopy(primary_rule["measurement"]),
+                        metric=primary_rule["metric"],
+                        threshold=copy.deepcopy(primary_rule["threshold"]),
+                        dwell_s=max(rule["dwell_s"] for rule in rules),
+                        timeout_s=min(rule["timeout_s"] for rule in rules),
+                        aggregation=primary_rule["aggregation"],
+                        guard_ids=tuple(sorted({guard_id for rule in rules for guard_id in rule["guard_ids"]})),
                         run_snapshot_hash=frozen.run_snapshot_hash,
                         candidate_source_hash=candidate.source_hash,
                         suite_hash=frozen.suite_hash,
                         execution_attempt=execution_attempt,
+                        criterion_ids=criterion_ids,
+                        criteria=tuple(copy.deepcopy(rule) for rule in rules),
                     )
                     try:
                         session = self._harness.open(invocation)
                         if not isinstance(session, TypedHarnessSession):
                             raise ContractError("TypedHarness returned an invalid session")
                     except HarnessInfrastructureError as exc:
-                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
+                        executions.append(_execution(
+                            group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                            "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence,
+                            criterion_ids=criterion_ids,
+                        ))
                         infrastructure_error = True
                         break
                     except Exception:
-                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "FAIL", ["HARNESS_PROTOCOL"]))
+                        executions.append(_execution(
+                            group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                            "FAIL", ["HARNESS_PROTOCOL"], criterion_ids=criterion_ids,
+                        ))
                         candidate_failure = True
                         continue
                     candidate_exception = False
                     candidate_infrastructure_error: HarnessInfrastructureError | None = None
                     try:
-                        session.invoke(candidate, rule["capability_id"], case["inputs"])
+                        session.invoke(candidate, group["capability_id"], case["inputs"])
                     except HarnessInfrastructureError as exc:
                         candidate_infrastructure_error = exc
                     except Exception:
@@ -702,39 +927,88 @@ class ValidationBRunner:
                     try:
                         observation = session.collect()
                     except HarnessInfrastructureError as exc:
-                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
+                        executions.append(_execution(
+                            group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                            "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence,
+                            criterion_ids=criterion_ids,
+                        ))
                         infrastructure_error = True
                         break
                     except Exception:
-                        executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "FAIL", ["HARNESS_PROTOCOL"]))
+                        executions.append(_execution(
+                            group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                            "FAIL", ["HARNESS_PROTOCOL"], criterion_ids=criterion_ids,
+                        ))
                         candidate_failure = True
                         continue
                     if candidate_infrastructure_error is not None:
                         executions.append(_execution(
-                            rule["capability_id"],
-                            rule["criterion_id"],
+                            group["capability_id"],
+                            criterion_ids[0],
                             case["case_id"],
                             repetition,
                             "INFRASTRUCTURE_ERROR",
                             ["HARNESS_INFRASTRUCTURE"],
                             observation.video_evidence if isinstance(observation, HarnessMeasurement) else candidate_infrastructure_error.video_evidence,
+                            observation.sdk_route_evidence if isinstance(observation, HarnessMeasurement) else None,
+                            criterion_ids=criterion_ids,
                         ))
                         infrastructure_error = True
                         break
                     if not isinstance(observation, HarnessMeasurement):
                         failures = ["HARNESS_PROTOCOL"]
+                        criterion_results = []
+                    elif len(rules) > 1 and (
+                        not isinstance(observation.criterion_measurements, Mapping)
+                        or any(
+                            criterion_id not in observation.criterion_measurements
+                            for criterion_id in criterion_ids
+                        )
+                    ):
+                        executions.append(_execution(
+                            group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                            "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"],
+                            observation.video_evidence,
+                            observation.sdk_route_evidence,
+                            criterion_ids=criterion_ids,
+                        ))
+                        infrastructure_error = True
+                        break
                     else:
                         try:
                             _verify_video_evidence(observation.video_evidence, invocation)
                         except HarnessInfrastructureError as exc:
-                            executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence))
+                            executions.append(_execution(
+                                group["capability_id"],
+                                criterion_ids[0],
+                                case["case_id"],
+                                repetition,
+                                "INFRASTRUCTURE_ERROR",
+                                ["HARNESS_INFRASTRUCTURE"],
+                                exc.video_evidence,
+                                observation.sdk_route_evidence,
+                                criterion_ids=criterion_ids,
+                            ))
                             infrastructure_error = True
                             break
-                        _passed, failures = _evaluate_measurement(observation, rule, frozen.context.run_snapshot)
+                        _passed, failures, criterion_results = _evaluate_episode(
+                            observation, rules, frozen.context.run_snapshot
+                        )
                     if candidate_exception:
                         failures = [*failures, "CANDIDATE_EXCEPTION"]
+                        for criterion_result in criterion_results:
+                            if "CANDIDATE_EXCEPTION" not in criterion_result["failure_codes"]:
+                                criterion_result["failure_codes"].append("CANDIDATE_EXCEPTION")
+                            criterion_result["verdict"] = "FAIL"
                     verdict = "PASS" if not failures else "FAIL"
-                    executions.append(_execution(rule["capability_id"], rule["criterion_id"], case["case_id"], repetition, verdict, failures, observation.video_evidence if isinstance(observation, HarnessMeasurement) else None))
+                    executions.append(_execution(
+                        group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                        verdict, list(dict.fromkeys(failures)),
+                        observation.video_evidence if isinstance(observation, HarnessMeasurement) else None,
+                        observation.sdk_route_evidence if isinstance(observation, HarnessMeasurement) else None,
+                        criterion_ids=criterion_ids,
+                        criterion_results=criterion_results,
+                    ))
                     candidate_failure |= verdict == "FAIL"
                 if infrastructure_error:
                     break
@@ -745,7 +1019,7 @@ class ValidationBRunner:
         elif candidate_failure:
             status = "FAIL"
         else:
-            expected_count = sum(len(rule["cases"]) for rule in frozen.suite_entries) * frozen.repetitions
+            expected_count = sum(len(group["cases"]) for group in episode_groups) * frozen.repetitions
             if len(executions) != expected_count:
                 raise ContractError("Validation B did not cover every sealed case and repetition")
             status = "PASS"
@@ -807,14 +1081,22 @@ def _execution(
     verdict: str,
     failures: list[str],
     video: ClosedEvaluationVideo | None = None,
+    sdk_route_evidence: Mapping[str, Any] | None = None,
+    *,
+    criterion_ids: tuple[str, ...] = (),
+    criterion_results: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    all_criterion_ids = criterion_ids or ((criterion_id,) if criterion_id else ())
     return {
         "capability_id": capability_id,
         "criterion_id": criterion_id,
+        "criterion_ids": list(all_criterion_ids),
+        "criterion_results": copy.deepcopy(criterion_results or []),
         "case_id": case_id,
         "repetition": repetition,
         "verdict": verdict,
         "failure_codes": failures,
         "video_manifest_hash": video.manifest_content_hash if video is not None else None,
         "video_media_hash": video.media_content_hash if video is not None else None,
+        "sdk_route_evidence": copy.deepcopy(dict(sdk_route_evidence)) if isinstance(sdk_route_evidence, Mapping) else None,
     }
