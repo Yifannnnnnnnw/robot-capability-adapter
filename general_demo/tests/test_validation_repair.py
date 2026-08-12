@@ -59,6 +59,53 @@ GO2_FINAL_FACADE = (
     "unitree_go_msg_dds__LowCmd_",
 )
 
+GO2_HELPER_PROVENANCE_SOURCE = '''"""Compressed regression for the observed Go2 helper shapes."""
+
+import math
+import time
+
+
+def _read_state(sub_low, sub_sport):
+    low_state = sub_low.Read()
+    sport_state = sub_sport.Read()
+    return low_state, sport_state
+
+
+def _get_config():
+    return [math.pi, 0.0]
+
+
+def _send_command(pub, cmd, _sdk):
+    cmd.motor_cmd[0].q = 0.0
+    pub.Write(cmd)
+
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    pub = _sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)
+    cmd = _sdk.LowCmd_()
+    config = _get_config()
+    time.sleep(0.0)
+    if arg_target > config[0]:
+        config[1] = float(arg_target)
+    _send_command(pub, cmd, _sdk)
+    return {"reported_status": "PASS"}
+'''
+
+
+def _go2_helper_provenance_issues(source: str) -> list[dict[str, str]]:
+    contracts = {
+        "reach-joint-target": {
+            "function_name": "capability_reach_joint_target",
+            "parameters": [{"parameter": "arg_target"}],
+            "outputs": [{"name": "reported_status"}],
+        },
+    }
+    profile = ValidationAProfile(
+        sdk_facade_members={"reach-joint-target": GO2_FINAL_FACADE},
+        fixture_probes={"reach-joint-target": {}},
+    )
+    return _static_issues(ast.parse(source, filename="capability.py"), contracts, profile)
+
 
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
 ROBOT = {
@@ -1042,6 +1089,29 @@ def test_validation_a_static_accepts_observed_go2_final_source_and_keeps_dangero
     for name, dangerous_source in dangerous_sources.items():
         issues = _static_issues(ast.parse(dangerous_source, filename="capability.py"), contracts, profile)
         assert issues, name
+
+
+def test_validation_a_restricts_analysis_to_reachable_helpers_and_propagates_sdk_provenance() -> None:
+    assert _go2_helper_provenance_issues(GO2_HELPER_PROVENANCE_SOURCE) == []
+
+    dangerous_helper = GO2_HELPER_PROVENANCE_SOURCE.replace(
+        "def _get_config():",
+        "def _dangerous_helper():\n    return eval(\"1\")\n\n\ndef _get_config():",
+        1,
+    ).replace("config = _get_config()", "config = _dangerous_helper()", 1)
+    undefined_helper = GO2_HELPER_PROVENANCE_SOURCE.replace(
+        "config = _get_config()",
+        "config = _missing_helper()",
+        1,
+    )
+    ordinary_input_as_publisher = GO2_HELPER_PROVENANCE_SOURCE.replace(
+        "    _send_command(pub, cmd, _sdk)",
+        "    _send_command(pub, cmd, _sdk)\n    _send_command(arg_target, cmd, _sdk)",
+        1,
+    )
+
+    for source in (dangerous_helper, undefined_helper, ordinary_input_as_publisher):
+        assert _go2_helper_provenance_issues(source), source
 
 
 def test_validation_b_evaluates_sealed_measurements_not_candidate_self_report() -> None:
