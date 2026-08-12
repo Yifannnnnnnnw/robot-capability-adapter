@@ -90,6 +90,7 @@ FROZEN_VIDEO_PROFILE = {
     "container": "matroska",
     "codec": "ffv1",
 }
+GO2_PUBLIC_INJECTED_HELPERS = ("CRC",)
 G2_PROFILE_PUBLIC = {
     "profile_id": "g2-reusable-effect",
     "version": "1.0.0",
@@ -1098,10 +1099,15 @@ def _implementation_projection_from_records(
     observation_mapping = translation.get("observation_mapping")
     if not isinstance(active_rule, Mapping) or not isinstance(inactive_rule, Mapping) or not isinstance(observation_mapping, Mapping):
         raise RunPackError("Go2 checked-in translation field rules are missing")
+    permitted_types = copy.deepcopy(sdk["public_symbols"])
+    if robot == "unitree-go2":
+        permitted_types.extend(
+            helper for helper in GO2_PUBLIC_INJECTED_HELPERS if helper not in permitted_types
+        )
     sdk_projection = {
         "sdk_entry_id": sdk["id"],
         "sdk_entry_version": sdk["version"],
-        "permitted_types": copy.deepcopy(sdk["public_symbols"]),
+        "permitted_types": permitted_types,
         "permitted_objects": [
             {"object_type": "ChannelPublisher", "operations": ["Init", "Write"]},
             {"object_type": "ChannelSubscriber", "operations": ["Init", "Read"]},

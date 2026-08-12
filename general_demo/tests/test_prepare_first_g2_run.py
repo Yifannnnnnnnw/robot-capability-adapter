@@ -30,6 +30,7 @@ from autoadapter2.libraries.tasks import TaskLibraryPackage
 from autoadapter2.orchestration import run_pack
 from autoadapter2.orchestration.run_pack import (
     RunPackError,
+    _implementation_projection_from_records,
     build_first_g2_run_pack,
     finalize_first_g2_run_snapshot,
     materialize_validation_a_profile,
@@ -361,9 +362,11 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
         "LowCmd_",
         "LowState_",
         "SportModeState_",
+        "CRC",
     }
     assert facade_members <= permitted_types
     assert "publisher" not in facade_members
+    assert "CRC" in permitted_types
     assert "capability_id" not in json.dumps(validation_template)
     assert "constructor" not in json.dumps(validation_template).lower()
     harness = json.loads(first.path("validation_harness_config").read_text(encoding="utf-8"))
@@ -382,6 +385,90 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert source_ref in snapshot["library_view_refs"]
     gate = ExperimentIntegrationGate(tmp_path).verify(first.integration_manifest_ref["path"], first.run_snapshot_path, first.readiness_report_ref["path"])
     assert gate.run_id == run_id
+
+
+def test_go2_template_adds_only_the_injected_crc_helper_to_public_sdk_surface() -> None:
+    template = json.loads(
+        (PROJECT_ROOT / "general_demo/config/first_g2_demo/robots/unitree-go2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    sdk_record = json.loads(
+        (PROJECT_ROOT / "general_demo/libraries/sdks/unitree-sdk2-go2-lowlevel/1.0.0/record.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    facade_members = set(template["validation_a_template"]["facade"]["members"])
+    permitted_types = set(template["implementation_projection"]["sdk_implementation_projection"]["permitted_types"])
+
+    assert template["validation_a_template"]["facade"]["members"] == [
+        "ChannelPublisher",
+        "ChannelSubscriber",
+        "LowCmd_",
+        "LowState_",
+        "SportModeState_",
+        "CRC",
+    ]
+    assert facade_members == {
+        "ChannelPublisher",
+        "ChannelSubscriber",
+        "LowCmd_",
+        "LowState_",
+        "SportModeState_",
+        "CRC",
+    }
+    assert facade_members <= permitted_types
+    assert "CRC" not in sdk_record["public_symbols"]
+    assert "publisher" not in facade_members
+
+
+def test_go2_bundle_derivation_appends_injected_crc_without_mutating_sdk_record() -> None:
+    template = json.loads(
+        (PROJECT_ROOT / "general_demo/config/first_g2_demo/robots/unitree-go2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    morphology = json.loads(
+        (PROJECT_ROOT / "general_demo/libraries/morphology/unitree-go2/1.0.0/record.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    sdk = json.loads(
+        (PROJECT_ROOT / "general_demo/libraries/sdks/unitree-sdk2-go2-lowlevel/1.0.0/record.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    translation = json.loads(
+        (PROJECT_ROOT / "general_demo/integrations/unitree-go2/translation.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    public = template["public_projection"]
+    projection = {
+        "topology": public["topology"],
+        "sensors": public["sensors"],
+        "observation_affordances": public["affordances"]["observations"],
+        "sdk_facts": {"units": public["units"]},
+        "frames": public["frames"],
+        "ranges": public["ranges"],
+        "limits": public["limits"],
+        "unsupported_behavior": public["unsupported_behavior"],
+    }
+    formal_symbols = list(sdk["public_symbols"])
+
+    derived = _implementation_projection_from_records(
+        "unitree-go2", morphology, sdk, translation, projection
+    )
+
+    assert sdk["public_symbols"] == formal_symbols
+    assert "CRC" not in sdk["public_symbols"]
+    assert derived["sdk_implementation_projection"]["permitted_types"] == [
+        *formal_symbols,
+        "CRC",
+    ]
+    assert derived["sdk_implementation_projection"]["permitted_types"] == template[
+        "implementation_projection"
+    ]["sdk_implementation_projection"]["permitted_types"]
 
 
 def test_session_task_bindings_pin_exact_values_and_source_bytes(tmp_path: Path) -> None:
