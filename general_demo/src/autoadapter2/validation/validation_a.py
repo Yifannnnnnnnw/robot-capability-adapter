@@ -1218,6 +1218,7 @@ def _sdk_derived_value(
     sdk_names: set[str],
     derived_locals: set[str],
     sdk_members: set[str] | frozenset[str],
+    helper_return_provenance: Mapping[str, _HelperReturnProvenance] | None = None,
 ) -> bool:
     path = _sdk_member_path(value, sdk_names)
     sdk_member = (
@@ -1226,9 +1227,25 @@ def _sdk_derived_value(
         and path[0] is not None
         and path[0] in sdk_members
     )
+    helper_return = (
+        helper_return_provenance.get(value.func.id)
+        if (
+            helper_return_provenance is not None
+            and isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Name)
+        )
+        else None
+    )
+    helper_return_scalar = helper_return.scalar if helper_return is not None else None
     return (
         sdk_member
         or _sdk_call_result(value, sdk_names, sdk_members)
+        or (
+            helper_return_scalar is not None
+            and helper_return_scalar[0]
+            and helper_return_scalar[1]
+            and helper_return.scalar_member_checked
+        )
         or (
             isinstance(value, ast.Name)
             and value.id in derived_locals
@@ -1243,6 +1260,7 @@ def _sdk_derived_helper_calls(
     sdk_names: set[str],
     initial: set[str],
     sdk_members: set[str] | frozenset[str],
+    helper_return_provenance: Mapping[str, _HelperReturnProvenance] | None = None,
 ) -> list[tuple[ast.Call, set[str]]]:
     """Return reachable helper calls with the SDK-derived locals at each call site."""
 
@@ -1262,7 +1280,13 @@ def _sdk_derived_helper_calls(
         else:
             targets = []
             value = None
-        if targets and value is not None and _sdk_derived_value(value, sdk_names, derived_locals, sdk_members):
+        if targets and value is not None and _sdk_derived_value(
+            value,
+            sdk_names,
+            derived_locals,
+            sdk_members,
+            helper_return_provenance,
+        ):
             for target in targets:
                 derived_locals.update(_assignment_target_names(target))
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in functions:
@@ -1295,6 +1319,7 @@ def _sdk_derived_parameter_names(
     functions: Mapping[str, list[ast.FunctionDef]],
     sdk_parameters: Mapping[str, set[str]],
     sdk_members: set[str] | frozenset[str],
+    helper_return_provenance: Mapping[str, _HelperReturnProvenance] | None = None,
 ) -> dict[str, set[str]]:
     derived_parameters = {symbol: set() for symbol in functions}
     changed = True
@@ -1311,13 +1336,20 @@ def _sdk_derived_parameter_names(
                 sdk_names,
                 derived_parameters.get(caller, set()),
                 sdk_members,
+                helper_return_provenance,
             )
             for call, derived_locals in helper_calls:
                 target = functions.get(call.func.id)
                 if target is None or len(target) != 1:
                     continue
                 for parameter, value in _call_parameter_values(call, target[0]):
-                    if _sdk_derived_value(value, sdk_names, derived_locals, sdk_members):
+                    if _sdk_derived_value(
+                        value,
+                        sdk_names,
+                        derived_locals,
+                        sdk_members,
+                        helper_return_provenance,
+                    ):
                         if parameter not in derived_parameters[call.func.id]:
                             derived_parameters[call.func.id].add(parameter)
                             changed = True
@@ -1329,6 +1361,7 @@ def _sdk_derived_argument_issues(
     sdk_parameters: Mapping[str, set[str]],
     derived_parameters: Mapping[str, set[str]],
     sdk_members: set[str] | frozenset[str],
+    helper_return_provenance: Mapping[str, _HelperReturnProvenance] | None = None,
 ) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
     for caller, nodes in functions.items():
@@ -1342,6 +1375,7 @@ def _sdk_derived_argument_issues(
             sdk_names,
             derived_parameters.get(caller, set()),
             sdk_members,
+            helper_return_provenance,
         )
         for call, derived_locals in helper_calls:
             target = functions.get(call.func.id)
@@ -1350,7 +1384,13 @@ def _sdk_derived_argument_issues(
             for parameter, value in _call_parameter_values(call, target[0]):
                 if (
                     parameter in derived_parameters.get(call.func.id, set())
-                    and not _sdk_derived_value(value, sdk_names, derived_locals, sdk_members)
+                    and not _sdk_derived_value(
+                        value,
+                        sdk_names,
+                        derived_locals,
+                        sdk_members,
+                        helper_return_provenance,
+                    )
                 ):
                     issues.append(_issue(
                         "EXPERIMENTAL_PROFILE",
@@ -1427,22 +1467,21 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
         for symbol in reachable_symbols
     }
     sdk_parameter_names = _sdk_parameter_names(reachable_functions, public_symbols)
-    sdk_derived_parameter_names = _sdk_derived_parameter_names(
-        reachable_functions,
-        sdk_parameter_names,
-        all_sdk_members,
-    )
-    issues.extend(_sdk_derived_argument_issues(
-        reachable_functions,
-        sdk_parameter_names,
-        sdk_derived_parameter_names,
-        all_sdk_members,
-    ))
     sdk_forwarded_calls = _sdk_forwarded_calls(reachable_functions, sdk_parameter_names)
     analyzers: dict[str, _SdkStaticAnalyzer] = {}
     helper_return_provenance: dict[str, _HelperReturnProvenance] = {}
+    sdk_derived_parameter_names: dict[str, set[str]] = {
+        symbol: set()
+        for symbol in reachable_functions
+    }
     analysis_issues: list[dict[str, str]] = []
     for _ in range(max(1, len(reachable_functions) + 1)):
+        next_sdk_derived_parameter_names = _sdk_derived_parameter_names(
+            reachable_functions,
+            sdk_parameter_names,
+            all_sdk_members,
+            helper_return_provenance,
+        )
         round_analyzers: dict[str, _SdkStaticAnalyzer] = {}
         round_issues: list[dict[str, str]] = []
         for symbol, nodes in functions.items():
@@ -1462,7 +1501,7 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
                     set(reachable_functions),
                     sdk_parameter_names.get(symbol, set()),
                     sdk_forwarded_calls.get(symbol, set()),
-                    sdk_derived_parameter_names.get(symbol, set()),
+                    next_sdk_derived_parameter_names.get(symbol, set()),
                     helper_return_provenance=helper_return_provenance,
                 )
             else:
@@ -1492,7 +1531,7 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
                     set(reachable_functions),
                     sdk_parameter_names.get(symbol, {"_sdk"}),
                     sdk_forwarded_calls.get(symbol, set()),
-                    sdk_derived_parameter_names.get(symbol, set()),
+                    next_sdk_derived_parameter_names.get(symbol, set()),
                     helper_return_provenance=helper_return_provenance,
                     expected_result_names={field["name"] for field in contracts[capability_id]["outputs"]},
                 )
@@ -1505,9 +1544,20 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
         }
         analyzers = round_analyzers
         analysis_issues = round_issues
-        if next_returns == helper_return_provenance:
+        if (
+            next_returns == helper_return_provenance
+            and next_sdk_derived_parameter_names == sdk_derived_parameter_names
+        ):
             break
+        sdk_derived_parameter_names = next_sdk_derived_parameter_names
         helper_return_provenance = next_returns
+    issues.extend(_sdk_derived_argument_issues(
+        reachable_functions,
+        sdk_parameter_names,
+        sdk_derived_parameter_names,
+        all_sdk_members,
+        helper_return_provenance,
+    ))
     issues.extend(analysis_issues)
     verified_sdk_functions: set[str] = set()
     changed = True

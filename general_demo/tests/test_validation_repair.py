@@ -1141,6 +1141,57 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     assert "FORBIDDEN_CALL" in {item["code"] for item in ordinary_issues}
 
 
+def test_validation_a_propagates_sdk_factory_returns_to_downstream_helpers() -> None:
+    source = '''def _create_publisher(_sdk):
+    pub = _sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)
+    pub.Init()
+    return pub
+
+def _create_subscriber(_sdk):
+    sub = _sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)
+    sub.Init()
+    return sub
+
+def _read_state(state_sub):
+    return state_sub.Read()
+
+def _write_command(pub, cmd):
+    pub.Write(cmd)
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    pub = _create_publisher(_sdk)
+    state_sub = _create_subscriber(_sdk)
+    _read_state(state_sub)
+    cmd = _sdk.LowCmd_()
+    _write_command(pub, cmd)
+    return {"reported_status": "PASS"}
+'''
+    assert _go2_helper_provenance_issues(source) == []
+
+    ordinary_input = source.replace(
+        "    pub = _create_publisher(_sdk)\n    state_sub = _create_subscriber(_sdk)\n",
+        "    pub = _return_input(arg_target)\n    state_sub = _return_input(arg_target)\n",
+    ).replace(
+        "def _create_publisher(_sdk):",
+        "def _return_input(value):\n    return value\n\ndef _create_publisher(_sdk):",
+        1,
+    )
+    ordinary_issues = _go2_helper_provenance_issues(ordinary_input)
+    assert "FORBIDDEN_CALL" in {item["code"] for item in ordinary_issues}
+
+    delete_source = source.replace(
+        "def _read_state(state_sub):",
+        "def _delete(value):\n    value.Delete()\n\ndef _read_state(state_sub):",
+        1,
+    ).replace(
+        "    state_sub = _create_subscriber(_sdk)\n",
+        "    state_sub = _create_subscriber(_sdk)\n    _delete(pub)\n",
+        1,
+    )
+    delete_issues = _go2_helper_provenance_issues(delete_source)
+    assert "FORBIDDEN_CALL" in {item["code"] for item in delete_issues}
+
+
 def test_validation_a_preserves_helper_tuple_element_provenance_without_tainting_mixed_values() -> None:
     source = '''def _read_state(sub):
     state = sub.Read()
@@ -1214,6 +1265,33 @@ def test_validation_a_reproduces_exact_go2_source_artifact_when_available() -> N
         "capability_hold_stable_stance": ("arg_duration",),
         "capability_move_forward_initial_heading": ("arg_distance",),
         "capability_adjust_body_height": ("arg_target_height",),
+    }
+    contracts = {
+        name: {
+            "function_name": name,
+            "parameters": [{"parameter": parameter} for parameter in function_parameters],
+            "outputs": [],
+        }
+        for name, function_parameters in parameters.items()
+    }
+    profile = ValidationAProfile(
+        sdk_facade_members={name: GO2_FINAL_FACADE for name in contracts},
+        fixture_probes={name: {} for name in contracts},
+    )
+    assert _static_issues(ast.parse(source, filename="capability.py"), contracts, profile) == []
+
+
+def test_validation_a_reproduces_factory_helper_go2_source_artifact_when_available() -> None:
+    source_path = Path("/private/tmp/go2-091356-r10.py")
+    if not source_path.exists():
+        pytest.skip("exact Go2 factory-helper reproduction artifact is not present")
+    source = source_path.read_text(encoding="utf-8")
+    parameters = {
+        "capability_cap_stand_up": (),
+        "capability_cap_sit_down": (),
+        "capability_cap_hold_stance": ("arg_duration",),
+        "capability_cap_move_forward": ("arg_distance",),
+        "capability_cap_adjust_body_height": ("arg_target_height",),
     }
     contracts = {
         name: {
