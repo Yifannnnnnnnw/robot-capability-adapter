@@ -15,11 +15,43 @@ from ..foundation.seals import create_seal, verify_seal
 from ..generation.llm import JsonGenerator
 
 
-BLUE_LINE_PROMPT = (
-    "Produce a private validation specification only. Cover every sealed semantic "
-    "capability, use catalog measurements, state false-pass guards, and never use "
-    "candidate, Stage 2, Sandbox, Repair, or execution outcomes."
-)
+BLUE_LINE_PROMPT = """
+Return one JSON object only, with exactly this top level and no other keys:
+{"capability_specs": [...]}. Do not return Markdown, prose, artifact_type, schema_version,
+design_hash, or any wrapper. Do not mention or include candidate, Stage 2, Sandbox, Repair,
+or execution outcomes.
+
+Emit exactly one spec for every capability_id in the sealed capability_design, with no
+duplicates or omissions. Every spec must have exactly these fields:
+capability_id, criteria, cases, lineage, false_pass_analysis. Do not use the legacy
+measurement/threshold/top-level guard_ids form.
+
+Each criteria item must have exactly these fields:
+criterion_id, measurement_id, metric, comparator, threshold_value, dwell_s, timeout_s,
+aggregation, guard_ids. For a copied project standard, copy every frozen criterion,
+including criterion_id, measurement_id, metric, comparator, threshold_value, dwell_s,
+timeout_s, and aggregation exactly; include all criteria when a standard has multiple
+criteria. Bind each criterion to the standard's required guard_ids. Never invent or change
+thresholds, metrics, timing, comparators, aggregation, or IDs.
+
+Each cases item must have exactly {case_id, initial_state, inputs}; use object values for
+initial_state and inputs, and provide at least one case and no more than
+policy.max_cases_per_capability cases.
+
+Each lineage object must have exactly {kind, standard_id, material}. Use an existing
+standard_id matching the capability and robot configuration. An exact frozen-standard
+copy uses {"kind":"COPIED", "standard_id":"<existing standard_id>", "material":false};
+do not invent a standard or alter a copied standard.
+
+Each false_pass_analysis item must have exactly {risk_id, guard_id}. Use only existing
+guard_id values from measurement_catalog and map every frozen standard false-pass risk to
+its required existing guard; do not invent risks or guards. Use the exact existing
+capability, standard, criterion, measurement, metric, and guard IDs supplied in the inputs.
+
+On correction calls, use both working_spec and diagnostics, repair the complete working
+spec, and return the complete corrected body again with exactly the same top-level shape.
+Return no patch, diagnostics, explanation, or other fields.
+""".strip()
 _FORBIDDEN_KEYS = ("candidate", "stage2", "sandbox", "repair", "validation_result", "demo_result")
 _AUTHORIZATION_TOKEN = object()
 _READY_BUNDLE_TOKEN = object()

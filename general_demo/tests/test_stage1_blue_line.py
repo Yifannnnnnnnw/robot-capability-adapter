@@ -4,7 +4,7 @@ import copy
 
 import pytest
 
-from autoadapter2.blue_line import BlueLineRunner
+from autoadapter2.blue_line import BLUE_LINE_PROMPT, BlueLineRunner
 from autoadapter2.foundation.errors import ContractError
 from autoadapter2.foundation.seals import verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Config, Stage1Runner
@@ -61,6 +61,26 @@ def test_stage1_prompt_exposes_closed_body_and_correction_contract() -> None:
     assert "empty array when a section is not applicable" in STAGE1_PROMPT
     assert "working_design" in STAGE1_PROMPT and "diagnostics" in STAGE1_PROMPT
     assert "return only the corrected body" in STAGE1_PROMPT
+
+
+def test_blue_line_prompt_exposes_closed_multi_criterion_contract() -> None:
+    assert '{"capability_specs": [...]}' in BLUE_LINE_PROMPT
+    assert "exactly one spec for every capability_id" in BLUE_LINE_PROMPT
+    assert "capability_id, criteria, cases, lineage, false_pass_analysis" in BLUE_LINE_PROMPT
+    for field in (
+        "criterion_id", "measurement_id", "metric", "comparator", "threshold_value",
+        "dwell_s", "timeout_s", "aggregation", "guard_ids",
+    ):
+        assert field in BLUE_LINE_PROMPT
+    assert "Each cases item must have exactly {case_id, initial_state, inputs}" in BLUE_LINE_PROMPT
+    assert "policy.max_cases_per_capability" in BLUE_LINE_PROMPT
+    assert "{kind, standard_id, material}" in BLUE_LINE_PROMPT
+    assert '"kind":"COPIED"' in BLUE_LINE_PROMPT
+    assert "{risk_id, guard_id}" in BLUE_LINE_PROMPT
+    assert "working_spec" in BLUE_LINE_PROMPT and "diagnostics" in BLUE_LINE_PROMPT
+    assert "complete corrected body" in BLUE_LINE_PROMPT
+    for forbidden in ("Markdown", "prose", "candidate", "Stage 2", "Sandbox", "Repair", "execution outcomes"):
+        assert forbidden in BLUE_LINE_PROMPT
 
 
 def _capability_body() -> dict:
