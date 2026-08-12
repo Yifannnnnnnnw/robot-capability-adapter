@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,7 @@ from autoadapter2.orchestration.first_g2_demo import (
     run_first_g2_demo,
     verify_first_g2_run_closure,
 )
+from autoadapter2.validation import MeasurementSample
 from autoadapter2.validation.validation_a import _descriptor_match
 
 from test_general_demo_runner import _RobotSession, _plan
@@ -426,6 +428,115 @@ class _ExplodingBlueLineModel(_FixtureModelClient):
             self.stages.append(stage)
             raise RuntimeError("blue line model failure")
         return super().generate_json(stage, prompt, inputs)
+
+
+class _NonRepairingModel(_FixtureModelClient):
+    def repair(self, request):
+        return {"capability.py": request["capability.py"], "llm_calls": 0}
+
+
+class _FailingValidationSession(_FixedCriterionSession):
+    def validation_evidence(self, invocation):
+        evidence = super().validation_evidence(invocation)
+        failing_samples = tuple(
+            MeasurementSample(sample.time_s, 1.0) for sample in evidence.samples
+        )
+        criterion_samples = (
+            {
+                criterion_id: failing_samples
+                for criterion_id in evidence.criterion_samples
+            }
+            if evidence.criterion_samples is not None
+            else None
+        )
+        return replace(
+            evidence,
+            samples=failing_samples,
+            criterion_samples=criterion_samples,
+        )
+
+
+class _AbruptValidationSession(_FixedCriterionSession):
+    def stop_external_recording(self):
+        raise RuntimeError("fixture validation recording aborted")
+
+
+def test_validation_failure_persists_a_verifiable_terminal_closure(tmp_path: Path) -> None:
+    plan, models = _plan(tmp_path, "so-arm101", 6)
+    result = run_first_g2_demo(
+        FirstG2DemoConfig(
+            root=tmp_path,
+            robot="so-arm101",
+            integration_manifest_path=plan.integration_manifest_path,
+            run_snapshot_path=plan.run_snapshot_path,
+            readiness_report_path=plan.readiness_report_path,
+            robot_session_factory=lambda selected_robot, _manifest, _run_dir: _FailingValidationSession(
+                6,
+                selected_robot,
+                {task.task_id: task.private_criterion for task in plan.tasks},
+            ),
+            validation_a_profile=plan.validation_a_profile,
+            validation_harness_config=plan.validation_harness_config,
+            video_profile=FrozenVideoProfile(
+                "validation-failure-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
+            ),
+            model_client=_NonRepairingModel(models),
+            test_only_allow_fixture_session=True,
+        )
+    )
+
+    assert result.status == "VALIDATION_FAILED"
+    summary = json.loads(result.summary_path.read_text(encoding="utf-8"))
+    assert summary["status"] == "VALIDATION_FAILED"
+    validation_refs = json.loads(
+        result.validation_video_references_path.read_text(encoding="utf-8")
+    )
+    assert len(validation_refs["videos"]) == 1
+    assert result.run_closure_path.is_file()
+    assert result.run_closure_seal_path.is_file()
+    closure = json.loads(result.run_closure_path.read_text(encoding="utf-8"))
+    assert closure["status"] == "VALIDATION_FAILED"
+    assert verify_first_g2_run_closure(
+        tmp_path, result.run_closure_path, result.run_closure_seal_path
+    ) == result.closure_hash
+
+
+def test_incomplete_validation_infrastructure_abort_has_no_closure(
+    tmp_path: Path,
+) -> None:
+    plan, models = _plan(tmp_path, "so-arm101", 6)
+    result = run_first_g2_demo(
+        FirstG2DemoConfig(
+            root=tmp_path,
+            robot="so-arm101",
+            integration_manifest_path=plan.integration_manifest_path,
+            run_snapshot_path=plan.run_snapshot_path,
+            readiness_report_path=plan.readiness_report_path,
+            robot_session_factory=lambda selected_robot, _manifest, _run_dir: _AbruptValidationSession(
+                6,
+                selected_robot,
+                {task.task_id: task.private_criterion for task in plan.tasks},
+            ),
+            validation_a_profile=plan.validation_a_profile,
+            validation_harness_config=plan.validation_harness_config,
+            video_profile=FrozenVideoProfile(
+                "validation-abort-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
+            ),
+            model_client=_FixtureModelClient(models),
+            test_only_allow_fixture_session=True,
+        )
+    )
+
+    assert result.status == "VALIDATION_FAILED"
+    summary = json.loads(result.summary_path.read_text(encoding="utf-8"))
+    assert summary["stages"][-1]["status"] == "INFRASTRUCTURE_ERROR"
+    assert result.closure_hash is None
+    assert not result.run_closure_path.exists()
+    assert not result.run_closure_seal_path.exists()
+    with pytest.raises(ContractError):
+        verify_first_g2_run_closure(
+            tmp_path, result.run_closure_path, result.run_closure_seal_path
+        )
 
 
 def test_terminal_stage1_persists_call_log_and_closes_session(tmp_path: Path) -> None:

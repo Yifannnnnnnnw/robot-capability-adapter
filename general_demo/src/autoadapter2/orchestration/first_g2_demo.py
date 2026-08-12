@@ -100,6 +100,21 @@ _DEFAULT_VIDEO_PROFILE = FrozenVideoProfile(
 )
 _SAFE_COMPONENT = re.compile(r"[^A-Za-z0-9._-]+")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_CLOSURE_ELIGIBLE_STATUSES = frozenset({
+    "COMPLETE",
+    "FAILED",
+    "STAGE1_FAILED",
+    "DESIGN_GAP",
+    "BLUE_LINE_NEEDS_REVIEW",
+    "STAGE2_FAILED",
+    "VALIDATION_FAILED",
+    "DEMO_FAILED",
+})
+_INFRASTRUCTURE_STAGE_STATUSES = frozenset({
+    "ERROR",
+    "INFRASTRUCTURE_ERROR",
+    "DEMO_INFRASTRUCTURE_ERROR",
+})
 
 
 class RobotSessionFactory(Protocol):
@@ -284,7 +299,7 @@ class FirstG2DemoResult:
     run_closure_path: Path
     run_closure_seal_path: Path
     summary_hash: str
-    closure_hash: str
+    closure_hash: str | None
     runner_result: DemoRunResult
 
 
@@ -657,37 +672,22 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         model_call_log_path,
         model_call_log,
     )
-    closure_files = {
-        "run_snapshot": _root_file_reference(root, snapshot_path),
-        "summary": _root_file_reference(root, summary_path),
-        "stage_artifacts": _root_file_reference(root, stage_artifacts_path),
-        "model_call_log": _root_file_reference(root, model_call_log_path),
-        "validation_video_references": _root_file_reference(root, validation_path),
-        "demo_video_references": _root_file_reference(root, demo_path),
-    }
-    closure = {
-        "artifact_type": "first_g2_run_closure",
-        "schema_version": "1.0.0",
-        "run_id": run_id,
-        "robot": config.robot,
-        "status": result.status,
-        "summary_hash": result.summary_hash,
-        "summary_seal": copy.deepcopy(result.summary_seal),
-        "files": closure_files,
-    }
-    closure_hash = content_hash(canonical_bytes(closure))
-    closure_seal = create_seal(
-        "first_g2_run_closure",
-        closure_hash,
-        [
-            result.summary_hash,
-            stage_artifacts_hash,
-            f"sha256:{model_call_log_sha256}",
-            *(f"sha256:{reference['sha256']}" for reference in closure_files.values()),
-        ],
+    closure_hash = _assemble_first_g2_run_closure(
+        root=root,
+        run_id=run_id,
+        robot=config.robot,
+        result=result,
+        snapshot_path=snapshot_path,
+        summary_path=summary_path,
+        stage_artifacts_path=stage_artifacts_path,
+        model_call_log_path=model_call_log_path,
+        validation_path=validation_path,
+        demo_path=demo_path,
+        stage_artifacts_hash=stage_artifacts_hash,
+        model_call_log_sha256=model_call_log_sha256,
+        closure_path=closure_path,
+        closure_seal_path=closure_seal_path,
     )
-    _write_immutable_json(closure_path, closure)
-    _write_immutable_json(closure_seal_path, closure_seal)
     return FirstG2DemoResult(
         robot=config.robot,
         run_id=run_id,
@@ -1605,6 +1605,77 @@ def _root_file_reference(root: Path, path: Path) -> dict[str, str]:
     return {"path": relative, "sha256": sha256_bytes(path.read_bytes())}
 
 
+def _eligible_closure_status(status: Any, summary: Mapping[str, Any]) -> str | None:
+    """Return a closed-run status only for complete non-infrastructure evidence."""
+
+    if not isinstance(status, str) or status not in _CLOSURE_ELIGIBLE_STATUSES:
+        return None
+    if summary.get("status") != status:
+        return None
+    stages = summary.get("stages")
+    if not isinstance(stages, list) or any(not isinstance(stage, Mapping) for stage in stages):
+        return None
+    if any(stage.get("status") in _INFRASTRUCTURE_STAGE_STATUSES for stage in stages):
+        return None
+    return status
+
+
+def _assemble_first_g2_run_closure(
+    *,
+    root: Path,
+    run_id: str,
+    robot: str,
+    result: DemoRunResult,
+    snapshot_path: Path,
+    summary_path: Path,
+    stage_artifacts_path: Path,
+    model_call_log_path: Path,
+    validation_path: Path,
+    demo_path: Path,
+    stage_artifacts_hash: str,
+    model_call_log_sha256: str,
+    closure_path: Path,
+    closure_seal_path: Path,
+) -> str | None:
+    """Write one immutable closure for COMPLETE or a closed terminal outcome."""
+
+    status = _eligible_closure_status(result.status, result.summary)
+    if status is None:
+        return None
+    closure_files = {
+        "run_snapshot": _root_file_reference(root, snapshot_path),
+        "summary": _root_file_reference(root, summary_path),
+        "stage_artifacts": _root_file_reference(root, stage_artifacts_path),
+        "model_call_log": _root_file_reference(root, model_call_log_path),
+        "validation_video_references": _root_file_reference(root, validation_path),
+        "demo_video_references": _root_file_reference(root, demo_path),
+    }
+    closure = {
+        "artifact_type": "first_g2_run_closure",
+        "schema_version": "1.0.0",
+        "run_id": run_id,
+        "robot": robot,
+        "status": status,
+        "summary_hash": result.summary_hash,
+        "summary_seal": copy.deepcopy(result.summary_seal),
+        "files": closure_files,
+    }
+    closure_hash = content_hash(canonical_bytes(closure))
+    closure_seal = create_seal(
+        "first_g2_run_closure",
+        closure_hash,
+        [
+            result.summary_hash,
+            stage_artifacts_hash,
+            f"sha256:{model_call_log_sha256}",
+            *(f"sha256:{reference['sha256']}" for reference in closure_files.values()),
+        ],
+    )
+    _write_immutable_json(closure_path, closure)
+    _write_immutable_json(closure_seal_path, closure_seal)
+    return closure_hash
+
+
 def _write_immutable_json(path: Path, value: Mapping[str, Any]) -> str:
     payload = canonical_bytes(dict(value))
     _write_new_bytes(path, payload)
@@ -1645,6 +1716,10 @@ def verify_first_g2_run_closure(
         summary_hash = content_hash(canonical_bytes(summary))
         if summary_hash != closure["summary_hash"]:
             raise ContractError("first G2 Demo closure summary hash does not match the summary")
+        if _eligible_closure_status(closure["status"], summary) != closure["status"]:
+            raise ContractError("first G2 Demo closure status is not a closed summary status")
+        if summary.get("run_id") != closure["run_id"]:
+            raise ContractError("first G2 Demo closure run_id does not match the summary")
         summary_seal = closure["summary_seal"]
         if (
             not isinstance(summary_seal, Mapping)
