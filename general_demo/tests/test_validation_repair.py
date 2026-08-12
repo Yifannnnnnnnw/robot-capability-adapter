@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import copy
 
 import pytest
@@ -35,7 +36,13 @@ from autoadapter2.validation import (
     bind_candidate_to_suite,
 )
 from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
-from autoadapter2.validation.validation_a import _descriptor_match
+from autoadapter2.validation.validation_a import (
+    _capability_contracts,
+    _descriptor_match,
+    _static_issues,
+    _verified_binding,
+    _verified_design,
+)
 
 
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
@@ -701,6 +708,36 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     _design, _seal, _stage2, _blue, result = _a_result(source)
     assert result.status == "PASS"
     assert result.candidate_handle is not None
+
+
+def test_validation_a_accepts_local_container_and_ndarray_transform_assignments() -> None:
+    source = '''def capability_reach_joint_target(arg_target, *, _sdk):
+    values = [arg_target]
+    values = values.copy()
+    _sdk.command(values[0])
+    return {"reported_status": "PASS"}
+'''
+    _design, _seal, _stage2, _blue, result = _a_result(source)
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+    ndarray_source = '''import numpy as np
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    values = np.asarray([arg_target], dtype=np.float64).reshape(1)
+    matrix = np.array([[arg_target]], dtype=np.float64).T
+    _sdk.command(float(values[0]) + float(matrix[0][0]))
+    return {"reported_status": "PASS"}
+'''
+    design, design_seal, stage2, _blue, _result = _a_result()
+    _design, design_hash, design_capabilities = _verified_design(design, design_seal)
+    binding, _binding_hash = _verified_binding(stage2.binding_contract, stage2.binding_seal, design_hash)
+    contracts = _capability_contracts(design_capabilities, binding)
+    assert _static_issues(ast.parse(ndarray_source), contracts, PROFILE) == []
+
+    pytest.importorskip("numpy", exc_type=ImportError)
+    _design, _seal, _stage2, _blue, ndarray_result = _a_result(ndarray_source)
+    assert ndarray_result.status == "PASS"
 
 
 def test_validation_a_accepts_forwarded_sdk_helpers_and_observed_local_containers() -> None:
