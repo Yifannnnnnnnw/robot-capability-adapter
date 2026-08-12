@@ -103,6 +103,47 @@ class Go2CandidateError(Go2SessionError):
         super().__init__(f"candidate invocation failed: {self.candidate_error}")
 
 
+class _CandidateSimulationClock:
+    """Child-side proxy for the parent-owned simulation clock."""
+
+    def __init__(self, connection: Any) -> None:
+        self._connection = connection
+
+    def _request(self, kind: str, **fields: Any) -> Any:
+        try:
+            self._connection.send({"kind": kind, **fields})
+            response = self._connection.recv()
+        except (EOFError, OSError) as exc:
+            raise RuntimeError("Framework simulation clock is unavailable") from exc
+        if not isinstance(response, Mapping) or response.get("ok") is not True:
+            error = response.get("error") if isinstance(response, Mapping) else None
+            raise RuntimeError(str(error or "Framework simulation clock rejected the request"))
+        return response.get("time_s")
+
+    def now(self) -> float:
+        value = self._request("now")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise RuntimeError("Framework simulation clock returned an invalid time")
+        return float(value)
+
+    def sleep(self, seconds: Any) -> None:
+        if isinstance(seconds, bool) or not isinstance(seconds, (int, float)):
+            raise TypeError("sleep duration must be numeric")
+        duration = float(seconds)
+        if not math.isfinite(duration) or duration < 0.0:
+            raise ValueError("sleep duration must be finite and non-negative")
+        self._request("sleep", seconds=duration)
+
+    def module(self) -> object:
+        return SimpleNamespace(
+            monotonic=self.now,
+            perf_counter=self.now,
+            process_time=self.now,
+            sleep=self.sleep,
+            time=self.now,
+        )
+
+
 def _bound_channel_factory_initialize(
     channel_factory_initialize: Callable[..., Any],
     *,
@@ -555,6 +596,7 @@ def _candidate_process_entry(
     arguments: Mapping[str, Any],
     worker_config: Mapping[str, Any],
     result_sender: Any,
+    clock_connection: Any,
 ) -> None:
     """Execute one candidate in the killable per-invocation worker boundary."""
 
@@ -563,7 +605,15 @@ def _candidate_process_entry(
         invoke = _candidate_invoke_from_spec(candidate_spec)
         binding, close_binding = _candidate_binding_from_config(worker_config)
         result_sender.send({"ready": True})
-        result = invoke(capability_id, arguments, binding)
+        if candidate_spec.get("kind") == "validated_handle":
+            result = invoke(
+                capability_id,
+                arguments,
+                binding,
+                time_module=_CandidateSimulationClock(clock_connection).module(),
+            )
+        else:
+            result = invoke(capability_id, arguments, binding)
         payload = {
             "ok": True,
             "result": result,
@@ -594,6 +644,10 @@ def _candidate_process_entry(
                 pass
         try:
             result_sender.close()
+        except BaseException:
+            pass
+        try:
+            clock_connection.close()
         except BaseException:
             pass
 
@@ -1303,9 +1357,17 @@ class UnitreeGo2EvaluationRobotSession:
             raise Go2SessionError("candidate worker DDS binding is unavailable")
         context = multiprocessing.get_context("spawn")
         result_receiver, result_sender = context.Pipe(duplex=False)
+        clock_parent, clock_child = context.Pipe(duplex=True)
         worker = context.Process(
             target=_candidate_process_entry,
-            args=(candidate_spec, capability_id, arguments, self._candidate_worker_config, result_sender),
+            args=(
+                candidate_spec,
+                capability_id,
+                arguments,
+                self._candidate_worker_config,
+                result_sender,
+                clock_child,
+            ),
             name="autoadapter2-go2-candidate",
         )
         # This is a killable process boundary, not the old unkillable daemon
@@ -1316,8 +1378,11 @@ class UnitreeGo2EvaluationRobotSession:
         except BaseException:
             result_receiver.close()
             result_sender.close()
+            clock_parent.close()
+            clock_child.close()
             raise
         result_sender.close()
+        clock_child.close()
         # The candidate cannot choose the wall deadline.  It is a frozen
         # Session-Runner bound, independent of capability arguments.
         deadline = time.monotonic() + DEFAULT_CANDIDATE_TIMEOUT_S
@@ -1329,6 +1394,9 @@ class UnitreeGo2EvaluationRobotSession:
         worker_alive_after_cleanup = True
         candidate_ready = False
         candidate_done = False
+        clock_sleep_seen = False
+        initial_fallback_waited = False
+        injected_clock_candidate = candidate_spec.get("kind") == "validated_handle"
 
         def receive_worker_messages() -> None:
             nonlocal candidate_ready, candidate_done, payload
@@ -1349,6 +1417,66 @@ class UnitreeGo2EvaluationRobotSession:
                     payload = message
                     candidate_done = True
 
+        def advance_one() -> None:
+            nonlocal steps
+            if steps >= self._max_rollout_steps:
+                raise Go2SessionError("candidate rollout exceeds the frozen session limit")
+            self._step_physics()
+            steps += 1
+            if self._should_wait_for_command_delivery():
+                delivery_deadline = time.monotonic() + self._state_wait_s
+                while (
+                    not self._last_bridge_result.get("accepted", False)
+                    and self.simulation_time_s - self._reset_time_s < 0.1
+                    and time.monotonic() < delivery_deadline
+                    and time.monotonic() < deadline
+                    and steps < self._max_rollout_steps
+                ):
+                    time.sleep(0.001)
+                    self._step_physics()
+                    steps += 1
+
+        def receive_clock_requests() -> None:
+            nonlocal clock_sleep_seen, timed_out
+            while clock_parent.poll():
+                try:
+                    request = clock_parent.recv()
+                except (EOFError, OSError):
+                    return
+                if not isinstance(request, Mapping):
+                    clock_parent.send({"ok": False, "error": "invalid simulation clock request"})
+                    continue
+                kind = request.get("kind")
+                if kind == "now":
+                    clock_parent.send({"ok": True, "time_s": self.simulation_time_s})
+                    continue
+                if kind != "sleep":
+                    clock_parent.send({"ok": False, "error": "unsupported simulation clock request"})
+                    continue
+                try:
+                    duration = _finite(request.get("seconds"), "candidate sleep duration")
+                    if duration < 0.0:
+                        raise Go2SessionError("candidate sleep duration must be non-negative")
+                    timestep = _finite(self._backend.timestep, "MuJoCo timestep")
+                    requested_steps = (
+                        int(math.ceil(duration / timestep - 1e-12)) if duration else 0
+                    )
+                    if requested_steps > self._max_rollout_steps - steps:
+                        clock_parent.send({
+                            "ok": False,
+                            "error": "candidate sleep exceeds the frozen session limit",
+                        })
+                        continue
+                    clock_sleep_seen = True
+                    for _ in range(requested_steps):
+                        if time.monotonic() >= deadline:
+                            timed_out = True
+                            return
+                        advance_one()
+                    clock_parent.send({"ok": True, "time_s": self.simulation_time_s})
+                except Go2SessionError as exc:
+                    clock_parent.send({"ok": False, "error": str(exc)})
+
         try:
             # A zero-duration yield gives the real DDS callback and candidate
             # worker a chance to publish before the first bridge step without
@@ -1356,9 +1484,24 @@ class UnitreeGo2EvaluationRobotSession:
             time.sleep(min(0.002, max(0.0, deadline - time.monotonic())))
             while not candidate_done or steps < planned_steps:
                 receive_worker_messages()
+                receive_clock_requests()
+                if not timed_out and not candidate_done:
+                    # Let a candidate continue a synchronous time request
+                    # sequence (for example monotonic() followed by sleep())
+                    # before the fallback rollout tick is selected.
+                    time.sleep(0.001)
+                    receive_clock_requests()
+                receive_worker_messages()
+                if timed_out:
+                    break
                 if time.monotonic() >= deadline:
                     timed_out = True
                     break
+                if clock_sleep_seen:
+                    if candidate_done:
+                        break
+                    time.sleep(0.001)
+                    continue
                 if candidate_done and steps >= planned_steps:
                     break
                 if not candidate_ready:
@@ -1366,23 +1509,35 @@ class UnitreeGo2EvaluationRobotSession:
                     # advance simulated time while that child is starting.
                     time.sleep(0.001)
                     continue
+                if (
+                    injected_clock_candidate
+                    and not initial_fallback_waited
+                    and steps == 0
+                    and not clock_sleep_seen
+                ):
+                    initial_fallback_waited = True
+                    initial_wait_deadline = time.monotonic() + 0.1
+                    while (
+                        not clock_sleep_seen
+                        and not candidate_done
+                        and not timed_out
+                        and time.monotonic() < initial_wait_deadline
+                    ):
+                        receive_clock_requests()
+                        receive_worker_messages()
+                        if clock_sleep_seen or candidate_done:
+                            break
+                        time.sleep(0.001)
+                    receive_clock_requests()
+                    receive_worker_messages()
+                    if timed_out:
+                        break
+                    if clock_sleep_seen or candidate_done:
+                        continue
                 if steps >= self._max_rollout_steps:
                     timed_out = True
                     break
-                self._step_physics()
-                steps += 1
-                if self._should_wait_for_command_delivery():
-                    delivery_deadline = time.monotonic() + self._state_wait_s
-                    while (
-                        not self._last_bridge_result.get("accepted", False)
-                        and self.simulation_time_s - self._reset_time_s < 0.1
-                        and time.monotonic() < delivery_deadline
-                        and time.monotonic() < deadline
-                        and steps < self._max_rollout_steps
-                    ):
-                        time.sleep(0.001)
-                        self._step_physics()
-                        steps += 1
+                advance_one()
                 # Yield only for delivery/thread scheduling.  Simulation time
                 # advances exclusively through the bridge step; the bounded
                 # wall yield lets a low-level candidate publish its next DDS
@@ -1437,6 +1592,10 @@ class UnitreeGo2EvaluationRobotSession:
                 cleanup_error = cleanup_error or exc
             try:
                 result_receiver.close()
+            except BaseException as exc:
+                cleanup_error = cleanup_error or exc
+            try:
+                clock_parent.close()
             except BaseException as exc:
                 cleanup_error = cleanup_error or exc
             worker_alive_after_cleanup = worker.is_alive()

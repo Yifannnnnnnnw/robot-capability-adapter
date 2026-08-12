@@ -11,6 +11,7 @@ from __future__ import annotations
 import ast
 import builtins
 import copy
+import hashlib
 import math
 import inspect
 import sys
@@ -19,6 +20,7 @@ import zlib
 from collections.abc import Callable, Mapping, Sequence
 from numbers import Real
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from .bridge import (
@@ -47,21 +49,30 @@ GO2_MAX_EXECUTION_EVENTS = 20_000
 GO2_OBSERVATION_NAMES = (
     "probe_id",
     "capability_id",
+    "source_hash",
     "accepted_command_count",
     "rejected_command_count",
+    "state_read_count",
+    "feedback_cycle_count",
     "simulation_time_s",
     "joint_positions_rad",
     "joint_velocities_rad_s",
+    "initial_frame_position_m",
+    "final_frame_position_m",
+    "frame_displacement_m",
+    "frame_displacement_norm_m",
     "frame_position_m",
     "frame_linear_velocity_m_s",
+    "terminal_velocity_m_s",
     "orientation_alignment",
+    "terminal_orientation_alignment",
     "finite_observation_available",
     "contact_available",
 )
 
 GO2_DEVELOPMENT_PROBE_CONTRACT: dict[str, Any] = {
     "contract_id": "unitree-go2-development-probe",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "robot": "unitree-go2",
     "mode": "source_coupled_sdk_probe",
     "backend": "bridge",
@@ -85,14 +96,23 @@ GO2_DEVELOPMENT_PROBE_CONTRACT: dict[str, Any] = {
         "units": {
             "probe_id": "identifier",
             "capability_id": "identifier",
+            "source_hash": "sha256",
             "accepted_command_count": "commands",
             "rejected_command_count": "commands",
+            "state_read_count": "reads",
+            "feedback_cycle_count": "cycles",
             "simulation_time_s": "s",
             "joint_positions_rad": "rad",
             "joint_velocities_rad_s": "rad/s",
+            "initial_frame_position_m": "m",
+            "final_frame_position_m": "m",
+            "frame_displacement_m": "m",
+            "frame_displacement_norm_m": "m",
             "frame_position_m": "m",
             "frame_linear_velocity_m_s": "m/s",
+            "terminal_velocity_m_s": "m/s",
             "orientation_alignment": "unitless",
+            "terminal_orientation_alignment": "unitless",
             "finite_observation_available": "boolean",
             "contact_available": "boolean",
         },
@@ -124,6 +144,53 @@ _FORBIDDEN_PUBLIC_TERMS = (
 
 class Go2DevelopmentProbeError(ValueError):
     """Internal input or execution error converted to public feedback."""
+
+
+class _TrackedFloat(float):
+    """Numeric SDK state value that retains generic state-dependence taint."""
+
+    def __new__(cls, value: object, state_token: int) -> "_TrackedFloat":
+        result = float.__new__(cls, float(value))
+        result._state_token = state_token
+        return result
+
+    @property
+    def state_dependent(self) -> bool:
+        return True
+
+    def _combine(self, other: object, operation: Callable[[float, float], float]) -> "_TrackedFloat":
+        other_value = float(other)
+        return _TrackedFloat(operation(float(self), other_value), self._state_token)
+
+    def __add__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: left + right)
+
+    def __radd__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: right + left)
+
+    def __sub__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: left - right)
+
+    def __rsub__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: right - left)
+
+    def __mul__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: left * right)
+
+    def __rmul__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: right * left)
+
+    def __truediv__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: left / right)
+
+    def __rtruediv__(self, other: object) -> "_TrackedFloat":
+        return self._combine(other, lambda left, right: right / left)
+
+    def __neg__(self) -> "_TrackedFloat":
+        return _TrackedFloat(-float(self), self._state_token)
+
+    def __pos__(self) -> "_TrackedFloat":
+        return _TrackedFloat(float(self), self._state_token)
 
 
 def get_go2_development_probe_contract() -> dict[str, Any]:
@@ -274,6 +341,12 @@ class _InMemoryGo2Transport:
         self._started = False
         self._closed = False
         self.published_command_count = 0
+        self.state_read_count = 0
+        self._state_read_epoch = 0
+        self._pending_command_read_epoch = 0
+        self._last_feedback_read_epoch = 0
+        self.feedback_cycle_count = 0
+        self._pending_command_state_dependent = False
 
     def start(self) -> None:
         if self._started or self._closed:
@@ -323,7 +396,27 @@ class _InMemoryGo2Transport:
         if not self._started:
             raise Go2DevelopmentProbeError("transport_not_started")
         self.published_command_count += 1
+        self._pending_command_read_epoch = self._state_read_epoch
+        slots = getattr(message, "motor_cmd", ())
+        self._pending_command_state_dependent = any(
+            bool(getattr(getattr(slot, field, None), "state_dependent", False))
+            for slot in tuple(slots)[: len(GO2_MOTOR_ORDER)]
+            for field in ("q", "dq", "kp", "kd", "tau")
+        )
         self._latest_command = message
+
+    def record_command_result(self, result: Mapping[str, Any]) -> None:
+        if result.get("accepted") is True:
+            read_epoch = self._pending_command_read_epoch
+            if (
+                self._pending_command_state_dependent
+                and read_epoch > 0
+                and read_epoch > self._last_feedback_read_epoch
+            ):
+                self.feedback_cycle_count += 1
+                self._last_feedback_read_epoch = read_epoch
+        self._pending_command_read_epoch = 0
+        self._pending_command_state_dependent = False
 
     def subscribe(self, topic: str, callback: Callable[[object], None]) -> None:
         if topic == LOWSTATE_TOPIC:
@@ -333,10 +426,39 @@ class _InMemoryGo2Transport:
 
     def read(self, topic: str) -> object | None:
         if topic == LOWSTATE_TOPIC:
-            return self._latest_lowstate
-        if topic == SPORTMODESTATE_TOPIC:
-            return self._latest_sportstate
-        return None
+            message = self._latest_lowstate
+        elif topic == SPORTMODESTATE_TOPIC:
+            message = self._latest_sportstate
+        else:
+            message = None
+        if message is not None:
+            self.state_read_count += 1
+            self._state_read_epoch += 1
+            state_token = self._state_read_epoch
+            for motor_state in getattr(message, "motor_state", ()):
+                for field in ("q", "dq", "tau_est"):
+                    setattr(
+                        motor_state,
+                        field,
+                        _TrackedFloat(getattr(motor_state, field), state_token),
+                    )
+            imu_state = getattr(message, "imu_state", None)
+            if imu_state is not None:
+                for field in ("quaternion", "gyroscope", "accelerometer"):
+                    values = getattr(imu_state, field, ())
+                    setattr(
+                        imu_state,
+                        field,
+                        [_TrackedFloat(value, state_token) for value in values],
+                    )
+            for field in ("position", "velocity"):
+                if hasattr(message, field):
+                    setattr(
+                        message,
+                        field,
+                        [_TrackedFloat(value, state_token) for value in getattr(message, field)],
+                    )
+        return message
 
     def seed(self, sensors: object) -> None:
         self.publish_lowstate(
@@ -463,6 +585,9 @@ class _SimulationClock:
             result = self._bridge.step()
             self.accepted_commands = int(result["accepted_commands"])
             self.rejected_commands = int(result["rejected_commands"])
+            record_result = getattr(self._bridge.transport, "record_command_result", None)
+            if callable(record_result):
+                record_result(result)
             self.steps += 1
 
 
@@ -474,6 +599,9 @@ def _safe_execution_globals(
     time_module = types.ModuleType("time")
     time_module.sleep = clock.sleep
     time_module.time = clock.time
+    time_module.monotonic = clock.time
+    time_module.perf_counter = clock.time
+    time_module.process_time = clock.time
 
     def safe_import(name: str, globals_: object = None, locals_: object = None, fromlist: tuple[str, ...] = (), level: int = 0) -> object:
         del globals_, locals_
@@ -520,9 +648,12 @@ def _state_vector(state: object, name: str, length: int) -> list[float]:
 def _observations(
     backend: object,
     clock: _SimulationClock,
+    transport: _InMemoryGo2Transport,
     *,
     probe_id: str,
     capability_id: str,
+    source_hash: str,
+    initial_frame_position_m: Sequence[float],
 ) -> dict[str, Any]:
     simulation_time_s = float(getattr(backend, "simulation_time"))
     state = backend.sensors()
@@ -530,22 +661,69 @@ def _observations(
     norm = math.sqrt(sum(value * value for value in quaternion))
     if norm == 0.0 or not math.isfinite(norm):
         raise Go2DevelopmentProbeError("observation_value_invalid")
-    w, x, y, z = (value / norm for value in quaternion)
+    _, x, y, z = (value / norm for value in quaternion)
     orientation_alignment = 1.0 - 2.0 * (x * x + y * y)
+    final_frame_position_m = _state_vector(state, "frame_position", 3)
+    frame_linear_velocity_m_s = _state_vector(state, "frame_linear_velocity", 3)
+    initial_position = _state_vector(
+        SimpleNamespace(frame_position=initial_frame_position_m),
+        "frame_position",
+        3,
+    )
+    frame_displacement_m = [
+        final - initial
+        for final, initial in zip(final_frame_position_m, initial_position)
+    ]
     return {
         "probe_id": probe_id,
         "capability_id": capability_id,
+        "source_hash": source_hash,
         "accepted_command_count": clock.accepted_commands,
         "rejected_command_count": clock.rejected_commands,
+        "state_read_count": transport.state_read_count,
+        "feedback_cycle_count": transport.feedback_cycle_count,
         "simulation_time_s": simulation_time_s,
         "joint_positions_rad": _state_vector(state, "q", 12),
         "joint_velocities_rad_s": _state_vector(state, "dq", 12),
-        "frame_position_m": _state_vector(state, "frame_position", 3),
-        "frame_linear_velocity_m_s": _state_vector(state, "frame_linear_velocity", 3),
+        "initial_frame_position_m": initial_position,
+        "final_frame_position_m": final_frame_position_m,
+        "frame_displacement_m": frame_displacement_m,
+        "frame_displacement_norm_m": math.sqrt(sum(value * value for value in frame_displacement_m)),
+        "frame_position_m": final_frame_position_m,
+        "frame_linear_velocity_m_s": frame_linear_velocity_m_s,
+        "terminal_velocity_m_s": frame_linear_velocity_m_s,
         "orientation_alignment": float(orientation_alignment),
+        "terminal_orientation_alignment": float(orientation_alignment),
         "finite_observation_available": True,
         "contact_available": False,
     }
+
+
+def _healthy_terminal_observation(observations: Mapping[str, Any]) -> bool:
+    velocity = observations.get("terminal_velocity_m_s")
+    if (
+        not isinstance(velocity, list)
+        or len(velocity) != 3
+        or any(isinstance(value, bool) or not isinstance(value, Real) for value in velocity)
+    ):
+        return False
+    terminal_speed = math.sqrt(sum(float(value) * float(value) for value in velocity))
+    orientation = observations.get("terminal_orientation_alignment")
+    return bool(
+        observations.get("finite_observation_available") is True
+        and isinstance(observations.get("state_read_count"), int)
+        and observations["state_read_count"] >= 2
+        and isinstance(observations.get("feedback_cycle_count"), int)
+        and observations["feedback_cycle_count"] >= 2
+        and isinstance(observations.get("accepted_command_count"), int)
+        and observations["accepted_command_count"] >= 2
+        and isinstance(orientation, Real)
+        and not isinstance(orientation, bool)
+        and math.isfinite(float(orientation))
+        and float(orientation) >= 0.0
+        and math.isfinite(terminal_speed)
+        and terminal_speed <= 1.0
+    )
 
 
 class Go2DevelopmentProbe:
@@ -577,7 +755,12 @@ class Go2DevelopmentProbe:
         backend: Any | None = None
         bridge: Go2DDSMuJoCoBridge | None = None
         transport: _InMemoryGo2Transport | None = None
-        observations = {"probe_id": probe_id, "capability_id": capability_id}
+        source_hash = "sha256:" + hashlib.sha256(capability_source.encode("utf-8")).hexdigest()
+        observations = {
+            "probe_id": probe_id,
+            "capability_id": capability_id,
+            "source_hash": source_hash,
+        }
         try:
             backend = self._backend_factory(self.model_path)
             transport = _InMemoryGo2Transport()
@@ -590,7 +773,9 @@ class Go2DevelopmentProbe:
             clock = _SimulationClock(bridge, timestep, max_steps)
             bridge.start()
             bridge.reset()
-            transport.seed(backend.sensors())
+            initial_sensors = backend.sensors()
+            initial_frame_position_m = _state_vector(initial_sensors, "frame_position", 3)
+            transport.seed(initial_sensors)
             namespace = _safe_execution_globals(transport, clock)
             previous_trace = sys.gettrace()
             events = 0
@@ -625,18 +810,25 @@ class Go2DevelopmentProbe:
             final_observations = _observations(
                 backend,
                 clock,
+                transport,
                 probe_id=probe_id,
                 capability_id=capability_id,
+                source_hash=source_hash,
+                initial_frame_position_m=initial_frame_position_m,
             )
             observations = final_observations
             if (
-                int(final_observations["accepted_command_count"]) >= 1
-                and float(final_observations["simulation_time_s"]) > 0.0
+                float(final_observations["simulation_time_s"]) > 0.0
+                and _healthy_terminal_observation(final_observations)
             ):
-                return _feedback("OK", "Go2 probe completed.", final_observations)
+                return _feedback(
+                    "OK",
+                    "Go2 probe completed with repeated SDK feedback.",
+                    final_observations,
+                )
             return _feedback(
                 "INCONCLUSIVE",
-                "Go2 probe returned without a bridged physical effect.",
+                "Go2 probe produced bounded public feedback without a repeated stable loop.",
                 final_observations,
             )
         except Go2DevelopmentProbeError as exc:

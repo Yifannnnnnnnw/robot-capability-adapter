@@ -526,14 +526,26 @@ class Stage2Runner:
         last_feedback: dict[str, Any] | None = None
         successful_sandbox_calls = 0
         covered_capability_ids: set[str] = set()
+        active_source_hash: str | None = None
         blocked_reason: str | None = None
         known_source_hashes: set[str] = set()
         known_executable_hashes: set[str] = set()
         if episode == "repair" and working_source is not None:
-            known_source_hashes.add(content_hash(working_source.encode("utf-8")))
+            active_source_hash = content_hash(working_source.encode("utf-8"))
+            known_source_hashes.add(active_source_hash)
             executable_hash = _executable_source_hash(working_source)
             if executable_hash is not None:
                 known_executable_hashes.add(executable_hash)
+
+        def select_working_source(source: str) -> str:
+            nonlocal active_source_hash, successful_sandbox_calls, covered_capability_ids
+            source_hash = content_hash(source.encode("utf-8"))
+            if source_hash != active_source_hash:
+                active_source_hash = source_hash
+                successful_sandbox_calls = 0
+                covered_capability_ids = set()
+            return source_hash
+
         for attempt in range(config.max_llm_calls):
             inputs: dict[str, Any] = copy.deepcopy(dict(base_inputs))
             inputs["sandbox_contract"] = copy.deepcopy(dict(sandbox_contract))
@@ -565,6 +577,7 @@ class Stage2Runner:
                 continue
             if action == "sandbox":
                 working_source = output_dict["capability.py"]
+                source_hash = select_working_source(working_source)
                 if self.sandbox is None:
                     last_feedback = {
                         "status": "ERROR",
@@ -575,7 +588,7 @@ class Stage2Runner:
                     sandbox_log.append({
                         "sandbox_call": len(sandbox_log) + 1,
                         "executed": False,
-                        "source_hash": content_hash(working_source.encode("utf-8")),
+                        "source_hash": source_hash,
                         "probe_hash": content_hash(canonical_bytes(output_dict["probe"])),
                         "feedback_hash": content_hash(canonical_bytes(last_feedback)),
                         "feedback": copy.deepcopy(last_feedback),
@@ -603,7 +616,7 @@ class Stage2Runner:
                 sandbox_log.append({
                     "sandbox_call": len(sandbox_log) + 1,
                     "executed": True,
-                    "source_hash": content_hash(working_source.encode("utf-8")),
+                    "source_hash": source_hash,
                     "probe_hash": content_hash(canonical_bytes(output_dict["probe"])),
                     "feedback_hash": content_hash(canonical_bytes(last_feedback)),
                     "feedback": copy.deepcopy(last_feedback),
@@ -638,6 +651,7 @@ class Stage2Runner:
             # required-symbol presence are checked here; Validation A owns semantics.
             source = output_dict["capability.py"]
             working_source = source
+            source_hash = select_working_source(source)
             diagnostics = _submission_issues(
                 llm_calls=len(calls),
                 successful_sandbox_calls=successful_sandbox_calls,
@@ -655,7 +669,6 @@ class Stage2Runner:
                 calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
                 continue
             if episode == "repair":
-                source_hash = content_hash(source.encode("utf-8"))
                 executable_hash = _executable_source_hash(source)
                 if (
                     source_hash in known_source_hashes

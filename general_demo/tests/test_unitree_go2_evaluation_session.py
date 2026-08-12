@@ -43,6 +43,8 @@ from autoadapter2.integrations.unitree_go2.session import (
     upright_score,
 )
 from autoadapter2.validation import HarnessInvocation
+from autoadapter2.validation.validation_a import _HANDLE_TOKEN, ValidatedCandidateHandle
+from autoadapter2.foundation.hashing import content_hash
 
 
 @dataclass
@@ -482,6 +484,38 @@ class CandidateRaisesPythonError:
         raise AttributeError("ChannelPublisher.Init expects a bound endpoint")
 
 
+def _validated_time_candidate() -> ValidatedCandidateHandle:
+    source = """
+import time
+
+def capability_time_capability(*, _sdk):
+    start = time.monotonic()
+    wall_start = time.time()
+    time.sleep(1.0)
+    elapsed = time.monotonic() - start
+    wall_elapsed = time.time() - wall_start
+    if elapsed < 0.9 or elapsed > 1.1 or wall_elapsed < 0.9 or wall_elapsed > 1.1:
+        raise RuntimeError("unexpected simulated time")
+    return {}
+"""
+    return ValidatedCandidateHandle(
+        _HANDLE_TOKEN,
+        source=source,
+        source_hash=content_hash(source.encode("utf-8")),
+        implementation_manifest_hash=content_hash(b"go2-time-manifest"),
+        implementation_bundle_hash=content_hash(b"go2-time-bundle"),
+        contracts={
+            "time-capability": {
+                "inputs": [],
+                "function_name": "capability_time_capability",
+                "parameters": [],
+                "outputs": [],
+            }
+        },
+        a_report_hash=content_hash(b"go2-time-validation-a"),
+    )
+
+
 def _truth(backend: FakeBackend):
     sensors = backend.sensors()
     return {
@@ -672,6 +706,24 @@ def test_validation_candidate_then_collect_uses_the_invocation_clock() -> None:
     assert transport.write_count.value == 1
     assert not hasattr(session.sdk, "write_low_command")
     session.close()
+
+
+def test_validated_candidate_sleep_uses_parent_simulation_clock() -> None:
+    session, backend, _transport, _sdk, _capture_count = _session(rollout_steps=1)
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="injected-time",
+            initial_state={"task_id": "G04"},
+        )
+        started = time.monotonic()
+        assert session.invoke(_validated_time_candidate(), "time-capability", {}) == {}
+        elapsed_wall = time.monotonic() - started
+
+        assert backend.time == pytest.approx(1.0)
+        assert elapsed_wall < go2_session_module.DEFAULT_CANDIDATE_TIMEOUT_S
+    finally:
+        session.close()
 
 
 def test_validation_evidence_maps_each_g01_criterion_to_the_shared_truth_window() -> None:

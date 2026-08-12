@@ -102,6 +102,19 @@ def _sealed_design(run_id: str = "run-stage2") -> tuple[dict, dict]:
     return result.capability_design, result.seal
 
 
+def _sealed_two_capability_design(run_id: str = "run-stage2-two") -> tuple[dict, dict]:
+    body = _design_body()
+    second = copy.deepcopy(body["capabilities"][0])
+    second["capability_id"] = "hold-joint-target"
+    second["requirement_ids"] = ["req-hold"]
+    second["effect"] = "The selected joint holds the requested public target."
+    body["capabilities"].append(second)
+    tasks = TASKS + [{"requirement_id": "req-hold", "description": "Hold a public joint target safely."}]
+    result = Stage1Runner(FixtureJsonGenerator([body])).run(run_id, ROBOT, tasks, G2)
+    assert result.status == "SEALED" and result.capability_design and result.seal
+    return result.capability_design, result.seal
+
+
 def test_stage2_prompt_describes_the_validation_a_source_contract() -> None:
     assert "exactly one JSON action object" in STAGE2_PROMPT
     assert '"action":"sandbox"' in STAGE2_PROMPT
@@ -141,9 +154,10 @@ def test_stage2_prompt_describes_the_validation_a_source_contract() -> None:
 
 
 def _authorization(design: dict, seal: dict):
-    spec = {
-        "capability_specs": [{
-            "capability_id": "reach-joint-target",
+    capability_specs = []
+    for capability in design["capabilities"]:
+        capability_specs.append({
+            "capability_id": capability["capability_id"],
             "measurement": {"measurement_id": "joint-error", "entity": "shoulder_pan", "unit": "rad", "frame": "joint"},
             "metric": "max_joint_error",
             "threshold": {"comparator": "<=", "value": 0.05},
@@ -153,8 +167,8 @@ def _authorization(design: dict, seal: dict):
             "guard_ids": ["physical-state-not-command-receipt"],
             "cases": [{"case_id": "nominal", "initial_state": {"joint": 0.0}, "inputs": {"target": 0.2}}],
             "lineage": {"kind": "COPIED", "standard_id": "joint-arrival", "material": False},
-        }],
-    }
+        })
+    spec = {"capability_specs": capability_specs}
     result = BlueLineRunner(FixtureJsonGenerator([spec])).run(
         design, seal, STANDARDS, MEASUREMENTS, POLICY
     )
@@ -637,6 +651,101 @@ def test_stage2_can_require_probe_coverage_for_all_runtime_design_capabilities()
     assert fixture.calls[0]["inputs"]["submission_requirements"]["required_sandbox_capability_ids"] == [
         "reach-joint-target"
     ]
+
+
+def test_stage2_sandbox_coverage_is_bound_to_the_exact_submitted_source() -> None:
+    design, seal = _sealed_two_capability_design()
+    binding = derive_python_binding(design, seal)
+    source_a = binding.starter_skeleton + "\nSOURCE_A = 1\n"
+    source_b = binding.starter_skeleton + "\nSOURCE_B = 1\n"
+    fixture = FixtureJsonGenerator([
+        {
+            "action": "sandbox",
+            "capability.py": source_a,
+            "probe": {"probe_id": "probe-x-a", "capability_id": "reach-joint-target"},
+        },
+        {
+            "action": "sandbox",
+            "capability.py": source_b,
+            "probe": {"probe_id": "probe-y-b", "capability_id": "hold-joint-target"},
+        },
+        {"action": "submit", "capability.py": source_b},
+        {
+            "action": "sandbox",
+            "capability.py": source_b,
+            "probe": {"probe_id": "probe-x-b", "capability_id": "reach-joint-target"},
+        },
+        {"action": "submit", "capability.py": source_b},
+    ])
+    runner = Stage2Runner(
+        fixture,
+        sandbox=CallbackSandbox(lambda _source, _probe: {
+            "status": "OK",
+            "summary": "public probe completed",
+            "observations": {},
+        }),
+        config=Stage2Config(
+            max_llm_calls=5,
+            require_all_design_capability_probes=True,
+        ),
+    )
+
+    result = runner.run(design, seal, _authorization(design, seal), _bundle())
+
+    assert result.status == "SUBMITTED"
+    assert result.capability_source == source_b
+    assert result.covered_sandbox_capability_ids == (
+        "hold-joint-target",
+        "reach-joint-target",
+    )
+    assert "missing required public sandbox capability IDs: reach-joint-target" in (
+        result.call_log[2]["diagnostics"][0]["message"]
+    )
+    assert result.sandbox_log[0]["source_hash"] != result.sandbox_log[1]["source_hash"]
+    assert result.sandbox_log[2]["source_hash"] == result.sandbox_log[1]["source_hash"]
+
+
+def test_repair_episode_does_not_inherit_ok_coverage_after_a_source_edit() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    source_a = source + "\nREPAIR_SOURCE_A = 1\n"
+    source_b = source + "\nREPAIR_SOURCE_B = 1\n"
+    fixture = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": source},
+        {
+            "action": "sandbox",
+            "capability.py": source_a,
+            "probe": {"probe_id": "repair-a", "capability_id": "reach-joint-target"},
+        },
+        {"action": "submit", "capability.py": source_b},
+        {
+            "action": "sandbox",
+            "capability.py": source_b,
+            "probe": {"probe_id": "repair-b", "capability_id": "reach-joint-target"},
+        },
+        {"action": "submit", "capability.py": source_b},
+    ])
+    runner = Stage2Runner(
+        fixture,
+        sandbox=CallbackSandbox(lambda _source, _probe: {
+            "status": "OK",
+            "summary": "public probe completed",
+            "observations": {},
+        }),
+        config=Stage2Config(max_llm_calls=1),
+    )
+    assert runner.run(design, seal, _authorization(design, seal), _bundle()).status == "SUBMITTED"
+
+    repaired = runner.repair_episode({"capability.py": source, "diagnostics": []})
+
+    assert repaired == {"capability.py": source_b, "llm_calls": 4}
+    trace = runner.last_repair_trace
+    assert trace is not None and trace["submitted"] is True
+    assert trace["call_log"][1]["diagnostics"] == [{
+        "code": "SUBMISSION_REQUIREMENTS",
+        "message": "Submit rejected: min_successful_sandbox_calls_before_submit is 1, but only 0 successful public sandbox calls are recorded.",
+    }]
 
 
 def test_submit_seals_exact_source_and_framework_derives_manifest() -> None:

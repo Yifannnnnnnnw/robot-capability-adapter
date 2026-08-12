@@ -185,7 +185,14 @@ class ValidatedCandidateHandle:
             overlay=overlay,
         )
 
-    def _invoke(self, capability_id: str, inputs: Mapping[str, Any], sdk: object) -> Any:
+    def _invoke(
+        self,
+        capability_id: str,
+        inputs: Mapping[str, Any],
+        sdk: object,
+        *,
+        time_module: object | None = None,
+    ) -> Any:
         payload = _candidate_payload_snapshot(self)
         contract = payload.contracts.get(capability_id)
         if not isinstance(contract, Mapping):
@@ -193,7 +200,7 @@ class ValidatedCandidateHandle:
         values = _runtime_inputs(inputs, contract["inputs"])
         if content_hash(payload.source.encode("utf-8")) != payload.source_hash:
             raise ContractError("candidate source changed after Validation A")
-        module = _isolated_module(payload.source)
+        module = _isolated_module(payload.source, time_module=time_module)
         function = getattr(module, contract["function_name"])
         arguments = {
             parameter["parameter"]: values[parameter["public_name"]]
@@ -2029,13 +2036,14 @@ def _allowed_import(
     _locals: Mapping[str, Any] | None = None,
     fromlist: tuple[str, ...] | list[str] = (),
     level: int = 0,
+    time_module: object | None = None,
 ) -> ModuleType:
     if level != 0 or name not in _ALLOWED_MODULE_IMPORTS or fromlist:
         raise ImportError(f"candidate import is not allowed: {name}")
     if name == "math":
         return math
     if name == "time":
-        return time
+        return time if time_module is None else time_module  # type: ignore[return-value]
     try:
         import numpy as np
     except Exception as exc:
@@ -2043,10 +2051,27 @@ def _allowed_import(
     return np
 
 
-def _isolated_module(source: str) -> ModuleType:
+def _isolated_module(source: str, *, time_module: object | None = None) -> ModuleType:
     module = ModuleType("validated_capability")
     safe_builtins = dict(_SAFE_BUILTINS)
-    safe_builtins["__import__"] = _allowed_import
+
+    def allowed_import(
+        name: str,
+        globals_: Mapping[str, Any] | None = None,
+        locals_: Mapping[str, Any] | None = None,
+        fromlist: tuple[str, ...] | list[str] = (),
+        level: int = 0,
+    ) -> ModuleType:
+        return _allowed_import(
+            name,
+            globals_,
+            locals_,
+            fromlist,
+            level,
+            time_module=time_module,
+        )
+
+    safe_builtins["__import__"] = allowed_import
     module.__dict__.update({"__name__": module.__name__, "__builtins__": safe_builtins})
     exec(compile(source, "capability.py", "exec"), module.__dict__, module.__dict__)
     return module
