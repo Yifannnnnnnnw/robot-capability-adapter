@@ -54,6 +54,8 @@ SO_ARM101_OBSERVATION_NAMES = (
     "probe_id",
     "capability_id",
     "accepted_command_count",
+    "state_read_count",
+    "feedback_cycle_count",
     "physics_step_count",
     "simulation_time_s",
     "joint_positions_rad",
@@ -63,7 +65,7 @@ SO_ARM101_OBSERVATION_NAMES = (
 
 SO_ARM101_DEVELOPMENT_PROBE_CONTRACT: dict[str, Any] = {
     "contract_id": "so-arm101-development-probe",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "robot": "so-arm101",
     "mode": "source_coupled_sdk_probe",
     "backend": "fresh_pinned_model",
@@ -131,6 +133,8 @@ SO_ARM101_DEVELOPMENT_PROBE_CONTRACT: dict[str, Any] = {
             "probe_id": "identifier",
             "capability_id": "identifier",
             "accepted_command_count": "commands",
+            "state_read_count": "reads",
+            "feedback_cycle_count": "cycles",
             "physics_step_count": "steps",
             "simulation_time_s": "s",
             "joint_positions_rad": "rad",
@@ -170,6 +174,92 @@ _FORBIDDEN_PUBLIC_TERMS = (
 
 class SOArm101DevelopmentProbeError(ValueError):
     """Internal input or execution error converted to public feedback."""
+
+
+class _SOArm101TrackedFloat(float):
+    """Numeric SDK state that retains generic state-dependence metadata."""
+
+    def __new__(cls, value: object, observation_token: int) -> "_SOArm101TrackedFloat":
+        result = float.__new__(cls, float(value))
+        result._observation_token = observation_token
+        return result
+
+    @property
+    def state_dependent(self) -> bool:
+        return True
+
+    def _combine(
+        self,
+        other: object,
+        operation: Callable[[float, float], float],
+    ) -> "_SOArm101TrackedFloat":
+        return _SOArm101TrackedFloat(
+            operation(float(self), float(other)),
+            int(self._observation_token),
+        )
+
+    def __add__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left + right)
+
+    def __radd__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right + left)
+
+    def __sub__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left - right)
+
+    def __rsub__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right - left)
+
+    def __mul__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left * right)
+
+    def __rmul__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right * left)
+
+    def __truediv__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left / right)
+
+    def __rtruediv__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right / left)
+
+    def __neg__(self) -> "_SOArm101TrackedFloat":
+        return _SOArm101TrackedFloat(-float(self), int(self._observation_token))
+
+    def __pos__(self) -> "_SOArm101TrackedFloat":
+        return _SOArm101TrackedFloat(float(self), int(self._observation_token))
+
+
+def _observation_tokens(value: object) -> set[int]:
+    if isinstance(value, _SOArm101TrackedFloat):
+        return {int(value._observation_token)}
+    if isinstance(value, Mapping):
+        tokens: set[int] = set()
+        for item in value.values():
+            tokens.update(_observation_tokens(item))
+        return tokens
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        tokens = set()
+        for item in value:
+            tokens.update(_observation_tokens(item))
+        return tokens
+    return set()
+
+
+def _track_observation(value: object, observation_token: int) -> object:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, Real):
+        return _SOArm101TrackedFloat(value, observation_token)
+    if isinstance(value, Mapping):
+        return {
+            key: _track_observation(item, observation_token)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_track_observation(item, observation_token) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_track_observation(item, observation_token) for item in value)
+    return value
 
 
 def get_so_arm101_development_probe_contract() -> dict[str, Any]:
@@ -461,12 +551,32 @@ class _SOArm101CandidateError(TypeError):
 class _SOArm101DevelopmentFacade:
     """The two-operation SO surface used by the source-coupled probe."""
 
-    __slots__ = ("_backend", "_gripper_tick_increases_qpos", "_accepted_commands")
+    __slots__ = (
+        "_backend",
+        "_gripper_tick_increases_qpos",
+        "_after_send_action",
+        "_accepted_commands",
+        "_state_read_count",
+        "_feedback_cycle_count",
+        "_last_observation_token",
+        "_last_observation_physics_steps",
+        "_last_action_observation_token",
+        "_last_action_physics_steps",
+        "_physics_steps",
+    )
 
-    def __init__(self, backend: object, gripper_tick_increases_qpos: bool) -> None:
+    def __init__(
+        self,
+        backend: object,
+        gripper_tick_increases_qpos: bool,
+        *,
+        after_send_action: Callable[[], int] | None = None,
+    ) -> None:
         object.__setattr__(self, "_backend", backend)
         object.__setattr__(self, "_gripper_tick_increases_qpos", gripper_tick_increases_qpos)
+        object.__setattr__(self, "_after_send_action", after_send_action)
         object.__setattr__(self, "_accepted_commands", 0)
+        object.__getattribute__(self, "_reset_feedback_tracking")()
 
     def __getattribute__(self, name: str) -> Any:
         if name.startswith("_"):
@@ -489,14 +599,62 @@ class _SOArm101DevelopmentFacade:
             owner.set_goal_ticks(ticks)
         except SOArm101DevelopmentProbeError as exc:
             raise _SOArm101CandidateError(str(exc)) from exc
+        observation_tokens = _observation_tokens(action_copy)
+        observation_token = int(object.__getattribute__(self, "_last_observation_token"))
+        observation_physics_steps = int(
+            object.__getattribute__(self, "_last_observation_physics_steps")
+        )
         object.__setattr__(
             self,
             "_accepted_commands",
             int(object.__getattribute__(self, "_accepted_commands")) + 1,
         )
+        after_send_action = object.__getattribute__(self, "_after_send_action")
+        if callable(after_send_action):
+            physics_steps = after_send_action()
+            if isinstance(physics_steps, bool) or not isinstance(physics_steps, int):
+                raise SOArm101DevelopmentProbeError("physics_progress_invalid")
+            object.__setattr__(self, "_physics_steps", max(0, physics_steps))
+        if (
+            observation_token in observation_tokens
+            and observation_token > int(object.__getattribute__(self, "_last_action_observation_token"))
+        ):
+            previous_action_steps = int(
+                object.__getattribute__(self, "_last_action_physics_steps")
+            )
+            if (
+                observation_token > 0
+                and (
+                    int(object.__getattribute__(self, "_last_action_observation_token")) == 0
+                    or observation_physics_steps >= previous_action_steps
+                )
+            ):
+                object.__setattr__(
+                    self,
+                    "_feedback_cycle_count",
+                    int(object.__getattribute__(self, "_feedback_cycle_count")) + 1,
+                )
+        object.__setattr__(self, "_last_action_observation_token", observation_token)
+        object.__setattr__(
+            self,
+            "_last_action_physics_steps",
+            int(object.__getattribute__(self, "_physics_steps")),
+        )
         return action_copy
 
     def get_observation(self) -> dict[str, Any]:
+        observation = object.__getattribute__(self, "_framework_observation")()
+        token = int(object.__getattribute__(self, "_state_read_count")) + 1
+        object.__setattr__(self, "_state_read_count", token)
+        object.__setattr__(self, "_last_observation_token", token)
+        object.__setattr__(
+            self,
+            "_last_observation_physics_steps",
+            int(object.__getattribute__(self, "_physics_steps")),
+        )
+        return _track_observation(observation, token)  # type: ignore[return-value]
+
+    def _framework_observation(self) -> dict[str, Any]:
         owner = object.__getattribute__(self, "_backend")
         direction = object.__getattribute__(self, "_gripper_tick_increases_qpos")
         try:
@@ -506,8 +664,25 @@ class _SOArm101DevelopmentFacade:
         except SOArm101DevelopmentProbeError as exc:
             raise _SOArm101CandidateError(str(exc)) from exc
 
+    def _reset_feedback_tracking(self) -> None:
+        object.__setattr__(self, "_accepted_commands", 0)
+        object.__setattr__(self, "_state_read_count", 0)
+        object.__setattr__(self, "_feedback_cycle_count", 0)
+        object.__setattr__(self, "_last_observation_token", 0)
+        object.__setattr__(self, "_last_observation_physics_steps", 0)
+        object.__setattr__(self, "_last_action_observation_token", 0)
+        object.__setattr__(self, "_last_action_physics_steps", 0)
+        object.__setattr__(self, "_physics_steps", 0)
+
     def _accepted_command_count(self) -> int:
         return int(object.__getattribute__(self, "_accepted_commands"))
+
+    def _feedback_metrics(self) -> dict[str, int]:
+        return {
+            "accepted_command_count": object.__getattribute__(self, "_accepted_command_count")(),
+            "state_read_count": int(object.__getattribute__(self, "_state_read_count")),
+            "feedback_cycle_count": int(object.__getattribute__(self, "_feedback_cycle_count")),
+        }
 
 
 class _SOArm101ProbeClock:
@@ -662,7 +837,7 @@ def _public_observations(
     )
     if not math.isfinite(motion_delta):
         raise SOArm101DevelopmentProbeError("observation_value_invalid")
-    sdk_observation = object.__getattribute__(facade, "get_observation")()
+    sdk_observation = object.__getattribute__(facade, "_framework_observation")()
     if set(sdk_observation) != set(SO_ARM101_PUBLIC_OBSERVATION_FIELDS):
         raise SOArm101DevelopmentProbeError("observation_shape_invalid")
     if any(
@@ -670,10 +845,13 @@ def _public_observations(
         for key, value in sdk_observation.items()
     ):
         raise SOArm101DevelopmentProbeError("observation_value_invalid")
+    feedback_metrics = object.__getattribute__(facade, "_feedback_metrics")()
     return {
         "probe_id": probe_id,
         "capability_id": capability_id,
-        "accepted_command_count": object.__getattribute__(facade, "_accepted_command_count")(),
+        "accepted_command_count": feedback_metrics["accepted_command_count"],
+        "state_read_count": feedback_metrics["state_read_count"],
+        "feedback_cycle_count": feedback_metrics["feedback_cycle_count"],
         "physics_step_count": int(physics_step_count),
         "simulation_time_s": float(physics_step_count * timestep_s),
         "joint_positions_rad": positions,
@@ -709,6 +887,7 @@ class SOArm101DevelopmentProbe:
         probe_id = ""
         capability_id = ""
         candidate_exception: Exception | None = None
+        physics_step_count = 0
         feedback: dict[str, Any] = _error(
             "SO-ARM101 probe execution failed.",
             "probe_execution_error",
@@ -721,10 +900,8 @@ class SOArm101DevelopmentProbe:
             if capability_id:
                 result["capability_id"] = capability_id
             if facade is not None:
-                result["accepted_command_count"] = object.__getattribute__(
-                    facade,
-                    "_accepted_command_count",
-                )()
+                result.update(object.__getattribute__(facade, "_feedback_metrics")())
+            result["physics_step_count"] = physics_step_count
             return result
 
         try:
@@ -741,10 +918,22 @@ class SOArm101DevelopmentProbe:
                 gripper_tick_increases_qpos=self.gripper_tick_increases_qpos,
             )
             backend.reset()
+            physics_step_count = 0
+            _, timestep_s = _step_count(backend, duration_s if duration_s > 0.0 else 1.0)
+            if not math.isfinite(timestep_s) or timestep_s <= 0.0:
+                raise SOArm101DevelopmentProbeError("physics_timestep_invalid")
             initial_positions = _joint_positions(backend)
+
+            def advance_after_action() -> int:
+                nonlocal physics_step_count
+                backend.step(timestep_s)
+                physics_step_count += 1
+                return physics_step_count
+
             facade = _SOArm101DevelopmentFacade(
                 backend,
                 self.gripper_tick_increases_qpos,
+                after_send_action=advance_after_action,
             )
             clock = _SOArm101ProbeClock()
             namespace = _safe_execution_globals(clock)
@@ -785,9 +974,10 @@ class SOArm101DevelopmentProbe:
                 candidate_exception = candidate_error
                 raise candidate_error
 
-            physics_step_count, timestep_s = _step_count(backend, duration_s)
+            tail_steps, _ = _step_count(backend, duration_s)
             if duration_s > 0.0:
                 backend.step(duration_s)
+                physics_step_count += tail_steps
             final_observations = _public_observations(
                 backend,
                 facade,
@@ -799,7 +989,9 @@ class SOArm101DevelopmentProbe:
             )
             accepted_command_count = int(final_observations["accepted_command_count"])
             if (
-                accepted_command_count >= 1
+                accepted_command_count >= 2
+                and int(final_observations["state_read_count"]) >= 2
+                and int(final_observations["feedback_cycle_count"]) >= 2
                 and physics_step_count > 0
                 and final_observations["finite_observation_available"] is True
             ):
@@ -807,7 +999,7 @@ class SOArm101DevelopmentProbe:
             else:
                 feedback = _feedback(
                     "INCONCLUSIVE",
-                    "SO-ARM101 probe returned without an accepted physical effect.",
+                    "SO-ARM101 probe returned bounded feedback without a repeated state-dependent loop.",
                     final_observations,
                 )
         except SOArm101DevelopmentProbeError as exc:

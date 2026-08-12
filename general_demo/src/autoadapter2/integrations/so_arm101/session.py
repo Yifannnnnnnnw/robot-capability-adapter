@@ -23,6 +23,7 @@ import os
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from numbers import Real
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -112,6 +113,92 @@ class _SOArm101ValidationEvidence(ValidationEvidence):
             raise ContractError("SO-ARM101 route evidence hash does not match detail")
 
 
+class _SOArm101TrackedFloat(float):
+    """Numeric public state that retains generic state-dependence metadata."""
+
+    def __new__(cls, value: object, observation_token: int) -> "_SOArm101TrackedFloat":
+        result = float.__new__(cls, float(value))
+        result._observation_token = observation_token
+        return result
+
+    def __reduce_ex__(self, protocol: int) -> tuple[Any, tuple[object, int]]:
+        del protocol
+        return type(self), (float(self), int(self._observation_token))
+
+    def _combine(
+        self,
+        other: object,
+        operation: Callable[[float, float], float],
+    ) -> "_SOArm101TrackedFloat":
+        return _SOArm101TrackedFloat(
+            operation(float(self), float(other)),
+            int(self._observation_token),
+        )
+
+    def __add__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left + right)
+
+    def __radd__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right + left)
+
+    def __sub__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left - right)
+
+    def __rsub__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right - left)
+
+    def __mul__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left * right)
+
+    def __rmul__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right * left)
+
+    def __truediv__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: left / right)
+
+    def __rtruediv__(self, other: object) -> "_SOArm101TrackedFloat":
+        return self._combine(other, lambda left, right: right / left)
+
+    def __neg__(self) -> "_SOArm101TrackedFloat":
+        return _SOArm101TrackedFloat(-float(self), int(self._observation_token))
+
+    def __pos__(self) -> "_SOArm101TrackedFloat":
+        return _SOArm101TrackedFloat(float(self), int(self._observation_token))
+
+
+def _observation_tokens(value: object) -> set[int]:
+    if isinstance(value, _SOArm101TrackedFloat):
+        return {int(value._observation_token)}
+    if isinstance(value, Mapping):
+        tokens: set[int] = set()
+        for item in value.values():
+            tokens.update(_observation_tokens(item))
+        return tokens
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        tokens = set()
+        for item in value:
+            tokens.update(_observation_tokens(item))
+        return tokens
+    return set()
+
+
+def _track_observation(value: object, observation_token: int) -> object:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, Real):
+        return _SOArm101TrackedFloat(value, observation_token)
+    if isinstance(value, Mapping):
+        return {
+            key: _track_observation(item, observation_token)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_track_observation(item, observation_token) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_track_observation(item, observation_token) for item in value)
+    return value
+
+
 class _SOArm101CandidateFacade:
     """Candidate-facing SO surface with the current public task projection."""
 
@@ -119,20 +206,68 @@ class _SOArm101CandidateFacade:
         self,
         follower: Any,
         public_state: Callable[[], Mapping[str, Any]],
+        after_send_action: Callable[[], int] | None = None,
     ) -> None:
         self._follower = follower
         self._public_state = public_state
+        self._after_send_action = after_send_action
+        self._reset_feedback_tracking()
 
     def send_action(self, action: Mapping[str, Any]) -> Any:
-        return self._follower.send_action(action)
+        observation_tokens = _observation_tokens(action)
+        observation_token = self._last_observation_token
+        observation_physics_steps = self._last_observation_physics_steps
+        result = self._follower.send_action(action)
+        self._accepted_command_count += 1
+        if self._after_send_action is not None:
+            self._physics_steps = int(self._after_send_action())
+        if (
+            observation_token in observation_tokens
+            and observation_token > self._last_action_observation_token
+        ):
+            if (
+                observation_token > 0
+                and (
+                    self._last_action_observation_token == 0
+                    or observation_physics_steps >= self._last_action_physics_steps
+                )
+            ):
+                self._feedback_cycle_count += 1
+        self._last_action_observation_token = observation_token
+        self._last_action_physics_steps = self._physics_steps
+        return result
 
     def get_observation(self) -> dict[str, Any]:
+        observation = self._framework_observation()
+        self._state_read_count += 1
+        self._last_observation_token = self._state_read_count
+        self._last_observation_physics_steps = self._physics_steps
+        return _track_observation(observation, self._state_read_count)  # type: ignore[return-value]
+
+    def _framework_observation(self) -> dict[str, Any]:
         raw = self._follower.get_observation()
         if not isinstance(raw, Mapping):
             raise SOArm101SessionError("SO101Follower returned an invalid observation")
         observation = copy.deepcopy(dict(raw))
         observation["public_task_state"] = copy.deepcopy(dict(self._public_state()))
         return observation
+
+    def _reset_feedback_tracking(self) -> None:
+        self._accepted_command_count = 0
+        self._state_read_count = 0
+        self._feedback_cycle_count = 0
+        self._last_observation_token = 0
+        self._last_observation_physics_steps = 0
+        self._last_action_observation_token = 0
+        self._last_action_physics_steps = 0
+        self._physics_steps = 0
+
+    def _feedback_metrics(self) -> dict[str, int]:
+        return {
+            "accepted_command_count": self._accepted_command_count,
+            "state_read_count": self._state_read_count,
+            "feedback_cycle_count": self._feedback_cycle_count,
+        }
 
 
 def _repo_general_demo_root() -> Path:
@@ -494,6 +629,7 @@ class SOArm101EvaluationRobotSession:
         self._present_position_read_count = 0
         self._last_route_evidence: dict[str, Any] = {}
         self._last_route_evidence_hash: str | None = None
+        self._feedback_goal_writes_seen = 0
 
         try:
             if backend_factory is None:
@@ -525,6 +661,7 @@ class SOArm101EvaluationRobotSession:
             self._candidate_sdk = _SOArm101CandidateFacade(
                 self._follower,
                 lambda: self._public_task_state,
+                after_send_action=self._advance_after_candidate_action,
             )
             self._opened = True
         except BaseException:
@@ -861,6 +998,9 @@ class SOArm101EvaluationRobotSession:
         self._last_truth = self._sample_truth()
         self._episode_samples.append(copy.deepcopy(self._last_truth))
         self._reset_goal_writes = self._goal_writes()
+        if self._candidate_sdk is not None:
+            self._candidate_sdk._reset_feedback_tracking()
+        self._feedback_goal_writes_seen = self._reset_goal_writes
         # Re-read independent MuJoCo state after the full private reset.  This
         # is the only place where object/mocap/qpos/qvel writes are allowed,
         # and every declared reset value is checked against the frozen 1e-9
@@ -1079,6 +1219,21 @@ class SOArm101EvaluationRobotSession:
         value = health.get("accepted_goal_writes", 0) if isinstance(health, Mapping) else 0
         return int(value) if isinstance(value, int) and not isinstance(value, bool) else 0
 
+    def _advance_after_candidate_action(self) -> int:
+        self._assert_open()
+        before = self._feedback_goal_writes_seen
+        if self._goal_writes() <= before:
+            self._wait_for_goal_traffic(before)
+        current = self._goal_writes()
+        if current <= before:
+            raise SOArm101SessionError("accepted SDK action did not reach the PTY translation")
+        self._feedback_goal_writes_seen = current
+        timestep = _number(getattr(self._backend, "timestep", DEFAULT_TIMESTEP), "MuJoCo timestep")
+        if timestep <= 0.0:
+            raise SOArm101SessionError("MuJoCo timestep must be positive")
+        self._advance(timestep)
+        return self._physics_steps
+
     def _advance(self, seconds: float) -> None:
         self._assert_open()
         if not _finite(seconds) or float(seconds) < 0:
@@ -1294,6 +1449,18 @@ class SOArm101EvaluationRobotSession:
         simulation_time_progressed = self.simulation_time_s > self._trial_baseline_time_s + 1e-12
         state_route_observed = bool(sdk_readback_observed and max_error is not None)
         accepted_command_count = route_detail["goal_writes_observed"]
+        feedback_metrics = (
+            self._candidate_sdk._feedback_metrics()
+            if self._candidate_sdk is not None
+            else {
+                "state_read_count": 0,
+                "feedback_cycle_count": 0,
+            }
+        )
+        feedback_loop_observed = bool(
+            feedback_metrics["state_read_count"] >= 2
+            and feedback_metrics["feedback_cycle_count"] >= 2
+        )
         route_verified = bool(
             route_verified
             and candidate_invocation_count == 1
@@ -1301,6 +1468,7 @@ class SOArm101EvaluationRobotSession:
             and route_detail["physics_steps"] > 0
             and simulation_time_progressed
             and route_detail["physics_progress"]
+            and feedback_loop_observed
             and self._present_position_read_count > 0
             and state_route_observed
             and max_error is not None
@@ -1314,6 +1482,9 @@ class SOArm101EvaluationRobotSession:
                 self._candidate_invocation_observed or candidate_invocation_count == 1
             ),
             "accepted_command_count": accepted_command_count,
+            "state_read_count": feedback_metrics["state_read_count"],
+            "feedback_cycle_count": feedback_metrics["feedback_cycle_count"],
+            "feedback_loop_observed": feedback_loop_observed,
             "simulation_time_progressed": simulation_time_progressed,
             "present_position_read_count": self._present_position_read_count,
             "state_route_observed": state_route_observed,

@@ -26,6 +26,7 @@ from autoadapter2.integrations.so_arm101.session import (
 from autoadapter2.integrations.so_arm101.feetech_protocol import MOTOR_NAMES
 from autoadapter2.integrations.so_arm101 import session as so_session
 from autoadapter2.validation import HarnessInvocation
+from autoadapter2.validation.validation_a import _HANDLE_TOKEN, ValidatedCandidateHandle
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -165,7 +166,12 @@ class _Candidate:
 
     def _invoke(self, _capability_id: str, _arguments: dict[str, Any], sdk: _Follower) -> dict[str, bool]:
         if self.send_sdk_command:
-            sdk.send_action({"shoulder_pan.pos": 1.0})
+            for _cycle in range(2):
+                observation = sdk.get_observation()
+                sdk.send_action({
+                    f"{name}.pos": observation[f"{name}.pos"] * 0.01 + 0.1
+                    for name in MOTOR_NAMES
+                })
         return {"accepted": True}
 
 
@@ -181,24 +187,101 @@ class _TaskStateCandidate:
     def _invoke(self, capability_id: str, arguments: dict[str, Any], sdk: Any) -> dict[str, bool]:
         assert capability_id == self.capability_id
         assert arguments == self.arguments
-        observation = sdk.get_observation()
-        self.observation = observation
-        state = observation.get("public_task_state", {})
-        accepted = isinstance(state, dict)
-        if capability_id in {"establish_target_contact", "move_object_to_region", "grasp_and_lift_object"}:
-            accepted = accepted and state.get("target_object_id") == arguments["target_object_id"]
-            accepted = accepted and state.get("target_object_position") == self.cube_position
-        if capability_id == "establish_target_contact":
-            accepted = accepted and state.get("target_face") == arguments["target_face"]
-        if capability_id == "move_object_to_region":
-            accepted = accepted and state.get("goal_center_m") == arguments["goal_center"]
-        if capability_id == "grasp_and_lift_object":
-            accepted = accepted and state.get("hold_height_delta_m") == arguments["hold_height_delta"]
-        if capability_id == "actuate_target_button":
-            accepted = accepted and state.get("specified_button_id") == arguments["button_id"]
-            accepted = accepted and state.get("button_position") == [0.43, -0.10, 0.080]
-        sdk.send_action({"shoulder_pan.pos": 1.0})
+        accepted = True
+        for _cycle in range(2):
+            observation = sdk.get_observation()
+            self.observation = observation
+            if _cycle == 0:
+                state = observation.get("public_task_state", {})
+                accepted = isinstance(state, dict)
+                if capability_id in {"establish_target_contact", "move_object_to_region", "grasp_and_lift_object"}:
+                    accepted = accepted and state.get("target_object_id") == arguments["target_object_id"]
+                    accepted = accepted and state.get("target_object_position") == self.cube_position
+                if capability_id == "establish_target_contact":
+                    accepted = accepted and state.get("target_face") == arguments["target_face"]
+                if capability_id == "move_object_to_region":
+                    accepted = accepted and state.get("goal_center_m") == arguments["goal_center"]
+                if capability_id == "grasp_and_lift_object":
+                    accepted = accepted and state.get("hold_height_delta_m") == arguments["hold_height_delta"]
+                if capability_id == "actuate_target_button":
+                    accepted = accepted and state.get("specified_button_id") == arguments["button_id"]
+                    accepted = accepted and state.get("button_position") == [0.43, -0.10, 0.080]
+            sdk.send_action({
+                f"{name}.pos": observation[f"{name}.pos"] * 0.01 + 0.1
+                for name in MOTOR_NAMES
+            })
         return {"accepted": accepted}
+
+
+class _FreshObservationCandidate:
+    def __init__(self) -> None:
+        self.first: dict[str, Any] | None = None
+        self.second: dict[str, Any] | None = None
+
+    def _invoke(self, _capability_id: str, _arguments: dict[str, Any], sdk: Any) -> dict[str, bool]:
+        self.first = sdk.get_observation()
+        sdk.send_action({
+            f"{name}.pos": self.first[f"{name}.pos"] * 0.01 + 0.1
+            for name in MOTOR_NAMES
+        })
+        self.second = sdk.get_observation()
+        sdk.send_action({
+            f"{name}.pos": self.second[f"{name}.pos"] * 0.01 + 0.1
+            for name in MOTOR_NAMES
+        })
+        return {
+            "fresh": self.second["shoulder_pan.pos"] != self.first["shoulder_pan.pos"]
+        }
+
+
+def _validated_feedback_candidate() -> ValidatedCandidateHandle:
+    source = """
+def capability_public_effect(*, _sdk):
+    first = _sdk.get_observation()
+    _sdk.send_action({
+        "shoulder_pan.pos": first["shoulder_pan.pos"] * 0.01 + 0.1,
+        "shoulder_lift.pos": first["shoulder_lift.pos"] * 0.01 + 0.1,
+        "elbow_flex.pos": first["elbow_flex.pos"] * 0.01 + 0.1,
+        "wrist_flex.pos": first["wrist_flex.pos"] * 0.01 + 0.1,
+        "wrist_roll.pos": first["wrist_roll.pos"] * 0.01 + 0.1,
+        "gripper.pos": first["gripper.pos"] * 0.01 + 0.1,
+    })
+    second = _sdk.get_observation()
+    _sdk.send_action({
+        "shoulder_pan.pos": second["shoulder_pan.pos"] * 0.01 + 0.1,
+        "shoulder_lift.pos": second["shoulder_lift.pos"] * 0.01 + 0.1,
+        "elbow_flex.pos": second["elbow_flex.pos"] * 0.01 + 0.1,
+        "wrist_flex.pos": second["wrist_flex.pos"] * 0.01 + 0.1,
+        "wrist_roll.pos": second["wrist_roll.pos"] * 0.01 + 0.1,
+        "gripper.pos": second["gripper.pos"] * 0.01 + 0.1,
+    })
+    return {"fresh": second["shoulder_pan.pos"] != first["shoulder_pan.pos"]}
+"""
+    return ValidatedCandidateHandle(
+        _HANDLE_TOKEN,
+        source=source,
+        source_hash=content_hash(source.encode("utf-8")),
+        implementation_manifest_hash=content_hash(b"so-feedback-manifest"),
+        implementation_bundle_hash=content_hash(b"so-feedback-bundle"),
+        contracts={
+            "public-effect": {
+                "inputs": [],
+                "function_name": "capability_public_effect",
+                "parameters": [],
+                "outputs": [
+                    {
+                        "name": "fresh",
+                        "type": "boolean",
+                        "shape": "scalar",
+                        "unit": "none",
+                        "frame": "none",
+                        "required": True,
+                    }
+                ],
+            }
+        },
+        a_report_hash=content_hash(b"so-feedback-validation-a"),
+    )
 
 
 class _Capture:
@@ -527,6 +610,47 @@ def test_validation_b_candidate_facade_projects_case_state_and_preserves_sdk_rou
         evidence = session.validation_evidence(_invocation())
         assert evidence.sdk_route_verified is True
         assert evidence.guard_results["sdk-route-verified"] is True
+    finally:
+        session.close()
+
+
+def test_formal_candidate_observation_is_fresh_after_each_framework_action() -> None:
+    session = _session([])
+    candidate = _FreshObservationCandidate()
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="validation-feedback-loop",
+            initial_state={"task_id": "T01"},
+        )
+        result = session.invoke(candidate, "public-effect", {})
+        assert result == {"fresh": True}
+        assert candidate.first is not None and candidate.second is not None
+        assert candidate.second["shoulder_pan.pos"] != candidate.first["shoulder_pan.pos"]
+
+        evidence = session.validation_evidence(_invocation())
+        assert evidence.sdk_route_verified is True
+        assert evidence.route_evidence["state_read_count"] == 2
+        assert evidence.route_evidence["feedback_cycle_count"] == 2
+        assert evidence.route_evidence["feedback_loop_observed"] is True
+        assert evidence.route_evidence["physics_steps"] >= 2
+    finally:
+        session.close()
+
+
+def test_formal_validated_source_runs_the_feedback_loop_through_the_public_facade() -> None:
+    session = _session([])
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="validation-validated-feedback-loop",
+            initial_state={"task_id": "T01"},
+        )
+        assert session.invoke(_validated_feedback_candidate(), "public-effect", {}) == {"fresh": True}
+        evidence = session.validation_evidence(_invocation())
+        assert evidence.sdk_route_verified is True
+        assert evidence.route_evidence["state_read_count"] == 2
+        assert evidence.route_evidence["feedback_cycle_count"] == 2
     finally:
         session.close()
 

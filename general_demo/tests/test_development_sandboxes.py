@@ -475,16 +475,18 @@ class _SOBackend:
         self.named_qpos = {name: float(index) for index, name in enumerate(SO_ARM101_JOINT_ORDER)}
         self.named_ctrl = {name: float(index) + 0.5 for index, name in enumerate(SO_ARM101_JOINT_ORDER)}
         self.present = {motor_id: 2048 for motor_id in SO_ARM101_MOTOR_IDS}
+        self.goal = dict(self.present)
 
     def reset(self) -> None:
         self.calls.append(("reset", None))
 
     def set_goal_ticks(self, values: dict[int, int]) -> None:
         self.calls.append(("set_goal_ticks", dict(values)))
-        self.present.update(values)
+        self.goal.update(values)
 
     def step(self, seconds: float) -> None:
         self.calls.append(("step", seconds))
+        self.present.update(self.goal)
 
     def present_ticks(self, motor_ids: object) -> dict[int, int]:
         return {int(motor_id): self.present[int(motor_id)] for motor_id in motor_ids}
@@ -505,17 +507,70 @@ class _SOBackend:
 def _so_source() -> str:
     return """
 def capability_capability_1(arg_target, *, _sdk):
+    for cycle in range(2):
+        observation = _sdk.get_observation()
+        action = {
+            "shoulder_pan.pos": observation["shoulder_pan.pos"] + (1.0 if cycle == 0 else 2.0),
+            "shoulder_lift.pos": observation["shoulder_lift.pos"] + 1.0,
+            "elbow_flex.pos": observation["elbow_flex.pos"] + 1.0,
+            "wrist_flex.pos": observation["wrist_flex.pos"] + 1.0,
+            "wrist_roll.pos": observation["wrist_roll.pos"] + 1.0,
+            "gripper.pos": observation["gripper.pos"] + 1.0,
+        }
+        _sdk.send_action(action)
+    return {"accepted": arg_target[0] == 0.0}
+"""
+
+
+def _so_one_read_one_write_source() -> str:
+    return """
+def capability_capability_1(arg_target, *, _sdk):
     observation = _sdk.get_observation()
+    _sdk.send_action({
+        "shoulder_pan.pos": observation["shoulder_pan.pos"] + 1.0,
+        "shoulder_lift.pos": observation["shoulder_lift.pos"] + 1.0,
+        "elbow_flex.pos": observation["elbow_flex.pos"] + 1.0,
+        "wrist_flex.pos": observation["wrist_flex.pos"] + 1.0,
+        "wrist_roll.pos": observation["wrist_roll.pos"] + 1.0,
+        "gripper.pos": observation["gripper.pos"] + 1.0,
+    })
+"""
+
+
+def _so_one_read_many_write_source() -> str:
+    return """
+def capability_capability_1(arg_target, *, _sdk):
+    _sdk.get_observation()
     action = {
-        "shoulder_pan.pos": observation["shoulder_pan.pos"],
-        "shoulder_lift.pos": observation["shoulder_lift.pos"],
-        "elbow_flex.pos": observation["elbow_flex.pos"],
-        "wrist_flex.pos": observation["wrist_flex.pos"],
-        "wrist_roll.pos": observation["wrist_roll.pos"],
-        "gripper.pos": observation["gripper.pos"],
+        "shoulder_pan.pos": 1.0,
+        "shoulder_lift.pos": 1.0,
+        "elbow_flex.pos": 1.0,
+        "wrist_flex.pos": 1.0,
+        "wrist_roll.pos": 1.0,
+        "gripper.pos": 50.0,
     }
     _sdk.send_action(action)
-    return {"accepted": arg_target[0] == 0.0}
+    _sdk.send_action(action)
+"""
+
+
+def _so_sleep_without_fresh_observation_source() -> str:
+    return """
+import time
+
+def capability_capability_1(arg_target, *, _sdk):
+    observation = _sdk.get_observation()
+    action = {
+        "shoulder_pan.pos": observation["shoulder_pan.pos"] + 1.0,
+        "shoulder_lift.pos": observation["shoulder_lift.pos"] + 1.0,
+        "elbow_flex.pos": observation["elbow_flex.pos"] + 1.0,
+        "wrist_flex.pos": observation["wrist_flex.pos"] + 1.0,
+        "wrist_roll.pos": observation["wrist_roll.pos"] + 1.0,
+        "gripper.pos": observation["gripper.pos"] + 1.0,
+    }
+    _sdk.send_action(action)
+    time.sleep(0.2)
+    _sdk.send_action(action)
 """
 
 
@@ -547,8 +602,10 @@ def test_so_executes_bound_source_through_public_facade_and_closes_backend() -> 
     assert feedback["status"] == "OK"
     assert feedback["observations"]["probe_id"] == "probe-1"
     assert feedback["observations"]["capability_id"] == "capability-1"
-    assert feedback["observations"]["accepted_command_count"] == 1
-    assert feedback["observations"]["physics_step_count"] == 5
+    assert feedback["observations"]["accepted_command_count"] == 2
+    assert feedback["observations"]["state_read_count"] == 2
+    assert feedback["observations"]["feedback_cycle_count"] == 2
+    assert feedback["observations"]["physics_step_count"] == 7
     assert feedback["observations"]["finite_observation_available"] is True
     assert feedback["observations"]["joint_positions_rad"] == [float(index) for index in range(6)]
 
@@ -556,12 +613,10 @@ def test_so_executes_bound_source_through_public_facade_and_closes_backend() -> 
     assert backend.path == "/pinned/so101/model.xml"
     assert backend.direction is False
     assert backend.closed
-    assert calls == [
-        ("reset", None),
-        ("set_goal_ticks", {motor_id: 2048 for motor_id in SO_ARM101_MOTOR_IDS}),
-        ("step", 0.25),
-        ("close", None),
-    ]
+    assert calls[0] == ("reset", None)
+    assert [name for name, _value in calls].count("set_goal_ticks") == 2
+    assert [value for name, value in calls if name == "step"] == [0.05, 0.05, 0.25]
+    assert calls[-1] == ("close", None)
 
 
 def test_so_source_coupled_feedback_passes_public_callback_boundary() -> None:
@@ -577,8 +632,53 @@ def test_so_source_coupled_feedback_passes_public_callback_boundary() -> None:
     )
     feedback = sandbox.run(_so_source(), _so_probe())
     assert feedback["status"] == "OK"
-    assert feedback["observations"]["accepted_command_count"] == 1
+    assert feedback["observations"]["accepted_command_count"] == 2
+    assert feedback["observations"]["feedback_cycle_count"] == 2
     assert instances[0].closed
+
+
+def test_so_one_read_one_write_is_inconclusive() -> None:
+    instances: list[_SOBackend] = []
+    feedback = SOArm101DevelopmentProbe(
+        "/pinned/so101/model.xml",
+        True,
+        backend_factory=_so_factory(instances),
+    )(_so_one_read_one_write_source(), _so_probe())
+
+    assert feedback["status"] == "INCONCLUSIVE"
+    assert feedback["observations"]["accepted_command_count"] == 1
+    assert feedback["observations"]["state_read_count"] == 1
+    assert feedback["observations"]["feedback_cycle_count"] == 1
+    assert feedback["observations"]["physics_step_count"] == 6
+
+
+def test_so_one_read_many_write_fixed_sequence_is_inconclusive() -> None:
+    instances: list[_SOBackend] = []
+    feedback = SOArm101DevelopmentProbe(
+        "/pinned/so101/model.xml",
+        True,
+        backend_factory=_so_factory(instances),
+    )(_so_one_read_many_write_source(), _so_probe())
+
+    assert feedback["status"] == "INCONCLUSIVE"
+    assert feedback["observations"]["accepted_command_count"] == 2
+    assert feedback["observations"]["state_read_count"] == 1
+    assert feedback["observations"]["feedback_cycle_count"] == 0
+    assert feedback["observations"]["physics_step_count"] == 7
+
+
+def test_so_virtual_sleep_without_a_fresh_observation_is_inconclusive() -> None:
+    instances: list[_SOBackend] = []
+    feedback = SOArm101DevelopmentProbe(
+        "/pinned/so101/model.xml",
+        True,
+        backend_factory=_so_factory(instances),
+    )(_so_sleep_without_fresh_observation_source(), _so_probe())
+
+    assert feedback["status"] == "INCONCLUSIVE"
+    assert feedback["observations"]["accepted_command_count"] == 2
+    assert feedback["observations"]["state_read_count"] == 1
+    assert feedback["observations"]["feedback_cycle_count"] == 1
 
 
 def test_so_bad_observation_sequence_and_list_action_are_candidate_errors() -> None:
