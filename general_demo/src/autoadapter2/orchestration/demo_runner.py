@@ -289,6 +289,8 @@ def _stage2_artifact(result: Any) -> dict[str, Any]:
         "implementation_manifest_seal": copy.deepcopy(result.manifest_seal),
         "llm_calls": result.llm_calls,
         "sandbox_calls": result.sandbox_calls,
+        "successful_sandbox_calls": result.successful_sandbox_calls,
+        "covered_sandbox_capability_ids": list(result.covered_sandbox_capability_ids),
         "call_log": copy.deepcopy(list(result.call_log)),
         "sandbox_log": copy.deepcopy(list(result.sandbox_log)),
         "diagnostics": copy.deepcopy(list(result.diagnostics)),
@@ -609,6 +611,8 @@ class GeneralDemoRunner:
             "implementation_manifest_hash": stage2.manifest_hash,
             "llm_calls": stage2.llm_calls,
             "sandbox_calls": stage2.sandbox_calls,
+            "successful_sandbox_calls": stage2.successful_sandbox_calls,
+            "covered_sandbox_capability_ids": list(stage2.covered_sandbox_capability_ids),
         })
         parents.add(stage2.binding_hash)
         if (

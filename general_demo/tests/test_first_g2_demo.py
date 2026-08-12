@@ -16,6 +16,7 @@ from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.generation import ModelApiClient, ModelApiConfig, model_api
 from autoadapter2.generation.model_api import DEFAULT_BASE_URL, DEFAULT_MODEL
 from autoadapter2.integration import write_stable_json
+from autoadapter2.implementation import CallbackSandbox
 from autoadapter2.orchestration.first_g2_demo import (
     FirstG2DemoConfig,
     ValidationAProfileTemplate,
@@ -29,7 +30,7 @@ from autoadapter2.orchestration.first_g2_demo import (
 from autoadapter2.validation import MeasurementSample
 from autoadapter2.validation.validation_a import _descriptor_match
 
-from test_general_demo_runner import _RobotSession, _plan
+from test_general_demo_runner import _RobotSession, _plan as _base_plan
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -41,6 +42,8 @@ class _FixtureModelClient:
     def __init__(self, models):
         self._models = models
         self.stages: list[str] = []
+        self._stage2_source: str | None = None
+        self._stage2_calls = 0
 
     def generate_json(self, stage, prompt, inputs):
         self.stages.append(stage)
@@ -49,6 +52,26 @@ class _FixtureModelClient:
             "blue_line": self._models.blue_line,
             "stage2": self._models.stage2,
         }[stage]
+        if stage == "stage2":
+            self._stage2_calls += 1
+            if self._stage2_source is None:
+                response = generator.generate_json(stage, prompt, inputs)
+                self._stage2_source = response["capability.py"]
+            if self._stage2_calls < 10:
+                capability_ids = [
+                    binding["capability_id"]
+                    for binding in inputs["binding_contract"]["bindings"]
+                ]
+                capability_id = capability_ids[(self._stage2_calls - 1) % len(capability_ids)]
+                return {
+                    "action": "sandbox",
+                    "capability.py": self._stage2_source,
+                    "probe": {
+                        "probe_id": f"fixture-probe-{self._stage2_calls}",
+                        "capability_id": capability_id,
+                    },
+                }
+            return {"action": "submit", "capability.py": self._stage2_source}
         return generator.generate_json(stage, prompt, inputs)
 
     def repair(self, request):
@@ -57,6 +80,40 @@ class _FixtureModelClient:
     def react(self, request):
         self.stages.append("react_consumer")
         return self._models.consumer(request)
+
+
+def _fixture_sandbox() -> CallbackSandbox:
+    return CallbackSandbox(
+        lambda _source, probe: {
+            "status": "OK",
+            "summary": "The public fixture probe completed.",
+            "observations": {
+                "probe_id": probe["probe_id"],
+                "capability_id": probe["capability_id"],
+            },
+            "exception": None,
+        }
+    )
+
+
+def _plan(root: Path, robot: str, width: int):
+    plan, models = _base_plan(root, robot, width)
+    snapshot_path = root / plan.run_snapshot_path
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    budget_path = root / snapshot["budget_ref"]["path"]
+    budget = json.loads(budget_path.read_text(encoding="utf-8"))
+    budget["stage2"] = {
+        "max_llm_calls": 30,
+        "min_llm_calls_before_submit": 10,
+        "min_successful_sandbox_calls_before_submit": 5,
+        "require_all_design_capability_probes": True,
+    }
+    write_stable_json(budget_path, budget)
+    snapshot["budget_ref"]["sha256"] = content_hash(
+        budget_path.read_bytes()
+    ).removeprefix("sha256:")
+    write_stable_json(snapshot_path, snapshot)
+    return plan, models
 
 
 def _passing_value(check):
@@ -197,6 +254,7 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
             validation_harness_config=plan.validation_harness_config,
             video_profile=profile,
             model_client=model_client,
+            sandbox=_fixture_sandbox(),
             test_only_allow_fixture_session=True,
         )
     )
@@ -255,8 +313,23 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
         "implementation_bundle_hash", "binding_contract", "binding_seal",
         "starter_skeleton", "capability_source", "source_seal",
         "implementation_manifest", "implementation_manifest_seal",
-        "call_log", "sandbox_log", "diagnostics",
+        "call_log", "sandbox_log", "successful_sandbox_calls",
+        "covered_sandbox_capability_ids", "diagnostics",
     } <= set(stage_artifacts["stages"]["stage2"])
+    stage2_artifact = stage_artifacts["stages"]["stage2"]
+    assert stage2_artifact["llm_calls"] >= 10
+    assert stage2_artifact["successful_sandbox_calls"] >= 5
+    assert stage2_artifact["covered_sandbox_capability_ids"] == [
+        "set-joint-configuration"
+    ]
+    assert "sandbox_unavailable" not in json.dumps(stage2_artifact)
+    stage2_summary = next(
+        item for item in summary["stages"] if item["stage"] == "stage2"
+    )
+    assert stage2_summary["successful_sandbox_calls"] >= 5
+    assert stage2_summary["covered_sandbox_capability_ids"] == [
+        "set-joint-configuration"
+    ]
     repair_artifacts = stage_artifacts["stages"]["validation_and_repair"]["repair"]
     assert repair_artifacts["initial_validation_a"]["report_seal"]
     assert repair_artifacts["initial_validation_b"]["report_seal"]
@@ -293,6 +366,7 @@ def _complete_first_g2_fixture_run(tmp_path: Path):
                 "closure-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
             ),
             model_client=_FixtureModelClient(models),
+            sandbox=_fixture_sandbox(),
             test_only_allow_fixture_session=True,
         )
     )
@@ -399,6 +473,7 @@ def test_first_g2_materializes_library_template_after_stage1(tmp_path: Path) -> 
                 "first-g2-template-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
             ),
             model_client=model_client,
+            sandbox=_fixture_sandbox(),
             test_only_allow_fixture_session=True,
         )
     )
@@ -481,6 +556,7 @@ def test_validation_failure_persists_a_verifiable_terminal_closure(tmp_path: Pat
                 "validation-failure-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
             ),
             model_client=_NonRepairingModel(models),
+            sandbox=_fixture_sandbox(),
             test_only_allow_fixture_session=True,
         )
     )
@@ -523,6 +599,7 @@ def test_incomplete_validation_infrastructure_abort_has_no_closure(
                 "validation-abort-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
             ),
             model_client=_FixtureModelClient(models),
+            sandbox=_fixture_sandbox(),
             test_only_allow_fixture_session=True,
         )
     )
@@ -567,6 +644,7 @@ def test_terminal_stage1_persists_call_log_and_closes_session(tmp_path: Path) ->
                 "terminal-stage1-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
             ),
             model_client=model_client,
+            sandbox=_fixture_sandbox(),
             test_only_allow_fixture_session=True,
         )
     )
@@ -786,7 +864,12 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
         "schema_version": "1.0.0",
         "stage1": {"correction_calls": 2},
         "blue_line": {"max_llm_calls": 3},
-        "stage2": {"llm_calls": 30},
+        "stage2": {
+            "max_llm_calls": 30,
+            "min_llm_calls_before_submit": 10,
+            "min_successful_sandbox_calls_before_submit": 5,
+            "require_all_design_capability_probes": True,
+        },
         "repair": {"max_repairs": 10, "max_infrastructure_retries": 1},
         "consumer": {"max_steps": 4},
         "demo": {"demo_repetitions": 1},
@@ -794,6 +877,9 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
     stage1, stage2, repair, consumer = _budgets(budget)
     assert stage1.max_correction_calls == 2
     assert stage2.max_llm_calls == 30
+    assert stage2.min_llm_calls_before_submit == 10
+    assert stage2.min_successful_sandbox_calls_before_submit == 5
+    assert stage2.require_all_design_capability_probes is True
     assert repair.max_repairs == 10
     assert consumer["consumer_max_steps"] == 4
 

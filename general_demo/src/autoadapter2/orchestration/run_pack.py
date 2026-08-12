@@ -398,7 +398,12 @@ def _validate_budget(value: Mapping[str, Any]) -> dict[str, Any]:
     expected = {
         "stage1": {"max_correction_calls": 2},
         "blue_line": {"max_inference_calls": 3},
-        "stage2": {"max_llm_calls": 30},
+        "stage2": {
+            "max_llm_calls": 30,
+            "min_llm_calls_before_submit": 10,
+            "min_successful_sandbox_calls_before_submit": 5,
+            "require_all_design_capability_probes": True,
+        },
         "repair": {"max_repairs": 10, "max_infrastructure_retries": 1},
         "consumer": {"max_steps": 4},
         "demo": {"repetitions": 1},

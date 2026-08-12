@@ -8,7 +8,10 @@
     "max_inference_calls": 3
   },
   "stage2": {
-    "max_llm_calls": 30
+    "max_llm_calls": 30,
+    "min_llm_calls_before_submit": 10,
+    "min_successful_sandbox_calls_before_submit": 5,
+    "require_all_design_capability_probes": true
   },
   "repair": {
     "max_repairs": 10,

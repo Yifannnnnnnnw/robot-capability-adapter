@@ -34,7 +34,9 @@ from ..foundation.hashing import content_hash, is_content_hash, sha256_bytes
 from ..foundation.seals import create_seal, verify_seal
 from ..generation import ModelApiClient, ModelApiConfig, Stage1Config
 from ..generation.model_api import DEFAULT_BASE_URL, DEFAULT_MODEL
-from ..implementation import Stage2Config
+from ..implementation import CallbackSandbox, Stage2Config
+from ..integrations.so_arm101.development_sandbox import create_so_arm101_development_probe
+from ..integrations.unitree_go2.development_sandbox import create_go2_development_probe
 from ..integration import ExperimentIntegrationGate, write_stable_json
 from ..integration.artifacts import load_json_artifact, load_run_snapshot, verify_file_reference
 from ..libraries import TasksLibrary
@@ -236,6 +238,7 @@ class FirstG2DemoConfig:
     validation_harness_config: Mapping[str, Any] | None = None
     video_profile: FrozenVideoProfile | None = None
     model_client: ModelClient | None = None
+    sandbox: CallbackSandbox | None = None
     test_only_allow_fixture_session: bool = False
 
     def __post_init__(self) -> None:
@@ -255,6 +258,12 @@ class FirstG2DemoConfig:
         if not self.test_only_allow_fixture_session and self.model_client is not None:
             raise ContractError(
                 "production first G2 Demo does not accept a caller model client"
+            )
+        if self.sandbox is not None and not isinstance(self.sandbox, CallbackSandbox):
+            raise ContractError("first G2 Demo sandbox must be the callback-only Sandbox boundary")
+        if not self.test_only_allow_fixture_session and self.sandbox is not None:
+            raise ContractError(
+                "production first G2 Demo does not accept a caller Sandbox"
             )
         if not self.test_only_allow_fixture_session and any(
             value is not None
@@ -560,12 +569,18 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
                 )
         else:
             validation_a_profile = validation_a_source
+        sandbox = (
+            config.sandbox
+            if config.test_only_allow_fixture_session
+            else _production_development_sandbox(config.robot, session)
+        )
         models = DemoModelAdapters(
             stage1=current_model_capture,
             blue_line=current_model_capture,
             stage2=current_model_capture,
             repair=current_model_capture.repair,
             consumer=current_model_capture.react,
+            sandbox=sandbox,
         )
         plan = DemoRunPlan(
             run_id=run_id,
@@ -706,6 +721,46 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         closure_hash=closure_hash,
         runner_result=result,
     )
+
+
+def _production_development_sandbox(
+    robot: str,
+    session: EvaluationRobotSession,
+) -> CallbackSandbox:
+    """Bind the public development probe to the verified live session inputs."""
+
+    model_path = getattr(session, "development_model_path", None)
+    if model_path is None:
+        model_path = getattr(session, "composed_model_path", None)
+    if model_path is None:
+        # The production factories keep these values private; this orchestration
+        # boundary reads them only to bind the already-verified probe input.
+        model_path = getattr(session, "_composed_model_path", None)
+    if model_path is None:
+        model_path = getattr(session, "model_path", None)
+    if model_path is None:
+        model_path = getattr(session, "_model_path", None)
+    if not isinstance(model_path, (str, Path)):
+        raise ContractError(
+            f"production {robot} session did not expose its verified development model path"
+        )
+    if robot == "unitree-go2":
+        provider = create_go2_development_probe(model_path)
+    elif robot == "so-arm101":
+        direction = getattr(session, "gripper_tick_increases_qpos", None)
+        if direction is None:
+            direction = getattr(session, "_gripper_tick_increases_qpos", None)
+        if not isinstance(direction, bool):
+            raise ContractError(
+                "production SO-ARM101 session did not expose its frozen gripper direction"
+            )
+        provider = create_so_arm101_development_probe(model_path, direction)
+    else:  # pragma: no cover - FirstG2DemoConfig closes this set
+        raise ContractError(f"unsupported first G2 development probe robot: {robot}")
+    contract = getattr(provider, "contract", None)
+    if not isinstance(contract, Mapping):
+        raise ContractError(f"production {robot} development probe has no public contract")
+    return CallbackSandbox(provider, contract=contract)
 
 
 def _load_production_session_factory(robot: str) -> RobotSessionFactory:
@@ -1271,9 +1326,39 @@ def _budgets(
     )
     if blue_calls != 3:
         raise ContractError("budget.blue_line must freeze exactly three inference calls")
-    stage2_field, stage2_calls = one_alias(
-        "stage2", ("max_inference_calls", "max_llm_calls", "llm_calls")
+    stage2_values = role_object("stage2")
+    stage2_fields = {
+        "max_llm_calls",
+        "min_llm_calls_before_submit",
+        "min_successful_sandbox_calls_before_submit",
+        "require_all_design_capability_probes",
+    }
+    if set(stage2_values) != stage2_fields:
+        raise ContractError("budget.stage2 has unknown or missing closed fields")
+    stage2_calls = integer("stage2", stage2_values["max_llm_calls"], "max_llm_calls")
+    min_stage2_calls = integer(
+        "stage2",
+        stage2_values["min_llm_calls_before_submit"],
+        "min_llm_calls_before_submit",
     )
+    min_successful_sandbox_calls = integer(
+        "stage2",
+        stage2_values["min_successful_sandbox_calls_before_submit"],
+        "min_successful_sandbox_calls_before_submit",
+    )
+    require_all_design_capability_probes = stage2_values[
+        "require_all_design_capability_probes"
+    ]
+    if not isinstance(require_all_design_capability_probes, bool):
+        raise ContractError("budget.stage2.require_all_design_capability_probes must be a boolean")
+    if (
+        stage2_calls,
+        min_stage2_calls,
+        min_successful_sandbox_calls,
+        require_all_design_capability_probes,
+    ) != (30, 10, 5, True):
+        raise ContractError("budget.stage2 does not match the frozen first G2 contract")
+    stage2_field = "max_llm_calls"
 
     repair_values = role_object("repair")
     if set(repair_values) not in (
@@ -1296,7 +1381,12 @@ def _budgets(
 
     return (
         Stage1Config(stage1_calls),
-        Stage2Config(stage2_calls),
+        Stage2Config(
+            max_llm_calls=stage2_calls,
+            min_llm_calls_before_submit=min_stage2_calls,
+            min_successful_sandbox_calls_before_submit=min_successful_sandbox_calls,
+            require_all_design_capability_probes=require_all_design_capability_probes,
+        ),
         RepairConfig(max_repairs=repair_calls, max_infrastructure_retries=retry_count),
         {
             "consumer_id": "react-consumer-experimental",
