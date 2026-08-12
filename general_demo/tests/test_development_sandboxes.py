@@ -27,16 +27,41 @@ from autoadapter2.integrations.unitree_go2.development_sandbox import (
 def _go2_probe(**overrides: Any) -> dict[str, Any]:
     probe: dict[str, Any] = {
         "probe_id": "probe-1",
-        "capability_id": "capability-1",
-        "target_q": [0.1 + (0.01 * index) for index in range(12)],
-        "target_dq": [0.2 + (0.01 * index) for index in range(12)],
-        "kp": [2.0 + (0.1 * index) for index in range(12)],
-        "kd": [0.25 + (0.01 * index) for index in range(12)],
-        "tau": [0.1 + (0.01 * index) for index in range(12)],
-        "steps": 2,
+        "capability_id": "capability_1",
+        "arguments": {"target": 1.0},
+        "horizon_s": 0.2,
     }
     probe.update(overrides)
     return probe
+
+
+def _go2_source(command: str = "target") -> str:
+    return f"""
+from unitree_sdk2py.core.channel import ChannelPublisher
+from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
+from unitree_sdk2py.idl.unitree_go.msg.dds_ import LowCmd_
+from unitree_sdk2py.utils.crc import CRC
+import time
+
+def capability_capability_1(target, *, _sdk):
+    publisher = ChannelPublisher('rt/lowcmd', LowCmd_)
+    publisher.Init()
+    command = unitree_go_msg_dds__LowCmd_()
+    for index, slot in enumerate(command.motor_cmd):
+        slot.mode = 1
+        if index == 0:
+            slot.q = {command}
+            slot.kp = 10.0
+        else:
+            slot.q = 2146000000.0
+            slot.dq = 16000.0
+            slot.kp = 0.0
+            slot.kd = 0.0
+            slot.tau = 0.0
+    command.crc = CRC().Crc(command)
+    publisher.Write(command)
+    time.sleep(0.2)
+"""
 
 
 class _Go2Backend:
@@ -44,8 +69,10 @@ class _Go2Backend:
         self.instances = instances
         self.path = path
         self.time = 0.0
-        self.q = [0.25 + index for index in range(12)]
-        self.dq = [0.75 + index for index in range(12)]
+        self.timestep = 0.1
+        self.actuator_names = GO2_MOTOR_ORDER
+        self.q = [0.0 for _ in range(12)]
+        self.dq = [0.0 for _ in range(12)]
         self.controls: list[tuple[float, ...]] = []
         self.events: list[str] = []
         self.closed = False
@@ -65,9 +92,12 @@ class _Go2Backend:
         return SimpleNamespace(
             q=tuple(self.q),
             dq=tuple(self.dq),
+            actuator_force=tuple(self.controls[-1]) if self.controls else (0.0,) * 12,
             frame_position=(1.0, 2.0, 3.0),
             frame_linear_velocity=(4.0, 5.0, 6.0),
             imu_quaternion=(1.0, 0.0, 0.0, 0.0),
+            imu_gyroscope=(0.0, 0.0, 0.0),
+            imu_accelerometer=(0.0, 0.0, 0.0),
         )
 
     def set_controls(self, controls: tuple[float, ...]) -> None:
@@ -78,7 +108,9 @@ class _Go2Backend:
         self.events.append("step")
         if self.fail_step:
             raise RuntimeError("step failed")
-        self.time += 0.1
+        self.dq[0] = self.controls[-1][0] if self.controls else 0.0
+        self.q[0] += self.dq[0] * self.timestep
+        self.time += self.timestep
 
     def close(self) -> None:
         self.events.append("close")
@@ -89,7 +121,7 @@ def test_contracts_are_json_compatible_and_declare_closed_public_surfaces() -> N
     for contract, expected_fields, expected_motor_order, expected_joint_order in (
         (
             GO2_DEVELOPMENT_PROBE_CONTRACT,
-            {"probe_id", "capability_id", "target_q", "target_dq", "kp", "kd", "tau", "steps"},
+            {"probe_id", "capability_id", "arguments", "horizon_s"},
             GO2_MOTOR_ORDER,
             GO2_JOINT_ORDER,
         ),
@@ -104,13 +136,13 @@ def test_contracts_are_json_compatible_and_declare_closed_public_surfaces() -> N
         assert set(contract["probe_fields"]) == expected_fields
         assert contract["motor_order"] == list(expected_motor_order)
         assert contract["joint_order"] == list(expected_joint_order)
-        assert contract["capability_source"]["execution"] is False
+        assert contract["capability_source"]["execution"] is (contract is GO2_DEVELOPMENT_PROBE_CONTRACT)
         text = json.dumps(contract).lower()
         for forbidden in ("private", "criterion", "validation", "threshold", "mujoco", "simulator", "raw_state", "score", "target_error"):
             assert forbidden not in text
 
 
-def test_go2_applies_ordered_pd_equation_and_closes_fresh_backend() -> None:
+def test_go2_executes_source_and_distinct_sources_have_distinct_physical_outcomes() -> None:
     instances: list[_Go2Backend] = []
     path = "/pinned/go2/scene.xml"
 
@@ -119,66 +151,36 @@ def test_go2_applies_ordered_pd_equation_and_closes_fresh_backend() -> None:
 
     callback = Go2DevelopmentProbe(path, backend_factory=factory)
     probe = _go2_probe()
-    feedback = callback("raise RuntimeError('must not run')", probe)
+    first = callback(_go2_source("target"), probe)
+    second = callback(_go2_source("target * 2.0"), probe)
 
-    assert feedback["status"] == "OK"
-    assert feedback["exception"] is None
-    observations = feedback["observations"]
-    assert observations["probe_id"] == "probe-1"
-    assert observations["capability_id"] == "capability-1"
-    assert observations["joint_positions_rad"] == [0.25 + index for index in range(12)]
-    assert observations["joint_velocities_rad_s"] == [0.75 + index for index in range(12)]
-    assert observations["frame_position_m"] == [1.0, 2.0, 3.0]
-    assert observations["frame_linear_velocity_m_s"] == [4.0, 5.0, 6.0]
-    assert observations["imu_quaternion_wxyz"] == [1.0, 0.0, 0.0, 0.0]
+    assert first["status"] == second["status"] == "OK"
+    assert first["observations"]["accepted_command_count"] == 1
+    assert first["observations"]["simulation_time_s"] == 0.2
+    assert first["observations"]["frame_position_m"] == [1.0, 2.0, 3.0]
+    assert first["observations"]["frame_linear_velocity_m_s"] == [4.0, 5.0, 6.0]
+    assert first["observations"]["orientation_alignment"] == 1.0
+    assert first["observations"]["finite_observation_available"] is True
+    assert first["observations"]["contact_available"] is False
+    assert first["observations"] != second["observations"]
 
-    backend = instances[0]
-    assert backend.path == path
-    assert backend.closed
-    assert backend.events == [
-        "reset",
-        "sensors", "set_controls", "step",
-        "sensors", "set_controls", "step",
-        "sensors",
-        "close",
-    ]
-    expected = tuple(
-        probe["tau"][index]
-        + probe["kp"][index] * (probe["target_q"][index] - backend.q[index])
-        + probe["kd"][index] * (probe["target_dq"][index] - backend.dq[index])
-        for index in range(12)
-    )
-    assert backend.controls == [expected, expected]
-
-    second = callback("pass", _go2_probe(probe_id="probe-2", steps=1))
-    assert second["status"] == "OK"
-    assert len(instances) == 2
     assert all(item.closed for item in instances)
 
 
-@pytest.mark.parametrize(
-    "probe",
-    [
-        _go2_probe(target_q=[0.0] * 11),
-        _go2_probe(kp=[float("nan")] + [0.0] * 11),
-        _go2_probe(steps=GO2_MAX_STEPS + 1),
-        {"probe_id": "p", "capability_id": "c"},
-    ],
-)
-def test_go2_rejects_bad_probe_before_backend_creation(probe: dict[str, Any]) -> None:
+def test_go2_rejects_bad_probe_before_backend_creation() -> None:
     created: list[object] = []
     callback = Go2DevelopmentProbe(
         "/pinned/go2/scene.xml",
         backend_factory=lambda _path: created.append(object()),
     )
-    feedback = callback("pass", probe)
-    assert feedback == {
-        "status": "ERROR",
-        "summary": "Go2 probe input rejected.",
-        "observations": {},
-        "exception": feedback["exception"],
-    }
-    assert isinstance(feedback["exception"], str)
+    for probe in (
+        _go2_probe(arguments=[]),
+        _go2_probe(horizon_s=0.0),
+        _go2_probe(extra=True),
+    ):
+        feedback = callback("pass", probe)
+        assert feedback["status"] == "ERROR"
+        assert isinstance(feedback["exception"], str)
     assert created == []
 
 
@@ -190,12 +192,21 @@ def test_go2_sandbox_feedback_is_accepted_by_public_callback_boundary() -> None:
             backend_factory=lambda path: _Go2Backend(instances, path),
         )
     )
-    feedback = callback.run("pass", _go2_probe(steps=1))
+    feedback = callback.run(_go2_source(), _go2_probe(horizon_s=0.1))
     assert feedback["status"] == "OK"
-    assert feedback["observations"]["capability_id"] == "capability-1"
+    assert feedback["observations"]["capability_id"] == "capability_1"
 
 
-def test_go2_backend_failure_is_public_error_and_still_closes() -> None:
+def test_go2_no_command_is_inconclusive_and_backend_failure_is_error() -> None:
+    no_command = "def capability_capability_1(target, *, _sdk):\n    return target\n"
+    instances: list[_Go2Backend] = []
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend(instances, path),
+    )(no_command, _go2_probe())
+    assert feedback["status"] == "INCONCLUSIVE"
+    assert feedback["observations"]["accepted_command_count"] == 0
+
     instances: list[_Go2Backend] = []
 
     def factory(path: object) -> _Go2Backend:
@@ -206,10 +217,81 @@ def test_go2_backend_failure_is_public_error_and_still_closes() -> None:
     feedback = Go2DevelopmentProbe(
         "/pinned/go2/scene.xml",
         backend_factory=factory,
-    )("pass", _go2_probe(steps=1))
+    )(_go2_source(), _go2_probe(horizon_s=0.1))
     assert feedback["status"] == "ERROR"
     assert feedback["exception"] == "probe_execution_error"
     assert instances[0].closed
+
+
+@pytest.mark.parametrize("mutation", ["crc", "width", "finite"])
+def test_go2_bridge_rejects_bad_crc_width_and_nonfinite_commands(mutation: str) -> None:
+    source = _go2_source()
+    if mutation == "crc":
+        source = source.replace("publisher.Write(command)", "command.crc += 1\n    publisher.Write(command)")
+    elif mutation == "width":
+        source = source.replace("publisher.Write(command)", "command.motor_cmd = command.motor_cmd[:19]\n    publisher.Write(command)")
+    else:
+        source = source.replace("command.crc = CRC().Crc(command)", "command.motor_cmd[0].q = float('nan')\n    command.crc = CRC().Crc(command)")
+    instances: list[_Go2Backend] = []
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend(instances, path),
+    )(source, _go2_probe())
+    assert feedback["status"] == "INCONCLUSIVE"
+    assert feedback["observations"]["accepted_command_count"] == 0
+    assert feedback["observations"]["rejected_command_count"] == 1
+
+
+def test_go2_fake_sleep_advances_without_wall_delay_and_stale_clears() -> None:
+    instances: list[_Go2Backend] = []
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend(instances, path),
+    )(_go2_source(), _go2_probe(horizon_s=0.3))
+    assert feedback["status"] == "OK"
+    assert feedback["observations"]["simulation_time_s"] == 0.2
+    assert instances[0].controls[-1] == (0.0,) * 12
+
+
+def test_go2_execution_is_bounded_for_a_tight_loop() -> None:
+    source = "def capability_capability_1(target, *, _sdk):\n    while True:\n        pass\n"
+    instances: list[_Go2Backend] = []
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend(instances, path),
+    )(source, _go2_probe())
+    assert feedback["status"] == "ERROR"
+    assert feedback["exception"] == "execution_limit"
+    assert instances[0].closed
+
+
+def test_go2_transport_keeps_only_latest_command() -> None:
+    source = _go2_source().replace(
+        "publisher.Write(command)\n    time.sleep",
+        "publisher.Write(command)\n    command.motor_cmd[0].q = 2.0\n    command.crc = CRC().Crc(command)\n    publisher.Write(command)\n    time.sleep",
+    )
+    instances: list[_Go2Backend] = []
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend(instances, path),
+    )(source, _go2_probe())
+    assert feedback["status"] == "OK"
+    assert feedback["observations"]["accepted_command_count"] == 1
+    assert feedback["observations"]["joint_positions_rad"][0] == 2.0
+
+
+def test_go2_lowcmd_idl_type_is_not_a_default_constructor() -> None:
+    source = _go2_source().replace(
+        "command = unitree_go_msg_dds__LowCmd_()",
+        "command = LowCmd_()",
+    )
+    instances: list[_Go2Backend] = []
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend(instances, path),
+    )(source, _go2_probe())
+    assert feedback["status"] == "ERROR"
+    assert feedback["exception"] == "probe_execution_error"
 
 
 def _so_probe(**overrides: Any) -> dict[str, Any]:
