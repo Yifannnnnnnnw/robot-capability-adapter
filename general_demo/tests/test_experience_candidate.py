@@ -50,6 +50,7 @@ def _make_closed_run(
     *,
     status: str = "COMPLETE",
     include_sdk_projection: bool = True,
+    include_feedback_loop: bool = False,
 ) -> tuple[Path, Path, Path]:
     root = tmp_path
     run = root / "general_demo" / "runs" / "closed-go2"
@@ -97,6 +98,54 @@ def _make_closed_run(
                 "private_projection": "must not be copied",
             },
         }
+    stage2_artifacts: dict[str, object] = {
+        "status": status,
+        "diagnostics": [{"code": "STAGE2_PUBLIC_CODE", "message": "ok"}],
+        "infrastructure_error": "public infrastructure issue",
+        "seed": 7,
+        "video_manifest": {"camera": "private"},
+        "credentials": "do-not-copy",
+    }
+    if include_feedback_loop:
+        stage2_artifacts.update({
+            "sandbox_calls": 2,
+            "successful_sandbox_calls": 0,
+            "diagnostics": [
+                {"code": "STAGE2_PUBLIC_CODE", "message": "ok"},
+                {"code": "SDK_SHAPE_ERROR", "message": "public SDK shape issue"},
+                {"code": "SDK_TIMING_ERROR", "message": "public SDK timing issue"},
+            ],
+            "sandbox_log": [
+                {
+                    "source_hash": "sha256:" + "1" * 64,
+                    "feedback": {
+                        "status": "INCONCLUSIVE",
+                        "summary": "public effect did not converge",
+                        "observations": {
+                            "source_hash": "sha256:" + "1" * 64,
+                            "accepted_command_count": 60,
+                            "state_read_count": 1,
+                            "feedback_cycle_count": 1,
+                        },
+                        "exception": "sdk_shape_error",
+                    },
+                },
+                {
+                    "source_hash": "sha256:" + "2" * 64,
+                    "feedback": {
+                        "status": "INCONCLUSIVE",
+                        "summary": "public effect did not converge",
+                        "observations": {
+                            "source_hash": "sha256:" + "2" * 64,
+                            "accepted_command_count": 75,
+                            "state_read_count": 0,
+                            "feedback_cycle_count": 0,
+                        },
+                        "exception": "sdk_timing_error",
+                    },
+                },
+            ],
+        })
     stage_artifacts = {
         "artifact_type": "first_g2_stage_artifacts",
         "schema_version": "1.0.0",
@@ -105,14 +154,7 @@ def _make_closed_run(
         "stages": {
             "integration_gate": {"status": "READY", "diagnostics": []},
             "stage1": stage1_artifacts,
-            "stage2": {
-                "status": status,
-                "diagnostics": [{"code": "STAGE2_PUBLIC_CODE", "message": "ok"}],
-                "infrastructure_error": "public infrastructure issue",
-                "seed": 7,
-                "video_manifest": {"camera": "private"},
-                "credentials": "do-not-copy",
-            },
+            "stage2": stage2_artifacts,
             "validation_and_repair": {
                 "status": "FAIL",
                 "repair": {
@@ -150,7 +192,11 @@ def _make_closed_run(
                     ],
                     "candidate_source": "def private_winning_source(): return qpos",
                     "private_threshold": 0.1,
-                    "raw_trace": {"qpos": [0.0], "credentials": "private"},
+                    "raw_trace": {
+                        "qpos": [0.0],
+                        "credentials": "private",
+                        "code": "RAW_TRACE_CODE_MUST_NOT_LEAK",
+                    },
                 },
             },
         },
@@ -258,6 +304,58 @@ def test_complete_and_terminal_failed_runs_propose_outside_run_without_mutation(
     assert "executions" not in callback_text
     assert "candidate_source" not in callback_text
     assert not (root / "general_demo" / "libraries" / "experience").exists()
+
+
+def test_failed_run_digest_exposes_bounded_loop_aggregate_and_allowlisted_sdk_categories(
+    tmp_path: Path,
+) -> None:
+    root, closure_path, closure_seal_path = _make_closed_run(
+        tmp_path,
+        status="STAGE2_FAILED",
+        include_feedback_loop=True,
+    )
+    seen: list[dict[str, object]] = []
+
+    def agent(evidence_digest: dict[str, object]) -> dict[str, object]:
+        seen.append(copy.deepcopy(evidence_digest))
+        return _semantic_fields(recipient_class="implementation")
+
+    result = propose_experience_candidate(
+        root,
+        closure_path,
+        closure_seal_path,
+        "feedback-loop-lesson",
+        evolution_cases_root=root / "evolution_cases",
+        evolution_agent=agent,
+    )
+
+    assert result.candidate_path.is_file()
+    assert len(seen) == 1
+    digest = seen[0]
+    assert digest["feedback_loop"] == {
+        "sandbox_calls": 2,
+        "successful_sandbox_calls": 0,
+        "accepted_command_count": 135,
+        "state_read_count": 1,
+        "feedback_cycle_count": 1,
+    }
+    assert digest["counts"]["accepted_command_count_total"] == 135
+    assert digest["counts"]["state_read_count_total"] == 1
+    assert digest["counts"]["feedback_cycle_count_total"] == 1
+    assert digest["counts"]["successful_sandbox_calls_total"] == 0
+    assert digest["sdk_public_error_categories"] == ["shape", "timing"]
+
+    callback_text = canonical_bytes(digest).decode("utf-8").casefold()
+    for forbidden in (
+        "source_hash",
+        "candidate_source",
+        "raw_trace",
+        "raw_trace_code_must_not_leak",
+        "threshold",
+        "seed",
+        "credentials",
+    ):
+        assert forbidden not in callback_text
 
 
 def test_candidate_and_report_have_exact_shapes_canonical_hashes_and_immutable_seals(

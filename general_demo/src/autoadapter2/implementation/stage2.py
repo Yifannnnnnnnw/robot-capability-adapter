@@ -18,6 +18,7 @@ from ..foundation.errors import ContractError
 from ..foundation.hashing import content_hash
 from ..foundation.seals import create_seal
 from ..generation.llm import JsonGenerator
+from ..generation.model_api import IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 from .binding import PythonBinding, derive_implementation_manifest, derive_python_binding, verify_capability_source
 from .bundle import ImplementationBundle, validate_implementation_bundle
 from .sandbox import CallbackSandbox, get_sandbox_contract
@@ -56,10 +57,10 @@ and public result fields exactly as supplied; physical behavior is assessed afte
 
 INPUT_JSON includes a closed sandbox_contract and public submission_requirements. The Sandbox is
 callback-only: use only varied public probes described by sandbox_contract and never request a
-direct simulator or private evaluation handle. Revise the working source from public Sandbox feedback.
+direct simulator or direct evaluation handle. Revise the working source from public Sandbox feedback.
 Do not submit before every submission requirement is met; a premature submit is
 rejected with public diagnostics, while its working source is retained and the loop continues.
-""".strip()
+""".strip() + "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 _ACTION_FIELDS = {
     "sandbox": {"action", "capability.py", "probe"},
     "submit": {"action", "capability.py"},
@@ -317,7 +318,116 @@ def _public_repair_diagnostics(value: Any) -> list[dict[str, str]]:
     return diagnostics
 
 
-def _public_sandbox_feedback(value: Any) -> dict[str, Any]:
+_FEEDBACK_LOOP_COUNT_FIELDS = (
+    "state_read_count",
+    "feedback_cycle_count",
+    "accepted_command_count",
+)
+_FEEDBACK_REVISION_FIELDS = (
+    "source_hash",
+    "submitted_source_hash",
+    "submitted_revision",
+    "revision",
+    "source_revision",
+)
+_FEEDBACK_HEALTH_KEY_HINTS = (
+    "health",
+    "terminal",
+    "finite_observation",
+    "contact",
+)
+_FEEDBACK_LOOP_NEXT_STEP = (
+    "Read fresh public state, compute and send a state-dependent action, allow "
+    "Framework-owned execution time or physics to advance, then read again and "
+    "correct until the public effect converges or a bounded timeout is reached."
+)
+
+
+def _bounded_public_feedback_value(value: Any, *, depth: int = 0) -> Any:
+    """Keep rendered health details public, JSON-shaped, and bounded."""
+
+    if depth > 2:
+        return None
+    if isinstance(value, Mapping):
+        return {
+            str(key): _bounded_public_feedback_value(item, depth=depth + 1)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+            if isinstance(key, str)
+        }
+    if isinstance(value, list):
+        return [_bounded_public_feedback_value(item, depth=depth + 1) for item in value[:16]]
+    if isinstance(value, tuple):
+        return [_bounded_public_feedback_value(item, depth=depth + 1) for item in value[:16]]
+    if isinstance(value, str):
+        return " ".join(value.split())[:320]
+    if value is None or isinstance(value, (int, float, bool)):
+        return value
+    return None
+
+
+def _feedback_loop_projection(
+    feedback: Mapping[str, Any],
+    observations: Mapping[str, Any],
+    *,
+    submitted_source_hash: str | None = None,
+) -> dict[str, Any]:
+    """Render public loop counters and broad terminal signals for the same agent."""
+
+    projection: dict[str, Any] = {}
+    counts = {
+        field: observations[field]
+        for field in _FEEDBACK_LOOP_COUNT_FIELDS
+        if isinstance(observations.get(field), int)
+        and not isinstance(observations.get(field), bool)
+        and observations[field] >= 0
+    }
+    if counts:
+        projection["counts"] = counts
+
+    observed_source_hash = None
+    for field in _FEEDBACK_REVISION_FIELDS:
+        candidate = observations.get(field)
+        if isinstance(candidate, str) and candidate.strip():
+            observed_source_hash = candidate.strip()
+            break
+    if observed_source_hash is not None:
+        projection["submitted_revision"] = {
+            "source_hash": submitted_source_hash,
+            "feedback_source_hash": observed_source_hash,
+            "matches": (
+                submitted_source_hash == observed_source_hash
+                if submitted_source_hash is not None and observed_source_hash is not None
+                else None
+            ),
+        }
+
+    reported_health: dict[str, Any] = {}
+    for key, value in observations.items():
+        if not isinstance(key, str):
+            continue
+        folded_key = key.casefold()
+        if any(hint in folded_key for hint in _FEEDBACK_HEALTH_KEY_HINTS):
+            reported_health[key] = _bounded_public_feedback_value(value)
+    if feedback.get("status") != "OK" or reported_health:
+        terminal_health: dict[str, Any] = {
+            "status": feedback.get("status"),
+        }
+        if isinstance(feedback.get("exception"), str) and feedback["exception"].strip():
+            terminal_health["public_reason"] = " ".join(feedback["exception"].split())[:320]
+        if reported_health:
+            terminal_health["reported"] = reported_health
+        projection["terminal_health"] = terminal_health
+
+    if projection:
+        projection["next_step"] = _FEEDBACK_LOOP_NEXT_STEP
+    return projection
+
+
+def _public_sandbox_feedback(
+    value: Any,
+    *,
+    submitted_source_hash: str | None = None,
+) -> dict[str, Any]:
     """Project callback feedback again before it reaches the implementation agent."""
 
     def contains_private(item: Any) -> bool:
@@ -333,14 +443,30 @@ def _public_sandbox_feedback(value: Any) -> dict[str, Any]:
             term in item.lower() for term in _REPAIR_PRIVATE_TERMS
         )
 
-    if not isinstance(value, Mapping) or contains_private(value):
+    if (
+        not isinstance(value, Mapping)
+        or set(value) - {"status", "summary", "observations", "exception"}
+        or contains_private(value)
+    ):
         return {
             "status": "ERROR",
             "summary": "Sandbox returned non-public feedback.",
             "observations": {},
             "exception": "sandbox_feedback_contract_error",
         }
-    return copy.deepcopy(dict(value))
+    feedback = copy.deepcopy(dict(value))
+    observations = feedback.get("observations")
+    if isinstance(observations, Mapping):
+        projection = _feedback_loop_projection(
+            feedback,
+            observations,
+            submitted_source_hash=submitted_source_hash,
+        )
+        if projection:
+            rendered_observations = copy.deepcopy(dict(observations))
+            rendered_observations["feedback_loop"] = projection
+            feedback["observations"] = rendered_observations
+    return feedback
 
 
 class Stage2Runner:
@@ -600,7 +726,8 @@ class Stage2Runner:
                     })
                     continue
                 last_feedback = _public_sandbox_feedback(
-                    self.sandbox.run(working_source, output_dict["probe"])
+                    self.sandbox.run(working_source, output_dict["probe"]),
+                    submitted_source_hash=source_hash,
                 )
                 identity = _coverage_identity(output_dict["probe"])
                 successful = last_feedback.get("status") == "OK"

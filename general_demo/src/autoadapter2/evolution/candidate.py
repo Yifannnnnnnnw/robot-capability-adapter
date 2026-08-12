@@ -174,6 +174,10 @@ _BLOCKED_PHRASES = (
 _COUNT_KEYS = (
     "llm_calls",
     "sandbox_calls",
+    "successful_sandbox_calls",
+    "accepted_command_count",
+    "state_read_count",
+    "feedback_cycle_count",
     "repair_invocations_used",
     "candidate_revisions_created",
     "repairs_consumed",
@@ -182,6 +186,73 @@ _COUNT_KEYS = (
     "repetitions",
     "trial_count",
 )
+_FEEDBACK_LOOP_COUNT_KEYS = (
+    "sandbox_calls",
+    "successful_sandbox_calls",
+    "accepted_command_count",
+    "state_read_count",
+    "feedback_cycle_count",
+)
+_MAX_PUBLIC_AGGREGATE = 1_000_000
+_SDK_PUBLIC_ERROR_CATEGORY_FIELDS = frozenset({
+    "sdk_error_category",
+    "public_sdk_error_category",
+    "sdk_category",
+})
+_SDK_PUBLIC_ERROR_CATEGORY_ALIASES = {
+    "sdk_shape": "shape",
+    "sdk_shape_error": "shape",
+    "sdk_type": "shape",
+    "sdk_type_error": "shape",
+    "sdk_read_shape": "shape",
+    "sdk_read_shape_error": "shape",
+    "sdk_write_shape": "shape",
+    "sdk_write_shape_error": "shape",
+    "sdk_timing": "timing",
+    "sdk_timing_error": "timing",
+    "sdk_read_timing": "timing",
+    "sdk_read_timing_error": "timing",
+    "sdk_write_timing": "timing",
+    "sdk_write_timing_error": "timing",
+    "sdk_timeout": "timing",
+    "timeout": "timing",
+}
+_SANITIZED_EVIDENCE_SKIP_KEYS = frozenset({
+    *EXCLUDED_EVIDENCE_CATEGORIES,
+    "threshold",
+    "case",
+    "cases",
+    "seed",
+    "truth",
+    "mujoco",
+    "qpos",
+    "qvel",
+    "prompt",
+    "prompts",
+    "messages",
+    "model_output",
+    "orchestration_call_log",
+    "raw_trace",
+    "raw",
+    "consumer_trace",
+    "candidate_source",
+    "capability_source",
+    "source_hash",
+    "source_seal",
+})
+
+
+def _skip_sanitized_evidence_key(key: Any) -> bool:
+    if not isinstance(key, str):
+        return False
+    folded = key.casefold()
+    return (
+        folded in _SANITIZED_EVIDENCE_SKIP_KEYS
+        or folded.endswith("_hash")
+        or folded.endswith("_source")
+    )
+
+
 _TERMINAL_FAILURE_STATUSES = frozenset({
     "FAILED",
     "STAGE1_FAILED",
@@ -433,6 +504,17 @@ def _bounded_error(value: Any) -> str | None:
     return result
 
 
+def _sdk_public_error_category(value: Any, *, explicit_field: bool = False) -> str | None:
+    """Map only bounded public SDK shape/timing labels to generic categories."""
+
+    if not isinstance(value, str):
+        return None
+    normalized = re.sub(r"[^a-z0-9]+", "_", value.casefold()).strip("_")
+    if explicit_field and normalized in {"shape", "timing"}:
+        return normalized
+    return _SDK_PUBLIC_ERROR_CATEGORY_ALIASES.get(normalized)
+
+
 def _collect_allowed_leaves(
     value: Any,
     *,
@@ -440,37 +522,61 @@ def _collect_allowed_leaves(
     candidate_errors: set[str],
     infrastructure_errors: set[str],
     counts: dict[str, int],
+    sdk_error_categories: set[str],
 ) -> None:
     """Walk containers while copying only explicitly allowed leaf values."""
 
     if isinstance(value, Mapping):
         for key, item in value.items():
+            if _skip_sanitized_evidence_key(key):
+                continue
             if key == "code" and not isinstance(item, (Mapping, list)):
                 token = _public_token(item, "diagnostic code")
                 if token is not None:
                     codes.add(token)
+                category = _sdk_public_error_category(item)
+                if category is not None:
+                    sdk_error_categories.add(category)
             elif key == "candidate_error" and not isinstance(item, (Mapping, list)):
                 error = _bounded_error(item)
                 if error is not None:
                     candidate_errors.add(error)
+                category = _sdk_public_error_category(item)
+                if category is not None:
+                    sdk_error_categories.add(category)
             elif key == "infrastructure_error" and not isinstance(item, (Mapping, list)):
                 error = _bounded_error(item)
                 if error is not None:
                     infrastructure_errors.add(error)
+                category = _sdk_public_error_category(item)
+                if category is not None:
+                    sdk_error_categories.add(category)
+            elif key in {"exception", "error"} and not isinstance(item, (Mapping, list)):
+                category = _sdk_public_error_category(item)
+                if category is not None:
+                    sdk_error_categories.add(category)
+            elif key in _SDK_PUBLIC_ERROR_CATEGORY_FIELDS and not isinstance(item, (Mapping, list)):
+                category = _sdk_public_error_category(item, explicit_field=True)
+                if category is not None:
+                    sdk_error_categories.add(category)
             elif (
                 key in _COUNT_KEYS
                 and isinstance(item, int)
                 and not isinstance(item, bool)
                 and item >= 0
             ):
-                counts[key] = counts.get(key, 0) + item
-            if isinstance(item, (Mapping, list)):
+                counts[key] = min(
+                    _MAX_PUBLIC_AGGREGATE,
+                    counts.get(key, 0) + item,
+                )
+            if isinstance(item, (Mapping, list)) and key != "feedback_loop":
                 _collect_allowed_leaves(
                     item,
                     codes=codes,
                     candidate_errors=candidate_errors,
                     infrastructure_errors=infrastructure_errors,
                     counts=counts,
+                    sdk_error_categories=sdk_error_categories,
                 )
     elif isinstance(value, list):
         for item in value:
@@ -480,7 +586,32 @@ def _collect_allowed_leaves(
                 candidate_errors=candidate_errors,
                 infrastructure_errors=infrastructure_errors,
                 counts=counts,
+                sdk_error_categories=sdk_error_categories,
             )
+
+
+def _collect_feedback_loop_counts(value: Any, counts: dict[str, int]) -> None:
+    """Collect loop counters from sealed stage artifacts without copied summaries."""
+
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if key in {"feedback_loop", "summary"} or _skip_sanitized_evidence_key(key):
+                continue
+            if (
+                key in _FEEDBACK_LOOP_COUNT_KEYS
+                and isinstance(item, int)
+                and not isinstance(item, bool)
+                and item >= 0
+            ):
+                counts[key] = min(
+                    _MAX_PUBLIC_AGGREGATE,
+                    counts.get(key, 0) + item,
+                )
+            if isinstance(item, (Mapping, list)):
+                _collect_feedback_loop_counts(item, counts)
+    elif isinstance(value, list):
+        for item in value:
+            _collect_feedback_loop_counts(item, counts)
 
 
 def _stage_record(
@@ -488,6 +619,7 @@ def _stage_record(
     summary_value: Mapping[str, Any] | None,
     artifact_value: Mapping[str, Any] | None,
     counts: dict[str, int],
+    sdk_error_categories: set[str],
 ) -> dict[str, Any] | None:
     public_name = _public_token(name, "stage name")
     if public_name is None:
@@ -511,6 +643,7 @@ def _stage_record(
             candidate_errors=candidate_errors,
             infrastructure_errors=infrastructure_errors,
             counts=counts,
+            sdk_error_categories=sdk_error_categories,
         )
     record["diagnostic_codes"] = sorted(codes)
     record["candidate_errors"] = sorted(candidate_errors)
@@ -601,6 +734,7 @@ def build_sanitized_evidence_digest(
         name for name in artifact_stages if isinstance(name, str)
     }
     nested_counts: dict[str, int] = {}
+    sdk_error_categories: set[str] = set()
     stages = [
         record
         for name in sorted(names)
@@ -610,6 +744,7 @@ def build_sanitized_evidence_digest(
                 summary_by_name.get(name),
                 artifact_stages.get(name) if isinstance(artifact_stages.get(name), Mapping) else None,
                 nested_counts,
+                sdk_error_categories,
             )
         ]
         if record is not None
@@ -625,6 +760,17 @@ def build_sanitized_evidence_digest(
     for key, value in nested_counts.items():
         counts[f"{key}_total"] = value
 
+    feedback_loop_counts: dict[str, int] = {}
+    stage2_artifact = artifact_stages.get("stage2")
+    if isinstance(stage2_artifact, Mapping):
+        _collect_feedback_loop_counts(stage2_artifact, feedback_loop_counts)
+    for key in _FEEDBACK_LOOP_COUNT_KEYS:
+        counts[f"{key}_total"] = feedback_loop_counts.get(key, 0)
+    feedback_loop = {
+        key: min(_MAX_PUBLIC_AGGREGATE, feedback_loop_counts.get(key, 0))
+        for key in _FEEDBACK_LOOP_COUNT_KEYS
+    }
+
     digest = {
         "format_version": CANDIDATE_FORMAT_VERSION,
         "run_status": _safe_status(closure.get("status"), "closed run status"),
@@ -635,6 +781,8 @@ def build_sanitized_evidence_digest(
         },
         "stage_statuses": stages,
         "counts": counts,
+        "feedback_loop": feedback_loop,
+        "sdk_public_error_categories": sorted(sdk_error_categories),
         "provenance": {
             "closure_hash": closure_hash,
             "summary_hash": f"sha256:{summary_sha256}",

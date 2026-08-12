@@ -7,6 +7,7 @@ import pytest
 from autoadapter2.foundation.errors import ContractError
 from autoadapter2.generation import ModelApiClient, ModelApiConfig
 from autoadapter2.generation import model_api
+from autoadapter2.generation.model_api import IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 
 
 class _Response:
@@ -67,6 +68,7 @@ def test_model_api_repair_requires_closed_raw_python_and_describes_validation_a_
         "private non-dunder helpers", "approved math/time/numpy members", "No dynamic import",
     ):
         assert phrase in instruction
+    assert IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT in instruction
 
     fenced_payload = {
         "choices": [{
@@ -140,6 +142,8 @@ def test_model_api_repair_renders_only_supplied_public_bundle_facts(monkeypatch)
     assert "Do not call `ChannelFactoryInitialize`" in unitree_instruction
     assert "second SDK" in unitree_instruction
     assert "PUBLIC IMPLEMENTATION BUNDLE" in unitree_instruction
+    assert IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT in unitree_instruction
+    assert IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT in so_instruction
     assert "unitree_go_msg_dds__LowCmd_" in unitree_instruction
     assert "rt/lowcmd" in unitree_instruction
     assert "motor_cmd" in unitree_instruction
@@ -240,6 +244,9 @@ def test_implementation_agent_replays_public_stage2_and_repair_history(monkeypat
     assert stage2_body["messages"][0] == repair_one_body["messages"][0]  # type: ignore[index]
     assert repair_one_body["messages"][0] == repair_two_body["messages"][0]  # type: ignore[index]
     assert "PUBLIC IMPLEMENTATION BUNDLE" in stage2_body["messages"][-1]["content"]  # type: ignore[index]
+    assert IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT in stage2_body["messages"][-1]["content"]  # type: ignore[index]
+    assert IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT in repair_one_body["messages"][-1]["content"]  # type: ignore[index]
+    assert IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT in repair_two_body["messages"][-1]["content"]  # type: ignore[index]
     assert sum(
         "PUBLIC IMPLEMENTATION BUNDLE" in message["content"]
         for message in repair_one_body["messages"]  # type: ignore[index]

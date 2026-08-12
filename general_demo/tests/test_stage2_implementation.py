@@ -11,6 +11,7 @@ from autoadapter2.foundation.errors import ContractError
 from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.foundation.seals import verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
+from autoadapter2.generation.model_api import IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 from autoadapter2.implementation import (
     CallbackSandbox,
     Stage2Config,
@@ -153,6 +154,28 @@ def test_stage2_prompt_describes_the_validation_a_source_contract() -> None:
     assert "unitree_go_msg_dds__LowCmd_" not in STAGE2_PROMPT
 
 
+def test_stage2_prompt_contains_the_shared_robot_agnostic_runtime_loop_contract() -> None:
+    assert IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT in STAGE2_PROMPT
+    contract_text = IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT.casefold()
+    for phrase in (
+        "repeatedly read fresh public state",
+        "compute the next action from the newest observation",
+        "Framework-owned execution time or physics to advance",
+        "state-dependent correction",
+        "public requested effect",
+        "bounded timeout",
+        "fixed trajectories",
+        "one-read-many-write",
+        "pure polling",
+        "sleep-only",
+        "self-report",
+        "do not satisfy the Sandbox",
+    ):
+        assert phrase.casefold() in contract_text
+    for forbidden in ("validation", "threshold", "case", "seed", "mujoco", "qpos", "truth"):
+        assert forbidden not in contract_text
+
+
 def _authorization(design: dict, seal: dict):
     capability_specs = []
     for capability in design["capabilities"]:
@@ -252,6 +275,59 @@ def test_sandbox_is_callback_only_and_is_not_an_extra_llm_call() -> None:
     assert fixture.calls[1]["inputs"]["sandbox_feedback"] == {
         "status": "OK", "summary": "The public probe completed.", "observations": {"joint": 0.2}, "exception": None,
     }
+
+
+def test_open_loop_feedback_is_actionable_but_remains_inconclusive_and_revision_bound() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    submitted_hash = content_hash(source.encode("utf-8"))
+    fixture = FixtureJsonGenerator([
+        {
+            "action": "sandbox",
+            "capability.py": source,
+            "probe": {"probe_id": "open-loop", "capability_id": "reach-joint-target"},
+        },
+        {"action": "submit", "capability.py": source},
+    ])
+
+    sandbox = CallbackSandbox(lambda _source, _probe: {
+        "status": "INCONCLUSIVE",
+        "summary": "The public effect did not converge.",
+        "observations": {
+            "source_hash": submitted_hash,
+            "state_read_count": 1,
+            "feedback_cycle_count": 1,
+            "accepted_command_count": 60,
+            "terminal_health_reasons": ["effect_not_converged"],
+        },
+        "exception": None,
+    })
+    result = Stage2Runner(fixture, sandbox=sandbox).run(
+        design, seal, _authorization(design, seal), _bundle()
+    )
+
+    assert result.status == "SUBMITTED"
+    rendered = fixture.calls[1]["inputs"]["sandbox_feedback"]
+    assert rendered["status"] == "INCONCLUSIVE"
+    loop = rendered["observations"]["feedback_loop"]
+    assert loop["counts"] == {
+        "state_read_count": 1,
+        "feedback_cycle_count": 1,
+        "accepted_command_count": 60,
+    }
+    assert loop["submitted_revision"] == {
+        "source_hash": submitted_hash,
+        "feedback_source_hash": submitted_hash,
+        "matches": True,
+    }
+    assert loop["terminal_health"]["status"] == "INCONCLUSIVE"
+    assert loop["terminal_health"]["reported"]["terminal_health_reasons"] == [
+        "effect_not_converged"
+    ]
+    next_step = loop["next_step"].casefold()
+    assert "read fresh public state" in next_step
+    assert "state-dependent action" in next_step
 
 
 def test_repair_episode_reuses_stage2_agent_source_and_sandbox_until_public_ok() -> None:

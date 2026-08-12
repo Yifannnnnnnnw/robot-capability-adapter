@@ -20,6 +20,25 @@ DEFAULT_BASE_URL = "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-
 DEFAULT_MODEL = "anthropic.claude-sonnet-4-5-20250929-v1:0"
 
 
+IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT = """
+RUNTIME FEEDBACK-LOOP CONTRACT (public and robot-agnostic):
+Every bound capability function that produces a dynamic robot effect must implement a
+bounded closed loop inside the capability itself. Repeatedly read fresh public state,
+compute the next action from the newest observation, send that action, allow
+Framework-owned execution time or physics to advance, read fresh public state again,
+and issue a state-dependent correction. Continue until the public requested effect
+converges or a bounded timeout is reached, then return a public result or error.
+
+Fixed trajectories, one-read-many-write behavior, pure polling, sleep-only behavior,
+and self-report do not satisfy the Sandbox. A command must be computed from a fresh
+observation, and later commands must be able to correct from later observations. Use
+only the exact public SDK names, state shapes, action shapes, and timing operations
+supplied by the Implementation Bundle and Sandbox contract; do not invent them. Do
+not infer hidden acceptance rules, numeric limits, test scenarios, privileged state,
+simulator internals, or robot-specific failure injection.
+""".strip()
+
+
 _GENERIC_SDK_GUIDANCE = """
 SDK boundary rules: `_sdk` is a module-like injected facade, not a robot object with
 invented endpoint attributes or endpoint instances on the facade. Use only the exact
@@ -162,11 +181,12 @@ def _repair_instruction(request: Mapping[str, Any]) -> str:
         "Return exactly {\"capability.py\": <complete raw parseable Python source>, "
         "\"llm_calls\": 1}. The capability.py string must contain the complete one-file "
         "source with no Markdown fences, backticks, explanation, or omitted code. Follow "
-        "the same Validation A grammar: imports only math, time, or numpy (optionally as np); "
+        "the same source grammar: imports only math, time, or numpy (optionally as np); "
         "safe literal constants; private non-dunder helpers; exact bound functions and "
         "signatures; approved math/time/numpy members, safe numeric builtins, and bound _sdk "
         "members only. No dynamic import, eval, exec, open, dunder access, extra public "
-        "symbols. Do not alter the supplied candidate except to return the complete corrected source."
+        "symbols. Do not alter the supplied candidate except to return the complete corrected source.\n\n"
+        f"{IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT}"
     )
     return instruction
 
@@ -210,6 +230,8 @@ class ModelApiClient:
             if implementation_agent
             else dict(inputs)
         )
+        if implementation_agent and IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT not in instruction:
+            instruction = instruction.rstrip() + "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
         if initial_implementation_context:
             instruction = instruction.rstrip() + "\n\n" + _render_public_implementation_bundle(
                 request_inputs.get("implementation_bundle")
