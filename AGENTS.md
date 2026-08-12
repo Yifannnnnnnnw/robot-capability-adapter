@@ -28,6 +28,9 @@ Large work should be split into independent, small implementation tasks when tha
 
 - Executor success is not final acceptance.
 - Sol performs a **time-boxed, experiment-grade review**: inspect the relevant diff, check the directly applicable Authority clauses, run focused tests, and run one relevant integration or smoke path when available.
+- **Run the real end-to-end path before preventive review.** As soon as the minimum required inputs and implementations exist, start the complete experiment path. Do not delay the first run for speculative risks, refreezing, broad audits, additional hardening, or tests that are not required to start it.
+- Before the first complete run, checks are limited to what is strictly necessary for the process to start safely. Afterward, fix only failures actually observed in that run, then resume from the failed point.
+- Preventive review must never become a gate that keeps the main experiment path from starting. If a non-critical evidence, governance, or formal-freeze task conflicts with end-to-end progress, defer it.
 - The goal is to expose major architectural mistakes and obvious false passes, not to prove production-grade correctness.
 - Do not add exhaustive schemas, cryptographic governance, enterprise registries, adversarial test matrices, repeated red-team cycles, or broad defensive machinery unless the Authority explicitly requires them or a demonstrated failure blocks the experiment.
 - Once the requested path works, its focused tests pass, and the main architecture boundaries are preserved, accept it and move to the next end-to-end step.
@@ -39,5 +42,6 @@ Large work should be split into independent, small implementation tasks when tha
 
 - Prefer the smallest complete implementation that exercises the real architecture.
 - The primary milestone is a runnable two-robot experimental architecture and its first end-to-end experiment, not an enterprise product.
+- Optimize for the user-visible outcome: a running full chain, actual traces, and Validation/Demo videos. Build first, run immediately, and debug from concrete runtime evidence.
 - Do not replace real SDK/Translation/MuJoCo paths with mocks in a formal run. Test doubles are allowed only in explicitly named tests or fixtures.
 - Keep plans short, code promptly, validate only what materially protects the experiment, report blockers honestly, and leave concise reproducible test evidence.
