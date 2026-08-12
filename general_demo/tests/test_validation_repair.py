@@ -571,6 +571,7 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
     assert no_change.repair_invocations_used == no_change.repairs_consumed == 1
     assert no_change.candidate_revisions_created == 0
     assert len(no_change.run_ledger) == 1
+    assert "candidate_source" not in no_change.repair_log[0]
     assert design == frozen_design
     assert stage2.binding_contract == frozen_binding
     assert context == frozen_context
@@ -588,6 +589,8 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
     assert repaired.candidate_revisions_created == 1
     assert repaired.repair_llm_calls == 2
     assert repaired.run_snapshot_hash == content_hash(canonical_bytes(context.run_snapshot))
+    assert repaired.repair_log[0]["candidate_revision_created"] is True
+    assert repaired.repair_log[0]["candidate_source"] == _source("REPAIRED")
 
     outputs = iter([_source("HISTORICAL_NEW"), _source("INITIAL")])
     historical = RepairRunner(
@@ -616,6 +619,7 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
     assert comment_only.repair_invocations_used == 1
     assert comment_only.candidate_revisions_created == 0
     assert len(comment_only.run_ledger) == 1
+    assert "candidate_source" not in comment_only.repair_log[0]
 
 
 def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_ten() -> None:

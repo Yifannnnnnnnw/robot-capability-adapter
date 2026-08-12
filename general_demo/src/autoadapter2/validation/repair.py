@@ -324,6 +324,7 @@ class RepairRunner:
                 "llm_calls": llm_calls,
                 "source_hash": source_hash,
                 "executable_source_hash": executable_hash,
+                "candidate_source": repaired_source,
                 "source_seal": source_seal,
                 "a_status": current_a.status,
                 "b_status": current_b.status if current_b is not None else None,

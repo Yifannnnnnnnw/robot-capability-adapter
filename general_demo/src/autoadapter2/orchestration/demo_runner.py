@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -26,7 +26,7 @@ from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ContractError
 from ..foundation.hashing import content_hash, is_content_hash
 from ..foundation.seals import create_seal
-from ..generation import JsonGenerator, Stage1Config, Stage1Runner
+from ..generation import JsonGenerator, Stage1Config, Stage1Result, Stage1Runner
 from ..implementation import CallbackSandbox, Stage2Config, Stage2Runner
 from ..implementation import validate_implementation_bundle
 from ..integration import ExperimentIntegrationGate, Stage1GateResult
@@ -75,7 +75,7 @@ class DemoRunPlan:
     measurement_catalog: Mapping[str, Any]
     blue_line_policy: Mapping[str, Any]
     implementation_bundle: Mapping[str, Any]
-    validation_a_profile: ValidationAProfile
+    validation_a_profile: ValidationAProfile | None
     public_state_schema: Mapping[str, Any]
     validation_harness_config: Mapping[str, Any]
     consumer_id: str = "react-consumer-experimental"
@@ -98,8 +98,10 @@ class DemoRunPlan:
             raise ContractError("General Demo requirement_id values must be unique")
         if any(self.g2_profile.get(key) != value for key, value in _G2.items()):
             raise ContractError("the first two-robot General Demo requires g2-reusable-effect@1.0.0")
-        if not isinstance(self.validation_a_profile, ValidationAProfile):
-            raise ContractError("General Demo requires a ValidationAProfile")
+        if self.validation_a_profile is not None and not isinstance(
+            self.validation_a_profile, ValidationAProfile
+        ):
+            raise ContractError("General Demo requires a ValidationAProfile or post-Stage-1 materializer")
         if isinstance(self.consumer_max_steps, bool) or not isinstance(self.consumer_max_steps, int) or self.consumer_max_steps <= 0:
             raise ContractError("consumer_max_steps must be a positive fixed integer")
         if isinstance(self.consumer_seed, bool) or not isinstance(self.consumer_seed, int) or self.consumer_seed < 0:
@@ -132,6 +134,7 @@ class DemoRunResult:
     summary_seal: dict[str, Any]
     validation_video_handles: tuple[ClosedEvaluationVideo, ...]
     demo_trials: tuple[DemoTrialResult, ...]
+    artifacts: dict[str, Any]
 
 
 def _prefixed_hash(value: str, label: str) -> str:
@@ -206,6 +209,139 @@ def _video_record(video: ClosedEvaluationVideo) -> dict[str, Any]:
     }
 
 
+def _stage1_artifact(result: Stage1Result | None) -> dict[str, Any] | None:
+    if result is None:
+        return None
+    return {
+        "status": result.status,
+        "capability_design": copy.deepcopy(result.capability_design),
+        "design_hash": result.design_hash,
+        "seal": copy.deepcopy(result.seal),
+        "call_log": copy.deepcopy(list(result.call_log)),
+        "diagnostics": copy.deepcopy(list(result.diagnostics)),
+    }
+
+
+def _recorded_stage_calls(adapter: Any, stage: str) -> list[dict[str, Any]]:
+    records = getattr(adapter, "records", ())
+    if not isinstance(records, (list, tuple)):
+        return []
+    return [
+        copy.deepcopy(dict(item))
+        for item in records
+        if isinstance(item, Mapping) and item.get("stage") == stage
+    ]
+
+
+def _blue_line_artifact(result: Any) -> dict[str, Any]:
+    return {
+        "status": result.status,
+        "validation_spec": copy.deepcopy(result.validation_spec),
+        "spec_hash": result.spec_hash,
+        "spec_seal": copy.deepcopy(result.spec_seal),
+        "validation_suite": copy.deepcopy(result.validation_suite),
+        "suite_hash": result.suite_hash,
+        "suite_seal": copy.deepcopy(result.suite_seal),
+        "manifest": copy.deepcopy(result.manifest),
+        "manifest_hash": result.manifest_hash,
+        "manifest_seal": copy.deepcopy(result.manifest_seal),
+        "call_log": copy.deepcopy(list(result.call_log)),
+        "diagnostics": copy.deepcopy(list(result.diagnostics)),
+    }
+
+
+def _stage2_artifact(result: Any) -> dict[str, Any]:
+    return {
+        "status": result.status,
+        "implementation_bundle_hash": result.bundle_hash,
+        "binding_contract": copy.deepcopy(result.binding_contract),
+        "binding_hash": result.binding_hash,
+        "binding_seal": copy.deepcopy(result.binding_seal),
+        "starter_skeleton": result.starter_skeleton,
+        "starter_skeleton_hash": result.starter_skeleton_hash,
+        "capability_source": result.capability_source,
+        "source_hash": result.source_hash,
+        "source_seal": copy.deepcopy(result.source_seal),
+        "implementation_manifest": copy.deepcopy(result.implementation_manifest),
+        "implementation_manifest_hash": result.manifest_hash,
+        "implementation_manifest_seal": copy.deepcopy(result.manifest_seal),
+        "llm_calls": result.llm_calls,
+        "sandbox_calls": result.sandbox_calls,
+        "call_log": copy.deepcopy(list(result.call_log)),
+        "sandbox_log": copy.deepcopy(list(result.sandbox_log)),
+        "diagnostics": copy.deepcopy(list(result.diagnostics)),
+        "blocked_reason": result.blocked_reason,
+    }
+
+
+def _validation_a_artifact(result: Any) -> dict[str, Any] | None:
+    if result is None:
+        return None
+    return {
+        "status": result.status,
+        "report": copy.deepcopy(result.report),
+        "report_hash": result.report_hash,
+        "report_seal": copy.deepcopy(result.report_seal),
+        "binding_result": copy.deepcopy(result.binding_result),
+        "source_hash": result.source_hash,
+        "implementation_manifest_hash": result.implementation_manifest_hash,
+        "implementation_bundle_hash": result.implementation_bundle_hash,
+        "diagnostics": copy.deepcopy(list(result.diagnostics)),
+    }
+
+
+def _validation_b_artifact(result: Any) -> dict[str, Any] | None:
+    if result is None:
+        return None
+    return {
+        "status": result.status,
+        "report": copy.deepcopy(result.report),
+        "report_hash": result.report_hash,
+        "report_seal": copy.deepcopy(result.report_seal),
+        "suite_hash": result.suite_hash,
+        "overlay_hash": result.overlay_hash,
+        "run_snapshot_hash": result.run_snapshot_hash,
+        "executions": copy.deepcopy(list(result.executions)),
+        "diagnostics": copy.deepcopy(list(result.diagnostics)),
+    }
+
+
+def _repair_artifact(result: Any) -> dict[str, Any]:
+    return {
+        "status": result.status,
+        "first_passing_repair_index": result.first_passing_repair_index,
+        "repair_invocations_used": result.repair_invocations_used,
+        "candidate_revisions_created": result.candidate_revisions_created,
+        "repairs_consumed": result.repairs_consumed,
+        "repair_llm_calls": result.repair_llm_calls,
+        "repair_log": copy.deepcopy(list(result.repair_log)),
+        "run_ledger": copy.deepcopy(list(result.run_ledger)),
+        "run_snapshot_hash": result.run_snapshot_hash,
+        "frozen_artifact_hashes": copy.deepcopy(result.frozen_artifact_hashes),
+        "initial_validation_a": _validation_a_artifact(result.initial_validation_a),
+        "initial_validation_b": _validation_b_artifact(result.initial_validation_b),
+        "final_validation_a": _validation_a_artifact(result.final_validation_a),
+        "final_validation_b": _validation_b_artifact(result.final_validation_b),
+    }
+
+
+def _demo_trial_artifact(trial: DemoTrialResult) -> dict[str, Any]:
+    return {
+        "task_id": trial.task_id,
+        "repetition": trial.repetition,
+        "status": trial.status,
+        "consumer_status": trial.consumer_result.status if trial.consumer_result else None,
+        "consumer_steps": trial.consumer_result.steps_used if trial.consumer_result else None,
+        "consumer_trace_hash": (
+            content_hash(canonical_bytes(trial.consumer_result.trace))
+            if trial.consumer_result else None
+        ),
+        "criterion_hash": trial.criterion_hash,
+        "evidence_hash": trial.evidence_hash,
+        "video": _video_record(trial.video_handle) if trial.video_handle else None,
+    }
+
+
 class GeneralDemoRunner:
     """Wire the existing frozen gates into one smallest complete run path."""
 
@@ -217,6 +353,7 @@ class GeneralDemoRunner:
         video_profile: FrozenVideoProfile,
         video_encoder_factory: VideoEncoderFactory,
         criterion_evaluator: CriterionEvaluator,
+        validation_a_materializer: Callable[[Stage1Result], ValidationAProfile] | None = None,
     ) -> None:
         self._root = Path(root).resolve()
         self._models = models
@@ -232,6 +369,9 @@ class GeneralDemoRunner:
         self._video_profile = video_profile
         self._video_encoder_factory = video_encoder_factory
         self._criterion_evaluator = criterion_evaluator
+        if validation_a_materializer is not None and not callable(validation_a_materializer):
+            raise ContractError("General Demo Validation A materializer must be callable")
+        self._validation_a_materializer = validation_a_materializer
 
     def run(self, plan: DemoRunPlan) -> DemoRunResult:
         if not isinstance(plan, DemoRunPlan):
@@ -264,6 +404,12 @@ class GeneralDemoRunner:
             ),
         )
         base, parents = self._base_summary(plan, gate_result, manifest, route)
+        artifacts: dict[str, Any] = {
+            "artifact_type": "general_demo_stage_artifacts",
+            "schema_version": "1.0.0",
+            "run_id": plan.run_id,
+            "stages": {},
+        }
         stages: list[dict[str, Any]] = [{
             "stage": "integration_gate",
             "status": "READY",
@@ -273,12 +419,40 @@ class GeneralDemoRunner:
             ),
         }]
 
-        stage1 = Stage1Runner(self._models.stage1, plan.stage1_config).run(
-            plan.run_id,
-            plan.robot_public_projection,
-            [task.stage1_view() for task in plan.tasks],
-            plan.g2_profile,
-        )
+        try:
+            stage1 = Stage1Runner(self._models.stage1, plan.stage1_config).run(
+                plan.run_id,
+                plan.robot_public_projection,
+                [task.stage1_view() for task in plan.tasks],
+                plan.g2_profile,
+            )
+        except Exception as exc:
+            call_log = _recorded_stage_calls(self._models.stage1, "stage1")
+            artifacts["stages"]["stage1"] = {
+                "status": "ERROR",
+                "capability_design": None,
+                "design_hash": None,
+                "seal": None,
+                "call_log": call_log,
+                "diagnostics": [{
+                    "code": "STAGE1_EXCEPTION",
+                    "message": f"{type(exc).__name__}: {exc}",
+                }],
+            }
+            stages.append({
+                "stage": "stage1",
+                "status": "ERROR",
+                "design_hash": None,
+                "llm_calls": len(call_log),
+            })
+            return self._finish(
+                "STAGE1_FAILED",
+                base,
+                stages,
+                parents,
+                artifacts=artifacts,
+            )
+        artifacts["stages"]["stage1"] = _stage1_artifact(stage1)
         stages.append({
             "stage": "stage1",
             "status": stage1.status,
@@ -286,17 +460,63 @@ class GeneralDemoRunner:
             "llm_calls": len(stage1.call_log),
         })
         if stage1.status != "SEALED" or stage1.capability_design is None or stage1.seal is None or stage1.design_hash is None:
-            return self._finish("STAGE1_FAILED", base, stages, parents)
+            return self._finish(
+                "STAGE1_FAILED",
+                base,
+                stages,
+                parents,
+                artifacts=artifacts,
+            )
         if not self._design_covers_tasks(stage1.capability_design, plan.tasks):
             stages[-1]["status"] = "DESIGN_GAP"
-            return self._finish("DESIGN_GAP", base, stages, parents)
+            return self._finish(
+                "DESIGN_GAP",
+                base,
+                stages,
+                parents,
+                artifacts=artifacts,
+            )
+        validation_a_profile = plan.validation_a_profile
+        if self._validation_a_materializer is not None:
+            try:
+                validation_a_profile = self._validation_a_materializer(stage1)
+            except Exception as exc:
+                stage1_artifact = artifacts["stages"].get("stage1")
+                if isinstance(stage1_artifact, dict):
+                    stage1_artifact.setdefault("diagnostics", []).append({
+                        "code": "VALIDATION_A_MATERIALIZATION",
+                        "message": f"{type(exc).__name__}: {exc}",
+                    })
+                stages[-1]["status"] = "MATERIALIZATION_FAILED"
+                return self._finish(
+                    "STAGE1_FAILED",
+                    base,
+                    stages,
+                    parents,
+                    artifacts=artifacts,
+                )
+        if not isinstance(validation_a_profile, ValidationAProfile):
+            raise ContractError("General Demo requires a materialized ValidationAProfile")
+        base["validation_a_profile_hash"] = validation_a_profile.profile_hash
+        parents.add(validation_a_profile.profile_hash)
+        if isinstance(base.get("gate_bindings"), Mapping):
+            base["gate_bindings"] = dict(base["gate_bindings"])
+            base["gate_bindings"]["validation_a_profile_hash"] = validation_a_profile.profile_hash
+        validation_harness_config = copy.deepcopy(dict(plan.validation_harness_config))
+        validation_harness_config["validation_a_profile_hash"] = validation_a_profile.profile_hash
         try:
             for capability in stage1.capability_design["capabilities"]:
                 _object_schema(capability["inputs"])
                 _object_schema(capability["outputs"])
         except (KeyError, TypeError, ContractError):
             stages[-1]["status"] = "DESIGN_GAP"
-            return self._finish("DESIGN_GAP", base, stages, parents)
+            return self._finish(
+                "DESIGN_GAP",
+                base,
+                stages,
+                parents,
+                artifacts=artifacts,
+            )
         parents.add(stage1.design_hash)
 
         blue = BlueLineRunner(self._models.blue_line).run(
@@ -306,6 +526,7 @@ class GeneralDemoRunner:
             plan.measurement_catalog,
             plan.blue_line_policy,
         )
+        artifacts["stages"]["blue_line"] = _blue_line_artifact(blue)
         stages.append({
             "stage": "blue_line",
             "status": blue.status,
@@ -315,7 +536,13 @@ class GeneralDemoRunner:
         })
         parents.add(blue.manifest_hash)
         if blue.status != "READY" or blue.validation_suite is None or blue.suite_hash is None or blue.suite_seal is None or blue.stage2_authorization is None:
-            return self._finish("BLUE_LINE_NEEDS_REVIEW", base, stages, parents)
+            return self._finish(
+                "BLUE_LINE_NEEDS_REVIEW",
+                base,
+                stages,
+                parents,
+                artifacts=artifacts,
+            )
         parents.add(blue.suite_hash)
 
         implementation_bundle = validate_implementation_bundle(plan.implementation_bundle)
@@ -331,6 +558,7 @@ class GeneralDemoRunner:
             blue.stage2_authorization,
             implementation_bundle,
         )
+        artifacts["stages"]["stage2"] = _stage2_artifact(stage2)
         stages.append({
             "stage": "stage2",
             "status": stage2.status,
@@ -349,7 +577,13 @@ class GeneralDemoRunner:
             or stage2.manifest_hash is None
             or stage2.manifest_seal is None
         ):
-            return self._finish("STAGE2_FAILED", base, stages, parents)
+            return self._finish(
+                "STAGE2_FAILED",
+                base,
+                stages,
+                parents,
+                artifacts=artifacts,
+            )
         parents.update({stage2.source_hash, stage2.manifest_hash})
 
         validation_harness = RecordingValidationHarness(
@@ -357,7 +591,7 @@ class GeneralDemoRunner:
             self._video_profile,
             self._video_encoder_factory,
             route,
-            plan.validation_harness_config,
+            validation_harness_config,
         )
         validation_context = ValidationContext(
             capability_design=stage1.capability_design,
@@ -384,7 +618,7 @@ class GeneralDemoRunner:
             },
         )
         validation = RepairRunner(
-            ValidationARunner(plan.validation_a_profile),
+            ValidationARunner(validation_a_profile),
             ValidationBRunner(validation_harness),
             self._models.repair,
             plan.repair_config,
@@ -399,6 +633,9 @@ class GeneralDemoRunner:
             validation_context,
             implementation_bundle,
         )
+        artifacts["stages"]["validation_and_repair"] = {
+            "repair": _repair_artifact(validation),
+        }
         initial_b_status = (
             validation.initial_validation_b.status
             if validation.initial_validation_b is not None else None
@@ -433,6 +670,7 @@ class GeneralDemoRunner:
                 stages,
                 parents,
                 validation_videos=validation_videos,
+                artifacts=artifacts,
             )
         final_a = validation.final_validation_a
         final_b = validation.final_validation_b
@@ -497,6 +735,15 @@ class GeneralDemoRunner:
             "layer_hash": layer_hash,
             "capability_ids": list(promoted_ids),
         })
+        artifacts["promotion"] = {
+            "status": "PROMOTED",
+            "layer_hash": layer_hash,
+            "capability_ids": list(promoted_ids),
+        }
+        artifacts["demo"] = {
+            "status": demo_status,
+            "trials": [_demo_trial_artifact(trial) for trial in trials],
+        }
         stages.append({
             "stage": "demo",
             "status": demo_status,
@@ -517,6 +764,7 @@ class GeneralDemoRunner:
             validation_videos=validation_videos,
             demo_trials=trials,
             promoted_capability_ids=promoted_ids,
+            artifacts=artifacts,
         )
 
     @staticmethod
@@ -720,23 +968,9 @@ class GeneralDemoRunner:
         validation_videos: tuple[ClosedEvaluationVideo, ...] = (),
         demo_trials: tuple[DemoTrialResult, ...] = (),
         promoted_capability_ids: tuple[str, ...] = (),
+        artifacts: Mapping[str, Any] | None = None,
     ) -> DemoRunResult:
-        trial_records: list[dict[str, Any]] = []
-        for trial in demo_trials:
-            trial_records.append({
-                "task_id": trial.task_id,
-                "repetition": trial.repetition,
-                "status": trial.status,
-                "consumer_status": trial.consumer_result.status if trial.consumer_result else None,
-                "consumer_steps": trial.consumer_result.steps_used if trial.consumer_result else None,
-                "consumer_trace_hash": (
-                    content_hash(canonical_bytes(trial.consumer_result.trace))
-                    if trial.consumer_result else None
-                ),
-                "criterion_hash": trial.criterion_hash,
-                "evidence_hash": trial.evidence_hash,
-                "video": _video_record(trial.video_handle) if trial.video_handle else None,
-            })
+        trial_records = [_demo_trial_artifact(trial) for trial in demo_trials]
         summary = copy.deepcopy(dict(base)) | {
             "status": status,
             "stages": copy.deepcopy(stages),
@@ -746,6 +980,12 @@ class GeneralDemoRunner:
         }
         summary_hash = content_hash(canonical_bytes(summary))
         exact_parents = {item for item in parents if is_content_hash(item)}
+        artifact_bundle = copy.deepcopy(dict(artifacts or {}))
+        artifact_bundle["summary"] = copy.deepcopy(summary)
+        artifact_bundle["summary_hash"] = summary_hash
+        artifact_bundle["summary_seal"] = create_seal(
+            "general_demo_run_summary", summary_hash, exact_parents
+        )
         return DemoRunResult(
             status=status,
             summary=summary,
@@ -753,6 +993,7 @@ class GeneralDemoRunner:
             summary_seal=create_seal("general_demo_run_summary", summary_hash, exact_parents),
             validation_video_handles=validation_videos,
             demo_trials=demo_trials,
+            artifacts=artifact_bundle,
         )
 
 

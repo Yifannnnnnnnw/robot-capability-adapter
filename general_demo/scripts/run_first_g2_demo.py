@@ -81,8 +81,12 @@ def main(argv: list[str] | None = None) -> int:
                 "validation_video_references": str(result.validation_video_references_path),
                 "demo_video_references": str(result.demo_video_references_path),
                 "stage_artifacts": str(result.stage_artifacts_path),
+                "stage_artifacts_seal": str(result.stage_artifacts_seal_path),
                 "model_call_log": str(result.model_call_log_path),
+                "run_closure": str(result.run_closure_path),
+                "run_closure_seal": str(result.run_closure_seal_path),
                 "summary_hash": result.summary_hash,
+                "closure_hash": result.closure_hash,
             },
             sort_keys=True,
         )

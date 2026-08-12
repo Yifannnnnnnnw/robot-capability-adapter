@@ -15,7 +15,7 @@ import os
 import re
 import secrets
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from types import MappingProxyType
@@ -32,7 +32,7 @@ from ..foundation.errors import ContractError
 from ..foundation.canonical import canonical_bytes
 from ..foundation.hashing import content_hash, sha256_bytes
 from ..foundation.seals import create_seal, verify_seal
-from ..generation import ModelApiClient, ModelApiConfig, Stage1Config, Stage1Result, Stage1Runner
+from ..generation import ModelApiClient, ModelApiConfig, Stage1Config
 from ..generation.model_api import DEFAULT_BASE_URL, DEFAULT_MODEL
 from ..implementation import Stage2Config
 from ..integration import ExperimentIntegrationGate, write_stable_json
@@ -128,25 +128,6 @@ class ValidationAProfileTemplate:
     profile_id: str
     facade_members: tuple[str, ...]
     input_value_policy: Mapping[str, Any]
-
-
-@dataclass(frozen=True)
-class _Stage1Replay:
-    """Replay the already sealed Stage 1 output into the generic runner."""
-
-    result: Stage1Result
-
-    def generate_json(
-        self, stage: str, _prompt: str, _inputs: Mapping[str, Any]
-    ) -> dict[str, Any]:
-        if stage != "stage1" or self.result.status != "SEALED" or self.result.capability_design is None:
-            raise ContractError("the sealed Stage 1 replay is unavailable")
-        design = self.result.capability_design
-        return {
-            "capabilities": copy.deepcopy(design["capabilities"]),
-            "unsupported_requirement_ids": copy.deepcopy(design["unsupported_requirement_ids"]),
-            "blocking_requirement_ids": copy.deepcopy(design["blocking_requirement_ids"]),
-        }
 
 
 class _ModelCallCapture:
@@ -296,8 +277,12 @@ class FirstG2DemoResult:
     validation_video_references_path: Path
     demo_video_references_path: Path
     stage_artifacts_path: Path
+    stage_artifacts_seal_path: Path
     model_call_log_path: Path
+    run_closure_path: Path
+    run_closure_seal_path: Path
     summary_hash: str
+    closure_hash: str
     runner_result: DemoRunResult
 
 
@@ -405,6 +390,32 @@ class _VideoStore:
         return references
 
 
+def _run_with_session_close(session: EvaluationRobotSession, operation: Any) -> Any:
+    """Run one session-owned operation and close the session exactly once."""
+
+    close = getattr(session, "close", None)
+    if not callable(close):
+        raise ContractError("first G2 Demo session does not provide Framework cleanup")
+    primary: BaseException | None = None
+    try:
+        return operation()
+    except BaseException as exc:
+        primary = exc
+        raise
+    finally:
+        try:
+            close()
+        except BaseException as cleanup:
+            if primary is not None:
+                raise ContractError(
+                    "first G2 Demo session cleanup failed (infrastructure) after "
+                    f"{type(primary).__name__}: {primary}; cleanup: {cleanup}"
+                ) from primary
+            raise ContractError(
+                f"first G2 Demo session cleanup failed (infrastructure): {cleanup}"
+            ) from cleanup
+
+
 def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
     """Run one robot-scoped first-Demo G2 path and persist its evidence.
 
@@ -480,96 +491,99 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         manifest_path,
         run_directory,
     )
-    if not isinstance(session, EvaluationRobotSession):
-        raise ContractError("robot-session factory did not return an EvaluationRobotSession")
-    if (
-        session.evidence_scope != "TEST_FIXTURE_ONLY"
-        and config.test_only_allow_fixture_session
-    ):
-        raise ContractError(
-            "test-only first G2 Demo requires the session to report TEST_FIXTURE_ONLY"
-        )
-    if (
-        session.evidence_scope != "SDK_GROUNDED_SIMULATION"
-        and not config.test_only_allow_fixture_session
-    ):
-        raise ContractError(
-            "production first G2 Demo requires SDK_GROUNDED_SIMULATION physical evidence"
-        )
+    video_store: _VideoStore | None = None
+    model_capture: _ModelCallCapture | None = None
 
-    model_capture = _ModelCallCapture(model_client)
-    stage1_preflight: Stage1Result | None = None
-    if isinstance(validation_a_source, ValidationAProfileTemplate):
-        stage1_preflight = Stage1Runner(model_capture, stage1_config).run(
-            run_id,
-            input_values["observation_profile"],
-            [task.stage1_view() for task in tasks],
-            input_values["g2_profile"],
-        )
+    def run_open_session() -> DemoRunResult:
+        nonlocal model_capture, video_store
+        if not isinstance(session, EvaluationRobotSession):
+            raise ContractError("robot-session factory did not return an EvaluationRobotSession")
+        expected = ROBOT_CONFIGURATIONS[config.robot]
         if (
-            stage1_preflight.status != "SEALED"
-            or stage1_preflight.capability_design is None
-            or stage1_preflight.seal is None
-            or stage1_preflight.design_hash is None
+            session.robot_model_id != expected["robot_model_id"]
+            or session.robot_configuration_id != expected["robot_configuration_id"]
         ):
-            raise ContractError("the model did not produce a sealed Stage 1 Capability Design")
-        if not _design_covers_tasks(stage1_preflight.capability_design, tasks):
-            raise ContractError("the sealed Stage 1 Capability Design does not cover the fixed-five tasks")
-        validation_a_profile = materialize_validation_a_profile(
-            validation_a_source,
-            stage1_preflight.capability_design,
-            design_seal=stage1_preflight.seal,
+            raise ContractError("robot session does not match the selected Integration Manifest")
+        if (
+            session.evidence_scope != "TEST_FIXTURE_ONLY"
+            and config.test_only_allow_fixture_session
+        ):
+            raise ContractError(
+                "test-only first G2 Demo requires the session to report TEST_FIXTURE_ONLY"
+            )
+        if (
+            session.evidence_scope != "SDK_GROUNDED_SIMULATION"
+            and not config.test_only_allow_fixture_session
+        ):
+            raise ContractError(
+                "production first G2 Demo requires SDK_GROUNDED_SIMULATION physical evidence"
+            )
+        current_video_store = _VideoStore(run_directory, run_id, video_profile)
+        current_model_capture = _ModelCallCapture(model_client)
+        validation_a_materializer = None
+        validation_a_profile = None
+        if isinstance(validation_a_source, ValidationAProfileTemplate):
+            def validation_a_materializer(stage1_result: Any) -> ValidationAProfile:
+                if (
+                    stage1_result.status != "SEALED"
+                    or stage1_result.capability_design is None
+                    or stage1_result.seal is None
+                    or stage1_result.design_hash is None
+                ):
+                    raise ContractError("the model did not produce a sealed Stage 1 Capability Design")
+                return materialize_validation_a_profile(
+                    validation_a_source,
+                    stage1_result.capability_design,
+                    design_seal=stage1_result.seal,
+                )
+        else:
+            validation_a_profile = validation_a_source
+        models = DemoModelAdapters(
+            stage1=current_model_capture,
+            blue_line=current_model_capture,
+            stage2=current_model_capture,
+            repair=current_model_capture.repair,
+            consumer=current_model_capture.react,
         )
-        stage1_model: ModelClient = _Stage1Replay(stage1_preflight)
-    else:
-        validation_a_profile = validation_a_source
-        stage1_model = model_capture
-    if not isinstance(validation_a_profile, ValidationAProfile):
-        raise ContractError("first G2 Demo did not resolve a Validation A profile")
-    validation_harness_config = copy.deepcopy(dict(validation_harness_config))
-    validation_harness_config["validation_a_profile_hash"] = validation_a_profile.profile_hash
+        plan = DemoRunPlan(
+            run_id=run_id,
+            integration_manifest_path=manifest_path,
+            run_snapshot_path=snapshot_path,
+            readiness_report_path=readiness_path,
+            robot_public_projection=input_values["observation_profile"],
+            g2_profile=input_values["g2_profile"],
+            tasks=tasks,
+            standards_snapshot=input_values["blue_line_inputs"][0],
+            measurement_catalog=input_values["blue_line_inputs"][1],
+            blue_line_policy=input_values["blue_line_inputs"][2],
+            implementation_bundle=implementation_bundle,
+            validation_a_profile=validation_a_profile,
+            public_state_schema=public_state_schema,
+            validation_harness_config=validation_harness_config,
+            consumer_id=consumer_config["consumer_id"],
+            consumer_max_steps=consumer_config["consumer_max_steps"],
+            consumer_seed=consumer_config["consumer_seed"],
+            demo_repetitions=consumer_config["demo_repetitions"],
+            task_catalog_version=expected_robot["task_catalog_version"],
+            stage1_config=stage1_config,
+            stage2_config=stage2_config,
+            repair_config=repair_config,
+        )
+        video_store = current_video_store
+        model_capture = current_model_capture
+        return GeneralDemoRunner(
+            root,
+            models,
+            session,
+            video_profile,
+            current_video_store.encoder,
+            evaluate_fixed_demo_criterion,
+            validation_a_materializer=validation_a_materializer,
+        ).run(plan)
 
-    video_store = _VideoStore(run_directory, run_id, video_profile)
-    models = DemoModelAdapters(
-        stage1=stage1_model,
-        blue_line=model_capture,
-        stage2=model_capture,
-        repair=model_capture.repair,
-        consumer=model_capture.react,
-    )
-    plan = DemoRunPlan(
-        run_id=run_id,
-        integration_manifest_path=manifest_path,
-        run_snapshot_path=snapshot_path,
-        readiness_report_path=readiness_path,
-        robot_public_projection=input_values["observation_profile"],
-        g2_profile=input_values["g2_profile"],
-        tasks=tasks,
-        standards_snapshot=input_values["blue_line_inputs"][0],
-        measurement_catalog=input_values["blue_line_inputs"][1],
-        blue_line_policy=input_values["blue_line_inputs"][2],
-        implementation_bundle=implementation_bundle,
-        validation_a_profile=validation_a_profile,
-        public_state_schema=public_state_schema,
-        validation_harness_config=validation_harness_config,
-        consumer_id=consumer_config["consumer_id"],
-        consumer_max_steps=consumer_config["consumer_max_steps"],
-        consumer_seed=consumer_config["consumer_seed"],
-        demo_repetitions=consumer_config["demo_repetitions"],
-        task_catalog_version=expected_robot["task_catalog_version"],
-        stage1_config=stage1_config,
-        stage2_config=stage2_config,
-        repair_config=repair_config,
-    )
-    result = GeneralDemoRunner(
-        root,
-        models,
-        session,
-        video_profile,
-        video_store.encoder,
-        evaluate_fixed_demo_criterion,
-    ).run(plan)
-    result = _bind_validation_a_profile(result, validation_a_profile.profile_hash)
+    result = _run_with_session_close(session, run_open_session)
+    if video_store is None or model_capture is None:
+        raise ContractError("first G2 Demo did not initialize its evidence stores")
 
     validation_references = video_store.persist("VALIDATION_B", result.validation_video_handles)
     demo_videos = tuple(
@@ -583,7 +597,10 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
     validation_path = run_directory / "validation_video_references.json"
     demo_path = run_directory / "demo_video_references.json"
     stage_artifacts_path = run_directory / "stage_artifacts.json"
+    stage_artifacts_seal_path = run_directory / "stage_artifacts.seal.json"
     model_call_log_path = run_directory / "model_call_log.json"
+    closure_path = run_directory / "run_closure.json"
+    closure_seal_path = run_directory / "run_closure.seal.json"
     summary_hash = write_stable_json(summary_path, result.summary)
     if summary_hash != result.summary_hash.removeprefix("sha256:"):
         raise ContractError("persisted first G2 Demo summary hash does not match the runner result")
@@ -596,33 +613,72 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         demo_path,
         _video_reference_artifact(run_id, config.robot, demo_references),
     )
-    stage_artifacts = {
+    stage_artifacts = copy.deepcopy(result.artifacts)
+    stage_artifacts.update({
         "artifact_type": "first_g2_stage_artifacts",
         "schema_version": "1.0.0",
         "run_id": run_id,
         "robot": config.robot,
-        "validation_a_profile_hash": validation_a_profile.profile_hash,
+        "validation_a_profile_hash": result.summary.get("validation_a_profile_hash"),
         "summary": copy.deepcopy(result.summary),
         "summary_hash": result.summary_hash,
         "summary_seal": copy.deepcopy(result.summary_seal),
-        "stage1_preflight": _stage1_artifact(stage1_preflight),
         "orchestration_call_log": copy.deepcopy(model_capture.records),
-    }
-    write_stable_json(stage_artifacts_path, stage_artifacts)
+    })
+    stage_artifacts_sha256 = _write_immutable_json(stage_artifacts_path, stage_artifacts)
+    stage_artifacts_hash = f"sha256:{stage_artifacts_sha256}"
+    stage_artifacts_seal = create_seal(
+        "first_g2_stage_artifacts",
+        stage_artifacts_hash,
+        [result.summary_hash],
+    )
+    _write_immutable_json(stage_artifacts_seal_path, stage_artifacts_seal)
     provider_calls = getattr(model_client, "calls", [])
     if not isinstance(provider_calls, list):
         provider_calls = []
-    write_stable_json(
+    model_call_log = {
+        "artifact_type": "first_g2_model_call_log",
+        "schema_version": "1.0.0",
+        "run_id": run_id,
+        "robot": config.robot,
+        "calls": copy.deepcopy(provider_calls),
+        "orchestration_calls": copy.deepcopy(model_capture.records),
+    }
+    model_call_log_sha256 = _write_immutable_json(
         model_call_log_path,
-        {
-            "artifact_type": "first_g2_model_call_log",
-            "schema_version": "1.0.0",
-            "run_id": run_id,
-            "robot": config.robot,
-            "calls": copy.deepcopy(provider_calls),
-            "orchestration_calls": copy.deepcopy(model_capture.records),
-        },
+        model_call_log,
     )
+    closure_files = {
+        "run_snapshot": _root_file_reference(root, snapshot_path),
+        "summary": _root_file_reference(root, summary_path),
+        "stage_artifacts": _root_file_reference(root, stage_artifacts_path),
+        "model_call_log": _root_file_reference(root, model_call_log_path),
+        "validation_video_references": _root_file_reference(root, validation_path),
+        "demo_video_references": _root_file_reference(root, demo_path),
+    }
+    closure = {
+        "artifact_type": "first_g2_run_closure",
+        "schema_version": "1.0.0",
+        "run_id": run_id,
+        "robot": config.robot,
+        "status": result.status,
+        "summary_hash": result.summary_hash,
+        "summary_seal": copy.deepcopy(result.summary_seal),
+        "files": closure_files,
+    }
+    closure_hash = content_hash(canonical_bytes(closure))
+    closure_seal = create_seal(
+        "first_g2_run_closure",
+        closure_hash,
+        [
+            result.summary_hash,
+            stage_artifacts_hash,
+            f"sha256:{model_call_log_sha256}",
+            *(f"sha256:{reference['sha256']}" for reference in closure_files.values()),
+        ],
+    )
+    _write_immutable_json(closure_path, closure)
+    _write_immutable_json(closure_seal_path, closure_seal)
     return FirstG2DemoResult(
         robot=config.robot,
         run_id=run_id,
@@ -633,39 +689,13 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         validation_video_references_path=validation_path,
         demo_video_references_path=demo_path,
         stage_artifacts_path=stage_artifacts_path,
+        stage_artifacts_seal_path=stage_artifacts_seal_path,
         model_call_log_path=model_call_log_path,
+        run_closure_path=closure_path,
+        run_closure_seal_path=closure_seal_path,
         summary_hash=result.summary_hash,
+        closure_hash=closure_hash,
         runner_result=result,
-    )
-
-
-def _bind_validation_a_profile(
-    result: DemoRunResult, profile_hash: str
-) -> DemoRunResult:
-    """Bind the post-Stage-1 profile into the sealed run context."""
-
-    summary = copy.deepcopy(result.summary)
-    summary["validation_a_profile_hash"] = profile_hash
-    gate_bindings = summary.get("gate_bindings")
-    if isinstance(gate_bindings, Mapping):
-        gate_bindings = dict(gate_bindings)
-        gate_bindings["validation_a_profile_hash"] = profile_hash
-        summary["gate_bindings"] = gate_bindings
-    summary_hash = content_hash(canonical_bytes(summary))
-    old_seal = result.summary_seal
-    parents = old_seal.get("parents", []) if isinstance(old_seal, Mapping) else []
-    if not isinstance(parents, list):
-        raise ContractError("General Demo returned an invalid summary seal parent list")
-    summary_seal = create_seal(
-        "general_demo_run_summary",
-        summary_hash,
-        [*parents, profile_hash],
-    )
-    return replace(
-        result,
-        summary=summary,
-        summary_hash=summary_hash,
-        summary_seal=summary_seal,
     )
 
 
@@ -709,12 +739,8 @@ def _create_robot_session(
         raise ContractError(f"{source} could not create the selected session") from exc
     if not isinstance(session, EvaluationRobotSession):
         raise ContractError("robot-session factory did not return an EvaluationRobotSession")
-    expected = ROBOT_CONFIGURATIONS[robot]
-    if (
-        session.robot_model_id != expected["robot_model_id"]
-        or session.robot_configuration_id != expected["robot_configuration_id"]
-    ):
-        raise ContractError("robot session does not match the selected Integration Manifest")
+    if not callable(getattr(session, "close", None)):
+        raise ContractError("robot-session factory did not return a closeable session")
     return session
 
 
@@ -827,19 +853,6 @@ def _design_covers_tasks(
         and design.get("unsupported_requirement_ids") == []
         and design.get("blocking_requirement_ids") == []
     )
-
-
-def _stage1_artifact(result: Stage1Result | None) -> dict[str, Any] | None:
-    if result is None:
-        return None
-    return {
-        "status": result.status,
-        "capability_design": copy.deepcopy(result.capability_design),
-        "design_hash": result.design_hash,
-        "seal": copy.deepcopy(result.seal),
-        "call_log": copy.deepcopy(list(result.call_log)),
-        "diagnostics": copy.deepcopy(list(result.diagnostics)),
-    }
 
 
 def _template_from_mapping(
@@ -1120,46 +1133,85 @@ def _schema_for_value(value: Any) -> dict[str, Any]:
 def _budgets(
     budget: Mapping[str, Any],
 ) -> tuple[Stage1Config, Stage2Config, RepairConfig, dict[str, Any]]:
-    values = budget.get("budgets") if isinstance(budget.get("budgets"), Mapping) else budget
+    if not isinstance(budget, Mapping):
+        raise ContractError("first G2 budget must be an object")
+    required = {
+        "artifact_type", "schema_version", "stage1", "blue_line", "stage2",
+        "repair", "consumer", "demo",
+    }
+    if set(budget) != required:
+        raise ContractError("first G2 budget fields are closed and complete")
+    if budget["artifact_type"] != "run_budget" or budget["schema_version"] != "1.0.0":
+        raise ContractError("first G2 budget identity is invalid")
 
-    def integer(names: Sequence[str], default: int) -> int:
-        for name in names:
-            if name in values:
-                value = values[name]
-                if isinstance(value, bool) or not isinstance(value, int):
-                    raise ContractError(f"budget {name} must be an integer")
-                return value
-        return default
+    def role_object(role: str) -> Mapping[str, Any]:
+        value = budget[role]
+        if not isinstance(value, Mapping):
+            raise ContractError(f"budget.{role} must be an object")
+        return value
 
-    stage1_values = values.get("stage1") if isinstance(values.get("stage1"), Mapping) else values
-    stage2_values = values.get("stage2") if isinstance(values.get("stage2"), Mapping) else values
-    repair_values = values.get("repair") if isinstance(values.get("repair"), Mapping) else values
-    consumer_values = values.get("consumer") if isinstance(values.get("consumer"), Mapping) else values
-    demo_values = values.get("demo") if isinstance(values.get("demo"), Mapping) else values
+    def integer(role: str, value: Any, field: str) -> int:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ContractError(f"budget.{role}.{field} must be an integer")
+        return value
 
-    def nested(mapping: Mapping[str, Any], names: Sequence[str], default: int) -> int:
-        for name in names:
-            if name in mapping:
-                value = mapping[name]
-                if isinstance(value, bool) or not isinstance(value, int):
-                    raise ContractError(f"budget {name} must be an integer")
-                return value
-        return default
+    def one_alias(role: str, aliases: Sequence[str]) -> tuple[str, int]:
+        value = role_object(role)
+        if len(value) != 1:
+            raise ContractError(f"budget.{role} has unknown or missing closed fields")
+        field = next(iter(value))
+        if field not in aliases:
+            raise ContractError(f"budget.{role} has unknown or missing closed fields")
+        return field, integer(role, value[field], field)
+
+    stage1_field, stage1_calls = one_alias(
+        "stage1", ("max_correction_calls", "correction_calls")
+    )
+    blue_field, blue_calls = one_alias(
+        "blue_line", ("max_inference_calls", "max_llm_calls", "llm_calls")
+    )
+    if blue_calls != 3:
+        raise ContractError("budget.blue_line must freeze exactly three inference calls")
+    stage2_field, stage2_calls = one_alias(
+        "stage2", ("max_inference_calls", "max_llm_calls", "llm_calls")
+    )
+
+    repair_values = role_object("repair")
+    if set(repair_values) not in (
+        {"max_invocations", "max_infrastructure_retries"},
+        {"max_repairs", "max_infrastructure_retries"},
+    ):
+        raise ContractError("budget.repair has unknown or missing closed fields")
+    repair_field = "max_invocations" if "max_invocations" in repair_values else "max_repairs"
+    repair_calls = integer("repair", repair_values[repair_field], repair_field)
+    retry_count = integer(
+        "repair", repair_values["max_infrastructure_retries"], "max_infrastructure_retries"
+    )
+
+    consumer_field, consumer_calls = one_alias(
+        "consumer", ("max_inference_calls", "max_steps", "consumer_max_steps")
+    )
+    demo_field, demo_repetitions = one_alias(
+        "demo", ("repetitions", "demo_repetitions")
+    )
 
     return (
-        Stage1Config(nested(stage1_values, ("max_correction_calls", "correction_calls"), 2)),
-        Stage2Config(nested(stage2_values, ("max_llm_calls", "llm_calls"), 30)),
-        RepairConfig(
-            max_repairs=nested(repair_values, ("max_repairs",), 10),
-            max_infrastructure_retries=nested(
-                repair_values, ("max_infrastructure_retries",), 1
-            ),
-        ),
+        Stage1Config(stage1_calls),
+        Stage2Config(stage2_calls),
+        RepairConfig(max_repairs=repair_calls, max_infrastructure_retries=retry_count),
         {
-            "consumer_id": _text_value(consumer_values.get("consumer_id"), "react-consumer-experimental"),
-            "consumer_max_steps": nested(consumer_values, ("max_steps", "consumer_max_steps"), 4),
-            "consumer_seed": nested(consumer_values, ("seed", "consumer_seed"), 0),
-            "demo_repetitions": nested(demo_values, ("repetitions", "demo_repetitions"), 1),
+            "consumer_id": "react-consumer-experimental",
+            "consumer_max_steps": consumer_calls,
+            "consumer_seed": 0,
+            "demo_repetitions": demo_repetitions,
+            "budget_fields": {
+                "stage1": stage1_field,
+                "blue_line": blue_field,
+                "stage2": stage2_field,
+                "repair": repair_field,
+                "consumer": consumer_field,
+                "demo": demo_field,
+            },
         },
     )
 
@@ -1218,6 +1270,89 @@ def _video_reference_artifact(
     }
 
 
+_CLOSURE_FILE_KEYS = (
+    "run_snapshot",
+    "summary",
+    "stage_artifacts",
+    "model_call_log",
+    "validation_video_references",
+    "demo_video_references",
+)
+
+
+def _root_file_reference(root: Path, path: Path) -> dict[str, str]:
+    try:
+        relative = path.resolve().relative_to(root).as_posix()
+    except ValueError as exc:
+        raise ContractError("first G2 Demo closure file escapes the project root") from exc
+    return {"path": relative, "sha256": sha256_bytes(path.read_bytes())}
+
+
+def _write_immutable_json(path: Path, value: Mapping[str, Any]) -> str:
+    payload = canonical_bytes(dict(value))
+    _write_new_bytes(path, payload)
+    return sha256_bytes(payload)
+
+
+def verify_first_g2_run_closure(
+    root: str | Path,
+    closure_path: str | Path,
+    closure_seal_path: str | Path,
+) -> str:
+    """Verify a closure seal and every frozen file reference it contains."""
+
+    root_path = Path(root).resolve()
+    try:
+        closure_file = _resolve_top_level(root_path, closure_path)
+        closure = load_json_artifact(closure_file).value
+        required = {
+            "artifact_type", "schema_version", "run_id", "robot", "status",
+            "summary_hash", "summary_seal", "files",
+        }
+        if (
+            set(closure) != required
+            or closure.get("artifact_type") != "first_g2_run_closure"
+            or closure.get("schema_version") != "1.0.0"
+        ):
+            raise ContractError("first G2 Demo closure identity or fields are invalid")
+        files = closure.get("files")
+        if not isinstance(files, Mapping) or set(files) != set(_CLOSURE_FILE_KEYS):
+            raise ContractError("first G2 Demo closure file references are incomplete")
+        resolved_files: dict[str, Path] = {}
+        for key in _CLOSURE_FILE_KEYS:
+            reference = files[key]
+            if not isinstance(reference, Mapping):
+                raise ContractError(f"first G2 Demo closure reference {key} is invalid")
+            resolved_files[key] = verify_file_reference(root_path, reference)
+        summary = load_json_artifact(resolved_files["summary"]).value
+        summary_hash = content_hash(canonical_bytes(summary))
+        if summary_hash != closure["summary_hash"]:
+            raise ContractError("first G2 Demo closure summary hash does not match the summary")
+        summary_seal = closure["summary_seal"]
+        if (
+            not isinstance(summary_seal, Mapping)
+            or not verify_seal(dict(summary_seal))
+            or summary_seal.get("artifact_type") != "general_demo_run_summary"
+            or summary_seal.get("artifact_hash") != summary_hash
+        ):
+            raise ContractError("first G2 Demo closure summary seal does not bind the summary")
+        closure_hash = content_hash(canonical_bytes(closure))
+        seal_file = _resolve_top_level(root_path, closure_seal_path)
+        seal = load_json_artifact(seal_file).value
+        valid = verify_seal(seal)
+    except Exception as exc:
+        if isinstance(exc, ContractError):
+            raise
+        raise ContractError("first G2 Demo closure seal is invalid") from exc
+    if (
+        not valid
+        or seal.get("artifact_type") != "first_g2_run_closure"
+        or seal.get("artifact_hash") != closure_hash
+    ):
+        raise ContractError("first G2 Demo closure seal does not bind the closure")
+    return closure_hash
+
+
 def _new_run_directory(output_root: str | Path, run_id: str, robot: str) -> Path:
     root = Path(output_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -1258,14 +1393,6 @@ def _write_new_bytes(path: Path, payload: bytes) -> None:
         raise ContractError(f"immutable first G2 Demo artifact already exists: {path}") from exc
 
 
-def _text_value(value: Any, default: str) -> str:
-    if value is None:
-        return default
-    if not isinstance(value, str) or not value.strip():
-        raise ContractError("budget consumer_id must be non-empty text")
-    return value
-
-
 __all__ = [
     "FirstG2DemoConfig",
     "FirstG2DemoResult",
@@ -1276,4 +1403,5 @@ __all__ = [
     "ValidationAProfileTemplate",
     "materialize_validation_a_profile",
     "run_first_g2_demo",
+    "verify_first_g2_run_closure",
 ]

@@ -16,9 +16,12 @@ from autoadapter2.integration import write_stable_json
 from autoadapter2.orchestration.first_g2_demo import (
     FirstG2DemoConfig,
     ValidationAProfileTemplate,
+    _budgets,
+    _run_with_session_close,
     _model_client,
     materialize_validation_a_profile,
     run_first_g2_demo,
+    verify_first_g2_run_closure,
 )
 
 from test_general_demo_runner import _RobotSession, _plan
@@ -152,6 +155,17 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
         for reference in snapshot["blue_line_input_refs"]
     )
     model_client = _FixtureModelClient(models)
+    sessions = []
+
+    def create_session(selected_robot, _manifest, _run_dir):
+        session = _FixedCriterionSession(
+            width,
+            selected_robot,
+            {task.task_id: task.private_criterion for task in plan.tasks},
+        )
+        sessions.append(session)
+        return session
+
     profile = FrozenVideoProfile(
         profile_id="first-g2-test-video",
         profile_version="1.0.0",
@@ -171,11 +185,7 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
             integration_manifest_path=plan.integration_manifest_path,
             run_snapshot_path=plan.run_snapshot_path,
             readiness_report_path=plan.readiness_report_path,
-            robot_session_factory=lambda selected_robot, _manifest, _run_dir: _FixedCriterionSession(
-                width,
-                selected_robot,
-                {task.task_id: task.private_criterion for task in plan.tasks},
-            ),
+            robot_session_factory=create_session,
             output_root=tmp_path / "first-g2-output",
             blue_line_input_paths=blue_line_paths,
             validation_a_profile=plan.validation_a_profile,
@@ -187,6 +197,7 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
     )
 
     assert result.status == "COMPLETE"
+    assert len(sessions) == 1 and sessions[0].close_calls == 1
     assert result.runner_result.summary["granularity_profile"]["granularity"] == "G2"
     assert len(result.runner_result.demo_trials) == 5
     assert all(item.status == "PASS" for item in result.runner_result.demo_trials)
@@ -195,7 +206,10 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
     assert result.validation_video_references_path.is_file()
     assert result.demo_video_references_path.is_file()
     assert result.stage_artifacts_path.is_file()
+    assert result.stage_artifacts_seal_path.is_file()
     assert result.model_call_log_path.is_file()
+    assert result.run_closure_path.is_file()
+    assert result.run_closure_seal_path.is_file()
 
     validation_refs = json.loads(
         result.validation_video_references_path.read_text(encoding="utf-8")
@@ -215,7 +229,37 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
     assert summary["validation_a_profile_hash"] == plan.validation_a_profile.profile_hash
     assert "criterion_text" not in json.dumps(summary)
     assert model_client.stages[:3] == ["stage1", "blue_line", "stage2"]
+    assert model_client.stages.count("stage1") == 1
     assert "react_consumer" in model_client.stages
+    assert verify_first_g2_run_closure(
+        tmp_path, result.run_closure_path, result.run_closure_seal_path
+    ) == result.closure_hash
+    stage_artifacts = json.loads(result.stage_artifacts_path.read_text(encoding="utf-8"))
+    assert stage_artifacts["stages"]["stage1"]["call_log"]
+    assert "stage1_preflight" not in stage_artifacts
+    assert {
+        "stage1", "blue_line", "stage2", "validation_and_repair",
+    } <= set(stage_artifacts["stages"])
+    assert {
+        "implementation_bundle_hash", "binding_contract", "binding_seal",
+        "starter_skeleton", "capability_source", "source_seal",
+        "implementation_manifest", "implementation_manifest_seal",
+        "call_log", "sandbox_log", "diagnostics",
+    } <= set(stage_artifacts["stages"]["stage2"])
+    repair_artifacts = stage_artifacts["stages"]["validation_and_repair"]["repair"]
+    assert repair_artifacts["initial_validation_a"]["report_seal"]
+    assert repair_artifacts["initial_validation_b"]["report_seal"]
+    assert repair_artifacts["initial_validation_b"]["executions"]
+    assert repair_artifacts["run_ledger"]
+    assert stage_artifacts["promotion"]["layer_hash"]
+    assert len(stage_artifacts["demo"]["trials"]) == 5
+    closure = json.loads(result.run_closure_path.read_text(encoding="utf-8"))
+    closure["files"]["summary"]["sha256"] = "0" * 64
+    write_stable_json(result.run_closure_path, closure)
+    with pytest.raises(ContractError):
+        verify_first_g2_run_closure(
+            tmp_path, result.run_closure_path, result.run_closure_seal_path
+        )
 
 
 def test_first_g2_materializes_library_template_after_stage1(tmp_path: Path) -> None:
@@ -273,9 +317,139 @@ def test_first_g2_materializes_library_template_after_stage1(tmp_path: Path) -> 
     )
     assert result.status == "COMPLETE"
     assert model_client.stages[:3] == ["stage1", "blue_line", "stage2"]
+    assert model_client.stages.count("stage1") == 1
     artifacts = json.loads(result.stage_artifacts_path.read_text(encoding="utf-8"))
-    assert artifacts["stage1_preflight"]["status"] == "SEALED"
+    assert artifacts["stages"]["stage1"]["status"] == "SEALED"
     assert artifacts["validation_a_profile_hash"] == result.runner_result.summary["validation_a_profile_hash"]
+
+
+class _TerminalStage1Model(_FixtureModelClient):
+    def generate_json(self, stage, prompt, inputs):
+        if stage == "stage1":
+            self.stages.append(stage)
+            return {
+                "capabilities": [],
+                "unsupported_requirement_ids": [],
+                "blocking_requirement_ids": [],
+            }
+        return super().generate_json(stage, prompt, inputs)
+
+
+class _ExplodingBlueLineModel(_FixtureModelClient):
+    def generate_json(self, stage, prompt, inputs):
+        if stage == "blue_line":
+            self.stages.append(stage)
+            raise RuntimeError("blue line model failure")
+        return super().generate_json(stage, prompt, inputs)
+
+
+def test_terminal_stage1_persists_call_log_and_closes_session(tmp_path: Path) -> None:
+    plan, models = _plan(tmp_path, "so-arm101", 6)
+    sessions = []
+
+    def create_session(selected_robot, _manifest, _run_dir):
+        session = _FixedCriterionSession(
+            6,
+            selected_robot,
+            {task.task_id: task.private_criterion for task in plan.tasks},
+        )
+        sessions.append(session)
+        return session
+
+    model_client = _TerminalStage1Model(models)
+    result = run_first_g2_demo(
+        FirstG2DemoConfig(
+            root=tmp_path,
+            robot="so-arm101",
+            integration_manifest_path=plan.integration_manifest_path,
+            run_snapshot_path=plan.run_snapshot_path,
+            readiness_report_path=plan.readiness_report_path,
+            robot_session_factory=create_session,
+            validation_a_profile=plan.validation_a_profile,
+            validation_harness_config=plan.validation_harness_config,
+            video_profile=FrozenVideoProfile(
+                "terminal-stage1-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
+            ),
+            model_client=model_client,
+            test_only_allow_fixture_session=True,
+        )
+    )
+    assert result.status == "STAGE1_FAILED"
+    assert len(sessions) == 1 and sessions[0].close_calls == 1
+    assert model_client.stages.count("stage1") == 3
+    assert result.runner_result.summary["stages"][1]["llm_calls"] == 3
+    artifacts = json.loads(result.stage_artifacts_path.read_text(encoding="utf-8"))
+    assert len(artifacts["stages"]["stage1"]["call_log"]) == 3
+    assert artifacts["stages"]["stage1"]["diagnostics"]
+    assert verify_first_g2_run_closure(
+        tmp_path, result.run_closure_path, result.run_closure_seal_path
+    ) == result.closure_hash
+
+
+def test_session_closes_once_when_runner_raises(tmp_path: Path) -> None:
+    plan, models = _plan(tmp_path, "so-arm101", 6)
+    sessions = []
+
+    def create_session(selected_robot, _manifest, _run_dir):
+        session = _FixedCriterionSession(
+            6,
+            selected_robot,
+            {task.task_id: task.private_criterion for task in plan.tasks},
+        )
+        sessions.append(session)
+        return session
+
+    with pytest.raises(RuntimeError, match="blue line model failure"):
+        run_first_g2_demo(
+            FirstG2DemoConfig(
+                root=tmp_path,
+                robot="so-arm101",
+                integration_manifest_path=plan.integration_manifest_path,
+                run_snapshot_path=plan.run_snapshot_path,
+                readiness_report_path=plan.readiness_report_path,
+                robot_session_factory=create_session,
+                validation_a_profile=plan.validation_a_profile,
+                validation_harness_config=plan.validation_harness_config,
+                video_profile=FrozenVideoProfile(
+                    "exception-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
+                ),
+                model_client=_ExplodingBlueLineModel(models),
+                test_only_allow_fixture_session=True,
+            )
+        )
+    assert len(sessions) == 1 and sessions[0].close_calls == 1
+
+
+class _ClosingSession:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.close_calls = 0
+        self.fail = fail
+
+    def close(self) -> None:
+        self.close_calls += 1
+        if self.fail:
+            raise RuntimeError("cleanup failed")
+
+
+def test_session_cleanup_failure_is_contract_error_and_preserves_primary() -> None:
+    success = _ClosingSession()
+    assert _run_with_session_close(success, lambda: "ok") == "ok"
+    assert success.close_calls == 1
+
+    cleanup_failure = _ClosingSession(fail=True)
+    with pytest.raises(ContractError, match="cleanup") as cleanup_error:
+        _run_with_session_close(cleanup_failure, lambda: "ok")
+    assert cleanup_failure.close_calls == 1
+
+    primary_failure = _ClosingSession(fail=True)
+
+    def fail_primary():
+        raise ValueError("primary failure")
+
+    with pytest.raises(ContractError, match="primary failure.*cleanup failed") as error:
+        _run_with_session_close(primary_failure, fail_primary)
+    assert primary_failure.close_calls == 1
+    assert isinstance(error.value.__cause__, ValueError)
 
 
 @pytest.mark.parametrize("robot", ["so-arm101", "unitree-go2"])
@@ -353,6 +527,34 @@ def test_model_prompt_config_rejects_empty_and_frozen_model_mismatch(monkeypatch
     mismatch["model"] = "caller-selected-model"
     with pytest.raises(ContractError, match="frozen first G2 model"):
         _model_client(mismatch)
+
+
+def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
+    budget = {
+        "artifact_type": "run_budget",
+        "schema_version": "1.0.0",
+        "stage1": {"correction_calls": 2},
+        "blue_line": {"max_llm_calls": 3},
+        "stage2": {"llm_calls": 30},
+        "repair": {"max_repairs": 10, "max_infrastructure_retries": 1},
+        "consumer": {"max_steps": 4},
+        "demo": {"demo_repetitions": 1},
+    }
+    stage1, stage2, repair, consumer = _budgets(budget)
+    assert stage1.max_correction_calls == 2
+    assert stage2.max_llm_calls == 30
+    assert repair.max_repairs == 10
+    assert consumer["consumer_max_steps"] == 4
+
+    unknown = json.loads(json.dumps(budget))
+    unknown["consumer"]["unknown"] = 4
+    with pytest.raises(ContractError, match="closed"):
+        _budgets(unknown)
+
+    missing = json.loads(json.dumps(budget))
+    del missing["demo"]
+    with pytest.raises(ContractError, match="closed"):
+        _budgets(missing)
 
 
 def test_production_rejects_caller_profile_override_as_snapshot_hash_mismatch(tmp_path: Path) -> None:

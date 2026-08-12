@@ -209,6 +209,10 @@ class _RobotSession:
         self.time_s = 0.0
         self.target = [0.0] * width
         self.sdk = _Sdk(self)
+        self.close_calls = 0
+
+    def close(self) -> None:
+        self.close_calls += 1
 
     @property
     def simulation_time_s(self) -> float:
@@ -382,6 +386,23 @@ def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAda
     frozen_snapshot["library_view_refs"] = [
         _json_ref(root, f"{run_dir}/implementation_bundle.json", implementation_bundle)
     ]
+    frozen_snapshot["budget_ref"] = _json_ref(
+        root,
+        f"{run_dir}/budget.json",
+        {
+            "artifact_type": "run_budget",
+            "schema_version": "1.0.0",
+            "stage1": {"max_correction_calls": 2},
+            "blue_line": {"max_inference_calls": 3},
+            "stage2": {"max_inference_calls": 30},
+            "repair": {
+                "max_invocations": 10,
+                "max_infrastructure_retries": 1,
+            },
+            "consumer": {"max_inference_calls": 4},
+            "demo": {"repetitions": 1},
+        },
+    )
     write_stable_json(snapshot_path, frozen_snapshot)
     plan = DemoRunPlan(
         run_id=f"run-{robot}",
