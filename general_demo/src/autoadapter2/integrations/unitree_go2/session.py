@@ -14,6 +14,7 @@ advances MuJoCo only after the candidate invocation through the existing
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import math
 import os
@@ -22,6 +23,7 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from pathlib import PurePosixPath
 from types import SimpleNamespace
 from typing import Any, Protocol
 
@@ -44,8 +46,37 @@ DEFAULT_ROLLOUT_STEPS = 1
 DEFAULT_STATE_WAIT_S = 2.0
 DEFAULT_MAX_ROLLOUT_STEPS = 5000
 DEFAULT_INVOCATION_WINDOW_S = 0.25
+DEFAULT_CANDIDATE_TIMEOUT_S = 8.0
+DEFAULT_CANDIDATE_CANCEL_GRACE_S = 0.1
 DEFAULT_FLOOR_Z_M = 0.0
 DEFAULT_STANDING_HEIGHT_M = 0.34
+
+# These are the immutable bindings selected by the production Go2 factory.
+# Keeping them here makes the factory fail closed before MuJoCo or SDK2 are
+# constructed; an environment variable can select a candidate path, but it
+# cannot change any of these trusted inputs.
+GO2_INTEGRATION_MANIFEST_SHA256 = "b6e100063a270cf732a86eff5bf3662f679b82475899c6721c62edf979c4214c"
+GO2_MORPHOLOGY_SHA256 = "ea2e45ee12476fe3d22b6de1f6178219009ce2b7e6d9e259167b0cf5ea3b2d31"
+GO2_SDK_SHA256 = "904c0fda7142dd20e572cba5b4b8f1cff2afd291571e461dd6f9585eac957ef3"
+GO2_TRANSLATION_SHA256 = "7034efe2c66053a0c224c2193a531bf029ad4c4016bdf6bd238c31c1331e6d44"
+GO2_READINESS_PROFILE_SHA256 = "b626cb1ef34a4c76f5df28499bbb516d1f86af62c45022dbd7a5af5a41e55b6f"
+GO2_RUNTIME_LOCK_SHA256 = "3e0282e2fef7ce8976de2e19af881a3f739dc8a621d0087e8d14d1683de8a6e7"
+GO2_TASK_INSTANCES_SHA256 = "b9755ee0b3e6f2317cceed08706e1f7883ee70d0fd96fbd7b99a08c6fb2d134a"
+GO2_SCENE_SHA256 = "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0"
+GO2_XML_SHA256 = "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b"
+GO2_ASSET_CLOSURE_SHA256 = "f9966ae2644b65dd555cb6dde33fb0175bb5b3e18c3faf2a6f8ed95d5533e5f7"
+GO2_RUNTIME_ID = "unitree-go2-linux-amd64"
+GO2_RUNTIME_VERSION = "1.0.0"
+GO2_MANIFEST_RELATIVE_PATH = "general_demo/integrations/unitree-go2/integration_manifest.json"
+GO2_TASK_RELATIVE_PATH = (
+    "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
+)
+GO2_RUNTIME_LOCK_RELATIVE_PATH = (
+    "general_demo/environments/unitree-go2-linux-amd64/1.0.0/runtime-lock.json"
+)
+GO2_READINESS_PROFILE_RELATIVE_PATH = (
+    "general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json"
+)
 
 
 class Go2SessionError(RuntimeError):
@@ -287,7 +318,6 @@ class _UnitreeGo2SDKConnection:
             raise Go2SDKError("invalid SDK2 endpoint lifecycle")
         try:
             from unitree_sdk2py.core.channel import (
-                ChannelFactoryInitialize,
                 ChannelPublisher,
                 ChannelSubscriber,
             )
@@ -302,7 +332,10 @@ class _UnitreeGo2SDKConnection:
                 "pinned unitree_sdk2py/CycloneDDS symbols are unavailable"
             ) from exc
 
-        ChannelFactoryInitialize(1, "lo")
+        # UnitreeSDK2Transport, which starts first through the bridge, owns
+        # the single frozen domain-1/lo ChannelFactoryInitialize call.  These
+        # are only the connected candidate-facing endpoints; reinitializing
+        # the process-global SDK2 factory here would invalidate that route.
         crc = CRC()
         lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
         lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
@@ -323,7 +356,6 @@ class _UnitreeGo2SDKConnection:
         self._crc = crc
         self._lowcmd_type = LowCmd_
         self._binding = SimpleNamespace(
-            ChannelFactoryInitialize=ChannelFactoryInitialize,
             ChannelPublisher=ChannelPublisher,
             ChannelSubscriber=ChannelSubscriber,
             LowCmd_=LowCmd_,
@@ -508,6 +540,7 @@ class UnitreeGo2EvaluationRobotSession:
         self._capture: Any | None = None
         self._last_invocation_start_s = 0.0
         self._last_invocation_end_s = 0.0
+        self._candidate_invocation_count = 0
         self._trial_action_start_s = 0.0
         self._last_route_evidence: dict[str, Any] = {}
 
@@ -651,6 +684,7 @@ class UnitreeGo2EvaluationRobotSession:
         self._trial_action_start_s = self._reset_time_s
         self._last_invocation_start_s = self._reset_time_s
         self._last_invocation_end_s = self._reset_time_s
+        self._candidate_invocation_count = 0
 
     def start_external_recording(self, *, phase: str, execution_id: str) -> None:
         self._require_started()
@@ -710,13 +744,17 @@ class UnitreeGo2EvaluationRobotSession:
         if not callable(invoke):
             raise Go2SessionError("candidate does not expose the Framework invocation boundary")
         action_start = self.simulation_time_s
-        result = invoke(capability_id, copy.deepcopy(dict(arguments)), self.sdk)
-        if not isinstance(result, Mapping):
-            raise Go2SessionError("candidate result must be a mapping")
-
         steps = self._steps_for_invocation(arguments)
         self._last_invocation_start_s = action_start
-        self._advance(steps * float(self._backend.timestep), wait_for_command=True)
+        self._candidate_invocation_count += 1
+        result = self._invoke_with_clock(
+            invoke,
+            capability_id,
+            copy.deepcopy(dict(arguments)),
+            steps,
+        )
+        if not isinstance(result, Mapping):
+            raise Go2SessionError("candidate result must be a mapping")
         self._last_invocation_end_s = self.simulation_time_s
         self._wait_for_sdk_state()
         self._last_route_evidence = self._route_evidence()
@@ -728,10 +766,10 @@ class UnitreeGo2EvaluationRobotSession:
             raise Go2SessionError("validation evidence requires a typed Harness invocation")
         if self._start_truth is None:
             raise Go2SessionError("validation evidence requires a verified reset")
-        # Validation B invokes the candidate directly with ``session.sdk`` and
-        # only then calls ``collect``.  This is the deterministic clock owner:
-        # the command can be accepted only while this method advances the
-        # private bridge and MuJoCo state.
+        # Validation B has already invoked the candidate through
+        # ``session.invoke``.  Collection owns only this criterion's trusted
+        # observation/dwell window; it does not pretend to own the candidate
+        # call or manufacture a command receipt for it.
         action_start = self._last_invocation_end_s if self._last_invocation_end_s > self._reset_time_s else self._reset_time_s
         duration = max(DEFAULT_INVOCATION_WINDOW_S, float(invocation.dwell_s))
         duration = min(duration, float(invocation.timeout_s))
@@ -800,6 +838,9 @@ class UnitreeGo2EvaluationRobotSession:
         self._advance(dwell, wait_for_command=False)
         self._wait_for_sdk_state()
         route = self._route_evidence()
+        route_guard = bool(
+            route.get("verified") and route.get("candidate_invocation_observed")
+        )
         self._last_route_evidence = route
         terminal_samples = [
             sample for sample in self._truth_samples
@@ -831,8 +872,10 @@ class UnitreeGo2EvaluationRobotSession:
                 "terminal_dwell_s": self._sample_duration(terminal_samples),
                 "elapsed_s": self._sample_duration(terminal_samples),
                 "duration_s": self._sample_duration(terminal_samples),
+                "sdk_route_guard": route_guard,
+                "sdk_route_evidence": copy.deepcopy(route),
                 "guard_results": self._demo_guard_results(
-                    [*motion_samples, *terminal_samples], route
+                    [*motion_samples, *terminal_samples], route, route_guard=route_guard
                 ),
             }
             return result
@@ -846,7 +889,11 @@ class UnitreeGo2EvaluationRobotSession:
             "terminal_duration_s": terminal_duration,
             "elapsed_s": terminal_duration,
             "duration_s": terminal_duration,
-            "guard_results": self._demo_guard_results(terminal_samples, route),
+            "sdk_route_guard": route_guard,
+            "sdk_route_evidence": copy.deepcopy(route),
+            "guard_results": self._demo_guard_results(
+                terminal_samples, route, route_guard=route_guard
+            ),
         }
 
     def close(self) -> None:
@@ -935,6 +982,153 @@ class UnitreeGo2EvaluationRobotSession:
         if steps > self._max_rollout_steps:
             raise Go2SessionError("candidate rollout exceeds the frozen session limit")
         return steps
+
+    def _discard_pending_lowcmd(self) -> None:
+        """Drop commands received outside the active runner clock window.
+
+        The real transport retains only its latest DDS callback value.  Test
+        transports may expose a FIFO, so drain the complete pre-window set
+        before the candidate worker starts and again after it ends.  No value
+        is replayed into future simulation time: only a message received while
+        the worker-owned clock is stepping can reach ``bridge.step()``.
+        """
+
+        take = getattr(self._transport, "take_lowcmd", None)
+        if not callable(take):
+            return
+        for _ in range(max(64, self._max_rollout_steps)):
+            try:
+                message = take()
+            except Exception as exc:
+                raise Go2SessionError("could not drain the Go2 DDS command boundary") from exc
+            if message is None:
+                return
+        raise Go2SessionError("Go2 DDS command boundary did not quiesce")
+
+    def _invoke_with_clock(
+        self,
+        invoke: Callable[[str, Mapping[str, Any], object], Any],
+        capability_id: str,
+        arguments: Mapping[str, Any],
+        planned_steps: int,
+    ) -> Any:
+        """Run candidate code beside the sole deterministic physics clock.
+
+        Candidate code remains responsible for constructing and publishing
+        every real ``LowCmd_``.  The runner only steps the existing bridge;
+        it neither queues, repeats, nor synthesizes commands.  Draining before
+        and after the bounded window prevents an old DDS/FIFO value from being
+        made fresh merely because it was dequeued later.
+        """
+
+        self._discard_pending_lowcmd()
+        binding = self.sdk
+        result_box: dict[str, Any] = {}
+
+        def candidate_worker() -> None:
+            try:
+                result_box["result"] = invoke(capability_id, arguments, binding)
+            except BaseException as exc:  # preserve the candidate failure for the runner
+                result_box["error"] = exc
+            finally:
+                result_box["finished_at"] = time.monotonic()
+
+        worker = threading.Thread(
+            target=candidate_worker,
+            name="autoadapter2-go2-candidate",
+            daemon=True,
+        )
+        worker.start()
+        # The candidate cannot choose the wall deadline.  It is a frozen
+        # Session-Runner bound, independent of capability arguments.
+        deadline = time.monotonic() + DEFAULT_CANDIDATE_TIMEOUT_S
+        steps = 0
+        timed_out = False
+        cleanup_error: BaseException | None = None
+        try:
+            # A zero-duration yield gives the real DDS callback and candidate
+            # worker a chance to publish before the first bridge step without
+            # making wall time the simulation clock.
+            time.sleep(0)
+            while steps < planned_steps or worker.is_alive():
+                if worker.is_alive() and time.monotonic() >= deadline:
+                    timed_out = True
+                    break
+                if not worker.is_alive() and "error" in result_box:
+                    break
+                if steps >= self._max_rollout_steps:
+                    timed_out = True
+                    break
+                self._step_physics()
+                steps += 1
+                if self._should_wait_for_command_delivery():
+                    delivery_deadline = time.monotonic() + self._state_wait_s
+                    while (
+                        not self._last_bridge_result.get("accepted", False)
+                        and self.simulation_time_s - self._reset_time_s < 0.1
+                        and time.monotonic() < delivery_deadline
+                        and time.monotonic() < deadline
+                        and steps < self._max_rollout_steps
+                    ):
+                        time.sleep(0.001)
+                        self._step_physics()
+                        steps += 1
+                # Yield only for delivery/thread scheduling.  Simulation time
+                # advances exclusively through the bridge step; the bounded
+                # wall yield lets a low-level candidate publish its next DDS
+                # sample before the next deterministic tick.
+                if worker.is_alive():
+                    time.sleep(0.001)
+                else:
+                    time.sleep(0)
+        finally:
+            timed_out = timed_out or (worker.is_alive() and time.monotonic() >= deadline)
+            finished_at = result_box.get("finished_at")
+            if isinstance(finished_at, (int, float)) and finished_at > deadline:
+                timed_out = True
+            if timed_out:
+                # First stop all real endpoints, then give a candidate that
+                # is blocked in a publisher a bounded chance to observe the
+                # closed endpoint.  Python has no safe general thread-kill;
+                # an invocation is never successful unless this worker exits.
+                try:
+                    self._discard_pending_lowcmd()
+                except BaseException as exc:
+                    cleanup_error = exc
+                try:
+                    self.close()
+                except BaseException as exc:
+                    cleanup_error = cleanup_error or exc
+                if worker.is_alive():
+                    worker.join(timeout=DEFAULT_CANDIDATE_CANCEL_GRACE_S)
+            elif worker.is_alive():
+                remaining = max(0.0, deadline - time.monotonic())
+                worker.join(timeout=min(DEFAULT_CANDIDATE_CANCEL_GRACE_S, remaining))
+            if worker.is_alive() and not self._closed:
+                try:
+                    self.close()
+                except BaseException as exc:
+                    cleanup_error = cleanup_error or exc
+                worker.join(timeout=DEFAULT_CANDIDATE_CANCEL_GRACE_S)
+            if not worker.is_alive() and not self._closed:
+                # A write racing the terminal step is outside this
+                # invocation's observation window and must not be replayed by
+                # collection/demo.
+                try:
+                    self._discard_pending_lowcmd()
+                except BaseException as exc:
+                    cleanup_error = cleanup_error or exc
+
+        if cleanup_error is not None:
+            raise Go2SessionError("candidate timeout cleanup failed") from cleanup_error
+        if worker.is_alive() or timed_out:
+            if worker.is_alive():
+                raise Go2SessionError("candidate worker cancellation did not complete")
+            raise Go2SessionError("candidate invocation exceeded its bounded clock window")
+        error = result_box.get("error")
+        if isinstance(error, BaseException):
+            raise Go2SessionError("candidate invocation failed") from error
+        return result_box.get("result")
 
     def _advance(self, seconds: float, *, wait_for_command: bool) -> None:
         self._require_started()
@@ -1331,6 +1525,8 @@ class UnitreeGo2EvaluationRobotSession:
         self,
         samples: Sequence[Go2TruthSample],
         _route: Mapping[str, Any],
+        *,
+        route_guard: bool,
     ) -> dict[str, bool]:
         finite = bool(samples) and all(self._sample_finite(sample) for sample in samples)
         no_contact = bool(samples) and all(
@@ -1341,7 +1537,7 @@ class UnitreeGo2EvaluationRobotSession:
         )
         return {
             "trusted-external-verdict": bool(
-                self._started and not self._closed and self._start_truth is not None
+                route_guard and self._started and not self._closed and self._start_truth is not None
             ),
             "finite-required-state": finite,
             "no-body-or-head-floor-contact": no_contact,
@@ -1479,6 +1675,7 @@ class UnitreeGo2EvaluationRobotSession:
             and state_observed
             and progress
         )
+        candidate_invocation_observed = self._candidate_invocation_count > 0
         return {
             "verified": verified,
             "accepted_command_count": accepted_delta,
@@ -1491,8 +1688,350 @@ class UnitreeGo2EvaluationRobotSession:
             "simulation_time_start_s": self._reset_time_s,
             "simulation_time_end_s": self.simulation_time_s,
             "simulation_time_progressed": progress,
+            "candidate_invocation_count": self._candidate_invocation_count,
+            "candidate_invocation_observed": candidate_invocation_observed,
             "lowcmd_message_type": getattr(lowcmd_type, "__name__", None),
         }
+
+
+def _factory_path(root: Path, value: str | Path, relative_path: str, label: str) -> Path:
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    resolved = candidate.resolve()
+    expected = (root / relative_path).resolve()
+    if resolved != expected:
+        raise Go2SessionError(f"{label} must use the frozen path {relative_path}")
+    if candidate.is_symlink() or not resolved.is_file():
+        raise Go2SessionError(f"{label} is not a regular frozen file: {resolved}")
+    return resolved
+
+
+def _factory_json_reference(
+    root: Path,
+    reference: Any,
+    *,
+    expected_path: str,
+    expected_sha256: str,
+    label: str,
+) -> dict[str, Any]:
+    from ...integration.artifacts import load_json_artifact
+
+    if not isinstance(reference, Mapping):
+        raise Go2SessionError(f"{label} is not a file reference")
+    if reference.get("path") != expected_path or reference.get("sha256") != expected_sha256:
+        raise Go2SessionError(f"{label} does not match the frozen file reference")
+    path = _factory_path(root, expected_path, expected_path, label)
+    try:
+        artifact = load_json_artifact(path)
+    except Exception as exc:
+        raise Go2SessionError(f"{label} could not be loaded") from exc
+    if artifact.sha256 != expected_sha256:
+        raise Go2SessionError(f"{label} hash does not match the frozen record")
+    return artifact.value
+
+
+def _factory_sha256(path: Path, label: str) -> str:
+    try:
+        payload = path.read_bytes()
+    except OSError as exc:
+        raise Go2SessionError(f"{label} could not be read") from exc
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _factory_verify_asset_closure(
+    *,
+    model_path: Path,
+    runtime_entrypoint: Mapping[str, Any],
+) -> None:
+    entrypoint = runtime_entrypoint.get("path")
+    if not isinstance(entrypoint, str):
+        raise Go2SessionError("runtime lock MuJoCo entrypoint is malformed")
+    entry_relative = PurePosixPath(entrypoint)
+    if entry_relative.is_absolute() or any(
+        part in {"", ".", ".."} for part in entry_relative.parts
+    ):
+        raise Go2SessionError("runtime lock MuJoCo entrypoint is not a safe relative path")
+    asset_root = model_path
+    for _ in entry_relative.parts:
+        asset_root = asset_root.parent
+    expected_model = (asset_root / Path(*entry_relative.parts)).resolve()
+    if expected_model != model_path:
+        raise Go2SessionError("selected model path is not the frozen runtime entrypoint")
+
+    asset_files = runtime_entrypoint.get("asset_files")
+    if not isinstance(asset_files, list) or not asset_files:
+        raise Go2SessionError("runtime lock MuJoCo asset closure is missing")
+    records: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for index, item in enumerate(asset_files):
+        if not isinstance(item, Mapping):
+            raise Go2SessionError(f"runtime asset record {index} is malformed")
+        relative = item.get("path")
+        expected_sha = item.get("sha256")
+        if not isinstance(relative, str) or not isinstance(expected_sha, str):
+            raise Go2SessionError(f"runtime asset record {index} is malformed")
+        relative_path = PurePosixPath(relative)
+        if relative_path.is_absolute() or any(
+            part in {"", ".", ".."} for part in relative_path.parts
+        ) or relative in seen:
+            raise Go2SessionError(f"runtime asset path is unsafe or duplicated: {relative}")
+        seen.add(relative)
+        asset_candidate = asset_root / Path(*relative_path.parts)
+        if asset_candidate.is_symlink() or not asset_candidate.is_file():
+            raise Go2SessionError(f"runtime asset is missing or symlinked: {relative}")
+        asset_path = asset_candidate.resolve()
+        try:
+            asset_path.relative_to(asset_root.resolve())
+        except ValueError as exc:
+            raise Go2SessionError("runtime asset escapes the selected closure root") from exc
+        actual_sha = _factory_sha256(asset_path, f"runtime asset {relative}")
+        if actual_sha != expected_sha:
+            raise Go2SessionError(f"runtime asset hash mismatch: {relative}")
+        records.append(
+            {"path": relative, "size": asset_path.stat().st_size, "sha256": actual_sha}
+        )
+
+    if entrypoint not in seen:
+        raise Go2SessionError("runtime asset closure does not include scene.xml")
+    go2_relative = "unitree_robots/go2/go2.xml"
+    if go2_relative not in seen:
+        raise Go2SessionError("runtime asset closure does not include go2.xml")
+    if _factory_sha256(model_path, "selected MuJoCo scene") != GO2_SCENE_SHA256:
+        raise Go2SessionError("selected MuJoCo scene hash is not the official frozen scene")
+    go2_path = (asset_root / Path(*PurePosixPath(go2_relative).parts)).resolve()
+    if _factory_sha256(go2_path, "included Go2 XML") != GO2_XML_SHA256:
+        raise Go2SessionError("included Go2 XML hash is not the official frozen asset")
+    from ...foundation.canonical import canonical_bytes
+
+    closure_sha = hashlib.sha256(
+        canonical_bytes(sorted(records, key=lambda item: item["path"]))
+    ).hexdigest()
+    if closure_sha != GO2_ASSET_CLOSURE_SHA256:
+        raise Go2SessionError("MuJoCo asset closure hash does not match the frozen runtime")
+
+
+def _verify_production_inputs(
+    *,
+    root: Path,
+    integration_manifest_path: str | Path | None,
+    model_path: str | Path | None,
+    task_instances_path: str | Path | None,
+    video_profile: FrozenVideoProfile | Mapping[str, Any] | None,
+) -> tuple[Path, Path, FrozenVideoProfile]:
+    """Verify the complete Go2 selection before constructing any live endpoint."""
+
+    from ...integration.artifacts import (
+        load_integration_manifest,
+        load_json_artifact,
+        validate_readiness_profile,
+    )
+    from ...integration.robot_facts import validate_robot_facts
+
+    manifest_path = _factory_path(
+        root,
+        integration_manifest_path or GO2_MANIFEST_RELATIVE_PATH,
+        GO2_MANIFEST_RELATIVE_PATH,
+        "Go2 integration manifest",
+    )
+    try:
+        manifest_artifact = load_integration_manifest(manifest_path)
+    except Exception as exc:
+        raise Go2SessionError("Go2 integration manifest failed strict validation") from exc
+    if manifest_artifact.sha256 != GO2_INTEGRATION_MANIFEST_SHA256:
+        raise Go2SessionError("Go2 integration manifest hash is not the frozen selection")
+    manifest = manifest_artifact.value
+    if (
+        manifest.get("manifest_id"),
+        manifest.get("version"),
+        manifest.get("status"),
+        manifest.get("robot_model_id"),
+        manifest.get("robot_configuration_id"),
+    ) != (
+        "unitree-go2-stock-12dof-mujoco",
+        "1.0.0",
+        "READY",
+        ROBOT_MODEL_ID,
+        ROBOT_CONFIGURATION_ID,
+    ):
+        raise Go2SessionError("Go2 integration manifest is not the READY stock-12dof selection")
+    if manifest.get("unresolved_gaps") != []:
+        raise Go2SessionError("Go2 integration manifest contains unresolved gaps")
+    runtime = manifest.get("runtime")
+    if not isinstance(runtime, Mapping) or (
+        runtime.get("id"),
+        runtime.get("version"),
+        runtime.get("mujoco"),
+        runtime.get("architecture"),
+        runtime.get("lock_sha256"),
+    ) != (GO2_RUNTIME_ID, GO2_RUNTIME_VERSION, "3.3.6", "amd64", GO2_RUNTIME_LOCK_SHA256):
+        raise Go2SessionError("Go2 integration manifest runtime binding is not frozen")
+
+    morphology = _factory_json_reference(
+        root,
+        manifest.get("morphology_ref"),
+        expected_path="general_demo/libraries/morphology/unitree-go2/1.0.0/record.json",
+        expected_sha256=GO2_MORPHOLOGY_SHA256,
+        label="Go2 morphology record",
+    )
+    sdk = _factory_json_reference(
+        root,
+        manifest.get("sdk_ref"),
+        expected_path="general_demo/libraries/sdks/unitree-sdk2-go2-lowlevel/1.0.0/record.json",
+        expected_sha256=GO2_SDK_SHA256,
+        label="Go2 SDK record",
+    )
+    translation = _factory_json_reference(
+        root,
+        manifest.get("translation_ref"),
+        expected_path="general_demo/integrations/unitree-go2/translation.json",
+        expected_sha256=GO2_TRANSLATION_SHA256,
+        label="Go2 Translation record",
+    )
+    readiness = _factory_json_reference(
+        root,
+        manifest.get("readiness_profile_ref"),
+        expected_path=GO2_READINESS_PROFILE_RELATIVE_PATH,
+        expected_sha256=GO2_READINESS_PROFILE_SHA256,
+        label="Go2 readiness profile",
+    )
+    try:
+        validate_readiness_profile(readiness)
+        validate_robot_facts(root, manifest)
+    except Exception as exc:
+        raise Go2SessionError("Go2 manifest dependencies failed the robot readiness gate") from exc
+    if morphology.get("robot_configuration_id") != ROBOT_CONFIGURATION_ID:
+        raise Go2SessionError("Go2 morphology configuration is not frozen")
+    if sdk.get("robot_configuration_id") != ROBOT_CONFIGURATION_ID:
+        raise Go2SessionError("Go2 SDK configuration is not frozen")
+    if translation.get("status") != "READY" or translation.get("conformance_status") != "PASS":
+        raise Go2SessionError("Go2 Translation is not READY/PASS")
+
+    runtime_lock_path = _factory_path(
+        root,
+        root / GO2_RUNTIME_LOCK_RELATIVE_PATH,
+        GO2_RUNTIME_LOCK_RELATIVE_PATH,
+        "Go2 runtime lock",
+    )
+    try:
+        runtime_lock_artifact = load_json_artifact(runtime_lock_path)
+    except Exception as exc:
+        raise Go2SessionError("Go2 runtime lock failed strict loading") from exc
+    if runtime_lock_artifact.sha256 != GO2_RUNTIME_LOCK_SHA256:
+        raise Go2SessionError("Go2 runtime lock hash is not the frozen selection")
+    runtime_lock = runtime_lock_artifact.value
+    if (
+        runtime_lock.get("runtime_id"),
+        runtime_lock.get("version"),
+        runtime_lock.get("status"),
+    ) != (GO2_RUNTIME_ID, GO2_RUNTIME_VERSION, "FROZEN_FROM_VERIFIED_LINUX_BUILD"):
+        raise Go2SessionError("Go2 runtime lock is not the frozen verified build")
+    if runtime_lock.get("unresolved") != []:
+        raise Go2SessionError("Go2 runtime lock contains unresolved items")
+    entrypoint = runtime_lock.get("mujoco_entrypoint")
+    if not isinstance(entrypoint, Mapping) or (
+        entrypoint.get("path"),
+        entrypoint.get("sha256"),
+        entrypoint.get("asset_closure_sha256"),
+        entrypoint.get("complete_asset_closure_verified"),
+    ) != ("unitree_robots/go2/scene.xml", GO2_SCENE_SHA256, GO2_ASSET_CLOSURE_SHA256, True):
+        raise Go2SessionError("Go2 runtime lock MuJoCo entrypoint is not the official closure")
+
+    selected_model = model_path
+    if selected_model is None:
+        selected_model = os.environ.get("AUTOADAPTER_GO2_MODEL")
+    if selected_model is None:
+        selected_model = Path("/opt/unitree_mujoco") / str(entrypoint["path"])
+    selected_model_path = Path(selected_model)
+    if not selected_model_path.is_absolute():
+        selected_model_path = root / selected_model_path
+    if selected_model_path.is_symlink() or not selected_model_path.is_file():
+        raise Go2SessionError("selected Go2 MuJoCo scene is missing or symlinked")
+    selected_model_path = selected_model_path.resolve()
+    if _factory_sha256(selected_model_path, "selected MuJoCo scene") != GO2_SCENE_SHA256:
+        raise Go2SessionError("selected MuJoCo scene hash is not the official frozen scene")
+    _factory_verify_asset_closure(model_path=selected_model_path, runtime_entrypoint=entrypoint)
+    morphology_mujoco = morphology.get("mujoco")
+    if not isinstance(morphology_mujoco, Mapping) or (
+        morphology_mujoco.get("simulation_entrypoint"),
+        morphology_mujoco.get("simulation_entrypoint_sha256"),
+        morphology_mujoco.get("asset_closure_sha256"),
+    ) != ("unitree_robots/go2/scene.xml", GO2_SCENE_SHA256, GO2_ASSET_CLOSURE_SHA256):
+        raise Go2SessionError("Go2 morphology does not bind the official scene closure")
+
+    task_path = _factory_path(
+        root,
+        task_instances_path or GO2_TASK_RELATIVE_PATH,
+        GO2_TASK_RELATIVE_PATH,
+        "Go2 private task instances",
+    )
+    try:
+        task_artifact = load_json_artifact(task_path)
+    except Exception as exc:
+        raise Go2SessionError("Go2 private task instances failed strict loading") from exc
+    if task_artifact.sha256 != GO2_TASK_INSTANCES_SHA256:
+        raise Go2SessionError("Go2 private task instances hash is not the frozen selection")
+    if (
+        task_artifact.value.get("artifact_type"),
+        task_artifact.value.get("robot_configuration_id"),
+        task_artifact.value.get("visibility"),
+    ) != (
+        "task_instances_private",
+        ROBOT_CONFIGURATION_ID,
+        "DEMO_EVALUATION_HARNESS_ONLY",
+    ):
+        raise Go2SessionError("Go2 private task instances are not the frozen harness-only set")
+
+    expected_profile = _profile(None)
+    if video_profile is not None and not isinstance(video_profile, FrozenVideoProfile):
+        if not isinstance(video_profile, Mapping) or dict(video_profile) != expected_profile.to_dict():
+            raise Go2SessionError("Go2 video profile input is not the exact frozen profile")
+    selected_profile = _profile(video_profile)
+    if selected_profile != expected_profile:
+        raise Go2SessionError("Go2 video profile is not the frozen external-evaluation profile")
+    return selected_model_path, task_path, selected_profile
+
+
+def create_evaluation_robot_session(
+    *,
+    project_root: str | Path | None = None,
+    integration_manifest_path: str | Path | None = None,
+    model_path: str | Path | None = None,
+    task_instances_path: str | Path | None = None,
+    video_profile: FrozenVideoProfile | Mapping[str, Any] | None = None,
+) -> UnitreeGo2EvaluationRobotSession:
+    """Construct the verified production Go2 EvaluationRobotSession.
+
+    This factory intentionally exposes no dependency injection.  Test doubles
+    belong to the direct fixture constructor; the runner-visible factory only
+    returns a live, SDK2/CycloneDDS/bridge/MuJoCo session.
+    """
+
+    root = Path(project_root).resolve() if project_root is not None else Path(__file__).resolve().parents[5]
+    if not root.is_dir():
+        raise Go2SessionError(f"Go2 project root is missing: {root}")
+    selected_model, task_path, selected_profile = _verify_production_inputs(
+        root=root,
+        integration_manifest_path=integration_manifest_path,
+        model_path=model_path,
+        task_instances_path=task_instances_path,
+        video_profile=video_profile,
+    )
+    try:
+        session = UnitreeGo2EvaluationRobotSession(
+            selected_model,
+            task_instances_path=task_path,
+            video_profile=selected_profile,
+        )
+    except Exception as exc:
+        raise Go2SessionError("verified Go2 production session could not be constructed") from exc
+    if session.evidence_scope != "SDK_GROUNDED_SIMULATION":
+        try:
+            session.close()
+        except Exception:
+            pass
+        raise Go2SessionError("production Go2 factory did not produce SDK_GROUNDED_SIMULATION")
+    return session
 
 
 # Short aliases used by integration assembly and tests.
@@ -1507,6 +2046,7 @@ __all__ = [
     "Go2TruthSample",
     "Go2ValidationEvidence",
     "Go2Transport",
+    "create_evaluation_robot_session",
     "UnitreeGo2EvaluationRobotSession",
     "UnitreeGo2EvaluationSession",
     "initial_body_yaw_frame",

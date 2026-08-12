@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import copy
 import json
+import sys
+import threading
+import types
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+import autoadapter2.integrations.unitree_go2.session as go2_session_module
 from autoadapter2.demo import EvaluationRobotSession
 from autoadapter2.demo.fixed_criteria import evaluate_fixed_demo_criterion
 from autoadapter2.evaluation import FrozenVideoProfile, RGBFrame
@@ -20,9 +24,13 @@ from autoadapter2.integrations.unitree_go2.bridge import (
     LowStateFrame,
     MuJoCoSensorFrame,
     SportModeStateFrame,
+    UnitreeSDK2Transport,
 )
 from autoadapter2.integrations.unitree_go2.session import (
+    Go2SessionError,
     UnitreeGo2EvaluationRobotSession,
+    _UnitreeGo2SDKConnection,
+    create_evaluation_robot_session,
     initial_body_yaw_frame,
     start_frame_displacement,
     upright_score,
@@ -57,6 +65,8 @@ class FakeBackend:
         self.dq = [0.0] * 12
         self.closed = False
         self.set_controls_calls = 0
+        self.control_history: list[tuple[float, ...]] = []
+        self.after_step = None
 
     @property
     def simulation_time(self) -> float:
@@ -85,11 +95,14 @@ class FakeBackend:
     def set_controls(self, controls) -> None:
         self.controls[:] = list(controls)
         self.set_controls_calls += 1
+        self.control_history.append(tuple(self.controls))
 
     def step(self) -> None:
         self.time += self.timestep
         self.q[0] += self.controls[0] * 0.001
         self.dq[0] = self.controls[0]
+        if self.after_step is not None:
+            self.after_step()
 
     def close(self) -> None:
         self.closed = True
@@ -166,7 +179,6 @@ class FakeSDKConnection:
         self.lowcmd_publisher = FakePublisher(transport)
         self.crc = FakeCRC()
         self.binding = SimpleNamespace(
-            ChannelFactoryInitialize=lambda *_args: None,
             ChannelPublisher=object,
             ChannelSubscriber=object,
             LowCmd_=LowCmd,
@@ -195,7 +207,13 @@ class FakeSDKConnection:
         self.started = False
 
 
-def _publish_command(sdk: object, value: float = 0.3) -> None:
+def _publish_command(
+    sdk: object,
+    value: float = 0.3,
+    *,
+    kp: float = 20.0,
+    tau: float = 0.0,
+) -> None:
     command = sdk.LowCmd_()
     assert len(command.motor_cmd) == DDS_MOTOR_SLOT_COUNT
     for index, slot in enumerate(command.motor_cmd):
@@ -203,9 +221,9 @@ def _publish_command(sdk: object, value: float = 0.3) -> None:
         if index < 12:
             slot.q = value
             slot.dq = 0.0
-            slot.kp = 20.0
+            slot.kp = kp
             slot.kd = 0.5
-            slot.tau = 0.0
+            slot.tau = tau
         else:
             for name, safe_value in INACTIVE_SAFE_FIELDS.items():
                 setattr(slot, name, safe_value)
@@ -383,6 +401,8 @@ def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
     assert demo["motion_samples"][-1]["time_s"] == pytest.approx(
         demo["terminal_samples"][0]["time_s"]
     )
+    assert demo["sdk_route_guard"] is True
+    assert demo["sdk_route_evidence"]["verified"] is True
     assert "terminal_stop_samples" not in demo
     assert set(demo["guard_results"]) == {
         "trusted-external-verdict",
@@ -390,6 +410,73 @@ def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
         "no-body-or-head-floor-contact",
     }
     session.close()
+
+
+def test_invoke_clock_applies_commands_in_arrival_order_then_stales_without_replay() -> None:
+    session, backend, _transport, _sdk, _capture_count = _session(rollout_steps=3)
+    first_step = threading.Event()
+    second_step = threading.Event()
+    step_count = {"value": 0}
+
+    def signal_step() -> None:
+        step_count["value"] += 1
+        if step_count["value"] == 1:
+            first_step.set()
+        elif step_count["value"] == 2:
+            second_step.set()
+
+    backend.after_step = signal_step
+
+    class SequencedCandidate:
+        def _invoke(self, _capability_id, _arguments, sdk):
+            _publish_command(sdk, 1.0, kp=0.0, tau=1.0)
+            assert first_step.wait(1.0)
+            _publish_command(sdk, 2.0, kp=0.0, tau=2.0)
+            assert second_step.wait(1.0)
+            _publish_command(sdk, 3.0, kp=0.0, tau=3.0)
+            return {"status": "issued"}
+
+    session.reset(phase="DEMO", execution_id="ordered-clock", initial_state={"task_id": "G03"})
+    result = session.invoke(SequencedCandidate(), "low-level-command", {"duration_s": 0.3})
+    assert result == {"status": "issued"}
+    assert [
+        values[0]
+        for values in backend.control_history
+        if values[0] > 0.0
+    ] == pytest.approx([1.0, 1.5, 2.25])
+    assert session.route_evidence["accepted_command_count"] == 3
+
+    # No new DDS message is published.  The bridge's frozen 0.100 s
+    # simulation-time rule must zero controls; the session must not replay the
+    # final queued value to keep the robot alive.
+    session._advance(0.2, wait_for_command=False)
+    assert backend.controls == [0.0] * 12
+    assert session._last_bridge_result["command_health"] == "STALE"
+    session.close()
+
+
+def test_candidate_timeout_closes_the_session_endpoints(monkeypatch) -> None:
+    session, backend, transport, sdk, _capture_count = _session(rollout_steps=1)
+    release = threading.Event()
+    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 0.01)
+
+    class BlockingCandidate:
+        def _invoke(self, _capability_id, _arguments, _sdk):
+            release.wait(1.0)
+            return {"status": "issued"}
+
+    session.reset(phase="DEMO", execution_id="timeout", initial_state={"task_id": "G01"})
+    with pytest.raises(Go2SessionError):
+        session.invoke(
+            BlockingCandidate(),
+            "low-level-command",
+            {},
+        )
+    assert session.evidence_scope == "UNAVAILABLE"
+    assert backend.closed is True
+    assert transport.closed is True
+    assert sdk.closed is True
+    release.set()
 
 
 def test_context_manager_closes_sdk_bridge_transport_and_backend() -> None:
@@ -452,6 +539,23 @@ def _fixed_criteria() -> dict[str, dict]:
         for item in value["criteria"]
         if item["task_id"] in {"G01", "G02", "G03", "G04", "G05"}
     }
+
+
+def test_demo_no_action_cannot_pass_a_pre_satisfied_g03_reset() -> None:
+    session, _backend, _transport, _sdk, _capture_count = _session(rollout_steps=1)
+    session.reset(
+        phase="DEMO",
+        execution_id="g03-no-action",
+        initial_state={"task_id": "G03"},
+    )
+    evidence = session.demo_evidence("G03")
+    assert evidence["sdk_route_evidence"]["verified"] is False
+    assert evidence["sdk_route_evidence"]["accepted_command_count"] == 0
+    assert evidence["sdk_route_evidence"]["candidate_invocation_observed"] is False
+    assert evidence["sdk_route_guard"] is False
+    assert evidence["guard_results"]["trusted-external-verdict"] is False
+    assert evaluate_fixed_demo_criterion(_fixed_criteria()["G03"], evidence) is False
+    session.close()
 
 
 def _sample(time_s: float, metrics: dict[str, object], phase: str = "terminal") -> dict:
@@ -534,3 +638,159 @@ def test_fixed_demo_evaluator_accepts_one_positive_and_rejects_one_decisive_nega
     else:
         negative["samples"][1]["metrics"]["absolute_body_height_error_m"] = 0.1
     assert evaluate_fixed_demo_criterion(criterion, negative) is False
+
+
+def test_factory_is_importable_through_lazy_integration_export() -> None:
+    import autoadapter2.integrations.unitree_go2 as go2_integration
+
+    assert callable(go2_integration.create_evaluation_robot_session)
+
+
+def test_factory_rejects_wrong_manifest_configuration(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    source = root / "general_demo/integrations/unitree-go2/integration_manifest.json"
+    value = json.loads(source.read_text(encoding="utf-8"))
+    value["robot_configuration_id"] = "wrong-configuration"
+    path = tmp_path / "integration_manifest.json"
+    path.write_text(json.dumps(value), encoding="utf-8")
+    with pytest.raises(Go2SessionError):
+        create_evaluation_robot_session(
+            project_root=root,
+            integration_manifest_path=path,
+            model_path=tmp_path / "scene.xml",
+        )
+
+
+def test_factory_rejects_wrong_scene_hash(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    scene = tmp_path / "scene.xml"
+    scene.write_text("<mujoco/>", encoding="utf-8")
+    with pytest.raises(Go2SessionError, match="scene hash"):
+        create_evaluation_robot_session(project_root=root, model_path=scene)
+
+
+def test_factory_rejects_unready_manifest(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    source = root / "general_demo/integrations/unitree-go2/integration_manifest.json"
+    value = json.loads(source.read_text(encoding="utf-8"))
+    value["status"] = "DRAFT"
+    path = tmp_path / "integration_manifest.json"
+    path.write_text(json.dumps(value), encoding="utf-8")
+    with pytest.raises(Go2SessionError):
+        create_evaluation_robot_session(
+            project_root=root,
+            integration_manifest_path=path,
+            model_path=tmp_path / "scene.xml",
+        )
+
+
+def test_factory_constructs_only_sdk_grounded_scope_after_verified_selection(monkeypatch) -> None:
+    root = Path(__file__).parents[2]
+    profile = go2_session_module._profile(None)
+    selected_model = root / "verified-scene.xml"
+    selected_tasks = root / (
+        "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
+    )
+    calls: dict[str, object] = {}
+
+    def verified_inputs(**kwargs):
+        calls.update(kwargs)
+        return selected_model, selected_tasks, profile
+
+    class ProductionSession:
+        evidence_scope = "SDK_GROUNDED_SIMULATION"
+
+        def __init__(self, model_path, *, task_instances_path, video_profile):
+            self.model_path = model_path
+            self.task_instances_path = task_instances_path
+            self.video_profile = video_profile
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(go2_session_module, "_verify_production_inputs", verified_inputs)
+    monkeypatch.setattr(go2_session_module, "UnitreeGo2EvaluationRobotSession", ProductionSession)
+    result = create_evaluation_robot_session(project_root=root)
+    assert result.evidence_scope == "SDK_GROUNDED_SIMULATION"
+    assert result.model_path == selected_model
+    assert calls["root"] == root
+
+
+def test_real_shaped_session_initializes_channel_factory_exactly_once(monkeypatch) -> None:
+    factory_calls: list[tuple[int, str]] = []
+
+    class Endpoint:
+        def __init__(self, topic, message_type):
+            self.topic = topic
+            self.message_type = message_type
+            self.closed = False
+
+        def Init(self, *_args):
+            return None
+
+        def Write(self, _message):
+            return None
+
+        def Close(self):
+            self.closed = True
+
+    class LowCmdType:
+        pass
+
+    class LowStateType:
+        pass
+
+    class SportModeStateType:
+        pass
+
+    class CRC:
+        def Crc(self, _message):
+            return 0
+
+    def channel_factory_initialize(domain, interface):
+        factory_calls.append((domain, interface))
+
+    channel = types.ModuleType("unitree_sdk2py.core.channel")
+    channel.ChannelFactoryInitialize = channel_factory_initialize
+    channel.ChannelPublisher = Endpoint
+    channel.ChannelSubscriber = Endpoint
+    dds = types.ModuleType("unitree_sdk2py.idl.unitree_go.msg.dds_")
+    dds.LowCmd_ = LowCmdType
+    dds.LowState_ = LowStateType
+    dds.SportModeState_ = SportModeStateType
+    default = types.ModuleType("unitree_sdk2py.idl.default")
+    default.unitree_go_msg_dds__LowState_ = LowStateType
+    default.unitree_go_msg_dds__SportModeState_ = SportModeStateType
+    crc = types.ModuleType("unitree_sdk2py.utils.crc")
+    crc.CRC = CRC
+    for name, module in {
+        "unitree_sdk2py": types.ModuleType("unitree_sdk2py"),
+        "unitree_sdk2py.core": types.ModuleType("unitree_sdk2py.core"),
+        "unitree_sdk2py.core.channel": channel,
+        "unitree_sdk2py.idl": types.ModuleType("unitree_sdk2py.idl"),
+        "unitree_sdk2py.idl.default": default,
+        "unitree_sdk2py.idl.unitree_go": types.ModuleType("unitree_sdk2py.idl.unitree_go"),
+        "unitree_sdk2py.idl.unitree_go.msg": types.ModuleType("unitree_sdk2py.idl.unitree_go.msg"),
+        "unitree_sdk2py.idl.unitree_go.msg.dds_": dds,
+        "unitree_sdk2py.utils": types.ModuleType("unitree_sdk2py.utils"),
+        "unitree_sdk2py.utils.crc": crc,
+    }.items():
+        monkeypatch.setitem(sys.modules, name, module)
+
+    backend = FakeBackend()
+    transport = UnitreeSDK2Transport()
+    bridge = Go2DDSMuJoCoBridge(backend, transport)
+    sdk = _UnitreeGo2SDKConnection()
+    session = UnitreeGo2EvaluationRobotSession(
+        backend=backend,
+        transport=transport,
+        bridge=bridge,
+        sdk=sdk,
+        truth_provider=_truth,
+        render_rgb=lambda: b"\x00" * 6,
+        auto_start=False,
+    )
+    session.start()
+    assert factory_calls == [(1, "lo")]
+    assert not hasattr(session.sdk, "ChannelFactoryInitialize")
+    session.close()
