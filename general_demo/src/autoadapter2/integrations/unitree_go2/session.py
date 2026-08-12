@@ -17,6 +17,7 @@ import copy
 import hashlib
 import json
 import math
+import multiprocessing
 import os
 import threading
 import time
@@ -51,16 +52,15 @@ DEFAULT_CANDIDATE_CANCEL_GRACE_S = 0.1
 DEFAULT_FLOOR_Z_M = 0.0
 DEFAULT_STANDING_HEIGHT_M = 0.34
 
-# These are the immutable bindings selected by the production Go2 factory.
-# Keeping them here makes the factory fail closed before MuJoCo or SDK2 are
-# constructed; an environment variable can select a candidate path, but it
-# cannot change any of these trusted inputs.
-GO2_INTEGRATION_MANIFEST_SHA256 = "b6e100063a270cf732a86eff5bf3662f679b82475899c6721c62edf979c4214c"
+# These are the immutable upstream and task/video bindings selected by the
+# production Go2 factory.  The manifest and runtime lock are deliberately not
+# constants here: a trusted launcher supplies the selected external files or
+# their hashes, and this module verifies their current bytes and cross-file
+# binding before constructing a live session.
 GO2_MORPHOLOGY_SHA256 = "ea2e45ee12476fe3d22b6de1f6178219009ce2b7e6d9e259167b0cf5ea3b2d31"
 GO2_SDK_SHA256 = "904c0fda7142dd20e572cba5b4b8f1cff2afd291571e461dd6f9585eac957ef3"
 GO2_TRANSLATION_SHA256 = "7034efe2c66053a0c224c2193a531bf029ad4c4016bdf6bd238c31c1331e6d44"
 GO2_READINESS_PROFILE_SHA256 = "b626cb1ef34a4c76f5df28499bbb516d1f86af62c45022dbd7a5af5a41e55b6f"
-GO2_RUNTIME_LOCK_SHA256 = "3e0282e2fef7ce8976de2e19af881a3f739dc8a621d0087e8d14d1683de8a6e7"
 GO2_TASK_INSTANCES_SHA256 = "b9755ee0b3e6f2317cceed08706e1f7883ee70d0fd96fbd7b99a08c6fb2d134a"
 GO2_SCENE_SHA256 = "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0"
 GO2_XML_SHA256 = "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b"
@@ -338,21 +338,33 @@ class _UnitreeGo2SDKConnection:
         # the process-global SDK2 factory here would invalidate that route.
         crc = CRC()
         lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
-        lowstate_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
-        sport_subscriber = ChannelSubscriber("rt/sportmodestate", SportModeState_)
+        # Keep the callback subscribers used for Framework route auditing
+        # separate from the polling subscribers exposed to the candidate.
+        # SDK2 callback readers consume their own DataReader samples; sharing
+        # one with candidate ``Read()`` would race feedback delivery.
+        lowstate_audit_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
+        sport_audit_subscriber = ChannelSubscriber("rt/sportmodestate", SportModeState_)
+        lowstate_polling_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
+        sport_polling_subscriber = ChannelSubscriber("rt/sportmodestate", SportModeState_)
         try:
             lowcmd_publisher.Init()
-            lowstate_subscriber.Init(self._on_low_state, 10)
-            sport_subscriber.Init(self._on_sport_mode_state, 10)
+            lowstate_audit_subscriber.Init(self._on_low_state, 10)
+            sport_audit_subscriber.Init(self._on_sport_mode_state, 10)
+            lowstate_polling_subscriber.Init()
+            sport_polling_subscriber.Init()
         except Exception:
             self._publisher = lowcmd_publisher
-            self._lowstate_subscriber = lowstate_subscriber
-            self._sport_subscriber = sport_subscriber
+            self._lowstate_audit_subscriber = lowstate_audit_subscriber
+            self._sport_audit_subscriber = sport_audit_subscriber
+            self._lowstate_polling_subscriber = lowstate_polling_subscriber
+            self._sport_polling_subscriber = sport_polling_subscriber
             self._close_endpoints()
             raise
         self._publisher = lowcmd_publisher
-        self._lowstate_subscriber = lowstate_subscriber
-        self._sport_subscriber = sport_subscriber
+        self._lowstate_audit_subscriber = lowstate_audit_subscriber
+        self._sport_audit_subscriber = sport_audit_subscriber
+        self._lowstate_polling_subscriber = lowstate_polling_subscriber
+        self._sport_polling_subscriber = sport_polling_subscriber
         self._crc = crc
         self._lowcmd_type = LowCmd_
         self._binding = SimpleNamespace(
@@ -363,8 +375,8 @@ class _UnitreeGo2SDKConnection:
             SportModeState_=SportModeState_,
             CRC=CRC,
             lowcmd_publisher=lowcmd_publisher,
-            lowstate_subscriber=lowstate_subscriber,
-            sport_mode_state_subscriber=sport_subscriber,
+            lowstate_subscriber=lowstate_polling_subscriber,
+            sport_mode_state_subscriber=sport_polling_subscriber,
             crc=crc,
         )
         self._started = True
@@ -382,7 +394,13 @@ class _UnitreeGo2SDKConnection:
             raise Go2SDKError("SDK2 endpoints are not started")
 
     def _close_endpoints(self) -> None:
-        for name in ("_publisher", "_lowstate_subscriber", "_sport_subscriber"):
+        for name in (
+            "_publisher",
+            "_lowstate_audit_subscriber",
+            "_sport_audit_subscriber",
+            "_lowstate_polling_subscriber",
+            "_sport_polling_subscriber",
+        ):
             endpoint = getattr(self, name, None)
             close = getattr(endpoint, "Close", None)
             if callable(close):
@@ -406,6 +424,42 @@ class _UnitreeGo2SDKConnection:
     def __exit__(self, _exc_type: object, _exc: object, _tb: object) -> bool:
         self.close()
         return False
+
+
+def _candidate_process_entry(
+    invoke: Callable[[str, Mapping[str, Any], object], Any],
+    capability_id: str,
+    arguments: Mapping[str, Any],
+    binding: object,
+    result_sender: Any,
+) -> None:
+    """Execute one candidate in the killable per-invocation worker boundary."""
+
+    try:
+        result = invoke(capability_id, arguments, binding)
+        payload = {
+            "ok": True,
+            "result": result,
+            "finished_at": time.monotonic(),
+        }
+    except BaseException as exc:
+        payload = {
+            "ok": False,
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "finished_at": time.monotonic(),
+        }
+    try:
+        result_sender.send(payload)
+    except BaseException:
+        # A non-picklable candidate result is reported by the parent as an
+        # unexpected worker exit; no candidate object crosses the public API.
+        pass
+    finally:
+        try:
+            result_sender.close()
+        except BaseException:
+            pass
 
 
 def _mapping_value(value: Any, names: Sequence[str], default: Any = None) -> Any:
@@ -1023,38 +1077,45 @@ class UnitreeGo2EvaluationRobotSession:
 
         self._discard_pending_lowcmd()
         binding = self.sdk
-        result_box: dict[str, Any] = {}
-
-        def candidate_worker() -> None:
-            try:
-                result_box["result"] = invoke(capability_id, arguments, binding)
-            except BaseException as exc:  # preserve the candidate failure for the runner
-                result_box["error"] = exc
-            finally:
-                result_box["finished_at"] = time.monotonic()
-
-        worker = threading.Thread(
-            target=candidate_worker,
+        try:
+            context = multiprocessing.get_context("fork")
+        except ValueError as exc:  # pragma: no cover - formal route is Linux
+            raise Go2SessionError(
+                "Go2 candidate execution requires the fork worker boundary"
+            ) from exc
+        result_receiver, result_sender = context.Pipe(duplex=False)
+        worker = context.Process(
+            target=_candidate_process_entry,
+            args=(invoke, capability_id, arguments, binding, result_sender),
             name="autoadapter2-go2-candidate",
-            daemon=True,
         )
-        worker.start()
+        # This is a killable process boundary, not the old unkillable daemon
+        # thread.  Candidates are not allowed to create child workers here.
+        worker.daemon = True
+        try:
+            worker.start()
+        except BaseException:
+            result_receiver.close()
+            result_sender.close()
+            raise
+        result_sender.close()
         # The candidate cannot choose the wall deadline.  It is a frozen
         # Session-Runner bound, independent of capability arguments.
         deadline = time.monotonic() + DEFAULT_CANDIDATE_TIMEOUT_S
         steps = 0
         timed_out = False
+        runner_error: BaseException | None = None
         cleanup_error: BaseException | None = None
+        payload: Mapping[str, Any] | None = None
+        worker_alive_after_cleanup = True
         try:
             # A zero-duration yield gives the real DDS callback and candidate
             # worker a chance to publish before the first bridge step without
             # making wall time the simulation clock.
-            time.sleep(0)
+            time.sleep(min(0.002, max(0.0, deadline - time.monotonic())))
             while steps < planned_steps or worker.is_alive():
                 if worker.is_alive() and time.monotonic() >= deadline:
                     timed_out = True
-                    break
-                if not worker.is_alive() and "error" in result_box:
                     break
                 if steps >= self._max_rollout_steps:
                     timed_out = True
@@ -1081,54 +1142,95 @@ class UnitreeGo2EvaluationRobotSession:
                     time.sleep(0.001)
                 else:
                     time.sleep(0)
+        except BaseException as exc:
+            runner_error = exc
         finally:
             timed_out = timed_out or (worker.is_alive() and time.monotonic() >= deadline)
-            finished_at = result_box.get("finished_at")
-            if isinstance(finished_at, (int, float)) and finished_at > deadline:
-                timed_out = True
-            if timed_out:
-                # First stop all real endpoints, then give a candidate that
-                # is blocked in a publisher a bounded chance to observe the
-                # closed endpoint.  Python has no safe general thread-kill;
-                # an invocation is never successful unless this worker exits.
+            if worker.is_alive() or timed_out or runner_error is not None:
+                timed_out = timed_out or worker.is_alive()
                 try:
-                    self._discard_pending_lowcmd()
+                    self._terminate_candidate_process(worker)
                 except BaseException as exc:
                     cleanup_error = exc
+            else:
                 try:
-                    self.close()
+                    worker.join(timeout=0)
+                    if worker.is_alive():
+                        self._terminate_candidate_process(worker)
+                        timed_out = True
                 except BaseException as exc:
-                    cleanup_error = cleanup_error or exc
-                if worker.is_alive():
-                    worker.join(timeout=DEFAULT_CANDIDATE_CANCEL_GRACE_S)
-            elif worker.is_alive():
-                remaining = max(0.0, deadline - time.monotonic())
-                worker.join(timeout=min(DEFAULT_CANDIDATE_CANCEL_GRACE_S, remaining))
-            if worker.is_alive() and not self._closed:
+                    cleanup_error = exc
+            if cleanup_error is None and not worker.is_alive():
                 try:
-                    self.close()
-                except BaseException as exc:
-                    cleanup_error = cleanup_error or exc
-                worker.join(timeout=DEFAULT_CANDIDATE_CANCEL_GRACE_S)
-            if not worker.is_alive() and not self._closed:
-                # A write racing the terminal step is outside this
-                # invocation's observation window and must not be replayed by
-                # collection/demo.
+                    if result_receiver.poll(0.2):
+                        candidate_payload = result_receiver.recv()
+                        if isinstance(candidate_payload, Mapping):
+                            payload = candidate_payload
+                except (EOFError, OSError) as exc:
+                    # A terminated worker closes the result pipe without a
+                    # payload; timeout handling intentionally treats that as
+                    # the expected kill path.
+                    if not timed_out:
+                        cleanup_error = exc
+            try:
+                # The worker is joined before this drain.  A queued command
+                # cannot become fresh after the invocation has ended.
+                self._discard_pending_lowcmd()
+            except BaseException as exc:
+                cleanup_error = cleanup_error or exc
+            try:
+                result_receiver.close()
+            except BaseException as exc:
+                cleanup_error = cleanup_error or exc
+            worker_alive_after_cleanup = worker.is_alive()
+            if not worker_alive_after_cleanup:
                 try:
-                    self._discard_pending_lowcmd()
-                except BaseException as exc:
-                    cleanup_error = cleanup_error or exc
+                    worker.close()
+                except ValueError:
+                    pass
 
         if cleanup_error is not None:
-            raise Go2SessionError("candidate timeout cleanup failed") from cleanup_error
-        if worker.is_alive() or timed_out:
-            if worker.is_alive():
-                raise Go2SessionError("candidate worker cancellation did not complete")
+            try:
+                self.close()
+            except BaseException:
+                pass
+            raise Go2SessionError("candidate worker cleanup failed") from cleanup_error
+        if worker_alive_after_cleanup:
+            try:
+                self.close()
+            except BaseException:
+                pass
+            raise Go2SessionError("candidate worker cancellation did not complete")
+        if runner_error is not None:
+            raise runner_error
+        if timed_out:
             raise Go2SessionError("candidate invocation exceeded its bounded clock window")
-        error = result_box.get("error")
-        if isinstance(error, BaseException):
-            raise Go2SessionError("candidate invocation failed") from error
-        return result_box.get("result")
+        if payload is None:
+            raise Go2SessionError("candidate worker exited without a result")
+        finished_at = payload.get("finished_at")
+        if isinstance(finished_at, (int, float)) and finished_at > deadline:
+            raise Go2SessionError("candidate invocation exceeded its bounded clock window")
+        if payload.get("ok") is not True:
+            error_type = payload.get("error_type", "candidate error")
+            error_text = payload.get("error", "candidate invocation failed")
+            raise Go2SessionError(f"candidate invocation failed: {error_type}: {error_text}")
+        return payload.get("result")
+
+    @staticmethod
+    def _terminate_candidate_process(worker: Any) -> None:
+        """Terminate and join the worker before the session can return."""
+
+        if worker.is_alive():
+            worker.terminate()
+            worker.join(timeout=DEFAULT_CANDIDATE_CANCEL_GRACE_S)
+        if worker.is_alive():
+            kill = getattr(worker, "kill", None)
+            if not callable(kill):
+                raise Go2SessionError("candidate worker has no kill operation")
+            kill()
+            worker.join(timeout=DEFAULT_CANDIDATE_CANCEL_GRACE_S)
+        if worker.is_alive():
+            raise Go2SessionError("candidate worker cancellation did not complete")
 
     def _advance(self, seconds: float, *, wait_for_command: bool) -> None:
         self._require_started()
@@ -1707,6 +1809,34 @@ def _factory_path(root: Path, value: str | Path, relative_path: str, label: str)
     return resolved
 
 
+def _factory_selected_path(
+    root: Path,
+    value: str | Path | None,
+    default_relative_path: str,
+    label: str,
+) -> Path:
+    """Resolve a launcher-selected regular file without trusting env paths."""
+
+    candidate = Path(value) if value is not None else root / default_relative_path
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    if candidate.is_symlink() or not candidate.is_file():
+        raise Go2SessionError(f"{label} is not a regular selected file: {candidate}")
+    return candidate.resolve()
+
+
+def _factory_hash_argument(value: str | None, label: str) -> str | None:
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdefABCDEF" for character in value)
+    ):
+        raise Go2SessionError(f"{label} must be a lowercase or uppercase SHA-256 hex digest")
+    return value.lower()
+
+
 def _factory_json_reference(
     root: Path,
     reference: Any,
@@ -1815,6 +1945,9 @@ def _verify_production_inputs(
     *,
     root: Path,
     integration_manifest_path: str | Path | None,
+    integration_manifest_sha256: str | None,
+    runtime_lock_path: str | Path | None,
+    runtime_lock_sha256: str | None,
     model_path: str | Path | None,
     task_instances_path: str | Path | None,
     video_profile: FrozenVideoProfile | Mapping[str, Any] | None,
@@ -1828,9 +1961,15 @@ def _verify_production_inputs(
     )
     from ...integration.robot_facts import validate_robot_facts
 
-    manifest_path = _factory_path(
+    selected_manifest_sha256 = _factory_hash_argument(
+        integration_manifest_sha256, "Go2 integration manifest hash"
+    )
+    selected_runtime_lock_sha256 = _factory_hash_argument(
+        runtime_lock_sha256, "Go2 runtime lock hash"
+    )
+    manifest_path = _factory_selected_path(
         root,
-        integration_manifest_path or GO2_MANIFEST_RELATIVE_PATH,
+        integration_manifest_path,
         GO2_MANIFEST_RELATIVE_PATH,
         "Go2 integration manifest",
     )
@@ -1838,8 +1977,11 @@ def _verify_production_inputs(
         manifest_artifact = load_integration_manifest(manifest_path)
     except Exception as exc:
         raise Go2SessionError("Go2 integration manifest failed strict validation") from exc
-    if manifest_artifact.sha256 != GO2_INTEGRATION_MANIFEST_SHA256:
-        raise Go2SessionError("Go2 integration manifest hash is not the frozen selection")
+    if (
+        selected_manifest_sha256 is not None
+        and manifest_artifact.sha256 != selected_manifest_sha256
+    ):
+        raise Go2SessionError("Go2 integration manifest hash does not match the selected bytes")
     manifest = manifest_artifact.value
     if (
         manifest.get("manifest_id"),
@@ -1863,9 +2005,23 @@ def _verify_production_inputs(
         runtime.get("version"),
         runtime.get("mujoco"),
         runtime.get("architecture"),
-        runtime.get("lock_sha256"),
-    ) != (GO2_RUNTIME_ID, GO2_RUNTIME_VERSION, "3.3.6", "amd64", GO2_RUNTIME_LOCK_SHA256):
+    ) != (GO2_RUNTIME_ID, GO2_RUNTIME_VERSION, "3.3.6", "amd64"):
         raise Go2SessionError("Go2 integration manifest runtime binding is not frozen")
+    manifest_runtime_lock_sha256 = _factory_hash_argument(
+        runtime.get("lock_sha256"), "Go2 integration manifest runtime lock reference"
+    )
+    if manifest_runtime_lock_sha256 is None:
+        raise Go2SessionError("Go2 integration manifest has no runtime lock reference")
+    if (
+        selected_runtime_lock_sha256 is not None
+        and selected_runtime_lock_sha256 != manifest_runtime_lock_sha256
+    ):
+        raise Go2SessionError(
+            "selected runtime lock hash does not match the manifest runtime lock reference"
+        )
+    selected_runtime_lock_sha256 = (
+        selected_runtime_lock_sha256 or manifest_runtime_lock_sha256
+    )
 
     morphology = _factory_json_reference(
         root,
@@ -1907,18 +2063,26 @@ def _verify_production_inputs(
     if translation.get("status") != "READY" or translation.get("conformance_status") != "PASS":
         raise Go2SessionError("Go2 Translation is not READY/PASS")
 
-    runtime_lock_path = _factory_path(
+    morphology_mujoco_ref = morphology.get("mujoco")
+    default_runtime_lock_path = GO2_RUNTIME_LOCK_RELATIVE_PATH
+    if isinstance(morphology_mujoco_ref, Mapping):
+        lock_ref = morphology_mujoco_ref.get("runtime_lock_ref")
+        if isinstance(lock_ref, Mapping) and isinstance(lock_ref.get("path"), str):
+            default_runtime_lock_path = lock_ref["path"]
+    selected_runtime_lock_path = _factory_selected_path(
         root,
-        root / GO2_RUNTIME_LOCK_RELATIVE_PATH,
-        GO2_RUNTIME_LOCK_RELATIVE_PATH,
+        runtime_lock_path,
+        default_runtime_lock_path,
         "Go2 runtime lock",
     )
     try:
-        runtime_lock_artifact = load_json_artifact(runtime_lock_path)
+        runtime_lock_artifact = load_json_artifact(selected_runtime_lock_path)
     except Exception as exc:
         raise Go2SessionError("Go2 runtime lock failed strict loading") from exc
-    if runtime_lock_artifact.sha256 != GO2_RUNTIME_LOCK_SHA256:
-        raise Go2SessionError("Go2 runtime lock hash is not the frozen selection")
+    if runtime_lock_artifact.sha256 != selected_runtime_lock_sha256:
+        raise Go2SessionError(
+            "Go2 runtime lock hash does not match the manifest-selected current bytes"
+        )
     runtime_lock = runtime_lock_artifact.value
     if (
         runtime_lock.get("runtime_id"),
@@ -1996,6 +2160,9 @@ def create_evaluation_robot_session(
     *,
     project_root: str | Path | None = None,
     integration_manifest_path: str | Path | None = None,
+    integration_manifest_sha256: str | None = None,
+    runtime_lock_path: str | Path | None = None,
+    runtime_lock_sha256: str | None = None,
     model_path: str | Path | None = None,
     task_instances_path: str | Path | None = None,
     video_profile: FrozenVideoProfile | Mapping[str, Any] | None = None,
@@ -2013,6 +2180,9 @@ def create_evaluation_robot_session(
     selected_model, task_path, selected_profile = _verify_production_inputs(
         root=root,
         integration_manifest_path=integration_manifest_path,
+        integration_manifest_sha256=integration_manifest_sha256,
+        runtime_lock_path=runtime_lock_path,
+        runtime_lock_sha256=runtime_lock_sha256,
         model_path=model_path,
         task_instances_path=task_instances_path,
         video_profile=video_profile,

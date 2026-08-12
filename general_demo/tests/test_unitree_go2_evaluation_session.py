@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
+import multiprocessing
 import sys
-import threading
+import time
 import types
+from queue import Empty
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
@@ -110,7 +113,8 @@ class FakeBackend:
 
 class FakeTransport:
     def __init__(self) -> None:
-        self.queue: list[object] = []
+        self.queue = multiprocessing.Queue()
+        self.write_count = multiprocessing.Value("i", 0)
         self.lowstates: list[LowStateFrame] = []
         self.sportstates: list[SportModeStateFrame] = []
         self.started = False
@@ -131,7 +135,10 @@ class FakeTransport:
         self.started = True
 
     def take_lowcmd(self):
-        return self.queue.pop(0) if self.queue else None
+        try:
+            return self.queue.get_nowait()
+        except Empty:
+            return None
 
     def is_lowcmd_type(self, message: object) -> bool:
         return isinstance(message, LowCmd)
@@ -148,6 +155,7 @@ class FakeTransport:
 
     def close(self) -> None:
         self.closed = True
+        self.queue.close()
 
 
 class FakePublisher:
@@ -157,7 +165,24 @@ class FakePublisher:
 
     def Write(self, message: object) -> None:
         self.writes.append(message)
-        self._transport.queue.append(message)
+        self._transport.write_count.value += 1
+        self._transport.queue.put(message)
+
+
+class PollingSubscriber:
+    """Upstream-shaped polling subscriber used only by the process fixture."""
+
+    def __init__(self, samples=()) -> None:
+        self._samples = list(samples)
+
+    def Init(self, *_args) -> None:
+        return None
+
+    def Read(self, _timeout=None):
+        return self._samples.pop(0) if self._samples else None
+
+    def Close(self) -> None:
+        return None
 
 
 class FakeCRC:
@@ -171,12 +196,14 @@ class FakeSDKConnection:
 
     is_real_sdk = False
 
-    def __init__(self, transport: FakeTransport) -> None:
+    def __init__(self, transport: FakeTransport, *, lowstate_samples=(), sportstate_samples=()) -> None:
         self.transport = transport
         self.started = False
         self.closed = False
         self.lowcmd_type = LowCmd
         self.lowcmd_publisher = FakePublisher(transport)
+        self.lowstate_subscriber = PollingSubscriber(lowstate_samples)
+        self.sport_mode_state_subscriber = PollingSubscriber(sportstate_samples)
         self.crc = FakeCRC()
         self.binding = SimpleNamespace(
             ChannelPublisher=object,
@@ -186,8 +213,8 @@ class FakeSDKConnection:
             SportModeState_=object,
             CRC=FakeCRC,
             lowcmd_publisher=self.lowcmd_publisher,
-            lowstate_subscriber=object(),
-            sport_mode_state_subscriber=object(),
+            lowstate_subscriber=self.lowstate_subscriber,
+            sport_mode_state_subscriber=self.sport_mode_state_subscriber,
             crc=self.crc,
         )
 
@@ -212,6 +239,7 @@ def _publish_command(
     value: float = 0.3,
     *,
     kp: float = 20.0,
+    kd: float = 0.5,
     tau: float = 0.0,
 ) -> None:
     command = sdk.LowCmd_()
@@ -222,7 +250,7 @@ def _publish_command(
             slot.q = value
             slot.dq = 0.0
             slot.kp = kp
-            slot.kd = 0.5
+            slot.kd = kd
             slot.tau = tau
         else:
             for name, safe_value in INACTIVE_SAFE_FIELDS.items():
@@ -282,10 +310,14 @@ def _invocation(metric: str = "forward_displacement_m") -> HarnessInvocation:
     )
 
 
-def _session(*, rollout_steps: int = 3):
+def _session(*, rollout_steps: int = 3, lowstate_samples=(), sportstate_samples=()):
     backend = FakeBackend()
     transport = FakeTransport()
-    sdk = FakeSDKConnection(transport)
+    sdk = FakeSDKConnection(
+        transport,
+        lowstate_samples=lowstate_samples,
+        sportstate_samples=sportstate_samples,
+    )
     profile = FrozenVideoProfile(
         profile_id="test",
         profile_version="1.0.0",
@@ -344,7 +376,7 @@ def test_reset_records_and_verifies_state_without_candidate_or_behavior() -> Non
 
 
 def test_direct_validation_candidate_then_collect_advances_private_clock() -> None:
-    session, backend, _transport, sdk, _capture_count = _session()
+    session, backend, transport, sdk, _capture_count = _session()
     session.reset(
         phase="VALIDATION_B",
         execution_id="direct-collect",
@@ -358,7 +390,7 @@ def test_direct_validation_candidate_then_collect_advances_private_clock() -> No
     assert backend.time > 0.0
     assert evidence.sdk_route_verified is True
     assert session.route_evidence["accepted_command_count"] == 1
-    assert sdk.lowcmd_publisher.writes
+    assert transport.write_count.value == 1
     assert not hasattr(session.sdk, "write_low_command")
     session.close()
 
@@ -385,7 +417,7 @@ def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
     assert session.route_evidence["state_publication_observed"] is True
     assert session.route_evidence["simulation_time_progressed"] is True
     assert len(transport.lowstates) == len(transport.sportstates) == 3
-    assert sdk.lowcmd_publisher.writes
+    assert transport.write_count.value == 1
 
     evidence = session.validation_evidence(_invocation())
     assert evidence.sdk_route_verified is True
@@ -414,8 +446,9 @@ def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
 
 def test_invoke_clock_applies_commands_in_arrival_order_then_stales_without_replay() -> None:
     session, backend, _transport, _sdk, _capture_count = _session(rollout_steps=3)
-    first_step = threading.Event()
-    second_step = threading.Event()
+    fork_context = multiprocessing.get_context("fork")
+    first_step = fork_context.Event()
+    second_step = fork_context.Event()
     step_count = {"value": 0}
 
     def signal_step() -> None:
@@ -455,28 +488,69 @@ def test_invoke_clock_applies_commands_in_arrival_order_then_stales_without_repl
     session.close()
 
 
-def test_candidate_timeout_closes_the_session_endpoints(monkeypatch) -> None:
+def test_candidate_polls_successive_lowstates_and_publishes_feedback_commands() -> None:
+    first_step = multiprocessing.get_context("fork").Event()
+    session, backend, transport, _sdk, _capture_count = _session(
+        rollout_steps=3,
+        lowstate_samples=[
+            SimpleNamespace(motor_state=[SimpleNamespace(q=0.75)]),
+            SimpleNamespace(motor_state=[SimpleNamespace(q=1.25)]),
+        ],
+    )
+    step_count = {"value": 0}
+
+    def signal_first_step() -> None:
+        step_count["value"] += 1
+        if step_count["value"] == 1:
+            first_step.set()
+
+    backend.after_step = signal_first_step
+
+    class FeedbackCandidate:
+        def _invoke(self, _capability_id, _arguments, sdk):
+            first = sdk.lowstate_subscriber.Read()
+            assert first is not None
+            first_q = first.motor_state[0].q
+            _publish_command(sdk, first_q, kp=0.0, kd=0.0, tau=first_q)
+            assert first_step.wait(1.0)
+            second = sdk.lowstate_subscriber.Read()
+            assert second is not None
+            second_q = second.motor_state[0].q
+            _publish_command(sdk, second_q, kp=0.0, kd=0.0, tau=second_q)
+            return {"feedback_q": [first_q, second_q]}
+
+    session.reset(phase="DEMO", execution_id="feedback-polling", initial_state={"task_id": "G03"})
+    result = session.invoke(FeedbackCandidate(), "low-level-command", {"duration_s": 0.3})
+    assert result == {"feedback_q": [0.75, 1.25]}
+    assert [
+        values[0] for values in backend.control_history if values[0] > 0.0
+    ] == pytest.approx([0.75, 1.25])
+    assert transport.write_count.value == 2
+    assert session.route_evidence["accepted_command_count"] == 2
+    session.close()
+
+
+def test_candidate_timeout_terminates_worker_and_allows_a_clean_next_trial(monkeypatch) -> None:
     session, backend, transport, sdk, _capture_count = _session(rollout_steps=1)
-    release = threading.Event()
     monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 0.01)
 
-    class BlockingCandidate:
+    class InfiniteCandidate:
         def _invoke(self, _capability_id, _arguments, _sdk):
-            release.wait(1.0)
-            return {"status": "issued"}
+            while True:
+                time.sleep(0.01)
 
     session.reset(phase="DEMO", execution_id="timeout", initial_state={"task_id": "G01"})
-    with pytest.raises(Go2SessionError):
-        session.invoke(
-            BlockingCandidate(),
-            "low-level-command",
-            {},
-        )
-    assert session.evidence_scope == "UNAVAILABLE"
-    assert backend.closed is True
-    assert transport.closed is True
-    assert sdk.closed is True
-    release.set()
+    with pytest.raises(Go2SessionError, match="bounded clock window"):
+        session.invoke(InfiniteCandidate(), "low-level-command", {})
+    assert session.evidence_scope == "TEST_FIXTURE_ONLY"
+    assert backend.closed is False
+    assert transport.closed is False
+    assert sdk.closed is False
+
+    session.reset(phase="DEMO", execution_id="timeout-next-trial", initial_state={"task_id": "G01"})
+    assert session.invoke(Candidate(), "low-level-command", {}) == {"status": "issued"}
+    assert transport.write_count.value == 1
+    session.close()
 
 
 def test_context_manager_closes_sdk_bridge_transport_and_backend() -> None:
@@ -684,6 +758,47 @@ def test_factory_rejects_unready_manifest(tmp_path: Path) -> None:
         )
 
 
+def test_factory_binds_selected_manifest_and_runtime_lock_bytes_dynamically(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    manifest_source = root / "general_demo/integrations/unitree-go2/integration_manifest.json"
+    lock_source = root / "general_demo/environments/unitree-go2-linux-amd64/1.0.0/runtime-lock.json"
+    manifest = json.loads(manifest_source.read_text(encoding="utf-8"))
+    runtime_lock = json.loads(lock_source.read_text(encoding="utf-8"))
+    runtime_lock["selected_by_test"] = "current-bytes"
+    selected_lock = tmp_path / "runtime-lock.json"
+    selected_lock.write_text(json.dumps(runtime_lock), encoding="utf-8")
+    selected_lock_sha = hashlib.sha256(selected_lock.read_bytes()).hexdigest()
+    manifest["runtime"]["lock_sha256"] = selected_lock_sha
+    selected_manifest = tmp_path / "integration_manifest.json"
+    selected_manifest.write_text(json.dumps(manifest), encoding="utf-8")
+    selected_manifest_sha = hashlib.sha256(selected_manifest.read_bytes()).hexdigest()
+    bad_scene = tmp_path / "scene.xml"
+    bad_scene.write_text("<mujoco/>", encoding="utf-8")
+
+    with pytest.raises(Go2SessionError, match="scene hash"):
+        create_evaluation_robot_session(
+            project_root=root,
+            integration_manifest_path=selected_manifest,
+            integration_manifest_sha256=selected_manifest_sha,
+            runtime_lock_path=selected_lock,
+            runtime_lock_sha256=selected_lock_sha,
+            model_path=bad_scene,
+        )
+    with pytest.raises(Go2SessionError, match="selected runtime lock hash"):
+        create_evaluation_robot_session(
+            project_root=root,
+            integration_manifest_path=selected_manifest,
+            integration_manifest_sha256=selected_manifest_sha,
+            runtime_lock_path=selected_lock,
+            runtime_lock_sha256="0" * 64,
+            model_path=bad_scene,
+        )
+
+    source = Path(go2_session_module.__file__).read_text(encoding="utf-8")
+    assert "GO2_INTEGRATION_MANIFEST_SHA256" not in source
+    assert "GO2_RUNTIME_LOCK_SHA256" not in source
+
+
 def test_factory_constructs_only_sdk_grounded_scope_after_verified_selection(monkeypatch) -> None:
     root = Path(__file__).parents[2]
     profile = go2_session_module._profile(None)
@@ -724,11 +839,16 @@ def test_real_shaped_session_initializes_channel_factory_exactly_once(monkeypatc
             self.topic = topic
             self.message_type = message_type
             self.closed = False
+            self.init_args = None
 
         def Init(self, *_args):
+            self.init_args = _args
             return None
 
         def Write(self, _message):
+            return None
+
+        def Read(self, _timeout=None):
             return None
 
         def Close(self):
@@ -793,4 +913,11 @@ def test_real_shaped_session_initializes_channel_factory_exactly_once(monkeypatc
     session.start()
     assert factory_calls == [(1, "lo")]
     assert not hasattr(session.sdk, "ChannelFactoryInitialize")
+    assert sdk._lowstate_audit_subscriber is not session.sdk.lowstate_subscriber
+    assert sdk._sport_audit_subscriber is not session.sdk.sport_mode_state_subscriber
+    assert callable(sdk._lowstate_audit_subscriber.init_args[0])
+    assert sdk._lowstate_audit_subscriber.init_args[1] == 10
+    assert sdk._sport_audit_subscriber.init_args[1] == 10
+    assert sdk._lowstate_polling_subscriber.init_args == ()
+    assert sdk._sport_polling_subscriber.init_args == ()
     session.close()
