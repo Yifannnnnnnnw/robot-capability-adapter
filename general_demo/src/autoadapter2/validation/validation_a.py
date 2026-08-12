@@ -552,7 +552,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return "sdk-derived-method"
         if root in self.sdk_readable_locals | self.mutable_sdk_locals and isinstance(function, ast.Attribute) and function.attr == "get":
             return "sdk-local"
-        if isinstance(function, ast.Attribute) and function.attr in {"append", "get"} and root in self.safe_locals | self.public_inputs:
+        if isinstance(function, ast.Attribute) and function.attr in {"append", "extend", "get"} and root in self.safe_locals | self.public_inputs:
             return "local-container"
         if isinstance(function, ast.Attribute) and function.attr in _ALLOWED_LOCAL_CONVERSION_METHODS and root in self.safe_locals | self.public_inputs:
             return "local-conversion"
@@ -1184,7 +1184,10 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
         changed = False
         for symbol, analyzer in analyzers.items():
             children = analyzer.forwarded_sdk_helpers
-            if not analyzer.issues and (analyzer.approved_sdk_use or children) and all(child in verified_sdk_functions for child in children):
+            if not analyzer.issues and (
+                analyzer.approved_sdk_use
+                or any(child in verified_sdk_functions for child in children)
+            ):
                 if symbol not in verified_sdk_functions:
                     verified_sdk_functions.add(symbol)
                     changed = True

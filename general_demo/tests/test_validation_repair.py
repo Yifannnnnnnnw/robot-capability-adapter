@@ -775,6 +775,33 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     assert any(item["code"] == "FORBIDDEN_CALL" for item in sdk_derived_issues)
 
 
+def test_validation_a_accepts_observed_local_list_extend_only() -> None:
+    source = '''def _make_target(sdk):
+    return [0.0]
+
+def _send_target(sdk, target_joints):
+    sdk.command(target_joints[0])
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    target_joints = _make_target(_sdk)
+    target_joints.extend([arg_target])
+    _send_target(_sdk, target_joints)
+    return {"reported_status": "PASS"}
+'''
+    _design, _seal, _stage2, _blue, result = _a_result(source)
+    assert result.status == "PASS"
+
+    negative = source.replace("target_joints.extend", "target_joints.insert")
+    _design, _seal, _stage2, _blue, negative_result = _a_result(negative)
+    assert negative_result.status == "FAIL"
+    assert "FORBIDDEN_CALL" in {item["code"] for item in negative_result.diagnostics}
+
+    pure_only = source.replace("    _send_target(_sdk, target_joints)\n", "    _make_target(_sdk)\n")
+    _design, _seal, _stage2, _blue, pure_only_result = _a_result(pure_only)
+    assert pure_only_result.status == "FAIL"
+    assert "SDK_INJECTION" in {item["code"] for item in pure_only_result.diagnostics}
+
+
 def test_validation_a_accepts_forwarded_sdk_helpers_and_observed_local_containers() -> None:
     result, _stage2 = _helper_a_result()
     assert result.status == "PASS"
@@ -869,10 +896,10 @@ def test_validation_a_rejects_destructive_or_unsafe_destructuring_targets() -> N
 def test_validation_a_rejects_unapproved_forwarded_helper_and_arbitrary_method() -> None:
     cases = [
         _helper_source().replace("sdk.send_action(action)", "sdk.private_state(action)"),
-        _helper_source().replace("target_q.append(current[0])", "target_q.extend([current[0]])"),
+        _helper_source().replace("target_q.append(current[0])", "target_q.insert(0, current[0])"),
         _helper_source().replace(
             "def capability_reach_joint_target(arg_target, *, _sdk):",
-            "def _unverified(sdk):\n    return 1\n\ndef capability_reach_joint_target(arg_target, *, _sdk):",
+            "def _unverified(sdk):\n    return sdk.private_state()\n\ndef capability_reach_joint_target(arg_target, *, _sdk):",
         ).replace(
             "current = _get_current_joint_positions(_sdk)",
             "current = _unverified(_sdk)\n    current = _get_current_joint_positions(_sdk)",
