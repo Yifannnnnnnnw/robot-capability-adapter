@@ -576,19 +576,22 @@ def _candidate_process_entry(
             "error": str(exc),
             "finished_at": time.monotonic(),
         }
-    finally:
-        if close_binding is not None:
-            try:
-                close_binding()
-            except BaseException:
-                pass
     try:
+        # Send completion before closing DDS endpoints.  CycloneDDS cleanup
+        # may wait on native reader/writer threads; the parent must be able to
+        # observe a completed candidate and reap that worker independently of
+        # endpoint teardown.
         result_sender.send(payload)
     except BaseException:
         # A non-picklable candidate result is reported by the parent as an
         # unexpected worker exit; no candidate object crosses the public API.
         pass
     finally:
+        if close_binding is not None:
+            try:
+                close_binding()
+            except BaseException:
+                pass
         try:
             result_sender.close()
         except BaseException:
@@ -1270,19 +1273,22 @@ class UnitreeGo2EvaluationRobotSession:
 
         def receive_worker_messages() -> None:
             nonlocal candidate_ready, candidate_done, payload
-            if not result_receiver.poll():
-                return
-            try:
-                message = result_receiver.recv()
-            except EOFError:
-                return
-            if not isinstance(message, Mapping):
-                return
-            if message.get("ready") is True:
-                candidate_ready = True
-            else:
-                payload = message
-                candidate_done = True
+            # A fast candidate can put both the ready marker and its result on
+            # the pipe before one parent poll.  Drain all currently available
+            # messages so completion is not mistaken for a still-running
+            # worker while DDS cleanup is unwinding.
+            while result_receiver.poll():
+                try:
+                    message = result_receiver.recv()
+                except EOFError:
+                    return
+                if not isinstance(message, Mapping):
+                    continue
+                if message.get("ready") is True:
+                    candidate_ready = True
+                else:
+                    payload = message
+                    candidate_done = True
 
         try:
             # A zero-duration yield gives the real DDS callback and candidate

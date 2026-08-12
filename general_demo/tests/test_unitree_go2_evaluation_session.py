@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import multiprocessing
+import os
 import sys
 import time
 import types
@@ -272,7 +273,17 @@ def _make_fake_candidate_binding(config):
         sport_mode_state_subscriber=sportstate,
         crc=FakeCRC(),
     )
-    return binding, lambda: None
+    if config.get("block_close"):
+        close_pid = config["close_pid"]
+
+        def close() -> None:
+            close_pid.value = os.getpid()
+            while True:
+                time.sleep(0.01)
+
+    else:
+        close = lambda: None
+    return binding, close
 
 
 class FakeCRC:
@@ -335,6 +346,22 @@ class FakeSDKConnection:
         self.started = False
 
 
+class BlockingCloseSDKConnection(FakeSDKConnection):
+    def __init__(self, transport: FakeTransport, *, lowstate_samples=(), sportstate_samples=()) -> None:
+        super().__init__(
+            transport,
+            lowstate_samples=lowstate_samples,
+            sportstate_samples=sportstate_samples,
+        )
+        self.close_pid = multiprocessing.Value("i", 0)
+
+    @property
+    def candidate_worker_config(self):
+        config = dict(super().candidate_worker_config)
+        config.update(block_close=True, close_pid=self.close_pid)
+        return config
+
+
 def _publish_command(
     sdk: object,
     value: float = 0.3,
@@ -364,6 +391,28 @@ class Candidate:
     def _invoke(self, capability_id, _arguments, sdk):
         assert capability_id == "low-level-command"
         _publish_command(sdk)
+        return {"status": "issued"}
+
+
+class RepairedCRCCandidate:
+    """Candidate-shaped fixture using the repaired ``CRC().Crc(cmd)`` form."""
+
+    def _invoke(self, _capability_id, _arguments, sdk):
+        command = sdk.LowCmd_()
+        for index, slot in enumerate(command.motor_cmd):
+            slot.mode = 1
+            if index < 12:
+                slot.q = 0.0
+                slot.dq = 0.0
+                slot.kp = 0.0
+                slot.kd = 0.0
+                slot.tau = 0.0
+            else:
+                for name, value in INACTIVE_SAFE_FIELDS.items():
+                    setattr(slot, name, value)
+        crc = sdk.CRC()
+        command.crc = crc.Crc(command)
+        sdk.lowcmd_publisher.Write(command)
         return {"status": "issued"}
 
 
@@ -468,10 +517,16 @@ def _invocation(metric: str = "forward_displacement_m") -> HarnessInvocation:
     )
 
 
-def _session(*, rollout_steps: int = 3, lowstate_samples=(), sportstate_samples=()):
+def _session(
+    *,
+    rollout_steps: int = 3,
+    lowstate_samples=(),
+    sportstate_samples=(),
+    sdk_factory=FakeSDKConnection,
+):
     backend = FakeBackend()
     transport = FakeTransport()
-    sdk = FakeSDKConnection(
+    sdk = sdk_factory(
         transport,
         lowstate_samples=lowstate_samples,
         sportstate_samples=sportstate_samples,
@@ -551,6 +606,22 @@ def test_direct_validation_candidate_then_collect_advances_private_clock() -> No
     assert transport.write_count.value == 1
     assert not hasattr(session.sdk, "write_low_command")
     session.close()
+
+
+def test_repaired_crc_shape_publishes_a_valid_command_under_fake_transport() -> None:
+    session, _backend, transport, _sdk, _capture_count = _session(rollout_steps=1)
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="repaired-crc-shape",
+            initial_state={"task_id": "G01"},
+        )
+        assert session.invoke(RepairedCRCCandidate(), "low-level-command", {}) == {"status": "issued"}
+        assert transport.write_count.value == 1
+        assert session.route_evidence["accepted_command_count"] == 1
+        assert session.route_evidence["accepted_command_crc_verified"] is True
+    finally:
+        session.close()
 
 
 def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
@@ -686,6 +757,29 @@ def test_candidate_timeout_terminates_worker_and_allows_a_clean_next_trial(monke
     assert session.invoke(Candidate(), "low-level-command", {}) == {"status": "issued"}
     assert transport.write_count.value == 1
     session.close()
+
+
+def test_completed_result_is_sent_before_blocking_dds_cleanup(monkeypatch) -> None:
+    session, _backend, transport, sdk, _capture_count = _session(
+        rollout_steps=1,
+        sdk_factory=BlockingCloseSDKConnection,
+    )
+    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 0.5)
+    try:
+        session.reset(phase="DEMO", execution_id="blocking-close", initial_state={"task_id": "G01"})
+        assert session.invoke(Candidate(), "low-level-command", {}) == {"status": "issued"}
+        assert transport.write_count.value == 1
+
+        deadline = time.monotonic() + 1.0
+        while sdk.close_pid.value == 0 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert sdk.close_pid.value > 0
+        assert not any(
+            child.name == "autoadapter2-go2-candidate" and child.is_alive()
+            for child in multiprocessing.active_children()
+        )
+    finally:
+        session.close()
 
 
 def test_candidate_python_error_is_distinguished_from_worker_infrastructure() -> None:
