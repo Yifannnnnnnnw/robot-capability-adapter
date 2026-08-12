@@ -788,6 +788,8 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
 
     def visit_For(self, node: ast.For) -> None:
         self.visit(node.iter)
+        if not self._classify_expression(node.iter)[0]:
+            self._assignment_issue("for-loop iterables must be approved safe ranges or literal local values")
         self._bind_safe_target(node.target)
         for statement in [*node.body, *node.orelse]:
             self.visit(statement)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import copy
+from pathlib import Path
 
 import pytest
 
@@ -43,6 +44,19 @@ from autoadapter2.validation.validation_a import (
     _static_issues,
     _verified_binding,
     _verified_design,
+)
+
+
+GO2_FINAL_SOURCE_FIXTURE = Path(__file__).parent / "fixtures" / "unitree_go2_final_candidate.py"
+GO2_FINAL_FACADE = (
+    "ChannelFactoryInitialize",
+    "ChannelPublisher",
+    "ChannelSubscriber",
+    "LowCmd_",
+    "LowState_",
+    "SportModeState_",
+    "CRC",
+    "unitree_go_msg_dds__LowCmd_",
 )
 
 
@@ -970,6 +984,41 @@ def test_validation_a_rejects_sdk_mutation_unapproved_roots_and_input_calls() ->
 
     assert "SDK_FACADE" in {item["code"] for item in _go2_a_result(cases["unapproved_root"])[0].diagnostics}
     assert "FORBIDDEN_CALL" in {item["code"] for item in _go2_a_result(cases["input_call"])[0].diagnostics}
+
+
+def test_validation_a_static_accepts_observed_go2_final_source_and_keeps_dangerous_calls_closed() -> None:
+    source = GO2_FINAL_SOURCE_FIXTURE.read_text(encoding="utf-8").rstrip("\n")
+    parameters = {
+        "capability_cap_stand_up": (),
+        "capability_cap_sit_down": (),
+        "capability_cap_hold_stance": ("arg_duration",),
+        "capability_cap_move_forward": ("arg_distance",),
+        "capability_cap_adjust_body_height": ("arg_target_height",),
+    }
+    contracts = {
+        capability_id: {
+            "function_name": function_name,
+            "parameters": [{"parameter": parameter} for parameter in function_parameters],
+        }
+        for function_name, function_parameters in parameters.items()
+        for capability_id in (function_name,)
+    }
+    profile = ValidationAProfile(
+        sdk_facade_members={capability_id: GO2_FINAL_FACADE for capability_id in contracts},
+        fixture_probes={capability_id: {} for capability_id in contracts},
+    )
+
+    assert _static_issues(ast.parse(source, filename="capability.py"), contracts, profile) == []
+
+    dangerous_sources = {
+        "os_import": source.replace("import math", "import os", 1),
+        "open": source.replace("cmd_pub.Write(cmd)", "open('candidate.txt', 'w')", 1),
+        "eval": source.replace("cmd_pub.Write(cmd)", "eval('1')", 1),
+        "dunder": source.replace("_sdk.CRC(cmd)", "_sdk.__class__(cmd)", 1),
+    }
+    for name, dangerous_source in dangerous_sources.items():
+        issues = _static_issues(ast.parse(dangerous_source, filename="capability.py"), contracts, profile)
+        assert issues, name
 
 
 def test_validation_b_evaluates_sealed_measurements_not_candidate_self_report() -> None:
