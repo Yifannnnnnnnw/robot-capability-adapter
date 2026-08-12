@@ -11,20 +11,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN test "$(uname -m)" = "x86_64"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends software-properties-common \
-    && add-apt-repository --yes universe \
-    && apt-get update \
     && apt-get install -y --no-install-recommends \
-      ca-certificates git ffmpeg python3.11 python3.11-dev python3.11-venv \
+      ca-certificates git ffmpeg python3.10 python3.10-dev python3-pip \
       build-essential cmake pkg-config libgl1 libegl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3.11 -m venv /opt/autoadapter-venv \
-    && python -m pip install --no-cache-dir setuptools==80.9.0 wheel==0.45.1
-ENV PATH=/opt/autoadapter-venv/bin:$PATH
-
 WORKDIR /opt/autoadapter
-COPY general_demo/pyproject.toml /opt/autoadapter/general_demo/pyproject.toml
 COPY general_demo/src /opt/autoadapter/general_demo/src
 COPY general_demo/scripts /opt/autoadapter/general_demo/scripts
 COPY general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json /opt/autoadapter/general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json
@@ -60,21 +52,20 @@ RUN git clone https://github.com/unitreerobotics/unitree_mujoco.git /opt/unitree
     && echo "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b  /opt/unitree_mujoco/unitree_robots/go2/go2.xml" | sha256sum -c - \
     && echo "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0  /opt/unitree_mujoco/unitree_robots/go2/scene.xml" | sha256sum -c -
 
-RUN python -m pip install --no-cache-dir -r /opt/autoadapter/python-requirements.lock \
-    && python -m pip install --no-cache-dir --no-deps -e /opt/unitree_sdk2_python \
-    && python -m pip install --no-cache-dir --no-deps /opt/autoadapter/general_demo
+RUN python3.10 -m pip install --no-cache-dir -r /opt/autoadapter/python-requirements.lock \
+    && python3.10 -m pip install --no-cache-dir --no-deps -e /opt/unitree_sdk2_python
 
 ENV AUTOADAPTER_GO2_MODEL=/opt/unitree_mujoco/unitree_robots/go2/scene.xml
 
 # Build-time validation covers both the full Framework import surface and the
 # real Go2 dependencies. It does not open a manifest, runtime lock, or model
 # API credential, and it does not invoke a readiness attempt.
-RUN python -m pip check \
+RUN python3.10 -m pip check \
     && test -x "$(command -v ffmpeg)" \
     && ffmpeg -hide_banner -version >/dev/null \
     && test -f /opt/unitree_sdk2_python/unitree_sdk2py/utils/lib/crc_amd64.so \
-    && python -c "import importlib, importlib.util; import mujoco; from pathlib import Path; from autoadapter2.evaluation.ffmpeg import FFmpegVideoEncoder; from autoadapter2.orchestration.demo_runner import GeneralDemoRunner; from autoadapter2.orchestration.first_g2_demo import run_first_g2_demo; from autoadapter2.integrations.unitree_go2 import Go2DDSMuJoCoBridge, MuJoCoGo2Backend, UnitreeSDK2Transport; from autoadapter2.integrations.unitree_go2.readiness import run_readiness; from autoadapter2.integrations.unitree_go2.runtime_lock import capture_runtime_lock; from unitree_sdk2py.utils.crc import CRC; assert Path('/opt/unitree_sdk2_python/unitree_sdk2py/utils/lib/crc_amd64.so').is_file(); CRC(); model = mujoco.MjModel.from_xml_path('/opt/unitree_mujoco/unitree_robots/go2/scene.xml'); assert (model.nq, model.nv, model.nu) == (19, 18, 12); session_spec = importlib.util.find_spec('autoadapter2.integrations.unitree_go2.session'); session = importlib.import_module('autoadapter2.integrations.unitree_go2.session') if session_spec is not None else None; assert session is None or callable(getattr(session, 'create_evaluation_robot_session', None)); print('Go2 General Demo imports OK:', FFmpegVideoEncoder.__name__, GeneralDemoRunner.__name__, run_first_g2_demo.__name__, Go2DDSMuJoCoBridge.__name__, MuJoCoGo2Backend.__name__, UnitreeSDK2Transport.__name__, run_readiness.__name__, capture_runtime_lock.__name__)" \
-    && python /opt/autoadapter/general_demo/scripts/run_first_g2_demo.py --help >/dev/null \
-    && python /opt/autoadapter/general_demo/scripts/run_unitree_go2_readiness.py --help >/dev/null \
-    && python /opt/autoadapter/general_demo/scripts/capture_unitree_go2_runtime_lock.py --help >/dev/null
+    && python3.10 -c "import mujoco; from pathlib import Path; from autoadapter2.evaluation.ffmpeg import FFmpegVideoEncoder; from autoadapter2.orchestration.demo_runner import GeneralDemoRunner; from autoadapter2.orchestration.first_g2_demo import run_first_g2_demo; from autoadapter2.integrations.unitree_go2 import Go2DDSMuJoCoBridge, MuJoCoGo2Backend, UnitreeSDK2Transport; from autoadapter2.integrations.unitree_go2.readiness import run_readiness; from autoadapter2.integrations.unitree_go2.runtime_lock import capture_runtime_lock; from autoadapter2.integrations.unitree_go2.session import create_evaluation_robot_session; from unitree_sdk2py.utils.crc import CRC; assert Path('/opt/unitree_sdk2_python/unitree_sdk2py/utils/lib/crc_amd64.so').is_file(); CRC(); model = mujoco.MjModel.from_xml_path('/opt/unitree_mujoco/unitree_robots/go2/scene.xml'); assert (model.nq, model.nv, model.nu) == (19, 18, 12); assert callable(create_evaluation_robot_session); print('Go2 General Demo imports OK:', FFmpegVideoEncoder.__name__, GeneralDemoRunner.__name__, run_first_g2_demo.__name__, Go2DDSMuJoCoBridge.__name__, MuJoCoGo2Backend.__name__, UnitreeSDK2Transport.__name__, run_readiness.__name__, capture_runtime_lock.__name__, create_evaluation_robot_session.__name__)" \
+    && python3.10 /opt/autoadapter/general_demo/scripts/run_first_g2_demo.py --help >/dev/null \
+    && python3.10 /opt/autoadapter/general_demo/scripts/run_unitree_go2_readiness.py --help >/dev/null \
+    && python3.10 /opt/autoadapter/general_demo/scripts/capture_unitree_go2_runtime_lock.py --help >/dev/null
 WORKDIR /opt/autoadapter/general_demo

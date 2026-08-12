@@ -1,7 +1,8 @@
 # Unitree Go2 Linux amd64 General Demo runtime
 
 This is the Ubuntu 22.04/Linux amd64 image for the full first-G2 Go2 path. The
-project runtime is CPython 3.11 in `/opt/autoadapter-venv`, with the pinned
+project runtime is CPython 3.10 with the Framework source exposed through the
+exact `/opt/autoadapter/general_demo/src` `PYTHONPATH`, with the pinned
 `unitree_sdk2py==1.0.1` checkout, CycloneDDS `0.10.2`, MuJoCo `3.3.6`, and
 FFmpeg. The pinned official Go2 scene is:
 
@@ -19,9 +20,11 @@ the integration manifest, or the runtime lock. Those inputs and outputs belong
 to the closed run pack mounted for an attempt.
 
 The final build layer runs `pip check`, verifies FFmpeg and the pinned native
-`crc_amd64.so`, imports the General Demo runner/CLI and Go2 bridge, and loads
-the pinned MuJoCo scene. If a Go2 session module/factory exists in the source at
-build time, the smoke also imports and checks its factory.
+`crc_amd64.so`, imports the General Demo runner/CLI and Go2 bridge, loads the
+pinned MuJoCo scene, and strictly imports
+`autoadapter2.integrations.unitree_go2.session:create_evaluation_robot_session`.
+The final main branch must include that real session factory before the image
+can build successfully; there is no fallback smoke path.
 
 Build from the repository root:
 
@@ -47,7 +50,7 @@ general_demo/scripts/run_unitree_go2_readiness_linux.sh \
 Before that readiness command, capture a new runtime lock from the exact built
 image and its Docker image ID. The checked-in `runtime-lock.json` remains
 DRAFT/NOT_RUN; do not hand-edit it into a final digest or readiness result.
-The final DGX build must recapture the Python 3.11 identity, complete SDK2 /
+The final DGX build must recapture the Python 3.10 identity, complete SDK2 /
 CycloneDDS /MuJoCo dependency hashes, CRC native-library hash, image digest,
 and complete scene asset closure.
 

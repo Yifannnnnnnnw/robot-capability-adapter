@@ -6,7 +6,7 @@
   "platform": {
     "os": "Ubuntu 22.04",
     "architecture": "amd64",
-    "python": "3.11"
+    "python": "3.10"
   },
   "packages": [
     {
@@ -54,7 +54,7 @@
     "the final linux-amd64 General Demo image has not been built and measured",
     "exact SDK2 source-build, CycloneDDS, MuJoCo and transitive artifact hashes are not captured",
     "complete Go2 MJCF asset-closure hashes are not captured",
-    "OCI image digest, CPython 3.11 build identity and native-library fingerprints are not captured",
+    "OCI image digest, CPython 3.10 build identity and native-library fingerprints are not captured",
     "the real route still needs same-publication-step LowState and SportModeState correlation plus complete free-base reset and cleanup evidence",
     "real SDK2/CycloneDDS/MuJoCo six-check readiness has not run; all six formal checks remain NOT_RUN"
   ]

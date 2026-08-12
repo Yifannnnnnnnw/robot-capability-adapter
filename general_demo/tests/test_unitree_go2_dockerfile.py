@@ -19,14 +19,16 @@ def test_go2_image_packages_full_framework_and_real_runtime() -> None:
 
     assert "FROM --platform=linux/amd64 ubuntu:22.04@" in dockerfile
     assert "ffmpeg" in dockerfile
-    assert "python3.11" in dockerfile
-    assert "python3.11 -m venv /opt/autoadapter-venv" in dockerfile
-    assert "PATH=/opt/autoadapter-venv/bin:$PATH" in dockerfile
-    assert "python -m pip install --no-cache-dir -r /opt/autoadapter/python-requirements.lock" in dockerfile
-    assert "python -m pip check" in dockerfile
+    assert "python3.10" in dockerfile
+    assert "PYTHONPATH=/opt/autoadapter/general_demo/src" in dockerfile
+    assert "python3.10 -m pip install --no-cache-dir -r /opt/autoadapter/python-requirements.lock" in dockerfile
+    assert "python3.10 -m pip install --no-cache-dir --no-deps -e /opt/unitree_sdk2_python" in dockerfile
+    assert "python3.10 -m pip check" in dockerfile
+    assert "python3.11" not in dockerfile
+    assert "pyproject.toml" not in dockerfile
+    assert "pip install --no-cache-dir --no-deps /opt/autoadapter/general_demo" not in dockerfile
 
     required_copies = (
-        "COPY general_demo/pyproject.toml /opt/autoadapter/general_demo/pyproject.toml",
         "COPY general_demo/src /opt/autoadapter/general_demo/src",
         "COPY general_demo/scripts /opt/autoadapter/general_demo/scripts",
         "COPY general_demo/contracts/profiles/readiness/",
@@ -55,6 +57,7 @@ def test_go2_image_packages_full_framework_and_real_runtime() -> None:
         "from autoadapter2.integrations.unitree_go2 import",
         "from autoadapter2.integrations.unitree_go2.readiness import run_readiness",
         "from autoadapter2.integrations.unitree_go2.runtime_lock import capture_runtime_lock",
+        "from autoadapter2.integrations.unitree_go2.session import create_evaluation_robot_session",
         "from unitree_sdk2py.utils.crc import CRC",
         "mujoco.MjModel.from_xml_path",
         "run_first_g2_demo.py --help",
@@ -62,6 +65,8 @@ def test_go2_image_packages_full_framework_and_real_runtime() -> None:
         "capture_unitree_go2_runtime_lock.py --help",
     ):
         assert smoke in dockerfile, smoke
+    assert "assert callable(create_evaluation_robot_session)" in dockerfile
+    assert "find_spec" not in dockerfile
 
     assert "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5" in dockerfile
     assert "ae6a8403e272733e9996ef59990880330496177f" in dockerfile
@@ -77,7 +82,7 @@ def test_go2_packaged_records_and_lock_are_not_promoted() -> None:
     )
 
     assert lock["status"] == "DRAFT_UNVERIFIED_LINUX_BUILD"
-    assert lock["platform"]["python"] == "3.11"
+    assert lock["platform"]["python"] == "3.10"
     assert lock["oci_image_digest"] is None
     assert any("NOT_RUN" in item for item in lock["unresolved"])
     assert translation["dds"]["domain_id"] == 1
@@ -92,5 +97,5 @@ def test_go2_packaged_records_and_lock_are_not_promoted() -> None:
 
 def test_go2_readiness_launcher_uses_image_python_and_keeps_network_isolation() -> None:
     launcher = (ROOT / "scripts/run_unitree_go2_readiness_linux.sh").read_text(encoding="utf-8")
-    assert "python scripts/run_unitree_go2_readiness.py" in launcher
+    assert "python3.10 scripts/run_unitree_go2_readiness.py" in launcher
     assert "--network none" in launcher
