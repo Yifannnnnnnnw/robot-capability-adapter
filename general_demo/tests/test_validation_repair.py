@@ -1114,6 +1114,33 @@ def test_validation_a_restricts_analysis_to_reachable_helpers_and_propagates_sdk
         assert _go2_helper_provenance_issues(source), source
 
 
+def test_validation_a_propagates_direct_sdk_member_alias_across_multi_hop_helpers() -> None:
+    source = '''def _crc_compute(cmd_msg, sdk_crc):
+    sdk_crc.Crc(cmd_msg)
+
+def _write_command(cmd_msg, sdk_crc):
+    _crc_compute(cmd_msg, sdk_crc)
+
+def _transition_to_pose(cmd_msg, sdk_crc):
+    local_sdk_crc = sdk_crc
+    _write_command(cmd_msg, local_sdk_crc)
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    cmd_msg = _sdk.LowCmd_()
+    sdk_crc = _sdk.CRC
+    _transition_to_pose(cmd_msg, sdk_crc)
+    return {"reported_status": "PASS"}
+'''
+    assert _go2_helper_provenance_issues(source) == []
+
+    ordinary_input = source.replace(
+        "    sdk_crc = _sdk.CRC\n",
+        "    sdk_crc = arg_target\n",
+    )
+    ordinary_issues = _go2_helper_provenance_issues(ordinary_input)
+    assert "FORBIDDEN_CALL" in {item["code"] for item in ordinary_issues}
+
+
 def test_validation_a_preserves_helper_tuple_element_provenance_without_tainting_mixed_values() -> None:
     source = '''def _read_state(sub):
     state = sub.Read()
@@ -1177,16 +1204,16 @@ def test_validation_a_does_not_add_sdk_injection_for_an_independent_static_failu
 
 
 def test_validation_a_reproduces_exact_go2_source_artifact_when_available() -> None:
-    source_path = Path("/private/tmp/go2-081459-r2.py")
+    source_path = Path("/private/tmp/go2-085243-last2.py")
     if not source_path.exists():
         pytest.skip("exact Go2 reproduction artifact is not present")
     source = source_path.read_text(encoding="utf-8")
     parameters = {
-        "capability_cap_stand_up": (),
-        "capability_cap_sit_down": (),
-        "capability_cap_hold_stance": ("arg_duration",),
-        "capability_cap_move_forward": ("arg_distance",),
-        "capability_cap_adjust_body_height": ("arg_target_height",),
+        "capability_stand_from_supported_posture": (),
+        "capability_sit_from_standing": (),
+        "capability_hold_stable_stance": ("arg_duration",),
+        "capability_move_forward_initial_heading": ("arg_distance",),
+        "capability_adjust_body_height": ("arg_target_height",),
     }
     contracts = {
         name: {

@@ -1219,8 +1219,16 @@ def _sdk_derived_value(
     derived_locals: set[str],
     sdk_members: set[str] | frozenset[str],
 ) -> bool:
+    path = _sdk_member_path(value, sdk_names)
+    sdk_member = (
+        path is not None
+        and len(path) == 1
+        and path[0] is not None
+        and path[0] in sdk_members
+    )
     return (
-        _sdk_call_result(value, sdk_names, sdk_members)
+        sdk_member
+        or _sdk_call_result(value, sdk_names, sdk_members)
         or (
             isinstance(value, ast.Name)
             and value.id in derived_locals
