@@ -12,6 +12,8 @@ from autoadapter2.integrations.so_arm101.development_sandbox import (
     SO_ARM101_JOINT_ORDER,
     SO_ARM101_MAX_DURATION_S,
     SO_ARM101_MOTOR_IDS,
+    SO_ARM101_PUBLIC_OBSERVATION_FIELDS,
+    SO_ARM101_SDK_FIELDS,
     SOArm101DevelopmentProbe,
     public_positions_to_ticks,
 )
@@ -127,7 +129,7 @@ def test_contracts_are_json_compatible_and_declare_closed_public_surfaces() -> N
         ),
         (
             SO_ARM101_DEVELOPMENT_PROBE_CONTRACT,
-            {"probe_id", "capability_id", "target_position", "duration_s"},
+            {"probe_id", "capability_id", "arguments", "target_position", "duration_s"},
             SO_ARM101_JOINT_ORDER,
             SO_ARM101_JOINT_ORDER,
         ),
@@ -136,10 +138,17 @@ def test_contracts_are_json_compatible_and_declare_closed_public_surfaces() -> N
         assert set(contract["probe_fields"]) == expected_fields
         assert contract["motor_order"] == list(expected_motor_order)
         assert contract["joint_order"] == list(expected_joint_order)
-        assert contract["capability_source"]["execution"] is (contract is GO2_DEVELOPMENT_PROBE_CONTRACT)
+        assert contract["capability_source"]["execution"] is True
         text = json.dumps(contract).lower()
         for forbidden in ("private", "criterion", "validation", "threshold", "mujoco", "simulator", "raw_state", "score", "target_error"):
             assert forbidden not in text
+    assert SO_ARM101_DEVELOPMENT_PROBE_CONTRACT["capability_source"]["execution"] is True
+    assert SO_ARM101_DEVELOPMENT_PROBE_CONTRACT["facade"]["get_observation"]["fields"] == list(
+        SO_ARM101_PUBLIC_OBSERVATION_FIELDS
+    )
+    assert SO_ARM101_DEVELOPMENT_PROBE_CONTRACT["facade"]["send_action"]["fields"] == list(
+        SO_ARM101_SDK_FIELDS
+    )
 
 
 def test_go2_executes_source_and_distinct_sources_have_distinct_physical_outcomes() -> None:
@@ -324,6 +333,7 @@ def _so_probe(**overrides: Any) -> dict[str, Any]:
     probe: dict[str, Any] = {
         "probe_id": "probe-1",
         "capability_id": "capability-1",
+        "arguments": {"target": [0.0, 0.0, 0.0, 0.0, 0.0, 50.0]},
         "target_position": [0.0, -180.0, 180.0, 0.0, 90.0, 50.0],
         "duration_s": 0.25,
     }
@@ -332,6 +342,8 @@ def _so_probe(**overrides: Any) -> dict[str, Any]:
 
 
 class _SOBackend:
+    timestep = 0.05
+
     def __init__(self, calls: list[tuple[str, Any]], path: object, direction: bool) -> None:
         self.calls = calls
         self.path = path
@@ -340,15 +352,20 @@ class _SOBackend:
         self.closed = False
         self.named_qpos = {name: float(index) for index, name in enumerate(SO_ARM101_JOINT_ORDER)}
         self.named_ctrl = {name: float(index) + 0.5 for index, name in enumerate(SO_ARM101_JOINT_ORDER)}
+        self.present = {motor_id: 2048 for motor_id in SO_ARM101_MOTOR_IDS}
 
     def reset(self) -> None:
         self.calls.append(("reset", None))
 
     def set_goal_ticks(self, values: dict[int, int]) -> None:
         self.calls.append(("set_goal_ticks", dict(values)))
+        self.present.update(values)
 
     def step(self, seconds: float) -> None:
         self.calls.append(("step", seconds))
+
+    def present_ticks(self, motor_ids: object) -> dict[int, int]:
+        return {int(motor_id): self.present[int(motor_id)] for motor_id in motor_ids}
 
     def state(self) -> dict[str, Any]:
         self.state_calls += 1
@@ -363,7 +380,33 @@ class _SOBackend:
         self.closed = True
 
 
-def test_so_converts_public_positions_in_order_and_closes_backend() -> None:
+def _so_source() -> str:
+    return """
+def capability_capability_1(arg_target, *, _sdk):
+    observation = _sdk.get_observation()
+    action = {
+        "shoulder_pan.pos": observation["shoulder_pan.pos"],
+        "shoulder_lift.pos": observation["shoulder_lift.pos"],
+        "elbow_flex.pos": observation["elbow_flex.pos"],
+        "wrist_flex.pos": observation["wrist_flex.pos"],
+        "wrist_roll.pos": observation["wrist_roll.pos"],
+        "gripper.pos": observation["gripper.pos"],
+    }
+    _sdk.send_action(action)
+    return {"accepted": arg_target[0] == 0.0}
+"""
+
+
+def _so_factory(instances: list[_SOBackend]):
+    def factory(path: object, *, gripper_tick_increases_qpos: bool) -> _SOBackend:
+        backend = _SOBackend([], path, gripper_tick_increases_qpos)
+        instances.append(backend)
+        return backend
+
+    return factory
+
+
+def test_so_executes_bound_source_through_public_facade_and_closes_backend() -> None:
     calls: list[tuple[str, Any]] = []
     instances: list[_SOBackend] = []
 
@@ -377,15 +420,15 @@ def test_so_converts_public_positions_in_order_and_closes_backend() -> None:
         False,
         backend_factory=factory,
     )
-    feedback = callback("raise RuntimeError('must not run')", _so_probe())
+    feedback = callback(_so_source(), _so_probe())
 
     assert feedback["status"] == "OK"
     assert feedback["observations"]["probe_id"] == "probe-1"
     assert feedback["observations"]["capability_id"] == "capability-1"
+    assert feedback["observations"]["accepted_command_count"] == 1
+    assert feedback["observations"]["physics_step_count"] == 5
+    assert feedback["observations"]["finite_observation_available"] is True
     assert feedback["observations"]["joint_positions_rad"] == [float(index) for index in range(6)]
-    assert feedback["observations"]["named_joint_positions_rad"]["gripper"] == 5.0
-    assert feedback["observations"]["named_control_positions_rad"]["wrist_roll"] == 4.5
-    assert feedback["observations"]["gripper_control_range_rad"] == [-0.2, 1.7]
 
     backend = instances[0]
     assert backend.path == "/pinned/so101/model.xml"
@@ -393,10 +436,93 @@ def test_so_converts_public_positions_in_order_and_closes_backend() -> None:
     assert backend.closed
     assert calls == [
         ("reset", None),
-        ("set_goal_ticks", public_positions_to_ticks(_so_probe()["target_position"])),
+        ("set_goal_ticks", {motor_id: 2048 for motor_id in SO_ARM101_MOTOR_IDS}),
         ("step", 0.25),
         ("close", None),
     ]
+
+
+def test_so_source_coupled_feedback_passes_public_callback_boundary() -> None:
+    from autoadapter2.implementation import CallbackSandbox
+
+    instances: list[_SOBackend] = []
+    sandbox = CallbackSandbox(
+        SOArm101DevelopmentProbe(
+            "/pinned/so101/model.xml",
+            True,
+            backend_factory=_so_factory(instances),
+        )
+    )
+    feedback = sandbox.run(_so_source(), _so_probe())
+    assert feedback["status"] == "OK"
+    assert feedback["observations"]["accepted_command_count"] == 1
+    assert instances[0].closed
+
+
+def test_so_bad_observation_sequence_and_list_action_are_candidate_errors() -> None:
+    bad_observation = """
+def capability_capability_1(arg_target, *, _sdk):
+    observation = _sdk.get_observation()
+    _sdk.send_action(observation[:5])
+"""
+    bad_action = """
+def capability_capability_1(arg_target, *, _sdk):
+    _sdk.send_action([0.0, 0.0, 0.0, 0.0, 0.0, 50.0])
+"""
+    for source, expected_exception in (
+        (bad_observation, "candidate_type_error:observation_mapping_required"),
+        (bad_action, "candidate_action_mapping_required"),
+    ):
+        instances: list[_SOBackend] = []
+        feedback = SOArm101DevelopmentProbe(
+            "/pinned/so101/model.xml",
+            True,
+            backend_factory=_so_factory(instances),
+        )(source, _so_probe())
+        assert feedback["status"] == "ERROR"
+        assert feedback["exception"] == expected_exception
+        assert feedback["observations"]["accepted_command_count"] == 0
+
+
+def test_so_no_action_self_report_is_not_success() -> None:
+    source = """
+def capability_capability_1(arg_target, *, _sdk):
+    observation = _sdk.get_observation()
+    return {"accepted": bool(observation)}
+"""
+    instances: list[_SOBackend] = []
+    feedback = SOArm101DevelopmentProbe(
+        "/pinned/so101/model.xml",
+        True,
+        backend_factory=_so_factory(instances),
+    )(source, _so_probe())
+    assert feedback["status"] == "INCONCLUSIVE"
+    assert feedback["observations"]["accepted_command_count"] == 0
+    assert feedback["observations"]["physics_step_count"] == 5
+    assert instances[0].closed
+
+
+def test_so_source_execution_is_rejected_for_syntax_import_and_tight_loop() -> None:
+    instances: list[_SOBackend] = []
+    callback = SOArm101DevelopmentProbe(
+        "/pinned/so101/model.xml",
+        True,
+        backend_factory=_so_factory(instances),
+    )
+    assert callback("def capability_capability_1(:", _so_probe())["exception"] == "source_syntax_error"
+    malicious = callback(
+        "import os\ndef capability_capability_1(arg_target, *, _sdk):\n    return os.getcwd()\n",
+        _so_probe(),
+    )
+    assert malicious["status"] == "ERROR"
+    assert malicious["exception"] == "candidate_import_error"
+    tight_loop = callback(
+        "def capability_capability_1(arg_target, *, _sdk):\n    while True:\n        pass\n",
+        _so_probe(),
+    )
+    assert tight_loop["status"] == "ERROR"
+    assert tight_loop["exception"] == "execution_limit"
+    assert all(instance.closed for instance in instances)
 
 
 def test_so_tick_conversion_and_bad_inputs_are_bounded() -> None:
