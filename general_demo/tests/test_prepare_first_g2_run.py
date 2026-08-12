@@ -982,6 +982,28 @@ def test_validation_a_run_pack_materializes_bounded_vector_aliases(
     assert design == design_before
 
 
+def test_validation_a_run_pack_materializes_scalar_one_tuple_as_number() -> None:
+    template, design, seal = _run_pack_vector_fixture("scalar", "(1,)")
+
+    profile = materialize_validation_a_profile(template, design, seal)
+
+    probe = profile.fixture_probes["cap-vector-alias"]["inputs"]["target_position"]
+    assert probe["value"] == 0.0
+    assert not isinstance(probe["value"], list)
+    assert {key: probe[key] for key in ("type", "shape", "unit", "frame")} == {
+        key: design["capabilities"][0]["inputs"][0][key]
+        for key in ("type", "shape", "unit", "frame")
+    }
+
+
+@pytest.mark.parametrize("shape", ["(2,)"])
+def test_validation_a_run_pack_rejects_scalar_tuple_shapes_other_than_one(shape: str) -> None:
+    template, design, seal = _run_pack_vector_fixture("scalar", shape)
+
+    with pytest.raises(RunPackError, match="cannot be materialized"):
+        materialize_validation_a_profile(template, design, seal)
+
+
 @pytest.mark.parametrize(
     ("field_type", "shape"),
     [

@@ -1061,6 +1061,8 @@ def _bounded_vector_dimension(raw: str) -> int | None:
 def _probe_value(field: Mapping[str, Any], policy: Mapping[str, Any]) -> Any:
     field_type = field.get("type")
     shape = field.get("shape")
+    if field_type == "scalar" and shape == "(1,)":
+        return copy.deepcopy(policy["number"])
     if field_type == "array" and isinstance(shape, str):
         match = re.fullmatch(r"\[([0-9]+)\]", shape)
         if match is not None:

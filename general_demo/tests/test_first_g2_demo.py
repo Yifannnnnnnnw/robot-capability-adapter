@@ -816,6 +816,70 @@ def test_validation_a_materializes_fixed_length_array_and_descriptor_matches() -
     assert not _descriptor_match([1.25, 1.25, 1.25, 1.25], field)
 
 
+def test_validation_a_materializes_scalar_one_tuple_as_number() -> None:
+    template = ValidationAProfileTemplate(
+        profile_id="experimental-python-a-v1",
+        facade_members=("send_action",),
+        input_value_policy={
+            "number": 1.25,
+            "integer": 0,
+            "boolean": False,
+            "string": "fixture",
+            "object": {},
+            "array": [],
+        },
+    )
+    field = {
+        "name": "goal_region_tolerance",
+        "type": "scalar",
+        "shape": "(1,)",
+        "unit": "m",
+        "frame": "world",
+        "required": True,
+    }
+    design = {"capabilities": [{"capability_id": "cap-scalar-alias", "inputs": [field]}]}
+
+    profile = materialize_validation_a_profile(template, design)
+
+    probe = profile.fixture_probes["cap-scalar-alias"]["inputs"]["goal_region_tolerance"]
+    assert probe["value"] == 1.25
+    assert not isinstance(probe["value"], list)
+    assert {key: probe[key] for key in ("type", "shape", "unit", "frame")} == {
+        key: field[key] for key in ("type", "shape", "unit", "frame")
+    }
+
+
+@pytest.mark.parametrize("shape", ["(2,)"])
+def test_validation_a_rejects_scalar_tuple_shapes_other_than_one(shape: str) -> None:
+    template = ValidationAProfileTemplate(
+        profile_id="experimental-python-a-v1",
+        facade_members=("send_action",),
+        input_value_policy={
+            "number": 0.0,
+            "integer": 0,
+            "boolean": False,
+            "string": "fixture",
+            "object": {},
+            "array": [],
+        },
+    )
+    design = {
+        "capabilities": [{
+            "capability_id": "cap-scalar-invalid",
+            "inputs": [{
+                "name": "goal_region_tolerance",
+                "type": "scalar",
+                "shape": shape,
+                "unit": "m",
+                "frame": "world",
+            }],
+        }],
+    }
+
+    with pytest.raises(ContractError, match="cannot be materialized"):
+        materialize_validation_a_profile(template, design)
+
+
 @pytest.mark.parametrize(
     ("field_type", "shape", "length"),
     [("vector2", "(2,)", 2), ("vector3", "(3,)", 3)],
