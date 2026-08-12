@@ -1,0 +1,21 @@
+{
+  "artifact_type": "demo_task_collection",
+  "schema_version": "1.0.0",
+  "collection_id": "anybotics-anymal-c-experimental-five",
+  "collection_version": "1.0.0",
+  "catalog_id": "anybotics-anymal-c-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "anybotics-anymal-c",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "formal_demo_status": "NOT_FORMAL_DEMO_APPROVED",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "selection_status": "EXPERIMENTAL_CANDIDATE_ONLY",
+  "selection_policy": "Five migrated AutoAdapter 1.0 tasks are executable candidates; no formal Demo approval is claimed.",
+  "task_ids": [
+    "sit_down_from_home",
+    "sit_then_stand_to_nominal",
+    "walk_forward_5cm",
+    "walk_forward_10cm",
+    "two_short_walks"
+  ]
+}

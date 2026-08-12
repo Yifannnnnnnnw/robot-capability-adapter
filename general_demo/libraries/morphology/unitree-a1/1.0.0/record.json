@@ -1,0 +1,217 @@
+{
+  "record_type": "morphology",
+  "id": "unitree-a1",
+  "version": "1.0.0",
+  "robot_model_id": "unitree-a1",
+  "robot_configuration_id": "unitree-a1",
+  "base_type": "free",
+  "actuated_dof": 12,
+  "base": {
+    "body": "trunk",
+    "joint": "freejoint",
+    "dof": 6
+  },
+  "joint_groups": {
+    "FR": [
+      "FR_hip_joint",
+      "FR_thigh_joint",
+      "FR_calf_joint"
+    ],
+    "FL": [
+      "FL_hip_joint",
+      "FL_thigh_joint",
+      "FL_calf_joint"
+    ],
+    "RR": [
+      "RR_hip_joint",
+      "RR_thigh_joint",
+      "RR_calf_joint"
+    ],
+    "RL": [
+      "RL_hip_joint",
+      "RL_thigh_joint",
+      "RL_calf_joint"
+    ]
+  },
+  "joint_names": [
+    "FR_hip_joint",
+    "FR_thigh_joint",
+    "FR_calf_joint",
+    "FL_hip_joint",
+    "FL_thigh_joint",
+    "FL_calf_joint",
+    "RR_hip_joint",
+    "RR_thigh_joint",
+    "RR_calf_joint",
+    "RL_hip_joint",
+    "RL_thigh_joint",
+    "RL_calf_joint"
+  ],
+  "actuator_names": [
+    "FR_hip",
+    "FR_thigh",
+    "FR_calf",
+    "FL_hip",
+    "FL_thigh",
+    "FL_calf",
+    "RR_hip",
+    "RR_thigh",
+    "RR_calf",
+    "RL_hip",
+    "RL_thigh",
+    "RL_calf"
+  ],
+  "joint_unit": "rad",
+  "joint_limits": {
+    "FR_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "FR_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "FR_calf_joint": [
+      -2.69653,
+      -0.916298
+    ],
+    "FL_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "FL_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "FL_calf_joint": [
+      -2.69653,
+      -0.916298
+    ],
+    "RR_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "RR_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "RR_calf_joint": [
+      -2.69653,
+      -0.916298
+    ],
+    "RL_hip_joint": [
+      -0.802851,
+      0.802851
+    ],
+    "RL_thigh_joint": [
+      -1.0472,
+      4.18879
+    ],
+    "RL_calf_joint": [
+      -2.69653,
+      -0.916298
+    ]
+  },
+  "state": [
+    "qpos",
+    "qvel",
+    "base_pose"
+  ],
+  "sensor_names": [],
+  "units": {
+    "joint_position": "rad",
+    "joint_velocity": "rad/s",
+    "base_position": "m",
+    "base_linear_velocity": "m/s",
+    "orientation": "quaternion"
+  },
+  "excluded_components": [
+    "camera",
+    "payload"
+  ],
+  "control": {
+    "type": "position",
+    "command_unit": "rad",
+    "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+    "sdk_shim": "NONE"
+  },
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "mujoco": {
+    "version": "3.3.6",
+    "entrypoint": "assets/mjcf/unitree_a1/scene.xml",
+    "local_entrypoint": "general_demo/libraries/assets/unitree-a1/1.0.0/scene.xml",
+    "source_sha256": "8126875ffc731834b97b31f8b90921727a57fc3e8d944cd72c587f63522a195e",
+    "reset_qpos_qvel_abs_tolerance": 1e-9,
+    "asset_closure_status": "MANIFEST_VERIFIED_NOT_VENDORED",
+    "simulation_entrypoint": "assets/mjcf/unitree_a1/scene.xml",
+    "simulation_entrypoint_sha256": "8126875ffc731834b97b31f8b90921727a57fc3e8d944cd72c587f63522a195e",
+    "asset_closure_sha256": "sha256:f9939606d650d472f32498842bec15e25d52b37a77088656340b3c127b92e472",
+    "asset_manifest_ref": "general_demo/libraries/assets/unitree-a1/1.0.0/asset_manifest.json",
+    "reset": {
+      "keyframe": "home",
+      "policy": "mj_resetDataKeyframe",
+      "qpos": [
+        0,
+        0,
+        0.27,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.9,
+        -1.8,
+        0,
+        0.9,
+        -1.8,
+        0,
+        0.9,
+        -1.8,
+        0,
+        0.9,
+        -1.8
+      ],
+      "qvel": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "ctrl": [
+        0,
+        0.9,
+        -1.8,
+        0,
+        0.9,
+        -1.8,
+        0,
+        0.9,
+        -1.8,
+        0,
+        0.9,
+        -1.8
+      ]
+    }
+  },
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "path": "assets/mjcf/unitree_a1/scene.xml",
+    "license": "BSD-3-Clause",
+    "license_source_path": "assets/mjcf/unitree_a1/LICENSE"
+  }
+}

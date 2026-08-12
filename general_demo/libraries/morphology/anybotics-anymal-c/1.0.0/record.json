@@ -1,0 +1,165 @@
+{
+  "record_type": "morphology",
+  "id": "anybotics-anymal-c",
+  "version": "1.0.0",
+  "robot_model_id": "anybotics-anymal-c",
+  "robot_configuration_id": "anybotics-anymal-c",
+  "base_type": "free",
+  "actuated_dof": 12,
+  "base": {
+    "body": "base",
+    "joint": "freejoint",
+    "dof": 6
+  },
+  "joint_groups": {
+    "LF": [
+      "LF_HAA",
+      "LF_HFE",
+      "LF_KFE"
+    ],
+    "RF": [
+      "RF_HAA",
+      "RF_HFE",
+      "RF_KFE"
+    ],
+    "LH": [
+      "LH_HAA",
+      "LH_HFE",
+      "LH_KFE"
+    ],
+    "RH": [
+      "RH_HAA",
+      "RH_HFE",
+      "RH_KFE"
+    ]
+  },
+  "joint_names": [
+    "LF_HAA",
+    "LF_HFE",
+    "LF_KFE",
+    "RF_HAA",
+    "RF_HFE",
+    "RF_KFE",
+    "LH_HAA",
+    "LH_HFE",
+    "LH_KFE",
+    "RH_HAA",
+    "RH_HFE",
+    "RH_KFE"
+  ],
+  "actuator_names": [
+    "LF_HAA",
+    "LF_HFE",
+    "LF_KFE",
+    "RF_HAA",
+    "RF_HFE",
+    "RF_KFE",
+    "LH_HAA",
+    "LH_HFE",
+    "LH_KFE",
+    "RH_HAA",
+    "RH_HFE",
+    "RH_KFE"
+  ],
+  "joint_unit": "rad",
+  "joint_limits": {
+    "LF_HAA": [
+      -0.72,
+      0.49
+    ],
+    "LF_HFE": [
+      -9.42478,
+      9.42478
+    ],
+    "LF_KFE": [
+      -9.42478,
+      9.42478
+    ],
+    "RF_HAA": [
+      -0.49,
+      0.72
+    ],
+    "RF_HFE": [
+      -9.42478,
+      9.42478
+    ],
+    "RF_KFE": [
+      -9.42478,
+      9.42478
+    ],
+    "LH_HAA": [
+      -0.72,
+      0.49
+    ],
+    "LH_HFE": [
+      -9.42478,
+      9.42478
+    ],
+    "LH_KFE": [
+      -9.42478,
+      9.42478
+    ],
+    "RH_HAA": [
+      -0.49,
+      0.72
+    ],
+    "RH_HFE": [
+      -9.42478,
+      9.42478
+    ],
+    "RH_KFE": [
+      -9.42478,
+      9.42478
+    ]
+  },
+  "state": [
+    "qpos",
+    "qvel",
+    "base_pose"
+  ],
+  "sensor_names": [],
+  "units": {
+    "joint_position": "rad",
+    "joint_velocity": "rad/s",
+    "base_position": "m",
+    "base_linear_velocity": "m/s",
+    "orientation": "quaternion"
+  },
+  "excluded_components": [
+    "camera",
+    "depth_camera",
+    "lidar",
+    "payload"
+  ],
+  "control": {
+    "type": "position",
+    "command_unit": "rad",
+    "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+    "sdk_shim": "NONE"
+  },
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "mujoco": {
+    "version": "3.3.6",
+    "entrypoint": "assets/mjcf/anybotics_anymal_c/scene.xml",
+    "local_entrypoint": "general_demo/libraries/assets/anybotics-anymal-c/1.0.0/scene.xml",
+    "source_sha256": "f5f2ee05cc6fb47a1816fb1d3cebad92532b3c13da66f86a8d6c39ecbf1dde97",
+    "reset_qpos_qvel_abs_tolerance": 1e-9,
+    "asset_closure_status": "MANIFEST_VERIFIED_NOT_VENDORED",
+    "simulation_entrypoint": "assets/mjcf/anybotics_anymal_c/scene.xml",
+    "simulation_entrypoint_sha256": "f5f2ee05cc6fb47a1816fb1d3cebad92532b3c13da66f86a8d6c39ecbf1dde97",
+    "asset_closure_sha256": "sha256:89417a035f015490864bd39ae2e1ae96c06a8ce9e654777656aad95bf53cb8b3",
+    "asset_manifest_ref": "general_demo/libraries/assets/anybotics-anymal-c/1.0.0/asset_manifest.json",
+    "reset": {
+      "keyframe": null,
+      "policy": "controller_initializes_home_then_mj_forward",
+      "qpos_qvel_source": "DIRECT_MUJOCO_EXPERIMENTAL"
+    }
+  },
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "path": "assets/mjcf/anybotics_anymal_c/scene.xml",
+    "license": "BSD-3-Clause",
+    "license_source_path": "assets/mjcf/anybotics_anymal_c/LICENSE"
+  }
+}

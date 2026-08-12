@@ -1,0 +1,261 @@
+{
+  "artifact_type": "mujoco_asset_manifest",
+  "schema_version": "1.0.0",
+  "robot_configuration_id": "anymal-c",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "vendor_policy": "NOT_VENDORED",
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "root_path": "assets/mjcf/anybotics_anymal_c",
+    "entrypoint_path": "assets/mjcf/anybotics_anymal_c/scene.xml",
+    "included_model_path": "assets/mjcf/anybotics_anymal_c/anymal_c.xml"
+  },
+  "entrypoint": {
+    "path": "scene.xml",
+    "sha256": "f5f2ee05cc6fb47a1816fb1d3cebad92532b3c13da66f86a8d6c39ecbf1dde97"
+  },
+  "files": [
+    {
+      "path": "anymal_c.xml",
+      "sha256": "25dfeab8913aff6f69877a85faa5f2dfa15c56a0d553cd99dbd46a4584067d8b"
+    },
+    {
+      "path": "assets/base.png",
+      "sha256": "c85872e7e662dbfe342b7450d9be8332dbe9da3cc46e73e5c44960d1bd6f1b97"
+    },
+    {
+      "path": "assets/base_0.obj",
+      "sha256": "72ce71522d12cbea774fc53b21114571b540ea2a4601ea002be8010cef882671"
+    },
+    {
+      "path": "assets/base_1.obj",
+      "sha256": "a3a47ce38a65d1502db9385a8f7946ad60befb67be3ec08ce9b5349ee8628aed"
+    },
+    {
+      "path": "assets/base_2.obj",
+      "sha256": "9d9ef6510bdb9e7e3d0607d4132bd1a2d2c4b9f058acec88c81b48bb03fc2b84"
+    },
+    {
+      "path": "assets/base_3.obj",
+      "sha256": "7a3c6829dc3ff2b4889df63df3f0fd5a380499f2ef6d6ab56fdb724d9bab5fc2"
+    },
+    {
+      "path": "assets/base_4.obj",
+      "sha256": "5ffc5f36cfc0ad40066294b743de56c10effe1089eca0010a22e3675e92d3de7"
+    },
+    {
+      "path": "assets/base_5.obj",
+      "sha256": "6672630cecff1b3aa731ef04e4035158bf1553aaa9a305791891bf4bfe429f93"
+    },
+    {
+      "path": "assets/battery.obj",
+      "sha256": "14055cc0a83b9e3d3d11dbbe68927bd643760220f11a0ec3a344af2018e11aca"
+    },
+    {
+      "path": "assets/battery.png",
+      "sha256": "4376d81adfc74952fa436d818c3a6265758e592f1bfe0aefc518eb689410bd41"
+    },
+    {
+      "path": "assets/bottom_shell.obj",
+      "sha256": "81dee5e360c21ed46d17e0bac1a63b4f8f1b16abc525bbba58a3affe83c6343d"
+    },
+    {
+      "path": "assets/bottom_shell.png",
+      "sha256": "e8f5017a1e5d37262c20f124c59baf7eebc00b30b3011eb14480664a80aa8e61"
+    },
+    {
+      "path": "assets/depth_camera.obj",
+      "sha256": "d9a33307c7bc1774dab3ef98d203c50a02b7f28a948f1be98a54741c97843f2c"
+    },
+    {
+      "path": "assets/depth_camera.png",
+      "sha256": "0528317164108af038c4cf95401f2960d2a7ed40ec74d2a840dd12eba50450a4"
+    },
+    {
+      "path": "assets/drive.obj",
+      "sha256": "4f537162db7fe80e1cbf70eb239c7ad6257f226e8da15713981ae978deab0606"
+    },
+    {
+      "path": "assets/drive.png",
+      "sha256": "a7bfe1e5a04b617bab07544e0856cc92003a368624f827a46c6be756c4bf3d9b"
+    },
+    {
+      "path": "assets/face.obj",
+      "sha256": "ae0fe279f9d4bb9903d85f65ffd508fa9440af34793537b411bfef4bd40b1995"
+    },
+    {
+      "path": "assets/face.png",
+      "sha256": "0d71ddc915f9a8baf0f225669a576ca27263e9bad9474b847bb0762fa7a2bcde"
+    },
+    {
+      "path": "assets/foot.obj",
+      "sha256": "bea4989f973561f468bda26e1ca062b13df03b1be813aa7c57db1b1039bcd6e6"
+    },
+    {
+      "path": "assets/foot.png",
+      "sha256": "1a63a3f3ddb77cfa56189dd3bc30fadea1f04d3464695b8533de02d94ba490cd"
+    },
+    {
+      "path": "assets/handle.obj",
+      "sha256": "04ebd8554ef96021923511f58520e8f216c1f57d83f665a3b23c88588b0da8fb"
+    },
+    {
+      "path": "assets/handle.png",
+      "sha256": "ed0ea6805961b41904f94398c783115e4cff71cf0e887a3fca3e5fa60c0972ef"
+    },
+    {
+      "path": "assets/hatch.obj",
+      "sha256": "b1f5cd8f322dba16d45f39b095f7f313ef1e17f785d3c2b189ecfed18f9a6c77"
+    },
+    {
+      "path": "assets/hatch.png",
+      "sha256": "2a22cbfef3bf5d305dc9f2c429b44f7a914144151ff95fece1db8f7abd157cda"
+    },
+    {
+      "path": "assets/hip_l.obj",
+      "sha256": "3eba208035323fcabc5bdfcdc8c45141705bf1aa0e4f6c1562b53351433fbe31"
+    },
+    {
+      "path": "assets/hip_l.png",
+      "sha256": "c7a3207c0f541a418241e5027c7325d1774c1a558597dfac0d17fe59d2708d70"
+    },
+    {
+      "path": "assets/hip_r.obj",
+      "sha256": "f819e2c964d6e1cef9b2f4f78b80edfb094cb09de5c577472d3e6d72d81c9f9d"
+    },
+    {
+      "path": "assets/hip_r.png",
+      "sha256": "c7a3207c0f541a418241e5027c7325d1774c1a558597dfac0d17fe59d2708d70"
+    },
+    {
+      "path": "assets/lidar.obj",
+      "sha256": "052bc2763ee33917f185b97e08a3b18b586280c8b16f3038ed124f06e42d12af"
+    },
+    {
+      "path": "assets/lidar.png",
+      "sha256": "71977fe401550113b7ba2765b70a6d66431b31123a38d72c5ff88826b27425e1"
+    },
+    {
+      "path": "assets/lidar_cage.obj",
+      "sha256": "062d7bb73b9851f49da56fdb6d61d88d1785ccb4eec5da540378c04dd966b7f3"
+    },
+    {
+      "path": "assets/lidar_cage.png",
+      "sha256": "428af55b37f4ae3a91288cc7e4d5153671ff5df38442d9af4807653a27a5b0a3"
+    },
+    {
+      "path": "assets/remote.obj",
+      "sha256": "4adb2625193d97fbe366dee61482cc754e0605687db4d8037c0903a960f61fcc"
+    },
+    {
+      "path": "assets/remote.png",
+      "sha256": "98f7c8faae8653e3ece45f67d2f420cd64a647bc41d52183d1411f3e97a39115"
+    },
+    {
+      "path": "assets/shank_l.obj",
+      "sha256": "c8b9327bd8985c8239d63bfe8cd79a6848bab8c327e863ecccd854736ef2eefe"
+    },
+    {
+      "path": "assets/shank_l.png",
+      "sha256": "3abf0f871f65b66a330c09655797f1feb5332993112f888ca17d082decdce823"
+    },
+    {
+      "path": "assets/shank_r.obj",
+      "sha256": "75a0a2233d2549ea5cc92d069d702b90cda14061756f8562886e859e84360dde"
+    },
+    {
+      "path": "assets/shank_r.png",
+      "sha256": "3abf0f871f65b66a330c09655797f1feb5332993112f888ca17d082decdce823"
+    },
+    {
+      "path": "assets/thigh.obj",
+      "sha256": "bffa716b73791f8bac4cb27ded83a606be324b4ac9887bd50ee5c441560638e3"
+    },
+    {
+      "path": "assets/thigh.png",
+      "sha256": "35875b0cdaf9669493143a28dc6cbab919d4e9429313b530976f1e8ae3f9cc4b"
+    },
+    {
+      "path": "assets/top_shell.obj",
+      "sha256": "2e4addfd7d041ed38df197517397c2fd23389ec0fa7116c8021a4b2710b5e43c"
+    },
+    {
+      "path": "assets/top_shell.png",
+      "sha256": "0d804ae204693933c470c674fe7192d1dd9262df056ab9d15e010678db80b7ed"
+    },
+    {
+      "path": "assets/wide_angle_camera.obj",
+      "sha256": "a827d67756f78a0fb9cfaf6c0d8b3b8458bdc793bc6d82bbd28a7557fc47f78c"
+    },
+    {
+      "path": "assets/wide_angle_camera.png",
+      "sha256": "15a07c60015de459965a2d7f1a7ad08e88f32c78fdbf4193b459a34f3af38ca5"
+    },
+    {
+      "path": "scene.xml",
+      "sha256": "f5f2ee05cc6fb47a1816fb1d3cebad92532b3c13da66f86a8d6c39ecbf1dde97"
+    }
+  ],
+  "closure_sha256": "sha256:89417a035f015490864bd39ae2e1ae96c06a8ce9e654777656aad95bf53cb8b3",
+  "license": {
+    "id": "BSD-3-Clause",
+    "source_path": "assets/mjcf/anybotics_anymal_c/LICENSE",
+    "sha256": "de5f42e8397f2e1c2339f41b00d2e4e64d09ad8c5b9251be9388445ae7f6b41d",
+    "local_path": "LICENSE"
+  },
+  "cache": {
+    "method": "SPARSE_UPSTREAM_CHECKOUT",
+    "repository": "https://github.com/981526092/auto-adapter.git",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "sparse_paths": [
+      "assets/mjcf/anybotics_anymal_c/anymal_c.xml",
+      "assets/mjcf/anybotics_anymal_c/assets/base.png",
+      "assets/mjcf/anybotics_anymal_c/assets/base_0.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/base_1.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/base_2.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/base_3.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/base_4.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/base_5.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/battery.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/battery.png",
+      "assets/mjcf/anybotics_anymal_c/assets/bottom_shell.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/bottom_shell.png",
+      "assets/mjcf/anybotics_anymal_c/assets/depth_camera.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/depth_camera.png",
+      "assets/mjcf/anybotics_anymal_c/assets/drive.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/drive.png",
+      "assets/mjcf/anybotics_anymal_c/assets/face.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/face.png",
+      "assets/mjcf/anybotics_anymal_c/assets/foot.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/foot.png",
+      "assets/mjcf/anybotics_anymal_c/assets/handle.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/handle.png",
+      "assets/mjcf/anybotics_anymal_c/assets/hatch.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/hatch.png",
+      "assets/mjcf/anybotics_anymal_c/assets/hip_l.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/hip_l.png",
+      "assets/mjcf/anybotics_anymal_c/assets/hip_r.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/hip_r.png",
+      "assets/mjcf/anybotics_anymal_c/assets/lidar.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/lidar.png",
+      "assets/mjcf/anybotics_anymal_c/assets/lidar_cage.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/lidar_cage.png",
+      "assets/mjcf/anybotics_anymal_c/assets/remote.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/remote.png",
+      "assets/mjcf/anybotics_anymal_c/assets/shank_l.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/shank_l.png",
+      "assets/mjcf/anybotics_anymal_c/assets/shank_r.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/shank_r.png",
+      "assets/mjcf/anybotics_anymal_c/assets/thigh.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/thigh.png",
+      "assets/mjcf/anybotics_anymal_c/assets/top_shell.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/top_shell.png",
+      "assets/mjcf/anybotics_anymal_c/assets/wide_angle_camera.obj",
+      "assets/mjcf/anybotics_anymal_c/assets/wide_angle_camera.png",
+      "assets/mjcf/anybotics_anymal_c/scene.xml"
+    ],
+    "copy_into": "general_demo/libraries/assets/anybotics-anymal-c/1.0.0",
+    "required_for_mujoco_load": true
+  }
+}

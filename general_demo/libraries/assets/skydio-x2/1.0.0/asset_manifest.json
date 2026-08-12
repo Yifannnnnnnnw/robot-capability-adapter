@@ -1,0 +1,56 @@
+{
+  "artifact_type": "mujoco_asset_manifest",
+  "schema_version": "1.0.0",
+  "robot_configuration_id": "skydio-x2",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "vendor_policy": "NOT_VENDORED",
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "root_path": "assets/mjcf/skydio_x2",
+    "entrypoint_path": "assets/mjcf/skydio_x2/scene.xml",
+    "included_model_path": "assets/mjcf/skydio_x2/x2.xml"
+  },
+  "entrypoint": {
+    "path": "scene.xml",
+    "sha256": "29ef5acc89483d95759a9b72d305948261f77ae698fa6196071b539859b092ab"
+  },
+  "files": [
+    {
+      "path": "assets/X2_lowpoly.obj",
+      "sha256": "4d6df3d7b26676a6ade8cbc320599961321ac3e3c52474d7c98dd7adc8152411"
+    },
+    {
+      "path": "assets/X2_lowpoly_texture_SpinningProps_1024.png",
+      "sha256": "24153733dd01f9ddd37a3c79fad5e24ac876228812e3a8e95f60ccd8cedb66e1"
+    },
+    {
+      "path": "scene.xml",
+      "sha256": "29ef5acc89483d95759a9b72d305948261f77ae698fa6196071b539859b092ab"
+    },
+    {
+      "path": "x2.xml",
+      "sha256": "b2378e046afe3b0600c34718397ef46ba8c9950e975def04d7b4962bb1dafc13"
+    }
+  ],
+  "closure_sha256": "sha256:12318ace99e640879e21f6d9116387b1533d63b237372c6fe8f636f5461eb25b",
+  "license": {
+    "id": "Apache-2.0",
+    "source_path": "LICENSE",
+    "sha256": "1ae35dbba8cacbfa989ca8d76fd4cc3ca7f8e3b9a20fcf65e1595c8302c237cf",
+    "local_path": "LICENSE"
+  },
+  "cache": {
+    "method": "SPARSE_UPSTREAM_CHECKOUT",
+    "repository": "https://github.com/981526092/auto-adapter.git",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "sparse_paths": [
+      "assets/mjcf/skydio_x2/assets/X2_lowpoly.obj",
+      "assets/mjcf/skydio_x2/assets/X2_lowpoly_texture_SpinningProps_1024.png",
+      "assets/mjcf/skydio_x2/scene.xml",
+      "assets/mjcf/skydio_x2/x2.xml"
+    ],
+    "copy_into": "general_demo/libraries/assets/skydio-x2/1.0.0",
+    "required_for_mujoco_load": true
+  }
+}

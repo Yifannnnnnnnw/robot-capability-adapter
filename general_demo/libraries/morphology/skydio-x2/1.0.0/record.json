@@ -1,0 +1,112 @@
+{
+  "record_type": "morphology",
+  "id": "skydio-x2",
+  "version": "1.0.0",
+  "robot_model_id": "skydio-x2",
+  "robot_configuration_id": "skydio-x2",
+  "base_type": "free",
+  "actuated_dof": 4,
+  "base": {
+    "body": "x2",
+    "joint": "freejoint",
+    "dof": 6
+  },
+  "joint_groups": {
+    "base": [
+      "freejoint"
+    ],
+    "rotors": [
+      "thrust1",
+      "thrust2",
+      "thrust3",
+      "thrust4"
+    ]
+  },
+  "joint_names": [],
+  "actuator_names": [
+    "thrust1",
+    "thrust2",
+    "thrust3",
+    "thrust4"
+  ],
+  "control_dof": 4,
+  "joint_unit": "rad",
+  "joint_limits": {},
+  "state": [
+    "qpos",
+    "qvel",
+    "base_pose",
+    "body_gyro",
+    "body_linacc",
+    "body_quat"
+  ],
+  "sensor_names": [
+    "body_gyro",
+    "body_linacc",
+    "body_quat"
+  ],
+  "units": {
+    "joint_position": "rad",
+    "joint_velocity": "rad/s",
+    "base_position": "m",
+    "base_linear_velocity": "m/s",
+    "orientation": "quaternion"
+  },
+  "excluded_components": [
+    "camera",
+    "payload"
+  ],
+  "control": {
+    "type": "motor",
+    "command_unit": "N",
+    "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+    "sdk_shim": "NONE"
+  },
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "mujoco": {
+    "version": "3.3.6",
+    "entrypoint": "assets/mjcf/skydio_x2/scene.xml",
+    "local_entrypoint": "general_demo/libraries/assets/skydio-x2/1.0.0/scene.xml",
+    "source_sha256": "29ef5acc89483d95759a9b72d305948261f77ae698fa6196071b539859b092ab",
+    "reset_qpos_qvel_abs_tolerance": 1e-9,
+    "asset_closure_status": "MANIFEST_VERIFIED_NOT_VENDORED",
+    "simulation_entrypoint": "assets/mjcf/skydio_x2/scene.xml",
+    "simulation_entrypoint_sha256": "29ef5acc89483d95759a9b72d305948261f77ae698fa6196071b539859b092ab",
+    "asset_closure_sha256": "sha256:12318ace99e640879e21f6d9116387b1533d63b237372c6fe8f636f5461eb25b",
+    "asset_manifest_ref": "general_demo/libraries/assets/skydio-x2/1.0.0/asset_manifest.json",
+    "reset": {
+      "keyframe": "hover",
+      "policy": "mj_resetDataKeyframe",
+      "qpos": [
+        0,
+        0,
+        0.3,
+        1,
+        0,
+        0,
+        0
+      ],
+      "qvel": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "ctrl": [
+        3.2495625,
+        3.2495625,
+        3.2495625,
+        3.2495625
+      ]
+    }
+  },
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "path": "assets/mjcf/skydio_x2/scene.xml",
+    "license": "Apache-2.0",
+    "license_source_path": "LICENSE"
+  }
+}

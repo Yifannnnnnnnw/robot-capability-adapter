@@ -1,0 +1,134 @@
+{
+  "artifact_type": "task_evaluation_private",
+  "schema_version": "1.0.0",
+  "evaluation_id": "h1-experimental-task-evaluation",
+  "evaluation_version": "1.0.0",
+  "catalog_id": "h1-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "h1",
+  "visibility": "EXPERIMENTAL_HARNESS_ONLY",
+  "forbidden_recipients": [
+    "stage1",
+    "stage2",
+    "generated_capability_layer",
+    "repair",
+    "demo_consumer"
+  ],
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "formal_demo_status": "NOT_FORMAL_DEMO_APPROVED",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "common_guards": [
+    {
+      "guard_id": "trusted-mujoco-state",
+      "rule": "Only trusted direct MuJoCo state may support the verdict; Consumer self-report and command receipts are not outcome evidence."
+    },
+    {
+      "guard_id": "finite-required-state",
+      "rule": "NaN, infinity, missing required measurement, or unavailable required observation fails the trial."
+    },
+    {
+      "guard_id": "route-isolation",
+      "rule": "No real SDK or SDK shim is used; this candidate is direct MuJoCo experimental evidence only."
+    }
+  ],
+  "criteria": [
+    {
+      "task_id": "stand_balance_2s",
+      "criterion_status": "HUMAN_REVIEW_REQUIRED",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "source_validator": "autoadapter_bench/spec/tasks_humanoid.yaml#suites.simple.tasks[0]",
+      "validator": {
+        "type": "torso_upright_height",
+        "min_torso_h_m": 0.85,
+        "min_upright": 0.7,
+        "n_trials": 5
+      },
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "guard_ids": [
+        "trusted-mujoco-state",
+        "finite-required-state",
+        "route-isolation"
+      ]
+    },
+    {
+      "task_id": "stand_in_place",
+      "criterion_status": "HUMAN_REVIEW_REQUIRED",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "source_validator": "autoadapter_bench/spec/tasks_humanoid.yaml#suites.simple.tasks[1]",
+      "validator": {
+        "type": "stayed_in_place",
+        "max_drift_m": 0.2,
+        "min_torso_h_m": 0.8,
+        "min_upright": 0.7,
+        "n_trials": 5
+      },
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "guard_ids": [
+        "trusted-mujoco-state",
+        "finite-required-state",
+        "route-isolation"
+      ]
+    },
+    {
+      "task_id": "squat_shallow",
+      "criterion_status": "HUMAN_REVIEW_REQUIRED",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "source_validator": "autoadapter_bench/spec/tasks_humanoid.yaml#suites.simple.tasks[2]",
+      "validator": {
+        "type": "squat_and_recover",
+        "min_drop_m": 0.08,
+        "recover_tol_m": 0.1,
+        "min_upright": 0.7,
+        "n_trials": 5
+      },
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "guard_ids": [
+        "trusted-mujoco-state",
+        "finite-required-state",
+        "route-isolation"
+      ]
+    },
+    {
+      "task_id": "squat_deep",
+      "criterion_status": "HUMAN_REVIEW_REQUIRED",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "source_validator": "autoadapter_bench/spec/tasks_humanoid.yaml#suites.simple.tasks[3]",
+      "validator": {
+        "type": "squat_and_recover",
+        "min_drop_m": 0.15,
+        "recover_tol_m": 0.12,
+        "min_upright": 0.7,
+        "n_trials": 5
+      },
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "guard_ids": [
+        "trusted-mujoco-state",
+        "finite-required-state",
+        "route-isolation"
+      ]
+    },
+    {
+      "task_id": "balance_hold_long",
+      "criterion_status": "HUMAN_REVIEW_REQUIRED",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "source_validator": "autoadapter_bench/spec/tasks_humanoid.yaml#suites.hard.tasks[0]",
+      "validator": {
+        "type": "torso_upright_height",
+        "min_torso_h_m": 0.9,
+        "min_upright": 0.8,
+        "n_trials": 5
+      },
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "guard_ids": [
+        "trusted-mujoco-state",
+        "finite-required-state",
+        "route-isolation"
+      ]
+    }
+  ]
+}
