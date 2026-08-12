@@ -414,6 +414,57 @@ _ALLOWED_LOCAL_ARRAY_ATTRIBUTES = frozenset({"T"})
 _ALLOWED_LOCAL_CONVERSION_METHODS = frozenset({"tolist"})
 
 
+@dataclass(frozen=True)
+class _HelperReturnProvenance:
+    """Conservative provenance for one reachable helper's return value."""
+
+    scalar: tuple[bool, bool, bool] | None = None
+    scalar_member_checked: bool = False
+    elements: tuple[tuple[bool, bool, bool], ...] | None = None
+    element_member_checked: tuple[bool, ...] | None = None
+
+
+def _merge_return_classifications(
+    classifications: list[tuple[bool, bool, bool]],
+) -> tuple[bool, bool, bool]:
+    if not classifications:
+        return True, False, False
+    return tuple(all(item[index] for item in classifications) for index in range(3))  # type: ignore[return-value]
+
+
+def _merge_helper_return_provenance(
+    returns: list[_HelperReturnProvenance],
+) -> _HelperReturnProvenance:
+    if not returns:
+        return _HelperReturnProvenance(scalar=(True, False, False))
+    if all(item.elements is None for item in returns):
+        return _HelperReturnProvenance(
+            scalar=_merge_return_classifications([
+                item.scalar or (False, False, False)
+                for item in returns
+            ]),
+            scalar_member_checked=all(item.scalar_member_checked for item in returns),
+        )
+    if all(item.elements is not None for item in returns):
+        element_lists = [item.elements or () for item in returns]
+        if len({len(elements) for elements in element_lists}) == 1:
+            member_checks = [
+                item.element_member_checked or (False,) * len(element_lists[0])
+                for item in returns
+            ]
+            return _HelperReturnProvenance(
+                elements=tuple(
+                    _merge_return_classifications([elements[index] for elements in element_lists])
+                    for index in range(len(element_lists[0]))
+                ),
+                element_member_checked=tuple(
+                    all(checks[index] for checks in member_checks)
+                    for index in range(len(element_lists[0]))
+                ),
+            )
+    return _HelperReturnProvenance(scalar=(True, False, False))
+
+
 def _module_path(value: ast.AST, aliases: Mapping[str, str]) -> tuple[str, tuple[str | None, ...]] | None:
     segments: list[str | None] = []
     current = value
@@ -493,6 +544,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         sdk_names: set[str] | frozenset[str],
         sdk_forwarded_helpers: set[str],
         sdk_derived_parameters: set[str] | frozenset[str] = frozenset(),
+        helper_return_provenance: Mapping[str, _HelperReturnProvenance] | None = None,
         expected_result_names: set[str] | None = None,
     ):
         self.function = function
@@ -504,6 +556,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self.sdk_names = set(sdk_names)
         self.sdk_forwarded_targets = set(sdk_forwarded_helpers)
         self.expected_result_names = expected_result_names
+        self.helper_return_provenance = dict(helper_return_provenance or {})
         self.sdk_readable_locals: set[str] = set()
         self.mutable_sdk_locals: set[str] = set(sdk_derived_parameters)
         self.derived_sdk_locals: set[str] = set(sdk_derived_parameters)
@@ -512,6 +565,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self._issue_keys: set[tuple[str, str]] = set()
         self.approved_sdk_use = False
         self.forwarded_sdk_helpers: set[str] = set()
+        self.return_provenance: list[_HelperReturnProvenance] = []
 
     def _add_issue(self, code: str, message: str) -> None:
         key = (code, message)
@@ -568,6 +622,23 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return "local-function"
         return None
 
+    def _helper_return(self, value: ast.AST) -> _HelperReturnProvenance | None:
+        if isinstance(value, ast.Call) and isinstance(value.func, ast.Name):
+            return self.helper_return_provenance.get(value.func.id)
+        return None
+
+    def _member_checked(self, value: ast.AST) -> bool:
+        if isinstance(value, ast.Call):
+            origin = self._call_origin(value.func)
+            if origin == "sdk-root":
+                return True
+            helper_return = self._helper_return(value)
+            if helper_return is not None:
+                return helper_return.scalar_member_checked
+        return _expression_root(value) in self.derived_sdk_locals or (
+            isinstance(value, ast.Name) and value.id in self.derived_sdk_locals
+        )
+
     def _classify_expression(self, value: ast.AST) -> tuple[bool, bool, bool]:
         """Return ``(allowed, sdk_derived, mutable)`` without widening the language."""
 
@@ -620,6 +691,12 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             origin = self._call_origin(value.func)
             if origin is None:
                 return False, False, False
+            if origin == "local-function":
+                helper_return = self._helper_return(value)
+                if helper_return is not None:
+                    if helper_return.elements is not None:
+                        return all(item[0] for item in helper_return.elements), False, False
+                    return helper_return.scalar or (False, False, False)
             sdk_derived = origin in {"sdk-root", "sdk-local", "sdk-derived-method"}
             return True, sdk_derived, sdk_derived
         if isinstance(value, ast.Starred):
@@ -670,7 +747,13 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
     def _assignment_issue(self, message: str = "only approved local assignments and SDK-derived mutations are allowed") -> None:
         self._add_issue("EXPERIMENTAL_PROFILE", message)
 
-    def _bind_local_name(self, name: str, value: ast.AST, classification: tuple[bool, bool, bool] | None = None) -> bool:
+    def _bind_local_name(
+        self,
+        name: str,
+        value: ast.AST,
+        classification: tuple[bool, bool, bool] | None = None,
+        member_checked: bool | None = None,
+    ) -> bool:
         if _dunder(name) or name == "_sdk":
             self._assignment_issue("assignment to a reserved or dunder name is forbidden")
             return False
@@ -685,7 +768,12 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
                 (isinstance(value, ast.Call) and self._call_origin(value.func) == "sdk-root")
                 or (not isinstance(value, ast.Call) and self._sdk_expression_allowed(value))
             )
-            if derived_value or (isinstance(value, ast.Name) and value.id in self.derived_sdk_locals):
+            if member_checked is None and isinstance(value, ast.Call):
+                helper_return = self._helper_return(value)
+                member_checked = helper_return.scalar_member_checked if helper_return is not None else derived_value
+            if member_checked is None:
+                member_checked = derived_value or (isinstance(value, ast.Name) and value.id in self.derived_sdk_locals)
+            if sdk_derived and member_checked:
                 self.derived_sdk_locals.add(name)
             else:
                 self.derived_sdk_locals.discard(name)
@@ -719,18 +807,30 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             values = list(value.elts)
             classifications = [self._classify_expression(element) for element in values]
         else:
-            classification = self._classify_expression(value)
-            if not classification[0]:
-                self._assignment_issue("destructuring RHS must be fully approved by the expression policy")
-                return True
-            values = [value] * len(target.elts)
-            classifications = [classification] * len(target.elts)
+            helper_return = self._helper_return(value)
+            if helper_return is not None and helper_return.elements is not None:
+                if len(target.elts) != len(helper_return.elements):
+                    self._assignment_issue("destructuring requires a same-shape approved tuple or list")
+                    return True
+                values = [value] * len(target.elts)
+                classifications = list(helper_return.elements)
+                member_checks = list(helper_return.element_member_checked or (False,) * len(target.elts))
+            else:
+                classification = self._classify_expression(value)
+                if not classification[0]:
+                    self._assignment_issue("destructuring RHS must be fully approved by the expression policy")
+                    return True
+                values = [value] * len(target.elts)
+                classifications = [classification] * len(target.elts)
+                member_checks = [None] * len(target.elts)
+        if isinstance(value, (ast.Tuple, ast.List)):
+            member_checks = [None] * len(target.elts)
         if not all(classification[0] for classification in classifications):
             self._assignment_issue("destructuring RHS must be fully approved by the expression policy")
             return True
-        for name, element, classification in zip(names, values, classifications, strict=True):
+        for name, element, classification, member_checked in zip(names, values, classifications, member_checks, strict=True):
             assert name is not None
-            self._bind_local_name(name, element, classification)
+            self._bind_local_name(name, element, classification, member_checked)
         return True
 
     def visit_Assign(self, node: ast.Assign) -> None:
@@ -814,6 +914,24 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Return(self, node: ast.Return) -> None:
+        value = node.value
+        if value is None:
+            self.return_provenance.append(_HelperReturnProvenance(scalar=(True, False, False)))
+        elif isinstance(value, (ast.Tuple, ast.List)):
+            self.return_provenance.append(_HelperReturnProvenance(
+                elements=tuple(self._classify_expression(element) for element in value.elts),
+                element_member_checked=tuple(self._member_checked(element) for element in value.elts),
+            ))
+        else:
+            helper_return = self._helper_return(value)
+            self.return_provenance.append(
+                helper_return
+                if helper_return is not None
+                else _HelperReturnProvenance(
+                    scalar=self._classify_expression(value),
+                    scalar_member_checked=self._member_checked(value),
+                )
+            )
         if self.expected_result_names is not None and isinstance(node.value, ast.Dict):
             names: list[str] = []
             for key in node.value.keys:
@@ -1314,60 +1432,75 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
     ))
     sdk_forwarded_calls = _sdk_forwarded_calls(reachable_functions, sdk_parameter_names)
     analyzers: dict[str, _SdkStaticAnalyzer] = {}
-    for symbol, nodes in functions.items():
-        if symbol not in reachable_symbols:
-            continue
-        public = symbol in symbol_to_capability
-        capability_id = symbol_to_capability.get(symbol)
-        nodes = functions.get(symbol, [])
-        if len(nodes) != 1:
-            continue
-        function = nodes[0]
-        issues.extend(_function_shape_issues(function, public=public, symbol=symbol))
-        if not public:
-            analyzer = _SdkStaticAnalyzer(
-                function,
-                _function_parameters(function),
-                all_sdk_members,
-                module_aliases,
-                module_constants,
-                set(reachable_functions),
-                sdk_parameter_names.get(symbol, set()),
-                sdk_forwarded_calls.get(symbol, set()),
-                sdk_derived_parameter_names.get(symbol, set()),
-            )
-        else:
-            assert capability_id is not None
-            arguments = function.args
-            expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
-            if (
-                function.decorator_list
-                or function.returns is not None
-                or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
-                or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
-                or arguments.defaults
-                or any(default is not None for default in arguments.kw_defaults)
-                or arguments.posonlyargs
-                or [argument.arg for argument in arguments.args] != expected_parameters
-                or [argument.arg for argument in arguments.kwonlyargs] != ["_sdk"]
-                or arguments.vararg is not None
-                or arguments.kwarg is not None
-            ):
-                issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
-            analyzer = _SdkStaticAnalyzer(
-                function,
-                expected_parameters,
-                profile.sdk_facade_members[capability_id],
-                module_aliases,
-                module_constants,
-                set(reachable_functions),
-                sdk_parameter_names.get(symbol, {"_sdk"}),
-                sdk_forwarded_calls.get(symbol, set()),
-                sdk_derived_parameter_names.get(symbol, set()),
-                {field["name"] for field in contracts[capability_id]["outputs"]},
-            )
-        issues.extend(analyzer.analyze())
-        analyzers[symbol] = analyzer
+    helper_return_provenance: dict[str, _HelperReturnProvenance] = {}
+    analysis_issues: list[dict[str, str]] = []
+    for _ in range(max(1, len(reachable_functions) + 1)):
+        round_analyzers: dict[str, _SdkStaticAnalyzer] = {}
+        round_issues: list[dict[str, str]] = []
+        for symbol, nodes in functions.items():
+            if symbol not in reachable_symbols or len(nodes) != 1:
+                continue
+            public = symbol in symbol_to_capability
+            capability_id = symbol_to_capability.get(symbol)
+            function = nodes[0]
+            round_issues.extend(_function_shape_issues(function, public=public, symbol=symbol))
+            if not public:
+                analyzer = _SdkStaticAnalyzer(
+                    function,
+                    _function_parameters(function),
+                    all_sdk_members,
+                    module_aliases,
+                    module_constants,
+                    set(reachable_functions),
+                    sdk_parameter_names.get(symbol, set()),
+                    sdk_forwarded_calls.get(symbol, set()),
+                    sdk_derived_parameter_names.get(symbol, set()),
+                    helper_return_provenance=helper_return_provenance,
+                )
+            else:
+                assert capability_id is not None
+                arguments = function.args
+                expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
+                if (
+                    function.decorator_list
+                    or function.returns is not None
+                    or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
+                    or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
+                    or arguments.defaults
+                    or any(default is not None for default in arguments.kw_defaults)
+                    or arguments.posonlyargs
+                    or [argument.arg for argument in arguments.args] != expected_parameters
+                    or [argument.arg for argument in arguments.kwonlyargs] != ["_sdk"]
+                    or arguments.vararg is not None
+                    or arguments.kwarg is not None
+                ):
+                    round_issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
+                analyzer = _SdkStaticAnalyzer(
+                    function,
+                    expected_parameters,
+                    profile.sdk_facade_members[capability_id],
+                    module_aliases,
+                    module_constants,
+                    set(reachable_functions),
+                    sdk_parameter_names.get(symbol, {"_sdk"}),
+                    sdk_forwarded_calls.get(symbol, set()),
+                    sdk_derived_parameter_names.get(symbol, set()),
+                    helper_return_provenance=helper_return_provenance,
+                    expected_result_names={field["name"] for field in contracts[capability_id]["outputs"]},
+                )
+            round_issues.extend(analyzer.analyze())
+            round_analyzers[symbol] = analyzer
+        next_returns = {
+            symbol: _merge_helper_return_provenance(analyzer.return_provenance)
+            for symbol, analyzer in round_analyzers.items()
+            if symbol not in symbol_to_capability
+        }
+        analyzers = round_analyzers
+        analysis_issues = round_issues
+        if next_returns == helper_return_provenance:
+            break
+        helper_return_provenance = next_returns
+    issues.extend(analysis_issues)
     verified_sdk_functions: set[str] = set()
     changed = True
     while changed:
@@ -1382,7 +1515,12 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
                     verified_sdk_functions.add(symbol)
                     changed = True
     for symbol in symbol_to_capability:
-        if symbol in analyzers and symbol not in verified_sdk_functions:
+        analyzer = analyzers.get(symbol)
+        if analyzer is not None and not (
+            analyzer.approved_sdk_use
+            or symbol in verified_sdk_functions
+            or any(child in verified_sdk_functions for child in analyzer.forwarded_sdk_helpers)
+        ):
             issues.append(_issue("SDK_INJECTION", f"{symbol} must call the injected _sdk facade"))
     return issues
 
