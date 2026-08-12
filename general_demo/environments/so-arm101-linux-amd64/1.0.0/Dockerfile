@@ -11,7 +11,7 @@ RUN test "$(uname -m)" = "x86_64"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates git python3.12 python3.12-dev python3.12-venv build-essential \
-      libgl1 libegl1 libglib2.0-0 \
+      ffmpeg libgl1 libegl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3.12 -m venv /opt/autoadapter-venv
@@ -21,9 +21,9 @@ WORKDIR /opt/autoadapter
 
 # The two SDK distributions are checked against the Authority's published
 # artifact hashes before installation.  LeRobot is installed without its
-# unrelated training/vision stack; this route only needs the real SOFollower,
-# Feetech bus, and their direct import/runtime dependencies.  PyTorch comes from
-# the official CPU index so this integration image never downloads CUDA wheels.
+# unrelated training stack, while its complete 0.6.0 runtime/import closure is
+# pinned below.  PyTorch and torchvision come from the official CPU index so
+# this integration image never downloads CUDA wheels.
 # The complete closure remains DRAFT until the build receipt and OCI digest are
 # captured into a build-produced runtime lock.
 RUN mkdir -p /tmp/wheels /opt/autoadapter/runtime-build \
@@ -33,12 +33,16 @@ RUN mkdir -p /tmp/wheels /opt/autoadapter/runtime-build \
     && test -n "$FEETECH_ARCHIVE" \
     && echo "d4d3832e4b1b22a8222133a414db9f868224c2fb639426a1b11d96ddfe84e69c  $FEETECH_ARCHIVE" | sha256sum -c - \
     && python -m pip install --index-url https://download.pytorch.org/whl/cpu \
-         --report /opt/autoadapter/runtime-build/01-torch-install-report.json torch==2.7.1 \
+         --report /opt/autoadapter/runtime-build/01-torch-install-report.json \
+         torch==2.7.1 torchvision==0.22.1 \
     && python -m pip install --report /opt/autoadapter/runtime-build/02-lerobot-install-report.json \
          --no-deps /tmp/wheels/lerobot-0.6.0-py3-none-any.whl "$FEETECH_ARCHIVE" \
     && python -m pip install --report /opt/autoadapter/runtime-build/03-direct-install-report.json \
          numpy==2.2.6 draccus==0.10.0 huggingface-hub==1.0.1 \
          tqdm==4.67.1 pyserial==3.5 deepdiff==8.6.1 \
+         opencv-python-headless==4.12.0.88 Pillow==11.3.0 einops==0.8.1 \
+         requests==2.32.4 gymnasium==1.1.1 safetensors==0.5.3 \
+         packaging==24.2 termcolor==3.1.0 cmake==3.31.6 setuptools==75.8.2 \
     && python -m pip download --no-deps --dest /tmp/wheels mujoco==3.3.6 \
     && MUJOCO_WHEEL="$(find /tmp/wheels -maxdepth 1 -type f -name 'mujoco-3.3.6-*.whl' -print -quit)" \
     && test -n "$MUJOCO_WHEEL" \
@@ -48,17 +52,22 @@ RUN mkdir -p /tmp/wheels /opt/autoadapter/runtime-build \
          "$MUJOCO_WHEEL" pytest \
     && rm -rf /tmp/wheels
 
-# Keep mutable manifest/profile/runtime-lock files outside the image.  The launcher
-# mounts them into a unique attempt directory, so a captured local image ID does not
-# become self-referential when those records bind the image.
+# Keep the closed run-pack inputs and outputs outside the image.  The launcher
+# mounts them into a unique attempt directory, so a captured local image ID does
+# not become self-referential when those records bind the image.
 COPY general_demo/pyproject.toml /opt/autoadapter/general_demo/pyproject.toml
-COPY general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json /opt/autoadapter/general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json
 COPY general_demo/src /opt/autoadapter/general_demo/src
 COPY general_demo/linux_tests /opt/autoadapter/general_demo/linux_tests
 COPY general_demo/scripts /opt/autoadapter/general_demo/scripts
 COPY general_demo/integrations/so-arm101/translation.json /opt/autoadapter/general_demo/integrations/so-arm101/translation.json
 COPY general_demo/integrations/so-arm101/gripper_endpoint_evidence.json /opt/autoadapter/general_demo/integrations/so-arm101/gripper_endpoint_evidence.json
 COPY general_demo/libraries/morphology/so-arm101/1.0.0/record.json /opt/autoadapter/general_demo/libraries/morphology/so-arm101/1.0.0/record.json
+COPY general_demo/libraries/morphology/so-arm101/1.0.0/private_demo_scene /opt/autoadapter/general_demo/libraries/morphology/so-arm101/1.0.0/private_demo_scene
+COPY general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/catalog.json /opt/autoadapter/general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/catalog.json
+COPY general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/demo_collection.json /opt/autoadapter/general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/demo_collection.json
+COPY general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/evaluation_private.json /opt/autoadapter/general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/evaluation_private.json
+COPY general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/stage1_projection.json /opt/autoadapter/general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/stage1_projection.json
+COPY general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/task_instances_private.json /opt/autoadapter/general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/task_instances_private.json
 COPY general_demo/libraries/sdks/lerobot-so101-follower/1.0.0/record.json /opt/autoadapter/general_demo/libraries/sdks/lerobot-so101-follower/1.0.0/record.json
 RUN python -m pip install --report /opt/autoadapter/runtime-build/05-general-demo-install-report.json \
     --no-deps /opt/autoadapter/general_demo
@@ -70,4 +79,13 @@ RUN git clone https://github.com/TheRobotStudio/SO-ARM100.git /opt/SO-ARM100 \
     && echo "d75253eb568e8a7214db9c631ab7bed4217f608a26f7276ebe9a7636cac82580  /opt/SO-ARM100/Simulation/SO101/so101_new_calib.xml" | sha256sum -c -
 
 ENV AUTOADAPTER_SO101_MODEL=/opt/SO-ARM100/Simulation/SO101/so101_new_calib.xml
+
+# Validate the final runtime closure and the import boundaries during the image
+# build.  The session factory is imported, but no hardware or run-pack input is
+# opened at build time.
+RUN python -m pip check \
+    && test -x "$(command -v ffmpeg)" \
+    && ffmpeg -hide_banner -version >/dev/null \
+    && python -c "import importlib, importlib.util; from lerobot.motors.feetech import FeetechMotorsBus; module_name = 'lerobot.robots.so101_follower' if importlib.util.find_spec('lerobot.robots.so101_follower') else 'lerobot.robots.so_follower'; SO101Follower = getattr(importlib.import_module(module_name), 'SO101Follower'); import mujoco; from autoadapter2.evaluation.ffmpeg import FFmpegVideoEncoder; from autoadapter2.integrations.session_support import MuJoCoFrameCapture; from autoadapter2.integrations.so_arm101.session import _load_frame_capture_factory, create_evaluation_robot_session; from autoadapter2.orchestration.demo_runner import GeneralDemoRunner; assert _load_frame_capture_factory() is MuJoCoFrameCapture; print('SO-ARM101 General Demo imports OK:', SO101Follower.__name__, FeetechMotorsBus.__name__, mujoco.__version__, FFmpegVideoEncoder.__name__, GeneralDemoRunner.__name__, create_evaluation_robot_session.__name__)"
+
 WORKDIR /opt/autoadapter/general_demo
