@@ -108,6 +108,42 @@ def _ready_so_run(root: Path) -> dict[str, object]:
     return material
 
 
+def _ready_go2_run(root: Path) -> dict[str, object]:
+    manifest_path = "general_demo/integrations/unitree-go2/integration_manifest.json"
+    manifest = json.loads((PROJECT_ROOT / manifest_path).read_text(encoding="utf-8"))
+    for relative in (
+        manifest["morphology_ref"]["path"],
+        manifest["sdk_ref"]["path"],
+        manifest["translation_ref"]["path"],
+        manifest["readiness_profile_ref"]["path"],
+    ):
+        _copy_source(root, relative)
+
+    translation = json.loads(
+        (PROJECT_ROOT / manifest["translation_ref"]["path"]).read_text(encoding="utf-8")
+    )
+    implementation = translation["implementation"]
+    for reference in list(implementation["source_files"]) + [implementation["readiness_runner"]]:
+        _copy_source(root, reference["path"])
+
+    profile_ref = manifest["readiness_profile_ref"]
+    profile = json.loads((PROJECT_ROOT / profile_ref["path"]).read_text(encoding="utf-8"))
+    input_ref = _json_ref(root, "general_demo/runs/run-1/input.json", {"frozen": True})
+    material: dict[str, object] = {
+        "root": root,
+        "manifest_path": manifest_path,
+        "manifest": manifest,
+        "profile_ref": profile_ref,
+        "input_ref": input_ref,
+    }
+    _rewrite_manifest_chain(material)
+    report = material["report"]
+    assert isinstance(report, dict)
+    report["numerical_tolerances"] = profile["numerical_tolerances"]
+    _rewrite_manifest_chain(material)
+    return material
+
+
 def _rewrite_manifest_chain(material: dict[str, object]) -> None:
     root = material["root"]
     manifest_path = material["manifest_path"]
@@ -355,3 +391,77 @@ def test_cleanup_failure_and_robot_fact_mutation_block_stage1(tmp_path: Path) ->
     _rewrite_manifest_chain(material)
     with pytest.raises(GateError):
         _gate(material).verify("general_demo/integrations/so-arm101/integration_manifest.json", "general_demo/runs/run-1/run_snapshot.json", "general_demo/runs/run-1/readiness_report.json")
+
+
+def _verify_go2(material: dict[str, object]) -> object:
+    return _gate(material).verify(
+        "general_demo/integrations/unitree-go2/integration_manifest.json",
+        "general_demo/runs/run-1/run_snapshot.json",
+        "general_demo/runs/run-1/readiness_report.json",
+    )
+
+
+def test_ready_go2_source_hash_mismatch_blocks_without_experimental_opt_in(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("AUTOADAPTER_GO2_EXPERIMENTAL_ARM64", raising=False)
+    with pytest.raises(GateError, match="Translation source file hash mismatch"):
+        _verify_go2(_ready_go2_run(tmp_path))
+
+
+def test_experimental_go2_bypasses_only_ready_source_layer_and_keeps_bindings(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("AUTOADAPTER_GO2_EXPERIMENTAL_ARM64", "1")
+    material = _ready_go2_run(tmp_path / "pass")
+    assert _verify_go2(material).run_id == "run-1"
+
+    material = _ready_go2_run(tmp_path / "facts")
+    root = material["root"]
+    manifest = material["manifest"]
+    assert isinstance(root, Path) and isinstance(manifest, dict)
+    morphology_path = root / manifest["morphology_ref"]["path"]
+    morphology = json.loads(morphology_path.read_text(encoding="utf-8"))
+    morphology["base_type"] = "fixed"
+    manifest["morphology_ref"]["sha256"] = write_stable_json(morphology_path, morphology)
+    _rewrite_manifest_chain(material)
+    with pytest.raises(GateError, match="wrong Go2 morphology"):
+        _verify_go2(material)
+
+    material = _ready_go2_run(tmp_path / "snapshot")
+    root = material["root"]
+    snapshot = material["snapshot"]
+    assert isinstance(root, Path) and isinstance(snapshot, dict)
+    input_path = root / snapshot["task_set_ref"]["path"]
+    input_path.write_bytes(input_path.read_bytes() + b"\n")
+    with pytest.raises(GateError, match="referenced file hash mismatch"):
+        _verify_go2(material)
+
+
+@pytest.mark.parametrize("value", ["0", "true"])
+def test_wrong_go2_experimental_value_does_not_bypass(tmp_path: Path, monkeypatch, value: str) -> None:
+    monkeypatch.setenv("AUTOADAPTER_GO2_EXPERIMENTAL_ARM64", value)
+    with pytest.raises(GateError, match="Translation source file hash mismatch"):
+        _verify_go2(_ready_go2_run(tmp_path))
+
+
+def test_unknown_go2_experimental_env_does_not_bypass(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("AUTOADAPTER_GO2_EXPERIMENTAL_ARM64", raising=False)
+    monkeypatch.setenv("AUTOADAPTER_GO2_EXPERIMENTAL_ARM64_WRONG", "1")
+    with pytest.raises(GateError, match="Translation source file hash mismatch"):
+        _verify_go2(_ready_go2_run(tmp_path))
+
+
+def test_go2_experimental_env_does_not_bypass_so(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("AUTOADAPTER_GO2_EXPERIMENTAL_ARM64", "1")
+    material = _ready_so_run(tmp_path)
+    root = material["root"]
+    manifest = material["manifest"]
+    assert isinstance(root, Path) and isinstance(manifest, dict)
+    translation = json.loads(
+        (root / manifest["translation_ref"]["path"]).read_text(encoding="utf-8")
+    )
+    source_path = root / translation["implementation"]["source_files"][0]["path"]
+    source_path.write_bytes(source_path.read_bytes() + b"\n")
+    with pytest.raises(GateError, match="Translation source file hash mismatch"):
+        _gate(material).verify(
+            "general_demo/integrations/so-arm101/integration_manifest.json",
+            "general_demo/runs/run-1/run_snapshot.json",
+            "general_demo/runs/run-1/readiness_report.json",
+        )

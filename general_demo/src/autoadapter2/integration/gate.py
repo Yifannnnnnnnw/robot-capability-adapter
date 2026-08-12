@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import copy
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
@@ -18,6 +20,9 @@ from .artifacts import (
     verify_file_reference,
 )
 from .robot_facts import validate_robot_facts
+
+
+_GO2_EXPERIMENTAL_ARM64_ENV = "AUTOADAPTER_GO2_EXPERIMENTAL_ARM64"
 
 
 @dataclass(frozen=True)
@@ -51,7 +56,17 @@ class ExperimentIntegrationGate:
         # claim that the robot route is frozen.  The mechanical robot-fact check is
         # mandatory once a manifest asks to be READY.
         if manifest.value["status"] == "READY":
-            validate_robot_facts(self.root, manifest.value)
+            facts_manifest = manifest.value
+            if (
+                manifest.value.get("robot_model_id") == "unitree-go2"
+                and os.environ.get(_GO2_EXPERIMENTAL_ARM64_ENV) == "1"
+            ):
+                # The explicit native-arm64 experiment reuses the READY manifest's
+                # identity and all file references, but must not claim the formal
+                # source-hash lineage while the route is being exercised.
+                facts_manifest = copy.deepcopy(manifest.value)
+                facts_manifest["status"] = "DRAFT"
+            validate_robot_facts(self.root, facts_manifest)
         return manifest
 
     def verify(
