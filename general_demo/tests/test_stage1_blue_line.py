@@ -5,7 +5,9 @@ import copy
 import pytest
 
 from autoadapter2.blue_line import BLUE_LINE_PROMPT, BlueLineRunner
+from autoadapter2.foundation.canonical import canonical_bytes
 from autoadapter2.foundation.errors import ContractError
+from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.foundation.seals import verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Config, Stage1Runner
 from autoadapter2.generation.stage1 import STAGE1_PROMPT
@@ -104,6 +106,131 @@ def _capability_body() -> dict:
         "unsupported_requirement_ids": [],
         "blocking_requirement_ids": [],
     }
+
+
+def _design_experience_snapshot() -> dict:
+    applicability = {
+        "robot_model_id": ROBOT["robot_model_id"],
+        "robot_configuration_id": ROBOT["robot_configuration_id"],
+        "sdk_entry_id": "lerobot-so-arm101-follower",
+        "granularity_condition": "G2",
+        "capability_effect_scope": ["reach-joint-target"],
+        "observation_condition": "joint position observation",
+    }
+    record_hash = "sha256:" + "1" * 64
+    return {
+        "artifact_type": "experience_snapshot",
+        "format_version": "experimental-1",
+        "snapshot_id": "design-snapshot-1",
+        "recipient_class": "design",
+        "applicability": applicability,
+        "records": [{
+            "record_id": "experience-record-1",
+            "version": "1.0.0",
+            "record_ref": {
+                "path": "general_demo/libraries/experience/records/design/experience-record-1/1.0.0/record.json",
+                "content_hash": record_hash,
+            },
+            "projection": {
+                "experience_id": "joint-target-guidance",
+                "guidance": "Prefer a reusable public joint-target effect.",
+                "applicability": copy.deepcopy(applicability),
+                "provenance": {
+                    "closure_hash": record_hash,
+                    "summary_ref": "general_demo/runs/run-1/summary.json",
+                    "stage_artifacts_ref": "general_demo/runs/run-1/stage-artifacts.json",
+                    "evidence_digest_hash": record_hash,
+                },
+            },
+        }],
+    }
+
+
+def test_stage1_uses_a_deterministic_explicit_empty_experience_snapshot() -> None:
+    first_fixture = FixtureJsonGenerator([_capability_body()])
+    first = Stage1Runner(first_fixture).run("run-1", ROBOT, TASKS, G2)
+    second_fixture = FixtureJsonGenerator([_capability_body()])
+    second = Stage1Runner(second_fixture).run("run-1", ROBOT, TASKS, G2)
+
+    empty_snapshot = first_fixture.calls[0]["inputs"]["design_experience_snapshot"]
+    assert empty_snapshot["recipient_class"] == "design"
+    assert empty_snapshot["records"] == []
+    assert first.capability_design["design_experience_snapshot_hash"] == content_hash(canonical_bytes(empty_snapshot))
+    assert first.capability_design["design_experience_snapshot_hash"] == second.capability_design["design_experience_snapshot_hash"]
+    assert first_fixture.calls[0]["inputs"]["design_experience_snapshot"] == second_fixture.calls[0]["inputs"]["design_experience_snapshot"]
+
+
+def test_stage1_passes_design_experience_to_generator_and_seals_only_its_hash() -> None:
+    snapshot = _design_experience_snapshot()
+    fixture = FixtureJsonGenerator([_capability_body()])
+    result = Stage1Runner(fixture).run(
+        "run-1", ROBOT, TASKS, G2, design_experience_snapshot=snapshot
+    )
+
+    assert fixture.calls[0]["inputs"]["design_experience_snapshot"] == snapshot
+    assert result.capability_design["design_experience_snapshot_hash"] == content_hash(canonical_bytes(snapshot))
+    assert "design_experience_snapshot" not in result.capability_design
+
+
+@pytest.mark.parametrize("recipient_class", ["implementation", "consumer"])
+def test_stage1_rejects_non_design_experience_recipients_before_model_call(recipient_class: str) -> None:
+    snapshot = _design_experience_snapshot()
+    snapshot["recipient_class"] = recipient_class
+    fixture = FixtureJsonGenerator([_capability_body()])
+
+    with pytest.raises(ContractError):
+        Stage1Runner(fixture).run("run-1", ROBOT, TASKS, G2, design_experience_snapshot=snapshot)
+    assert fixture.calls == []
+
+
+@pytest.mark.parametrize("mutation", ["unknown", "private", "non_json", "mismatch"])
+def test_stage1_rejects_invalid_design_experience_before_model_call(mutation: str) -> None:
+    snapshot = _design_experience_snapshot()
+    if mutation == "unknown":
+        snapshot["unexpected"] = True
+    elif mutation == "private":
+        snapshot["records"][0]["projection"]["provenance"] = {"private_note": "hidden"}
+    elif mutation == "non_json":
+        snapshot["records"][0]["projection"]["guidance"] = {"not_json": {"value"}}
+    else:
+        snapshot["records"][0]["projection"]["applicability"] = {"robot_configuration_id": "other"}
+    fixture = FixtureJsonGenerator([_capability_body()])
+
+    with pytest.raises(ContractError):
+        Stage1Runner(fixture).run("run-1", ROBOT, TASKS, G2, design_experience_snapshot=snapshot)
+    assert fixture.calls == []
+
+
+def test_stage1_correction_receives_the_original_experience_snapshot() -> None:
+    snapshot = _design_experience_snapshot()
+    observed: list[dict] = []
+
+    def generate(_stage: str, _prompt: str, inputs: dict) -> dict:
+        observed.append(copy.deepcopy(inputs["design_experience_snapshot"]))
+        if len(observed) == 1:
+            inputs["design_experience_snapshot"]["records"][0]["projection"]["guidance"] = "tampered"
+            return {"capabilities": [], "unsupported_requirement_ids": [], "blocking_requirement_ids": []}
+        return _capability_body()
+
+    result = Stage1Runner(
+        FixtureJsonGenerator(generate), Stage1Config(max_correction_calls=1)
+    ).run("run-1", ROBOT, TASKS, G2, design_experience_snapshot=snapshot)
+
+    assert result.status == "SEALED"
+    assert observed[0] == observed[1] == snapshot
+    assert result.capability_design["design_experience_snapshot_hash"] == content_hash(canonical_bytes(snapshot))
+
+
+def test_stage1_copies_experience_snapshot_before_the_call_returns() -> None:
+    snapshot = _design_experience_snapshot()
+    fixture = FixtureJsonGenerator([_capability_body()])
+    result = Stage1Runner(fixture).run("run-1", ROBOT, TASKS, G2, design_experience_snapshot=snapshot)
+    captured = copy.deepcopy(fixture.calls[0]["inputs"]["design_experience_snapshot"])
+
+    snapshot["records"][0]["projection"]["guidance"] = "mutated after run"
+
+    assert fixture.calls[0]["inputs"]["design_experience_snapshot"] == captured
+    assert result.capability_design["design_experience_snapshot_hash"] == content_hash(canonical_bytes(captured))
 
 
 def _sealed_design() -> tuple[dict, dict]:

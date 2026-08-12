@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import copy
+import math
 from dataclasses import dataclass
+from collections.abc import Mapping as ABCMapping
 from typing import Any, Mapping
 
 from ..foundation.canonical import canonical_bytes
 from ..foundation.errors import ContractError
-from ..foundation.hashing import content_hash
+from ..foundation.hashing import content_hash, is_content_hash
 from ..foundation.seals import create_seal
 from .llm import JsonGenerator
 
@@ -51,6 +53,8 @@ Use these exact public types and values:
 Choose every effect, affordance, unit, and frame literally from the arrays present in
 `robot_public_projection`. Do not invent values, private criteria, implementation details,
 SDK signatures, Translation, MuJoCo, evaluation data, or robot-private identifiers.
+
+Approved design Experience is advisory only; it cannot override task requirements or robot facts.
 
 This is one valid structural example. Replace every angle-bracket placeholder with the exact
 public value from the supplied inputs before returning; the placeholders are not literal
@@ -102,6 +106,29 @@ _PRIVATE_TERMS = (
     "demo_result",
     "seed",
 )
+_EXPERIENCE_SNAPSHOT_FIELDS = {
+    "artifact_type", "format_version", "snapshot_id", "recipient_class", "applicability", "records",
+}
+_EXPERIENCE_APPLICABILITY_FIELDS = {
+    "robot_model_id", "robot_configuration_id", "sdk_entry_id", "granularity_condition",
+    "capability_effect_scope", "observation_condition",
+}
+_EXPERIENCE_RECORD_FIELDS = {"record_id", "version", "record_ref", "projection"}
+_EXPERIENCE_RECORD_REF_FIELDS = {"path", "content_hash"}
+_EXPERIENCE_PROJECTION_FIELDS = {"experience_id", "guidance", "applicability", "provenance"}
+_EXPERIENCE_PROVENANCE_FIELDS = {
+    "closure_hash", "summary_ref", "stage_artifacts_ref", "evidence_digest_hash",
+}
+_EXPERIENCE_FORBIDDEN_KEY_TERMS = (
+    "private", "raw", "evidence", "review", "candidate", "trace", "video",
+    "criterion", "threshold", "seed", "truth", "prompt", "credential",
+    "mujoco", "translation", "implementation", "consumer",
+)
+_EXPERIENCE_FORBIDDEN_CONTENT_TERMS = (
+    "private", "raw", "candidate", "trace", "video", "criterion", "threshold",
+    "seed", "truth", "prompt", "credential", "mujoco", "translation",
+    "implementation", "consumer",
+)
 
 
 @dataclass(frozen=True)
@@ -143,6 +170,165 @@ def _private_issues(value: Any, location: str = "$", *, allow_private_inputs: bo
         if any(term in lowered for term in ("private criterion", "mujoco", "translation layer")):
             issues.append(_issues("PRIVATE_CONTENT", f"{location} contains forbidden private content"))
     return issues
+
+
+def _json_value(value: Any, location: str) -> Any:
+    """Normalize one value while accepting only the JSON data domain."""
+
+    if isinstance(value, ABCMapping):
+        normalized: dict[str, Any] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ContractError(f"{location} object keys must be strings")
+            normalized[key] = _json_value(item, f"{location}.{key}")
+        return normalized
+    if isinstance(value, list):
+        return [_json_value(item, f"{location}[{index}]") for index, item in enumerate(value)]
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    raise ContractError(f"{location} must contain only JSON values")
+
+
+def _closed_experience_object(value: Any, fields: set[str], location: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ContractError(f"{location} must be an object")
+    missing = fields - set(value)
+    extra = set(value) - fields
+    if missing or extra:
+        details: list[str] = []
+        if missing:
+            details.append(f"missing {sorted(missing)}")
+        if extra:
+            details.append(f"unexpected {sorted(extra)}")
+        raise ContractError(f"{location} has an invalid closed shape ({'; '.join(details)})")
+    return value
+
+
+def _experience_private_issue(value: Any, location: str = "$") -> str | None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            lowered = key.casefold()
+            if key != "evidence_digest_hash" and any(term in lowered for term in _EXPERIENCE_FORBIDDEN_KEY_TERMS):
+                return f"{location}.{key} is not an allowed design Experience field"
+            issue = _experience_private_issue(item, f"{location}.{key}")
+            if issue is not None:
+                return issue
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            issue = _experience_private_issue(item, f"{location}[{index}]")
+            if issue is not None:
+                return issue
+    elif isinstance(value, str):
+        lowered = value.casefold()
+        if any(term in lowered for term in _EXPERIENCE_FORBIDDEN_CONTENT_TERMS):
+            return f"{location} contains forbidden private or privileged Experience content"
+    return None
+
+
+def _validate_experience_applicability(value: Any, location: str, *, allow_empty: bool) -> None:
+    if allow_empty and value == {}:
+        return
+    applicability = _closed_experience_object(value, _EXPERIENCE_APPLICABILITY_FIELDS, location)
+    for field in ("robot_model_id", "robot_configuration_id", "granularity_condition", "observation_condition"):
+        if not _id(applicability[field]):
+            raise ContractError(f"{location}.{field} must be non-empty")
+    sdk_entry_id = applicability["sdk_entry_id"]
+    if sdk_entry_id is not None and not _id(sdk_entry_id):
+        raise ContractError(f"{location}.sdk_entry_id must be null or non-empty")
+    effect_scope = applicability["capability_effect_scope"]
+    if not isinstance(effect_scope, list) or not effect_scope or not all(_id(item) for item in effect_scope):
+        raise ContractError(f"{location}.capability_effect_scope must be a non-empty string array")
+
+
+def _validate_experience_provenance(value: Any, location: str) -> None:
+    provenance = _closed_experience_object(value, _EXPERIENCE_PROVENANCE_FIELDS, location)
+    for field in ("summary_ref", "stage_artifacts_ref"):
+        if not _id(provenance[field]):
+            raise ContractError(f"{location}.{field} must be non-empty")
+    for field in ("closure_hash", "evidence_digest_hash"):
+        if not is_content_hash(provenance[field]):
+            raise ContractError(f"{location}.{field} must be a content hash")
+
+
+def _empty_design_experience_snapshot() -> dict[str, Any]:
+    return {
+        "artifact_type": "experience_snapshot",
+        "format_version": "experimental-1",
+        "snapshot_id": "empty-design-experience",
+        "recipient_class": "design",
+        "applicability": {},
+        "records": [],
+    }
+
+
+def _validate_design_experience_snapshot(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    snapshot = _empty_design_experience_snapshot() if value is None else _json_value(value, "design_experience_snapshot")
+    snapshot = _closed_experience_object(snapshot, _EXPERIENCE_SNAPSHOT_FIELDS, "design_experience_snapshot")
+    if snapshot["artifact_type"] != "experience_snapshot":
+        raise ContractError("design_experience_snapshot artifact_type is invalid")
+    if snapshot["format_version"] != "experimental-1":
+        raise ContractError("design_experience_snapshot format_version is invalid")
+    if not _id(snapshot["snapshot_id"]):
+        raise ContractError("design_experience_snapshot snapshot_id must be non-empty")
+    if snapshot["recipient_class"] != "design":
+        raise ContractError("design_experience_snapshot recipient_class must be design")
+    records = snapshot["records"]
+    if not isinstance(records, list):
+        raise ContractError("design_experience_snapshot records must be an array")
+    _validate_experience_applicability(
+        snapshot["applicability"],
+        "design_experience_snapshot.applicability",
+        allow_empty=not records,
+    )
+    applicability_bytes = canonical_bytes(snapshot["applicability"])
+    for index, record_value in enumerate(records):
+        record = _closed_experience_object(record_value, _EXPERIENCE_RECORD_FIELDS, f"design_experience_snapshot.records[{index}]")
+        for field in ("record_id", "version"):
+            if not _id(record[field]):
+                raise ContractError(f"design_experience_snapshot.records[{index}].{field} must be non-empty")
+        record_ref = _closed_experience_object(
+            record["record_ref"],
+            _EXPERIENCE_RECORD_REF_FIELDS,
+            f"design_experience_snapshot.records[{index}].record_ref",
+        )
+        if not _id(record_ref["path"]):
+            raise ContractError(f"design_experience_snapshot.records[{index}].record_ref.path must be non-empty")
+        if not is_content_hash(record_ref["content_hash"]):
+            raise ContractError(
+                f"design_experience_snapshot.records[{index}].record_ref.content_hash must be a content hash"
+            )
+        projection = _closed_experience_object(
+            record["projection"],
+            _EXPERIENCE_PROJECTION_FIELDS,
+            f"design_experience_snapshot.records[{index}].projection",
+        )
+        if not _id(projection["experience_id"]):
+            raise ContractError(
+                f"design_experience_snapshot.records[{index}].projection.experience_id must be non-empty"
+            )
+        if not _id(projection["guidance"]):
+            raise ContractError(
+                f"design_experience_snapshot.records[{index}].projection.guidance must be non-empty"
+            )
+        _validate_experience_applicability(
+            projection["applicability"],
+            f"design_experience_snapshot.records[{index}].projection.applicability",
+            allow_empty=False,
+        )
+        _validate_experience_provenance(
+            projection["provenance"],
+            f"design_experience_snapshot.records[{index}].projection.provenance",
+        )
+        if canonical_bytes(projection["applicability"]) != applicability_bytes:
+            raise ContractError(
+                f"design_experience_snapshot.records[{index}].projection applicability does not match the snapshot"
+            )
+    private_issue = _experience_private_issue(snapshot, "design_experience_snapshot")
+    if private_issue is not None:
+        raise ContractError(private_issue)
+    return copy.deepcopy(snapshot)
 
 
 def _closed(value: Any, fields: set[str], location: str, issues: list[dict[str, str]]) -> dict[str, Any] | None:
@@ -273,7 +459,7 @@ def check_capability_design(design: Mapping[str, Any]) -> list[dict[str, str]]:
     fields = {
         "artifact_type", "schema_version", "run_id", "robot_public_projection",
         "granularity_profile", "task_requirement_ids", "capabilities",
-        "unsupported_requirement_ids", "blocking_requirement_ids",
+        "unsupported_requirement_ids", "blocking_requirement_ids", "design_experience_snapshot_hash",
     }
     artifact = _closed(design, fields, "capability_design", issues)
     if artifact is None:
@@ -282,6 +468,8 @@ def check_capability_design(design: Mapping[str, Any]) -> list[dict[str, str]]:
         issues.append(_issues("ARTIFACT_IDENTITY", "capability design identity is invalid"))
     if not _id(artifact.get("run_id")):
         issues.append(_issues("RUN_ID", "capability design run_id is invalid"))
+    if not is_content_hash(artifact.get("design_experience_snapshot_hash")):
+        issues.append(_issues("EXPERIENCE_SNAPSHOT_HASH", "design experience snapshot hash is invalid"))
     projection = artifact.get("robot_public_projection")
     if not isinstance(projection, dict):
         issues.append(_issues("ROBOT_PROJECTION", "robot public projection must be an object"))
@@ -381,14 +569,19 @@ class Stage1Runner:
         robot_public_projection: Mapping[str, Any],
         task_descriptions: list[Mapping[str, Any]],
         g2_profile: Mapping[str, Any],
+        *,
+        design_experience_snapshot: Mapping[str, Any] | None = None,
     ) -> Stage1Result:
         if not _id(run_id):
             raise ContractError("run_id must be a non-empty string")
+        experience_snapshot = _validate_design_experience_snapshot(design_experience_snapshot)
+        experience_snapshot_hash = content_hash(canonical_bytes(experience_snapshot))
         initial_inputs = {
             "run_id": run_id,
             "robot_public_projection": copy.deepcopy(dict(robot_public_projection)),
             "task_descriptions": copy.deepcopy([dict(task) for task in task_descriptions]),
             "g2_profile": copy.deepcopy(dict(g2_profile)),
+            "design_experience_snapshot": experience_snapshot,
         }
         private_input_issues = _private_issues(initial_inputs)
         if private_input_issues:
@@ -399,10 +592,11 @@ class Stage1Runner:
         diagnostics: list[dict[str, str]] = []
         working: dict[str, Any] | None = None
         for attempt in range(self.config.max_correction_calls + 1):
-            inputs: dict[str, Any] = dict(initial_inputs)
+            inputs: dict[str, Any] = copy.deepcopy(initial_inputs)
             if working is not None:
-                inputs["working_design"] = working
-                inputs["diagnostics"] = diagnostics
+                inputs["working_design"] = copy.deepcopy(working)
+                inputs["diagnostics"] = copy.deepcopy(diagnostics)
+            input_hash = content_hash(canonical_bytes(inputs))
             output = self.generator.generate_json("stage1", STAGE1_PROMPT, inputs)
             allowed_output_fields = {
                 "capabilities", "unsupported_requirement_ids", "blocking_requirement_ids",
@@ -421,6 +615,7 @@ class Stage1Runner:
                 "robot_public_projection": initial_inputs["robot_public_projection"],
                 "granularity_profile": profile,
                 "task_requirement_ids": requirement_ids,
+                "design_experience_snapshot_hash": experience_snapshot_hash,
                 "capabilities": output.get("capabilities"),
                 "unsupported_requirement_ids": output.get("unsupported_requirement_ids"),
                 "blocking_requirement_ids": output.get("blocking_requirement_ids"),
@@ -429,7 +624,7 @@ class Stage1Runner:
             calls.append({
                 "call": attempt + 1,
                 "stage": "stage1",
-                "input_hash": content_hash(canonical_bytes(inputs)),
+                "input_hash": input_hash,
                 "output_hash": content_hash(canonical_bytes(output)),
                 "diagnostics": copy.deepcopy(diagnostics),
             })
