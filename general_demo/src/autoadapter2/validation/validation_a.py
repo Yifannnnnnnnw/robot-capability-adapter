@@ -363,6 +363,10 @@ def _manifest_issues(
 
 
 _CANONICAL_DEFAULT_FACTORY_MEMBER = "unitree_go_msg_dds__LowCmd_"
+_GO2_LOW_CMD_CONSTRUCTOR_MESSAGE = (
+    "LowCmd_ is an IDL type for ChannelPublisher; command creation must use "
+    "_sdk.unitree_go_msg_dds__LowCmd_()."
+)
 
 
 def _profile_issues(profile: ValidationAProfile, contracts: Mapping[str, Mapping[str, Any]]) -> list[dict[str, str]]:
@@ -903,6 +907,12 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
     def visit_Call(self, node: ast.Call) -> None:
         sdk_root, member = _sdk_path_root(node.func, self.sdk_names)
         origin = self._call_origin(node.func)
+        sdk_path = _sdk_member_path(node.func, self.sdk_names)
+        if (
+            sdk_path == ("LowCmd_",)
+            and {"LowCmd_", _CANONICAL_DEFAULT_FACTORY_MEMBER}.issubset(self.members)
+        ):
+            self._add_issue("SDK_FACADE", _GO2_LOW_CMD_CONSTRUCTOR_MESSAGE)
         if origin in {"sdk-root", "sdk-local", "sdk-derived-method"}:
             self.approved_sdk_use = True
         elif origin == "local-function" and isinstance(node.func, ast.Name) and node.func.id in self.sdk_forwarded_targets:

@@ -37,7 +37,7 @@ from autoadapter2.validation import (
     bind_candidate_to_suite,
 )
 from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
-from autoadapter2.validation.repair import _candidate_owned_error
+from autoadapter2.validation.repair import _candidate_owned_error, _sanitized_diagnostics
 from autoadapter2.validation.validation_a import (
     _capability_contracts,
     _descriptor_match,
@@ -82,7 +82,7 @@ def _send_command(pub, cmd, _sdk):
 
 def capability_reach_joint_target(arg_target, *, _sdk):
     pub = _sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)
-    cmd = _sdk.LowCmd_()
+    cmd = _sdk.unitree_go_msg_dds__LowCmd_()
     config = _get_config()
     time.sleep(0.0)
     if arg_target > config[0]:
@@ -171,7 +171,14 @@ HELPER_PROFILE = ValidationAProfile(
     fixture_probes=copy.deepcopy(PROFILE.fixture_probes),
 )
 GO2_PROFILE = ValidationAProfile(
-    sdk_facade_members={"reach-joint-target": ("LowCmd_", "CRC", "publisher")},
+    sdk_facade_members={
+        "reach-joint-target": (
+            "LowCmd_",
+            "CRC",
+            "publisher",
+            "unitree_go_msg_dds__LowCmd_",
+        )
+    },
     fixture_probes={
         "reach-joint-target": {
             "inputs": {
@@ -183,7 +190,7 @@ GO2_PROFILE = ValidationAProfile(
 GO2_IMPLEMENTATION_BUNDLE = copy.deepcopy(IMPLEMENTATION_BUNDLE)
 GO2_IMPLEMENTATION_BUNDLE["sdk_implementation_projection"] = {
     "sdk_entry_id": "unitree-sdk2",
-    "members": ["LowCmd_", "CRC", "publisher"],
+    "members": ["LowCmd_", "CRC", "publisher", "unitree_go_msg_dds__LowCmd_"],
 }
 GO2_BUNDLE_HASH = content_hash(canonical_bytes(GO2_IMPLEMENTATION_BUNDLE))
 
@@ -224,7 +231,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
 def _go2_source() -> str:
     assignments = "\n".join(f"    cmd.motor_cmd[{index}].q = arg_q[{index}]" for index in range(20))
     return f'''def capability_reach_joint_target(arg_q, *, _sdk):
-    cmd = _sdk.LowCmd_()
+    cmd = _sdk.unitree_go_msg_dds__LowCmd_()
     crc = _sdk.CRC()
 {assignments}
     cmd.crc = crc.Crc(cmd)
@@ -1034,18 +1041,87 @@ def test_validation_a_accepts_real_shaped_go2_construction_and_sdk_derived_mutat
     assert alias_result.status == "PASS"
 
 
+def test_validation_a_rejects_go2_lowcmd_constructor_and_preserves_type_argument_use() -> None:
+    bad_source = _go2_source().replace(
+        "    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
+        "    cmd = _sdk.LowCmd_()",
+        1,
+    )
+    result, _source_text, _stage2 = _go2_a_result(bad_source)
+    expected_message = (
+        "LowCmd_ is an IDL type for ChannelPublisher; command creation must use "
+        "_sdk.unitree_go_msg_dds__LowCmd_()."
+    )
+    matching = [
+        item for item in result.diagnostics
+        if item["code"] == "SDK_FACADE" and item["message"] == expected_message
+    ]
+    assert result.status == "FAIL"
+    assert matching == [{"code": "SDK_FACADE", "message": expected_message}]
+    assert _sanitized_diagnostics(result, None) == [{
+        "gate": "A",
+        "code": "SDK_FACADE",
+        "candidate_error": expected_message,
+    }]
+
+    allowed_source = '''def capability_reach_joint_target(arg_target, *, _sdk):
+    pub = _sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)
+    cmd = _sdk.unitree_go_msg_dds__LowCmd_()
+    pub.Write(cmd)
+    return {"reported_status": "PASS"}
+'''
+    assert _go2_helper_provenance_issues(allowed_source) == []
+
+
+def test_validation_a_lowcmd_constructor_rule_is_bound_to_canonical_go2_facade() -> None:
+    source = '''def capability_reach_joint_target(arg_target, *, _sdk):
+    cmd = _sdk.LowCmd_()
+    _sdk.publisher.Write(cmd)
+    return {"reported_status": "PASS"}
+'''
+    profile = ValidationAProfile(
+        sdk_facade_members={"reach-joint-target": ("LowCmd_", "publisher")},
+        fixture_probes={"reach-joint-target": {}},
+    )
+    issues = _static_issues(
+        ast.parse(source, filename="capability.py"),
+        {
+            "reach-joint-target": {
+                "function_name": "capability_reach_joint_target",
+                "parameters": [{"parameter": "arg_target"}],
+                "outputs": [{"name": "reported_status"}],
+            },
+        },
+        profile,
+    )
+    assert not any(
+        item["message"].startswith("LowCmd_ is an IDL type") for item in issues
+    )
+
+
 def test_validation_a_rejects_sdk_mutation_unapproved_roots_and_input_calls() -> None:
     cases = {
-        "sdk_mutation": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    _sdk.LowCmd_ = arg_q\n    cmd = _sdk.LowCmd_()"),
-        "unapproved_root": _go2_source().replace("_sdk.LowCmd_()", "_sdk.Hidden()"),
+        "sdk_mutation": _go2_source().replace(
+            "    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
+            "    _sdk.LowCmd_ = arg_q\n    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
+        ),
+        "unapproved_root": _go2_source().replace(
+            "_sdk.unitree_go_msg_dds__LowCmd_()", "_sdk.Hidden()"
+        ),
         "input_call": _go2_source().replace("_sdk.publisher.Write(cmd)", "arg_q.execute()"),
         "endpoint_alias_mutation": _go2_source().replace(
             "    _sdk.publisher.Write(cmd)",
             "    endpoint = _sdk.publisher\n    endpoint.some_internal_field = arg_q[0]\n    _sdk.publisher.Write(cmd)",
         ),
         "global": _go2_source().replace("def capability_reach_joint_target(arg_q, *, _sdk):", "def capability_reach_joint_target(arg_q, *, _sdk):\n    global external"),
-        "nested_function": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    def nested():\n        return 1\n    cmd = _sdk.LowCmd_()"),
-        "nested_class": _go2_source().replace("    cmd = _sdk.LowCmd_()", "    class Nested:\n        pass\n    cmd = _sdk.LowCmd_()"),
+        "nested_function": _go2_source().replace(
+            "    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
+            "    def nested():\n        return 1\n    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
+        ),
+        "nested_class": _go2_source().replace(
+            "    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
+            "    class Nested:\n        pass\n    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
+        ),
     }
     for name, source in cases.items():
         result, _source_text, _stage2 = _go2_a_result(source)
@@ -1126,7 +1202,7 @@ def _transition_to_pose(cmd_msg, sdk_crc):
     _write_command(cmd_msg, local_sdk_crc)
 
 def capability_reach_joint_target(arg_target, *, _sdk):
-    cmd_msg = _sdk.LowCmd_()
+    cmd_msg = _sdk.unitree_go_msg_dds__LowCmd_()
     sdk_crc = _sdk.CRC
     _transition_to_pose(cmd_msg, sdk_crc)
     return {"reported_status": "PASS"}
@@ -1162,7 +1238,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     pub = _create_publisher(_sdk)
     state_sub = _create_subscriber(_sdk)
     _read_state(state_sub)
-    cmd = _sdk.LowCmd_()
+    cmd = _sdk.unitree_go_msg_dds__LowCmd_()
     _write_command(pub, cmd)
     return {"reported_status": "PASS"}
 '''
@@ -1201,7 +1277,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     sub = _sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)
     low_state, ordinary = _read_state(sub)
     q = low_state.motor_state[0].q
-    cmd = _sdk.LowCmd_()
+    cmd = _sdk.unitree_go_msg_dds__LowCmd_()
     cmd.motor_cmd[0].q = q + ordinary + arg_target
     pub = _sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)
     pub.Write(cmd)
@@ -1234,7 +1310,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     value.Delete()
 
 def capability_reach_joint_target(arg_target, *, _sdk):
-    cmd = _sdk.LowCmd_()
+    cmd = _sdk.unitree_go_msg_dds__LowCmd_()
     _delete(cmd)
     return {"reported_status": "PASS"}
 '''
@@ -1244,7 +1320,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
 
 def test_validation_a_does_not_add_sdk_injection_for_an_independent_static_failure() -> None:
     source = '''def capability_reach_joint_target(arg_target, *, _sdk):
-    cmd = _sdk.LowCmd_()
+    cmd = _sdk.unitree_go_msg_dds__LowCmd_()
     eval("1")
     return {"reported_status": "PASS"}
 '''
