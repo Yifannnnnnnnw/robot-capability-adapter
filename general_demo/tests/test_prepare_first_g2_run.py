@@ -357,6 +357,7 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     facade_members = set(validation_template["facade"]["members"])
     permitted_types = set(bundle["sdk_implementation_projection"]["permitted_types"])
     assert facade_members == {
+        "ChannelFactoryInitialize",
         "ChannelPublisher",
         "ChannelSubscriber",
         "LowCmd_",
@@ -402,6 +403,7 @@ def test_go2_template_adds_only_the_injected_crc_helper_to_public_sdk_surface() 
     permitted_types = set(template["implementation_projection"]["sdk_implementation_projection"]["permitted_types"])
 
     assert template["validation_a_template"]["facade"]["members"] == [
+        "ChannelFactoryInitialize",
         "ChannelPublisher",
         "ChannelSubscriber",
         "LowCmd_",
@@ -410,6 +412,7 @@ def test_go2_template_adds_only_the_injected_crc_helper_to_public_sdk_surface() 
         "CRC",
     ]
     assert facade_members == {
+        "ChannelFactoryInitialize",
         "ChannelPublisher",
         "ChannelSubscriber",
         "LowCmd_",

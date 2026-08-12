@@ -53,6 +53,8 @@ DEFAULT_CANDIDATE_TIMEOUT_S = 8.0
 DEFAULT_CANDIDATE_CANCEL_GRACE_S = 0.1
 DEFAULT_FLOOR_Z_M = 0.0
 DEFAULT_STANDING_HEIGHT_M = 0.34
+GO2_DDS_DOMAIN = 1
+GO2_DDS_INTERFACE = "lo"
 
 # These are the immutable upstream and task/video bindings selected by the
 # production Go2 factory.  The manifest and runtime lock are deliberately not
@@ -84,6 +86,23 @@ class Go2SessionError(RuntimeError):
 
 class Go2SDKError(Go2SessionError):
     """The narrow SDK2 façade could not construct or use a real endpoint."""
+
+
+def _bound_channel_factory_initialize(
+    channel_factory_initialize: Callable[..., Any],
+    *,
+    domain: Any = GO2_DDS_DOMAIN,
+    interface: Any = GO2_DDS_INTERFACE,
+) -> Callable[[], Any]:
+    """Bind the SDK initializer to the one approved Go2 DDS route."""
+
+    if domain != GO2_DDS_DOMAIN or interface != GO2_DDS_INTERFACE:
+        raise Go2SDKError("Go2 DDS ChannelFactoryInitialize route must be domain 1 on lo")
+
+    def initialize() -> Any:
+        return channel_factory_initialize(GO2_DDS_DOMAIN, GO2_DDS_INTERFACE)
+
+    return initialize
 
 
 def _experimental_arm64_enabled() -> bool:
@@ -331,6 +350,7 @@ class _UnitreeGo2SDKConnection:
             raise Go2SDKError("invalid SDK2 endpoint lifecycle")
         try:
             from unitree_sdk2py.core.channel import (
+                ChannelFactoryInitialize,
                 ChannelPublisher,
                 ChannelSubscriber,
             )
@@ -362,6 +382,7 @@ class _UnitreeGo2SDKConnection:
         self._sport_audit_subscriber = sport_audit_subscriber
         self._lowcmd_type = LowCmd_
         self._binding = SimpleNamespace(
+            ChannelFactoryInitialize=_bound_channel_factory_initialize(ChannelFactoryInitialize),
             ChannelPublisher=ChannelPublisher,
             ChannelSubscriber=ChannelSubscriber,
             LowCmd_=LowCmd_,
@@ -433,7 +454,12 @@ def _candidate_binding_from_config(config: Mapping[str, Any]) -> tuple[object, C
             from unitree_sdk2py.utils.crc import CRC
         except ImportError as exc:  # pragma: no cover - Linux production route
             raise Go2SDKError("pinned worker SDK2 symbols are unavailable") from exc
-        ChannelFactoryInitialize(int(config.get("domain", 1)), str(config.get("interface", "lo")))
+        configured_factory_initialize = _bound_channel_factory_initialize(
+            ChannelFactoryInitialize,
+            domain=config.get("domain", GO2_DDS_DOMAIN),
+            interface=config.get("interface", GO2_DDS_INTERFACE),
+        )
+        configured_factory_initialize()
         publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
         lowstate = ChannelSubscriber("rt/lowstate", LowState_)
         sport = ChannelSubscriber("rt/sportmodestate", SportModeState_)
@@ -449,6 +475,7 @@ def _candidate_binding_from_config(config: Mapping[str, Any]) -> tuple[object, C
                     close()
             raise
         binding = SimpleNamespace(
+            ChannelFactoryInitialize=configured_factory_initialize,
             ChannelPublisher=ChannelPublisher,
             ChannelSubscriber=ChannelSubscriber,
             LowCmd_=LowCmd_,

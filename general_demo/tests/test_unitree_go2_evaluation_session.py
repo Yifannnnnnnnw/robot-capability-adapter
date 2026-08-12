@@ -32,6 +32,7 @@ from autoadapter2.integrations.unitree_go2.bridge import (
 from autoadapter2.integrations.unitree_go2.session import (
     Go2SessionError,
     UnitreeGo2EvaluationRobotSession,
+    _candidate_binding_from_config,
     _UnitreeGo2SDKConnection,
     create_evaluation_robot_session,
     initial_body_yaw_frame,
@@ -1118,7 +1119,7 @@ def test_factory_uses_selected_translation_runtime_lock_for_first_g2_runner(
     assert calls["runtime_lock_sha256"] == runtime_lock_sha256
 
 
-def test_real_shaped_session_initializes_channel_factory_exactly_once(monkeypatch) -> None:
+def test_real_shaped_session_binds_channel_factory_to_domain_one_loopback(monkeypatch) -> None:
     factory_calls: list[tuple[int, str]] = []
 
     class Endpoint:
@@ -1199,7 +1200,17 @@ def test_real_shaped_session_initializes_channel_factory_exactly_once(monkeypatc
     )
     session.start()
     assert factory_calls == [(1, "lo")]
-    assert not hasattr(session.sdk, "ChannelFactoryInitialize")
+    assert callable(session.sdk.ChannelFactoryInitialize)
+    session.sdk.ChannelFactoryInitialize()
+    assert factory_calls == [(1, "lo"), (1, "lo")]
+    candidate_binding, close_candidate_binding = _candidate_binding_from_config(
+        {"kind": "unitree_sdk2", "domain": 1, "interface": "lo"}
+    )
+    candidate_binding.ChannelFactoryInitialize()
+    assert factory_calls == [(1, "lo"), (1, "lo"), (1, "lo"), (1, "lo")]
+    close_candidate_binding()
+    with pytest.raises(Go2SessionError, match="domain 1 on lo"):
+        _candidate_binding_from_config({"kind": "unitree_sdk2", "domain": 0, "interface": "lo"})
     assert callable(sdk._lowstate_audit_subscriber.init_args[0])
     assert sdk._lowstate_audit_subscriber.init_args[1] == 10
     assert sdk._sport_audit_subscriber.init_args[1] == 10
