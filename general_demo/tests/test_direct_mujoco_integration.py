@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,9 @@ from autoadapter2.integrations.direct_mujoco import (
     DirectMuJoCoEvaluationRobotSession,
     DirectMuJoCoFacade,
     DirectMuJoCoLibraryConfig,
+    DirectMuJoCoTaskConfig,
 )
+from autoadapter2.validation import HarnessInvocation
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -190,6 +193,98 @@ def test_direct_mujoco_1_0_migration_asset_smoke(tmp_path: Path, monkeypatch: py
         session.close()
     with pytest.raises(Exception, match="closed"):
         session.sdk.state()
+
+
+def test_task_config_binds_declared_scene_frames_and_measurements(tmp_path: Path) -> None:
+    record = _migrated_record(tmp_path)
+    _write_mini_mjcf(tmp_path)
+    config = DirectMuJoCoLibraryConfig.from_record(record, asset_root=tmp_path)
+    task = DirectMuJoCoTaskConfig.from_value(
+        {
+            "task_id": "mini-reach",
+            "scene_entrypoint": "migrated_1_0/robot.xml",
+            "frames": {"body_names": ["base"], "site_names": [], "sensor_names": []},
+            "parameters": {"target_offset_m": [0.0, 0.0, 0.0]},
+            "measurements": [
+                {
+                    "metric": "joint_position",
+                    "path": "joint_positions.hinge_joint",
+                }
+            ],
+        }
+    )
+    bound = config.bind_task(task)
+    assert bound.entrypoint == "migrated_1_0/robot.xml"
+    assert bound.body_names == ("base",)
+    assert bound.measurement_declarations[-1]["metric"] == "joint_position"
+    assert bound.bound_task == task
+
+
+def test_validation_evidence_records_physical_direct_route_without_no_action_verification(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("mujoco")
+    monkeypatch.setenv("MUJOCO_GL", "egl")
+    record = _migrated_record(tmp_path)
+    _write_mini_mjcf(tmp_path)
+
+    invocation = HarnessInvocation(
+        capability_id="move",
+        case_id="case-1",
+        inputs={},
+        initial_state={},
+        repetition=1,
+        measurement={
+            "measurement_id": "hinge-position",
+            "entity": "hinge_joint",
+            "unit": "rad",
+            "frame": "joint",
+            "path": "joint_positions.hinge_joint",
+        },
+        metric="joint_position",
+        threshold={"comparator": "<=", "value": 1.0},
+        dwell_s=0.1,
+        timeout_s=0.2,
+        aggregation="ALL",
+        guard_ids=("direct-route-verified", "finite-required-state"),
+        run_snapshot_hash="snapshot",
+        candidate_source_hash="candidate",
+        suite_hash="suite",
+        execution_attempt=1,
+        criterion_id="move-criterion",
+    )
+
+    class Candidate:
+        def _invoke(self, _capability_id, _arguments, sdk):
+            sdk.state()
+            sdk.send_action({"hinge_motor": 0.8})
+            sdk.step(0.1)
+            return {"status": "OK"}
+
+    class NoActionCandidate:
+        def _invoke(self, _capability_id, _arguments, sdk):
+            sdk.state()
+            sdk.step(0.1)
+            return {"status": "OK"}
+
+    session = DirectMuJoCoEvaluationRobotSession(record, asset_root=tmp_path)
+    try:
+        session.invoke(Candidate(), "move", {})
+        evidence = session.validation_evidence(invocation)
+        assert evidence.sdk_route_verified is True
+        assert evidence.route_evidence["evidence_scope"] == "DIRECT_MUJOCO_EXPERIMENTAL"
+        assert evidence.route_evidence["sdk_grounded"] is False
+        assert evidence.criterion_samples["move-criterion"]
+        assert all(math.isfinite(sample.value) for sample in evidence.samples)
+
+        session.reset()
+        session.invoke(NoActionCandidate(), "move", {})
+        no_action = session.validation_evidence(invocation)
+        assert no_action.sdk_route_verified is False
+        assert no_action.route_evidence["accepted_command_count"] == 0
+    finally:
+        session.close()
 
 
 def test_model_default_reset_and_free_camera_use_shared_mujoco_forms(

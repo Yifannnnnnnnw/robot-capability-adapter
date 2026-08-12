@@ -1,0 +1,38 @@
+{
+  "artifact_type": "direct_mujoco_task_adapter",
+  "schema_version": "1.0.0",
+  "robot_configuration_id": "franka_panda",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "tasks": [
+    {
+      "task_id": "F01",
+      "robot_configuration_id": "franka_panda",
+      "scene_entrypoint": "assets/mjcf/franka_panda/pushbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 101
+      },
+      "parameters": {
+        "target_object_id": "cube_red",
+        "target_offset_m": [0.0, 0.0, 0.05]
+      },
+      "frames": {
+        "body_names": ["cube_red"],
+        "site_names": [],
+        "sensor_names": []
+      },
+      "measurements": [
+        {
+          "task_id": "F01",
+          "metric": "ee_target_error_m",
+          "operator": "distance",
+          "observation_path": "bodies.hand.position",
+          "reference": {
+            "observation_path": "bodies.cube_red.position"
+          },
+          "reference_offset_path": "parameters.target_offset_m"
+        }
+      ]
+    }
+  ]
+}

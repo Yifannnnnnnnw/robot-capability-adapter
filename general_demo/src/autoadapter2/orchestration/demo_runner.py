@@ -930,7 +930,11 @@ class GeneralDemoRunner:
         route: EvaluationRoute,
     ) -> tuple[dict[str, Any], set[str]]:
         scope = self._robot_session.evidence_scope
-        if scope not in {"TEST_FIXTURE_ONLY", "SDK_GROUNDED_SIMULATION"}:
+        if scope not in {
+            "TEST_FIXTURE_ONLY",
+            "SDK_GROUNDED_SIMULATION",
+            "DIRECT_MUJOCO_EXPERIMENTAL",
+        }:
             raise ContractError("robot session evidence_scope is invalid")
         readiness_hash = _prefixed_hash(gate.readiness_report_sha256, "readiness report hash")
         profile_hash = _prefixed_hash(gate.readiness_profile_sha256, "readiness profile hash")

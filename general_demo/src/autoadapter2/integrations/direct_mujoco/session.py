@@ -16,12 +16,15 @@ from numbers import Real
 from pathlib import Path
 from typing import Any
 
+from ...demo import ValidationEvidence
 from ...evaluation import FrozenVideoProfile, RGBFrame
-from ...foundation.errors import ContractError
 from ..session_support import MuJoCoFrameCapture
+from ...validation import HarnessInvocation, MeasurementSample
 from .config import (
     DirectMuJoCoConfigurationError,
     DirectMuJoCoLibraryConfig,
+    DirectMuJoCoTaskConfig,
+    load_direct_mujoco_task_config,
     load_morphology_record,
 )
 
@@ -50,6 +53,90 @@ def _copy_value(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [_copy_value(item) for item in value]
     return value
+
+
+_MISSING = object()
+
+
+def _path_tokens(path: Any, label: str) -> tuple[str | int, ...]:
+    if isinstance(path, (list, tuple)) and not isinstance(path, (str, bytes, bytearray)):
+        tokens: list[str | int] = []
+        for index, item in enumerate(path):
+            if isinstance(item, bool) or not isinstance(item, (str, int)):
+                raise DirectMuJoCoSessionError(f"{label}[{index}] must be text or an integer")
+            if isinstance(item, str) and not item.strip():
+                raise DirectMuJoCoSessionError(f"{label}[{index}] must be non-empty text")
+            tokens.append(item.strip() if isinstance(item, str) else item)
+        return tuple(tokens)
+    if not isinstance(path, str) or not path.strip():
+        raise DirectMuJoCoSessionError(f"{label} must be a non-empty observation path")
+    tokens = []
+    for component in path.strip().removeprefix("$.").split("."):
+        if not component:
+            raise DirectMuJoCoSessionError(f"{label} contains an empty path component")
+        remainder = component
+        while remainder:
+            if "[" not in remainder:
+                tokens.append(remainder)
+                break
+            prefix, remainder = remainder.split("[", 1)
+            if prefix:
+                tokens.append(prefix)
+            if "]" not in remainder:
+                raise DirectMuJoCoSessionError(f"{label} contains an unterminated index")
+            index, remainder = remainder.split("]", 1)
+            if not index.isdigit():
+                raise DirectMuJoCoSessionError(f"{label} contains a non-integer index")
+            tokens.append(int(index))
+    return tuple(tokens)
+
+
+def _path_value(root: Any, path: Any, label: str) -> Any:
+    current = root
+    for token in _path_tokens(path, label):
+        if isinstance(token, int):
+            if isinstance(current, (str, bytes, bytearray)) or not isinstance(current, Sequence):
+                return _MISSING
+            if token >= len(current):
+                return _MISSING
+            current = current[token]
+        elif isinstance(current, Mapping):
+            if token not in current:
+                return _MISSING
+            current = current[token]
+        else:
+            return _MISSING
+    return current
+
+
+def _find_named_value(value: Any, name: str) -> Any:
+    if isinstance(value, Mapping):
+        if name in value:
+            return value[name]
+        for nested in value.values():
+            found = _find_named_value(nested, name)
+            if found is not _MISSING:
+                return found
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for nested in value:
+            found = _find_named_value(nested, name)
+            if found is not _MISSING:
+                return found
+    return _MISSING
+
+
+def _finite_scalar(value: Any, label: str) -> float:
+    if isinstance(value, bool):
+        return 1.0 if value else 0.0
+    if isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(float(value)):
+        return float(value)
+    raise DirectMuJoCoSessionError(f"{label} must resolve to a finite scalar")
+
+
+def _finite_vector(value: Any, label: str) -> list[float]:
+    if isinstance(value, (str, bytes, bytearray)) or not isinstance(value, Sequence):
+        raise DirectMuJoCoSessionError(f"{label} must resolve to a numeric vector")
+    return [_finite_scalar(item, f"{label}[{index}]") for index, item in enumerate(value)]
 
 
 class DirectMuJoCoFacade:
@@ -97,7 +184,7 @@ class DirectMuJoCoFacade:
 
     def state(self) -> dict[str, Any]:
         owner = object.__getattribute__(self, "_session")
-        return owner._observation()
+        return owner._candidate_observation()
 
     def get_observation(self) -> dict[str, Any]:
         return self.state()
@@ -106,16 +193,17 @@ class DirectMuJoCoFacade:
         """Advance physics and return the resulting public observation."""
 
         owner = object.__getattribute__(self, "_session")
-        return owner._step(seconds, steps=steps)
+        observation = owner._step(seconds, steps=steps)
+        owner._candidate_observation_reads += 1
+        return observation
 
 
 class DirectMuJoCoEvaluationRobotSession:
     """Evaluation-session-shaped owner for one direct MuJoCo experiment.
 
     The lifecycle and ``sdk``/``invoke`` methods are compatible with the
-    narrow evaluation-session boundary.  Formal Validation evidence is
-    intentionally unsupported: this route is explicitly experimental and
-    returns no READY/PASS state.
+    narrow evaluation-session boundary.  Evidence remains explicitly
+    experimental and never asserts an SDK-grounded route.
     """
 
     evidence_scope = "DIRECT_MUJOCO_EXPERIMENTAL"
@@ -128,6 +216,8 @@ class DirectMuJoCoEvaluationRobotSession:
         video_profile: FrozenVideoProfile | None = None,
         mujoco_module: Any | None = None,
         renderer_factory: Callable[[Any, int, int], Any] | None = None,
+        task_config: Mapping[str, Any] | str | Path | DirectMuJoCoTaskConfig | None = None,
+        task_id: str | None = None,
     ) -> None:
         if isinstance(morphology_record, DirectMuJoCoLibraryConfig):
             config = morphology_record
@@ -141,6 +231,15 @@ class DirectMuJoCoEvaluationRobotSession:
                     "asset_root is required when morphology_record is an in-memory record"
                 )
             config = DirectMuJoCoLibraryConfig.from_record(record, asset_root=resolved_asset_root)
+        if task_config is None:
+            selected_task = config.bound_task
+        elif isinstance(task_config, DirectMuJoCoTaskConfig):
+            selected_task = task_config
+        else:
+            selected_task = load_direct_mujoco_task_config(task_config, task_id=task_id)
+        if selected_task is not None and config.bound_task != selected_task:
+            config = config.bind_task(selected_task)
+        self.task_config = selected_task
         self.config = config
         self._mj = mujoco_module if mujoco_module is not None else self._import_mujoco()
         required_version = config.mujoco_version
@@ -165,6 +264,10 @@ class DirectMuJoCoEvaluationRobotSession:
         self._closed = False
         self._accepted_action_count = 0
         self._physics_step_count = 0
+        self._candidate_invocation_count = 0
+        self._candidate_observation_reads = 0
+        self._truth_trace: list[tuple[float, dict[str, Any]]] = []
+        self._last_invocation: dict[str, Any] | None = None
         self._joint_ids: dict[str, int] = {}
         self._actuator_ids: dict[str, int] = {}
         self._body_ids: dict[str, int] = {}
@@ -349,9 +452,74 @@ class DirectMuJoCoEvaluationRobotSession:
             qvel = self.config.reset_qvel or (0.0,) * int(self._model.nv)
             for index, value in enumerate(qvel):
                 self._data.qvel[index] = value
+        if self.task_config is not None:
+            task_state = dict(self.task_config.initial_state)
+            task_state.setdefault("scene_entrypoint", self.task_config.scene_entrypoint)
+            task_state.setdefault("reset", dict(self.task_config.reset))
+            self._apply_initial_state(task_state)
+        self._apply_initial_state(initial_state)
         self._mj.mj_forward(self._model, self._data)
         self._accepted_action_count = 0
         self._physics_step_count = 0
+        self._candidate_invocation_count = 0
+        self._candidate_observation_reads = 0
+        self._truth_trace = []
+        self._last_invocation = None
+        self._record_truth_sample()
+
+    def _apply_initial_state(self, initial_state: Mapping[str, Any] | None) -> None:
+        """Apply only Framework-owned, declarative task reset values.
+
+        Public task state is intentionally ignored.  A task may provide a
+        complete ``qpos``/``qvel`` reset (directly or under ``reset``), and a
+        scene entrypoint assertion; arbitrary fields never write MuJoCo state.
+        """
+
+        if not initial_state:
+            return
+        declared_scene = initial_state.get("scene_entrypoint")
+        nested_task = initial_state.get("task_instance", initial_state.get("task"))
+        if declared_scene is None and isinstance(nested_task, Mapping):
+            declared_scene = nested_task.get("scene_entrypoint")
+        if declared_scene is not None:
+            if not isinstance(declared_scene, str) or not declared_scene.strip():
+                raise DirectMuJoCoSessionError("initial_state.scene_entrypoint must be non-empty text")
+            allowed_scenes = {self.config.entrypoint}
+            if self.task_config is not None:
+                allowed_scenes.add(self.task_config.scene_entrypoint)
+            if declared_scene not in allowed_scenes:
+                raise DirectMuJoCoSessionError(
+                    "task scene_entrypoint does not match the session's resolved MJCF scene"
+                )
+        reset = initial_state.get("reset")
+        if reset is None and isinstance(nested_task, Mapping):
+            reset = nested_task.get("reset")
+        if reset is None:
+            reset = initial_state.get("mujoco")
+        if reset is None:
+            reset = initial_state
+        if not isinstance(reset, Mapping):
+            raise DirectMuJoCoSessionError("initial_state.reset must be an object when supplied")
+        qpos = reset.get("qpos")
+        qvel = reset.get("qvel")
+        if qpos is None and qvel is None:
+            return
+        if qpos is None:
+            raise DirectMuJoCoSessionError("initial_state.reset.qpos is required with qvel")
+        qpos_values = _vector(qpos, "initial_state.reset.qpos")
+        if len(qpos_values) != int(self._model.nq):
+            raise DirectMuJoCoSessionError("initial_state.reset.qpos length must equal loaded MJCF nq")
+        qvel_values = (
+            _vector(qvel, "initial_state.reset.qvel")
+            if qvel is not None
+            else [0.0] * int(self._model.nv)
+        )
+        if len(qvel_values) != int(self._model.nv):
+            raise DirectMuJoCoSessionError("initial_state.reset.qvel length must equal loaded MJCF nv")
+        for index, value in enumerate(qpos_values):
+            self._data.qpos[index] = value
+        for index, value in enumerate(qvel_values):
+            self._data.qvel[index] = value
 
     def _send_action(self, action: Mapping[str, Real]) -> dict[str, Any]:
         self._require_open()
@@ -393,6 +561,7 @@ class DirectMuJoCoEvaluationRobotSession:
         for _ in range(count):
             self._mj.mj_step(self._model, self._data)
             self._physics_step_count += 1
+            self._record_truth_sample()
         if self._capture is not None:
             self._capture.on_step(float(self._data.time))
         return self._observation()
@@ -460,6 +629,13 @@ class DirectMuJoCoEvaluationRobotSession:
             "sites": sites,
             "sensors": sensors,
         }
+
+    def _record_truth_sample(self) -> None:
+        self._truth_trace.append((float(self._data.time), copy.deepcopy(self._observation())))
+
+    def _candidate_observation(self) -> dict[str, Any]:
+        self._candidate_observation_reads += 1
+        return self._observation()
 
     def state(self) -> dict[str, Any]:
         return self._observation()
@@ -552,18 +728,508 @@ class DirectMuJoCoEvaluationRobotSession:
             raise DirectMuJoCoSessionError("candidate does not expose the Framework invocation boundary")
         if not isinstance(arguments, Mapping):
             raise DirectMuJoCoSessionError("capability arguments must be a mapping")
-        result = invoke(capability_id, copy.deepcopy(dict(arguments)), self._facade)
-        if not isinstance(result, Mapping):
-            raise DirectMuJoCoSessionError("candidate result must be a mapping")
-        return copy.deepcopy(dict(result))
+        start_time = self.simulation_time_s
+        start_actions = self._accepted_action_count
+        start_steps = self._physics_step_count
+        start_reads = self._candidate_observation_reads
+        trace_start = max(0, len(self._truth_trace) - 1)
+        self._candidate_invocation_count += 1
+        try:
+            result = invoke(capability_id, copy.deepcopy(dict(arguments)), self._facade)
+            if not isinstance(result, Mapping):
+                raise DirectMuJoCoSessionError("candidate result must be a mapping")
+            return copy.deepcopy(dict(result))
+        finally:
+            self._last_invocation = {
+                "capability_id": capability_id,
+                "start_time_s": start_time,
+                "end_time_s": self.simulation_time_s,
+                "start_actions": start_actions,
+                "end_actions": self._accepted_action_count,
+                "start_steps": start_steps,
+                "end_steps": self._physics_step_count,
+                "start_reads": start_reads,
+                "end_reads": self._candidate_observation_reads,
+                "trace_start": trace_start,
+            }
 
-    def validation_evidence(self, _invocation: Any) -> Any:
-        raise DirectMuJoCoSessionError(
-            "formal Validation evidence is not implemented for DIRECT_MUJOCO_EXPERIMENTAL"
+    def _direct_route_detail(self) -> tuple[dict[str, Any], bool]:
+        invocation = self._last_invocation
+        observed = invocation is not None
+        if invocation is None:
+            start_time = float(self._truth_trace[0][0]) if self._truth_trace else self.simulation_time_s
+            end_time = self.simulation_time_s
+            accepted = 0
+            candidate_steps = 0
+            state_reads = 0
+        else:
+            start_time = float(invocation["start_time_s"])
+            end_time = float(invocation["end_time_s"])
+            accepted = int(invocation["end_actions"]) - int(invocation["start_actions"])
+            candidate_steps = int(invocation["end_steps"]) - int(invocation["start_steps"])
+            state_reads = int(invocation["end_reads"]) - int(invocation["start_reads"])
+        time_progressed = end_time > start_time + 1e-12
+        route_verified = bool(
+            observed
+            and accepted > 0
+            and candidate_steps > 0
+            and time_progressed
+            and state_reads > 0
+        )
+        detail = {
+            "mode": "DIRECT_MUJOCO_EXPERIMENTAL",
+            "status": "EXPERIMENTAL",
+            "evidence_scope": self.evidence_scope,
+            "robot_model_id": self.robot_model_id,
+            "robot_configuration_id": self.robot_configuration_id,
+            "candidate_invocation_observed": observed,
+            "accepted_command_count": accepted,
+            "candidate_physics_steps": candidate_steps,
+            "physics_steps": candidate_steps,
+            "simulation_time_progressed": time_progressed,
+            "state_route_observed": state_reads > 0,
+            "physics_progress": candidate_steps > 0 and time_progressed,
+            "direct_route_verified": route_verified,
+            "verified": route_verified,
+            "sdk_grounded": False,
+        }
+        return detail, route_verified
+
+    @staticmethod
+    def _criterion_list(invocation: HarnessInvocation) -> tuple[dict[str, Any], ...]:
+        raw = tuple(invocation.criteria)
+        if not raw:
+            criterion_id = invocation.criterion_id or "direct-mujoco-criterion"
+            return ({
+                "criterion_id": criterion_id,
+                "metric": invocation.metric,
+                "measurement": copy.deepcopy(dict(invocation.measurement)),
+                "dwell_s": invocation.dwell_s,
+                "timeout_s": invocation.timeout_s,
+            },)
+        criteria: list[dict[str, Any]] = []
+        for index, criterion in enumerate(raw):
+            if not isinstance(criterion, Mapping):
+                raise DirectMuJoCoSessionError(f"validation criterion {index} must be an object")
+            item = copy.deepcopy(dict(criterion))
+            item.setdefault("criterion_id", invocation.criterion_id)
+            item.setdefault("metric", invocation.metric)
+            item.setdefault("measurement", copy.deepcopy(dict(invocation.measurement)))
+            item.setdefault("dwell_s", invocation.dwell_s)
+            item.setdefault("timeout_s", invocation.timeout_s)
+            if not isinstance(item.get("criterion_id"), str) or not item["criterion_id"].strip():
+                raise DirectMuJoCoSessionError(f"validation criterion {index} has no criterion_id")
+            if not isinstance(item.get("metric"), str) or not item["metric"].strip():
+                raise DirectMuJoCoSessionError(f"validation criterion {index} has no metric")
+            criteria.append(item)
+        return tuple(criteria)
+
+    @staticmethod
+    def _context_value(
+        path: Any,
+        inputs: Mapping[str, Any],
+        initial_state: Mapping[str, Any],
+        label: str,
+    ) -> Any:
+        context = {"inputs": inputs, "initial_state": initial_state}
+        value = _path_value(context, path, label)
+        if value is not _MISSING:
+            return value
+        for root in (inputs, initial_state):
+            value = _path_value(root, path, label)
+            if value is not _MISSING:
+                return value
+        return _MISSING
+
+    def _task_input_context(self, inputs: Mapping[str, Any]) -> dict[str, Any]:
+        context: dict[str, Any] = {}
+        if self.task_config is not None:
+            context["parameters"] = copy.deepcopy(dict(self.task_config.parameters))
+            context["task_id"] = self.task_config.task_id
+        context.update(copy.deepcopy(dict(inputs)))
+        return context
+
+    @staticmethod
+    def _observation_operand(observation: Mapping[str, Any], source: Any, label: str) -> Any:
+        if isinstance(source, Mapping):
+            return DirectMuJoCoEvaluationRobotSession._metric_spec_value(
+                observation, source, {}, {}, label
+            )
+        value = _path_value(observation, source, label)
+        if value is _MISSING and isinstance(source, str):
+            value = _find_named_value(observation, source)
+        return value
+
+    @classmethod
+    def _reference_value(
+        cls,
+        observation: Mapping[str, Any],
+        spec: Mapping[str, Any],
+        inputs: Mapping[str, Any],
+        initial_state: Mapping[str, Any],
+        label: str,
+    ) -> Any:
+        for key in ("target_observation_path", "reference_observation_path"):
+            if key in spec:
+                value = cls._observation_operand(observation, spec[key], f"{label}.{key}")
+                if value is not _MISSING:
+                    return value
+                raise DirectMuJoCoSessionError(f"{label}.{key} is unavailable")
+        for key in ("target_path", "reference_path", "input_path", "target_input_path"):
+            if key in spec:
+                value = cls._context_value(spec[key], inputs, initial_state, f"{label}.{key}")
+                if value is not _MISSING:
+                    return value
+                raise DirectMuJoCoSessionError(f"{label}.{key} does not resolve in task inputs")
+        for key in ("target", "reference"):
+            if key in spec:
+                reference = spec[key]
+                if isinstance(reference, Mapping):
+                    if "observation_path" in reference:
+                        value = cls._observation_operand(
+                            observation,
+                            reference["observation_path"],
+                            f"{label}.{key}.observation_path",
+                        )
+                        if value is not _MISSING:
+                            return value
+                        raise DirectMuJoCoSessionError(
+                            f"{label}.{key}.observation_path is unavailable"
+                        )
+                    if "input_path" in reference or "path" in reference:
+                        path = reference.get("input_path", reference.get("path"))
+                        value = cls._context_value(path, inputs, initial_state, f"{label}.{key}")
+                        if value is not _MISSING:
+                            return value
+                    if "value" in reference:
+                        return reference["value"]
+                else:
+                    return reference
+        raise DirectMuJoCoSessionError(f"{label} requires a declared target or reference")
+
+    @classmethod
+    def _metric_spec_value(
+        cls,
+        observation: Mapping[str, Any],
+        spec: Mapping[str, Any],
+        inputs: Mapping[str, Any],
+        initial_state: Mapping[str, Any],
+        label: str,
+    ) -> Any:
+        operation = str(spec.get("operator", spec.get("op", "path"))).strip().lower()
+        source = next(
+            (spec[key] for key in ("observation_path", "path", "source_path", "source") if key in spec),
+            None,
+        )
+        if source is None and "metric" in spec:
+            source = spec["metric"]
+        if operation in {"path", "read", "value"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no declared observation path")
+            value = cls._observation_operand(observation, source, label)
+            if value is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} observation path is unavailable")
+            if "index" in spec:
+                index = spec["index"]
+                if isinstance(index, bool) or not isinstance(index, int):
+                    raise DirectMuJoCoSessionError(f"{label}.index must be an integer")
+                values = _finite_vector(value, label)
+                if index < 0 or index >= len(values):
+                    raise DirectMuJoCoSessionError(f"{label}.index is outside the observation vector")
+                return values[index]
+            return value
+        if operation == "component":
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no component source")
+            index = spec.get("index")
+            if isinstance(index, bool) or not isinstance(index, int):
+                raise DirectMuJoCoSessionError(f"{label}.index must be an integer")
+            values = _finite_vector(cls._observation_operand(observation, source, label), label)
+            if index < 0 or index >= len(values):
+                raise DirectMuJoCoSessionError(f"{label}.index is outside the observation vector")
+            return values[index]
+        if operation == "norm":
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no norm source")
+            return math.sqrt(sum(value * value for value in _finite_vector(
+                cls._observation_operand(observation, source, label), label
+            )))
+        if operation in {"distance", "difference", "delta", "absolute_difference"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no difference source")
+            left = cls._observation_operand(observation, source, label)
+            right = cls._reference_value(observation, spec, inputs, initial_state, label)
+            offset_path = next(
+                (
+                    spec[key]
+                    for key in ("reference_offset_path", "target_offset_path", "offset_path")
+                    if key in spec
+                ),
+                _MISSING,
+            )
+            if offset_path is not _MISSING:
+                offset = cls._context_value(offset_path, inputs, initial_state, f"{label}.offset")
+                if offset is _MISSING:
+                    raise DirectMuJoCoSessionError(f"{label}.offset does not resolve in task inputs")
+                if isinstance(right, Sequence) and not isinstance(right, (str, bytes, bytearray)):
+                    right_values = _finite_vector(right, f"{label}.reference")
+                    offset_values = _finite_vector(offset, f"{label}.offset")
+                    if len(right_values) != len(offset_values):
+                        raise DirectMuJoCoSessionError(f"{label} reference and offset dimensions differ")
+                    right = [right_value + offset_value for right_value, offset_value in zip(right_values, offset_values, strict=True)]
+                else:
+                    right = _finite_scalar(right, f"{label}.reference") + _finite_scalar(offset, f"{label}.offset")
+            if isinstance(left, Sequence) and not isinstance(left, (str, bytes, bytearray)):
+                left_values = _finite_vector(left, f"{label}.source")
+                right_values = _finite_vector(right, f"{label}.reference")
+                if len(left_values) != len(right_values):
+                    raise DirectMuJoCoSessionError(f"{label} source and reference dimensions differ")
+                deltas = [left_value - right_value for left_value, right_value in zip(left_values, right_values, strict=True)]
+                if operation == "difference" and spec.get("absolute") is False:
+                    return deltas[0] if len(deltas) == 1 else deltas
+                return math.sqrt(sum(delta * delta for delta in deltas))
+            delta = _finite_scalar(left, f"{label}.source") - _finite_scalar(right, f"{label}.reference")
+            return abs(delta) if operation != "difference" or spec.get("absolute", True) else delta
+        if operation in {"sum", "total"}:
+            if "paths" in spec:
+                values = [
+                    cls._observation_operand(observation, path, f"{label}.paths[{index}]")
+                    for index, path in enumerate(spec["paths"])
+                ]
+            elif source is not None:
+                values = cls._observation_operand(observation, source, label)
+            else:
+                raise DirectMuJoCoSessionError(f"{label} has no sum source")
+            return sum(_finite_vector(values, label))
+        if operation == "count":
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no count source")
+            value = cls._observation_operand(observation, source, label)
+            if isinstance(value, Mapping) or (isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray))):
+                return float(len(value))
+            raise DirectMuJoCoSessionError(f"{label} count source is not a collection")
+        if operation in {"any", "all"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no boolean source")
+            value = cls._observation_operand(observation, source, label)
+            values = value.values() if isinstance(value, Mapping) else value
+            if isinstance(values, (str, bytes, bytearray)) or not isinstance(values, Sequence):
+                raise DirectMuJoCoSessionError(f"{label} boolean source is not a collection")
+            return bool(any(values) if operation == "any" else all(values))
+        raise DirectMuJoCoSessionError(f"{label} uses unsupported measurement operator {operation!r}")
+
+    def _measurement_spec(
+        self,
+        criterion: Mapping[str, Any],
+        *,
+        metric: str,
+        measurement: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        for candidate in (measurement, criterion):
+            if isinstance(candidate, Mapping) and any(
+                key in candidate
+                for key in ("path", "observation_path", "source_path", "operator", "op")
+            ):
+                return candidate
+        measurement_id = measurement.get("measurement_id")
+        for declaration in self.config.measurement_declarations:
+            names = {
+                declaration.get("metric"),
+                declaration.get("name"),
+                declaration.get("measurement_id"),
+            }
+            if metric in names or measurement_id in names:
+                return declaration
+        return {"path": metric}
+
+    def _trace_window(
+        self,
+        invocation: HarnessInvocation,
+        criteria: Sequence[Mapping[str, Any]],
+    ) -> tuple[tuple[tuple[float, dict[str, Any]], ...], float]:
+        if not self._truth_trace:
+            raise DirectMuJoCoSessionError("direct MuJoCo truth trace is empty")
+        last = self._last_invocation
+        start_index = int(last["trace_start"]) if last is not None else 0
+        available = self._truth_trace[start_index:]
+        if not available:
+            available = self._truth_trace[-1:]
+        start_time = float(last["start_time_s"]) if last is not None else float(available[0][0])
+        end_time = float(last["end_time_s"]) if last is not None else float(available[-1][0])
+        dwell = max(
+            [_finite(float(item.get("dwell_s", invocation.dwell_s)), "validation dwell") for item in criteria]
+            or [_finite(invocation.dwell_s, "validation dwell")]
+        )
+        timeout = min(
+            [_finite(float(item.get("timeout_s", invocation.timeout_s)), "validation timeout") for item in criteria]
+            or [_finite(invocation.timeout_s, "validation timeout")]
+        )
+        if dwell < 0 or timeout < 0:
+            raise DirectMuJoCoSessionError("validation dwell/timeout must be non-negative")
+        window_start = max(start_time, end_time - min(max(dwell, 0.0), timeout))
+        selected = [item for item in available if item[0] >= window_start - 1e-12 and item[0] <= end_time + 1e-12]
+        preceding = [item for item in available if item[0] <= window_start + 1e-12]
+        if preceding and (not selected or selected[0] is not preceding[-1]):
+            selected.insert(0, preceding[-1])
+        if not selected:
+            selected = [available[-1]]
+        origin = float(selected[0][0])
+        return tuple(selected), origin
+
+    def _guard_results(
+        self,
+        invocation: HarnessInvocation,
+        route: Mapping[str, Any],
+        finite: bool,
+    ) -> dict[str, bool]:
+        direct_verified = route.get("direct_route_verified") is True
+        base = {
+            "direct-route-verified": direct_verified,
+            "sdk-route-verified": False,
+            "trusted-external-verdict": direct_verified,
+            "finite-required-state": finite,
+            "finite-physical-state": finite,
+            "scene-entrypoint-bound": self._model_path.is_file(),
+            "candidate-invocation-observed": route.get("candidate_invocation_observed") is True,
+            "accepted-command-observed": bool(route.get("accepted_command_count", 0) > 0),
+            "physics-progress-observed": route.get("physics_progress") is True,
+            "state-route-observed": route.get("state_route_observed") is True,
+        }
+        for guard_id in invocation.guard_ids:
+            if guard_id in base:
+                continue
+            lowered = guard_id.lower()
+            if "finite" in lowered or "state" in lowered and "route" not in lowered:
+                base[guard_id] = finite
+            elif "scene" in lowered or "entrypoint" in lowered:
+                base[guard_id] = base["scene-entrypoint-bound"]
+            elif "route" in lowered or "command" in lowered or "action" in lowered:
+                base[guard_id] = direct_verified
+            elif "trusted" in lowered or "external" in lowered:
+                base[guard_id] = direct_verified
+            else:
+                base[guard_id] = False
+        return base
+
+    def validation_evidence(self, invocation: HarnessInvocation) -> ValidationEvidence:
+        self._require_open()
+        if not isinstance(invocation, HarnessInvocation):
+            raise DirectMuJoCoSessionError("validation evidence requires a typed Harness invocation")
+        criteria = self._criterion_list(invocation)
+        selected, origin = self._trace_window(invocation, criteria)
+        route, _direct_verified = self._direct_route_detail()
+        inputs = self._task_input_context(
+            invocation.inputs if isinstance(invocation.inputs, Mapping) else {}
+        )
+        initial_state = invocation.initial_state if isinstance(invocation.initial_state, Mapping) else {}
+        samples_by_criterion: dict[str, tuple[MeasurementSample, ...]] = {}
+        finite = True
+        for criterion in criteria:
+            criterion_id = str(criterion["criterion_id"])
+            metric = str(criterion["metric"])
+            measurement = criterion.get("measurement")
+            if not isinstance(measurement, Mapping):
+                raise DirectMuJoCoSessionError(f"criterion {criterion_id} measurement declaration is missing")
+            spec = self._measurement_spec(criterion, metric=metric, measurement=measurement)
+            samples: list[MeasurementSample] = []
+            for time_s, observation in selected:
+                value = self._metric_spec_value(
+                    observation,
+                    spec,
+                    inputs,
+                    initial_state,
+                    f"criterion {criterion_id} metric {metric!r}",
+                )
+                scalar = _finite_scalar(value, f"criterion {criterion_id} metric {metric!r}")
+                samples.append(MeasurementSample(max(0.0, float(time_s) - origin), scalar))
+            if not samples:
+                raise DirectMuJoCoSessionError(f"criterion {criterion_id} has no physical samples")
+            samples_by_criterion[criterion_id] = tuple(samples)
+            finite = finite and all(
+                math.isfinite(sample.time_s) and sample.time_s >= 0 and math.isfinite(sample.value)
+                for sample in samples
+            )
+        if not finite:
+            raise DirectMuJoCoSessionError("direct MuJoCo criterion measurements are not finite")
+        primary = samples_by_criterion[criteria[0]["criterion_id"]]
+        elapsed_s = max(0.0, float(selected[-1][0]) - origin)
+        return ValidationEvidence(
+            samples=primary,
+            elapsed_s=elapsed_s,
+            guard_results=self._guard_results(invocation, route, finite),
+            sdk_route_verified=_direct_verified,
+            route_evidence=route,
+            criterion_samples=samples_by_criterion,
         )
 
-    def demo_evidence(self, _task_id: str) -> Mapping[str, Any]:
-        return self._observation()
+    def demo_evidence(self, task_id: str) -> Mapping[str, Any]:
+        self._require_open()
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise DirectMuJoCoSessionError("task_id must be non-empty text")
+        if self.task_config is not None and self.task_config.task_id != task_id:
+            raise DirectMuJoCoSessionError(
+                f"task_id {task_id!r} does not match the bound task {self.task_config.task_id!r}"
+            )
+        declarations = []
+        for declaration in self.config.measurement_declarations:
+            task_ids = declaration.get("task_ids", declaration.get("task_id"))
+            if task_ids is None:
+                declarations.append(declaration)
+            elif isinstance(task_ids, str) and task_ids == task_id:
+                declarations.append(declaration)
+            elif isinstance(task_ids, Sequence) and not isinstance(task_ids, (str, bytes, bytearray)) and task_id in task_ids:
+                declarations.append(declaration)
+        if not declarations:
+            raise DirectMuJoCoSessionError(
+                f"no declared direct MuJoCo Demo metric mapping exists for task {task_id!r}"
+            )
+        route, _direct_verified = self._direct_route_detail()
+        trace = tuple(self._truth_trace)
+        if not trace:
+            raise DirectMuJoCoSessionError("direct MuJoCo Demo truth trace is empty")
+        origin = float(trace[0][0])
+        samples: list[dict[str, Any]] = []
+        latest: dict[str, float] = {}
+        task_inputs = self._task_input_context({})
+        for time_s, observation in trace:
+            metrics: dict[str, float] = {}
+            for declaration in declarations:
+                metric = declaration.get("metric", declaration.get("name"))
+                if not isinstance(metric, str) or not metric.strip():
+                    raise DirectMuJoCoSessionError("direct MuJoCo Demo measurement has no metric name")
+                value = self._metric_spec_value(
+                    observation,
+                    declaration,
+                    task_inputs,
+                    {},
+                    f"Demo task {task_id} metric {metric!r}",
+                )
+                metrics[metric] = _finite_scalar(value, f"Demo task {task_id} metric {metric!r}")
+            latest.update(metrics)
+            samples.append({
+                "time_s": max(0.0, float(time_s) - origin),
+                "phase": "motion" if float(time_s) > origin else "reset",
+                "metrics": metrics,
+            })
+        return {
+            "mode": "DIRECT_MUJOCO_EXPERIMENTAL",
+            "status": "EXPERIMENTAL",
+            "task_id": task_id,
+            "samples": samples,
+            "metrics": latest,
+            "elapsed_s": max(0.0, float(trace[-1][0]) - origin),
+            "duration_s": max(0.0, float(trace[-1][0]) - origin),
+            "guard_results": {
+                "direct-route-verified": route["direct_route_verified"],
+                "trusted-external-verdict": route["direct_route_verified"],
+                "finite-required-state": True,
+                "scene-entrypoint-bound": self._model_path.is_file(),
+            },
+            "route_evidence": route,
+            "direct_route_verified": route["direct_route_verified"],
+            "accepted_action_count": route["accepted_command_count"],
+            "physics_step_count": route["physics_steps"],
+        }
 
     def close(self) -> None:
         if self._closed:
@@ -599,6 +1265,8 @@ def create_direct_mujoco_session(
     *,
     asset_root: str | Path | None = None,
     video_profile: FrozenVideoProfile | None = None,
+    task_config: Mapping[str, Any] | str | Path | DirectMuJoCoTaskConfig | None = None,
+    task_id: str | None = None,
 ) -> DirectMuJoCoEvaluationRobotSession:
     """Create a session from a morphology Library record, not a robot name."""
 
@@ -606,6 +1274,8 @@ def create_direct_mujoco_session(
         morphology_record,
         asset_root=asset_root,
         video_profile=video_profile,
+        task_config=task_config,
+        task_id=task_id,
     )
 
 

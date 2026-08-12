@@ -32,7 +32,11 @@ from ..validation import (
 
 CriterionEvaluator = Callable[[Mapping[str, Any], Mapping[str, Any]], bool]
 VideoEncoderFactory = Callable[[str, str], VideoEncoder]
-_EVIDENCE_SCOPES = {"TEST_FIXTURE_ONLY", "SDK_GROUNDED_SIMULATION"}
+_EVIDENCE_SCOPES = {
+    "TEST_FIXTURE_ONLY",
+    "SDK_GROUNDED_SIMULATION",
+    "DIRECT_MUJOCO_EXPERIMENTAL",
+}
 
 
 def _text(value: Any, label: str) -> str:
@@ -261,8 +265,11 @@ def _route_evidence(
     for key, expected_value in expected.items():
         if key in detail and detail[key] != expected_value:
             raise ContractError(f"route_evidence {key} does not match the EvaluationRoute")
+    is_direct = detail.get("evidence_scope") == "DIRECT_MUJOCO_EXPERIMENTAL"
     if "verified" in detail and detail["verified"] is not evidence.sdk_route_verified:
         raise ContractError("route_evidence verified status is inconsistent")
+    if is_direct and detail.get("sdk_grounded") is not False:
+        raise ContractError("DIRECT_MUJOCO_EXPERIMENTAL route evidence must not claim SDK grounding")
     if evidence.sdk_route_verified:
         required_detail = {
             "candidate_invocation_observed",
@@ -272,7 +279,7 @@ def _route_evidence(
             "verified",
         }
         if not required_detail.issubset(detail):
-            raise ContractError("verified SDK route evidence lacks required route detail")
+            raise ContractError("verified route evidence lacks required route detail")
         if any(
             not isinstance(detail[key], bool) or detail[key] is not True
             for key in (
@@ -282,7 +289,7 @@ def _route_evidence(
                 "verified",
             )
         ):
-            raise ContractError("verified SDK route evidence has an invalid route status")
+            raise ContractError("verified route evidence has an invalid route status")
         accepted_command_count = detail["accepted_command_count"]
         if (
             isinstance(accepted_command_count, bool)
@@ -290,12 +297,12 @@ def _route_evidence(
             or not math.isfinite(accepted_command_count)
             or accepted_command_count <= 0
         ):
-            raise ContractError("verified SDK route evidence has no accepted command")
+            raise ContractError("verified route evidence has no accepted command")
     if "physics_progress" in detail:
         if not isinstance(detail["physics_progress"], bool):
             raise ContractError("route_evidence physics_progress must be boolean")
         if evidence.sdk_route_verified and not detail["physics_progress"]:
-            raise ContractError("verified SDK route evidence lacks physics progress")
+            raise ContractError("verified route evidence lacks physics progress")
     for key in ("goal_writes_observed", "physics_steps"):
         if key in detail:
             value = detail[key]
@@ -307,7 +314,7 @@ def _route_evidence(
             ):
                 raise ContractError(f"route_evidence {key} is invalid")
             if evidence.sdk_route_verified and value <= 0:
-                raise ContractError(f"verified SDK route evidence has no {key}")
+                raise ContractError(f"verified route evidence has no {key}")
     if evidence.sdk_route_verified and (any(
         str(detail.get(key, "")).startswith("so-arm101")
         for key in ("robot_model_id", "robot_configuration_id")

@@ -19,14 +19,17 @@ from ..integrations.direct_mujoco import (
     DirectMuJoCoDevelopmentSandbox,
     DirectMuJoCoEvaluationRobotSession,
     DirectMuJoCoLibraryConfig,
+    DirectMuJoCoTaskConfig,
     create_direct_mujoco_development_sandbox,
     create_direct_mujoco_session,
+    load_direct_mujoco_task_config,
     load_morphology_record,
 )
 from ..libraries.no_sdk_direct_mujoco import (
     NoSDKDirectMuJoCoRecord,
     load_no_sdk_direct_mujoco_record,
 )
+from ..validation import HarnessInvocation, MeasurementSample
 
 
 DIRECT_MUJOCO_EXPERIMENTAL = "DIRECT_MUJOCO_EXPERIMENTAL"
@@ -203,6 +206,51 @@ class DirectMuJoCoExperiment:
             probe=self.development_sandbox.run(source, probe),
         )
 
+    def run_validation(
+        self,
+        candidate: Any,
+        invocation: HarnessInvocation,
+    ) -> dict[str, Any]:
+        """Run the closest direct full entry through typed Validation evidence."""
+
+        if not isinstance(invocation, HarnessInvocation):
+            raise DirectMuJoCoRunResolutionError("run_validation requires a typed HarnessInvocation")
+        execution_id = f"direct-validation-{invocation.case_id}-{invocation.repetition}"
+        self.session.reset(
+            phase="VALIDATION_B",
+            execution_id=execution_id,
+            initial_state=invocation.initial_state,
+        )
+        candidate_result = self.session.invoke(
+            candidate,
+            invocation.capability_id,
+            invocation.inputs,
+        )
+        evidence = self.session.validation_evidence(invocation)
+
+        def sample_record(sample: MeasurementSample) -> dict[str, float]:
+            return {"time_s": sample.time_s, "value": sample.value}
+
+        grouped = {
+            criterion_id: [sample_record(sample) for sample in samples]
+            for criterion_id, samples in (evidence.criterion_samples or {}).items()
+        }
+        return self._result_envelope(
+            candidate_result=candidate_result,
+            validation_evidence={
+                "samples": [sample_record(sample) for sample in evidence.samples],
+                "criterion_samples": grouped,
+                "elapsed_s": evidence.elapsed_s,
+                "guard_results": dict(evidence.guard_results),
+                "sdk_route_verified": evidence.sdk_route_verified,
+                "route_evidence": dict(evidence.route_evidence or {}),
+            },
+            next_blocker=(
+                "DIRECT_MUJOCO_EXPERIMENTAL evidence is physically observed but not SDK-grounded; "
+                "GeneralDemo formal admission still needs its approved run-pack inputs and SDK route."
+            ),
+        )
+
     def close(self) -> None:
         self.session.close()
 
@@ -221,6 +269,8 @@ def create_direct_mujoco_experiment(
     *,
     session_factory: SessionFactory | None = None,
     sandbox_factory: SandboxFactory | None = None,
+    task_config: Mapping[str, Any] | str | Path | DirectMuJoCoTaskConfig | None = None,
+    task_id: str | None = None,
 ) -> DirectMuJoCoExperiment:
     """Resolve a Library record and construct its shared experimental handles."""
 
@@ -230,11 +280,26 @@ def create_direct_mujoco_experiment(
         repo_root,
         asset_cache_root,
     )
+    if task_config is None:
+        selected_task = package.config.bound_task
+    elif isinstance(task_config, DirectMuJoCoTaskConfig):
+        selected_task = task_config
+    else:
+        selected_task = load_direct_mujoco_task_config(task_config, task_id=task_id)
+    bound_config = (
+        package.config.bind_task(selected_task)
+        if selected_task is not None
+        else package.config
+    )
     session_builder = session_factory or create_direct_mujoco_session
     sandbox_builder = sandbox_factory or create_direct_mujoco_development_sandbox
-    session = session_builder(package.config)
+    session = (
+        create_direct_mujoco_session(bound_config, task_config=selected_task)
+        if session_factory is None
+        else session_builder(bound_config)
+    )
     try:
-        sandbox = sandbox_builder(package.config, session_factory=session_builder)
+        sandbox = sandbox_builder(bound_config, session_factory=session_builder)
     except Exception:
         session.close()
         raise

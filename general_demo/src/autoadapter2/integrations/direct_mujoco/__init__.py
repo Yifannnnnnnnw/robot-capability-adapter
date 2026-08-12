@@ -3,6 +3,8 @@
 from .config import (
     DirectMuJoCoConfigurationError,
     DirectMuJoCoLibraryConfig,
+    DirectMuJoCoTaskConfig,
+    load_direct_mujoco_task_config,
     load_morphology_record,
 )
 from .sandbox import (
@@ -34,6 +36,7 @@ __all__ = [
     "DirectMuJoCoEvaluationRobotSession",
     "DirectMuJoCoFacade",
     "DirectMuJoCoLibraryConfig",
+    "DirectMuJoCoTaskConfig",
     "DirectMuJoCoSandbox",
     "DirectMuJoCoSession",
     "DirectMuJoCoSessionError",
@@ -43,5 +46,6 @@ __all__ = [
     "create_direct_mujoco_session",
     "direct_mujoco_development_probe_callback",
     "get_direct_mujoco_experimental_contract",
+    "load_direct_mujoco_task_config",
     "load_morphology_record",
 ]

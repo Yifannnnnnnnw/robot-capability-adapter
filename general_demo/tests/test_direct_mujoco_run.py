@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 import shutil
+from types import SimpleNamespace
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from autoadapter2.integrations.direct_mujoco import DirectMuJoCoLibraryConfig
+from autoadapter2.evaluation import FrozenVideoProfile
 from autoadapter2.libraries.no_sdk_direct_mujoco import (
     NO_SDK_DIRECT_MUJOCO_RECORD_RELATIVE_PATH,
     NoSDKDirectMuJoCoRecordError,
@@ -19,6 +21,7 @@ from autoadapter2.orchestration.direct_mujoco_run import (
     create_direct_mujoco_experiment,
     resolve_morphology_record,
 )
+from autoadapter2.orchestration.demo_runner import GeneralDemoRunner
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -237,3 +240,41 @@ def test_shared_sdk_sentinel_rejects_non_experimental_or_nonempty_surfaces(
 
     with pytest.raises(NoSDKDirectMuJoCoRecordError):
         resolve_morphology_record("synthetic-alpha", "1.0.0", tmp_path, cache_root)
+
+
+def test_general_demo_summary_keeps_direct_route_experimental_and_not_sdk_grounded() -> None:
+    runner = object.__new__(GeneralDemoRunner)
+
+    class DirectSession:
+        evidence_scope = DIRECT_MUJOCO_EXPERIMENTAL
+
+    runner._robot_session = DirectSession()
+    runner._video_profile = FrozenVideoProfile(
+        profile_id="direct-test",
+        profile_version="1.0.0",
+        camera="free",
+        view="test",
+        fps=10,
+        width=16,
+        height=12,
+        container="raw",
+        codec="rgb",
+    )
+    digest = "a" * 64
+    plan = SimpleNamespace(run_id="direct-run")
+    gate = SimpleNamespace(readiness_report_sha256=digest, readiness_profile_sha256=digest)
+    manifest = {
+        "robot_model_id": "model",
+        "robot_configuration_id": "configuration",
+    }
+    route = SimpleNamespace(
+        run_id="direct-run",
+        integration_manifest_hash=f"sha256:{'b' * 64}",
+        sdk_entry_hash=f"sha256:{'c' * 64}",
+        runtime_hash=f"sha256:{'d' * 64}",
+        simulation_profile_hash=f"sha256:{'e' * 64}",
+    )
+
+    summary, _parents = runner._base_summary(plan, gate, manifest, route)
+    assert summary["execution_scope"] == DIRECT_MUJOCO_EXPERIMENTAL
+    assert summary["sdk_grounded_simulation_claim"] is False
