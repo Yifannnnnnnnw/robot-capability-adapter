@@ -102,6 +102,7 @@ _DEFAULT_VIDEO_PROFILE = FrozenVideoProfile(
 )
 _SAFE_COMPONENT = re.compile(r"[^A-Za-z0-9._-]+")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_MAX_MATERIALIZED_VECTOR_DIMENSION = 64
 _CLOSURE_ELIGIBLE_STATUSES = frozenset({
     "COMPLETE",
     "FAILED",
@@ -1045,6 +1046,18 @@ def _template_from_mapping(
     )
 
 
+def _bounded_vector_dimension(raw: str) -> int | None:
+    if not re.fullmatch(r"[0-9]+", raw):
+        return None
+    try:
+        dimension = int(raw)
+    except ValueError:
+        return None
+    if not 0 < dimension <= _MAX_MATERIALIZED_VECTOR_DIMENSION:
+        return None
+    return dimension
+
+
 def _probe_value(field: Mapping[str, Any], policy: Mapping[str, Any]) -> Any:
     field_type = field.get("type")
     shape = field.get("shape")
@@ -1059,6 +1072,14 @@ def _probe_value(field: Mapping[str, Any], policy: Mapping[str, Any]) -> Any:
         if not length_text.isdigit() or int(length_text) <= 0:
             raise ContractError("sealed Stage 1 vector shape is invalid")
         return [copy.deepcopy(policy["number"])] * int(length_text)
+    if isinstance(field_type, str) and isinstance(shape, str):
+        type_match = re.fullmatch(r"vector([1-9][0-9]?)", field_type)
+        shape_match = re.fullmatch(r"\(([1-9][0-9]*),\)", shape)
+        if type_match is not None and shape_match is not None:
+            expected = _bounded_vector_dimension(type_match.group(1))
+            length = _bounded_vector_dimension(shape_match.group(1))
+            if expected is not None and length == expected:
+                return [copy.deepcopy(policy["number"])] * length
     if field_type == "float" and shape == "scalar":
         return copy.deepcopy(policy["number"])
     if field_type in {"number", "integer", "boolean", "string", "object", "array"} and shape == "scalar":

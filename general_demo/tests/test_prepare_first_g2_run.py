@@ -906,6 +906,103 @@ def test_validation_a_run_pack_materializes_fixed_length_array_probe(tmp_path: P
     assert seal == seal_before
 
 
+def _run_pack_vector_fixture(field_type: str, shape: str) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    template = json.loads(
+        (PROJECT_ROOT / "general_demo/config/first_g2_demo/robots/unitree-go2.json")
+        .read_text(encoding="utf-8")
+    )["validation_a_template"]
+    design = {
+        "artifact_type": "capability_design",
+        "schema_version": "1.0.0",
+        "run_id": "go2-vector-alias-materialization",
+        "robot_public_projection": {
+            "action_affordances": ["low_level_joint_command"],
+            "observation_affordances": ["joint_position"],
+            "effect_allowlist": ["stand"],
+            "unit_allowlist": ["m"],
+            "frame_allowlist": ["world"],
+        },
+        "granularity_profile": {
+            "profile_id": "g2-reusable-effect",
+            "version": "1.0.0",
+            "granularity": "G2",
+        },
+        "task_requirement_ids": ["requirement-vector-alias"],
+        "capabilities": [{
+            "capability_id": "cap-vector-alias",
+            "kind": "observation",
+            "requirement_ids": ["requirement-vector-alias"],
+            "inputs": [{
+                "name": "target_position",
+                "type": field_type,
+                "shape": shape,
+                "unit": "m",
+                "frame": "world",
+                "required": True,
+            }],
+            "outputs": [],
+            "effect": "stand",
+            "preconditions": [],
+            "invocation_semantics": "Observe the bounded public state.",
+            "temporal_semantics": "Return after a bounded observation window.",
+            "invariants": [],
+            "required_action_affordances": [],
+            "required_observation_affordances": ["joint_position"],
+            "errors": [{"code": "PUBLIC_ERROR", "message": "The observation is unavailable."}],
+            "unsupported_scope": [],
+        }],
+        "unsupported_requirement_ids": [],
+        "blocking_requirement_ids": [],
+        "design_experience_snapshot_hash": "sha256:" + "0" * 64,
+    }
+    seal = create_seal("capability_design", content_hash(canonical_bytes(design)))
+    return template, design, seal
+
+
+@pytest.mark.parametrize(
+    ("field_type", "shape", "length"),
+    [("vector2", "(2,)", 2), ("vector3", "(3,)", 3)],
+)
+def test_validation_a_run_pack_materializes_bounded_vector_aliases(
+    field_type: str,
+    shape: str,
+    length: int,
+) -> None:
+    template, design, seal = _run_pack_vector_fixture(field_type, shape)
+    design_before = copy.deepcopy(design)
+
+    profile = materialize_validation_a_profile(template, design, seal)
+
+    probe = profile.fixture_probes["cap-vector-alias"]["inputs"]["target_position"]
+    assert probe["value"] == [0.0] * length
+    assert {key: probe[key] for key in ("type", "shape", "unit", "frame")} == {
+        key: design["capabilities"][0]["inputs"][0][key]
+        for key in ("type", "shape", "unit", "frame")
+    }
+    assert design == design_before
+
+
+@pytest.mark.parametrize(
+    ("field_type", "shape"),
+    [
+        ("vector3", "(2,)"),
+        ("vector100", "(100,)"),
+        ("vector3", "(0,)"),
+        ("vector3", "(65,)"),
+        ("vector3", "(n,)"),
+        ("vector3", "(3)"),
+    ],
+)
+def test_validation_a_run_pack_rejects_invalid_vector_aliases(
+    field_type: str,
+    shape: str,
+) -> None:
+    template, design, seal = _run_pack_vector_fixture(field_type, shape)
+
+    with pytest.raises(RunPackError, match="cannot be materialized"):
+        materialize_validation_a_profile(template, design, seal)
+
+
 def test_robot_projection_is_accepted_as_stage1_public_input(tmp_path: Path) -> None:
     _copy_project(tmp_path)
     pack = _build_pack(tmp_path, "go2-first-g2-stage1-input")
