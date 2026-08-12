@@ -308,7 +308,7 @@ class RepairRunner:
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
                 })
-                return self._result("NO_CHANGE", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                continue
 
             executable_hash = _executable_source_hash(repaired_source)
             if executable_hash is None:
@@ -334,7 +334,7 @@ class RepairRunner:
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
                 })
-                return self._result("NO_EXECUTABLE_CHANGE", None, repair_invocations_used, candidate_revisions_created, total_llm_calls, repair_log, ledger, frozen_context, initial_a, initial_b, current_a, current_b, hashes)
+                continue
 
             candidate_revisions_created += 1
             source_history.add(source_hash)

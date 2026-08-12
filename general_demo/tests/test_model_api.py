@@ -78,3 +78,56 @@ def test_model_api_repair_requires_closed_raw_python_and_describes_validation_a_
     monkeypatch.setattr(model_api.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(fenced_payload))
     with pytest.raises(ContractError, match="raw source"):
         client.repair({"diagnostics": []})
+
+
+def test_model_api_repair_adds_unitree_shape_only_for_unitree_bundle(monkeypatch):
+    source = "def capability_example():\n    return 1\n"
+    payload = {
+        "choices": [{
+            "message": {
+                "content": json.dumps({"capability.py": source, "llm_calls": 1}),
+            },
+        }],
+    }
+    captured: list[str] = []
+
+    def urlopen(request, **_kwargs):
+        body = json.loads(request.data.decode("utf-8"))
+        captured.append(body["messages"][1]["content"])
+        return _Response(payload)
+
+    monkeypatch.setattr(model_api.urllib.request, "urlopen", urlopen)
+    client = ModelApiClient(ModelApiConfig(api_key="test-only"))
+    unitree_bundle = {
+        "sdk_implementation_projection": {
+            "sdk_entry_id": "unitree-sdk2-go2-lowlevel",
+            "permitted_types": [
+                "ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_",
+            ],
+        },
+    }
+    so_bundle = {
+        "sdk_implementation_projection": {
+            "sdk_entry_id": "lerobot-so101-follower",
+            "permitted_types": ["command"],
+        },
+    }
+
+    assert client.repair({"diagnostics": [], "implementation_bundle": unitree_bundle}) == {
+        "capability.py": source, "llm_calls": 1,
+    }
+    assert client.repair({"diagnostics": [], "implementation_bundle": so_bundle}) == {
+        "capability.py": source, "llm_calls": 1,
+    }
+
+    unitree_instruction, so_instruction = captured
+    for instruction in (unitree_instruction, so_instruction):
+        assert "`_sdk` is a module-like injected facade" in instruction
+        assert "module-global `_sdk`" in instruction
+        assert "Do not call `ChannelFactoryInitialize`" in instruction
+        assert "second SDK" in instruction
+    assert '_sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)' in unitree_instruction
+    assert "_sdk.unitree_go_msg_dds__LowCmd_()" in unitree_instruction
+    assert "_sdk.low_state_subscriber" in unitree_instruction
+    assert '_sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)' not in so_instruction
+    assert "_sdk.unitree_go_msg_dds__LowCmd_()" not in so_instruction

@@ -113,8 +113,19 @@ def test_stage2_prompt_describes_the_validation_a_source_contract() -> None:
     assert "exactly the bound public functions" in STAGE2_PROMPT
     assert "approved math/time/numpy members" in STAGE2_PROMPT
     assert "exact `_sdk` members" in STAGE2_PROMPT
-    for forbidden in ("Markdown fences", "dynamic imports", "eval/exec/open", "another SDK/connection"):
+    for framework_rule in (
+        "invented attributes on",
+        "implementation_bundle",
+        "ChannelFactoryInitialize",
+        "local endpoints",
+        "not a second SDK connection",
+        "module-global `_sdk`",
+    ):
+        assert framework_rule in STAGE2_PROMPT
+    for forbidden in ("Markdown fences", "dynamic imports", "eval/exec/open"):
         assert forbidden in STAGE2_PROMPT
+    assert "rt/lowcmd" not in STAGE2_PROMPT
+    assert "unitree_go_msg_dds__LowCmd_" not in STAGE2_PROMPT
 
 
 def _authorization(design: dict, seal: dict):

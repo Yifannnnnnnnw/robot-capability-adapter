@@ -18,6 +18,74 @@ DEFAULT_BASE_URL = "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-
 DEFAULT_MODEL = "anthropic.claude-sonnet-4-5-20250929-v1:0"
 
 
+_GENERIC_SDK_GUIDANCE = """
+SDK boundary rules: `_sdk` is a module-like injected facade, not a robot object with
+invented endpoint attributes or endpoint instances on the facade. Use only the exact
+members listed in the binding and implementation_bundle. Do not depend on a module-global
+`_sdk`: every helper that uses the SDK must receive `_sdk` explicitly,
+or receive a local endpoint/message object explicitly after the capability constructs
+it from `_sdk`. Do not call `ChannelFactoryInitialize` or otherwise reinitialize the
+SDK's global communication. Bundle-listed publisher/subscriber constructors are
+allowed local endpoints; construct them, call their listed `Init()`, and use their
+listed `Read()`/`Write()` operations. Such local endpoints are not a second SDK
+connection. Keep examples to SDK wiring and message-field shapes only.
+""".strip()
+
+_UNITREE_GO2_SDK_GUIDANCE = """
+This implementation_bundle is the Unitree/Go2 low-level projection. Use this exact
+public SDK shape, and no other facade attributes:
+- `_sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)`, then call `Init()` on the
+  local publisher;
+- `_sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)` and
+  `_sdk.ChannelSubscriber("rt/sportmodestate", _sdk.SportModeState_)`, then call
+  `Init()` on each local subscriber;
+- pass `_sdk.LowState_` and `_sdk.SportModeState_` as IDL type classes, not strings;
+- create a command message with `_sdk.unitree_go_msg_dds__LowCmd_()`, assign its
+  `motor_cmd` fields, and pass that message instance to publisher `Write()`;
+- pass `_sdk` or these local endpoint/message objects explicitly into helpers. Do not
+  use `_sdk.low_cmd_publisher`, `_sdk.low_state_subscriber`, or
+  `_sdk.sport_state_subscriber`.
+Do not call `ChannelFactoryInitialize`; the framework owns global SDK setup. This is
+only the allowed SDK wiring shape, not a fixed robot behavior implementation.
+""".strip()
+
+
+def _is_unitree_sdk_bundle(value: Any) -> bool:
+    if not isinstance(value, Mapping):
+        return False
+    projection = value.get("sdk_implementation_projection")
+    if not isinstance(projection, Mapping):
+        return False
+    permitted_types = projection.get("permitted_types")
+    if not isinstance(permitted_types, (list, tuple)):
+        return False
+    return {
+        "ChannelPublisher",
+        "ChannelSubscriber",
+        "LowCmd_",
+        "LowState_",
+        "SportModeState_",
+    }.issubset(permitted_types)
+
+
+def _repair_instruction(request: Mapping[str, Any]) -> str:
+    instruction = (
+        "Repair only capability.py using the supplied public diagnostics and binding. "
+        "Return exactly {\"capability.py\": <complete raw parseable Python source>, "
+        "\"llm_calls\": 1}. The capability.py string must contain the complete one-file "
+        "source with no Markdown fences, backticks, explanation, or omitted code. Follow "
+        "the same Validation A grammar: imports only math, time, or numpy (optionally as np); "
+        "safe literal constants; private non-dunder helpers; exact bound functions and "
+        "signatures; approved math/time/numpy members, safe numeric builtins, and bound _sdk "
+        "members only. No dynamic import, eval, exec, open, dunder access, extra public "
+        "symbols. Do not alter the supplied candidate except to return the complete corrected source."
+    )
+    guidance = _GENERIC_SDK_GUIDANCE
+    if _is_unitree_sdk_bundle(request.get("implementation_bundle")):
+        guidance += "\n\n" + _UNITREE_GO2_SDK_GUIDANCE
+    return instruction + "\n\nFRAMEWORK SDK RULES:\n" + guidance
+
+
 @dataclass(frozen=True)
 class ModelApiConfig:
     api_key: str
@@ -141,18 +209,7 @@ class ModelApiClient:
     def repair(self, request: Mapping[str, Any]) -> dict[str, Any]:
         result = self._complete_json(
             stage="repair",
-            instruction=(
-                "Repair only capability.py using the supplied public diagnostics and binding. "
-                "Return exactly {\"capability.py\": <complete raw parseable Python source>, "
-                "\"llm_calls\": 1}. The capability.py string must contain the complete one-file "
-                "source with no Markdown fences, backticks, explanation, or omitted code. Follow "
-                "the same Validation A grammar: imports only math, time, or numpy (optionally as np); "
-                "safe literal constants; private non-dunder helpers; exact bound functions and "
-                "signatures; approved math/time/numpy members, safe numeric builtins, and bound _sdk "
-                "members only. No dynamic import, eval, exec, open, dunder access, extra public "
-                "symbols, or second SDK connection. Do not alter the supplied candidate except to "
-                "return the complete corrected source."
-            ),
+            instruction=_repair_instruction(request),
             inputs=request,
         )
         if set(result) != {"capability.py", "llm_calls"}:

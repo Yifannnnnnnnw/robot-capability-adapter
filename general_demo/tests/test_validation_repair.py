@@ -1222,7 +1222,11 @@ def test_validation_b_preserves_candidate_error_when_collection_lacks_route() ->
         {"capability.py": _source("PASS")}, _stage2.implementation_manifest,
         _stage2.manifest_seal, context, _bundle(),
     )
-    assert repaired.status == "NO_CHANGE"
+    assert repaired.status == "FAILED_AFTER_REPAIRS"
+    assert repaired.repair_invocations_used == repaired.repairs_consumed == 10
+    assert repaired.candidate_revisions_created == 0
+    assert len(repaired.repair_log) == 10
+    assert all(entry["status"] == "NO_CHANGE" for entry in repaired.repair_log)
     assert captured["diagnostics"] == [{
         "gate": "B",
         "code": "CANDIDATE_EXCEPTION",
@@ -1250,7 +1254,10 @@ def test_repair_exposes_only_safe_candidate_sdk_validation_detail() -> None:
         stage2.manifest_seal, context, _bundle(),
     )
 
-    assert result.status == "NO_CHANGE"
+    assert result.status == "FAILED_AFTER_REPAIRS"
+    assert result.repair_invocations_used == result.repairs_consumed == 10
+    assert result.candidate_revisions_created == 0
+    assert len(result.repair_log) == 10
     diagnostics = captured["diagnostics"]
     assert any(
         item.get("code") == "SDK_FACADE"
@@ -1497,58 +1504,62 @@ def test_validation_b_rejects_self_resealed_rules_without_blue_line_ready_origin
         )
 
 
-def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_frozen() -> None:
+def test_repair_repeated_source_consumes_invocation_and_continues_without_b() -> None:
     design, design_seal, stage2, blue = _stage2_submission(_source("INITIAL"))
     context = _context(design, design_seal, blue)
     frozen_design = copy.deepcopy(design)
     frozen_binding = copy.deepcopy(stage2.binding_contract)
     frozen_context = copy.deepcopy(context)
-    harness = _FixedHarness(context.run_snapshot, ["fail", "fail"])
-    no_change = RepairRunner(
-        ValidationARunner(PROFILE), ValidationBRunner(harness),
-        lambda _request: {"capability.py": _source("INITIAL"), "llm_calls": 1},
-    ).run(
-        design, design_seal, stage2.binding_contract, stage2.binding_seal,
-        {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
-    )
-    assert no_change.status == "NO_CHANGE"
-    assert no_change.repair_invocations_used == no_change.repairs_consumed == 1
-    assert no_change.candidate_revisions_created == 0
-    assert len(no_change.run_ledger) == 1
-    assert "candidate_source" not in no_change.repair_log[0]
-    assert design == frozen_design
-    assert stage2.binding_contract == frozen_binding
-    assert context == frozen_context
+    requests: list[dict] = []
 
-    harness = _FixedHarness(context.run_snapshot, ["fail", "fail", "pass", "pass"])
+    def repeated_then_repaired(request):
+        requests.append(copy.deepcopy(dict(request)))
+        source = _source("INITIAL") if len(requests) == 1 else _source("REPAIRED")
+        return {"capability.py": source, "llm_calls": 1}
+
     repaired = RepairRunner(
-        ValidationARunner(PROFILE), ValidationBRunner(harness),
-        lambda _request: {"capability.py": _source("REPAIRED"), "llm_calls": 2},
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail", "pass", "pass"])),
+        repeated_then_repaired,
     ).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert repaired.status == "PASS"
-    assert repaired.first_passing_repair_index == repaired.repair_invocations_used == repaired.repairs_consumed == 1
+    assert repaired.first_passing_repair_index == 2
+    assert repaired.repair_invocations_used == repaired.repairs_consumed == 2
     assert repaired.candidate_revisions_created == 1
-    assert repaired.repair_llm_calls == 2
-    assert repaired.run_snapshot_hash == content_hash(canonical_bytes(context.run_snapshot))
-    assert repaired.repair_log[0]["candidate_revision_created"] is True
-    assert repaired.repair_log[0]["candidate_source"] == _source("REPAIRED")
+    assert [entry["status"] for entry in repaired.repair_log] == ["NO_CHANGE", "PASS"]
+    assert "candidate_source" not in repaired.repair_log[0]
+    assert repaired.repair_log[1]["candidate_source"] == _source("REPAIRED")
+    assert requests[0]["capability.py"] == requests[1]["capability.py"] == _source("INITIAL")
+    assert requests[1]["ledger"]["repair_invocations_used"] == 1
+    assert design == frozen_design
+    assert stage2.binding_contract == frozen_binding
+    assert context == frozen_context
 
-    outputs = iter([_source("HISTORICAL_NEW"), _source("INITIAL")])
-    historical = RepairRunner(
+    repeated_requests: list[dict] = []
+
+    def repeat_same_source(request):
+        repeated_requests.append(copy.deepcopy(dict(request)))
+        return {"capability.py": _source("INITIAL"), "llm_calls": 1}
+
+    capped = RepairRunner(
         ValidationARunner(PROFILE),
-        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail", "fail", "fail"])),
-        lambda _request: {"capability.py": next(outputs), "llm_calls": 1},
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail"])),
+        repeat_same_source,
     ).run(
         design, design_seal, stage2.binding_contract, stage2.binding_seal,
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
-    assert historical.status == "NO_CHANGE"
-    assert historical.repair_invocations_used == historical.repairs_consumed == 2
-    assert historical.candidate_revisions_created == 1
-    assert len(historical.run_ledger) == 2
+    assert capped.status == "FAILED_AFTER_REPAIRS"
+    assert capped.repair_invocations_used == capped.repairs_consumed == 10
+    assert capped.candidate_revisions_created == 0
+    assert len(capped.repair_log) == 10
+    assert all(entry["status"] == "NO_CHANGE" for entry in capped.repair_log)
+    assert len(capped.run_ledger) == 1
+    assert len(repeated_requests) == 10
+    assert repeated_requests[-1]["ledger"]["repair_invocations_used"] == 9
 
     comment_only = RepairRunner(
         ValidationARunner(PROFILE),
@@ -1559,9 +1570,10 @@ def test_repair_new_source_consumes_k_no_change_does_not_run_b_and_snapshot_is_f
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
         stage2.manifest_seal, context, _bundle(),
     )
-    assert comment_only.status == "NO_EXECUTABLE_CHANGE"
-    assert comment_only.repair_invocations_used == 1
+    assert comment_only.status == "FAILED_AFTER_REPAIRS"
+    assert comment_only.repair_invocations_used == comment_only.repairs_consumed == 10
     assert comment_only.candidate_revisions_created == 0
+    assert [entry["status"] for entry in comment_only.repair_log] == ["NO_EXECUTABLE_CHANGE"] * 10
     assert len(comment_only.run_ledger) == 1
     assert "candidate_source" not in comment_only.repair_log[0]
 

@@ -35,14 +35,22 @@ backticks, explanation, or omission. It may contain an optional module docstring
 literal/numeric module constants, imports only `math`, `time`, and `numpy` (optionally as
 `np`), private non-dunder helper functions, and exactly the bound public functions with
 the signatures in binding_contract (`..., *, _sdk`). Do not add public functions/classes,
-decorators, dynamic imports, eval/exec/open, dunder access, or another SDK/connection.
+decorators, dynamic imports, eval/exec/open, dunder access, or invented attributes on
+the injected `_sdk` facade.
 
 Calls may use only approved math/time/numpy members, the small safe numeric builtins
 (`range`, `len`, `min`, `max`, `abs`, `sum`, `enumerate`, `zip`, `float`, `int`, `bool`,
 `str`, `list`, `tuple`, `dict`, `RuntimeError`, and related safe numeric helpers), module-local
-helpers/bound functions, and the exact `_sdk` members listed in the implementation profile.
-Keep the one-file binding contract and public result fields exactly as supplied; physical
-behavior is assessed after submission.
+helpers/bound functions, and the exact `_sdk` members listed in the implementation_bundle.
+The bundle is authoritative for SDK types, factories, constructors, and operations: do not
+invent endpoint attributes or endpoint instances on the injected facade.
+Do not call `ChannelFactoryInitialize` or otherwise reinitialize global SDK communication.
+When the bundle lists publisher/subscriber constructors, use them to create local endpoints,
+call their listed `Init()`, and use their listed `Read()`/`Write()` operations; these local
+endpoints are allowed and are not a second SDK connection. Pass `_sdk` explicitly to every
+helper that uses it, or pass a locally constructed endpoint/message explicitly; never rely on
+a module-global `_sdk`. Keep the one-file binding contract and public result fields exactly as
+supplied; physical behavior is assessed after submission.
 """.strip()
 _ACTION_FIELDS = {
     "sandbox": {"action", "capability.py", "probe"},
