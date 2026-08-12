@@ -169,6 +169,8 @@ class DirectMuJoCoExperiment:
         return {
             "mode": DIRECT_MUJOCO_EXPERIMENTAL,
             "status": "EXPERIMENTAL",
+            "execution_scope": DIRECT_MUJOCO_EXPERIMENTAL,
+            "sdk_grounded_simulation_claim": False,
             "robot_configuration_id": self.package.robot_configuration_id,
             "version": self.package.version,
             "record_path": str(self.package.record_path),
@@ -246,8 +248,8 @@ class DirectMuJoCoExperiment:
                 "route_evidence": dict(evidence.route_evidence or {}),
             },
             next_blocker=(
-                "DIRECT_MUJOCO_EXPERIMENTAL evidence is physically observed but not SDK-grounded; "
-                "GeneralDemo formal admission still needs its approved run-pack inputs and SDK route."
+                "DIRECT_MUJOCO_EXPERIMENTAL evidence is physically observed and intentionally "
+                "not SDK-grounded; no SDK admission is implied by this route."
             ),
         )
 

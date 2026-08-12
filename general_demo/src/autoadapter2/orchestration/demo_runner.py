@@ -47,6 +47,7 @@ from ..validation import (
 _AUTHORITY_REVISION = "0.16.1"
 _G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
 _SCALAR_TYPES = {"null", "boolean", "integer", "number", "string"}
+_DIRECT_MUJOCO_EXPERIMENTAL = "DIRECT_MUJOCO_EXPERIMENTAL"
 
 
 @dataclass(frozen=True)
@@ -66,9 +67,9 @@ class DemoRunPlan:
     """Frozen inputs needed by the existing experiment-grade component APIs."""
 
     run_id: str
-    integration_manifest_path: str | Path
-    run_snapshot_path: str | Path
-    readiness_report_path: str | Path
+    integration_manifest_path: str | Path | None
+    run_snapshot_path: str | Path | None
+    readiness_report_path: str | Path | None
     robot_public_projection: Mapping[str, Any]
     g2_profile: Mapping[str, Any]
     tasks: tuple[DemoTask, ...]
@@ -89,6 +90,9 @@ class DemoRunPlan:
     repair_config: RepairConfig = RepairConfig()
     design_experience_snapshot: Mapping[str, Any] | None = None
     implementation_experience_snapshot: Mapping[str, Any] | None = None
+    execution_route: str = "SDK_GROUNDED_SIMULATION"
+    evaluation_route: EvaluationRoute | None = None
+    route_metadata: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.run_id, str) or not self.run_id.strip():
@@ -113,6 +117,15 @@ class DemoRunPlan:
             raise ContractError("demo_repetitions must be a positive fixed integer")
         if not isinstance(self.task_catalog_version, str) or not self.task_catalog_version.strip():
             raise ContractError("task_catalog_version must be non-empty text")
+        if self.execution_route not in {
+            "SDK_GROUNDED_SIMULATION",
+            _DIRECT_MUJOCO_EXPERIMENTAL,
+        }:
+            raise ContractError("General Demo execution_route is invalid")
+        if self.evaluation_route is not None and not isinstance(
+            self.evaluation_route, EvaluationRoute
+        ):
+            raise ContractError("evaluation_route must be an EvaluationRoute when supplied")
         for field in (
             "robot_public_projection",
             "g2_profile",
@@ -133,6 +146,10 @@ class DemoRunPlan:
                 if not isinstance(value, Mapping):
                     raise ContractError(f"{field} must be an object when supplied")
                 object.__setattr__(self, field, copy.deepcopy(dict(value)))
+        if self.route_metadata is not None:
+            if not isinstance(self.route_metadata, Mapping):
+                raise ContractError("route_metadata must be an object when supplied")
+            object.__setattr__(self, "route_metadata", copy.deepcopy(dict(self.route_metadata)))
 
 
 @dataclass(frozen=True)
@@ -412,33 +429,52 @@ class GeneralDemoRunner:
     def run(self, plan: DemoRunPlan) -> DemoRunResult:
         if not isinstance(plan, DemoRunPlan):
             raise ContractError("General Demo requires a DemoRunPlan")
-        gate = ExperimentIntegrationGate(self._root)
-        gate_result = gate.verify(
-            plan.integration_manifest_path,
-            plan.run_snapshot_path,
-            plan.readiness_report_path,
-        )
-        if gate_result.run_id != plan.run_id:
-            raise ContractError("DemoRunPlan run_id does not match the verified gate result")
-        manifest_artifact = gate.inspect_manifest(plan.integration_manifest_path)
-        if manifest_artifact.sha256 != gate_result.integration_manifest_sha256:
-            raise ContractError("integration manifest changed after the pre-Stage-1 gate")
-        manifest = manifest_artifact.value
-        self._verify_robot_projection(manifest, plan.robot_public_projection)
-        self._verify_robot_session(manifest)
-        self._verify_tasks_library(manifest, plan)
-        self._verify_frozen_run_inputs(plan)
-        route = EvaluationRoute(
-            run_id=plan.run_id,
-            integration_manifest_hash=_prefixed_hash(
-                gate_result.integration_manifest_sha256, "integration manifest hash"
-            ),
-            sdk_entry_hash=_prefixed_hash(manifest["sdk_ref"]["sha256"], "SDK Entry hash"),
-            runtime_hash=_prefixed_hash(gate_result.runtime_sha256, "runtime hash"),
-            simulation_profile_hash=_prefixed_hash(
-                manifest["morphology_ref"]["sha256"], "simulation profile hash"
-            ),
-        )
+        gate_result: Stage1GateResult | None = None
+        if plan.execution_route == _DIRECT_MUJOCO_EXPERIMENTAL:
+            route = plan.evaluation_route or self._derive_direct_route(plan)
+            if route.run_id != plan.run_id:
+                raise ContractError("DemoRunPlan run_id does not match the direct EvaluationRoute")
+            metadata = dict(plan.route_metadata or {})
+            manifest = {
+                "robot_model_id": metadata.get(
+                    "robot_model_id", plan.robot_public_projection.get("robot_model_id")
+                ),
+                "robot_configuration_id": metadata.get(
+                    "robot_configuration_id",
+                    plan.robot_public_projection.get("robot_configuration_id"),
+                ),
+            }
+            self._verify_robot_projection(manifest, plan.robot_public_projection)
+            self._verify_robot_session(manifest)
+            self._verify_tasks_library(manifest, plan)
+        else:
+            gate = ExperimentIntegrationGate(self._root)
+            gate_result = gate.verify(
+                plan.integration_manifest_path,
+                plan.run_snapshot_path,
+                plan.readiness_report_path,
+            )
+            if gate_result.run_id != plan.run_id:
+                raise ContractError("DemoRunPlan run_id does not match the verified gate result")
+            manifest_artifact = gate.inspect_manifest(plan.integration_manifest_path)
+            if manifest_artifact.sha256 != gate_result.integration_manifest_sha256:
+                raise ContractError("integration manifest changed after the pre-Stage-1 gate")
+            manifest = manifest_artifact.value
+            self._verify_robot_projection(manifest, plan.robot_public_projection)
+            self._verify_robot_session(manifest)
+            self._verify_tasks_library(manifest, plan)
+            self._verify_frozen_run_inputs(plan)
+            route = EvaluationRoute(
+                run_id=plan.run_id,
+                integration_manifest_hash=_prefixed_hash(
+                    gate_result.integration_manifest_sha256, "integration manifest hash"
+                ),
+                sdk_entry_hash=_prefixed_hash(manifest["sdk_ref"]["sha256"], "SDK Entry hash"),
+                runtime_hash=_prefixed_hash(gate_result.runtime_sha256, "runtime hash"),
+                simulation_profile_hash=_prefixed_hash(
+                    manifest["morphology_ref"]["sha256"], "simulation profile hash"
+                ),
+            )
         base, parents = self._base_summary(plan, gate_result, manifest, route)
         artifacts: dict[str, Any] = {
             "artifact_type": "general_demo_stage_artifacts",
@@ -446,14 +482,26 @@ class GeneralDemoRunner:
             "run_id": plan.run_id,
             "stages": {},
         }
-        stages: list[dict[str, Any]] = [{
-            "stage": "integration_gate",
-            "status": "READY",
-            "integration_manifest_hash": route.integration_manifest_hash,
-            "readiness_report_hash": _prefixed_hash(
-                gate_result.readiness_report_sha256, "readiness report hash"
-            ),
-        }]
+        if plan.execution_route == _DIRECT_MUJOCO_EXPERIMENTAL:
+            stages: list[dict[str, Any]] = [{
+                "stage": "direct_route_resolution",
+                "status": "READY",
+                "execution_route": _DIRECT_MUJOCO_EXPERIMENTAL,
+                "route_hash": route.integration_manifest_hash,
+                "sdk_entry_hash": route.sdk_entry_hash,
+                "runtime_hash": route.runtime_hash,
+                "simulation_profile_hash": route.simulation_profile_hash,
+            }]
+        else:
+            assert gate_result is not None
+            stages = [{
+                "stage": "integration_gate",
+                "status": "READY",
+                "integration_manifest_hash": route.integration_manifest_hash,
+                "readiness_report_hash": _prefixed_hash(
+                    gate_result.readiness_report_sha256, "readiness report hash"
+                ),
+            }]
 
         try:
             stage1 = Stage1Runner(self._models.stage1, plan.stage1_config).run(
@@ -899,6 +947,59 @@ class GeneralDemoRunner:
                 )
 
     @staticmethod
+    def _derive_direct_route(plan: DemoRunPlan) -> EvaluationRoute:
+        """Create a minimal content-hashed lineage for a direct route plan.
+
+        The full direct entry point supplies hashes for the no-SDK record,
+        morphology, task adapter, and runtime.  This fallback keeps the plan
+        usable by small callers that only need the shared runner boundary; it
+        deliberately creates no manifest or readiness artifact.
+        """
+
+        metadata = dict(plan.route_metadata or {})
+
+        def route_hash(field: str, value: Mapping[str, Any]) -> str:
+            supplied = metadata.get(field)
+            if supplied is not None:
+                return _prefixed_hash(supplied, field)
+            return content_hash(canonical_bytes(dict(value)))
+
+        return EvaluationRoute(
+            run_id=plan.run_id,
+            integration_manifest_hash=route_hash(
+                "route_hash",
+                {
+                    "execution_route": _DIRECT_MUJOCO_EXPERIMENTAL,
+                    "robot_model_id": plan.robot_public_projection.get("robot_model_id"),
+                    "robot_configuration_id": plan.robot_public_projection.get(
+                        "robot_configuration_id"
+                    ),
+                },
+            ),
+            sdk_entry_hash=route_hash(
+                "sdk_entry_hash",
+                {
+                    "id": "no-sdk-direct-mujoco",
+                    "version": "1.0.0",
+                    "sdk_status": "NOT_APPLICABLE",
+                },
+            ),
+            runtime_hash=route_hash(
+                "runtime_hash",
+                {"execution_route": _DIRECT_MUJOCO_EXPERIMENTAL, "runtime": "mujoco"},
+            ),
+            simulation_profile_hash=route_hash(
+                "simulation_profile_hash",
+                {
+                    "execution_route": _DIRECT_MUJOCO_EXPERIMENTAL,
+                    "robot_configuration_id": plan.robot_public_projection.get(
+                        "robot_configuration_id"
+                    ),
+                },
+            ),
+        )
+
+    @staticmethod
     def _design_covers_tasks(
         design: Mapping[str, Any], tasks: tuple[DemoTask, ...]
     ) -> bool:
@@ -925,7 +1026,7 @@ class GeneralDemoRunner:
     def _base_summary(
         self,
         plan: DemoRunPlan,
-        gate: Stage1GateResult,
+        gate: Stage1GateResult | None,
         manifest: Mapping[str, Any],
         route: EvaluationRoute,
     ) -> tuple[dict[str, Any], set[str]]:
@@ -936,8 +1037,6 @@ class GeneralDemoRunner:
             "DIRECT_MUJOCO_EXPERIMENTAL",
         }:
             raise ContractError("robot session evidence_scope is invalid")
-        readiness_hash = _prefixed_hash(gate.readiness_report_sha256, "readiness report hash")
-        profile_hash = _prefixed_hash(gate.readiness_profile_sha256, "readiness profile hash")
         base = {
             "artifact_type": "general_demo_run_summary",
             "format_version": "experimental-1",
@@ -951,13 +1050,38 @@ class GeneralDemoRunner:
             "execution_scope": scope,
             "sdk_grounded_simulation_claim": scope == "SDK_GROUNDED_SIMULATION",
             "real_hardware_executed": False,
-            "gate_bindings": {
-                "integration_manifest_hash": route.integration_manifest_hash,
-                "readiness_report_hash": readiness_hash,
-                "readiness_profile_hash": profile_hash,
+        }
+        if scope == _DIRECT_MUJOCO_EXPERIMENTAL:
+            if getattr(plan, "execution_route", _DIRECT_MUJOCO_EXPERIMENTAL) != _DIRECT_MUJOCO_EXPERIMENTAL:
+                raise ContractError("direct MuJoCo session requires the direct execution route")
+            base["gate_bindings"] = {
+                "execution_route": _DIRECT_MUJOCO_EXPERIMENTAL,
+                "route_hash": route.integration_manifest_hash,
+                "sdk_entry_hash": route.sdk_entry_hash,
                 "runtime_hash": route.runtime_hash,
+                "simulation_profile_hash": route.simulation_profile_hash,
                 "video_profile_hash": self._video_profile.content_hash,
-            },
+            }
+            route_metadata = getattr(plan, "route_metadata", None)
+            if route_metadata is not None:
+                base["direct_route"] = copy.deepcopy(dict(route_metadata))
+            return base, {
+                route.integration_manifest_hash,
+                route.runtime_hash,
+                route.sdk_entry_hash,
+                route.simulation_profile_hash,
+                self._video_profile.content_hash,
+            }
+        if gate is None:
+            raise ContractError("SDK-grounded General Demo requires the verified integration gate")
+        readiness_hash = _prefixed_hash(gate.readiness_report_sha256, "readiness report hash")
+        profile_hash = _prefixed_hash(gate.readiness_profile_sha256, "readiness profile hash")
+        base["gate_bindings"] = {
+            "integration_manifest_hash": route.integration_manifest_hash,
+            "readiness_report_hash": readiness_hash,
+            "readiness_profile_hash": profile_hash,
+            "runtime_hash": route.runtime_hash,
+            "video_profile_hash": self._video_profile.content_hash,
         }
         return base, {
             route.integration_manifest_hash,
