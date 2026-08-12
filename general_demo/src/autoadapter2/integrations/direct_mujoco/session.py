@@ -282,6 +282,8 @@ class DirectMuJoCoEvaluationRobotSession:
             self._site_ids[name] = self._id(obj.mjOBJ_SITE, name, "morphology.mujoco.frames.site_names entry")
         for name in self.config.sensor_names:
             self._sensor_ids[name] = self._id(obj.mjOBJ_SENSOR, name, "morphology.mujoco.sensor_names entry")
+        if self.config.render_camera == "free":
+            return -1
         return self._id(obj.mjOBJ_CAMERA, self.config.render_camera, "morphology.mujoco.render.camera")
 
     def _joint_dimensions(self, joint_id: int) -> tuple[int, int]:
@@ -294,6 +296,8 @@ class DirectMuJoCoEvaluationRobotSession:
         return 1, 1
 
     def _validate_reset(self) -> None:
+        if self.config.reset_policy == "model_default":
+            return
         if self.config.reset_keyframe is not None:
             keyframe_id = self._id(
                 self._mj.mjtObj.mjOBJ_KEY,
@@ -328,7 +332,9 @@ class DirectMuJoCoEvaluationRobotSession:
             raise DirectMuJoCoSessionError("initial_state must be a mapping when supplied")
         if self._capture is not None:
             raise DirectMuJoCoSessionError("cannot reset while external recording is active")
-        if self.config.reset_keyframe is not None:
+        if self.config.reset_policy == "model_default":
+            self._mj.mj_resetData(self._model, self._data)
+        elif self.config.reset_keyframe is not None:
             keyframe_id = self._id(
                 self._mj.mjtObj.mjOBJ_KEY,
                 self.config.reset_keyframe,

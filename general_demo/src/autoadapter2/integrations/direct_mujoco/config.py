@@ -70,8 +70,9 @@ class DirectMuJoCoLibraryConfig:
     ``mujoco.entrypoint``
         Relative path to the canonical MJCF entrypoint under ``asset_root``.
     ``mujoco.reset``
-        Exactly one of ``keyframe`` or full-model ``qpos``; optional ``qvel``
-        accompanies a qpos reset.
+        Exactly one closed form: ``{"policy": "model_default"}``,
+        ``{"keyframe": name}``, or full-model ``qpos`` with optional
+        ``qvel``.
     ``mujoco.frames``
         ``body_names`` and ``site_names`` used for public frame observations.
     ``mujoco.sensor_names`` or top-level ``sensor_names``
@@ -91,6 +92,7 @@ class DirectMuJoCoLibraryConfig:
     body_names: tuple[str, ...]
     site_names: tuple[str, ...]
     sensor_names: tuple[str, ...]
+    reset_policy: str | None
     reset_keyframe: str | None
     reset_qpos: tuple[float, ...] | None
     reset_qvel: tuple[float, ...] | None
@@ -134,18 +136,32 @@ class DirectMuJoCoLibraryConfig:
             )
 
         reset = _required_mapping(mujoco.get("reset"), "morphology.mujoco.reset")
-        has_keyframe = "keyframe" in reset
-        has_qpos = "qpos" in reset
-        if has_keyframe == has_qpos:
+        reset_policy: str | None = None
+        reset_keyframe: str | None = None
+        reset_qpos: tuple[float, ...] | None = None
+        reset_qvel: tuple[float, ...] | None = None
+        if "policy" in reset:
+            if set(reset) != {"policy"} or reset.get("policy") != "model_default":
+                raise DirectMuJoCoConfigurationError(
+                    "morphology.mujoco.reset.policy must be 'model_default' without extra fields"
+                )
+            reset_policy = "model_default"
+        elif "keyframe" in reset:
+            if set(reset) != {"keyframe"}:
+                raise DirectMuJoCoConfigurationError(
+                    "morphology.mujoco.reset.keyframe cannot be combined with extra fields"
+                )
+            reset_keyframe = _required_text(reset.get("keyframe"), "morphology.mujoco.reset.keyframe")
+        elif "qpos" in reset:
+            if set(reset) not in ({"qpos"}, {"qpos", "qvel"}):
+                raise DirectMuJoCoConfigurationError(
+                    "morphology.mujoco.reset.qpos accepts only the optional qvel field"
+                )
+            reset_qpos = _number_list(reset.get("qpos"), "morphology.mujoco.reset.qpos")
+            reset_qvel = _number_list(reset.get("qvel"), "morphology.mujoco.reset.qvel") if "qvel" in reset else None
+        else:
             raise DirectMuJoCoConfigurationError(
-                "morphology.mujoco.reset must contain exactly one of keyframe or qpos"
-            )
-        reset_keyframe = _required_text(reset.get("keyframe"), "morphology.mujoco.reset.keyframe") if has_keyframe else None
-        reset_qpos = _number_list(reset.get("qpos"), "morphology.mujoco.reset.qpos") if has_qpos else None
-        reset_qvel = _number_list(reset.get("qvel"), "morphology.mujoco.reset.qvel") if "qvel" in reset else None
-        if reset_qvel is not None and reset_qpos is None:
-            raise DirectMuJoCoConfigurationError(
-                "morphology.mujoco.reset.qvel is only valid with morphology.mujoco.reset.qpos"
+                "morphology.mujoco.reset must be policy:model_default, keyframe, or qpos"
             )
 
         frames = _required_mapping(mujoco.get("frames"), "morphology.mujoco.frames")
@@ -195,6 +211,7 @@ class DirectMuJoCoLibraryConfig:
             body_names=body_names,
             site_names=site_names,
             sensor_names=sensor_names,
+            reset_policy=reset_policy,
             reset_keyframe=reset_keyframe,
             reset_qpos=reset_qpos,
             reset_qvel=reset_qvel,
