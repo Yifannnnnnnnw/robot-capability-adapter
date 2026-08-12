@@ -1,0 +1,41 @@
+{
+  "artifact_type": "project_validation_standard",
+  "schema_version": "1.0.0",
+  "standard_id": "franka-f04-push-blue-cube-v1",
+  "version": "1.0.0",
+  "record_status": "APPROVED",
+  "intended_use": "capability_validation_b",
+  "robot_configuration_id": "franka_panda",
+  "effect_id": "push_blue_cube_to_goal_without_obstacle_contact",
+  "criteria": [
+    {
+      "criterion_id": "f04-cube-goal-error",
+      "measurement_id": "franka-f04-cube-goal-error",
+      "metric": "cube_goal_error_m",
+      "comparator": "<=",
+      "threshold_value": 0.05,
+      "dwell_s": 0.0,
+      "timeout_s": 10.0,
+      "aggregation": "ALL"
+    },
+    {
+      "criterion_id": "f04-obstacle-contact-count",
+      "measurement_id": "franka-f04-obstacle-contact-count",
+      "metric": "obstacle_contact_count",
+      "comparator": "==",
+      "threshold_value": 0,
+      "dwell_s": 0.0,
+      "timeout_s": 10.0,
+      "aggregation": "ALL"
+    }
+  ],
+  "required_guard_ids": ["trusted-external-verdict", "finite-required-state", "scene-entrypoint-bound"],
+  "false_pass_requirements": ["trusted-external-verdict", "finite-required-state", "scene-entrypoint-bound"],
+  "approval_lineage": {
+    "review_status": "HUMAN_APPROVED",
+    "reviewed_by": "project_owner",
+    "approval_id": "pvstd-franka-f04-push-blue-2026-08-12",
+    "reviewed_at": "2026-08-12",
+    "approval_basis": "Separately authored capability-validation record, not an automatic Demo-criteria import; direct project-owner approval covers the previously approved Franka effect and physical metric thresholds in task thread 019fec37-f7e0-7cc0-b6df-243f33668c15."
+  }
+}

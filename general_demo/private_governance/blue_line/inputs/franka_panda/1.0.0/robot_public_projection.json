@@ -1,0 +1,35 @@
+{
+  "robot_model_id": "franka_panda",
+  "robot_configuration_id": "franka_panda",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "action_affordances": ["named actuator command"],
+  "observation_affordances": ["joint state", "body state", "site state", "sensor state"],
+  "effect_allowlist": [
+    "move_end_effector_to_red_cube",
+    "move_end_effector_to_green_cube",
+    "push_red_cube_to_goal",
+    "push_blue_cube_to_goal_without_obstacle_contact",
+    "trace_square_and_return"
+  ],
+  "unit_allowlist": [
+    "native_mujoco_control",
+    "rad",
+    "rad/s",
+    "m",
+    "m/s",
+    "s",
+    "quaternion"
+  ],
+  "frame_allowlist": ["joint", "body", "site", "sensor", "world"],
+  "actuator_names": [
+    "actuator1",
+    "actuator2",
+    "actuator3",
+    "actuator4",
+    "actuator5",
+    "actuator6",
+    "actuator7",
+    "actuator8"
+  ],
+  "observation_frames": ["hand"]
+}
