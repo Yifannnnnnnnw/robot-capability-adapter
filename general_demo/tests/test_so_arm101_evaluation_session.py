@@ -337,7 +337,9 @@ def test_sample_truth_uses_mujoco_object_velocity_not_site_xvelp() -> None:
         site_xpos=[[0.30, -0.04, 0.18]],
         xpos=[[0.0, 0.0, 0.0], [0.33, 0.04, 0.037]],
         qpos=[0.0],
-        qvel=[0.0] * 6,
+        # MuJoCo free-joint qvel is [linear xyz, angular xyz].  Keep the
+        # magnitudes asymmetric so swapping the slices is observable.
+        qvel=[1.0, 2.0, 2.0, 0.1, 0.2, 0.2],
         ctrl=[0.0],
         ncon=0,
         contact=[],
@@ -368,6 +370,24 @@ def test_sample_truth_uses_mujoco_object_velocity_not_site_xvelp() -> None:
 
     truth = session._sample_truth()  # type: ignore[attr-defined]
     assert truth["tip_speed_m_s"] == pytest.approx((0.1**2 + 0.2**2 + 0.3**2) ** 0.5)
+    assert truth["cube_linear_speed_m_s"] == pytest.approx(3.0)
+    assert truth["cube_angular_speed_rad_s"] == pytest.approx(0.3)
+
+
+def test_validation_evidence_resolves_t02_non_target_contact_metric() -> None:
+    session = _session([])
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="validation-t02-contact-metric",
+            initial_state={"task_id": "T02"},
+        )
+        session.invoke(_Candidate(send_sdk_command=True), "public-effect", {})
+        evidence = session.validation_evidence(_invocation("non_target_contact_count"))
+        assert evidence.samples
+        assert all(sample.value == 0.0 for sample in evidence.samples)
+    finally:
+        session.close()
 
 
 def _write_json_artifact(path: Path, value: dict[str, Any]) -> str:

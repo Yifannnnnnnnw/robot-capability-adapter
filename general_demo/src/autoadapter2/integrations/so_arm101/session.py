@@ -63,6 +63,7 @@ _DEMO_METRIC_FIELDS = (
     "tip_speed_m_s",
     "intended_tip_face_contact_dwell_s",
     "target_object_displacement_m",
+    "non_target_contact_count",
     "other_object_contact_count",
     "cube_center_planar_goal_error_m",
     "cube_table_supported",
@@ -1172,9 +1173,11 @@ class SOArm101EvaluationRobotSession:
                 ("target_contact_truth", "intended_tip_face_contact"),
                 ("cube_held_truth", "cube_held"),
                 ("specified_button_activation_truth", "specified_button_active"),
+                ("non_target_contact_count", "other_object_contact_count"),
+                ("other_object_contact_count", "non_target_contact_count"),
             ):
                 if target not in truth and source in truth:
-                    truth[target] = 1.0 if bool(truth[source]) else 0.0
+                    truth[target] = truth[source]
             truth.setdefault("time_s", self.simulation_time_s)
             truth.setdefault(
                 "finite_state",
@@ -1209,6 +1212,8 @@ class SOArm101EvaluationRobotSession:
                 "ctrl": snapshot["ctrl"],
                 "tip_position_error_m": math.inf,
                 "tip_speed_m_s": math.inf,
+                "non_target_contact_count": 0,
+                "other_object_contact_count": 0,
             }
             self._update_events(truth)
             self._last_truth = truth
@@ -1222,8 +1227,8 @@ class SOArm101EvaluationRobotSession:
         cube_position = [float(value) for value in data.xpos[cube_body]]
         cube_joint = self._first_id(mj, model, mj.mjtObj.mjOBJ_JOINT, ("demo_cube_free",))
         cube_qvel_address = int(model.jnt_dofadr[cube_joint])
-        cube_linear_velocity = [float(value) for value in data.qvel[cube_qvel_address + 3 : cube_qvel_address + 6]]
-        cube_angular_velocity = [float(value) for value in data.qvel[cube_qvel_address : cube_qvel_address + 3]]
+        cube_linear_velocity = [float(value) for value in data.qvel[cube_qvel_address : cube_qvel_address + 3]]
+        cube_angular_velocity = [float(value) for value in data.qvel[cube_qvel_address + 3 : cube_qvel_address + 6]]
         task = self._current_task or {}
         target = task.get("target", {}) if isinstance(task, Mapping) else {}
         tip_target = target.get("tip_position_m", tip_position) if isinstance(target, Mapping) else tip_position
@@ -1303,6 +1308,7 @@ class SOArm101EvaluationRobotSession:
             "specified_button_active": specified_button_active,
             "specified_button_activation_truth": 1.0 if specified_button_active else 0.0,
             "other_button_activation_count": 0,
+            "non_target_contact_count": other_object_contacts,
             "other_object_contact_count": other_object_contacts,
             "contacts": contacts,
             "finite_state": finite_state,
@@ -1417,10 +1423,17 @@ class SOArm101EvaluationRobotSession:
             float(self._event_state.get("button_activation_max_dwell_s", 0.0)),
             float(self._event_state.get("button_activation_streak_s", 0.0)),
         )
-        self._event_state["max_other_object_contact_count"] = max(
-            int(self._event_state.get("max_other_object_contact_count", 0)),
-            int(truth.get("other_object_contact_count", 0)),
+        non_target_contact_count = int(truth.get(
+            "non_target_contact_count",
+            truth.get("other_object_contact_count", 0),
+        ))
+        self._event_state["max_non_target_contact_count"] = max(
+            int(self._event_state.get("max_non_target_contact_count", 0)),
+            non_target_contact_count,
         )
+        self._event_state["max_other_object_contact_count"] = self._event_state[
+            "max_non_target_contact_count"
+        ]
         self._event_state["max_cube_height_increase_m"] = max(
             float(self._event_state.get("max_cube_height_increase_m", 0.0)),
             float(truth.get("cube_height_increase_m", 0.0)),
@@ -1522,7 +1535,8 @@ class SOArm101EvaluationRobotSession:
         event_metrics = {
             "intended_tip_face_contact_dwell_s": float(self._event_state.get("face_contact_max_dwell_s", 0.0)),
             "specified_button_activation_dwell_s": float(self._event_state.get("button_activation_max_dwell_s", 0.0)),
-            "other_object_contact_count": int(self._event_state.get("max_other_object_contact_count", 0)),
+            "non_target_contact_count": int(self._event_state.get("max_non_target_contact_count", 0)),
+            "other_object_contact_count": int(self._event_state.get("max_non_target_contact_count", 0)),
             "other_button_activation_count": int(self._event_state.get("other_button_activation_count", 0)),
             "cube_held": self._window_all(samples, "cube_held", 1.0),
             "continuous_sample_count": len(samples),
