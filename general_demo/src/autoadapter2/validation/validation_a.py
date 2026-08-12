@@ -686,7 +686,8 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         if not isinstance(target, (ast.Tuple, ast.List)):
             return False
         names = [element.id if isinstance(element, ast.Name) else None for element in target.elts]
-        if any(name is None for name in names) or len(set(names)) != len(names):
+        real_names = [name for name in names if name is not None and name != "_"]
+        if any(name is None for name in names) or len(set(real_names)) != len(real_names):
             self._assignment_issue("destructuring targets must be unique non-dunder local names")
             return True
         if isinstance(value, (ast.Tuple, ast.List)):

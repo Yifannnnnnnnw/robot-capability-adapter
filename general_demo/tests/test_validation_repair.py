@@ -724,10 +724,10 @@ def test_validation_a_accepts_math_conversion_constants_with_forwarded_helpers()
 def test_validation_a_accepts_helper_call_destructuring_from_forwarded_sdk() -> None:
     source = '''def _get_state(sdk):
     observation = sdk.get_observation()
-    return observation, None
+    return observation, None, None
 
 def capability_reach_joint_target(arg_target, *, _sdk):
-    low_state, _ = _get_state(_sdk)
+    _, _, task_state = _get_state(_sdk)
     _sdk.send_action({"target": arg_target})
     return {"reported_status": "PASS"}
 '''
