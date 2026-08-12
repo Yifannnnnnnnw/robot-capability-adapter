@@ -546,3 +546,47 @@ def test_cli_manual_smoke_and_model_api_mode_only_see_sanitized_digest(tmp_path:
     callback_text = canonical_bytes(inputs).decode("utf-8").casefold()
     assert "threshold" not in callback_text
     assert "trace" not in callback_text
+
+
+def test_model_api_evolution_prompt_declares_exact_json_types() -> None:
+    sys.path.insert(0, str(PROJECT_ROOT / "general_demo" / "scripts"))
+    cli = importlib.import_module("propose_experience_candidate")
+
+    class PromptCaptureClient:
+        def __init__(self) -> None:
+            self.stage = ""
+            self.prompt = ""
+            self.inputs: dict[str, object] = {}
+
+        def generate_json(
+            self,
+            *,
+            stage: str,
+            prompt: str,
+            inputs: dict[str, object],
+        ) -> dict[str, object]:
+            self.stage = stage
+            self.prompt = prompt
+            self.inputs = copy.deepcopy(inputs)
+            return {"ok": True}
+
+    client = PromptCaptureClient()
+    agent = cli.model_api_agent(client)
+
+    assert agent({"evidence": "sanitized"}) == {"ok": True}
+    assert client.stage == "evolution"
+    assert client.inputs == {"evidence": "sanitized"}
+    for requirement in (
+        'recipient_class: a JSON string enum with exactly one of "design" or "implementation".',
+        "lesson: a nonempty JSON string.",
+        "applicability: a JSON object with exactly these keys and types:",
+        "robot_model_id: a JSON string.",
+        "robot_configuration_id: a JSON string.",
+        "sdk_entry_id: a JSON string or JSON null.",
+        "granularity_condition: a JSON string.",
+        "capability_effect_scope: a nonempty JSON array of nonempty JSON strings.",
+        "observation_condition: a JSON string.",
+        "limitations: a JSON array of nonempty JSON strings.",
+        "invalidation_conditions: a nonempty JSON array of nonempty JSON strings.",
+    ):
+        assert requirement in client.prompt

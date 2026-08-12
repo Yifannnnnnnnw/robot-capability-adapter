@@ -19,10 +19,19 @@ from autoadapter2.generation.model_api import ModelApiClient, ModelApiConfig  # 
 from autoadapter2.integration.artifacts import load_json_artifact  # noqa: E402
 
 EVOLUTION_PROMPT = """
-Return exactly one JSON object and no Markdown with exactly these keys:
-recipient_class, lesson, applicability, limitations, invalidation_conditions.
-The applicability object must contain exactly robot_model_id, robot_configuration_id,
-sdk_entry_id, granularity_condition, capability_effect_scope, and observation_condition.
+Return exactly one JSON object and no Markdown. It must contain exactly these keys and
+JSON value types:
+- recipient_class: a JSON string enum with exactly one of "design" or "implementation".
+- lesson: a nonempty JSON string.
+- applicability: a JSON object with exactly these keys and types:
+  - robot_model_id: a JSON string.
+  - robot_configuration_id: a JSON string.
+  - sdk_entry_id: a JSON string or JSON null.
+  - granularity_condition: a JSON string.
+  - capability_effect_scope: a nonempty JSON array of nonempty JSON strings.
+  - observation_condition: a JSON string.
+- limitations: a JSON array of nonempty JSON strings.
+- invalidation_conditions: a nonempty JSON array of nonempty JSON strings.
 Use only a bounded public lesson supported by the supplied sanitized evidence digest.
 Do not include source code, private evaluation details, diagnostics payloads, traces,
 video or camera details, simulator truth, credentials, prompts, or model output.
