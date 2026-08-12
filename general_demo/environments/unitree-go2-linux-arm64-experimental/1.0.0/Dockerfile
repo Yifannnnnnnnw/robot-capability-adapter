@@ -7,6 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONPATH=/opt/autoadapter/general_demo/src \
     AUTOADAPTER_RUNTIME_BUILD=/opt/autoadapter/runtime-build \
     AUTOADAPTER_GO2_EXPERIMENTAL_ARM64=1 \
+    CYCLONEDDS_HOME=/opt/cyclonedds-system \
     AUTOADAPTER_GO2_EXPERIMENTAL_RUNTIME_LOCK=/run/autoadapter/runtime-lock.json
 
 # This image is deliberately native-only.  A DGX arm64 build must report
@@ -19,6 +20,17 @@ RUN apt-get update \
       build-essential cmake pkg-config cyclonedds-dev \
       libgl1 libegl1 libglib2.0-0 libglfw3 \
     && rm -rf /var/lib/apt/lists/*
+
+# cyclonedds==0.10.2 searches CYCLONEDDS_HOME as a legacy prefix with
+# include/, bin/, and lib/libddsc.so.  Adapt the Ubuntu multiarch package
+# layout without changing the installed system paths.
+RUN test -d /usr/include/dds \
+    && test -f /usr/lib/aarch64-linux-gnu/libddsc.so \
+    && test -f /usr/lib/aarch64-linux-gnu/libcycloneddsidl.so \
+    && mkdir -p /opt/cyclonedds-system/bin /opt/cyclonedds-system/lib \
+    && ln -s /usr/include /opt/cyclonedds-system/include \
+    && ln -s /usr/lib/aarch64-linux-gnu/libddsc.so /opt/cyclonedds-system/lib/libddsc.so \
+    && ln -s /usr/lib/aarch64-linux-gnu/libcycloneddsidl.so /opt/cyclonedds-system/lib/libcycloneddsidl.so
 
 WORKDIR /opt/autoadapter
 COPY general_demo/src /opt/autoadapter/general_demo/src

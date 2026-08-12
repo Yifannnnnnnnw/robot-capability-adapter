@@ -25,6 +25,11 @@ def test_experimental_arm64_image_is_native_and_smokes_the_renderer() -> None:
     assert "MUJOCO_GL=egl" in dockerfile
     assert "ffmpeg" in dockerfile
     assert "cyclonedds-dev" in dockerfile
+    assert (
+        "CYCLONEDDS_HOME=/opt/cyclonedds-system" in dockerfile
+        and "ln -s /usr/include /opt/cyclonedds-system/include" in dockerfile
+        and "/usr/lib/aarch64-linux-gnu/libddsc.so" in dockerfile
+    )
     assert "cyclonedds==0.10.2" in (ENVIRONMENT / "python-requirements.lock").read_text(
         encoding="utf-8"
     )
