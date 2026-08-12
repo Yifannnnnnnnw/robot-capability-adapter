@@ -200,7 +200,7 @@ def test_initial_stage2_request_includes_public_controller_family_experience(mon
     monkeypatch.setattr(model_api.urllib.request, "urlopen", urlopen)
     template = json.loads(
         (
-            Path(__file__).resolve().parents[2]
+            Path(__file__).resolve().parents[1]
             / "config/first_g2_demo/robots/so-arm101.json"
         ).read_text(encoding="utf-8")
     )
@@ -223,7 +223,7 @@ def test_initial_stage2_request_includes_public_controller_family_experience(mon
     assert '"controller_family": "serial_arm_dls_closed_loop"' in request_text
     assert "fresh observation" in request_text
     assert "state-dependent send" in request_text
-    assert "at least two" in request_text.lower()
+    assert "minimum_feedback_cycles" in request_text
     for phrase in (
         '"max_feedback_cycles": 32',
         '"minimum_feedback_cycles": 2',

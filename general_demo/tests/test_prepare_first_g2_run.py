@@ -492,14 +492,14 @@ def test_quadruped_family_experience_is_in_bundle_and_public_renderer(tmp_path: 
         "time.time()",
         "at least 2 cycles",
         "fresh LowState Read",
-        "_TrackedFloat",
+        "raw fresh SDK state numeric value",
+        "fresh_q + (desired - float(fresh_q))",
         "bounded state-dependent correction",
         "20-slot LowCmd_",
         "unitree_go_msg_dds__LowCmd_",
         "CRC().Crc(message)",
         "small bounded time.sleep/advance",
         "fresh Read",
-        "float()",
         "numpy",
         "one-read-many-write",
         "bounded phase oscillator",
@@ -514,7 +514,7 @@ def test_quadruped_family_experience_is_in_bundle_and_public_renderer(tmp_path: 
     rendered = _render_public_implementation_bundle(bundle)
     assert '"implementation_experience": [' in rendered
     assert "quadruped_joint_pd_closed_loop" in rendered
-    assert "_TrackedFloat" in rendered
+    assert "fresh_q + (desired - float(fresh_q))" in rendered
 
 
 def test_experience_snapshot_rejects_wrong_robot_applicability(tmp_path: Path) -> None:
