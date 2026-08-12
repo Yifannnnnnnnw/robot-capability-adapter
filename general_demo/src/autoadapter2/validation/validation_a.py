@@ -413,7 +413,10 @@ _ALLOWED_NUMPY_PATHS = frozenset({
     ("linalg", "lstsq"),
 })
 _ALLOWED_DERIVED_OBJECT_MEMBERS = frozenset({"Init", "Read", "Write", "Crc", "get"})
-_ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({"mode", "q", "dq", "kp", "kd", "tau", "motor_cmd", "crc"})
+_ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({
+    "mode", "q", "dq", "kp", "kd", "tau", "motor_cmd", "crc", "motor_state", "position",
+})
+_ALLOWED_DERIVED_SEQUENCE_FIELDS = frozenset({"motor_state", "position"})
 _ALLOWED_LOCAL_ARRAY_ATTRIBUTES = frozenset({"T"})
 _ALLOWED_LOCAL_CONVERSION_METHODS = frozenset({"tolist"})
 
@@ -564,6 +567,9 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self.sdk_readable_locals: set[str] = set()
         self.mutable_sdk_locals: set[str] = set(sdk_derived_parameters)
         self.derived_sdk_locals: set[str] = set(sdk_derived_parameters)
+        self.read_only_sdk_locals: set[str] = set()
+        self.derived_sequence_locals: set[str] = set()
+        self.derived_element_locals: set[str] = set()
         self.safe_locals: set[str] = set()
         self.issues: list[dict[str, str]] = []
         self._issue_keys: set[tuple[str, str]] = set()
@@ -591,14 +597,74 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         return len(path) == 1 or (len(path) == 2 and path[1] in _ALLOWED_DERIVED_OBJECT_MEMBERS)
 
     def _derived_expression_allowed(self, value: ast.AST) -> bool:
+        if isinstance(value, ast.Attribute) and self._derived_element_expression(value.value):
+            return value.attr in _ALLOWED_DERIVED_OBJECT_FIELDS
+        if self._derived_element_expression(value):
+            return True
+        sequence_path = _sdk_member_path(value, self.derived_sequence_locals)
+        if sequence_path is not None:
+            return isinstance(value, ast.Subscript) and self._sequence_selector_allowed(value.slice)
         path = _sdk_member_path(value, self.derived_sdk_locals)
         if path is None:
             return True
+        root = _expression_root(value)
+        if root in self.read_only_sdk_locals:
+            return all(
+                segment is None or segment in _ALLOWED_DERIVED_OBJECT_FIELDS
+                for segment in path
+            )
         return all(
             segment is None
             or segment in _ALLOWED_DERIVED_OBJECT_FIELDS
             or segment in _ALLOWED_DERIVED_OBJECT_MEMBERS
             for segment in path
+        )
+
+    def _sequence_selector_allowed(self, value: ast.AST) -> bool:
+        if isinstance(value, ast.Slice):
+            return all(
+                part is None or _safe_literal_ast(part)
+                for part in (value.lower, value.upper, value.step)
+            )
+        return _safe_literal_ast(value)
+
+    def _derived_sequence_expression(self, value: ast.AST) -> bool:
+        if isinstance(value, ast.Name):
+            return value.id in self.derived_sequence_locals
+        if isinstance(value, ast.Attribute):
+            path = _sdk_member_path(value, self.derived_sdk_locals)
+            return bool(
+                path
+                and path[-1] in _ALLOWED_DERIVED_SEQUENCE_FIELDS
+                and self._derived_expression_allowed(value)
+            )
+        if isinstance(value, ast.Subscript):
+            return (
+                self._derived_sequence_expression(value.value)
+                and isinstance(value.slice, ast.Slice)
+                and self._sequence_selector_allowed(value.slice)
+            )
+        if isinstance(value, ast.Call) and isinstance(value.func, ast.Name) and value.func.id in {"list", "tuple"}:
+            return len(value.args) == 1 and self._derived_sequence_expression(value.args[0])
+        return False
+
+    def _derived_element_expression(self, value: ast.AST) -> bool:
+        if isinstance(value, ast.Name):
+            return value.id in self.derived_element_locals
+        if isinstance(value, ast.Subscript):
+            return (
+                self._derived_sequence_expression(value.value)
+                and not isinstance(value.slice, ast.Slice)
+                and self._sequence_selector_allowed(value.slice)
+            )
+        return False
+
+    def _read_only_derived_expression(self, value: ast.AST) -> bool:
+        return (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Attribute)
+            and value.func.attr == "Read"
+            and self._call_origin(value.func) == "sdk-derived-method"
         )
 
     def _call_origin(self, function: ast.AST) -> str | None:
@@ -649,6 +715,12 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         if isinstance(value, ast.Constant):
             return True, False, False
         if isinstance(value, ast.Name):
+            if value.id in self.derived_element_locals:
+                return True, True, False
+            if value.id in self.derived_sequence_locals:
+                return True, True, False
+            if value.id in self.read_only_sdk_locals:
+                return True, True, False
             if value.id in self.sdk_names:
                 return True, True, True
             if value.id in self.mutable_sdk_locals:
@@ -673,7 +745,19 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if sdk_root:
                 allowed = self._sdk_expression_allowed(value)
                 return allowed, allowed, allowed
+            if isinstance(value, ast.Attribute) and self._derived_element_expression(value.value):
+                return value.attr in _ALLOWED_DERIVED_OBJECT_FIELDS, True, False
+            if self._derived_element_expression(value):
+                return True, True, False
+            if self._derived_sequence_expression(value):
+                return True, True, False
             root = _expression_root(value)
+            if root in self.read_only_sdk_locals or root in self.derived_sdk_locals:
+                return (
+                    self._derived_expression_allowed(value),
+                    True,
+                    root in self.mutable_sdk_locals and root not in self.read_only_sdk_locals,
+                )
             if root in self.mutable_sdk_locals:
                 return True, True, True
             if root in self.sdk_readable_locals:
@@ -701,6 +785,13 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if origin is None:
                 return False, False, False
             if origin == "local-function":
+                if (
+                    isinstance(value.func, ast.Name)
+                    and value.func.id in {"list", "tuple"}
+                    and len(value.args) == 1
+                    and self._derived_sequence_expression(value.args[0])
+                ):
+                    return True, True, False
                 helper_return = self._helper_return(value)
                 if helper_return is not None:
                     if helper_return.elements is not None:
@@ -718,17 +809,22 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return all(item[0] for item in results), False, False
         if isinstance(value, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
             saved_locals = set(self.safe_locals)
+            saved_elements = set(self.derived_element_locals)
             expressions: list[ast.AST] = []
             for generator in value.generators:
                 expressions.append(generator.iter)
                 expressions.extend(generator.ifs)
-                self._bind_safe_target(generator.target)
+                if self._derived_sequence_expression(generator.iter):
+                    self._bind_derived_element_target(generator.target)
+                else:
+                    self._bind_safe_target(generator.target)
             if isinstance(value, ast.DictComp):
                 expressions.extend((value.key, value.value))
             else:
                 expressions.append(value.elt)
             allowed = all(self._classify_expression(expression)[0] for expression in expressions)
             self.safe_locals = saved_locals
+            self.derived_element_locals = saved_elements
             return allowed, False, False
         if isinstance(value, ast.UnaryOp):
             return self._classify_expression(value.operand)[0], False, False
@@ -766,6 +862,9 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         if _dunder(name) or name == "_sdk":
             self._assignment_issue("assignment to a reserved or dunder name is forbidden")
             return False
+        self.read_only_sdk_locals.discard(name)
+        self.derived_sequence_locals.discard(name)
+        self.derived_element_locals.discard(name)
         allowed, sdk_derived, mutable = classification or self._classify_expression(value)
         if not allowed:
             self._assignment_issue()
@@ -779,7 +878,11 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             )
             if member_checked is None and isinstance(value, ast.Call):
                 helper_return = self._helper_return(value)
-                member_checked = helper_return.scalar_member_checked if helper_return is not None else derived_value
+                member_checked = (
+                    helper_return.scalar_member_checked
+                    if helper_return is not None
+                    else self._member_checked(value)
+                )
             if member_checked is None:
                 member_checked = derived_value or (isinstance(value, ast.Name) and value.id in self.derived_sdk_locals)
             if sdk_derived and member_checked:
@@ -797,6 +900,16 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             self.sdk_readable_locals.discard(name)
             self.mutable_sdk_locals.discard(name)
             self.derived_sdk_locals.discard(name)
+        if self._read_only_derived_expression(value):
+            self.read_only_sdk_locals.add(name)
+            self.derived_sdk_locals.add(name)
+        if self._derived_sequence_expression(value):
+            self.derived_sequence_locals.add(name)
+            self.safe_locals.discard(name)
+            self.sdk_readable_locals.add(name)
+        if self._derived_element_expression(value):
+            self.derived_element_locals.add(name)
+            self.safe_locals.discard(name)
         if isinstance(value, ast.Name) and value.id in self.sdk_names:
             self.sdk_names.add(name)
         return True
@@ -855,7 +968,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return
         self.visit(target)
         root = _expression_root(target)
-        if root not in self.mutable_sdk_locals and root not in self.safe_locals | self.public_inputs:
+        if root in self.read_only_sdk_locals or root not in self.mutable_sdk_locals and root not in self.safe_locals | self.public_inputs:
             self._assignment_issue("only a local value derived from the injected SDK may be mutated")
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
@@ -868,7 +981,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return
         self.visit(node.target)
         root = _expression_root(node.target)
-        if root not in self.mutable_sdk_locals and root not in self.safe_locals | self.public_inputs:
+        if root in self.read_only_sdk_locals or root not in self.mutable_sdk_locals and root not in self.safe_locals | self.public_inputs:
             self._assignment_issue("only a local value derived from the injected SDK may be mutated")
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
@@ -888,6 +1001,7 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             if _dunder(target.id) or target.id == "_sdk":
                 self._assignment_issue("assignment to a reserved or dunder name is forbidden")
             else:
+                self.derived_element_locals.discard(target.id)
                 self.safe_locals.add(target.id)
             return
         if isinstance(target, (ast.Tuple, ast.List)):
@@ -896,13 +1010,32 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return
         self._assignment_issue("loop targets must be local names")
 
+    def _bind_derived_element_target(self, target: ast.AST) -> None:
+        if isinstance(target, ast.Name):
+            if _dunder(target.id) or target.id == "_sdk":
+                self._assignment_issue("assignment to a reserved or dunder name is forbidden")
+            else:
+                self.derived_element_locals.add(target.id)
+                self.safe_locals.discard(target.id)
+            return
+        if isinstance(target, (ast.Tuple, ast.List)):
+            for element in target.elts:
+                self._bind_derived_element_target(element)
+            return
+        self._assignment_issue("loop targets must be local names")
+
     def visit_For(self, node: ast.For) -> None:
         self.visit(node.iter)
         if not self._classify_expression(node.iter)[0]:
             self._assignment_issue("for-loop iterables must be approved safe ranges or literal local values")
-        self._bind_safe_target(node.target)
+        saved_elements = set(self.derived_element_locals)
+        if self._derived_sequence_expression(node.iter):
+            self._bind_derived_element_target(node.target)
+        else:
+            self._bind_safe_target(node.target)
         for statement in [*node.body, *node.orelse]:
             self.visit(statement)
+        self.derived_element_locals = saved_elements
 
     def visit_While(self, node: ast.While) -> None:
         self.visit(node.test)

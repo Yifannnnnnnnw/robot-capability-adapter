@@ -1321,6 +1321,46 @@ def test_validation_a_static_accepts_observed_go2_final_source_and_keeps_dangero
         assert issues, name
 
 
+@pytest.mark.parametrize("conversion", ["list", "tuple"])
+def test_validation_a_accepts_sdk_derived_sequence_conversion_and_element_reads(conversion: str) -> None:
+    source = f'''def capability_reach_joint_target(arg_target, *, _sdk):
+    state_sub = _sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)
+    state = state_sub.Read()
+    current_pos = {conversion}(state.motor_state[:12])
+    current_q = [m.q for m in current_pos]
+    current_dq = [m.dq for m in current_pos]
+    return {{"reported_status": "PASS"}}
+'''
+    assert _go2_helper_provenance_issues(source) == []
+
+
+def test_validation_a_rejects_unapproved_sequence_element_attributes_and_mutation() -> None:
+    arbitrary = '''def capability_reach_joint_target(arg_target, *, _sdk):
+    state_sub = _sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)
+    state = state_sub.Read()
+    current_pos = list(state.motor_state[:12])
+    current_q = [m.arbitrary for m in current_pos]
+    return {"reported_status": "PASS"}
+'''
+    assert _go2_helper_provenance_issues(arbitrary)
+
+    state_mutation = arbitrary.replace(
+        "    current_q = [m.arbitrary for m in current_pos]\n",
+        "    state.motor_state[0].q = 0.0\n    current_q = [m.q for m in current_pos]\n",
+    )
+    assert _go2_helper_provenance_issues(state_mutation)
+
+
+def test_validation_a_rejects_public_input_sequence_element_attributes() -> None:
+    source = '''def capability_reach_joint_target(arg_target, *, _sdk):
+    current_pos = arg_target
+    current_q = [m.q for m in current_pos]
+    _sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)
+    return {"reported_status": "PASS"}
+'''
+    assert _go2_helper_provenance_issues(source)
+
+
 def test_validation_a_restricts_analysis_to_reachable_helpers_and_propagates_sdk_provenance() -> None:
     assert _go2_helper_provenance_issues(GO2_HELPER_PROVENANCE_SOURCE) == []
 
