@@ -25,6 +25,9 @@ from ...foundation.canonical import canonical_bytes
 
 RUNTIME_ID = "unitree-go2-linux-amd64"
 RUNTIME_VERSION = "1.0.0"
+EXPERIMENTAL_ARM64_RUNTIME_ID = "unitree-go2-linux-arm64-experimental"
+EXPERIMENTAL_ARM64_RUNTIME_VERSION = "1.0.0"
+EXPERIMENTAL_ARM64_RUNTIME_STATUS = "EXPERIMENTAL_FROZEN_FROM_VERIFIED_LINUX_ARM64_BUILD"
 SDK_COMMIT = "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5"
 MUJOCO_COMMIT = "ae6a8403e272733e9996ef59990880330496177f"
 DIRECT_DISTRIBUTIONS = {
@@ -231,18 +234,32 @@ def _model_record(entrypoint: Path, closure_root: Path) -> dict[str, Any]:
     }
 
 
-def capture_runtime_lock(
+def _capture_runtime_lock(
     *,
     image_digest: str,
     sdk_checkout: str | Path = "/opt/unitree_sdk2_python",
     mujoco_checkout: str | Path = "/opt/unitree_mujoco",
     model_path: str | Path = "/opt/unitree_mujoco/unitree_robots/go2/scene.xml",
     dependency_lock_path: str | Path = "/opt/autoadapter/python-requirements.lock",
+    runtime_id: str,
+    runtime_version: str,
+    runtime_status: str,
+    architecture: str,
+    required_machine: str | tuple[str, ...],
+    crc_library: str,
+    required_machine_label: str | None = None,
+    include_experimental_session_source: bool = False,
 ) -> dict[str, Any]:
-    """Capture the exact small runtime closure used by one Go2 experiment."""
+    """Capture one explicitly selected Go2 runtime closure."""
 
-    if sys.platform != "linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
-        raise RuntimeLockError("Go2 Runtime Lock capture requires Linux amd64")
+    required_machines = (
+        (required_machine,) if isinstance(required_machine, str) else required_machine
+    )
+    if sys.platform != "linux" or platform.machine().lower() not in required_machines:
+        raise RuntimeLockError(
+            "Go2 Runtime Lock capture requires Linux "
+            f"{required_machine_label or required_machines[0]}"
+        )
     if sys.version_info[:2] != (3, 10):
         raise RuntimeLockError("Go2 Runtime Lock capture requires CPython 3.10")
     if not _DIGEST.fullmatch(image_digest):
@@ -265,7 +282,7 @@ def capture_runtime_lock(
     packages_by_name = {item["name"]: item for item in packages}
     packages_by_name["unitree_sdk2py"]["source_commit"] = SDK_COMMIT
 
-    crc_path = sdk_checkout / "unitree_sdk2py/utils/lib/crc_amd64.so"
+    crc_path = sdk_checkout / f"unitree_sdk2py/utils/lib/{crc_library}"
     native_paths.add(crc_path)
     native_records = []
     for path in sorted(native_paths, key=lambda item: item.as_posix()):
@@ -279,14 +296,16 @@ def capture_runtime_lock(
         Path(__file__).with_name("readiness.py").resolve(),
         Path("/opt/autoadapter/general_demo/scripts/run_unitree_go2_readiness.py").resolve(),
     ]
+    if include_experimental_session_source:
+        implementation_paths.append(Path(__file__).with_name("session.py").resolve())
     return {
         "schema_version": "1.0.0",
-        "runtime_id": RUNTIME_ID,
-        "version": RUNTIME_VERSION,
-        "status": "FROZEN_FROM_VERIFIED_LINUX_BUILD",
+        "runtime_id": runtime_id,
+        "version": runtime_version,
+        "status": runtime_status,
         "platform": {
             "os": "Ubuntu 22.04",
-            "architecture": "amd64",
+            "architecture": architecture,
             "python": "3.10",
             "python_version": platform.python_version(),
             "python_build": list(platform.python_build()),
@@ -327,6 +346,62 @@ def capture_runtime_lock(
     }
 
 
+def capture_runtime_lock(
+    *,
+    image_digest: str,
+    sdk_checkout: str | Path = "/opt/unitree_sdk2_python",
+    mujoco_checkout: str | Path = "/opt/unitree_mujoco",
+    model_path: str | Path = "/opt/unitree_mujoco/unitree_robots/go2/scene.xml",
+    dependency_lock_path: str | Path = "/opt/autoadapter/python-requirements.lock",
+) -> dict[str, Any]:
+    """Capture the formal Linux amd64 Go2 runtime closure."""
+
+    return _capture_runtime_lock(
+        image_digest=image_digest,
+        sdk_checkout=sdk_checkout,
+        mujoco_checkout=mujoco_checkout,
+        model_path=model_path,
+        dependency_lock_path=dependency_lock_path,
+        runtime_id=RUNTIME_ID,
+        runtime_version=RUNTIME_VERSION,
+        runtime_status="FROZEN_FROM_VERIFIED_LINUX_BUILD",
+        architecture="amd64",
+        required_machine=("x86_64", "amd64"),
+        required_machine_label="amd64",
+        crc_library="crc_amd64.so",
+    )
+
+
+def capture_experimental_arm64_runtime_lock(
+    *,
+    image_digest: str,
+    sdk_checkout: str | Path = "/opt/unitree_sdk2_python",
+    mujoco_checkout: str | Path = "/opt/unitree_mujoco",
+    model_path: str | Path = "/opt/unitree_mujoco/unitree_robots/go2/scene.xml",
+    dependency_lock_path: str | Path = "/opt/autoadapter/python-requirements.lock",
+) -> dict[str, Any]:
+    """Capture the opt-in native DGX arm64 Go2 runtime closure.
+
+    This deliberately has its own runtime identity and non-formal status.  It
+    is not a platform fallback for the formal amd64 contract.
+    """
+
+    return _capture_runtime_lock(
+        image_digest=image_digest,
+        sdk_checkout=sdk_checkout,
+        mujoco_checkout=mujoco_checkout,
+        model_path=model_path,
+        dependency_lock_path=dependency_lock_path,
+        runtime_id=EXPERIMENTAL_ARM64_RUNTIME_ID,
+        runtime_version=EXPERIMENTAL_ARM64_RUNTIME_VERSION,
+        runtime_status=EXPERIMENTAL_ARM64_RUNTIME_STATUS,
+        architecture="arm64",
+        required_machine="aarch64",
+        crc_library="crc_aarch64.so",
+        include_experimental_session_source=True,
+    )
+
+
 def verify_runtime_lock(runtime_lock: dict[str, Any]) -> dict[str, Any]:
     """Recompute the small closure and require byte-equivalent content."""
 
@@ -336,6 +411,20 @@ def verify_runtime_lock(runtime_lock: dict[str, Any]) -> dict[str, Any]:
     actual = capture_runtime_lock(image_digest=image_digest)
     if runtime_lock != actual:
         raise RuntimeLockError("Runtime Lock does not match the live Linux runtime")
+    return actual
+
+
+def verify_experimental_arm64_runtime_lock(runtime_lock: dict[str, Any]) -> dict[str, Any]:
+    """Recompute and verify the explicit experimental native arm64 lock."""
+
+    image_digest = runtime_lock.get("oci_image_digest")
+    if not isinstance(image_digest, str):
+        raise RuntimeLockError("experimental arm64 Runtime Lock lacks oci_image_digest")
+    actual = capture_experimental_arm64_runtime_lock(image_digest=image_digest)
+    if runtime_lock != actual:
+        raise RuntimeLockError(
+            "experimental arm64 Runtime Lock does not match the live Linux runtime"
+        )
     return actual
 
 

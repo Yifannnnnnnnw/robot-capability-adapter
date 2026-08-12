@@ -19,6 +19,8 @@ import json
 import math
 import multiprocessing
 import os
+import platform
+import sys
 import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -63,6 +65,11 @@ GO2_XML_SHA256 = "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d
 GO2_ASSET_CLOSURE_SHA256 = "f9966ae2644b65dd555cb6dde33fb0175bb5b3e18c3faf2a6f8ed95d5533e5f7"
 GO2_RUNTIME_ID = "unitree-go2-linux-amd64"
 GO2_RUNTIME_VERSION = "1.0.0"
+GO2_EXPERIMENTAL_ARM64_RUNTIME_ID = "unitree-go2-linux-arm64-experimental"
+GO2_EXPERIMENTAL_ARM64_RUNTIME_VERSION = "1.0.0"
+GO2_EXPERIMENTAL_ARM64_RUNTIME_STATUS = "EXPERIMENTAL_FROZEN_FROM_VERIFIED_LINUX_ARM64_BUILD"
+GO2_EXPERIMENTAL_ARM64_ENV = "AUTOADAPTER_GO2_EXPERIMENTAL_ARM64"
+GO2_EXPERIMENTAL_ARM64_LOCK_ENV = "AUTOADAPTER_GO2_EXPERIMENTAL_RUNTIME_LOCK"
 GO2_TASK_RELATIVE_PATH = (
     "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
 )
@@ -77,6 +84,16 @@ class Go2SessionError(RuntimeError):
 
 class Go2SDKError(Go2SessionError):
     """The narrow SDK2 façade could not construct or use a real endpoint."""
+
+
+def _experimental_arm64_enabled() -> bool:
+    """Return true only for the explicit native arm64 experimental route."""
+
+    return (
+        os.environ.get(GO2_EXPERIMENTAL_ARM64_ENV) == "1"
+        and sys.platform == "linux"
+        and platform.machine().lower() == "aarch64"
+    )
 
 
 def _finite(value: Any, label: str) -> float:
@@ -2079,6 +2096,7 @@ def _factory_runner_inputs(
     if manifest_lock_hash is None:
         raise Go2SessionError("selected Go2 integration manifest has no runtime lock hash")
 
+    experimental_arm64 = _experimental_arm64_enabled()
     snapshot: Mapping[str, Any] | None = None
     selected_run_directory = None
     if run_directory is not None:
@@ -2110,7 +2128,7 @@ def _factory_runner_inputs(
                 raise Go2SessionError("first-G2 run snapshot does not bind the selected runtime")
 
     selected_lock = runtime_lock_path
-    if selected_lock is None and snapshot is not None:
+    if selected_lock is None and snapshot is not None and not experimental_arm64:
         for key in ("runtime_lock_ref", "runtime_lock", "runtime_lock_path"):
             candidate = snapshot.get(key)
             if isinstance(candidate, Mapping):
@@ -2124,6 +2142,16 @@ def _factory_runner_inputs(
             if isinstance(candidate, (str, Path)):
                 selected_lock = candidate
                 break
+    if selected_lock is None and experimental_arm64:
+        selected_lock = os.environ.get(GO2_EXPERIMENTAL_ARM64_LOCK_ENV)
+        if selected_lock is None:
+            selected_lock = (
+                root
+                / "general_demo/environments"
+                / GO2_EXPERIMENTAL_ARM64_RUNTIME_ID
+                / GO2_EXPERIMENTAL_ARM64_RUNTIME_VERSION
+                / "runtime-lock.json"
+            )
     if selected_lock is None:
         translation_ref = manifest_value.get("translation_ref")
         if translation_ref is not None:
@@ -2169,12 +2197,18 @@ def _factory_runner_inputs(
     if not selected_lock_path.is_absolute():
         selected_lock_path = root / selected_lock_path
     selected_lock_path = selected_lock_path.resolve()
+    selected_lock_hash = manifest_lock_hash
+    if experimental_arm64 and runtime_lock_sha256 is None:
+        selected_lock_hash = _factory_sha256(
+            selected_lock_path,
+            "selected experimental arm64 Go2 runtime lock",
+        )
     return (
         root,
         selected_manifest,
         selected_manifest_hash,
         selected_lock_path,
-        manifest_lock_hash,
+        selected_lock_hash,
         selected_run_directory,
     )
 
@@ -2364,6 +2398,7 @@ def _verify_production_inputs(
         runtime.get("architecture"),
     ) != (GO2_RUNTIME_ID, GO2_RUNTIME_VERSION, "3.3.6", "amd64"):
         raise Go2SessionError("Go2 integration manifest runtime binding is not frozen")
+    experimental_arm64 = _experimental_arm64_enabled()
     manifest_runtime_lock_sha256 = _factory_hash_argument(
         runtime.get("lock_sha256"), "Go2 integration manifest runtime lock reference"
     )
@@ -2372,6 +2407,7 @@ def _verify_production_inputs(
     if (
         selected_runtime_lock_sha256 is not None
         and selected_runtime_lock_sha256 != manifest_runtime_lock_sha256
+        and not experimental_arm64
     ):
         raise Go2SessionError(
             "selected runtime lock hash does not match the manifest runtime lock reference"
@@ -2402,7 +2438,17 @@ def _verify_production_inputs(
     )
     try:
         validate_readiness_profile(readiness)
-        validate_robot_facts(root, manifest)
+        if experimental_arm64:
+            # The formal Translation record hashes the formal amd64 source
+            # snapshot.  Keep its mechanical robot facts checks for this
+            # route, but do not claim those READY source hashes for the
+            # experimental arm64 branch; its native Runtime Lock captures the
+            # actual implementation sources instead.
+            experimental_facts_manifest = copy.deepcopy(manifest)
+            experimental_facts_manifest["status"] = "DRAFT"
+            validate_robot_facts(root, experimental_facts_manifest)
+        else:
+            validate_robot_facts(root, manifest)
     except Exception as exc:
         raise Go2SessionError("Go2 manifest dependencies failed the robot readiness gate") from exc
     if morphology.get("robot_configuration_id") != ROBOT_CONFIGURATION_ID:
@@ -2427,12 +2473,41 @@ def _verify_production_inputs(
             "Go2 runtime lock hash does not match the manifest-selected current bytes"
         )
     runtime_lock = runtime_lock_artifact.value
+    expected_runtime_lock = (
+        (
+            GO2_EXPERIMENTAL_ARM64_RUNTIME_ID,
+            GO2_EXPERIMENTAL_ARM64_RUNTIME_VERSION,
+            GO2_EXPERIMENTAL_ARM64_RUNTIME_STATUS,
+        )
+        if experimental_arm64
+        else (GO2_RUNTIME_ID, GO2_RUNTIME_VERSION, "FROZEN_FROM_VERIFIED_LINUX_BUILD")
+    )
     if (
         runtime_lock.get("runtime_id"),
         runtime_lock.get("version"),
         runtime_lock.get("status"),
-    ) != (GO2_RUNTIME_ID, GO2_RUNTIME_VERSION, "FROZEN_FROM_VERIFIED_LINUX_BUILD"):
+    ) != expected_runtime_lock:
+        if experimental_arm64:
+            raise Go2SessionError(
+                "experimental Go2 runtime lock is not the verified native arm64 build"
+            )
         raise Go2SessionError("Go2 runtime lock is not the frozen verified build")
+    if experimental_arm64:
+        lock_platform = runtime_lock.get("platform")
+        if not isinstance(lock_platform, Mapping) or (
+            lock_platform.get("os"),
+            lock_platform.get("architecture"),
+            lock_platform.get("python"),
+        ) != ("Ubuntu 22.04", "arm64", "3.10"):
+            raise Go2SessionError("experimental Go2 runtime lock is not native Linux arm64")
+        native_libraries = runtime_lock.get("native_library_fingerprints")
+        if not isinstance(native_libraries, list) or not any(
+            isinstance(item, Mapping)
+            and isinstance(item.get("path"), str)
+            and item["path"].endswith("/crc_aarch64.so")
+            for item in native_libraries
+        ):
+            raise Go2SessionError("experimental Go2 runtime lock does not bind crc_aarch64.so")
     if runtime_lock.get("unresolved") != []:
         raise Go2SessionError("Go2 runtime lock contains unresolved items")
     entrypoint = runtime_lock.get("mujoco_entrypoint")
