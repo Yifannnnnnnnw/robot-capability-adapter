@@ -53,6 +53,16 @@ TASK_INSTANCE_SOURCE_RELATIVE_PATH = {
     "so-arm101": "general_demo/libraries/tasks/so-arm101-follower-stock-gripper/1.0.0/task_instances_private.json",
     "unitree-go2": "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json",
 }
+SO_KINEMATICS_PROJECTION_RELATIVE_PATH = (
+    "general_demo/libraries/morphology/so-arm101-follower-stock-gripper/"
+    "1.0.0/kinematics_projection.json"
+)
+SO_CANONICAL_MODEL_REF = {
+    "repository": "https://github.com/TheRobotStudio/SO-ARM100",
+    "commit": "7629d2ad9853d10fb903093a33ef6114099d97e5",
+    "path": "Simulation/SO101/so101_new_calib.xml",
+    "sha256": "d75253eb568e8a7214db9c631ab7bed4217f608a26f7276ebe9a7636cac82580",
+}
 DEFAULT_MANIFESTS = {
     "so-arm101": "general_demo/integrations/so-arm101/integration_manifest.json",
     "unitree-go2": "general_demo/integrations/unitree-go2/integration_manifest.json",
@@ -1104,12 +1114,142 @@ def _go2_unsupported_behavior(sdk: Mapping[str, Any], translation: Mapping[str, 
     return normalized
 
 
+def _finite_vector(value: Any, length: int, label: str) -> list[float | int]:
+    if not isinstance(value, list) or len(value) != length:
+        raise RunPackError(f"{label} must be a numeric vector of length {length}")
+    return [_finite_number(item, f"{label}[{index}]") for index, item in enumerate(value)]
+
+
+def _validate_so_kinematics_projection(
+    value: Mapping[str, Any],
+    morphology: Mapping[str, Any],
+) -> dict[str, Any]:
+    projection = _as_object(value, "SO kinematics projection")
+    required = {"units", "sdk_units", "sdk_gripper_range", "base_frame", "joint_order", "chain", "end_effector"}
+    if set(projection) != required:
+        raise RunPackError("SO kinematics projection fields are not closed")
+    if projection["units"] != {
+        "joint_angle": "rad",
+        "translation": "m",
+        "orientation": "quaternion_wxyz",
+    }:
+        raise RunPackError("SO kinematics projection must use radian joint geometry")
+    if projection["sdk_units"] != {"arm": "degree", "gripper": "normalized_0_100"}:
+        raise RunPackError("SO kinematics projection SDK units do not match LeRobot")
+    if projection["sdk_gripper_range"] != [0, 100]:
+        raise RunPackError("SO kinematics projection gripper range must be 0..100")
+    _recursive_forbidden(
+        projection,
+        (
+            "private", "criterion", "target", "task", "ik", "inverse", "algorithm",
+            "controller", "gain", "threshold", "truth", "simulator", "runtime",
+            "source",
+        ),
+        reject_string_values=True,
+    )
+
+    base_frame = _as_object(projection["base_frame"], "SO kinematics base_frame")
+    if set(base_frame) != {"body", "position_m", "quaternion_wxyz"} or base_frame["body"] != "base":
+        raise RunPackError("SO kinematics base frame is invalid")
+    _finite_vector(base_frame["position_m"], 3, "SO kinematics base_frame.position_m")
+    _finite_vector(base_frame["quaternion_wxyz"], 4, "SO kinematics base_frame.quaternion_wxyz")
+
+    expected_joint_order = morphology.get("joint_names")
+    if not isinstance(expected_joint_order, list) or projection["joint_order"] != expected_joint_order:
+        raise RunPackError("SO kinematics joint order does not match the admitted morphology record")
+    if projection["joint_order"] != [
+        "shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"
+    ]:
+        raise RunPackError("SO kinematics joint order is not the stock arm-plus-gripper order")
+
+    chain = projection["chain"]
+    if not isinstance(chain, list) or len(chain) != len(projection["joint_order"]):
+        raise RunPackError("SO kinematics chain must cover every ordered joint")
+    expected_parents = ["base", "shoulder", "upper_arm", "lower_arm", "wrist", "gripper"]
+    expected_children = ["shoulder", "upper_arm", "lower_arm", "wrist", "gripper", "moving_jaw_so101_v1"]
+    for index, item in enumerate(chain):
+        joint = _as_object(item, f"SO kinematics chain[{index}]")
+        required_joint = {
+            "joint_name", "group", "parent_body", "child_body", "joint_type", "axis", "axis_frame",
+            "joint_origin_in_child_body_m", "parent_to_joint", "range_rad",
+        }
+        if set(joint) != required_joint:
+            raise RunPackError(f"SO kinematics chain[{index}] fields are not closed")
+        if (
+            joint["joint_name"] != projection["joint_order"][index]
+            or joint["parent_body"] != expected_parents[index]
+            or joint["child_body"] != expected_children[index]
+            or joint["group"] != ("arm" if index < 5 else "gripper")
+            or joint["joint_type"] != "hinge"
+            or joint["axis_frame"] != "child_body"
+        ):
+            raise RunPackError(f"SO kinematics chain[{index}] identity is invalid")
+        if _finite_vector(joint["axis"], 3, f"SO kinematics chain[{index}].axis") != [0, 0, 1]:
+            raise RunPackError(f"SO kinematics chain[{index}] axis is invalid")
+        if _finite_vector(joint["joint_origin_in_child_body_m"], 3, f"SO kinematics chain[{index}].joint_origin_in_child_body_m") != [0, 0, 0]:
+            raise RunPackError(f"SO kinematics chain[{index}] joint origin is invalid")
+        parent_to_joint = _as_object(joint["parent_to_joint"], f"SO kinematics chain[{index}].parent_to_joint")
+        if set(parent_to_joint) != {"position_m", "quaternion_wxyz"}:
+            raise RunPackError(f"SO kinematics chain[{index}] fixed transform is invalid")
+        _finite_vector(parent_to_joint["position_m"], 3, f"SO kinematics chain[{index}].parent_to_joint.position_m")
+        _finite_vector(parent_to_joint["quaternion_wxyz"], 4, f"SO kinematics chain[{index}].parent_to_joint.quaternion_wxyz")
+        joint_range = _finite_vector(joint["range_rad"], 2, f"SO kinematics chain[{index}].range_rad")
+        if joint_range[0] >= joint_range[1]:
+            raise RunPackError(f"SO kinematics chain[{index}] range is not increasing")
+
+    end_effector = _as_object(projection["end_effector"], "SO kinematics end_effector")
+    if set(end_effector) != {"name", "reference_site", "site_body", "parent_to_reference"}:
+        raise RunPackError("SO kinematics end-effector facts are not closed")
+    if end_effector["name"] != "stock_gripper" or end_effector["reference_site"] != "gripperframe" or end_effector["site_body"] != "gripper":
+        raise RunPackError("SO kinematics end-effector reference is invalid")
+    parent_to_reference = _as_object(end_effector["parent_to_reference"], "SO kinematics parent_to_reference")
+    if set(parent_to_reference) != {"position_m", "quaternion_wxyz"}:
+        raise RunPackError("SO kinematics end-effector fixed transform is invalid")
+    _finite_vector(parent_to_reference["position_m"], 3, "SO kinematics parent_to_reference.position_m")
+    _finite_vector(parent_to_reference["quaternion_wxyz"], 4, "SO kinematics parent_to_reference.quaternion_wxyz")
+    return projection
+
+
+def _load_so_kinematics_projection(
+    root: Path,
+    morphology: Mapping[str, Any],
+    morphology_ref: Mapping[str, str],
+) -> dict[str, Any]:
+    path = _resolve_input(
+        root,
+        None,
+        SO_KINEMATICS_PROJECTION_RELATIVE_PATH,
+        "SO kinematics projection",
+    )
+    try:
+        artifact = load_json_artifact(path)
+    except (OSError, ContractError, IntegrityError) as exc:
+        raise RunPackError("SO kinematics projection must be a valid checked-in JSON artifact") from exc
+    value = _as_object(artifact.value, "SO kinematics projection artifact")
+    required = {
+        "artifact_type", "schema_version", "robot_model_id", "robot_configuration_id",
+        "canonical_model_ref", "admitted_morphology_ref", "kinematics",
+    }
+    if set(value) != required:
+        raise RunPackError("SO kinematics projection artifact fields are not closed")
+    if value["artifact_type"] != "so_arm101_public_kinematics_projection" or value["schema_version"] != SCHEMA_VERSION:
+        raise RunPackError("SO kinematics projection artifact identity is invalid")
+    if value["robot_model_id"] != "so-arm101" or value["robot_configuration_id"] != "so-arm101-follower-stock-gripper":
+        raise RunPackError("SO kinematics projection artifact robot identity is invalid")
+    if value["canonical_model_ref"] != SO_CANONICAL_MODEL_REF:
+        raise RunPackError("SO kinematics projection is not bound to the pinned canonical model")
+    if not isinstance(value["admitted_morphology_ref"], Mapping) or dict(value["admitted_morphology_ref"]) != dict(morphology_ref):
+        raise RunPackError("SO kinematics projection is not bound to the admitted morphology record")
+    return _validate_so_kinematics_projection(value["kinematics"], morphology)
+
+
 def _implementation_projection_from_records(
     robot: str,
     morphology: Mapping[str, Any],
     sdk: Mapping[str, Any],
     translation: Mapping[str, Any],
     projection: Mapping[str, Any],
+    kinematics_projection: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     topology = copy.deepcopy(dict(projection["topology"]))
     robot_facts = {
@@ -1128,9 +1268,12 @@ def _implementation_projection_from_records(
         "unsupported_behavior": copy.deepcopy(projection["unsupported_behavior"]),
     }
     if robot == "so-arm101":
+        if kinematics_projection is None:
+            raise RunPackError("SO kinematics projection is required for the Implementation Bundle")
         implementation = translation.get("implementation")
         if not isinstance(implementation, Mapping):
             raise RunPackError("SO checked-in translation implementation facts are missing")
+        robot_facts["kinematics"] = copy.deepcopy(dict(kinematics_projection))
         sdk_projection = {
             "sdk_entry_id": sdk["id"],
             "sdk_entry_version": sdk["version"],
@@ -1316,6 +1459,8 @@ def _validate_implementation_bundle_contents(bundle: Mapping[str, Any], robot: s
     if robot_facts["effect_allowlist"] != PUBLIC_EFFECT_ALLOWLIST[robot]:
         raise RunPackError("Implementation Bundle effect_allowlist does not match the public projection")
     if robot == "so-arm101":
+        if not isinstance(robot_facts.get("kinematics"), Mapping) or not robot_facts["kinematics"]:
+            raise RunPackError("SO Implementation Bundle kinematics facts are empty")
         if sdk_projection.get("permitted_operations") != list(SO_PUBLIC_INJECTED_OPERATIONS):
             raise RunPackError("SO Implementation Bundle permitted_operations must match the injected facade")
         if sdk_projection.get("lifecycle") != list(SO_FRAMEWORK_LIFECYCLE):
@@ -1333,8 +1478,16 @@ def _build_implementation_bundle(
     translation: Mapping[str, Any],
     projection: Mapping[str, Any],
     template: Mapping[str, Any],
+    kinematics_projection: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    derived = _implementation_projection_from_records(robot, morphology, sdk, translation, projection)
+    derived = _implementation_projection_from_records(
+        robot,
+        morphology,
+        sdk,
+        translation,
+        projection,
+        kinematics_projection,
+    )
     configured = _as_object(template["implementation_projection"], "implementation_projection")
     if configured != derived:
         raise RunPackError("robot implementation projection does not exactly match checked-in SDK/morphology/route facts")
@@ -1536,6 +1689,11 @@ def build_first_g2_run_pack(
     morphology = load_json_artifact(morphology_path).value
     sdk = load_json_artifact(sdk_path).value
     translation = load_json_artifact(translation_path).value
+    kinematics_projection = (
+        _load_so_kinematics_projection(project_root, morphology, manifest.value["morphology_ref"])
+        if exact_robot == "so-arm101"
+        else None
+    )
     template = _validate_robot_template(_load_template(project_root, _robot_template_path(exact_robot), f"{exact_robot} robot"), exact_robot, configuration)
     g2_contract_profile = _load_template(project_root, G2_PROFILE_RELATIVE_PATH, "G2 profile")
     if stable_json_sha256(g2_contract_profile) != G2_PROFILE_STABLE_SHA256:
@@ -1551,7 +1709,15 @@ def build_first_g2_run_pack(
     task_set, stage1_tasks, task_instances, task_instance_source_ref = _build_task_set(
         project_root, selected_run_id, configuration, template
     )
-    implementation_bundle = _build_implementation_bundle(exact_robot, morphology, sdk, translation, robot_projection, template)
+    implementation_bundle = _build_implementation_bundle(
+        exact_robot,
+        morphology,
+        sdk,
+        translation,
+        robot_projection,
+        template,
+        kinematics_projection,
+    )
     sdk_entry_id = (
         f"{robot_projection['sdk_facts']['entry_id']}@"
         f"{robot_projection['sdk_facts']['entry_version']}"

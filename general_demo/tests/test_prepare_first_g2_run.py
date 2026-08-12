@@ -31,7 +31,10 @@ from autoadapter2.libraries.tasks import TaskLibraryPackage
 from autoadapter2.orchestration import run_pack
 from autoadapter2.orchestration.run_pack import (
     RunPackError,
+    _build_implementation_bundle,
+    _build_robot_projection,
     _implementation_projection_from_records,
+    _load_so_kinematics_projection,
     build_first_g2_run_pack,
     finalize_first_g2_run_snapshot,
     materialize_validation_a_profile,
@@ -264,6 +267,37 @@ def _build_pack(root: Path, run_id: str, robot: str = "unitree-go2"):
     )
 
 
+def _so_implementation_inputs(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    manifest = json.loads(
+        (root / "general_demo/integrations/so-arm101/integration_manifest.json").read_text(encoding="utf-8")
+    )
+    morphology = json.loads(
+        (root / "general_demo/libraries/morphology/so-arm101/1.0.0/record.json").read_text(encoding="utf-8")
+    )
+    sdk = json.loads(
+        (root / "general_demo/libraries/sdks/lerobot-so101-follower/1.0.0/record.json").read_text(encoding="utf-8")
+    )
+    translation = json.loads(
+        (root / "general_demo/integrations/so-arm101/translation.json").read_text(encoding="utf-8")
+    )
+    template = json.loads(
+        (root / "general_demo/config/first_g2_demo/robots/so-arm101.json").read_text(encoding="utf-8")
+    )
+    kinematics = _load_so_kinematics_projection(root, morphology, manifest["morphology_ref"])
+    robot_projection = _build_robot_projection(manifest, morphology, sdk, template)
+    projection = {
+        "topology": robot_projection["topology"],
+        "sensors": robot_projection["sensors"],
+        "observation_affordances": robot_projection["observation_affordances"],
+        "sdk_facts": robot_projection["sdk_facts"],
+        "frames": robot_projection["frames"],
+        "ranges": robot_projection["ranges"],
+        "limits": robot_projection["limits"],
+        "unsupported_behavior": robot_projection["unsupported_behavior"],
+    }
+    return manifest, morphology, sdk, translation, template, kinematics, projection
+
+
 def _sealed_design(pack) -> tuple[dict[str, Any], dict[str, Any]]:
     requirements = [task["requirement_id"] for task in pack.stage1_task_projection]
     design = {
@@ -464,6 +498,75 @@ def test_so_bundle_exposes_only_validation_a_facade_operations(tmp_path: Path) -
         "latest_valid_action": "latest valid goal remains latched until reset or replacement",
         "invalid_input": "bad checksum, unknown ID/register, read-only write, wrong width, or malformed packet does not alter actuator control",
     }
+
+
+def test_so_kinematics_projection_contains_exact_chain_and_separate_sdk_units(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    manifest, morphology, sdk, translation, template, kinematics, projection = _so_implementation_inputs(tmp_path)
+
+    assert kinematics == template["implementation_projection"]["robot_implementation_facts"]["kinematics"]
+    assert kinematics["units"] == {
+        "joint_angle": "rad",
+        "translation": "m",
+        "orientation": "quaternion_wxyz",
+    }
+    assert kinematics["sdk_units"] == {"arm": "degree", "gripper": "normalized_0_100"}
+    assert kinematics["sdk_gripper_range"] == [0, 100]
+    assert [item["joint_name"] for item in kinematics["chain"]] == morphology["joint_names"]
+    assert [(item["parent_body"], item["child_body"]) for item in kinematics["chain"]] == [
+        ("base", "shoulder"),
+        ("shoulder", "upper_arm"),
+        ("upper_arm", "lower_arm"),
+        ("lower_arm", "wrist"),
+        ("wrist", "gripper"),
+        ("gripper", "moving_jaw_so101_v1"),
+    ]
+    assert all(item["joint_type"] == "hinge" and item["axis"] == [0, 0, 1] for item in kinematics["chain"])
+    assert kinematics["chain"][0]["parent_to_joint"] == {
+        "position_m": [0.0388353, -8.97657e-09, 0.0624],
+        "quaternion_wxyz": [3.56167e-16, 1.22818e-15, -1, -4.14635e-16],
+    }
+    assert kinematics["chain"][0]["range_rad"] == [-1.9198621771937616, 1.9198621771937634]
+    assert kinematics["end_effector"] == {
+        "name": "stock_gripper",
+        "reference_site": "gripperframe",
+        "site_body": "gripper",
+        "parent_to_reference": {
+            "position_m": [-0.0079, -0.000218121, -0.0981274],
+            "quaternion_wxyz": [0.707107, -0.0, 0.707107, -2.37788e-17],
+        },
+    }
+
+    derived = _implementation_projection_from_records(
+        "so-arm101", morphology, sdk, translation, projection, kinematics
+    )
+    assert derived == template["implementation_projection"]
+    bundle = _build_implementation_bundle(
+        "so-arm101", morphology, sdk, translation, projection, template, kinematics
+    )
+    assert bundle["robot_implementation_facts"]["kinematics"] == kinematics
+    kinematics_text = json.dumps(kinematics).lower()
+    assert not {"private", "criterion", "target", "task", "ik", "inverse", "algorithm"} & set(
+        token for token in ("private", "criterion", "target", "task", "ik", "inverse", "algorithm")
+        if token in kinematics_text
+    )
+
+
+def test_so_kinematics_template_drift_is_rejected(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    manifest, morphology, sdk, translation, template, kinematics, projection = _so_implementation_inputs(tmp_path)
+    template["implementation_projection"]["robot_implementation_facts"]["kinematics"]["chain"][0]["range_rad"][0] += 0.001
+
+    with pytest.raises(RunPackError, match="implementation projection"):
+        _build_implementation_bundle(
+            "so-arm101",
+            morphology,
+            sdk,
+            translation,
+            projection,
+            template,
+            kinematics,
+        )
 
 
 def test_go2_template_adds_only_injected_helpers_and_default_factory_to_public_sdk_surface() -> None:
