@@ -1,0 +1,110 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "piper-tasks",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "piper",
+  "robot_configuration_id": "piper",
+  "catalog_review_status": "HUMAN_APPROVED",
+  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "configuration_boundary": {
+    "base_type": "fixed",
+    "actuated_dof": 7,
+    "source_entry": "assets/mjcf/piper/piper.xml",
+    "scene_entrypoints": [
+      "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "general_demo/libraries/assets/piper/1.0.0/pushbench.xml"
+    ],
+    "mesh_policy": "UPSTREAM_CACHE_REQUIRED"
+  },
+  "source_registry": [
+    {
+      "source_id": "auto-adapter-1.0-mjcf",
+      "kind": "pinned_prior_work",
+      "repository": "https://github.com/981526092/auto-adapter",
+      "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+      "paths": [
+        "assets/mjcf/piper/pickbench.xml",
+        "assets/mjcf/piper/piper.xml"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "P01",
+      "description": "Move the Piper end-effector 5 cm above the red cube in pickbench and hold.",
+      "task_type": "reach",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "scene_assets": [
+        "cube_red"
+      ],
+      "criterion_summary": "End-effector target error is at most 40 mm for 0.5 s."
+    },
+    {
+      "task_id": "P02",
+      "description": "Move the Piper end-effector 5 cm above the green cube in pickbench and hold.",
+      "task_type": "reach",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "scene_assets": [
+        "cube_green"
+      ],
+      "criterion_summary": "End-effector target error is at most 40 mm for 0.5 s."
+    },
+    {
+      "task_id": "P03",
+      "description": "Move the Piper end-effector 5 cm above the blue cube in pickbench and hold.",
+      "task_type": "reach",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "scene_assets": [
+        "cube_blue"
+      ],
+      "criterion_summary": "End-effector target error is at most 40 mm for 0.5 s."
+    },
+    {
+      "task_id": "P04",
+      "description": "Grasp the red cube in pickbench and lift it by at least 5 cm while retaining the grasp.",
+      "task_type": "grasp_and_lift",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "scene_assets": [
+        "cube_red"
+      ],
+      "criterion_summary": "The red cube rises at least 50 mm and remains held during a 0.5 s observation window."
+    },
+    {
+      "task_id": "P05",
+      "description": "Push the green cube to the specified planar goal region in Piper pushbench.",
+      "task_type": "planar_pushing",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_green"
+      ],
+      "criterion_summary": "Green-cube planar goal error is at most 50 mm and it remains table-supported."
+    }
+  ]
+}

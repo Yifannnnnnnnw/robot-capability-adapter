@@ -1,0 +1,108 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "franka_panda-tasks",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "franka_panda",
+  "robot_configuration_id": "franka_panda",
+  "catalog_review_status": "HUMAN_APPROVED",
+  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "configuration_boundary": {
+    "base_type": "fixed",
+    "actuated_dof": 8,
+    "source_entry": "assets/mjcf/franka_panda/panda.xml",
+    "scene_entrypoints": [
+      "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml"
+    ],
+    "mesh_policy": "UPSTREAM_CACHE_REQUIRED"
+  },
+  "source_registry": [
+    {
+      "source_id": "auto-adapter-1.0-mjcf",
+      "kind": "pinned_prior_work",
+      "repository": "https://github.com/981526092/auto-adapter",
+      "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+      "paths": [
+        "assets/mjcf/franka_panda/pushbench.xml",
+        "assets/mjcf/franka_panda/panda.xml"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "F01",
+      "description": "Move the Panda end-effector above the red cube in the pushbench scene and hold.",
+      "task_type": "reach",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_red"
+      ],
+      "criterion_summary": "End-effector target error is at most 40 mm for 0.5 s."
+    },
+    {
+      "task_id": "F02",
+      "description": "Move the Panda end-effector above the green cube in the pushbench scene and hold.",
+      "task_type": "reach",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_green"
+      ],
+      "criterion_summary": "End-effector target error is at most 40 mm for 0.5 s."
+    },
+    {
+      "task_id": "F03",
+      "description": "Push the red cube to the specified planar goal region without leaving the tabletop.",
+      "task_type": "planar_pushing",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_red"
+      ],
+      "criterion_summary": "Red-cube planar goal error is at most 50 mm and the cube remains table-supported."
+    },
+    {
+      "task_id": "F04",
+      "description": "Push the blue cube to the specified planar goal region without contacting the fixed obstacle.",
+      "task_type": "planar_pushing",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_blue",
+        "obs"
+      ],
+      "criterion_summary": "Blue-cube planar goal error is at most 50 mm and obstacle contact count is zero."
+    },
+    {
+      "task_id": "F05",
+      "description": "Trace a 4 cm square with the Panda end-effector above the pushbench, then return to the start.",
+      "task_type": "cartesian_trace",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [],
+      "criterion_summary": "All four square waypoints are within 40 mm and the final point is within 40 mm of the start."
+    }
+  ]
+}

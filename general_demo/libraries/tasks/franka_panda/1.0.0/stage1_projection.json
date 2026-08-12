@@ -1,0 +1,33 @@
+{
+  "artifact_type": "task_description_projection_template",
+  "schema_version": "1.0.0",
+  "projection_id": "franka_panda-demo-five-stage1",
+  "projection_version": "1.0.0",
+  "robot_configuration_id": "franka_panda",
+  "source_collection_id": "franka_panda-demo-five",
+  "source_collection_version": "1.0.0",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "tasks": [
+    {
+      "task_id": "F01",
+      "description": "Move the Panda end-effector above the red cube in the pushbench scene and hold."
+    },
+    {
+      "task_id": "F02",
+      "description": "Move the Panda end-effector above the green cube in the pushbench scene and hold."
+    },
+    {
+      "task_id": "F03",
+      "description": "Push the red cube to the specified planar goal region without leaving the tabletop."
+    },
+    {
+      "task_id": "F04",
+      "description": "Push the blue cube to the specified planar goal region without contacting the fixed obstacle."
+    },
+    {
+      "task_id": "F05",
+      "description": "Trace a 4 cm square with the Panda end-effector above the pushbench, then return to the start."
+    }
+  ]
+}

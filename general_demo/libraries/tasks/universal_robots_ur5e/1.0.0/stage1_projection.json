@@ -1,0 +1,33 @@
+{
+  "artifact_type": "task_description_projection_template",
+  "schema_version": "1.0.0",
+  "projection_id": "universal_robots_ur5e-demo-five-stage1",
+  "projection_version": "1.0.0",
+  "robot_configuration_id": "universal_robots_ur5e",
+  "source_collection_id": "universal_robots_ur5e-demo-five",
+  "source_collection_version": "1.0.0",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "tasks": [
+    {
+      "task_id": "U01",
+      "description": "Move the UR5e attachment site to a reachable target and hold."
+    },
+    {
+      "task_id": "U02",
+      "description": "Trace a 4 cm square in the UR5e attachment site's XY plane and return to start."
+    },
+    {
+      "task_id": "U03",
+      "description": "Move the UR5e attachment site upward by 5 cm, hold, and return to the home keyframe."
+    },
+    {
+      "task_id": "U04",
+      "description": "Visit three reachable attachment-site waypoints in the declared order."
+    },
+    {
+      "task_id": "U05",
+      "description": "Attempt an unreachable UR5e target, detect the failure, and return home without retrying."
+    }
+  ]
+}

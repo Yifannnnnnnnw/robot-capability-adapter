@@ -1,0 +1,99 @@
+{
+  "artifact_type": "task_instances_private",
+  "schema_version": "1.0.0",
+  "instance_set_id": "piper-demo-five-instances",
+  "instance_set_version": "1.0.0",
+  "robot_configuration_id": "piper",
+  "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source_task_catalog": "piper-tasks",
+  "selection_policy": "Exactly the five listed instances, in catalog order.",
+  "instances": [
+    {
+      "task_id": "P01",
+      "instance_id": "piper-p01-seed-101",
+      "task_type": "reach",
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 101
+      },
+      "parameters": {
+        "target_object_id": "cube_red",
+        "target_offset_m": [
+          0,
+          0,
+          0.05
+        ]
+      }
+    },
+    {
+      "task_id": "P02",
+      "instance_id": "piper-p02-seed-102",
+      "task_type": "reach",
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 102
+      },
+      "parameters": {
+        "target_object_id": "cube_green",
+        "target_offset_m": [
+          0,
+          0,
+          0.05
+        ]
+      }
+    },
+    {
+      "task_id": "P03",
+      "instance_id": "piper-p03-seed-103",
+      "task_type": "reach",
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 103
+      },
+      "parameters": {
+        "target_object_id": "cube_blue",
+        "target_offset_m": [
+          0,
+          0,
+          0.05
+        ]
+      }
+    },
+    {
+      "task_id": "P04",
+      "instance_id": "piper-p04-seed-104",
+      "task_type": "grasp_and_lift",
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 104
+      },
+      "parameters": {
+        "target_object_id": "cube_red",
+        "lift_m": 0.05
+      }
+    },
+    {
+      "task_id": "P05",
+      "instance_id": "piper-p05-seed-105",
+      "task_type": "planar_pushing",
+      "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pushbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 105
+      },
+      "parameters": {
+        "target_object_id": "cube_green",
+        "goal_center_m": [
+          0.5,
+          0.12
+        ]
+      }
+    }
+  ]
+}

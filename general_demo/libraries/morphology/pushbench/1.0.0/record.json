@@ -1,0 +1,88 @@
+{
+  "record_type": "morphology",
+  "schema_version": "1.0.0",
+  "id": "pushbench",
+  "version": "1.0.0",
+  "robot_model_id": "pushbench_so101",
+  "robot_configuration_id": "pushbench",
+  "record_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "base_type": "fixed",
+  "actuated_dof": 6,
+  "joint_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll",
+    "jaw_visual_joint"
+  ],
+  "actuator_names": [
+    "act_shoulder_pan",
+    "act_shoulder_lift",
+    "act_elbow_flex",
+    "act_wrist_flex",
+    "act_wrist_roll",
+    "act_jaw_visual"
+  ],
+  "actuator_joint_map": {
+    "act_shoulder_pan": "shoulder_pan",
+    "act_shoulder_lift": "shoulder_lift",
+    "act_elbow_flex": "elbow_flex",
+    "act_wrist_flex": "wrist_flex",
+    "act_wrist_roll": "wrist_roll",
+    "act_jaw_visual": "jaw_visual_joint"
+  },
+  "sensor_names": [],
+  "state": [
+    "joint_position",
+    "joint_velocity"
+  ],
+  "joint_unit": "rad",
+  "units": {
+    "joint_position": "rad",
+    "joint_velocity": "rad/s",
+    "actuator_command": "native_mujoco_control",
+    "length": "m",
+    "time": "s"
+  },
+  "end_effector_sites": [
+    "ee_site"
+  ],
+  "mujoco": {
+    "version": "2.3.3",
+    "frames": {
+      "body_names": [
+        "gripper_link"
+      ],
+      "site_names": [
+        "ee_site"
+      ]
+    },
+    "render": {
+      "camera": "overhead",
+      "width": 640,
+      "height": 480,
+      "fps": 30
+    },
+    "entrypoint": "assets/mjcf/pushbench/so101_pushbench.xml",
+    "local_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+    "source_sha256": "6992ab76a8f7302c1662a6bda4ee5f5c4eb09484313174e5c747bac49995546c",
+    "simulation_entrypoint": "assets/mjcf/pushbench/so101_pushbench.xml",
+    "simulation_entrypoint_sha256": "6992ab76a8f7302c1662a6bda4ee5f5c4eb09484313174e5c747bac49995546c",
+    "sensor_names": [],
+    "asset_closure_status": "RECORDED_UPSTREAM_CACHE_REQUIRED",
+    "asset_closure_path": "general_demo/libraries/assets/pushbench/1.0.0/asset_closure.json",
+    "asset_closure_sha256": "e8139f032847c444ef8878de83a822ac3d16238006771897c1fa9b1e9c0f768e",
+    "reset": {
+      "policy": "model_default"
+    }
+  },
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "path": "assets/mjcf/pushbench/so101_pushbench.xml",
+    "license": "Apache-2.0 repository-level"
+  }
+}

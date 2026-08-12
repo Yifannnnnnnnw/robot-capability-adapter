@@ -1,0 +1,163 @@
+{
+  "artifact_type": "task_evaluation_private",
+  "schema_version": "1.0.0",
+  "evaluation_id": "franka_panda-task-evaluation",
+  "evaluation_version": "1.0.0",
+  "catalog_id": "franka_panda-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "franka_panda",
+  "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "forbidden_recipients": [
+    "stage1",
+    "stage2",
+    "generated_capability_layer",
+    "repair",
+    "demo_consumer"
+  ],
+  "common_guards": [
+    {
+      "guard_id": "trusted-external-verdict",
+      "rule": "Only trusted physical state may support success; model self-report and command receipts are not outcome evidence."
+    },
+    {
+      "guard_id": "finite-required-state",
+      "rule": "NaN, infinity, missing required measurement, or unavailable required observation fails the trial."
+    },
+    {
+      "guard_id": "scene-entrypoint-bound",
+      "rule": "The task must execute only in its declared source-backed MJCF scene."
+    }
+  ],
+  "definitions": {
+    "continuous_dwell": "Every stated terminal check holds at every required harness sample.",
+    "task_instance_parameters": "Target, reset, timeout, and scene-specific limits are frozen before a trial."
+  },
+  "criteria": [
+    {
+      "task_id": "F01",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_red"
+      ],
+      "checks": [
+        {
+          "metric": "ee_target_error_m",
+          "comparator": "<=",
+          "value": 0.04
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    },
+    {
+      "task_id": "F02",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_green"
+      ],
+      "checks": [
+        {
+          "metric": "ee_target_error_m",
+          "comparator": "<=",
+          "value": 0.04
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    },
+    {
+      "task_id": "F03",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "criterion_text": "Red-cube planar goal error is at most 50 mm and the cube remains table-supported.",
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_red"
+      ],
+      "checks": [
+        {
+          "metric": "cube_goal_error_m",
+          "comparator": "<=",
+          "value": 0.05
+        },
+        {
+          "metric": "cube_table_supported",
+          "comparator": "==",
+          "value": true
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    },
+    {
+      "task_id": "F04",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "criterion_text": "Blue-cube planar goal error is at most 50 mm and obstacle contact count is zero.",
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [
+        "cube_blue",
+        "obs"
+      ],
+      "checks": [
+        {
+          "metric": "cube_goal_error_m",
+          "comparator": "<=",
+          "value": 0.05
+        },
+        {
+          "metric": "obstacle_contact_count",
+          "comparator": "==",
+          "value": 0
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    },
+    {
+      "task_id": "F05",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "criterion_text": "All four square waypoints are within 40 mm and the final point is within 40 mm of the start.",
+      "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_assets": [],
+      "checks": [
+        {
+          "metric": "waypoint_max_error_m",
+          "comparator": "<=",
+          "value": 0.04
+        },
+        {
+          "metric": "final_return_error_m",
+          "comparator": "<=",
+          "value": 0.04
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    }
+  ]
+}

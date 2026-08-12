@@ -1,0 +1,20 @@
+{
+  "artifact_type": "demo_task_collection",
+  "schema_version": "1.0.0",
+  "collection_id": "robotstudio_so101-demo-five",
+  "collection_version": "1.0.0",
+  "catalog_id": "robotstudio_so101-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "robotstudio_so101",
+  "review_status": "HUMAN_APPROVED",
+  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "selection_policy": "Five source-backed experimental tasks execute in fixed order; none is held out.",
+  "task_ids": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05"
+  ]
+}

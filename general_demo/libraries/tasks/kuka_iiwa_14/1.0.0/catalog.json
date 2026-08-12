@@ -1,0 +1,107 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "kuka_iiwa_14-tasks",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "kuka_iiwa_14",
+  "robot_configuration_id": "kuka_iiwa_14",
+  "catalog_review_status": "HUMAN_APPROVED",
+  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "configuration_boundary": {
+    "base_type": "fixed",
+    "actuated_dof": 7,
+    "source_entry": "assets/mjcf/kuka_iiwa_14/iiwa14.xml",
+    "scene_entrypoints": [
+      "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml"
+    ],
+    "mesh_policy": "UPSTREAM_CACHE_REQUIRED"
+  },
+  "source_registry": [
+    {
+      "source_id": "auto-adapter-1.0-mjcf",
+      "kind": "pinned_prior_work",
+      "repository": "https://github.com/981526092/auto-adapter",
+      "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+      "paths": [
+        "assets/mjcf/kuka_iiwa_14/scene.xml",
+        "assets/mjcf/kuka_iiwa_14/iiwa14.xml"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "K01",
+      "description": "Move the KUKA attachment site to the specified reachable target and hold.",
+      "task_type": "reach",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
+      "scene_assets": [
+        "attachment_site"
+      ],
+      "criterion_summary": "Attachment-site error is at most 40 mm for 0.5 s."
+    },
+    {
+      "task_id": "K02",
+      "description": "Trace a 4 cm square in the attachment site's XY plane and return to the start.",
+      "task_type": "cartesian_trace",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
+      "scene_assets": [],
+      "criterion_summary": "Maximum waypoint error is at most 40 mm and return error is at most 40 mm."
+    },
+    {
+      "task_id": "K03",
+      "description": "Move the KUKA attachment site upward by 5 cm, hold briefly, and return home.",
+      "task_type": "bounded_offset",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
+      "scene_assets": [
+        "attachment_site"
+      ],
+      "criterion_summary": "The commanded offset is reached within 40 mm and the home error is at most 40 mm."
+    },
+    {
+      "task_id": "K04",
+      "description": "Visit three reachable attachment-site waypoints in order and finish at the final waypoint.",
+      "task_type": "waypoint_sequence",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
+      "scene_assets": [
+        "attachment_site"
+      ],
+      "criterion_summary": "Every waypoint error is at most 50 mm and order is preserved."
+    },
+    {
+      "task_id": "K05",
+      "description": "Attempt an unreachable attachment-site target, detect the failed reach, and return home without retrying.",
+      "task_type": "negative_reach",
+      "task_review_status": "HUMAN_APPROVED",
+      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "source_basis": [
+        "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
+      ],
+      "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
+      "scene_assets": [
+        "attachment_site"
+      ],
+      "criterion_summary": "The unreachable target is rejected, one attempt is recorded, and home error is at most 50 mm."
+    }
+  ]
+}

@@ -27,6 +27,29 @@ fixed-Demo membership. Private criteria are never inputs to Stage 1, Stage 2, ge
 Demo Consumer. The Blue Line validation-reference library is also a different collection: it
 governs capability validation and neither owns nor replaces the downstream tasks here.
 
+## Experimental AutoAdapter 1.0 migration population
+
+The following six packages are source-backed experimental candidates. Their loader-compatible
+catalog fields remain in the existing schema; the migration itself is explicitly
+HUMAN_REVIEW_REQUIRED and uses DIRECT_MUJOCO_EXPERIMENTAL. They are not SDK records and do not
+claim formal admission.
+
+| Configuration | Source-backed fixed five | MJCF scene facts |
+|---|---:|---|
+| franka_panda | F01–F05 | panda.xml + pushbench.xml; red/green/blue cubes and obstacle |
+| kuka_iiwa_14 | K01–K05 | iiwa14.xml + scene.xml; attachment-site pose suite |
+| piper | P01–P05 | piper.xml + pickbench.xml/pushbench.xml; three cubes |
+| universal_robots_ur5e | U01–U05 | ur5e.xml + scene.xml; attachment-site pose suite |
+| pushbench | B01–B05 | inline SO101 pushbench; T-shape, three cubes, obstacle |
+| robotstudio_so101 | S01–S05 | so101.xml + scene_box.xml; free box and gripper frame |
+
+Each migration package has catalog.json, stage1_projection.json, evaluation_private.json,
+demo_collection.json, and task_instances_private.json. The corresponding morphology record
+and general_demo/libraries/assets/<configuration>/1.0.0/asset_closure.json pin the upstream
+repository, commit, entry MJCF SHA-256, recursive include/mesh paths, and per-file hashes. Small
+XMLs are vendored for inspection; large meshes remain an explicitly declared upstream-cache
+requirement and are not copied into this repository.
+
 ## Current population
 
 | Exact robot configuration | Approved catalog | Fixed Demo set | Approved but outside fixed Demo |
