@@ -401,7 +401,7 @@ _ALLOWED_NUMPY_PATHS = frozenset({
     ("linalg", "solve"),
     ("linalg", "lstsq"),
 })
-_ALLOWED_DERIVED_OBJECT_MEMBERS = frozenset({"Init", "Read", "Write", "Crc"})
+_ALLOWED_DERIVED_OBJECT_MEMBERS = frozenset({"Init", "Read", "Write", "Crc", "get"})
 _ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({"mode", "q", "dq", "kp", "kd", "tau", "motor_cmd", "crc"})
 
 
