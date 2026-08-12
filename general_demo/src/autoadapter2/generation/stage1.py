@@ -13,10 +13,85 @@ from ..foundation.seals import create_seal
 from .llm import JsonGenerator
 
 
-STAGE1_PROMPT = (
-    "Produce only the public semantic capability-design body. Do not include private "
-    "criteria, implementation details, SDK signatures, Translation, MuJoCo, or evaluation data."
-)
+STAGE1_PROMPT = """
+Produce one JSON object and nothing else: no Markdown, explanation, wrapper object, or
+artifact metadata. The object must have exactly these three top-level fields and no others:
+`capabilities`, `unsupported_requirement_ids`, and `blocking_requirement_ids`.
+
+Each item in `capabilities` must be an object with exactly these fourteen fields:
+`capability_id`, `kind`, `requirement_ids`, `inputs`, `outputs`, `effect`,
+`preconditions`, `invocation_semantics`, `temporal_semantics`, `invariants`,
+`required_action_affordances`, `required_observation_affordances`, `errors`, and
+`unsupported_scope`. Do not add, omit, rename, or nest these fields.
+
+Use these exact public types and values:
+- `kind` is exactly one of `action`, `observation`, `state_maintenance`, or `composition`.
+- `requirement_ids`, `unsupported_requirement_ids`, and `blocking_requirement_ids` contain
+  only exact `requirement_id` values from `task_descriptions`; never invent IDs or use task IDs.
+  Every supplied requirement must be covered by one or more capabilities or occur in one
+  disposition array, but never both.
+- `inputs` and `outputs` are arrays. Each field object has exactly this shape:
+  `{name,type,shape,unit,frame,required}`. The first five values are non-empty strings and
+  `required` is a boolean. Use exact `unit` and `frame` strings from the corresponding
+  `robot_public_projection` allowlists; do not paraphrase them.
+- `effect` must be one exact string from the `robot_public_projection` effect allowlist
+  (`effect_allowlist`, or the supplied `effects` alias).
+- `required_action_affordances` must contain only exact strings from
+  `robot_public_projection.action_affordances`, and `required_observation_affordances`
+  only exact strings from `robot_public_projection.observation_affordances`.
+- Each `errors` item has exactly this shape: `{code,message}`; both values are non-empty
+  public strings. Do not use `error_id` or `condition`.
+- `preconditions`, `invariants`, `required_action_affordances`,
+  `required_observation_affordances`, and `unsupported_scope` are string arrays. Use an
+  empty array when a section is not applicable; never omit an array. `inputs` and `outputs`
+  may also be empty when not applicable. `requirement_ids` and `errors` must be non-empty.
+  The two disposition arrays must be empty when there are no such requirements.
+- `invocation_semantics` and `temporal_semantics` are non-empty public semantic strings.
+
+Choose every effect, affordance, unit, and frame literally from the arrays present in
+`robot_public_projection`. Do not invent values, private criteria, implementation details,
+SDK signatures, Translation, MuJoCo, evaluation data, or robot-private identifiers.
+
+This is one valid structural example. Replace every angle-bracket placeholder with the exact
+public value from the supplied inputs before returning; the placeholders are not literal
+output values:
+{
+  "capabilities": [
+    {
+      "capability_id": "capability-placeholder",
+      "kind": "action",
+      "requirement_ids": ["<REQUIREMENT_ID_FROM_TASK_DESCRIPTIONS>"],
+      "inputs": [
+        {
+          "name": "input-placeholder",
+          "type": "type-placeholder",
+          "shape": "shape-placeholder",
+          "unit": "<UNIT_FROM_ROBOT_PUBLIC_PROJECTION>",
+          "frame": "<FRAME_FROM_ROBOT_PUBLIC_PROJECTION>",
+          "required": true
+        }
+      ],
+      "outputs": [],
+      "effect": "<EFFECT_FROM_ROBOT_PUBLIC_PROJECTION>",
+      "preconditions": [],
+      "invocation_semantics": "public invocation semantics placeholder",
+      "temporal_semantics": "public temporal semantics placeholder",
+      "invariants": [],
+      "required_action_affordances": ["<ACTION_AFFORDANCE_FROM_ROBOT_PUBLIC_PROJECTION>"],
+      "required_observation_affordances": [],
+      "errors": [{"code": "ERROR_CODE_PLACEHOLDER", "message": "public error message placeholder"}],
+      "unsupported_scope": []
+    }
+  ],
+  "unsupported_requirement_ids": [],
+  "blocking_requirement_ids": []
+}
+
+On a correction call, use both `working_design` and `diagnostics`: preserve valid public
+content, replace every invalid, missing, extra, or non-allowlisted field, and return only the corrected body.
+The correction still must contain exactly the same three top-level fields and must not return
+diagnostics, commentary, a wrapper, or artifact metadata.
+""".strip()
 _PRIVATE_TERMS = (
     "private",
     "criterion",

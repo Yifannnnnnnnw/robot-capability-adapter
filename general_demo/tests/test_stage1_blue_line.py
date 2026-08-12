@@ -8,6 +8,7 @@ from autoadapter2.blue_line import BlueLineRunner
 from autoadapter2.foundation.errors import ContractError
 from autoadapter2.foundation.seals import verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Config, Stage1Runner
+from autoadapter2.generation.stage1 import STAGE1_PROMPT
 
 
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
@@ -41,6 +42,25 @@ POLICY = {
     "policy_id": "blue-1", "model_id": "fixed-fixture", "prompt_id": "blue-prompt-1",
     "max_cases_per_capability": 2, "repetitions": 3,
 }
+
+
+def test_stage1_prompt_exposes_closed_body_and_correction_contract() -> None:
+    assert "exactly these three top-level fields" in STAGE1_PROMPT
+    for field in ("capabilities", "unsupported_requirement_ids", "blocking_requirement_ids"):
+        assert f"`{field}`" in STAGE1_PROMPT
+    for field in (
+        "capability_id", "kind", "requirement_ids", "inputs", "outputs", "effect",
+        "preconditions", "invocation_semantics", "temporal_semantics", "invariants",
+        "required_action_affordances", "required_observation_affordances", "errors",
+        "unsupported_scope",
+    ):
+        assert f"`{field}`" in STAGE1_PROMPT
+    assert "`action`, `observation`, `state_maintenance`, or `composition`" in STAGE1_PROMPT
+    assert "`{name,type,shape,unit,frame,required}`" in STAGE1_PROMPT
+    assert "`{code,message}`" in STAGE1_PROMPT
+    assert "empty array when a section is not applicable" in STAGE1_PROMPT
+    assert "working_design" in STAGE1_PROMPT and "diagnostics" in STAGE1_PROMPT
+    assert "return only the corrected body" in STAGE1_PROMPT
 
 
 def _capability_body() -> dict:
