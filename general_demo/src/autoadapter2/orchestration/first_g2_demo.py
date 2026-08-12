@@ -38,6 +38,7 @@ from ..implementation import Stage2Config
 from ..integration import ExperimentIntegrationGate, write_stable_json
 from ..integration.artifacts import load_json_artifact, load_run_snapshot, verify_file_reference
 from ..libraries import TasksLibrary
+from ..libraries.experience import verify_experience_snapshot
 from ..orchestration.demo_runner import (
     DemoModelAdapters,
     DemoRunPlan,
@@ -450,6 +451,11 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
     input_values = _resolve_run_inputs(root, snapshot, config.blue_line_input_paths)
     if input_values["g2_profile"] != G2_PROFILE:
         raise ContractError("the selected run snapshot does not freeze the first-Demo G2 profile")
+    _verify_experience_applicability(
+        input_values,
+        robot_model_id=expected_robot["robot_model_id"],
+        robot_configuration_id=expected_robot["robot_configuration_id"],
+    )
     task_package = TasksLibrary(root / "general_demo/libraries/tasks").load(
         expected_robot["robot_configuration_id"], expected_robot["task_catalog_version"]
     )
@@ -561,6 +567,8 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
             validation_a_profile=validation_a_profile,
             public_state_schema=public_state_schema,
             validation_harness_config=validation_harness_config,
+            design_experience_snapshot=input_values["design_experience_snapshot"],
+            implementation_experience_snapshot=input_values["implementation_experience_snapshot"],
             consumer_id=consumer_config["consumer_id"],
             consumer_max_steps=consumer_config["consumer_max_steps"],
             consumer_seed=consumer_config["consumer_seed"],
@@ -753,6 +761,10 @@ def _resolve_run_inputs(
     def value(reference: Mapping[str, Any]) -> dict[str, Any]:
         return load_json_artifact(verify_file_reference(root, reference)).value
 
+    def value_with_path(reference: Mapping[str, Any]) -> tuple[Path, dict[str, Any]]:
+        path = verify_file_reference(root, reference)
+        return path, load_json_artifact(path).value
+
     expected_blue_line = snapshot["blue_line_input_refs"]
     if not isinstance(expected_blue_line, list) or len(expected_blue_line) != 3:
         raise ContractError(
@@ -771,6 +783,42 @@ def _resolve_run_inputs(
                 )
             blue_line_inputs.append(load_json_artifact(supplied_path).value)
 
+    library_views: list[dict[str, Any]] = []
+    experience_snapshots: dict[str, dict[str, Any] | None] = {
+        "design": None,
+        "implementation": None,
+    }
+    for reference in snapshot["library_view_refs"]:
+        path, library_view = value_with_path(reference)
+        if library_view.get("artifact_type") == "experience_snapshot":
+            recipient_class = library_view.get("recipient_class")
+            if recipient_class not in experience_snapshots:
+                raise ContractError(
+                    "the frozen run snapshot contains an unsupported Experience recipient"
+                )
+            if experience_snapshots[recipient_class] is not None:
+                raise ContractError(
+                    f"the frozen run snapshot contains more than one {recipient_class} Experience snapshot"
+                )
+            try:
+                verified = verify_experience_snapshot(
+                    root,
+                    path,
+                    recipient_class=recipient_class,
+                )
+            except ContractError as exc:
+                raise ContractError(
+                    "the frozen run snapshot contains an invalid Experience snapshot"
+                ) from exc
+            if verified != library_view:
+                raise ContractError(
+                    "the frozen Experience snapshot value is not the exact referenced file value"
+                )
+            experience_snapshots[recipient_class] = verified
+            library_views.append(verified)
+        else:
+            library_views.append(library_view)
+
     return {
         "task_set": value(snapshot["task_set_ref"]),
         "g2_profile": value(snapshot["g2_profile_ref"]),
@@ -778,8 +826,50 @@ def _resolve_run_inputs(
         "model_prompt_config": value(snapshot["model_prompt_config_ref"]),
         "budget": value(snapshot["budget_ref"]),
         "blue_line_inputs": blue_line_inputs,
-        "library_views": [value(item) for item in snapshot["library_view_refs"]],
+        "library_views": library_views,
+        "design_experience_snapshot": experience_snapshots["design"],
+        "implementation_experience_snapshot": experience_snapshots["implementation"],
     }
+
+
+def _verify_experience_applicability(
+    input_values: Mapping[str, Any],
+    *,
+    robot_model_id: str,
+    robot_configuration_id: str,
+) -> None:
+    implementation_snapshot = input_values["implementation_experience_snapshot"]
+    expected_sdk_entry_id: str | None = None
+    if implementation_snapshot is not None:
+        observation_profile = input_values["observation_profile"]
+        sdk_facts = observation_profile.get("sdk_facts")
+        if not isinstance(sdk_facts, Mapping):
+            raise ContractError("the frozen observation profile does not provide public SDK facts")
+        expected_sdk_entry_id = (
+            f"{sdk_facts.get('entry_id')}@{sdk_facts.get('entry_version')}"
+        )
+    for recipient_class in ("design", "implementation"):
+        snapshot = input_values[f"{recipient_class}_experience_snapshot"]
+        if snapshot is None:
+            continue
+        applicability = snapshot["applicability"]
+        if applicability["robot_model_id"] != robot_model_id:
+            raise ContractError(
+                f"frozen {recipient_class} Experience snapshot does not match the selected robot"
+            )
+        if applicability["robot_configuration_id"] != robot_configuration_id:
+            raise ContractError(
+                f"frozen {recipient_class} Experience snapshot does not match the selected configuration"
+            )
+        if applicability["granularity_condition"] != G2_PROFILE["granularity"]:
+            raise ContractError(
+                f"frozen {recipient_class} Experience snapshot does not match G2"
+            )
+        expected_sdk = None if recipient_class == "design" else expected_sdk_entry_id
+        if applicability["sdk_entry_id"] != expected_sdk:
+            raise ContractError(
+                f"frozen {recipient_class} Experience snapshot does not match the selected SDK"
+            )
 
 
 def _tasks_from_canonical_library(

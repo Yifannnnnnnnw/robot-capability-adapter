@@ -87,6 +87,8 @@ class DemoRunPlan:
     stage1_config: Stage1Config = Stage1Config()
     stage2_config: Stage2Config = Stage2Config()
     repair_config: RepairConfig = RepairConfig()
+    design_experience_snapshot: Mapping[str, Any] | None = None
+    implementation_experience_snapshot: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.run_id, str) or not self.run_id.strip():
@@ -125,6 +127,12 @@ class DemoRunPlan:
             if not isinstance(value, Mapping):
                 raise ContractError(f"{field} must be an object")
             object.__setattr__(self, field, copy.deepcopy(dict(value)))
+        for field in ("design_experience_snapshot", "implementation_experience_snapshot"):
+            value = getattr(self, field)
+            if value is not None:
+                if not isinstance(value, Mapping):
+                    raise ContractError(f"{field} must be an object when supplied")
+                object.__setattr__(self, field, copy.deepcopy(dict(value)))
 
 
 @dataclass(frozen=True)
@@ -450,6 +458,7 @@ class GeneralDemoRunner:
                 plan.robot_public_projection,
                 [task.stage1_view() for task in plan.tasks],
                 plan.g2_profile,
+                design_experience_snapshot=plan.design_experience_snapshot,
             )
         except Exception as exc:
             call_log = _recorded_stage_calls(self._models.stage1, "stage1")
@@ -571,6 +580,13 @@ class GeneralDemoRunner:
         parents.add(blue.suite_hash)
 
         implementation_bundle = validate_implementation_bundle(plan.implementation_bundle)
+        if plan.implementation_experience_snapshot is not None:
+            derived_artifact = implementation_bundle.artifact
+            derived_artifact["implementation_experience"].extend(
+                copy.deepcopy(item["projection"])
+                for item in plan.implementation_experience_snapshot["records"]
+            )
+            implementation_bundle = validate_implementation_bundle(derived_artifact)
         parents.add(implementation_bundle.bundle_hash)
 
         stage2 = Stage2Runner(
@@ -869,6 +885,12 @@ class GeneralDemoRunner:
         library_views = [value_for(reference) for reference in snapshot["library_view_refs"]]
         if dict(plan.implementation_bundle) not in library_views:
             raise ContractError("Stage 2 Implementation Bundle is not frozen in the run input")
+        for field in ("design_experience_snapshot", "implementation_experience_snapshot"):
+            snapshot_value = getattr(plan, field)
+            if snapshot_value is not None and dict(snapshot_value) not in library_views:
+                raise ContractError(
+                    f"{field} is not frozen in the run input"
+                )
 
     @staticmethod
     def _design_covers_tasks(

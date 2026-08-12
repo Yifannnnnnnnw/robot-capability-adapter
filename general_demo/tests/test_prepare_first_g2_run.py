@@ -406,6 +406,36 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert gate.run_id == run_id
 
 
+def test_experience_snapshot_rejects_wrong_robot_applicability(tmp_path: Path) -> None:
+    snapshot = {
+        "artifact_type": "experience_snapshot",
+        "format_version": "experimental-1",
+        "snapshot_id": "design-snapshot",
+        "recipient_class": "design",
+        "applicability": {
+            "robot_model_id": "so-arm101",
+            "robot_configuration_id": "so-arm101-follower-stock-gripper",
+            "sdk_entry_id": None,
+            "granularity_condition": "G2",
+            "capability_effect_scope": ["joint-target"],
+            "observation_condition": "public-observation",
+        },
+        "records": [],
+    }
+    snapshot_path = tmp_path / "design-experience.json"
+    write_stable_json(snapshot_path, snapshot)
+
+    with pytest.raises(RunPackError, match="robot_model_id"):
+        run_pack._verify_experience_snapshot_input(
+            tmp_path,
+            snapshot_path,
+            recipient_class="design",
+            robot_model_id="unitree-go2",
+            robot_configuration_id="unitree-go2-stock-12dof",
+            sdk_entry_id=None,
+        )
+
+
 def test_so_bundle_exposes_only_validation_a_facade_operations(tmp_path: Path) -> None:
     _copy_project(tmp_path)
     pack = _build_pack(tmp_path, "so-first-g2-facade", "so-arm101")

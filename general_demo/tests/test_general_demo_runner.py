@@ -3,8 +3,10 @@ from __future__ import annotations
 import copy
 import json
 import shutil
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -25,6 +27,7 @@ from autoadapter2.integration import (
 )
 from autoadapter2.libraries import TasksLibrary
 from autoadapter2.orchestration import DemoModelAdapters, DemoRunPlan, GeneralDemoRunner
+import autoadapter2.orchestration.demo_runner as demo_runner_module
 from autoadapter2.orchestration.demo_runner import _field_schema
 from autoadapter2.validation import MeasurementSample, RepairConfig, ValidationAProfile
 
@@ -354,6 +357,42 @@ def _blue_spec(width: int) -> dict[str, Any]:
     }
 
 
+def _experience_snapshot(recipient_class: str) -> dict[str, Any]:
+    sdk_entry_id = None if recipient_class == "design" else "fixture-sdk@1.0.0"
+    applicability = {
+        "robot_model_id": "so-arm101",
+        "robot_configuration_id": "so-arm101-follower-stock-gripper",
+        "sdk_entry_id": sdk_entry_id,
+        "granularity_condition": "G2",
+        "capability_effect_scope": ["joint-target"],
+        "observation_condition": "public-observation",
+    }
+    digest = "sha256:" + "1" * 64
+    return {
+        "artifact_type": "experience_snapshot",
+        "format_version": "experimental-1",
+        "snapshot_id": f"{recipient_class}-snapshot",
+        "recipient_class": recipient_class,
+        "applicability": applicability,
+        "records": [{
+            "record_id": f"{recipient_class}-record",
+            "version": "1.0.0",
+            "record_ref": {"path": f"{recipient_class}-record-ref", "content_hash": digest},
+            "projection": {
+                "experience_id": f"{recipient_class}-guidance",
+                "guidance": "use-bounded-effect",
+                "applicability": copy.deepcopy(applicability),
+                "provenance": {
+                    "closure_hash": digest,
+                    "summary_ref": "summary-ref",
+                    "stage_artifacts_ref": "stage-artifacts-ref",
+                    "evidence_digest_hash": digest,
+                },
+            },
+        }],
+    }
+
+
 def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAdapters]:
     manifest, snapshot, report, projection = _ready_robot_run(root, robot)
     task_library_root = root / "general_demo/libraries/tasks"
@@ -547,3 +586,53 @@ def test_same_g2_runner_completes_two_robot_shaped_runs(
     assert all(trial.status == "PASS" for trial in result.demo_trials)
     assert result.summary["robot"]["robot_model_id"] == robot
     assert result.summary["granularity_profile"]["granularity"] == "G2"
+
+
+def test_frozen_experience_reaches_only_its_recipient_stage_and_shares_bundle(
+    tmp_path: Path,
+) -> None:
+    plan, models = _plan(tmp_path, "so-arm101", 6)
+    design_snapshot = _experience_snapshot("design")
+    implementation_snapshot = _experience_snapshot("implementation")
+    run_dir = Path(plan.run_snapshot_path).parent.as_posix()
+    snapshot_path = tmp_path / plan.run_snapshot_path
+    frozen_snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    frozen_snapshot["library_view_refs"].extend([
+        _json_ref(tmp_path, f"{run_dir}/design-experience.json", design_snapshot),
+        _json_ref(tmp_path, f"{run_dir}/implementation-experience.json", implementation_snapshot),
+    ])
+    write_stable_json(snapshot_path, frozen_snapshot)
+    plan = replace(
+        plan,
+        design_experience_snapshot=design_snapshot,
+        implementation_experience_snapshot=implementation_snapshot,
+    )
+
+    captured: dict[str, Any] = {}
+    original_repair_runner = demo_runner_module.RepairRunner
+
+    class _CapturingRepairRunner(original_repair_runner):
+        def run(self, *args, **kwargs):
+            captured["bundle"] = kwargs.get("implementation_bundle", args[-1])
+            return super().run(*args, **kwargs)
+
+    with patch.object(demo_runner_module, "RepairRunner", _CapturingRepairRunner):
+        result = GeneralDemoRunner(
+            tmp_path,
+            models,
+            _RobotSession(6, "so-arm101"),
+            FrozenVideoProfile("demo-video", "1.0.0", "external", "fixed", 5, 2, 2, "mp4", "h264"),
+            lambda _phase, _execution_id: _Encoder(),
+            lambda criterion, evidence: bool(criterion) and evidence == {"passed": True},
+        ).run(plan)
+
+    stage1_inputs = models.stage1.calls[0]["inputs"]
+    assert stage1_inputs["design_experience_snapshot"] == design_snapshot
+    assert "implementation_experience_snapshot" not in stage1_inputs
+    derived_bundle = models.stage2.calls[0]["inputs"]["implementation_bundle"]
+    assert derived_bundle["implementation_experience"] == [
+        implementation_snapshot["records"][0]["projection"]
+    ]
+    assert plan.implementation_bundle["implementation_experience"] == []
+    assert derived_bundle == captured["bundle"].artifact
+    assert result.artifacts["stages"]["stage2"]["implementation_bundle_hash"] == captured["bundle"].bundle_hash

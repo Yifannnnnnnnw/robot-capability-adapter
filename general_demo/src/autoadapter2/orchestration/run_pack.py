@@ -38,6 +38,7 @@ from ..integration.artifacts import (
     verify_file_reference,
 )
 from ..libraries import TasksLibrary
+from ..libraries.experience import verify_experience_snapshot
 from ..validation import ValidationAProfile
 
 
@@ -196,6 +197,57 @@ def _resolve_input(root: Path, supplied: str | Path | None, default: str | None,
     if not resolved.is_file() or resolved.is_symlink():
         raise RunPackError(f"{label} must be an existing regular file")
     return resolved
+
+
+def _verify_experience_snapshot_input(
+    root: Path,
+    supplied: str | Path,
+    *,
+    recipient_class: str,
+    robot_model_id: str,
+    robot_configuration_id: str,
+    sdk_entry_id: str | None,
+) -> dict[str, str]:
+    path = _resolve_input(
+        root,
+        supplied,
+        None,
+        f"{recipient_class}_experience_snapshot_path",
+    )
+    try:
+        snapshot = verify_experience_snapshot(
+            root,
+            path,
+            recipient_class=recipient_class,
+        )
+    except ContractError as exc:
+        raise RunPackError(
+            f"{recipient_class} Experience snapshot is not a verified immutable snapshot"
+        ) from exc
+    applicability = snapshot["applicability"]
+    if applicability["robot_model_id"] != robot_model_id:
+        raise RunPackError(
+            f"{recipient_class} Experience snapshot robot_model_id does not match the selected robot"
+        )
+    if applicability["robot_configuration_id"] != robot_configuration_id:
+        raise RunPackError(
+            f"{recipient_class} Experience snapshot robot_configuration_id does not match the selected configuration"
+        )
+    if applicability["granularity_condition"] != G2_PROFILE_PUBLIC["granularity"]:
+        raise RunPackError(
+            f"{recipient_class} Experience snapshot granularity_condition must match G2"
+        )
+    if applicability["sdk_entry_id"] != sdk_entry_id:
+        raise RunPackError(
+            f"{recipient_class} Experience snapshot sdk_entry_id does not match the selected SDK"
+        )
+    try:
+        artifact = load_json_artifact(path)
+        return _relative_artifact_ref(root, artifact)
+    except (OSError, ContractError) as exc:
+        raise RunPackError(
+            f"{recipient_class} Experience snapshot reference could not be created"
+        ) from exc
 
 
 def _load_template(root: Path, relative: str, label: str) -> dict[str, Any]:
@@ -1420,6 +1472,8 @@ def build_first_g2_run_pack(
     reviewed_measurement_catalog_path: str | Path | None = None,
     standards_snapshot_path: str | Path | None = None,
     measurement_catalog_path: str | Path | None = None,
+    design_experience_snapshot_path: str | Path | None = None,
+    implementation_experience_snapshot_path: str | Path | None = None,
     output_dir: str | Path | None = None,
 ) -> FirstG2RunPack:
     """Build one deterministic SO-ARM101 or Go2 first-G2 preparation pack."""
@@ -1482,6 +1536,33 @@ def build_first_g2_run_pack(
         project_root, selected_run_id, configuration, template
     )
     implementation_bundle = _build_implementation_bundle(exact_robot, morphology, sdk, translation, robot_projection, template)
+    sdk_entry_id = (
+        f"{robot_projection['sdk_facts']['entry_id']}@"
+        f"{robot_projection['sdk_facts']['entry_version']}"
+    )
+    experience_refs: list[dict[str, str]] = []
+    if design_experience_snapshot_path is not None:
+        experience_refs.append(
+            _verify_experience_snapshot_input(
+                project_root,
+                design_experience_snapshot_path,
+                recipient_class="design",
+                robot_model_id=exact_robot,
+                robot_configuration_id=configuration,
+                sdk_entry_id=None,
+            )
+        )
+    if implementation_experience_snapshot_path is not None:
+        experience_refs.append(
+            _verify_experience_snapshot_input(
+                project_root,
+                implementation_experience_snapshot_path,
+                recipient_class="implementation",
+                robot_model_id=exact_robot,
+                robot_configuration_id=configuration,
+                sdk_entry_id=sdk_entry_id,
+            )
+        )
 
     if output_dir is None:
         output_path = project_root / "general_demo" / "runs" / selected_run_id
@@ -1550,6 +1631,7 @@ def build_first_g2_run_pack(
             artifact_refs["validation_harness_config"],
             artifact_refs["task_instances"],
             task_instance_source_ref,
+            *experience_refs,
         ],
         "task_set_ref": artifact_refs["task_set"],
         "g2_profile_ref": artifact_refs["g2_profile"],
@@ -1670,6 +1752,18 @@ def _main(argv: list[str] | None = None) -> int:
     parser.add_argument("--readiness-report", required=True)
     parser.add_argument("--standards-snapshot", required=True)
     parser.add_argument("--measurement-catalog", required=True)
+    parser.add_argument(
+        "--design-experience-snapshot",
+        "--design-experience-snapshot-path",
+        dest="design_experience_snapshot",
+        default=None,
+    )
+    parser.add_argument(
+        "--implementation-experience-snapshot",
+        "--implementation-experience-snapshot-path",
+        dest="implementation_experience_snapshot",
+        default=None,
+    )
     parser.add_argument("--output-dir", default=None)
     args = parser.parse_args(argv)
     root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[4]
@@ -1682,6 +1776,8 @@ def _main(argv: list[str] | None = None) -> int:
             readiness_report_path=args.readiness_report,
             reviewed_standards_snapshot_path=args.standards_snapshot,
             reviewed_measurement_catalog_path=args.measurement_catalog,
+            design_experience_snapshot_path=args.design_experience_snapshot,
+            implementation_experience_snapshot_path=args.implementation_experience_snapshot,
             output_dir=args.output_dir,
         )
     except (ContractError, GateError, IntegrityError) as exc:
