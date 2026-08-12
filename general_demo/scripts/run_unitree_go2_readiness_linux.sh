@@ -35,7 +35,7 @@ docker run --rm --platform linux/amd64 --network none \
   -v "$integration_manifest:/opt/autoadapter/general_demo/integrations/unitree-go2/integration_manifest.json:ro" \
   -v "$output_directory:$container_output" \
   "$image" \
-  python3.10 scripts/run_unitree_go2_readiness.py \
+  python scripts/run_unitree_go2_readiness.py \
     --run-id linux-real-unitree-go2-route \
     --manifest integrations/unitree-go2/integration_manifest.json \
     --profile contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json \
