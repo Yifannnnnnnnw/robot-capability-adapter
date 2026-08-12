@@ -1,0 +1,18 @@
+{
+  "artifact_type": "standards_snapshot",
+  "schema_version": "1.0.0",
+  "snapshot_id": "unitree-go2-first-demo-capability-validation-b-standards",
+  "snapshot_version": "1.0.0",
+  "robot_model_id": "unitree-go2",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "review_status": "HUMAN_APPROVED",
+  "intended_use": "capability_validation_b",
+  "demo_criteria_import_policy": "NOT_AUTOMATIC",
+  "record_refs": [
+    {"path": "general_demo/private_governance/blue_line/standards/go2_g01_stand_v1.json", "sha256": "dff1bf901e73b390ac158d61def13df116938853a2f9bb8057135a87026c654e"},
+    {"path": "general_demo/private_governance/blue_line/standards/go2_g02_sit_v1.json", "sha256": "916a18e56088bac9fd2f123f06bc398d4d0d2402c730a8bf7da56f0b3addaa82"},
+    {"path": "general_demo/private_governance/blue_line/standards/go2_g03_hold_stable_v1.json", "sha256": "e9dfe0e8c6f25bb6e498822f48d75fc82f24dca1280143c614fed212c1ebef8d"},
+    {"path": "general_demo/private_governance/blue_line/standards/go2_g04_move_forward_v1.json", "sha256": "7a0055aeaf4d3ef2a0379b28462043a68dcab4eb0997ef1348fa1c37bda856a2"},
+    {"path": "general_demo/private_governance/blue_line/standards/go2_g05_target_body_height_v1.json", "sha256": "dc8ba5c75c6a8d7c94b96589a517d5ca19b5b15ddfcda6367b4710873e2c2418"}
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "artifact_type": "measurement_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "so-arm101-first-demo-capability-validation-b-measurements",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "so-arm101",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "intended_use": "capability_validation_b",
+  "truth_policy": {
+    "candidate_self_report": "FORBIDDEN_AS_TRUTH",
+    "sdk_receipt": "FORBIDDEN_AS_TRUTH"
+  },
+  "adapters": [
+    {
+      "adapter_id": "so-arm101.trusted_state",
+      "owner": "trusted_validation_harness",
+      "truth_source": "trusted_harness_physical_state",
+      "session_task": "first_g2_capability_validation_b"
+    }
+  ],
+  "measurements": [
+    {"measurement_id": "so-ee-position-error", "entity": "end_effector_tip", "unit": "m", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["tip_position_error_m"]},
+    {"measurement_id": "so-ee-tip-speed", "entity": "end_effector_tip", "unit": "m/s", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["tip_speed_m_s"]},
+    {"measurement_id": "so-target-contact", "entity": "target_tip_face_contact", "unit": "boolean", "frame": "contact_pair", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["target_contact_truth"]},
+    {"measurement_id": "so-non-target-contact", "entity": "non_target_contact", "unit": "count", "frame": "scene", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["non_target_contact_count"]},
+    {"measurement_id": "so-target-object-displacement", "entity": "target_object", "unit": "m", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["target_object_displacement_m"]},
+    {"measurement_id": "so-cube-region-error", "entity": "target_object", "unit": "m", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["cube_center_planar_goal_error_m"]},
+    {"measurement_id": "so-cube-linear-speed", "entity": "target_object", "unit": "m/s", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["cube_linear_speed_m_s"]},
+    {"measurement_id": "so-cube-angular-speed", "entity": "target_object", "unit": "rad/s", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["cube_angular_speed_rad_s"]},
+    {"measurement_id": "so-cube-table-support", "entity": "target_object", "unit": "boolean", "frame": "scene", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["cube_table_supported"]},
+    {"measurement_id": "so-cube-rise", "entity": "target_object", "unit": "m", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["cube_height_increase_m"]},
+    {"measurement_id": "so-cube-slip", "entity": "gripper_target_object_relative_pose", "unit": "m", "frame": "robot_base", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["gripper_relative_cube_slip_m"]},
+    {"measurement_id": "so-cube-held", "entity": "target_object", "unit": "boolean", "frame": "gripper_target_object", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["cube_held_truth"]},
+    {"measurement_id": "so-button-displacement", "entity": "specified_button", "unit": "m", "frame": "button_joint", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["specified_button_displacement_m"]},
+    {"measurement_id": "so-button-activation", "entity": "specified_button", "unit": "boolean", "frame": "button_joint", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["specified_button_activation_truth"]},
+    {"measurement_id": "so-other-button-activation", "entity": "other_buttons", "unit": "count", "frame": "button_panel", "adapter_id": "so-arm101.trusted_state", "truth_source": "trusted_harness_physical_state", "metrics": ["other_button_activation_count"]}
+  ],
+  "guards": [
+    {"guard_id": "sdk_receipt_not_completion", "adapter_id": "so-arm101.trusted_state"},
+    {"guard_id": "candidate_self_report_not_truth", "adapter_id": "so-arm101.trusted_state"},
+    {"guard_id": "finite_fresh_physical_state", "adapter_id": "so-arm101.trusted_state"},
+    {"guard_id": "entity_unit_frame_match", "adapter_id": "so-arm101.trusted_state"},
+    {"guard_id": "no_forbidden_collision_or_safety_violation", "adapter_id": "so-arm101.trusted_state"}
+  ]
+}

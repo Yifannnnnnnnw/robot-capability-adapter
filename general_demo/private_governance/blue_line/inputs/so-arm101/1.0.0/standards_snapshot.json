@@ -1,0 +1,18 @@
+{
+  "artifact_type": "standards_snapshot",
+  "schema_version": "1.0.0",
+  "snapshot_id": "so-arm101-first-demo-capability-validation-b-standards",
+  "snapshot_version": "1.0.0",
+  "robot_model_id": "so-arm101",
+  "robot_configuration_id": "so-arm101-follower-stock-gripper",
+  "review_status": "HUMAN_APPROVED",
+  "intended_use": "capability_validation_b",
+  "demo_criteria_import_policy": "NOT_AUTOMATIC",
+  "record_refs": [
+    {"path": "general_demo/private_governance/blue_line/standards/so_t01_move_end_effector_to_target_v1.json", "sha256": "d7b99d1fc53c5999c2617331152761fadc9c707d1a2681227564fbcb33b44f2d"},
+    {"path": "general_demo/private_governance/blue_line/standards/so_t02_establish_target_contact_v1.json", "sha256": "1dad23b9a3c3930e2dfff97841b91bf8ab46aa538b31d01856d201bc19c16153"},
+    {"path": "general_demo/private_governance/blue_line/standards/so_t03_move_object_to_region_v1.json", "sha256": "7249845a4bf4e3cb656554dfefac648953fb39bf0c435d04594de91658e07bcc"},
+    {"path": "general_demo/private_governance/blue_line/standards/so_t08_grasp_and_lift_object_v1.json", "sha256": "b4c29f4c8843ca629a1cdb91442f6e20846ede36dc4e30dcda2a11e02c989bb2"},
+    {"path": "general_demo/private_governance/blue_line/standards/so_t20_actuate_target_button_v1.json", "sha256": "2f5a62ad1ccf959e67d1e334fe6ab8c13417b09eaf52bed3b676252da6025f57"}
+  ]
+}
