@@ -37,7 +37,6 @@ from autoadapter2.validation import (
     bind_candidate_to_suite,
 )
 from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
-from autoadapter2.validation.repair import _candidate_owned_error
 from autoadapter2.validation.validation_a import (
     _capability_contracts,
     _descriptor_match,
@@ -744,6 +743,28 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     assert result.candidate_handle is not None
 
 
+def test_validation_a_accepts_observed_safe_unpack_builtins_and_loop_locals() -> None:
+    source = '''"""Bounded observed Go2 control subset."""
+def capability_reach_joint_target(arg_target, *, _sdk):
+    first, second = [0, 1]
+    values = list([first, second, int(arg_target)])
+    for step, i in enumerate(range(0, 2)):
+        value = int(values[i] + step)
+        values[i] = value
+    for _ in [0]:
+        values[0] = list([values[0]])[0]
+    _sdk.command(float(values[0]))
+    return {"reported_status": "PASS"}
+'''
+    _design, _seal, _stage2, _blue, result = _a_result(source)
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+    unsafe_source = source.replace("for step, i in enumerate(range(0, 2)):", "for step, i in arg_target.execute():")
+    _design, _seal, _stage2, _blue, unsafe_result = _a_result(unsafe_source)
+    assert unsafe_result.status == "FAIL"
+
+
 def _ndarray_transpose_source() -> str:
     return '''import numpy as np
 
@@ -999,6 +1020,7 @@ def test_validation_a_static_accepts_observed_go2_final_source_and_keeps_dangero
         capability_id: {
             "function_name": function_name,
             "parameters": [{"parameter": parameter} for parameter in function_parameters],
+            "outputs": [],
         }
         for function_name, function_parameters in parameters.items()
         for capability_id in (function_name,)
