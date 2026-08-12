@@ -709,6 +709,24 @@ def test_validation_a_accepts_forwarded_sdk_helpers_and_observed_local_container
     assert result.candidate_handle is not None
 
 
+def test_validation_a_accepts_math_conversion_constants_with_forwarded_helpers() -> None:
+    source = (
+        "import math\n"
+        "DEGREES_TO_RAD = math.pi / 180.0\n"
+        "RAD_TO_DEGREES = 180.0 / math.pi\n"
+        + _helper_source().replace('"kp": kp', '"kp": kp * DEGREES_TO_RAD').replace('"kd": kd', '"kd": kd * RAD_TO_DEGREES')
+    )
+    result, _stage2 = _helper_a_result(source)
+    assert result.status == "PASS"
+    assert result.candidate_handle is not None
+
+
+def test_validation_a_rejects_dynamic_or_nonconstant_module_expressions() -> None:
+    for prefix in ("import time\nBAD = time.time()\n", "import math\nBAD = math.sin\n"):
+        result, _stage2 = _helper_a_result(prefix + _helper_source())
+        assert result.status == "FAIL"
+
+
 def test_validation_a_accepts_safe_tuple_destructuring() -> None:
     source = '''def capability_reach_joint_target(arg_target, *, _sdk):
     joint_angles_rad = [arg_target, arg_target, arg_target, arg_target, arg_target]

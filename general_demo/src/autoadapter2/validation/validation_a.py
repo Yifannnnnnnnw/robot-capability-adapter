@@ -872,6 +872,35 @@ def _safe_literal_ast(value: ast.AST) -> bool:
     return False
 
 
+_SAFE_MATH_CONSTANT_NAMES = frozenset({"e", "pi", "tau"})
+_SAFE_ARITHMETIC_NODES = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow)
+
+
+def _safe_module_constant_ast(
+    value: ast.AST,
+    module_aliases: Mapping[str, str],
+    module_constants: set[str],
+) -> bool:
+    if _safe_literal_ast(value):
+        return True
+    if isinstance(value, ast.Name):
+        return value.id in module_constants
+    if isinstance(value, ast.Attribute):
+        module_path = _module_path(value, module_aliases)
+        if module_path != ("math", (value.attr,)) or value.attr not in _SAFE_MATH_CONSTANT_NAMES:
+            return False
+        constant = getattr(math, value.attr, None)
+        return isinstance(constant, (int, float)) and not isinstance(constant, bool) and math.isfinite(float(constant))
+    if isinstance(value, ast.UnaryOp) and isinstance(value.op, (ast.UAdd, ast.USub)):
+        return _safe_module_constant_ast(value.operand, module_aliases, module_constants)
+    if isinstance(value, ast.BinOp) and isinstance(value.op, _SAFE_ARITHMETIC_NODES):
+        return (
+            _safe_module_constant_ast(value.left, module_aliases, module_constants)
+            and _safe_module_constant_ast(value.right, module_aliases, module_constants)
+        )
+    return False
+
+
 def _module_import_issues(
     node: ast.Import,
     aliases: dict[str, str],
@@ -1048,7 +1077,7 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
                 or _dunder(targets[0].id)
                 or targets[0].id in module_symbols
                 or value is None
-                or not _safe_literal_ast(value)
+                or not _safe_module_constant_ast(value, module_aliases, module_constants)
                 or (isinstance(node, ast.AnnAssign) and node.annotation is not None)
             ):
                 issues.append(_issue("EXPERIMENTAL_PROFILE", "module scope allows only safe literal constants"))
