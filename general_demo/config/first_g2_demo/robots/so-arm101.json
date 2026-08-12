@@ -48,7 +48,7 @@
       "reset_write_scope": "reset_only",
       "latest_valid_action": "latched_until_reset_or_replacement"
     },
-    "unsupported_behavior": ["camera", "IK", "trajectory", "planning", "recovery", "task_policy"]
+    "unsupported_behavior": ["camera", "prebuilt_ik_api_unavailable", "prebuilt_trajectory_api_unavailable", "prebuilt_planner_api_unavailable", "recovery", "task_policy"]
   },
   "public_state_schema": {
     "type": "object",
@@ -124,7 +124,7 @@
         "latest_valid_action": "latest valid goal remains latched until reset or replacement",
         "invalid_input": "bad checksum, unknown ID/register, read-only write, wrong width, or malformed packet does not alter actuator control"
       },
-      "unsupported_behavior": ["camera", "IK", "trajectory", "planning", "recovery", "task_policy"]
+      "unsupported_behavior": ["camera", "prebuilt_ik_api_unavailable", "prebuilt_trajectory_api_unavailable", "prebuilt_planner_api_unavailable", "recovery", "task_policy"]
     },
     "robot_implementation_facts": {
       "robot_model_id": "so-arm101",
@@ -146,7 +146,7 @@
       "ranges": {"arm_position": {"unit": "degree", "minimum": -180, "maximum": 180}, "gripper_position": {"unit": "normalized_0_100", "minimum": 0, "maximum": 100}},
       "limits": {"arm_position_unit": "degree", "gripper_position_unit": "normalized_0_100", "normal_motion_write_scope": "actuator_control_only", "reset_write_scope": "reset_only", "latest_valid_action": "latched_until_reset_or_replacement"},
       "effect_allowlist": ["move_end_effector_to_target", "establish_target_contact", "move_object_to_region", "grasp_and_lift_object", "actuate_target_button"],
-      "unsupported_behavior": ["camera", "IK", "trajectory", "planning", "recovery", "task_policy"],
+      "unsupported_behavior": ["camera", "prebuilt_ik_api_unavailable", "prebuilt_trajectory_api_unavailable", "prebuilt_planner_api_unavailable", "recovery", "task_policy"],
       "kinematics": {"units":{"joint_angle":"rad","translation":"m","orientation":"quaternion_wxyz"},"sdk_units":{"arm":"degree","gripper":"normalized_0_100"},"sdk_gripper_range":[0,100],"base_frame":{"body":"base","position_m":[0,0,0],"quaternion_wxyz":[1,0,0,0]},"joint_order":["shoulder_pan","shoulder_lift","elbow_flex","wrist_flex","wrist_roll","gripper"],"chain":[{"joint_name":"shoulder_pan","group":"arm","parent_body":"base","child_body":"shoulder","joint_type":"hinge","axis":[0,0,1],"axis_frame":"child_body","joint_origin_in_child_body_m":[0,0,0],"parent_to_joint":{"position_m":[0.0388353,-8.97657e-09,0.0624],"quaternion_wxyz":[3.56167e-16,1.22818e-15,-1,-4.14635e-16]},"range_rad":[-1.9198621771937616,1.9198621771937634]},{"joint_name":"shoulder_lift","group":"arm","parent_body":"shoulder","child_body":"upper_arm","joint_type":"hinge","axis":[0,0,1],"axis_frame":"child_body","joint_origin_in_child_body_m":[0,0,0],"parent_to_joint":{"position_m":[-0.0303992,-0.0182778,-0.0542],"quaternion_wxyz":[0.5,-0.5,-0.5,-0.5]},"range_rad":[-1.7453292519943224,1.7453292519943366]},{"joint_name":"elbow_flex","group":"arm","parent_body":"upper_arm","child_body":"lower_arm","joint_type":"hinge","axis":[0,0,1],"axis_frame":"child_body","joint_origin_in_child_body_m":[0,0,0],"parent_to_joint":{"position_m":[-0.11257,-0.028,1.73763e-16],"quaternion_wxyz":[0.707107,-5.98613e-17,-2.58051e-17,0.707107]},"range_rad":[-1.69,1.69]},{"joint_name":"wrist_flex","group":"arm","parent_body":"lower_arm","child_body":"wrist","joint_type":"hinge","axis":[0,0,1],"axis_frame":"child_body","joint_origin_in_child_body_m":[0,0,0],"parent_to_joint":{"position_m":[-0.1349,0.0052,3.62355e-17],"quaternion_wxyz":[0.707107,9.58722e-16,-7.51313e-16,-0.707107]},"range_rad":[-1.6580628494556928,1.6580627293335335]},{"joint_name":"wrist_roll","group":"arm","parent_body":"wrist","child_body":"gripper","joint_type":"hinge","axis":[0,0,1],"axis_frame":"child_body","joint_origin_in_child_body_m":[0,0,0],"parent_to_joint":{"position_m":[5.55112e-17,-0.0611,0.0181],"quaternion_wxyz":[0.0172091,-0.0172091,0.706897,0.706897]},"range_rad":[-2.7438472969992493,2.841206309382605]},{"joint_name":"gripper","group":"gripper","parent_body":"gripper","child_body":"moving_jaw_so101_v1","joint_type":"hinge","axis":[0,0,1],"axis_frame":"child_body","joint_origin_in_child_body_m":[0,0,0],"parent_to_joint":{"position_m":[0.0202,0.0188,-0.0234],"quaternion_wxyz":[0.707107,0.707107,-1.85362e-08,1.85362e-08]},"range_rad":[-0.17453297762778586,1.7453291995659765]}],"end_effector":{"name":"stock_gripper","reference_site":"gripperframe","site_body":"gripper","parent_to_reference":{"position_m":[-0.0079,-0.000218121,-0.0981274],"quaternion_wxyz":[0.707107,-0.0,0.707107,-2.37788e-17]}}}
     }
   },

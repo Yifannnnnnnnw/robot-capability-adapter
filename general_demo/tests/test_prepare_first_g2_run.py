@@ -545,6 +545,28 @@ def test_so_kinematics_projection_contains_exact_chain_and_separate_sdk_units(tm
         "so-arm101", morphology, sdk, translation, projection, template, kinematics
     )
     assert bundle["robot_implementation_facts"]["kinematics"] == kinematics
+    unsupported_behavior = bundle["robot_implementation_facts"]["unsupported_behavior"]
+    assert "move_end_effector_to_target" in bundle["robot_implementation_facts"]["effect_allowlist"]
+    assert "move_end_effector_to_target" not in unsupported_behavior
+    assert unsupported_behavior == [
+        "camera",
+        "prebuilt_ik_api_unavailable",
+        "prebuilt_trajectory_api_unavailable",
+        "prebuilt_planner_api_unavailable",
+        "recovery",
+        "task_policy",
+    ]
+    assert not {"IK", "trajectory", "planning"} & set(unsupported_behavior)
+    assert bundle["sdk_implementation_projection"]["unsupported_behavior"] == unsupported_behavior
+    legacy_projection = copy.deepcopy(projection)
+    legacy_projection["unsupported_behavior"] = [
+        "camera", "IK", "trajectory", "planning", "recovery", "task_policy"
+    ]
+    derived_from_source_facts = _implementation_projection_from_records(
+        "so-arm101", morphology, sdk, translation, legacy_projection, kinematics
+    )
+    assert derived_from_source_facts["robot_implementation_facts"]["unsupported_behavior"] == unsupported_behavior
+    assert derived_from_source_facts["sdk_implementation_projection"]["unsupported_behavior"] == unsupported_behavior
     kinematics_text = json.dumps(kinematics).lower()
     assert not {"private", "criterion", "target", "task", "ik", "inverse", "algorithm"} & set(
         token for token in ("private", "criterion", "target", "task", "ik", "inverse", "algorithm")

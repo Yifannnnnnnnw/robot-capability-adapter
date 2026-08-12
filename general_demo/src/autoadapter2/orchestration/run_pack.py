@@ -63,6 +63,19 @@ SO_CANONICAL_MODEL_REF = {
     "path": "Simulation/SO101/so101_new_calib.xml",
     "sha256": "d75253eb568e8a7214db9c631ab7bed4217f608a26f7276ebe9a7636cac82580",
 }
+SO_UNSUPPORTED_BEHAVIOR = [
+    "camera",
+    "prebuilt_ik_api_unavailable",
+    "prebuilt_trajectory_api_unavailable",
+    "prebuilt_planner_api_unavailable",
+    "recovery",
+    "task_policy",
+]
+SO_PREBUILT_API_UNSUPPORTED = {
+    "IK": "prebuilt_ik_api_unavailable",
+    "trajectory": "prebuilt_trajectory_api_unavailable",
+    "planning": "prebuilt_planner_api_unavailable",
+}
 DEFAULT_MANIFESTS = {
     "so-arm101": "general_demo/integrations/so-arm101/integration_manifest.json",
     "unitree-go2": "general_demo/integrations/unitree-go2/integration_manifest.json",
@@ -478,6 +491,8 @@ def _validate_public_projection_template(template: Mapping[str, Any], robot: str
         item in projection["unsupported_behavior"] for item in ("stand", "sit", "move")
     ):
         raise RunPackError("Go2 unsupported_behavior must not contradict its public semantic effect allowlist")
+    if robot == "so-arm101" and projection["unsupported_behavior"] != SO_UNSUPPORTED_BEHAVIOR:
+        raise RunPackError("SO unsupported_behavior must use precise unavailable helper API facts")
     units = projection["units"]
     if not isinstance(units, Mapping) or not units or not all(isinstance(key, str) and key.strip() for key in units) or not all(isinstance(item, str) and item.strip() for item in units.values()):
         raise RunPackError("public_projection.units is malformed")
@@ -1114,6 +1129,23 @@ def _go2_unsupported_behavior(sdk: Mapping[str, Any], translation: Mapping[str, 
     return normalized
 
 
+def _so_unsupported_behavior(
+    sdk: Mapping[str, Any], translation_implementation: Mapping[str, Any]
+) -> list[str]:
+    values = [
+        *sdk.get("excluded", []),
+        *translation_implementation.get("forbidden_behavior", []),
+    ]
+    normalized = []
+    for value in values:
+        value = SO_PREBUILT_API_UNSUPPORTED.get(value, value)
+        if value not in normalized:
+            normalized.append(value)
+    if normalized != SO_UNSUPPORTED_BEHAVIOR:
+        raise RunPackError("SO SDK and translation unsupported behavior facts are not the exact public projection")
+    return normalized
+
+
 def _finite_vector(value: Any, length: int, label: str) -> list[float | int]:
     if not isinstance(value, list) or len(value) != length:
         raise RunPackError(f"{label} must be a numeric vector of length {length}")
@@ -1273,6 +1305,8 @@ def _implementation_projection_from_records(
         implementation = translation.get("implementation")
         if not isinstance(implementation, Mapping):
             raise RunPackError("SO checked-in translation implementation facts are missing")
+        so_unsupported_behavior = _so_unsupported_behavior(sdk, implementation)
+        robot_facts["unsupported_behavior"] = copy.deepcopy(so_unsupported_behavior)
         robot_facts["kinematics"] = copy.deepcopy(dict(kinematics_projection))
         sdk_projection = {
             "sdk_entry_id": sdk["id"],
@@ -1290,7 +1324,7 @@ def _implementation_projection_from_records(
                 "latest_valid_action": translation["command_rule"],
                 "invalid_input": translation["error_rule"],
             },
-            "unsupported_behavior": list(dict.fromkeys([*sdk["excluded"], *implementation["forbidden_behavior"]])),
+            "unsupported_behavior": copy.deepcopy(so_unsupported_behavior),
         }
         return {
             "sdk_implementation_projection": sdk_projection,
