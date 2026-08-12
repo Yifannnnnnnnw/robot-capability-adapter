@@ -92,6 +92,8 @@ FROZEN_VIDEO_PROFILE = {
 }
 GO2_PUBLIC_INJECTED_HELPERS = ("CRC",)
 GO2_PUBLIC_INJECTED_FACTORIES = ("unitree_go_msg_dds__LowCmd_",)
+SO_PUBLIC_INJECTED_OPERATIONS = ("send_action", "get_observation")
+SO_FRAMEWORK_LIFECYCLE = ("framework_open", "send_action", "get_observation", "framework_close")
 G2_PROFILE_PUBLIC = {
     "profile_id": "g2-reusable-effect",
     "version": "1.0.0",
@@ -1080,13 +1082,13 @@ def _implementation_projection_from_records(
         sdk_projection = {
             "sdk_entry_id": sdk["id"],
             "sdk_entry_version": sdk["version"],
-            "permitted_types": copy.deepcopy(sdk["public_symbols"]),
-            "permitted_operations": copy.deepcopy(sdk["operations"]),
+            "permitted_types": [],
+            "permitted_operations": list(SO_PUBLIC_INJECTED_OPERATIONS),
             "action_fields": copy.deepcopy(sdk["action_fields"]),
             "observation_fields": copy.deepcopy(sdk["observation_fields"]),
             "field_order": copy.deepcopy(sdk["action_fields"]),
             "units": copy.deepcopy(sdk["units"]),
-            "lifecycle": ["connect", "send_action", "get_observation", "disconnect"],
+            "lifecycle": list(SO_FRAMEWORK_LIFECYCLE),
             "transport_constraints": {
                 "normal_motion_writes": translation["normal_motion_writes"],
                 "reset_write_scope": translation["direct_qpos_qvel_write"],
@@ -1233,13 +1235,23 @@ def _validate_implementation_bundle_contents(bundle: Mapping[str, Any], robot: s
     if not isinstance(sdk_projection, Mapping) or not sdk_projection or not isinstance(robot_facts, Mapping) or not robot_facts or not isinstance(experience, list) or not experience:
         raise RunPackError("Implementation Bundle mandatory sections must be non-empty")
     for field in ("sdk_entry_id", "sdk_entry_version", "permitted_types", "lifecycle", "unsupported_behavior"):
-        if field not in sdk_projection or not sdk_projection[field]:
+        if field not in sdk_projection:
+            raise RunPackError(f"Implementation Bundle SDK fact section {field} is empty")
+        if field == "permitted_types" and robot == "so-arm101":
+            if sdk_projection[field] != []:
+                raise RunPackError("SO Implementation Bundle must not expose upstream constructors as candidate types")
+        elif not sdk_projection[field]:
             raise RunPackError(f"Implementation Bundle SDK fact section {field} is empty")
     for field in ("robot_model_id", "robot_configuration_id", "topology", "sensors", "units", "frames", "limits", "effect_allowlist", "unsupported_behavior"):
         if field not in robot_facts or not robot_facts[field]:
             raise RunPackError(f"Implementation Bundle robot fact section {field} is empty")
     if robot_facts["effect_allowlist"] != PUBLIC_EFFECT_ALLOWLIST[robot]:
         raise RunPackError("Implementation Bundle effect_allowlist does not match the public projection")
+    if robot == "so-arm101":
+        if sdk_projection.get("permitted_operations") != list(SO_PUBLIC_INJECTED_OPERATIONS):
+            raise RunPackError("SO Implementation Bundle permitted_operations must match the injected facade")
+        if sdk_projection.get("lifecycle") != list(SO_FRAMEWORK_LIFECYCLE):
+            raise RunPackError("SO Implementation Bundle lifecycle must leave open and close to Framework")
     if robot == "unitree-go2":
         for section in (sdk_projection, robot_facts):
             if any(item in section["unsupported_behavior"] for item in ("stand", "sit", "move")):

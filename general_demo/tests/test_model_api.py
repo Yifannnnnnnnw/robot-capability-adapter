@@ -131,3 +131,22 @@ def test_model_api_repair_adds_unitree_shape_only_for_unitree_bundle(monkeypatch
     assert "_sdk.low_state_subscriber" in unitree_instruction
     assert '_sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)' not in so_instruction
     assert "_sdk.unitree_go_msg_dds__LowCmd_()" not in so_instruction
+    for phrase in (
+        "already-open injected SO facade",
+        "`_sdk.get_observation()`",
+        "`_sdk.send_action({...six fields...})`",
+        "`public_task_state` is returned inside the observation",
+        "Do not construct",
+        "SO101Follower",
+        "SOFollower",
+        "FeetechMotorsBus",
+        "do not call `connect` or",
+        "`disconnect`",
+        "API wiring only, not IK/control behavior",
+    ):
+        assert phrase in so_instruction
+    assert "_sdk.SO101Follower(" not in so_instruction
+    assert "_sdk.SOFollower(" not in so_instruction
+    assert "_sdk.FeetechMotorsBus(" not in so_instruction
+    assert "_sdk.connect(" not in so_instruction
+    assert "_sdk.disconnect(" not in so_instruction

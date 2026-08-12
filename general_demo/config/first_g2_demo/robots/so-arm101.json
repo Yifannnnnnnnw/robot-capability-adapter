@@ -111,13 +111,13 @@
     "sdk_implementation_projection": {
       "sdk_entry_id": "lerobot-so101-follower",
       "sdk_entry_version": "1.0.0",
-      "permitted_types": ["SO101Follower", "SOFollower", "FeetechMotorsBus"],
-      "permitted_operations": ["connect", "disconnect", "send_action", "get_observation"],
+      "permitted_types": [],
+      "permitted_operations": ["send_action", "get_observation"],
       "action_fields": ["shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos", "wrist_flex.pos", "wrist_roll.pos", "gripper.pos"],
       "observation_fields": ["shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos", "wrist_flex.pos", "wrist_roll.pos", "gripper.pos"],
       "field_order": ["shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos", "wrist_flex.pos", "wrist_roll.pos", "gripper.pos"],
       "units": {"arm": "degree", "gripper": "normalized_0_100"},
-      "lifecycle": ["connect", "send_action", "get_observation", "disconnect"],
+      "lifecycle": ["framework_open", "send_action", "get_observation", "framework_close"],
       "transport_constraints": {
         "normal_motion_writes": "actuator_control_only",
         "reset_write_scope": "reset_only",
@@ -150,6 +150,6 @@
     }
   },
   "implementation_experience": [
-    {"experience_id": "so-arm101-checked-in-public-surface-v1", "basis": "checked_in_sdk_morphology_route_records", "guidance": "Use the six ordered pos fields, the recorded SDK lifecycle, and the recorded actuator-only route."}
+    {"experience_id": "so-arm101-checked-in-public-surface-v1", "basis": "checked_in_sdk_morphology_route_records", "guidance": "Use the six ordered pos fields and direct injected facade operations; Framework owns SO session open/close and the actuator-only route is transport behavior."}
   ]
 }

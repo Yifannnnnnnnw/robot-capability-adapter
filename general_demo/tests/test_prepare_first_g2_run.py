@@ -406,6 +406,35 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert gate.run_id == run_id
 
 
+def test_so_bundle_exposes_only_validation_a_facade_operations(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    pack = _build_pack(tmp_path, "so-first-g2-facade", "so-arm101")
+    bundle = json.loads(pack.path("implementation_bundle").read_text(encoding="utf-8"))
+    validation_template = json.loads(pack.path("validation_a_template").read_text(encoding="utf-8"))
+    sdk_projection = bundle["sdk_implementation_projection"]
+    facade_members = validation_template["facade"]["members"]
+
+    assert sdk_projection["permitted_operations"] == facade_members == ["send_action", "get_observation"]
+    assert sdk_projection["permitted_types"] == []
+    assert not {"SO101Follower", "SOFollower", "FeetechMotorsBus", "connect", "disconnect"} & (
+        set(sdk_projection["permitted_types"]) | set(sdk_projection["permitted_operations"])
+    )
+    assert sdk_projection["action_fields"] == [
+        "shoulder_pan.pos", "shoulder_lift.pos", "elbow_flex.pos",
+        "wrist_flex.pos", "wrist_roll.pos", "gripper.pos",
+    ]
+    assert sdk_projection["observation_fields"] == sdk_projection["action_fields"]
+    assert sdk_projection["field_order"] == sdk_projection["action_fields"]
+    assert sdk_projection["units"] == {"arm": "degree", "gripper": "normalized_0_100"}
+    assert sdk_projection["lifecycle"] == ["framework_open", "send_action", "get_observation", "framework_close"]
+    assert sdk_projection["transport_constraints"] == {
+        "normal_motion_writes": "actuator_control_only",
+        "reset_write_scope": "reset_only",
+        "latest_valid_action": "latest valid goal remains latched until reset or replacement",
+        "invalid_input": "bad checksum, unknown ID/register, read-only write, wrong width, or malformed packet does not alter actuator control",
+    }
+
+
 def test_go2_template_adds_only_injected_helpers_and_default_factory_to_public_sdk_surface() -> None:
     template = json.loads(
         (PROJECT_ROOT / "general_demo/config/first_g2_demo/robots/unitree-go2.json").read_text(

@@ -120,6 +120,8 @@ def test_stage2_prompt_describes_the_validation_a_source_contract() -> None:
         "local endpoints",
         "not a second SDK connection",
         "module-global `_sdk`",
+        "direct facade operations and no constructors",
+        "leave lifecycle to Framework",
     ):
         assert framework_rule in STAGE2_PROMPT
     for forbidden in ("Markdown fences", "dynamic imports", "eval/exec/open"):

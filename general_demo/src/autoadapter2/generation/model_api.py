@@ -21,8 +21,7 @@ DEFAULT_MODEL = "anthropic.claude-sonnet-4-5-20250929-v1:0"
 _GENERIC_SDK_GUIDANCE = """
 SDK boundary rules: `_sdk` is a module-like injected facade, not a robot object with
 invented endpoint attributes or endpoint instances on the facade. Use only the exact
-members listed in the binding and implementation_bundle. Do not depend on a module-global
-`_sdk`: every helper that uses the SDK must receive `_sdk` explicitly,
+members listed in the binding and implementation_bundle. Do not depend on a module-global `_sdk`: every helper that uses the SDK must receive `_sdk` explicitly,
 or receive a local endpoint/message object explicitly after the capability constructs
 it from `_sdk`. Do not call `ChannelFactoryInitialize` or otherwise reinitialize the
 SDK's global communication. Bundle-listed publisher/subscriber constructors are
@@ -49,6 +48,18 @@ Do not call `ChannelFactoryInitialize`; the framework owns global SDK setup. Thi
 only the allowed SDK wiring shape, not a fixed robot behavior implementation.
 """.strip()
 
+_SO_ARM101_SDK_GUIDANCE = """
+This implementation_bundle is the SO-ARM101 direct-facade projection. `_sdk` is the
+already-open injected SO facade. Call `_sdk.get_observation()` and
+`_sdk.send_action({...six fields...})` directly. The action object uses exactly these
+six ordered fields: `shoulder_pan.pos`, `shoulder_lift.pos`, `elbow_flex.pos`,
+`wrist_flex.pos`, `wrist_roll.pos`, and `gripper.pos`; the arm fields use degree and
+`gripper.pos` uses normalized_0_100. The observation contains those same six fields,
+and `public_task_state` is returned inside the observation. Do not construct
+`SO101Follower`, `SOFollower`, or `FeetechMotorsBus`; do not call `connect` or
+`disconnect`. Opening and closing are Framework session lifecycle. This is API wiring only, not IK/control behavior.
+""".strip()
+
 
 def _is_unitree_sdk_bundle(value: Any) -> bool:
     if not isinstance(value, Mapping):
@@ -68,6 +79,19 @@ def _is_unitree_sdk_bundle(value: Any) -> bool:
     }.issubset(permitted_types)
 
 
+def _is_so_sdk_bundle(value: Any) -> bool:
+    if not isinstance(value, Mapping):
+        return False
+    projection = value.get("sdk_implementation_projection")
+    if not isinstance(projection, Mapping):
+        return False
+    entry_id = projection.get("sdk_entry_id")
+    if entry_id in {"lerobot-so101-follower", "lerobot-so-arm101"}:
+        return True
+    operations = projection.get("permitted_operations")
+    return operations == ["send_action", "get_observation"]
+
+
 def _repair_instruction(request: Mapping[str, Any]) -> str:
     instruction = (
         "Repair only capability.py using the supplied public diagnostics and binding. "
@@ -83,6 +107,8 @@ def _repair_instruction(request: Mapping[str, Any]) -> str:
     guidance = _GENERIC_SDK_GUIDANCE
     if _is_unitree_sdk_bundle(request.get("implementation_bundle")):
         guidance += "\n\n" + _UNITREE_GO2_SDK_GUIDANCE
+    elif _is_so_sdk_bundle(request.get("implementation_bundle")):
+        guidance += "\n\n" + _SO_ARM101_SDK_GUIDANCE
     return instruction + "\n\nFRAMEWORK SDK RULES:\n" + guidance
 
 

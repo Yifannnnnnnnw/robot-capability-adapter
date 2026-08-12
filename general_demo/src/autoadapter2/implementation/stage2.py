@@ -49,8 +49,9 @@ When the bundle lists publisher/subscriber constructors, use them to create loca
 call their listed `Init()`, and use their listed `Read()`/`Write()` operations; these local
 endpoints are allowed and are not a second SDK connection. Pass `_sdk` explicitly to every
 helper that uses it, or pass a locally constructed endpoint/message explicitly; never rely on
-a module-global `_sdk`. Keep the one-file binding contract and public result fields exactly as
-supplied; physical behavior is assessed after submission.
+a module-global `_sdk`. When a bundle lists direct facade operations and no constructors, call
+those operations directly and leave lifecycle to Framework. Keep the one-file binding contract
+and public result fields exactly as supplied; physical behavior is assessed after submission.
 """.strip()
 _ACTION_FIELDS = {
     "sandbox": {"action", "capability.py", "probe"},
