@@ -33,18 +33,36 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 G2 = {"profile_id": "g2-reusable-effect", "version": "1.0.0", "granularity": "G2"}
 
 
-def test_field_schema_accepts_fixed_length_arrays_and_rejects_invalid_shapes() -> None:
+def test_field_schema_maps_float_and_preserves_fixed_shapes() -> None:
+    assert _field_schema({"type": "float", "shape": "scalar"}) == {"type": "number"}
+    assert _field_schema({"type": "number", "shape": "scalar"}) == {"type": "number"}
+    assert _field_schema({"type": "number", "shape": "vector:4"}) == {
+        "type": "array",
+        "items": {"type": "number"},
+        "minItems": 4,
+        "maxItems": 4,
+    }
     for shape, length in (("[2]", 2), ("[3]", 3)):
         assert _field_schema({"type": "array", "shape": shape}) == {
             "type": "array",
             "items": {"type": "number"},
             "minItems": length,
             "maxItems": length,
-    }
+        }
 
-    for shape in ("[]", "[0]", "[-1]", "[3", "3]", "[3.0]", "[abc]"):
+    for field in (
+        {"type": "array", "shape": "[]"},
+        {"type": "array", "shape": "[0]"},
+        {"type": "array", "shape": "[-1]"},
+        {"type": "array", "shape": "[3"},
+        {"type": "array", "shape": "3]"},
+        {"type": "array", "shape": "[3.0]"},
+        {"type": "array", "shape": "[abc]"},
+        {"type": "number", "shape": "vector:0"},
+        {"type": "number", "shape": "vector:invalid"},
+    ):
         with pytest.raises(ContractError):
-            _field_schema({"type": "array", "shape": shape})
+            _field_schema(field)
 
 
 def _copy(root: Path, relative: str) -> None:

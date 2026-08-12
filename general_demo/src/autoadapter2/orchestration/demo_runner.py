@@ -154,6 +154,8 @@ def _bare_hash(value: str, label: str) -> str:
 def _field_schema(field: Mapping[str, Any]) -> dict[str, Any]:
     field_type = field.get("type")
     shape = field.get("shape")
+    if shape == "scalar" and field_type == "float":
+        return {"type": "number"}
     if shape == "scalar" and field_type in _SCALAR_TYPES:
         return {"type": field_type}
     if field_type == "array" and isinstance(shape, str):
