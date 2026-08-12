@@ -2004,6 +2004,7 @@ class UnitreeGo2EvaluationRobotSession:
             "low_state_publications": max(0, self._sdk_count("low_state_publications") - self._lowstate_baseline),
             "sport_mode_state_publications": max(0, self._sdk_count("sport_mode_state_publications") - self._sportstate_baseline),
             "state_publication_observed": state_observed,
+            "state_route_observed": state_observed,
             "simulation_time_start_s": self._reset_time_s,
             "simulation_time_end_s": self.simulation_time_s,
             "simulation_time_progressed": progress,

@@ -179,6 +179,14 @@ class FakeTransport:
         self.sportstate_queue.close()
 
 
+class NoStateTransport(FakeTransport):
+    def publish_lowstate(self, _state: LowStateFrame) -> None:
+        return None
+
+    def publish_sportmodestate(self, _state: SportModeStateFrame) -> None:
+        return None
+
+
 class FakePublisher:
     def __init__(self, transport: FakeTransport) -> None:
         self._transport = transport
@@ -580,9 +588,10 @@ def _session(
     lowstate_samples=(),
     sportstate_samples=(),
     sdk_factory=FakeSDKConnection,
+    transport_factory=FakeTransport,
 ):
     backend = FakeBackend()
-    transport = FakeTransport()
+    transport = transport_factory()
     sdk = sdk_factory(
         transport,
         lowstate_samples=lowstate_samples,
@@ -747,7 +756,10 @@ def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
     assert session.route_evidence["accepted_command_type_verified"] is True
     assert session.route_evidence["accepted_command_crc_verified"] is True
     assert session.route_evidence["state_publication_observed"] is True
+    assert session.route_evidence["state_route_observed"] is True
     assert session.route_evidence["simulation_time_progressed"] is True
+    assert session.route_evidence["candidate_invocation_observed"] is True
+    assert session.route_evidence["verified"] is True
     assert len(transport.lowstates) == len(transport.sportstates) == 3
     assert transport.write_count.value == 1
 
@@ -774,6 +786,31 @@ def test_invoke_rolls_physics_and_captures_one_shared_stream() -> None:
         "no-body-or-head-floor-contact",
     }
     session.close()
+
+
+def test_route_evidence_requires_observed_returned_state() -> None:
+    session, backend, _transport, _sdk, _capture_count = _session(
+        rollout_steps=1,
+        transport_factory=NoStateTransport,
+    )
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="missing-returned-state",
+            initial_state={"task_id": "G01"},
+        )
+        assert session.invoke(Candidate(), "low-level-command", {}) == {"status": "issued"}
+
+        route = session.route_evidence
+        assert backend.time > 0.0
+        assert route["candidate_invocation_observed"] is True
+        assert route["accepted_command_count"] == 1
+        assert route["simulation_time_progressed"] is True
+        assert route["state_publication_observed"] is False
+        assert route["state_route_observed"] is False
+        assert route["verified"] is False
+    finally:
+        session.close()
 
 
 def test_invoke_clock_applies_commands_in_arrival_order_then_stales_without_replay() -> None:
