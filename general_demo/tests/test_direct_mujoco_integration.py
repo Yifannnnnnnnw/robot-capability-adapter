@@ -39,9 +39,6 @@ def _write_mini_mjcf(root: Path) -> Path:
   <actuator>
     <position name="hinge_motor" joint="hinge_joint" kp="20" ctrlrange="-1 1" ctrllimited="true"/>
   </actuator>
-  <sensor>
-    <jointpos name="joint_position_sensor" joint="hinge_joint"/>
-  </sensor>
 </mujoco>
 """.strip(),
         encoding="utf-8",
@@ -54,7 +51,7 @@ def _migrated_record(root: Path) -> dict[str, object]:
     record = copy.deepcopy(record)
     record["joint_names"] = ["hinge_joint"]
     record["actuator_names"] = ["hinge_motor"]
-    record["sensor_names"] = ["joint_position_sensor"]
+    record["sensor_names"] = []
     mujoco = copy.deepcopy(record["mujoco"])
     mujoco.update(
         {
@@ -98,7 +95,8 @@ def test_direct_mujoco_1_0_migration_asset_smoke(tmp_path: Path, monkeypatch: py
         session.sdk.step(0.2)
         after = session.sdk.state()
         assert after["joint_positions"]["hinge_joint"] != before["joint_positions"]["hinge_joint"]
-        assert after["sensors"]["joint_position_sensor"] == after["joint_positions"]["hinge_joint"]
+        assert after["sensors"] == {}
+        assert session.sensor_observation() == {}
         assert "model" not in dir(session.sdk)
 
         frame = session.capture_frame()

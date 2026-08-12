@@ -165,7 +165,11 @@ class DirectMuJoCoLibraryConfig:
             )
 
         sensor_value = mujoco.get("sensor_names", record.get("sensor_names"))
-        sensor_names = _names(sensor_value, "morphology.mujoco.sensor_names")
+        sensor_names = _names(
+            sensor_value,
+            "morphology.mujoco.sensor_names",
+            allow_empty=True,
+        )
 
         render = _required_mapping(mujoco.get("render"), "morphology.mujoco.render")
         render_camera = _required_text(render.get("camera"), "morphology.mujoco.render.camera")
