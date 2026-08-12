@@ -17,7 +17,7 @@ import secrets
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Protocol
 
@@ -29,8 +29,8 @@ from ..evaluation import (
 )
 from ..evaluation.ffmpeg import FFmpegVideoEncoder
 from ..foundation.errors import ContractError
-from ..foundation.canonical import canonical_bytes
-from ..foundation.hashing import content_hash, sha256_bytes
+from ..foundation.canonical import CANONICALIZER_VERSION, canonical_bytes
+from ..foundation.hashing import content_hash, is_content_hash, sha256_bytes
 from ..foundation.seals import create_seal, verify_seal
 from ..generation import ModelApiClient, ModelApiConfig, Stage1Config
 from ..generation.model_api import DEFAULT_BASE_URL, DEFAULT_MODEL
@@ -98,6 +98,7 @@ _DEFAULT_VIDEO_PROFILE = FrozenVideoProfile(
     codec="ffv1",
 )
 _SAFE_COMPONENT = re.compile(r"[^A-Za-z0-9._-]+")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 class RobotSessionFactory(Protocol):
@@ -1270,6 +1271,224 @@ def _video_reference_artifact(
     }
 
 
+def _require_sha256(value: Any, label: str) -> str:
+    if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
+        raise ContractError(f"{label} must be a bare SHA-256 digest")
+    return value
+
+
+def _resolve_video_file(
+    run_directory: Path,
+    relative: Any,
+    label: str,
+) -> Path:
+    if not isinstance(relative, str) or not relative or "\\" in relative:
+        raise ContractError(f"{label} must be a normalized relative POSIX path")
+    path = PurePosixPath(relative)
+    if (
+        path.is_absolute()
+        or path.as_posix() != relative
+        or any(part in {"", ".", ".."} for part in path.parts)
+    ):
+        raise ContractError(f"{label} must be a normalized relative POSIX path")
+    base = run_directory.resolve()
+    candidate = base.joinpath(*path.parts)
+    current = base
+    for part in path.parts:
+        current = current / part
+        if current.is_symlink():
+            raise ContractError(f"{label} cannot reference a symlink")
+    try:
+        resolved = candidate.resolve(strict=True)
+        resolved.relative_to(base)
+    except (OSError, ValueError) as exc:
+        raise ContractError(f"{label} does not resolve beneath the run directory") from exc
+    if resolved.is_symlink() or not resolved.is_file():
+        raise ContractError(f"{label} is not a regular file")
+    return resolved
+
+
+def _verify_persisted_video_reference(
+    reference_file: Path,
+    reference: Mapping[str, Any],
+    *,
+    expected_phase: str,
+) -> None:
+    required_reference_fields = {
+        "recording_id", "execution_id", "phase", "completion_status",
+        "execution_disposition", "manifest", "media",
+    }
+    if set(reference) != required_reference_fields:
+        raise ContractError("video reference fields are not closed")
+    recording_id = reference["recording_id"]
+    if not isinstance(recording_id, str) or not recording_id.strip():
+        raise ContractError("video reference recording_id is invalid")
+    if reference["phase"] != expected_phase:
+        raise ContractError("video reference phase is invalid")
+    if not isinstance(reference["execution_id"], str) or not reference["execution_id"].strip():
+        raise ContractError("video reference execution_id is invalid")
+    for field in ("completion_status", "execution_disposition"):
+        if not isinstance(reference[field], str) or not reference[field].strip():
+            raise ContractError(f"video reference {field} is invalid")
+
+    manifest_reference = reference["manifest"]
+    if not isinstance(manifest_reference, Mapping) or set(manifest_reference) != {
+        "path", "content_hash", "file_sha256"
+    }:
+        raise ContractError("video manifest reference fields are invalid")
+    manifest_content_hash = manifest_reference["content_hash"]
+    if not is_content_hash(manifest_content_hash):
+        raise ContractError("video manifest content_hash is invalid")
+    manifest_file_sha256 = _require_sha256(
+        manifest_reference["file_sha256"], "video manifest file_sha256"
+    )
+    manifest_path = _resolve_video_file(
+        reference_file.parent, manifest_reference["path"], "video manifest path"
+    )
+    manifest_bytes = manifest_path.read_bytes()
+    if sha256_bytes(manifest_bytes) != manifest_file_sha256:
+        raise ContractError("video manifest file_sha256 does not match the file")
+    if content_hash(manifest_bytes) != manifest_content_hash:
+        raise ContractError("video manifest content_hash does not match the file")
+    manifest = load_json_artifact(manifest_path).value
+    if manifest_bytes != canonical_bytes(manifest):
+        raise ContractError("video manifest is not in its canonical sealed form")
+
+    top_level = {
+        "manifest_type", "manifest_version", "canonicalizer", "closed",
+        "recording_id", "bindings", "profile", "profile_content_hash",
+        "coverage", "frame_index_content_hash", "media", "completion_status",
+        "execution_disposition", "failures",
+    }
+    profile_fields = {
+        "profile_id", "profile_version", "camera", "view", "fps",
+        "resolution", "container", "codec",
+    }
+    coverage_fields = {
+        "start_simulation_time_s", "terminal_simulation_time_s",
+        "first_frame_simulation_time_s", "last_frame_simulation_time_s",
+        "frame_count", "frame_simulation_timestamps_s", "frame_slots",
+    }
+    media_fields = {"content_hash", "size_bytes", "container", "codec"}
+    if (
+        set(manifest) != top_level
+        or manifest.get("manifest_type") != "framework_evaluation_video"
+        or manifest.get("manifest_version") != "0.1.0"
+        or manifest.get("canonicalizer") != CANONICALIZER_VERSION
+        or manifest.get("closed") is not True
+        or manifest.get("recording_id") != recording_id
+        or manifest.get("completion_status") != reference["completion_status"]
+        or manifest.get("execution_disposition") != reference["execution_disposition"]
+        or not is_content_hash(manifest.get("profile_content_hash"))
+        or manifest.get("profile_content_hash")
+        != content_hash(canonical_bytes(manifest.get("profile")))
+        or not is_content_hash(manifest.get("frame_index_content_hash"))
+    ):
+        raise ContractError("video manifest closure fields are invalid")
+    bindings = manifest.get("bindings")
+    if (
+        not isinstance(bindings, Mapping)
+        or any(
+            not isinstance(key, str)
+            or not key
+            or not isinstance(value, str)
+            or not value
+            for key, value in bindings.items()
+        )
+        or bindings.get("phase") != expected_phase
+        or bindings.get("execution_id") != reference["execution_id"]
+    ):
+        raise ContractError("video manifest bindings do not match the reference")
+    if (
+        not isinstance(manifest.get("profile"), Mapping)
+        or set(manifest["profile"]) != profile_fields
+        or not isinstance(manifest.get("coverage"), Mapping)
+        or set(manifest["coverage"]) != coverage_fields
+        or not isinstance(manifest.get("media"), Mapping)
+        or set(manifest["media"]) != media_fields
+    ):
+        raise ContractError("video manifest profile, coverage, or media fields are invalid")
+    failures = manifest.get("failures")
+    if not isinstance(failures, list):
+        raise ContractError("video manifest failures are invalid")
+    for failure in failures:
+        if not isinstance(failure, Mapping) or set(failure) != {
+            "code", "message", "frame_index", "simulation_time_s"
+        }:
+            raise ContractError("video manifest failure fields are invalid")
+        if not isinstance(failure["code"], str) or not failure["code"]:
+            raise ContractError("video manifest failure code is invalid")
+        if not isinstance(failure["message"], str) or not failure["message"]:
+            raise ContractError("video manifest failure message is invalid")
+        if failure["frame_index"] is not None and (
+            isinstance(failure["frame_index"], bool)
+            or not isinstance(failure["frame_index"], int)
+        ):
+            raise ContractError("video manifest failure frame_index is invalid")
+
+    media = manifest["media"]
+    media_reference = reference["media"]
+    if media_reference is None:
+        if media["content_hash"] is not None or media["size_bytes"] is not None:
+            raise ContractError("video media reference is missing a recorded media closure")
+        return
+    if not isinstance(media_reference, Mapping) or set(media_reference) != {
+        "path", "content_hash", "file_sha256"
+    }:
+        raise ContractError("video media reference fields are invalid")
+    media_content_hash = media_reference["content_hash"]
+    if not is_content_hash(media_content_hash):
+        raise ContractError("video media content_hash is invalid")
+    media_file_sha256 = _require_sha256(
+        media_reference["file_sha256"], "video media file_sha256"
+    )
+    media_path = _resolve_video_file(
+        reference_file.parent, media_reference["path"], "video media path"
+    )
+    media_bytes = media_path.read_bytes()
+    if not media_bytes:
+        raise ContractError("video media file is empty")
+    if sha256_bytes(media_bytes) != media_file_sha256:
+        raise ContractError("video media file_sha256 does not match the file")
+    if content_hash(media_bytes) != media_content_hash:
+        raise ContractError("video media content_hash does not match the file")
+    if (
+        media["content_hash"] != media_content_hash
+        or media["size_bytes"] != len(media_bytes)
+        or media["container"] != manifest["profile"]["container"]
+        or media["codec"] != manifest["profile"]["codec"]
+    ):
+        raise ContractError("video media does not match its manifest binding")
+
+
+def _verify_video_reference_artifact(
+    reference_file: Path,
+    *,
+    run_id: str,
+    robot: str,
+    expected_phase: str,
+) -> None:
+    artifact = load_json_artifact(reference_file).value
+    if set(artifact) != {"artifact_type", "schema_version", "run_id", "robot", "videos"}:
+        raise ContractError("video reference artifact fields are invalid")
+    if (
+        artifact.get("artifact_type") != "general_demo_video_references"
+        or artifact.get("schema_version") != "1.0.0"
+        or artifact.get("run_id") != run_id
+        or artifact.get("robot") != robot
+        or not isinstance(artifact.get("videos"), list)
+    ):
+        raise ContractError("video reference artifact identity is invalid")
+    for reference in artifact["videos"]:
+        if not isinstance(reference, Mapping):
+            raise ContractError("video reference entry is invalid")
+        _verify_persisted_video_reference(
+            reference_file,
+            reference,
+            expected_phase=expected_phase,
+        )
+
+
 _CLOSURE_FILE_KEYS = (
     "run_snapshot",
     "summary",
@@ -1336,6 +1555,18 @@ def verify_first_g2_run_closure(
             or summary_seal.get("artifact_hash") != summary_hash
         ):
             raise ContractError("first G2 Demo closure summary seal does not bind the summary")
+        _verify_video_reference_artifact(
+            resolved_files["validation_video_references"],
+            run_id=closure["run_id"],
+            robot=closure["robot"],
+            expected_phase="VALIDATION_B",
+        )
+        _verify_video_reference_artifact(
+            resolved_files["demo_video_references"],
+            run_id=closure["run_id"],
+            robot=closure["robot"],
+            expected_phase="DEMO",
+        )
         closure_hash = content_hash(canonical_bytes(closure))
         seal_file = _resolve_top_level(root_path, closure_seal_path)
         seal = load_json_artifact(seal_file).value

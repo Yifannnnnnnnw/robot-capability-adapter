@@ -325,8 +325,12 @@ def _repair_artifact(result: Any) -> dict[str, Any]:
     }
 
 
-def _demo_trial_artifact(trial: DemoTrialResult) -> dict[str, Any]:
-    return {
+def _demo_trial_artifact(
+    trial: DemoTrialResult,
+    *,
+    include_private_trace: bool = False,
+) -> dict[str, Any]:
+    artifact = {
         "task_id": trial.task_id,
         "repetition": trial.repetition,
         "status": trial.status,
@@ -340,6 +344,13 @@ def _demo_trial_artifact(trial: DemoTrialResult) -> dict[str, Any]:
         "evidence_hash": trial.evidence_hash,
         "video": _video_record(trial.video_handle) if trial.video_handle else None,
     }
+    if include_private_trace:
+        artifact["consumer_trace"] = (
+            copy.deepcopy(trial.consumer_result.trace)
+            if trial.consumer_result is not None
+            else None
+        )
+    return artifact
 
 
 class GeneralDemoRunner:
@@ -742,7 +753,10 @@ class GeneralDemoRunner:
         }
         artifacts["demo"] = {
             "status": demo_status,
-            "trials": [_demo_trial_artifact(trial) for trial in trials],
+            "trials": [
+                _demo_trial_artifact(trial, include_private_trace=True)
+                for trial in trials
+            ],
         }
         stages.append({
             "stage": "demo",

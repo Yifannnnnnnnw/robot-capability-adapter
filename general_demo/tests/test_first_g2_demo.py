@@ -9,7 +9,9 @@ import pytest
 
 from autoadapter2.demo import evaluate_fixed_demo_criterion
 from autoadapter2.evaluation import FrozenVideoProfile
+from autoadapter2.foundation.canonical import canonical_bytes
 from autoadapter2.foundation.errors import ContractError
+from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.generation import ModelApiClient, ModelApiConfig, model_api
 from autoadapter2.generation.model_api import DEFAULT_BASE_URL, DEFAULT_MODEL
 from autoadapter2.integration import write_stable_json
@@ -228,6 +230,7 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
     assert summary["status"] == "COMPLETE"
     assert summary["validation_a_profile_hash"] == plan.validation_a_profile.profile_hash
     assert "criterion_text" not in json.dumps(summary)
+    assert all("consumer_trace" not in trial for trial in summary["demo_trials"])
     assert model_client.stages[:3] == ["stage1", "blue_line", "stage2"]
     assert model_client.stages.count("stage1") == 1
     assert "react_consumer" in model_client.stages
@@ -237,6 +240,11 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
     stage_artifacts = json.loads(result.stage_artifacts_path.read_text(encoding="utf-8"))
     assert stage_artifacts["stages"]["stage1"]["call_log"]
     assert "stage1_preflight" not in stage_artifacts
+    for trial in stage_artifacts["demo"]["trials"]:
+        assert trial["consumer_trace"]
+        assert trial["consumer_trace_hash"] == content_hash(
+            canonical_bytes(trial["consumer_trace"])
+        )
     assert {
         "stage1", "blue_line", "stage2", "validation_and_repair",
     } <= set(stage_artifacts["stages"])
@@ -260,6 +268,82 @@ def test_first_g2_entrypoint_runs_both_robot_shapes_and_persists_ffmpeg_evidence
         verify_first_g2_run_closure(
             tmp_path, result.run_closure_path, result.run_closure_seal_path
         )
+
+
+def _complete_first_g2_fixture_run(tmp_path: Path):
+    plan, models = _plan(tmp_path, "so-arm101", 6)
+    return run_first_g2_demo(
+        FirstG2DemoConfig(
+            root=tmp_path,
+            robot="so-arm101",
+            integration_manifest_path=plan.integration_manifest_path,
+            run_snapshot_path=plan.run_snapshot_path,
+            readiness_report_path=plan.readiness_report_path,
+            robot_session_factory=lambda selected_robot, _manifest, _run_dir: _FixedCriterionSession(
+                6,
+                selected_robot,
+                {task.task_id: task.private_criterion for task in plan.tasks},
+            ),
+            validation_a_profile=plan.validation_a_profile,
+            validation_harness_config=plan.validation_harness_config,
+            video_profile=FrozenVideoProfile(
+                "closure-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
+            ),
+            model_client=_FixtureModelClient(models),
+            test_only_allow_fixture_session=True,
+        )
+    )
+
+
+def test_run_closure_rejects_video_append_delete_and_manifest_tamper(tmp_path: Path) -> None:
+    result = _complete_first_g2_fixture_run(tmp_path)
+    validation_refs = json.loads(
+        result.validation_video_references_path.read_text(encoding="utf-8")
+    )
+    demo_refs = json.loads(result.demo_video_references_path.read_text(encoding="utf-8"))
+    validation_video = validation_refs["videos"][0]
+    demo_video = demo_refs["videos"][0]
+    validation_manifest = result.run_directory / validation_video["manifest"]["path"]
+    demo_manifest = result.run_directory / demo_video["manifest"]["path"]
+    validation_media = result.run_directory / validation_video["media"]["path"]
+    demo_media = result.run_directory / demo_video["media"]["path"]
+    original_validation_manifest = validation_manifest.read_bytes()
+    original_demo_manifest = demo_manifest.read_bytes()
+    original_validation_media = validation_media.read_bytes()
+    original_demo_media = demo_media.read_bytes()
+
+    validation_manifest.write_bytes(original_validation_manifest + b"append")
+    with pytest.raises(ContractError):
+        verify_first_g2_run_closure(
+            tmp_path, result.run_closure_path, result.run_closure_seal_path
+        )
+    validation_manifest.write_bytes(original_validation_manifest)
+
+    tampered_demo_manifest = json.loads(original_demo_manifest.decode("utf-8"))
+    tampered_demo_manifest["recording_id"] = "tampered-recording"
+    write_stable_json(demo_manifest, tampered_demo_manifest)
+    with pytest.raises(ContractError):
+        verify_first_g2_run_closure(
+            tmp_path, result.run_closure_path, result.run_closure_seal_path
+        )
+    demo_manifest.write_bytes(original_demo_manifest)
+
+    validation_media.write_bytes(original_validation_media + b"append")
+    with pytest.raises(ContractError):
+        verify_first_g2_run_closure(
+            tmp_path, result.run_closure_path, result.run_closure_seal_path
+        )
+    validation_media.write_bytes(original_validation_media)
+
+    demo_media.unlink()
+    with pytest.raises(ContractError):
+        verify_first_g2_run_closure(
+            tmp_path, result.run_closure_path, result.run_closure_seal_path
+        )
+    demo_media.write_bytes(original_demo_media)
+    assert verify_first_g2_run_closure(
+        tmp_path, result.run_closure_path, result.run_closure_seal_path
+    ) == result.closure_hash
 
 
 def test_first_g2_materializes_library_template_after_stage1(tmp_path: Path) -> None:
