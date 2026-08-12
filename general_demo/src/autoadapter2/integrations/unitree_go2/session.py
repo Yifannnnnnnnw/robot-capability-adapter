@@ -57,22 +57,14 @@ DEFAULT_STANDING_HEIGHT_M = 0.34
 # constants here: a trusted launcher supplies the selected external files or
 # their hashes, and this module verifies their current bytes and cross-file
 # binding before constructing a live session.
-GO2_MORPHOLOGY_SHA256 = "ea2e45ee12476fe3d22b6de1f6178219009ce2b7e6d9e259167b0cf5ea3b2d31"
-GO2_SDK_SHA256 = "904c0fda7142dd20e572cba5b4b8f1cff2afd291571e461dd6f9585eac957ef3"
-GO2_TRANSLATION_SHA256 = "7034efe2c66053a0c224c2193a531bf029ad4c4016bdf6bd238c31c1331e6d44"
-GO2_READINESS_PROFILE_SHA256 = "b626cb1ef34a4c76f5df28499bbb516d1f86af62c45022dbd7a5af5a41e55b6f"
 GO2_TASK_INSTANCES_SHA256 = "b9755ee0b3e6f2317cceed08706e1f7883ee70d0fd96fbd7b99a08c6fb2d134a"
 GO2_SCENE_SHA256 = "6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0"
 GO2_XML_SHA256 = "2014a3d76e30f17ab9447d8a67bd015291f74fa4d71ae30d005f1a32bd693d4b"
 GO2_ASSET_CLOSURE_SHA256 = "f9966ae2644b65dd555cb6dde33fb0175bb5b3e18c3faf2a6f8ed95d5533e5f7"
 GO2_RUNTIME_ID = "unitree-go2-linux-amd64"
 GO2_RUNTIME_VERSION = "1.0.0"
-GO2_MANIFEST_RELATIVE_PATH = "general_demo/integrations/unitree-go2/integration_manifest.json"
 GO2_TASK_RELATIVE_PATH = (
     "general_demo/libraries/tasks/unitree-go2-stock-12dof/1.0.0/task_instances_private.json"
-)
-GO2_RUNTIME_LOCK_RELATIVE_PATH = (
-    "general_demo/environments/unitree-go2-linux-amd64/1.0.0/runtime-lock.json"
 )
 GO2_READINESS_PROFILE_RELATIVE_PATH = (
     "general_demo/contracts/profiles/readiness/general-demo-integration-readiness/1.0.0/profile.json"
@@ -313,6 +305,10 @@ class _UnitreeGo2SDKConnection:
     def sport_mode_state_publications(self) -> int:
         return self._sport_mode_state_publications
 
+    @property
+    def candidate_worker_config(self) -> Mapping[str, Any]:
+        return {"kind": "unitree_sdk2", "domain": 1, "interface": "lo"}
+
     def start(self) -> None:  # pragma: no cover - exercised by Linux route
         if self._started or self._closed:
             raise Go2SDKError("invalid SDK2 endpoint lifecycle")
@@ -332,40 +328,21 @@ class _UnitreeGo2SDKConnection:
                 "pinned unitree_sdk2py/CycloneDDS symbols are unavailable"
             ) from exc
 
-        # UnitreeSDK2Transport, which starts first through the bridge, owns
-        # the single frozen domain-1/lo ChannelFactoryInitialize call.  These
-        # are only the connected candidate-facing endpoints; reinitializing
-        # the process-global SDK2 factory here would invalidate that route.
-        crc = CRC()
-        lowcmd_publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
-        # Keep the callback subscribers used for Framework route auditing
-        # separate from the polling subscribers exposed to the candidate.
-        # SDK2 callback readers consume their own DataReader samples; sharing
-        # one with candidate ``Read()`` would race feedback delivery.
+        # The parent owns only Framework audit readers.  Candidate publishers
+        # and polling readers are constructed in the separate worker process;
+        # no C-backed SDK2/CycloneDDS endpoint crosses a process boundary.
         lowstate_audit_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
         sport_audit_subscriber = ChannelSubscriber("rt/sportmodestate", SportModeState_)
-        lowstate_polling_subscriber = ChannelSubscriber("rt/lowstate", LowState_)
-        sport_polling_subscriber = ChannelSubscriber("rt/sportmodestate", SportModeState_)
         try:
-            lowcmd_publisher.Init()
             lowstate_audit_subscriber.Init(self._on_low_state, 10)
             sport_audit_subscriber.Init(self._on_sport_mode_state, 10)
-            lowstate_polling_subscriber.Init()
-            sport_polling_subscriber.Init()
         except Exception:
-            self._publisher = lowcmd_publisher
             self._lowstate_audit_subscriber = lowstate_audit_subscriber
             self._sport_audit_subscriber = sport_audit_subscriber
-            self._lowstate_polling_subscriber = lowstate_polling_subscriber
-            self._sport_polling_subscriber = sport_polling_subscriber
             self._close_endpoints()
             raise
-        self._publisher = lowcmd_publisher
         self._lowstate_audit_subscriber = lowstate_audit_subscriber
         self._sport_audit_subscriber = sport_audit_subscriber
-        self._lowstate_polling_subscriber = lowstate_polling_subscriber
-        self._sport_polling_subscriber = sport_polling_subscriber
-        self._crc = crc
         self._lowcmd_type = LowCmd_
         self._binding = SimpleNamespace(
             ChannelPublisher=ChannelPublisher,
@@ -374,10 +351,6 @@ class _UnitreeGo2SDKConnection:
             LowState_=LowState_,
             SportModeState_=SportModeState_,
             CRC=CRC,
-            lowcmd_publisher=lowcmd_publisher,
-            lowstate_subscriber=lowstate_polling_subscriber,
-            sport_mode_state_subscriber=sport_polling_subscriber,
-            crc=crc,
         )
         self._started = True
 
@@ -398,8 +371,6 @@ class _UnitreeGo2SDKConnection:
             "_publisher",
             "_lowstate_audit_subscriber",
             "_sport_audit_subscriber",
-            "_lowstate_polling_subscriber",
-            "_sport_polling_subscriber",
         ):
             endpoint = getattr(self, name, None)
             close = getattr(endpoint, "Close", None)
@@ -426,16 +397,109 @@ class _UnitreeGo2SDKConnection:
         return False
 
 
+def _candidate_binding_from_config(config: Mapping[str, Any]) -> tuple[object, Callable[[], None]]:
+    """Construct candidate DDS objects inside the worker process only."""
+
+    kind = config.get("kind")
+    if kind == "unitree_sdk2":
+        try:
+            from unitree_sdk2py.core.channel import (
+                ChannelFactoryInitialize,
+                ChannelPublisher,
+                ChannelSubscriber,
+            )
+            from unitree_sdk2py.idl.unitree_go.msg.dds_ import (
+                LowCmd_,
+                LowState_,
+                SportModeState_,
+            )
+            from unitree_sdk2py.utils.crc import CRC
+        except ImportError as exc:  # pragma: no cover - Linux production route
+            raise Go2SDKError("pinned worker SDK2 symbols are unavailable") from exc
+        ChannelFactoryInitialize(int(config.get("domain", 1)), str(config.get("interface", "lo")))
+        publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
+        lowstate = ChannelSubscriber("rt/lowstate", LowState_)
+        sport = ChannelSubscriber("rt/sportmodestate", SportModeState_)
+        endpoints = (publisher, lowstate, sport)
+        try:
+            publisher.Init()
+            lowstate.Init()
+            sport.Init()
+        except BaseException:
+            for endpoint in endpoints:
+                close = getattr(endpoint, "Close", None)
+                if callable(close):
+                    close()
+            raise
+        binding = SimpleNamespace(
+            ChannelPublisher=ChannelPublisher,
+            ChannelSubscriber=ChannelSubscriber,
+            LowCmd_=LowCmd_,
+            LowState_=LowState_,
+            SportModeState_=SportModeState_,
+            CRC=CRC,
+            lowcmd_publisher=publisher,
+            lowstate_subscriber=lowstate,
+            sport_mode_state_subscriber=sport,
+            crc=CRC(),
+        )
+
+        def close() -> None:
+            for endpoint in endpoints:
+                endpoint_close = getattr(endpoint, "Close", None)
+                if callable(endpoint_close):
+                    endpoint_close()
+
+        return binding, close
+    if kind == "fixture":
+        factory = config.get("factory")
+        if not callable(factory):
+            raise Go2SDKError("test fixture candidate binding factory is missing")
+        value = factory(config)
+        if not isinstance(value, tuple) or len(value) != 2 or not callable(value[1]):
+            raise Go2SDKError("test fixture candidate binding factory returned an invalid binding")
+        return value[0], value[1]
+    raise Go2SDKError(f"unknown candidate worker binding kind: {kind!r}")
+
+
+def _candidate_invoke_from_spec(spec: Mapping[str, Any]) -> Callable[[str, Mapping[str, Any], object], Any]:
+    if spec.get("kind") == "validated_handle":
+        from ...validation.validation_a import ValidatedCandidateHandle, _HANDLE_TOKEN
+
+        payload = spec.get("payload")
+        if not isinstance(payload, Mapping):
+            raise Go2SessionError("candidate handle payload is missing")
+        handle = ValidatedCandidateHandle(
+            _HANDLE_TOKEN,
+            source=payload["source"],
+            source_hash=payload["source_hash"],
+            implementation_manifest_hash=payload["implementation_manifest_hash"],
+            implementation_bundle_hash=payload["implementation_bundle_hash"],
+            contracts=payload["contracts"],
+            a_report_hash=payload["validation_a_report_hash"],
+            overlay=payload.get("overlay"),
+        )
+        return handle._invoke
+    invoke = spec.get("invoke")
+    if not callable(invoke):
+        raise Go2SessionError("candidate worker invocation is not callable")
+    return invoke
+
+
 def _candidate_process_entry(
-    invoke: Callable[[str, Mapping[str, Any], object], Any],
+    candidate_spec: Mapping[str, Any],
     capability_id: str,
     arguments: Mapping[str, Any],
-    binding: object,
+    worker_config: Mapping[str, Any],
     result_sender: Any,
 ) -> None:
     """Execute one candidate in the killable per-invocation worker boundary."""
 
+    close_binding: Callable[[], None] | None = None
     try:
+        invoke = _candidate_invoke_from_spec(candidate_spec)
+        binding, close_binding = _candidate_binding_from_config(worker_config)
+        result_sender.send({"ready": True})
         result = invoke(capability_id, arguments, binding)
         payload = {
             "ok": True,
@@ -449,6 +513,12 @@ def _candidate_process_entry(
             "error": str(exc),
             "finished_at": time.monotonic(),
         }
+    finally:
+        if close_binding is not None:
+            try:
+                close_binding()
+            except BaseException:
+                pass
     try:
         result_sender.send(payload)
     except BaseException:
@@ -545,6 +615,7 @@ class UnitreeGo2EvaluationRobotSession:
         self._bridge = bridge
         self._sdk_connection = sdk
         self._sdk_binding: object | None = None
+        self._candidate_worker_config: Mapping[str, Any] | None = None
         self._truth_provider = truth_provider
         self._video_profile = _profile(video_profile)
         self._frame_capture_factory = frame_capture_factory
@@ -669,8 +740,14 @@ class UnitreeGo2EvaluationRobotSession:
                     raise Go2SessionError("SDK2 connection does not implement start")
                 start()
             binding = getattr(self._sdk_connection, "binding", None)
+            worker_config = getattr(self._sdk_connection, "candidate_worker_config", None)
+            if callable(worker_config):
+                worker_config = worker_config()
+            if not isinstance(worker_config, Mapping):
+                raise Go2SessionError("SDK2 connection did not expose a worker DDS binding")
+            self._candidate_worker_config = dict(worker_config)
             if binding is None:
-                raise Go2SessionError("SDK2 connection did not expose its real binding")
+                binding = SimpleNamespace()
             self._sdk_binding = binding
             self._started = True
         except Exception:
@@ -797,12 +874,32 @@ class UnitreeGo2EvaluationRobotSession:
         invoke = getattr(candidate, "_invoke", None)
         if not callable(invoke):
             raise Go2SessionError("candidate does not expose the Framework invocation boundary")
+        if self._candidate_worker_config is None:
+            raise Go2SessionError("candidate worker DDS binding is unavailable")
+        candidate_spec: dict[str, Any]
+        if isinstance(candidate, ValidatedCandidateHandle):
+            payload = candidate._framework_payload_snapshot()
+            candidate_spec = {
+                "kind": "validated_handle",
+                "payload": {
+                    "source": payload.source,
+                    "source_hash": payload.source_hash,
+                    "implementation_manifest_hash": payload.implementation_manifest_hash,
+                    "implementation_bundle_hash": payload.implementation_bundle_hash,
+                    "contracts": copy.deepcopy(payload.contracts),
+                    "validation_a_report_hash": payload.validation_a_report_hash,
+                    "overlay": copy.deepcopy(payload.overlay),
+                },
+            }
+        else:
+            candidate_spec = {"kind": "callable", "invoke": invoke}
         action_start = self.simulation_time_s
         steps = self._steps_for_invocation(arguments)
         self._last_invocation_start_s = action_start
         self._candidate_invocation_count += 1
         result = self._invoke_with_clock(
             invoke,
+            candidate_spec,
             capability_id,
             copy.deepcopy(dict(arguments)),
             steps,
@@ -1062,6 +1159,7 @@ class UnitreeGo2EvaluationRobotSession:
     def _invoke_with_clock(
         self,
         invoke: Callable[[str, Mapping[str, Any], object], Any],
+        candidate_spec: Mapping[str, Any],
         capability_id: str,
         arguments: Mapping[str, Any],
         planned_steps: int,
@@ -1076,17 +1174,13 @@ class UnitreeGo2EvaluationRobotSession:
         """
 
         self._discard_pending_lowcmd()
-        binding = self.sdk
-        try:
-            context = multiprocessing.get_context("fork")
-        except ValueError as exc:  # pragma: no cover - formal route is Linux
-            raise Go2SessionError(
-                "Go2 candidate execution requires the fork worker boundary"
-            ) from exc
+        if self._candidate_worker_config is None:
+            raise Go2SessionError("candidate worker DDS binding is unavailable")
+        context = multiprocessing.get_context("spawn")
         result_receiver, result_sender = context.Pipe(duplex=False)
         worker = context.Process(
             target=_candidate_process_entry,
-            args=(invoke, capability_id, arguments, binding, result_sender),
+            args=(candidate_spec, capability_id, arguments, self._candidate_worker_config, result_sender),
             name="autoadapter2-go2-candidate",
         )
         # This is a killable process boundary, not the old unkillable daemon
@@ -1108,15 +1202,42 @@ class UnitreeGo2EvaluationRobotSession:
         cleanup_error: BaseException | None = None
         payload: Mapping[str, Any] | None = None
         worker_alive_after_cleanup = True
+        candidate_ready = False
+        candidate_done = False
+
+        def receive_worker_messages() -> None:
+            nonlocal candidate_ready, candidate_done, payload
+            if not result_receiver.poll():
+                return
+            try:
+                message = result_receiver.recv()
+            except EOFError:
+                return
+            if not isinstance(message, Mapping):
+                return
+            if message.get("ready") is True:
+                candidate_ready = True
+            else:
+                payload = message
+                candidate_done = True
+
         try:
             # A zero-duration yield gives the real DDS callback and candidate
             # worker a chance to publish before the first bridge step without
             # making wall time the simulation clock.
             time.sleep(min(0.002, max(0.0, deadline - time.monotonic())))
-            while steps < planned_steps or worker.is_alive():
-                if worker.is_alive() and time.monotonic() >= deadline:
+            while not candidate_done or steps < planned_steps:
+                receive_worker_messages()
+                if time.monotonic() >= deadline:
                     timed_out = True
                     break
+                if candidate_done and steps >= planned_steps:
+                    break
+                if not candidate_ready:
+                    # DDS endpoint construction belongs to the child.  Do not
+                    # advance simulated time while that child is starting.
+                    time.sleep(0.001)
+                    continue
                 if steps >= self._max_rollout_steps:
                     timed_out = True
                     break
@@ -1142,16 +1263,24 @@ class UnitreeGo2EvaluationRobotSession:
                     time.sleep(0.001)
                 else:
                     time.sleep(0)
+                receive_worker_messages()
         except BaseException as exc:
             runner_error = exc
         finally:
             timed_out = timed_out or (worker.is_alive() and time.monotonic() >= deadline)
-            if worker.is_alive() or timed_out or runner_error is not None:
-                timed_out = timed_out or worker.is_alive()
+            if worker.is_alive():
+                # A result payload means the candidate call completed; the
+                # still-live process is only waiting for its interpreter to
+                # unwind and must be reaped without turning success into a
+                # timeout.
+                if not candidate_done and runner_error is None:
+                    timed_out = True
                 try:
                     self._terminate_candidate_process(worker)
                 except BaseException as exc:
                     cleanup_error = exc
+            elif timed_out or runner_error is not None:
+                pass
             else:
                 try:
                     worker.join(timeout=0)
@@ -1160,7 +1289,7 @@ class UnitreeGo2EvaluationRobotSession:
                         timed_out = True
                 except BaseException as exc:
                     cleanup_error = exc
-            if cleanup_error is None and not worker.is_alive():
+            if cleanup_error is None and payload is None and not worker.is_alive():
                 try:
                     if result_receiver.poll(0.2):
                         candidate_payload = result_receiver.recv()
@@ -1837,27 +1966,197 @@ def _factory_hash_argument(value: str | None, label: str) -> str | None:
     return value.lower()
 
 
+def _factory_runner_inputs(
+    *,
+    robot: str | Mapping[str, Any] | None,
+    manifest_path: str | Path | None,
+    run_directory: str | Path | None,
+    project_root: str | Path | None,
+    integration_manifest_path: str | Path | None,
+    integration_manifest_sha256: str | None,
+    runtime_lock_path: str | Path | None,
+    runtime_lock_sha256: str | None,
+) -> tuple[Path, Path | None, str, Path | None, str | None, Path | None]:
+    """Adapt the first-G2 runner call into verified factory inputs.
+
+    The runner deliberately passes only its selected robot, manifest, and new
+    run directory.  This adapter derives the project root and the external
+    runtime-lock reference from those selected artifacts; it never chooses a
+    model or accepts an environment-only path.
+    """
+
+    if robot is not None:
+        if isinstance(robot, str):
+            robot_model_id = robot
+            robot_configuration_id = None
+        elif isinstance(robot, Mapping):
+            robot_model_id = robot.get("robot_model_id", robot.get("model_id"))
+            robot_configuration_id = robot.get("robot_configuration_id", robot.get("configuration_id"))
+        else:
+            raise Go2SessionError("Go2 production factory robot selection is malformed")
+        if robot_model_id != ROBOT_MODEL_ID or (
+            robot_configuration_id is not None
+            and robot_configuration_id != ROBOT_CONFIGURATION_ID
+        ):
+            raise Go2SessionError("Go2 production factory received a non-Go2 robot selection")
+
+    if manifest_path is not None and integration_manifest_path is not None:
+        first = Path(manifest_path)
+        second = Path(integration_manifest_path)
+        if first.resolve() != second.resolve():
+            raise Go2SessionError("conflicting Go2 integration manifest paths")
+    selected_manifest_value = integration_manifest_path or manifest_path
+    if selected_manifest_value is None:
+        return (
+            Path(project_root).resolve() if project_root is not None else Path(__file__).resolve().parents[5],
+            None,
+            "",
+            None,
+            None,
+            None,
+        )
+
+    selected_manifest = Path(selected_manifest_value)
+    if not selected_manifest.is_absolute():
+        selected_manifest = (
+            Path(project_root).resolve() / selected_manifest
+            if project_root is not None
+            else Path.cwd() / selected_manifest
+        )
+    selected_manifest = selected_manifest.resolve()
+    if selected_manifest.is_symlink() or not selected_manifest.is_file():
+        raise Go2SessionError("selected Go2 integration manifest is missing or symlinked")
+
+    if project_root is not None:
+        root = Path(project_root).resolve()
+    else:
+        root = None
+        for ancestor in (selected_manifest.parent, *selected_manifest.parents):
+            if (ancestor / "general_demo").is_dir():
+                root = ancestor.resolve()
+                break
+        if root is None:
+            raise Go2SessionError("could not derive Go2 project root from the selected manifest")
+
+    selected_manifest_hash = integration_manifest_sha256 or _factory_sha256(
+        selected_manifest, "selected Go2 integration manifest"
+    )
+    _factory_hash_argument(selected_manifest_hash, "Go2 integration manifest hash")
+    if runtime_lock_path is not None and runtime_lock_sha256 is not None:
+        selected_lock = Path(runtime_lock_path)
+        if not selected_lock.is_absolute():
+            selected_lock = root / selected_lock
+        return (
+            root,
+            selected_manifest,
+            selected_manifest_hash,
+            selected_lock.resolve(),
+            _factory_hash_argument(runtime_lock_sha256, "Go2 runtime lock hash"),
+            None,
+        )
+
+    try:
+        manifest_value = json.loads(selected_manifest.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError) as exc:
+        raise Go2SessionError("selected Go2 integration manifest could not be read") from exc
+    if not isinstance(manifest_value, Mapping):
+        raise Go2SessionError("selected Go2 integration manifest is not an object")
+    runtime_value = manifest_value.get("runtime")
+    if not isinstance(runtime_value, Mapping):
+        raise Go2SessionError("selected Go2 integration manifest has no runtime binding")
+    manifest_lock_hash = _factory_hash_argument(
+        runtime_value.get("lock_sha256"),
+        "Go2 integration manifest runtime lock reference",
+    )
+    if manifest_lock_hash is None:
+        raise Go2SessionError("selected Go2 integration manifest has no runtime lock hash")
+
+    snapshot: Mapping[str, Any] | None = None
+    selected_run_directory = None
+    if run_directory is not None:
+        selected_run_directory = Path(run_directory)
+        if not selected_run_directory.is_absolute():
+            selected_run_directory = root / selected_run_directory
+        selected_run_directory = selected_run_directory.resolve()
+        snapshot_path = selected_run_directory / "run_snapshot.json"
+        if snapshot_path.is_file() and not snapshot_path.is_symlink():
+            try:
+                value = json.loads(snapshot_path.read_text(encoding="utf-8"))
+            except (OSError, TypeError, ValueError) as exc:
+                raise Go2SessionError("selected first-G2 run snapshot could not be read") from exc
+            if not isinstance(value, Mapping):
+                raise Go2SessionError("selected first-G2 run snapshot is not an object")
+            snapshot = value
+            manifest_ref = snapshot.get("integration_manifest_ref")
+            if isinstance(manifest_ref, Mapping):
+                snapshot_manifest_hash = _factory_hash_argument(
+                    manifest_ref.get("sha256"),
+                    "first-G2 run snapshot manifest hash",
+                )
+                if snapshot_manifest_hash != selected_manifest_hash.lower():
+                    raise Go2SessionError("first-G2 run snapshot does not bind the selected manifest")
+            from ...integration.artifacts import stable_json_sha256
+
+            snapshot_runtime_hash = snapshot.get("runtime_sha256")
+            if snapshot_runtime_hash is not None and snapshot_runtime_hash != stable_json_sha256(runtime_value):
+                raise Go2SessionError("first-G2 run snapshot does not bind the selected runtime")
+
+    selected_lock = runtime_lock_path
+    if selected_lock is None and snapshot is not None:
+        for key in ("runtime_lock_ref", "runtime_lock", "runtime_lock_path"):
+            candidate = snapshot.get(key)
+            if isinstance(candidate, Mapping):
+                selected_lock = candidate.get("path")
+                snapshot_lock_hash = _factory_hash_argument(
+                    candidate.get("sha256"), "first-G2 run snapshot runtime lock hash"
+                )
+                if snapshot_lock_hash != manifest_lock_hash:
+                    raise Go2SessionError("first-G2 run snapshot does not bind the manifest runtime lock")
+                break
+            if isinstance(candidate, (str, Path)):
+                selected_lock = candidate
+                break
+    if selected_lock is None:
+        runtime_id = runtime_value.get("id")
+        runtime_version = runtime_value.get("version")
+        if not isinstance(runtime_id, str) or not isinstance(runtime_version, str):
+            raise Go2SessionError("selected Go2 runtime binding has no lock path derivation")
+        selected_lock = root / "general_demo/environments" / runtime_id / runtime_version / "runtime-lock.json"
+    selected_lock_path = Path(selected_lock)
+    if not selected_lock_path.is_absolute():
+        selected_lock_path = root / selected_lock_path
+    selected_lock_path = selected_lock_path.resolve()
+    return (
+        root,
+        selected_manifest,
+        selected_manifest_hash,
+        selected_lock_path,
+        manifest_lock_hash,
+        selected_run_directory,
+    )
+
+
 def _factory_json_reference(
     root: Path,
     reference: Any,
     *,
-    expected_path: str,
-    expected_sha256: str,
     label: str,
 ) -> dict[str, Any]:
     from ...integration.artifacts import load_json_artifact
 
     if not isinstance(reference, Mapping):
         raise Go2SessionError(f"{label} is not a file reference")
-    if reference.get("path") != expected_path or reference.get("sha256") != expected_sha256:
-        raise Go2SessionError(f"{label} does not match the frozen file reference")
-    path = _factory_path(root, expected_path, expected_path, label)
+    reference_path = reference.get("path")
+    expected_sha256 = _factory_hash_argument(reference.get("sha256"), f"{label} hash")
+    if not isinstance(reference_path, str) or expected_sha256 is None:
+        raise Go2SessionError(f"{label} is not a complete selected file reference")
+    path = _factory_selected_path(root, reference_path, reference_path, label)
     try:
         artifact = load_json_artifact(path)
     except Exception as exc:
         raise Go2SessionError(f"{label} could not be loaded") from exc
     if artifact.sha256 != expected_sha256:
-        raise Go2SessionError(f"{label} hash does not match the frozen record")
+        raise Go2SessionError(f"{label} hash does not match the selected manifest bytes")
     return artifact.value
 
 
@@ -1967,10 +2266,18 @@ def _verify_production_inputs(
     selected_runtime_lock_sha256 = _factory_hash_argument(
         runtime_lock_sha256, "Go2 runtime lock hash"
     )
+    if integration_manifest_path is None or selected_manifest_sha256 is None:
+        raise Go2SessionError(
+            "production Go2 factory requires an external manifest path and hash"
+        )
+    if runtime_lock_path is None or selected_runtime_lock_sha256 is None:
+        raise Go2SessionError(
+            "production Go2 factory requires an external runtime lock path and hash"
+        )
     manifest_path = _factory_selected_path(
         root,
         integration_manifest_path,
-        GO2_MANIFEST_RELATIVE_PATH,
+        str(integration_manifest_path),
         "Go2 integration manifest",
     )
     try:
@@ -2026,29 +2333,21 @@ def _verify_production_inputs(
     morphology = _factory_json_reference(
         root,
         manifest.get("morphology_ref"),
-        expected_path="general_demo/libraries/morphology/unitree-go2/1.0.0/record.json",
-        expected_sha256=GO2_MORPHOLOGY_SHA256,
         label="Go2 morphology record",
     )
     sdk = _factory_json_reference(
         root,
         manifest.get("sdk_ref"),
-        expected_path="general_demo/libraries/sdks/unitree-sdk2-go2-lowlevel/1.0.0/record.json",
-        expected_sha256=GO2_SDK_SHA256,
         label="Go2 SDK record",
     )
     translation = _factory_json_reference(
         root,
         manifest.get("translation_ref"),
-        expected_path="general_demo/integrations/unitree-go2/translation.json",
-        expected_sha256=GO2_TRANSLATION_SHA256,
         label="Go2 Translation record",
     )
     readiness = _factory_json_reference(
         root,
         manifest.get("readiness_profile_ref"),
-        expected_path=GO2_READINESS_PROFILE_RELATIVE_PATH,
-        expected_sha256=GO2_READINESS_PROFILE_SHA256,
         label="Go2 readiness profile",
     )
     try:
@@ -2063,16 +2362,10 @@ def _verify_production_inputs(
     if translation.get("status") != "READY" or translation.get("conformance_status") != "PASS":
         raise Go2SessionError("Go2 Translation is not READY/PASS")
 
-    morphology_mujoco_ref = morphology.get("mujoco")
-    default_runtime_lock_path = GO2_RUNTIME_LOCK_RELATIVE_PATH
-    if isinstance(morphology_mujoco_ref, Mapping):
-        lock_ref = morphology_mujoco_ref.get("runtime_lock_ref")
-        if isinstance(lock_ref, Mapping) and isinstance(lock_ref.get("path"), str):
-            default_runtime_lock_path = lock_ref["path"]
     selected_runtime_lock_path = _factory_selected_path(
         root,
         runtime_lock_path,
-        default_runtime_lock_path,
+        str(runtime_lock_path),
         "Go2 runtime lock",
     )
     try:
@@ -2157,6 +2450,9 @@ def _verify_production_inputs(
 
 
 def create_evaluation_robot_session(
+    robot: str | Mapping[str, Any] | None = None,
+    manifest_path: str | Path | None = None,
+    run_directory: str | Path | None = None,
     *,
     project_root: str | Path | None = None,
     integration_manifest_path: str | Path | None = None,
@@ -2174,9 +2470,33 @@ def create_evaluation_robot_session(
     returns a live, SDK2/CycloneDDS/bridge/MuJoCo session.
     """
 
-    root = Path(project_root).resolve() if project_root is not None else Path(__file__).resolve().parents[5]
+    (
+        root,
+        selected_manifest_path,
+        selected_manifest_hash,
+        selected_runtime_lock_path,
+        selected_runtime_lock_hash,
+        _selected_run_directory,
+    ) = _factory_runner_inputs(
+        robot=robot,
+        manifest_path=manifest_path,
+        run_directory=run_directory,
+        project_root=project_root,
+        integration_manifest_path=integration_manifest_path,
+        integration_manifest_sha256=integration_manifest_sha256,
+        runtime_lock_path=runtime_lock_path,
+        runtime_lock_sha256=runtime_lock_sha256,
+    )
     if not root.is_dir():
         raise Go2SessionError(f"Go2 project root is missing: {root}")
+    if selected_manifest_path is not None:
+        integration_manifest_path = selected_manifest_path
+    if selected_manifest_hash:
+        integration_manifest_sha256 = selected_manifest_hash
+    if selected_runtime_lock_path is not None:
+        runtime_lock_path = selected_runtime_lock_path
+    if selected_runtime_lock_hash is not None:
+        runtime_lock_sha256 = selected_runtime_lock_hash
     selected_model, task_path, selected_profile = _verify_production_inputs(
         root=root,
         integration_manifest_path=integration_manifest_path,
