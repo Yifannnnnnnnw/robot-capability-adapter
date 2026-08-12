@@ -654,7 +654,7 @@ def test_reset_records_and_verifies_state_without_candidate_or_behavior() -> Non
     session.close()
 
 
-def test_direct_validation_candidate_then_collect_advances_private_clock() -> None:
+def test_validation_candidate_then_collect_uses_the_invocation_clock() -> None:
     session, backend, transport, sdk, _capture_count = _session()
     session.reset(
         phase="VALIDATION_B",
@@ -662,8 +662,8 @@ def test_direct_validation_candidate_then_collect_advances_private_clock() -> No
         initial_state={"task_id": "G04"},
     )
     # This is the Validation-B ordering: candidate code sees only connected
-    # SDK2 objects, then the session-owned collector advances the bridge.
-    result = Candidate()._invoke("low-level-command", {}, session.sdk)
+    # SDK2 objects, and invoke owns the shared physics clock.
+    result = session.invoke(Candidate(), "low-level-command", {"duration_s": 0.3})
     evidence = session.validation_evidence(_invocation())
     assert result == {"status": "issued"}
     assert backend.time > 0.0
@@ -682,7 +682,7 @@ def test_validation_evidence_maps_each_g01_criterion_to_the_shared_truth_window(
             execution_id="g01-criteria",
             initial_state={"task_id": "G01"},
         )
-        Candidate()._invoke("low-level-command", {}, session.sdk)
+        session.invoke(Candidate(), "low-level-command", {"duration_s": 1.0})
         evidence = session.validation_evidence(_g01_invocation())
 
         assert evidence.criterion_samples is not None
@@ -711,11 +711,98 @@ def test_single_criterion_validation_evidence_keeps_existing_primary_samples() -
             execution_id="single-criterion",
             initial_state={"task_id": "G04"},
         )
+        session.invoke(Candidate(), "low-level-command", {"duration_s": 0.3})
         evidence = session.validation_evidence(_invocation(metric="body_height_m"))
 
         assert evidence.criterion_samples is None
         assert evidence.samples
         assert all(sample.value == pytest.approx(0.34) for sample in evidence.samples)
+    finally:
+        session.close()
+
+
+def test_validation_tail_survives_stale_controls_after_candidate_return() -> None:
+    session, backend, _transport, _sdk, _capture_count = _session()
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="terminal-tail",
+            initial_state={"task_id": "G01"},
+        )
+        session.invoke(Candidate(), "low-level-command", {"duration_s": 1.0})
+        invocation_end = session._last_invocation_end_s
+        session._advance(0.2, wait_for_command=False)
+        assert backend.time > invocation_end
+        assert session._last_bridge_result["command_health"] == "STALE"
+
+        evidence = session.validation_evidence(_g01_invocation())
+
+        assert evidence.sdk_route_verified is True
+        assert evidence.route_evidence["simulation_time_end_s"] == pytest.approx(invocation_end)
+        assert evidence.elapsed_s == pytest.approx(1.0)
+        assert evidence.samples[-1].time_s == pytest.approx(1.0)
+        assert evidence.guard_results["finite-required-state"] is True
+        assert evidence.guard_results["no-body-or-head-floor-contact"] is True
+    finally:
+        session.close()
+
+
+def test_short_invocation_remains_dwell_insufficient_without_padding() -> None:
+    session, backend, _transport, _sdk, _capture_count = _session(rollout_steps=1)
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="short-tail",
+            initial_state={"task_id": "G01"},
+        )
+        session.invoke(Candidate(), "low-level-command", {"duration_s": 0.1})
+        evidence = session.validation_evidence(_g01_invocation())
+
+        assert backend.time == pytest.approx(0.1)
+        assert evidence.elapsed_s == pytest.approx(0.1)
+        assert evidence.samples[-1].time_s == pytest.approx(0.1)
+        assert len(evidence.samples) == 2
+        assert evidence.elapsed_s < _g01_invocation().dwell_s
+    finally:
+        session.close()
+
+
+def test_validation_tail_includes_real_sample_before_discrete_window_boundary() -> None:
+    session, _backend, _transport, _sdk, _capture_count = _session()
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="discrete-tail-boundary",
+            initial_state={"task_id": "G01"},
+        )
+        session.invoke(Candidate(), "low-level-command", {"duration_s": 0.3})
+        invocation = replace(_invocation(), dwell_s=0.25)
+
+        evidence = session.validation_evidence(invocation)
+
+        assert evidence.samples[0].time_s == pytest.approx(0.0)
+        assert evidence.samples[-1].time_s == pytest.approx(0.3)
+        assert evidence.elapsed_s == pytest.approx(0.3)
+    finally:
+        session.close()
+
+
+def test_validation_evidence_does_not_add_physics_steps_after_invoke() -> None:
+    session, backend, _transport, _sdk, _capture_count = _session()
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="no-post-return-steps",
+            initial_state={"task_id": "G01"},
+        )
+        session.invoke(Candidate(), "low-level-command", {"duration_s": 0.3})
+        before_time = backend.time
+        before_steps = session._physics_steps
+
+        session.validation_evidence(_invocation())
+
+        assert backend.time == pytest.approx(before_time)
+        assert session._physics_steps == before_steps
     finally:
         session.close()
 

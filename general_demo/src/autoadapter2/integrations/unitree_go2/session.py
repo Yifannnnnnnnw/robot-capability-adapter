@@ -731,6 +731,7 @@ class UnitreeGo2EvaluationRobotSession:
         self._capture: Any | None = None
         self._last_invocation_start_s = 0.0
         self._last_invocation_end_s = 0.0
+        self._last_invocation_sample_start_index = 0
         self._candidate_invocation_count = 0
         self._trial_action_start_s = 0.0
         self._last_route_evidence: dict[str, Any] = {}
@@ -881,6 +882,7 @@ class UnitreeGo2EvaluationRobotSession:
         self._trial_action_start_s = self._reset_time_s
         self._last_invocation_start_s = self._reset_time_s
         self._last_invocation_end_s = self._reset_time_s
+        self._last_invocation_sample_start_index = len(self._truth_samples)
         self._candidate_invocation_count = 0
 
     def start_external_recording(self, *, phase: str, execution_id: str) -> None:
@@ -962,6 +964,7 @@ class UnitreeGo2EvaluationRobotSession:
         action_start = self.simulation_time_s
         steps = self._steps_for_invocation(arguments)
         self._last_invocation_start_s = action_start
+        self._last_invocation_sample_start_index = len(self._truth_samples)
         self._candidate_invocation_count += 1
         result = self._invoke_with_clock(
             invoke,
@@ -984,32 +987,69 @@ class UnitreeGo2EvaluationRobotSession:
         if self._start_truth is None:
             raise Go2SessionError("validation evidence requires a verified reset")
         # Validation B has already invoked the candidate through
-        # ``session.invoke``.  Collection owns only this criterion's trusted
-        # observation/dwell window; it does not pretend to own the candidate
-        # call or manufacture a command receipt for it.
-        action_start = self._last_invocation_end_s if self._last_invocation_end_s > self._reset_time_s else self._reset_time_s
-        duration = max(DEFAULT_INVOCATION_WINDOW_S, float(invocation.dwell_s))
-        duration = min(duration, float(invocation.timeout_s))
+        # ``session.invoke``.  Collection owns only the terminal tail of that
+        # invocation's trusted physical history.  It must not advance the
+        # bridge after the worker has returned: doing so would observe a
+        # command that the candidate no longer refreshes and would turn the
+        # bridge's frozen stale rule into a false-pass guard failure.
+        dwell_values = [_finite(invocation.dwell_s, "validation dwell")]
+        timeout_values = [_finite(invocation.timeout_s, "validation timeout")]
+        for index, criterion in enumerate(invocation.criteria):
+            if not isinstance(criterion, Mapping):
+                raise Go2SessionError(f"validation criterion {index} must be a mapping")
+            if "dwell_s" in criterion:
+                dwell_values.append(_finite(criterion["dwell_s"], f"validation criterion {index} dwell"))
+            if "timeout_s" in criterion:
+                timeout_values.append(_finite(criterion["timeout_s"], f"validation criterion {index} timeout"))
+        duration = max(DEFAULT_INVOCATION_WINDOW_S, max(dwell_values))
+        duration = min(duration, min(timeout_values))
         if duration < 0:
             raise Go2SessionError("validation timeout/dwell is invalid")
-        self._last_invocation_start_s = action_start
-        self._advance(duration, wait_for_command=True)
-        self._last_invocation_end_s = self.simulation_time_s
-        self._wait_for_sdk_state()
-        route = self._route_evidence()
-        selected = [
-            sample for sample in self._truth_samples
-            if sample.time_s > action_start + 1e-12
+
+        action_start = _finite(self._last_invocation_start_s, "last invocation start")
+        action_end = _finite(self._last_invocation_end_s, "last invocation end")
+        if action_end < action_start - 1e-12:
+            raise Go2SessionError("last Go2 invocation ended before it started")
+        window_start = max(action_start, action_end - duration)
+
+        # The sample immediately before the invocation is the physical state
+        # at its boundary (normally the verified reset sample).  Include it
+        # only for a real session.invoke call and only when its timestamp is
+        # the invocation start; no sample is synthesized or repeated.
+        sample_start = self._last_invocation_sample_start_index
+        invocation_samples: list[Go2TruthSample] = []
+        if self._candidate_invocation_count > 0:
+            if 0 < sample_start <= len(self._truth_samples):
+                boundary = self._truth_samples[sample_start - 1]
+                if abs(boundary.time_s - action_start) <= 1e-12:
+                    invocation_samples.append(boundary)
+            invocation_samples.extend(self._truth_samples[sample_start:])
+        available = [
+            sample for sample in invocation_samples
+            if sample.time_s <= action_end + 1e-12
         ]
-        if not selected:
-            selected = [self._truth_samples[-1]]
+        selected = [
+            sample for sample in available
+            if sample.time_s >= window_start - 1e-12
+        ]
+        # A discrete physics trace may not contain a sample exactly at the
+        # requested tail boundary.  Include the latest real sample before the
+        # boundary when one exists; this preserves the physical interval
+        # without synthesizing or repeating a terminal sample.
+        preceding = [sample for sample in available if sample.time_s <= window_start + 1e-12]
+        if preceding:
+            boundary = preceding[-1]
+            if not selected or selected[0] is not boundary:
+                selected.insert(0, boundary)
+        selected_window_start = selected[0].time_s if selected else window_start
+        route = copy.deepcopy(self._last_route_evidence)
         metric = invocation.metric if isinstance(invocation.metric, str) else "body_height_m"
         samples_by_criterion: dict[str, tuple[MeasurementSample, ...]] | None = None
         if invocation.criteria:
             samples_by_criterion = {
                 criterion["criterion_id"]: tuple(
                     MeasurementSample(
-                        max(0.0, sample.time_s - action_start),
+                        self._relative_sample_time(sample.time_s, selected_window_start),
                         self._metric_value(sample, criterion["metric"]),
                     )
                     for sample in selected
@@ -1020,13 +1060,13 @@ class UnitreeGo2EvaluationRobotSession:
         else:
             samples = tuple(
                 MeasurementSample(
-                    max(0.0, sample.time_s - action_start),
+                    self._relative_sample_time(sample.time_s, selected_window_start),
                     self._metric_value(sample, metric),
                 )
                 for sample in selected
             )
-        finite = all(self._sample_finite(sample) for sample in selected)
-        no_contact = all(
+        finite = bool(selected) and all(self._sample_finite(sample) for sample in selected)
+        no_contact = bool(selected) and all(
             sample.body_floor_contact is False and sample.head_floor_contact is False
             for sample in selected
         )
@@ -1034,15 +1074,19 @@ class UnitreeGo2EvaluationRobotSession:
             requested=invocation.guard_ids,
             finite=finite,
             no_contact=no_contact,
-            route_verified=bool(route["verified"]),
+            route_verified=bool(route.get("verified")),
         )
-        self._last_route_evidence = route
+        elapsed_s = (
+            self._relative_sample_time(selected[-1].time_s, selected_window_start)
+            if selected
+            else 0.0
+        )
         return Go2ValidationEvidence(
             samples=samples,
-            elapsed_s=max(0.0, self.simulation_time_s - action_start),
+            elapsed_s=elapsed_s,
             guard_results=guards,
-            sdk_route_verified=bool(route["verified"]),
-            route_evidence=copy.deepcopy(route),
+            sdk_route_verified=bool(route.get("verified")),
+            route_evidence=route,
             criterion_samples=samples_by_criterion,
         )
 
@@ -1841,6 +1885,15 @@ class UnitreeGo2EvaluationRobotSession:
                 "contact_observation_available": sample.contact_observation_available,
             },
         }
+
+    @staticmethod
+    def _relative_sample_time(time_s: float, window_start_s: float) -> float:
+        """Normalize a trusted sample time without binary-timestep drift."""
+
+        relative = max(0.0, float(time_s) - float(window_start_s))
+        if relative <= 1e-12:
+            return 0.0
+        return round(relative, 12)
 
     @staticmethod
     def _sample_duration(samples: Sequence[Go2TruthSample]) -> float:
