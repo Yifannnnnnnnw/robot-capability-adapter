@@ -8,6 +8,11 @@ session module is loaded only when one of its public names is requested.
 from importlib import import_module
 
 from .bridge import Go2DDSMuJoCoBridge, Go2Transport, MuJoCoGo2Backend, UnitreeSDK2Transport
+from .development_sandbox import (
+    GO2_DEVELOPMENT_PROBE_CONTRACT,
+    Go2DevelopmentProbe,
+    create_go2_development_probe,
+)
 
 
 _SESSION_EXPORTS = frozenset(
@@ -42,6 +47,8 @@ def __dir__() -> list[str]:
 
 __all__ = [
     "Go2DDSMuJoCoBridge",
+    "GO2_DEVELOPMENT_PROBE_CONTRACT",
+    "Go2DevelopmentProbe",
     "Go2EvaluationRobotSession",
     "Go2SessionError",
     "Go2SDKError",
@@ -49,6 +56,7 @@ __all__ = [
     "Go2ValidationEvidence",
     "Go2Transport",
     "create_evaluation_robot_session",
+    "create_go2_development_probe",
     "MuJoCoGo2Backend",
     "UnitreeGo2EvaluationRobotSession",
     "UnitreeGo2EvaluationSession",
