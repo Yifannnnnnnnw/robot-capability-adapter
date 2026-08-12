@@ -340,6 +340,11 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert "criterion" not in projection_text
     assert "private" not in projection_text
 
+    model_config = json.loads(first.path("model_prompt_config").read_text(encoding="utf-8"))
+    assert model_config["max_tokens"] == 8192
+    assert model_config["temperature"] == 0
+    assert model_config["timeout_s"] == 125
+
     bundle = json.loads(first.path("implementation_bundle").read_text(encoding="utf-8"))
     assert set(bundle) == {"artifact_type", "schema_version", "sdk_implementation_projection", "robot_implementation_facts", "implementation_experience"}
     assert bundle["sdk_implementation_projection"]["command"]["active_slot_count"] == 12

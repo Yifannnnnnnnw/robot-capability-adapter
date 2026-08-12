@@ -298,7 +298,7 @@ def _validate_model_config(config: Mapping[str, Any]) -> dict[str, Any]:
         raise RunPackError("first G2 model config has the wrong endpoint path")
     if value["model"] != DEFAULT_MODEL:
         raise RunPackError("first G2 model config must use Claude Sonnet 4.5")
-    if value["max_tokens"] != 4096 or value["temperature"] != 0 or value["timeout_s"] != 125:
+    if value["max_tokens"] != 8192 or value["temperature"] != 0 or value["timeout_s"] != 125:
         raise RunPackError("first G2 model limits are not frozen")
     if value["credential_env"] != MODEL_API_KEY_ENV:
         raise RunPackError("first G2 model credentials must remain environment-only")
