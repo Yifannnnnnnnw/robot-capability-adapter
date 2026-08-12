@@ -614,5 +614,6 @@ def test_model_api_evolution_prompt_declares_exact_json_types() -> None:
         "Copy robot_model_id, robot_configuration_id, sdk_entry_id, and granularity_condition\nexactly",
         "Keep capability_effect_scope and\nobservation_condition model-authored",
         "All free-text fields must be plain prose only. Do not use code fences, assignments,\nfunction signatures or call expressions, braces, semicolons, arrows, filenames, or\nsource snippets. Refer to API concepts in ordinary prose rather than reproducing syntax.",
+        "Free-text fields must avoid these reserved privacy/evidence words and their plural forms:\nthreshold, criterion, case, seed, video, frame, camera, trace, diagnostic, source, code,\nMuJoCo, qpos, qvel, truth, private, translation, transport, credential, password, secret,\ntoken, prompt, LLM, oracle, expected, winning, raw.",
     ):
         assert requirement in client.prompt

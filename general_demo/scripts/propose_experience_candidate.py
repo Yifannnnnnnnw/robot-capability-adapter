@@ -40,6 +40,10 @@ observation_condition model-authored from the supplied public evidence.
 All free-text fields must be plain prose only. Do not use code fences, assignments,
 function signatures or call expressions, braces, semicolons, arrows, filenames, or
 source snippets. Refer to API concepts in ordinary prose rather than reproducing syntax.
+Free-text fields must avoid these reserved privacy/evidence words and their plural forms:
+threshold, criterion, case, seed, video, frame, camera, trace, diagnostic, source, code,
+MuJoCo, qpos, qvel, truth, private, translation, transport, credential, password, secret,
+token, prompt, LLM, oracle, expected, winning, raw.
 Do not include source code, private evaluation details, diagnostics payloads, traces,
 video or camera details, simulator truth, credentials, prompts, or model output.
 For design recipients sdk_entry_id must be null; for implementation recipients it must
