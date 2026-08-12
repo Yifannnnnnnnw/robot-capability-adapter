@@ -100,6 +100,9 @@ _CHECK_FIELDS = (
 )
 _CASE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+_SDK_ENTRY_REFERENCE = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}@[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+)
 _PUBLIC_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
 _CODE_LIKE = (
     re.compile(r"```"),
@@ -287,7 +290,7 @@ def _assert_json_value(value: Any, label: str = "value") -> None:
 def _validate_semantic_fields(
     value: Mapping[str, Any],
     *,
-    expected_robot: Mapping[str, str] | None = None,
+    expected_robot: Mapping[str, str | None] | None = None,
 ) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise ContractError("EvolutionAgent must return a JSON object")
@@ -331,11 +334,19 @@ def _validate_semantic_fields(
     }
     sdk_entry_id = applicability["sdk_entry_id"]
     if sdk_entry_id is not None:
-        normalized_applicability["sdk_entry_id"] = _public_identifier(
-            sdk_entry_id, "applicability.sdk_entry_id"
-        )
-    if recipient_class == "implementation" and normalized_applicability["sdk_entry_id"] is None:
-        raise ContractError("implementation Experience requires a non-null sdk_entry_id")
+        if (
+            not isinstance(sdk_entry_id, str)
+            or _SDK_ENTRY_REFERENCE.fullmatch(sdk_entry_id) is None
+            or _contains_private_term(sdk_entry_id)
+        ):
+            raise ContractError("applicability.sdk_entry_id is not a bounded SDK Entry reference")
+        normalized_applicability["sdk_entry_id"] = sdk_entry_id
+    expected_sdk_entry_id = expected_robot.get("sdk_entry_id") if expected_robot else None
+    if recipient_class == "implementation":
+        if not isinstance(expected_sdk_entry_id, str):
+            raise ContractError("implementation Experience has no verified SDK Entry in the run")
+        if normalized_applicability["sdk_entry_id"] != expected_sdk_entry_id:
+            raise ContractError("implementation Experience SDK Entry does not match the run")
     if recipient_class == "design" and normalized_applicability["sdk_entry_id"] is not None:
         raise ContractError("design Experience must not bind an SDK Entry")
 
@@ -406,22 +417,6 @@ def _safe_status(value: Any, label: str) -> str:
     return value.strip()
 
 
-def _diagnostic_codes(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    result: set[str] = set()
-    for item in value:
-        if isinstance(item, Mapping):
-            token = _public_token(item.get("code"), "diagnostic code")
-            if token is not None:
-                result.add(token)
-        elif isinstance(item, str):
-            token = _public_token(item, "diagnostic code")
-            if token is not None:
-                result.add(token)
-    return sorted(result)
-
-
 def _bounded_error(value: Any) -> str | None:
     if not isinstance(value, str) or not value.strip() or len(value.strip()) > 240:
         return None
@@ -431,10 +426,61 @@ def _bounded_error(value: Any) -> str | None:
     return result
 
 
+def _collect_allowed_leaves(
+    value: Any,
+    *,
+    codes: set[str],
+    candidate_errors: set[str],
+    infrastructure_errors: set[str],
+    counts: dict[str, int],
+) -> None:
+    """Walk containers while copying only explicitly allowed leaf values."""
+
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if key == "code" and not isinstance(item, (Mapping, list)):
+                token = _public_token(item, "diagnostic code")
+                if token is not None:
+                    codes.add(token)
+            elif key == "candidate_error" and not isinstance(item, (Mapping, list)):
+                error = _bounded_error(item)
+                if error is not None:
+                    candidate_errors.add(error)
+            elif key == "infrastructure_error" and not isinstance(item, (Mapping, list)):
+                error = _bounded_error(item)
+                if error is not None:
+                    infrastructure_errors.add(error)
+            elif (
+                key in _COUNT_KEYS
+                and isinstance(item, int)
+                and not isinstance(item, bool)
+                and item >= 0
+            ):
+                counts[key] = counts.get(key, 0) + item
+            if isinstance(item, (Mapping, list)):
+                _collect_allowed_leaves(
+                    item,
+                    codes=codes,
+                    candidate_errors=candidate_errors,
+                    infrastructure_errors=infrastructure_errors,
+                    counts=counts,
+                )
+    elif isinstance(value, list):
+        for item in value:
+            _collect_allowed_leaves(
+                item,
+                codes=codes,
+                candidate_errors=candidate_errors,
+                infrastructure_errors=infrastructure_errors,
+                counts=counts,
+            )
+
+
 def _stage_record(
     name: str,
     summary_value: Mapping[str, Any] | None,
     artifact_value: Mapping[str, Any] | None,
+    counts: dict[str, int],
 ) -> dict[str, Any] | None:
     public_name = _public_token(name, "stage name")
     if public_name is None:
@@ -452,18 +498,13 @@ def _stage_record(
     candidate_errors: set[str] = set()
     infrastructure_errors: set[str] = set()
     for item in (summary_value, artifact_value):
-        if not isinstance(item, Mapping):
-            continue
-        codes.update(_diagnostic_codes(item.get("diagnostics")))
-        for key, destination in (
-            ("candidate_error", candidate_errors),
-            ("infrastructure_error", infrastructure_errors),
-        ):
-            error = _bounded_error(item.get(key))
-            if error is not None:
-                destination.add(error)
-        for key in ("diagnostic_codes", "error_codes"):
-            codes.update(_diagnostic_codes(item.get(key)))
+        _collect_allowed_leaves(
+            item,
+            codes=codes,
+            candidate_errors=candidate_errors,
+            infrastructure_errors=infrastructure_errors,
+            counts=counts,
+        )
     record["diagnostic_codes"] = sorted(codes)
     record["candidate_errors"] = sorted(candidate_errors)
     record["infrastructure_errors"] = sorted(infrastructure_errors)
@@ -474,6 +515,29 @@ def _count(value: Any) -> int:
     if isinstance(value, (list, tuple, dict)):
         return len(value)
     return 0
+
+
+def _stage1_sdk_entry_id(stage_artifacts: Mapping[str, Any]) -> str | None:
+    stages = stage_artifacts.get("stages")
+    stage1 = stages.get("stage1") if isinstance(stages, Mapping) else None
+    capability_design = stage1.get("capability_design") if isinstance(stage1, Mapping) else None
+    projection = (
+        capability_design.get("robot_public_projection")
+        if isinstance(capability_design, Mapping)
+        else None
+    )
+    sdk_facts = projection.get("sdk_facts") if isinstance(projection, Mapping) else None
+    if not isinstance(sdk_facts, Mapping):
+        return None
+    try:
+        entry_id = _public_identifier(sdk_facts.get("entry_id"), "Stage 1 SDK Entry id")
+        entry_version = _public_identifier(
+            sdk_facts.get("entry_version"), "Stage 1 SDK Entry version"
+        )
+    except ContractError:
+        return None
+    reference = f"{entry_id}@{entry_version}"
+    return reference if _SDK_ENTRY_REFERENCE.fullmatch(reference) else None
 
 
 def build_sanitized_evidence_digest(
@@ -522,6 +586,7 @@ def build_sanitized_evidence_digest(
     names = set(summary_by_name) | {
         name for name in artifact_stages if isinstance(name, str)
     }
+    nested_counts: dict[str, int] = {}
     stages = [
         record
         for name in sorted(names)
@@ -530,6 +595,7 @@ def build_sanitized_evidence_digest(
                 name,
                 summary_by_name.get(name),
                 artifact_stages.get(name) if isinstance(artifact_stages.get(name), Mapping) else None,
+                nested_counts,
             )
         ]
         if record is not None
@@ -542,14 +608,8 @@ def build_sanitized_evidence_digest(
         "demo_trials": _count(summary.get("demo_trials")),
         "promoted_capabilities": _count(summary.get("promoted_capability_ids")),
     }
-    for source in (summary_stages, list(artifact_stages.values())):
-        for item in source:
-            if not isinstance(item, Mapping):
-                continue
-            for key in _COUNT_KEYS:
-                value = item.get(key)
-                if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
-                    counts[f"{key}_total"] = counts.get(f"{key}_total", 0) + value
+    for key, value in nested_counts.items():
+        counts[f"{key}_total"] = value
 
     digest = {
         "format_version": CANDIDATE_FORMAT_VERSION,
@@ -566,6 +626,9 @@ def build_sanitized_evidence_digest(
             "stage_artifacts_hash": f"sha256:{stage_sha256}",
         },
     }
+    sdk_entry_id = _stage1_sdk_entry_id(stage_artifacts)
+    if sdk_entry_id is not None:
+        digest["robot"]["sdk_entry_id"] = sdk_entry_id
     _assert_json_value(digest, "sanitized evidence digest")
     return digest
 
@@ -696,12 +759,6 @@ def propose_experience_candidate(
         root_path, evolution_cases_root, case_id, run_directory
     )
     robot = summary["robot"]
-    expected_robot = {
-        "robot_model_id": _public_identifier(robot["robot_model_id"], "summary robot model"),
-        "robot_configuration_id": _public_identifier(
-            robot["robot_configuration_id"], "summary robot configuration"
-        ),
-    }
     evidence_digest = build_sanitized_evidence_digest(
         closure,
         summary,
@@ -709,6 +766,7 @@ def propose_experience_candidate(
         closure_hash=closure_hash,
     )
     evidence_digest_hash = content_hash(canonical_bytes(evidence_digest))
+    expected_robot = evidence_digest["robot"]
 
     if evolution_agent is not None:
         try:

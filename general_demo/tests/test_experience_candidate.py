@@ -31,7 +31,11 @@ def _semantic_fields(*, recipient_class: str = "design") -> dict[str, object]:
         "applicability": {
             "robot_model_id": "unitree-go2",
             "robot_configuration_id": "unitree-go2-stock-12dof",
-            "sdk_entry_id": None if recipient_class == "design" else "unitree-sdk2-go2-lowlevel",
+            "sdk_entry_id": (
+                None
+                if recipient_class == "design"
+                else "unitree-sdk2-go2-lowlevel@1.0.0"
+            ),
             "granularity_condition": "G2 reusable effect",
             "capability_effect_scope": ["bounded locomotion effect"],
             "observation_condition": "State-provided public robot observation is available.",
@@ -41,7 +45,12 @@ def _semantic_fields(*, recipient_class: str = "design") -> dict[str, object]:
     }
 
 
-def _make_closed_run(tmp_path: Path, *, status: str = "COMPLETE") -> tuple[Path, Path, Path]:
+def _make_closed_run(
+    tmp_path: Path,
+    *,
+    status: str = "COMPLETE",
+    include_sdk_projection: bool = True,
+) -> tuple[Path, Path, Path]:
     root = tmp_path
     run = root / "general_demo" / "runs" / "closed-go2"
     run.mkdir(parents=True)
@@ -64,6 +73,25 @@ def _make_closed_run(tmp_path: Path, *, status: str = "COMPLETE") -> tuple[Path,
         "demo_trials": [],
         "promoted_capability_ids": [],
     }
+    stage1_artifacts: dict[str, object] = {
+        "status": "SEALED",
+        "diagnostics": [{"code": "STAGE1_PUBLIC_CODE", "message": "ok"}],
+        "capability_source": "def private_winning_source(): return qpos",
+        "consumer_trace": {"raw_truth": "secret"},
+        "threshold": 0.1,
+        "candidate_error": "public stage candidate issue",
+    }
+    if include_sdk_projection:
+        stage1_artifacts["capability_design"] = {
+            "robot_public_projection": {
+                "sdk_facts": {
+                    "entry_id": "unitree-sdk2-go2-lowlevel",
+                    "entry_version": "1.0.0",
+                    "private_detail": "must not be copied",
+                },
+                "private_projection": "must not be copied",
+            },
+        }
     stage_artifacts = {
         "artifact_type": "first_g2_stage_artifacts",
         "schema_version": "1.0.0",
@@ -71,14 +99,7 @@ def _make_closed_run(tmp_path: Path, *, status: str = "COMPLETE") -> tuple[Path,
         "robot": "unitree-go2",
         "stages": {
             "integration_gate": {"status": "READY", "diagnostics": []},
-            "stage1": {
-                "status": "SEALED",
-                "diagnostics": [{"code": "STAGE1_PUBLIC_CODE", "message": "ok"}],
-                "capability_source": "def private_winning_source(): return qpos",
-                "consumer_trace": {"raw_truth": "secret"},
-                "threshold": 0.1,
-                "candidate_error": "public stage candidate issue",
-            },
+            "stage1": stage1_artifacts,
             "stage2": {
                 "status": status,
                 "diagnostics": [{"code": "STAGE2_PUBLIC_CODE", "message": "ok"}],
@@ -86,6 +107,46 @@ def _make_closed_run(tmp_path: Path, *, status: str = "COMPLETE") -> tuple[Path,
                 "seed": 7,
                 "video_manifest": {"camera": "private"},
                 "credentials": "do-not-copy",
+            },
+            "validation_and_repair": {
+                "status": "FAIL",
+                "repair": {
+                    "initial_validation_b": {
+                        "executions": [
+                            {
+                                "candidate_error": (
+                                    "TypeError: CRC.Crc() missing 1 required positional argument: 'msg'"
+                                ),
+                                "diagnostics": [{"code": "CRC_CRC_TYPE_ERROR"}],
+                            },
+                            {
+                                "candidate_error": (
+                                    "TypeError: CRC.Crc() missing 1 required positional argument: 'msg'"
+                                ),
+                            },
+                        ],
+                    },
+                    "final_validation_b": {
+                        "executions": [
+                            {
+                                "candidate_error": (
+                                    "TypeError: CRC.Crc() missing 1 required positional argument: 'msg'"
+                                ),
+                            },
+                        ],
+                    },
+                    "repair_log": [
+                        {
+                            "candidate_error": (
+                                "TypeError: CRC.Crc() missing 1 required positional argument: 'msg'"
+                            ),
+                            "diagnostics": [{"code": "CRC_CRC_TYPE_ERROR"}],
+                        },
+                    ],
+                    "candidate_source": "def private_winning_source(): return qpos",
+                    "private_threshold": 0.1,
+                    "raw_trace": {"qpos": [0.0], "credentials": "private"},
+                },
             },
         },
     }
@@ -180,9 +241,16 @@ def test_complete_and_terminal_failed_runs_propose_outside_run_without_mutation(
     assert not result.candidate_path.is_relative_to(closure_path.parent)
     assert _run_bytes(root) == before
     assert len(seen) == 1
+    assert seen[0]["robot"]["sdk_entry_id"] == "unitree-sdk2-go2-lowlevel@1.0.0"
     callback_text = canonical_bytes(seen[0]).decode("utf-8").casefold()
     for forbidden in ("threshold", "qpos", "winning", "trace", "video", "prompt", "credential"):
         assert forbidden not in callback_text
+    crc_error = "TypeError: CRC.Crc() missing 1 required positional argument: 'msg'"
+    assert crc_error.casefold() in callback_text
+    assert callback_text.count(crc_error.casefold()) == 1
+    assert "crc_crc_type_error" in callback_text
+    assert "executions" not in callback_text
+    assert "candidate_source" not in callback_text
     assert not (root / "general_demo" / "libraries" / "experience").exists()
 
 
@@ -211,7 +279,7 @@ def test_candidate_and_report_have_exact_shapes_canonical_hashes_and_immutable_s
         "robot_model_id", "robot_configuration_id", "sdk_entry_id",
         "granularity_condition", "capability_effect_scope", "observation_condition",
     }
-    assert candidate["applicability"]["sdk_entry_id"] == "unitree-sdk2-go2-lowlevel"
+    assert candidate["applicability"]["sdk_entry_id"] == "unitree-sdk2-go2-lowlevel@1.0.0"
     assert set(candidate["provenance"]) == {
         "closure_hash", "summary_ref", "stage_artifacts_ref", "evidence_digest_hash",
     }
@@ -376,6 +444,44 @@ def test_private_or_full_code_like_semantics_are_rejected(tmp_path: Path, bad_te
             candidate_fields=fields,
         )
     assert not (root / "evolution_cases").exists()
+
+
+@pytest.mark.parametrize(
+    "sdk_entry_id",
+    ["invented-sdk@1.0.0", "unitree-sdk2-go2-lowlevel", "unitree-sdk2-go2-lowlevel@9.9.9"],
+)
+def test_implementation_sdk_entry_must_match_verified_stage1_projection(
+    tmp_path: Path, sdk_entry_id: str
+) -> None:
+    root, closure_path, closure_seal_path = _make_closed_run(tmp_path)
+    fields = _semantic_fields(recipient_class="implementation")
+    fields["applicability"]["sdk_entry_id"] = sdk_entry_id
+    with pytest.raises(ContractError):
+        propose_experience_candidate(
+            root,
+            closure_path,
+            closure_seal_path,
+            "wrong-sdk",
+            evolution_cases_root=root / "evolution_cases",
+            candidate_fields=fields,
+        )
+
+
+def test_implementation_sdk_entry_is_required_when_stage1_projection_is_absent(
+    tmp_path: Path,
+) -> None:
+    root, closure_path, closure_seal_path = _make_closed_run(
+        tmp_path, include_sdk_projection=False
+    )
+    with pytest.raises(ContractError):
+        propose_experience_candidate(
+            root,
+            closure_path,
+            closure_seal_path,
+            "missing-sdk",
+            evolution_cases_root=root / "evolution_cases",
+            candidate_fields=_semantic_fields(recipient_class="implementation"),
+        )
 
 
 def test_cli_manual_smoke_and_model_api_mode_only_see_sanitized_digest(tmp_path: Path) -> None:
