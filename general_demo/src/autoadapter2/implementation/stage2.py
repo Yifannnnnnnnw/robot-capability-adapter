@@ -19,7 +19,7 @@ from ..foundation.seals import create_seal
 from ..generation.llm import JsonGenerator
 from .binding import PythonBinding, derive_implementation_manifest, derive_python_binding, verify_capability_source
 from .bundle import ImplementationBundle, validate_implementation_bundle
-from .sandbox import CallbackSandbox
+from .sandbox import CallbackSandbox, get_sandbox_contract
 
 
 STAGE2_PROMPT = """
@@ -52,22 +52,64 @@ helper that uses it, or pass a locally constructed endpoint/message explicitly; 
 a module-global `_sdk`. When a bundle lists direct facade operations and no constructors, call
 those operations directly and leave lifecycle to Framework. Keep the one-file binding contract
 and public result fields exactly as supplied; physical behavior is assessed after submission.
+
+INPUT_JSON includes a closed sandbox_contract and public submission_requirements. The Sandbox is
+callback-only: use only varied public probes described by sandbox_contract and never request a
+direct simulator or private evaluation handle. Revise the working source from public Sandbox feedback.
+Do not submit before every submission requirement is met; a premature submit is
+rejected with public diagnostics, while its working source is retained and the loop continues.
 """.strip()
 _ACTION_FIELDS = {
     "sandbox": {"action", "capability.py", "probe"},
     "submit": {"action", "capability.py"},
     "blocked": {"action", "reason"},
 }
-_PRIVATE_TERMS = ("private", "criterion", "validation", "suite", "threshold", "mujoco", "translation")
+_PRIVATE_TERMS = (
+    "private", "criterion", "validation", "suite", "threshold", "mujoco", "translation",
+    "truth", "video", "score", "verdict",
+)
 
 
 @dataclass(frozen=True)
 class Stage2Config:
     max_llm_calls: int = 30
+    min_llm_calls_before_submit: int = 1
+    min_successful_sandbox_calls_before_submit: int = 0
+    required_sandbox_probe_ids: tuple[str, ...] = ()
+    require_all_design_capability_probes: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.max_llm_calls, int) or isinstance(self.max_llm_calls, bool) or not 1 <= self.max_llm_calls <= 30:
             raise ContractError("Stage 2 max_llm_calls must be between 1 and 30")
+        if (
+            not isinstance(self.min_llm_calls_before_submit, int)
+            or isinstance(self.min_llm_calls_before_submit, bool)
+            or not 1 <= self.min_llm_calls_before_submit <= self.max_llm_calls
+        ):
+            raise ContractError(
+                "Stage 2 min_llm_calls_before_submit must be between 1 and max_llm_calls"
+            )
+        if (
+            not isinstance(self.min_successful_sandbox_calls_before_submit, int)
+            or isinstance(self.min_successful_sandbox_calls_before_submit, bool)
+            or self.min_successful_sandbox_calls_before_submit < 0
+        ):
+            raise ContractError(
+                "Stage 2 min_successful_sandbox_calls_before_submit must be non-negative"
+            )
+        if not isinstance(self.required_sandbox_probe_ids, tuple):
+            raise ContractError("Stage 2 required_sandbox_probe_ids must be a tuple")
+        if any(
+            not isinstance(probe_id, str) or not probe_id.strip()
+            for probe_id in self.required_sandbox_probe_ids
+        ):
+            raise ContractError(
+                "Stage 2 required_sandbox_probe_ids must contain non-empty strings"
+            )
+        if len(set(self.required_sandbox_probe_ids)) != len(self.required_sandbox_probe_ids):
+            raise ContractError("Stage 2 required_sandbox_probe_ids must be unique")
+        if not isinstance(self.require_all_design_capability_probes, bool):
+            raise ContractError("Stage 2 require_all_design_capability_probes must be a boolean")
 
 
 @dataclass(frozen=True)
@@ -87,6 +129,8 @@ class Stage2Result:
     manifest_seal: dict[str, Any] | None
     llm_calls: int
     sandbox_calls: int
+    successful_sandbox_calls: int
+    covered_sandbox_probe_ids: tuple[str, ...]
     call_log: tuple[dict[str, Any], ...]
     sandbox_log: tuple[dict[str, Any], ...]
     diagnostics: tuple[dict[str, str], ...]
@@ -131,6 +175,64 @@ def _action_issues(output: Mapping[str, Any]) -> list[dict[str, str]]:
     return []
 
 
+def _submission_requirements(
+    config: Stage2Config,
+    required_probe_ids: tuple[str, ...],
+) -> dict[str, Any]:
+    return {
+        "max_llm_calls": config.max_llm_calls,
+        "min_llm_calls_before_submit": config.min_llm_calls_before_submit,
+        "min_successful_sandbox_calls_before_submit": config.min_successful_sandbox_calls_before_submit,
+        "required_sandbox_probe_ids": list(required_probe_ids),
+        "require_all_design_capability_probes": config.require_all_design_capability_probes,
+    }
+
+
+def _coverage_identity(probe: Mapping[str, Any]) -> tuple[str, str] | None:
+    probe_id = probe.get("probe_id")
+    capability_id = probe.get("capability_id")
+    if (
+        not isinstance(probe_id, str)
+        or not probe_id.strip()
+        or not isinstance(capability_id, str)
+        or not capability_id.strip()
+    ):
+        return None
+    return probe_id, capability_id
+
+
+def _submission_issues(
+    *,
+    llm_calls: int,
+    successful_sandbox_calls: int,
+    covered_probe_ids: set[str],
+    required_probe_ids: tuple[str, ...],
+    config: Stage2Config,
+) -> list[dict[str, str]]:
+    issues: list[dict[str, str]] = []
+    if llm_calls < config.min_llm_calls_before_submit:
+        issues.append(_issue(
+            "SUBMISSION_REQUIREMENTS",
+            "Submit rejected: min_llm_calls_before_submit is "
+            f"{config.min_llm_calls_before_submit}, but the current call count is {llm_calls}.",
+        ))
+    if successful_sandbox_calls < config.min_successful_sandbox_calls_before_submit:
+        issues.append(_issue(
+            "SUBMISSION_REQUIREMENTS",
+            "Submit rejected: min_successful_sandbox_calls_before_submit is "
+            f"{config.min_successful_sandbox_calls_before_submit}, but only "
+            f"{successful_sandbox_calls} successful public sandbox calls are recorded.",
+        ))
+    missing_probe_ids = sorted(set(required_probe_ids) - covered_probe_ids)
+    if missing_probe_ids:
+        issues.append(_issue(
+            "SUBMISSION_REQUIREMENTS",
+            "Submit rejected: missing required public sandbox probe IDs: "
+            + ", ".join(missing_probe_ids) + ".",
+        ))
+    return issues
+
+
 class Stage2Runner:
     """A 30-accounted-call, action-only Stage 2 runner for the demo."""
 
@@ -154,6 +256,15 @@ class Stage2Runner:
             blue_line_authorization, binding.contract["design_hash"]
         )
         design = copy.deepcopy(dict(capability_design))
+        design_probe_ids = tuple(
+            str(entry["capability_id"])
+            for entry in binding.contract["bindings"]
+        )
+        required_probe_ids = tuple(dict.fromkeys(
+            (*self.config.required_sandbox_probe_ids, *(
+                design_probe_ids if self.config.require_all_design_capability_probes else ()
+            ))
+        ))
         base_inputs = {
             "capability_design": design,
             "binding_contract": copy.deepcopy(binding.contract),
@@ -166,8 +277,15 @@ class Stage2Runner:
         diagnostics: list[dict[str, str]] = []
         working_source: str | None = None
         last_feedback: dict[str, Any] | None = None
+        successful_sandbox_calls = 0
+        covered_probe_ids: set[str] = set()
+        sandbox_contract = self.sandbox.contract if self.sandbox is not None else get_sandbox_contract()
         for attempt in range(self.config.max_llm_calls):
             inputs: dict[str, Any] = copy.deepcopy(base_inputs)
+            inputs["sandbox_contract"] = copy.deepcopy(sandbox_contract)
+            inputs["submission_requirements"] = _submission_requirements(
+                self.config, required_probe_ids
+            )
             if working_source is not None:
                 inputs["working_capability.py"] = working_source
             if last_feedback is not None:
@@ -205,25 +323,51 @@ class Stage2Runner:
                         "source_hash": content_hash(working_source.encode("utf-8")),
                         "probe_hash": content_hash(canonical_bytes(output_dict["probe"])),
                         "feedback_hash": content_hash(canonical_bytes(last_feedback)),
+                        "successful": False,
+                        "probe_id": None,
+                        "capability_id": None,
+                        "coverage_counted": False,
                     })
                     continue
                 last_feedback = self.sandbox.run(working_source, output_dict["probe"])
+                identity = _coverage_identity(output_dict["probe"])
+                successful = last_feedback.get("status") == "OK"
+                if successful:
+                    successful_sandbox_calls += 1
+                    if identity is not None:
+                        covered_probe_ids.add(identity[0])
                 sandbox_log.append({
                     "sandbox_call": len(sandbox_log) + 1,
                     "executed": True,
                     "source_hash": content_hash(working_source.encode("utf-8")),
                     "probe_hash": content_hash(canonical_bytes(output_dict["probe"])),
                     "feedback_hash": content_hash(canonical_bytes(last_feedback)),
+                    "successful": successful,
+                    "probe_id": identity[0] if identity is not None else None,
+                    "capability_id": identity[1] if identity is not None else None,
+                    "coverage_counted": successful and identity is not None,
                 })
                 continue
             if action == "blocked":
                 return self._result(
                     "IMPLEMENTATION_BLOCKED", bundle.bundle_hash, binding, None, None, None, None,
-                    calls, sandbox_log, diagnostics, output_dict["reason"],
+                    calls, sandbox_log, successful_sandbox_calls, covered_probe_ids,
+                    diagnostics, output_dict["reason"],
                 )
             # Submit starts the immutable candidate boundary.  Only basic parsing and
             # required-symbol presence are checked here; Validation A owns semantics.
             source = output_dict["capability.py"]
+            working_source = source
+            diagnostics = _submission_issues(
+                llm_calls=len(calls),
+                successful_sandbox_calls=successful_sandbox_calls,
+                covered_probe_ids=covered_probe_ids,
+                required_probe_ids=required_probe_ids,
+                config=self.config,
+            )
+            if diagnostics:
+                calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
+                continue
             try:
                 symbols = verify_capability_source(source, binding.contract)
             except ContractError as exc:
@@ -242,11 +386,12 @@ class Stage2Runner:
             )
             return self._result(
                 "SUBMITTED", bundle.bundle_hash, binding, source, source_hash, source_seal,
-                (manifest, manifest_hash, manifest_seal), calls, sandbox_log, (), None,
+                (manifest, manifest_hash, manifest_seal), calls, sandbox_log,
+                successful_sandbox_calls, covered_probe_ids, [], None,
             )
         return self._result(
-            "CALL_LIMIT_EXHAUSTED", bundle.bundle_hash, binding, None, None, None, None,
-            calls, sandbox_log, diagnostics, None,
+            "CALL_LIMIT_EXHAUSTED", bundle.bundle_hash, binding, working_source, None, None, None,
+            calls, sandbox_log, successful_sandbox_calls, covered_probe_ids, diagnostics, None,
         )
 
     @staticmethod
@@ -260,6 +405,8 @@ class Stage2Runner:
         manifest_data: tuple[dict[str, Any], str, dict[str, Any]] | None,
         calls: list[dict[str, Any]],
         sandbox_log: list[dict[str, Any]],
+        successful_sandbox_calls: int,
+        covered_probe_ids: set[str],
         diagnostics: list[dict[str, str]],
         blocked_reason: str | None,
     ) -> Stage2Result:
@@ -280,6 +427,8 @@ class Stage2Runner:
             manifest_seal=manifest_seal,
             llm_calls=len(calls),
             sandbox_calls=sum(1 for item in sandbox_log if item["executed"]),
+            successful_sandbox_calls=successful_sandbox_calls,
+            covered_sandbox_probe_ids=tuple(sorted(covered_probe_ids)),
             call_log=tuple(calls),
             sandbox_log=tuple(sandbox_log),
             diagnostics=tuple(diagnostics),

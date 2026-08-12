@@ -45,6 +45,8 @@ _PUBLIC_IMPLEMENTATION_INPUTS = {
         "starter_skeleton",
         "blue_line_authorization",
         "implementation_bundle",
+        "sandbox_contract",
+        "submission_requirements",
         "working_capability.py",
         "sandbox_feedback",
         "public_diagnostics",
@@ -59,6 +61,22 @@ _PUBLIC_IMPLEMENTATION_INPUTS = {
         "run_snapshot_hash",
         "diagnostics",
         "ledger",
+    }),
+}
+_IMPLEMENTATION_DELTA_INPUTS = {
+    "stage2": frozenset({
+        "working_capability.py",
+        "sandbox_feedback",
+        "public_diagnostics",
+    }),
+    "repair": frozenset({
+        "repair_index",
+        "capability.py",
+        "diagnostics",
+        "ledger",
+        "run_snapshot_hash",
+        "implementation_bundle_hash",
+        "design_hash",
     }),
 }
 
@@ -86,6 +104,23 @@ def _public_implementation_inputs(stage: str, inputs: Mapping[str, Any]) -> dict
     return {
         key: copy.deepcopy(value)
         for key, value in inputs.items()
+        if key in allowed
+    }
+
+
+def _implementation_request_inputs(
+    stage: str,
+    inputs: Mapping[str, Any],
+    *,
+    initial: bool,
+) -> dict[str, Any]:
+    public_inputs = _public_implementation_inputs(stage, inputs)
+    if initial:
+        return public_inputs
+    allowed = _IMPLEMENTATION_DELTA_INPUTS[stage]
+    return {
+        key: copy.deepcopy(value)
+        for key, value in public_inputs.items()
         if key in allowed
     }
 
@@ -134,12 +169,17 @@ class ModelApiClient:
 
     def _complete_json(self, *, stage: str, instruction: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
         implementation_agent = stage in _IMPLEMENTATION_AGENT_STAGES
+        initial_implementation_context = implementation_agent and not self._implementation_history
         request_inputs = (
-            _public_implementation_inputs(stage, inputs)
+            _implementation_request_inputs(
+                stage,
+                inputs,
+                initial=initial_implementation_context,
+            )
             if implementation_agent
             else dict(inputs)
         )
-        if implementation_agent:
+        if initial_implementation_context:
             instruction = instruction.rstrip() + "\n\n" + _render_public_implementation_bundle(
                 request_inputs.get("implementation_bundle")
             )

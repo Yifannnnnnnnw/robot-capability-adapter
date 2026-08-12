@@ -19,8 +19,36 @@ SandboxCallback = Callable[[str, Mapping[str, Any]], Mapping[str, Any]]
 _FORBIDDEN_TERMS = (
     "private", "criterion", "validation", "blue line", "suite", "threshold",
     "mujoco", "translation", "simulator", "raw_state", "score", "target_error",
+    "truth", "video", "verdict",
 )
 _ALLOWED_FEEDBACK_FIELDS = {"status", "summary", "observations", "exception"}
+
+_SANDBOX_CONTRACT = {
+    "artifact_type": "stage2_public_sandbox_contract",
+    "schema_version": "1.0.0",
+    "execution": {
+        "mode": "callback_only",
+        "direct_handle_access": False,
+        "candidate_input": "complete capability.py source",
+        "probe_input": "public JSON object",
+    },
+    "probe": {
+        "coverage_identity_fields": ["probe_id", "capability_id"],
+        "coverage_identity_rule": "both fields must be exact non-empty strings",
+        "use_varied_public_probes": True,
+    },
+    "feedback": {
+        "fields": ["status", "summary", "observations", "exception"],
+        "status_values": ["OK", "ERROR", "INCONCLUSIVE"],
+        "projection": "bounded public execution feedback",
+    },
+}
+
+
+def get_sandbox_contract() -> dict[str, Any]:
+    """Return the closed public contract without exposing callback state."""
+
+    return copy.deepcopy(_SANDBOX_CONTRACT)
 
 
 def _public_value(value: Any, location: str = "$") -> None:
@@ -49,6 +77,12 @@ class CallbackSandbox:
         if not callable(callback):
             raise ContractError("Sandbox requires a callback")
         self._callback = callback
+
+    @property
+    def contract(self) -> dict[str, Any]:
+        """Return the closed public contract as an isolated value."""
+
+        return get_sandbox_contract()
 
     def run(self, capability_source: str, probe: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(capability_source, str) or not capability_source.strip():

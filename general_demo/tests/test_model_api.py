@@ -89,11 +89,11 @@ def test_model_api_repair_renders_only_supplied_public_bundle_facts(monkeypatch)
             },
         }],
     }
-    captured: list[str] = []
+    captured: list[dict[str, object]] = []
 
     def urlopen(request, **_kwargs):
         body = json.loads(request.data.decode("utf-8"))
-        captured.append(body["messages"][-1]["content"])
+        captured.append(body)
         return _Response(payload)
 
     monkeypatch.setattr(model_api.urllib.request, "urlopen", urlopen)
@@ -133,22 +133,23 @@ def test_model_api_repair_renders_only_supplied_public_bundle_facts(monkeypatch)
         "capability.py": source, "llm_calls": 1,
     }
 
-    unitree_instruction, so_instruction = captured
-    for instruction in (unitree_instruction, so_instruction):
-        assert "`_sdk` is a module-like injected facade" in instruction
-        assert "module-global `_sdk`" in instruction
-        assert "Do not call `ChannelFactoryInitialize`" in instruction
-        assert "second SDK" in instruction
+    unitree_instruction = captured[0]["messages"][-1]["content"]  # type: ignore[index]
+    so_instruction = captured[1]["messages"][-1]["content"]  # type: ignore[index]
+    assert "`_sdk` is a module-like injected facade" in unitree_instruction
+    assert "module-global `_sdk`" in unitree_instruction
+    assert "Do not call `ChannelFactoryInitialize`" in unitree_instruction
+    assert "second SDK" in unitree_instruction
     assert "PUBLIC IMPLEMENTATION BUNDLE" in unitree_instruction
     assert "unitree_go_msg_dds__LowCmd_" in unitree_instruction
     assert "rt/lowcmd" in unitree_instruction
     assert "motor_cmd" in unitree_instruction
     assert "q" in unitree_instruction
     assert "made_up_member" not in unitree_instruction
-    assert "send_action" in so_instruction
-    assert "get_observation" in so_instruction
-    assert "shoulder_pan.pos" in so_instruction
-    assert "degree" in so_instruction
+    assert "PUBLIC IMPLEMENTATION BUNDLE" not in so_instruction
+    assert "send_action" not in so_instruction
+    assert "get_observation" not in so_instruction
+    assert "shoulder_pan.pos" not in so_instruction
+    assert "degree" not in so_instruction
     assert "unitree_go_msg_dds__LowCmd_" not in so_instruction
     assert "made_up_member" not in so_instruction
 
@@ -239,6 +240,13 @@ def test_implementation_agent_replays_public_stage2_and_repair_history(monkeypat
     assert stage2_body["messages"][0] == repair_one_body["messages"][0]  # type: ignore[index]
     assert repair_one_body["messages"][0] == repair_two_body["messages"][0]  # type: ignore[index]
     assert "PUBLIC IMPLEMENTATION BUNDLE" in stage2_body["messages"][-1]["content"]  # type: ignore[index]
+    assert sum(
+        "PUBLIC IMPLEMENTATION BUNDLE" in message["content"]
+        for message in repair_one_body["messages"]  # type: ignore[index]
+    ) == 1
+    assert "PUBLIC IMPLEMENTATION BUNDLE" not in repair_one_body["messages"][-1]["content"]  # type: ignore[index]
+    assert "capability_design" not in repair_one_body["messages"][-1]["content"]  # type: ignore[index]
+    assert '"implementation_bundle"' not in repair_one_body["messages"][-1]["content"]  # type: ignore[index]
     assert json.loads(repair_one_body["messages"][2]["content"])["capability.py"] == stage2_source  # type: ignore[index]
     assert "public-repair-one-diagnostic" in repair_two_body["messages"][3]["content"]  # type: ignore[index]
     assert json.loads(repair_two_body["messages"][4]["content"])["capability.py"] == repair_one_source  # type: ignore[index]

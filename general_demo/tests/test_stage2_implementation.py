@@ -126,6 +126,15 @@ def test_stage2_prompt_describes_the_validation_a_source_contract() -> None:
         assert framework_rule in STAGE2_PROMPT
     for forbidden in ("Markdown fences", "dynamic imports", "eval/exec/open"):
         assert forbidden in STAGE2_PROMPT
+    for iteration_rule in (
+        "sandbox_contract",
+        "submission_requirements",
+        "varied public probes",
+        "Revise the working source from public Sandbox feedback",
+        "premature submit is",
+        "working source is retained",
+    ):
+        assert iteration_rule in STAGE2_PROMPT
     assert "rt/lowcmd" not in STAGE2_PROMPT
     assert "unitree_go_msg_dds__LowCmd_" not in STAGE2_PROMPT
 
@@ -187,7 +196,7 @@ def test_stage2_requires_non_sensitive_ready_authorization() -> None:
     assert result.blocked_reason == "The public SDK method is unavailable."
     assert set(fixture.calls[0]["inputs"]) == {
         "capability_design", "binding_contract", "starter_skeleton", "blue_line_authorization",
-        "implementation_bundle",
+        "implementation_bundle", "sandbox_contract", "submission_requirements",
     }
     assert fixture.calls[0]["inputs"]["implementation_bundle"] == IMPLEMENTATION_BUNDLE
 
@@ -228,6 +237,138 @@ def test_sandbox_is_callback_only_and_is_not_an_extra_llm_call() -> None:
     assert fixture.calls[1]["inputs"]["sandbox_feedback"] == {
         "status": "OK", "summary": "The public probe completed.", "observations": {"joint": 0.2}, "exception": None,
     }
+
+
+def test_sandbox_contract_is_closed_and_feedback_redacts_private_fields() -> None:
+    sandbox = CallbackSandbox(
+        lambda _source, _probe: {
+            "status": "OK",
+            "summary": "public execution completed",
+            "observations": {"truth": 0.2},
+        }
+    )
+    contract = sandbox.contract
+    assert contract["execution"] == {
+        "mode": "callback_only",
+        "direct_handle_access": False,
+        "candidate_input": "complete capability.py source",
+        "probe_input": "public JSON object",
+    }
+    assert contract["probe"]["coverage_identity_fields"] == ["probe_id", "capability_id"]
+    contract["execution"]["mode"] = "changed"
+    assert sandbox.contract["execution"]["mode"] == "callback_only"
+
+    feedback = sandbox.run("def capability_example():\n    return 1\n", {
+        "probe_id": "probe-1",
+        "capability_id": "capability-example",
+    })
+    assert feedback == {
+        "status": "ERROR",
+        "summary": "Sandbox callback returned invalid public feedback.",
+        "observations": {},
+        "exception": "sandbox_feedback_contract_error",
+    }
+
+
+def test_stage2_rejects_premature_submit_until_calls_sandbox_and_probe_coverage_are_met() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    probes = [
+        {"probe_id": "probe-a", "capability_id": "reach-joint-target", "target": 0.1},
+        {"probe_id": "probe-b", "capability_id": "reach-joint-target", "target": 0.2},
+        {"probe_id": "", "capability_id": "reach-joint-target", "target": 0.25},
+        {"probe_id": "probe-c", "capability_id": "reach-joint-target", "target": 0.3},
+    ]
+    responses = [
+        {"action": "submit", "capability.py": source},
+        {"action": "sandbox", "capability.py": source, "probe": probes[0]},
+        {"action": "sandbox", "capability.py": source, "probe": probes[1]},
+        {"action": "sandbox", "capability.py": source, "probe": probes[2]},
+        {"action": "submit", "capability.py": source},
+        {"action": "sandbox", "capability.py": source, "probe": probes[3]},
+        {"action": "submit", "capability.py": source},
+        {"action": "submit", "capability.py": source},
+        {"action": "submit", "capability.py": source},
+        {"action": "submit", "capability.py": source},
+    ]
+    fixture = FixtureJsonGenerator(responses)
+    sandbox = CallbackSandbox(
+        lambda _source, probe: {
+            "status": "OK",
+            "summary": f"public probe {probe.get('probe_id', 'unidentified')} completed",
+            "observations": {"joint": probe.get("target", 0.0)},
+        }
+    )
+    config = Stage2Config(
+        max_llm_calls=10,
+        min_llm_calls_before_submit=10,
+        min_successful_sandbox_calls_before_submit=3,
+        required_sandbox_probe_ids=("probe-a", "probe-b", "probe-c"),
+    )
+    result = Stage2Runner(fixture, sandbox=sandbox, config=config).run(
+        design, seal, _authorization(design, seal), _bundle()
+    )
+
+    assert result.status == "SUBMITTED"
+    assert result.llm_calls == 10
+    assert result.sandbox_calls == 4
+    assert result.successful_sandbox_calls == 4
+    assert result.covered_sandbox_probe_ids == ("probe-a", "probe-b", "probe-c")
+    assert result.sandbox_log[2]["successful"] is True
+    assert result.sandbox_log[2]["coverage_counted"] is False
+    assert any("missing required public sandbox probe IDs: probe-a, probe-b, probe-c" in item["message"] for item in result.call_log[0]["diagnostics"])
+    assert any("missing required public sandbox probe IDs: probe-c" in item["message"] for item in result.call_log[4]["diagnostics"])
+    assert any("min_llm_calls_before_submit is 10" in item["message"] for item in result.call_log[4]["diagnostics"])
+    assert fixture.calls[1]["inputs"]["working_capability.py"] == source
+    assert fixture.calls[1]["inputs"]["public_diagnostics"] == list(result.call_log[0]["diagnostics"])
+    assert fixture.calls[0]["inputs"]["submission_requirements"] == {
+        "max_llm_calls": 10,
+        "min_llm_calls_before_submit": 10,
+        "min_successful_sandbox_calls_before_submit": 3,
+        "required_sandbox_probe_ids": ["probe-a", "probe-b", "probe-c"],
+        "require_all_design_capability_probes": False,
+    }
+
+
+def test_stage2_can_require_probe_coverage_for_all_runtime_design_capabilities() -> None:
+    design, seal = _sealed_design()
+    source = derive_python_binding(design, seal).starter_skeleton
+    fixture = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": source},
+        {
+            "action": "sandbox",
+            "capability.py": source,
+            "probe": {
+                "probe_id": "reach-joint-target",
+                "capability_id": "reach-joint-target",
+                "target": 0.2,
+            },
+        },
+        {"action": "submit", "capability.py": source},
+    ])
+    result = Stage2Runner(
+        fixture,
+        sandbox=CallbackSandbox(
+            lambda _source, _probe: {
+                "status": "OK",
+                "summary": "public probe completed",
+                "observations": {},
+            }
+        ),
+        config=Stage2Config(
+            max_llm_calls=3,
+            min_llm_calls_before_submit=3,
+            min_successful_sandbox_calls_before_submit=1,
+            require_all_design_capability_probes=True,
+        ),
+    ).run(design, seal, _authorization(design, seal), _bundle())
+
+    assert result.status == "SUBMITTED"
+    assert result.covered_sandbox_probe_ids == ("reach-joint-target",)
+    assert fixture.calls[0]["inputs"]["submission_requirements"]["required_sandbox_probe_ids"] == [
+        "reach-joint-target"
+    ]
 
 
 def test_submit_seals_exact_source_and_framework_derives_manifest() -> None:
