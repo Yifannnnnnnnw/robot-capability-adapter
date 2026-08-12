@@ -270,7 +270,97 @@ def test_sandbox_contract_is_closed_and_feedback_redacts_private_fields() -> Non
     }
 
 
-def test_stage2_rejects_premature_submit_until_calls_sandbox_and_probe_coverage_are_met() -> None:
+def test_custom_sandbox_contract_is_public_exact_and_reaches_stage2_isolated() -> None:
+    robot_contract = {
+        "artifact_type": "go2_public_probe_contract",
+        "schema_version": "1.0.0",
+        "capability_probes": [{
+            "capability_id": "reach-joint-target",
+            "probe_id": "go2-reach-public",
+            "inputs": {"target": "public joint target"},
+        }],
+    }
+    sandbox = CallbackSandbox(
+        lambda _source, _probe: {
+            "status": "OK",
+            "summary": "public execution completed",
+            "observations": {},
+        },
+        contract=robot_contract,
+    )
+    robot_contract["capability_probes"][0]["probe_id"] = "mutated-after-construction"
+    returned = sandbox.contract
+    assert returned["robot_contract"] == {
+        "artifact_type": "go2_public_probe_contract",
+        "schema_version": "1.0.0",
+        "capability_probes": [{
+            "capability_id": "reach-joint-target",
+            "probe_id": "go2-reach-public",
+            "inputs": {"target": "public joint target"},
+        }],
+    }
+    assert returned["execution"]["mode"] == "callback_only"
+    returned["robot_contract"]["capability_probes"][0]["probe_id"] = "mutated-return-value"
+    assert sandbox.contract["robot_contract"]["capability_probes"][0]["probe_id"] == "go2-reach-public"
+
+    with pytest.raises(ContractError):
+        CallbackSandbox(lambda _source, _probe: {}, contract={"private_criteria": "not public"})
+
+    design, seal = _sealed_design()
+    source = derive_python_binding(design, seal).starter_skeleton
+    fixture = FixtureJsonGenerator([{"action": "submit", "capability.py": source}])
+    Stage2Runner(fixture, sandbox=sandbox).run(
+        design, seal, _authorization(design, seal), _bundle()
+    )
+    assert fixture.calls[0]["inputs"]["sandbox_contract"]["robot_contract"] == sandbox.contract[
+        "robot_contract"
+    ]
+    fixture.calls[0]["inputs"]["sandbox_contract"]["robot_contract"]["capability_probes"][0]["probe_id"] = "mutated-input"
+    assert sandbox.contract["robot_contract"]["capability_probes"][0]["probe_id"] == "go2-reach-public"
+
+
+def test_unknown_capability_id_never_counts_as_design_coverage() -> None:
+    design, seal = _sealed_design()
+    source = derive_python_binding(design, seal).starter_skeleton
+    fixture = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": source},
+        {
+            "action": "sandbox",
+            "capability.py": source,
+            "probe": {
+                "probe_id": "reach-joint-target",
+                "capability_id": "unknown-capability",
+                "target": 0.2,
+            },
+        },
+        {"action": "submit", "capability.py": source},
+    ])
+    result = Stage2Runner(
+        fixture,
+        sandbox=CallbackSandbox(
+            lambda _source, _probe: {
+                "status": "OK",
+                "summary": "public probe completed",
+                "observations": {},
+            }
+        ),
+        config=Stage2Config(
+            max_llm_calls=3,
+            min_llm_calls_before_submit=3,
+            min_successful_sandbox_calls_before_submit=1,
+            require_all_design_capability_probes=True,
+        ),
+    ).run(design, seal, _authorization(design, seal), _bundle())
+
+    assert result.status == "CALL_LIMIT_EXHAUSTED"
+    assert result.covered_sandbox_capability_ids == ()
+    assert result.sandbox_log[0]["probe_id"] == "reach-joint-target"
+    assert result.sandbox_log[0]["capability_id"] == "unknown-capability"
+    assert result.sandbox_log[0]["coverage_counted"] is False
+    assert "missing required public sandbox capability IDs: reach-joint-target" in result.diagnostics[-1]["message"]
+
+
+def test_stage2_rejects_premature_submit_until_calls_sandbox_and_capability_coverage_are_met() -> None:
     design, seal = _sealed_design()
     binding = derive_python_binding(design, seal)
     source = binding.starter_skeleton
@@ -304,7 +394,7 @@ def test_stage2_rejects_premature_submit_until_calls_sandbox_and_probe_coverage_
         max_llm_calls=10,
         min_llm_calls_before_submit=10,
         min_successful_sandbox_calls_before_submit=3,
-        required_sandbox_probe_ids=("probe-a", "probe-b", "probe-c"),
+        required_sandbox_capability_ids=("reach-joint-target",),
     )
     result = Stage2Runner(fixture, sandbox=sandbox, config=config).run(
         design, seal, _authorization(design, seal), _bundle()
@@ -314,11 +404,10 @@ def test_stage2_rejects_premature_submit_until_calls_sandbox_and_probe_coverage_
     assert result.llm_calls == 10
     assert result.sandbox_calls == 4
     assert result.successful_sandbox_calls == 4
-    assert result.covered_sandbox_probe_ids == ("probe-a", "probe-b", "probe-c")
+    assert result.covered_sandbox_capability_ids == ("reach-joint-target",)
     assert result.sandbox_log[2]["successful"] is True
     assert result.sandbox_log[2]["coverage_counted"] is False
-    assert any("missing required public sandbox probe IDs: probe-a, probe-b, probe-c" in item["message"] for item in result.call_log[0]["diagnostics"])
-    assert any("missing required public sandbox probe IDs: probe-c" in item["message"] for item in result.call_log[4]["diagnostics"])
+    assert any("missing required public sandbox capability IDs: reach-joint-target" in item["message"] for item in result.call_log[0]["diagnostics"])
     assert any("min_llm_calls_before_submit is 10" in item["message"] for item in result.call_log[4]["diagnostics"])
     assert fixture.calls[1]["inputs"]["working_capability.py"] == source
     assert fixture.calls[1]["inputs"]["public_diagnostics"] == list(result.call_log[0]["diagnostics"])
@@ -326,7 +415,7 @@ def test_stage2_rejects_premature_submit_until_calls_sandbox_and_probe_coverage_
         "max_llm_calls": 10,
         "min_llm_calls_before_submit": 10,
         "min_successful_sandbox_calls_before_submit": 3,
-        "required_sandbox_probe_ids": ["probe-a", "probe-b", "probe-c"],
+        "required_sandbox_capability_ids": ["reach-joint-target"],
         "require_all_design_capability_probes": False,
     }
 
@@ -340,7 +429,7 @@ def test_stage2_can_require_probe_coverage_for_all_runtime_design_capabilities()
             "action": "sandbox",
             "capability.py": source,
             "probe": {
-                "probe_id": "reach-joint-target",
+                "probe_id": "independent-public-probe",
                 "capability_id": "reach-joint-target",
                 "target": 0.2,
             },
@@ -365,8 +454,11 @@ def test_stage2_can_require_probe_coverage_for_all_runtime_design_capabilities()
     ).run(design, seal, _authorization(design, seal), _bundle())
 
     assert result.status == "SUBMITTED"
-    assert result.covered_sandbox_probe_ids == ("reach-joint-target",)
-    assert fixture.calls[0]["inputs"]["submission_requirements"]["required_sandbox_probe_ids"] == [
+    assert result.covered_sandbox_capability_ids == ("reach-joint-target",)
+    assert fixture.calls[1]["inputs"]["sandbox_contract"]["probe"]["coverage_identity_fields"] == [
+        "probe_id", "capability_id"
+    ]
+    assert fixture.calls[0]["inputs"]["submission_requirements"]["required_sandbox_capability_ids"] == [
         "reach-joint-target"
     ]
 

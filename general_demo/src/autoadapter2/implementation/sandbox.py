@@ -54,6 +54,8 @@ def get_sandbox_contract() -> dict[str, Any]:
 def _public_value(value: Any, location: str = "$") -> None:
     if isinstance(value, Mapping):
         for key, item in value.items():
+            if not isinstance(key, str):
+                raise ContractError(f"Sandbox feedback {location} contains a non-string key")
             if any(term in str(key).lower() for term in _FORBIDDEN_TERMS):
                 raise ContractError(f"Sandbox feedback {location}.{key} is not public")
             _public_value(item, f"{location}.{key}")
@@ -73,16 +75,31 @@ def _error_feedback(summary: str, exception: str) -> dict[str, Any]:
 class CallbackSandbox:
     """An injected callback, not a simulator, SDK, or private evaluation harness."""
 
-    def __init__(self, callback: SandboxCallback):
+    def __init__(
+        self,
+        callback: SandboxCallback,
+        contract: Mapping[str, Any] | None = None,
+    ):
         if not callable(callback):
             raise ContractError("Sandbox requires a callback")
         self._callback = callback
+        if contract is None:
+            self._contract = get_sandbox_contract()
+        else:
+            if not isinstance(contract, Mapping) or not contract:
+                raise ContractError("Sandbox contract must be a non-empty public object")
+            try:
+                _public_value(contract, "contract")
+            except ContractError as exc:
+                raise ContractError("Sandbox contract is not public JSON") from exc
+            self._contract = get_sandbox_contract()
+            self._contract["robot_contract"] = copy.deepcopy(dict(contract))
 
     @property
     def contract(self) -> dict[str, Any]:
         """Return the closed public contract as an isolated value."""
 
-        return get_sandbox_contract()
+        return copy.deepcopy(self._contract)
 
     def run(self, capability_source: str, probe: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(capability_source, str) or not capability_source.strip():
