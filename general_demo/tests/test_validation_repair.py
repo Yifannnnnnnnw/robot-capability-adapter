@@ -741,6 +741,40 @@ def test_validation_a_imports_approved_ndarray_transpose_when_available() -> Non
     assert ndarray_result.status == "PASS"
 
 
+def test_validation_a_accepts_only_safe_local_tolist_with_forwarded_sdk_path() -> None:
+    source = '''import numpy as np
+
+def _read_position(sdk):
+    sdk.get_observation()
+    return np.array([0.0])
+
+def _move_to_position(sdk):
+    return _read_position(sdk)
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    final_pos = _move_to_position(_sdk)
+    values = final_pos.tolist()
+    _sdk.send_action({"target": values[0]})
+    return {"reported_status": "PASS"}
+'''
+    design, design_seal, stage2, _blue, _result = _a_result()
+    _design, design_hash, design_capabilities = _verified_design(design, design_seal)
+    binding, _binding_hash = _verified_binding(stage2.binding_contract, stage2.binding_seal, design_hash)
+    contracts = _capability_contracts(design_capabilities, binding)
+    assert _static_issues(ast.parse(source), contracts, HELPER_PROFILE) == []
+
+    arbitrary = source.replace("final_pos.tolist()", "final_pos.arbitrary()")
+    arbitrary_issues = _static_issues(ast.parse(arbitrary), contracts, HELPER_PROFILE)
+    assert any(item["code"] == "FORBIDDEN_CALL" for item in arbitrary_issues)
+
+    sdk_derived = source.replace(
+        "    final_pos = _move_to_position(_sdk)\n",
+        "    observation = _sdk.get_observation()\n    final_pos = observation\n",
+    )
+    sdk_derived_issues = _static_issues(ast.parse(sdk_derived), contracts, HELPER_PROFILE)
+    assert any(item["code"] == "FORBIDDEN_CALL" for item in sdk_derived_issues)
+
+
 def test_validation_a_accepts_forwarded_sdk_helpers_and_observed_local_containers() -> None:
     result, _stage2 = _helper_a_result()
     assert result.status == "PASS"

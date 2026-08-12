@@ -404,6 +404,7 @@ _ALLOWED_NUMPY_PATHS = frozenset({
 _ALLOWED_DERIVED_OBJECT_MEMBERS = frozenset({"Init", "Read", "Write", "Crc", "get"})
 _ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({"mode", "q", "dq", "kp", "kd", "tau", "motor_cmd", "crc"})
 _ALLOWED_LOCAL_ARRAY_ATTRIBUTES = frozenset({"T"})
+_ALLOWED_LOCAL_CONVERSION_METHODS = frozenset({"tolist"})
 
 
 def _module_path(value: ast.AST, aliases: Mapping[str, str]) -> tuple[str, tuple[str | None, ...]] | None:
@@ -553,6 +554,8 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
             return "sdk-local"
         if isinstance(function, ast.Attribute) and function.attr in {"append", "get"} and root in self.safe_locals | self.public_inputs:
             return "local-container"
+        if isinstance(function, ast.Attribute) and function.attr in _ALLOWED_LOCAL_CONVERSION_METHODS and root in self.safe_locals | self.public_inputs:
+            return "local-conversion"
         if root in self.local_functions or root in _SAFE_BUILTIN_NAMES:
             return "local-function"
         return None
