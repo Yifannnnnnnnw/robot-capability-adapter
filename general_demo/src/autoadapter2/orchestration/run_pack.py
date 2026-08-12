@@ -91,6 +91,7 @@ FROZEN_VIDEO_PROFILE = {
     "codec": "ffv1",
 }
 GO2_PUBLIC_INJECTED_HELPERS = ("CRC",)
+GO2_PUBLIC_INJECTED_FACTORIES = ("unitree_go_msg_dds__LowCmd_",)
 G2_PROFILE_PUBLIC = {
     "profile_id": "g2-reusable-effect",
     "version": "1.0.0",
@@ -991,7 +992,12 @@ def _validate_validation_a_template(template: Mapping[str, Any], robot: str) -> 
     probe = value.get("probe")
     if not isinstance(facade, Mapping) or set(facade) != {"members", "lifecycle"}:
         raise RunPackError("validation_a_template facade is invalid")
-    if not isinstance(facade["members"], list) or not facade["members"] or not all(isinstance(member, str) and member.strip() and "__" not in member for member in facade["members"]):
+    if not isinstance(facade["members"], list) or not facade["members"] or not all(
+        isinstance(member, str)
+        and member.strip()
+        and ("__" not in member or member in GO2_PUBLIC_INJECTED_FACTORIES)
+        for member in facade["members"]
+    ):
         raise RunPackError("validation_a_template facade members are invalid")
     if any(member.lower() in {"constructor", "construct", "new"} for member in facade["members"]):
         raise RunPackError("Validation A template must not expose constructors as named candidate operations")
@@ -1100,21 +1106,57 @@ def _implementation_projection_from_records(
     if not isinstance(active_rule, Mapping) or not isinstance(inactive_rule, Mapping) or not isinstance(observation_mapping, Mapping):
         raise RunPackError("Go2 checked-in translation field rules are missing")
     permitted_types = copy.deepcopy(sdk["public_symbols"])
+    permitted_factories: list[str] = []
     if robot == "unitree-go2":
         permitted_types.extend(
             helper for helper in GO2_PUBLIC_INJECTED_HELPERS if helper not in permitted_types
         )
+        permitted_factories.extend(GO2_PUBLIC_INJECTED_FACTORIES)
     sdk_projection = {
         "sdk_entry_id": sdk["id"],
         "sdk_entry_version": sdk["version"],
         "permitted_types": permitted_types,
+        "permitted_factories": permitted_factories,
         "permitted_objects": [
-            {"object_type": "ChannelPublisher", "operations": ["Init", "Write"]},
-            {"object_type": "ChannelSubscriber", "operations": ["Init", "Read"]},
+            {
+                "object_type": "ChannelPublisher",
+                "constructor": {
+                    "parameters": ["topic", "message_type"],
+                    "message_type_kind": "IDL type class",
+                    "message_type_by_topic": {"rt/lowcmd": "LowCmd_"},
+                },
+                "operations": ["Init", "Write"],
+                "write_contract": {
+                    "message_factory": "unitree_go_msg_dds__LowCmd_",
+                    "message_instance_required": True,
+                    "field_container": "motor_cmd",
+                    "field_names": ["mode", "q", "dq", "kp", "kd", "tau"],
+                    "crc_field": "crc",
+                },
+            },
+            {
+                "object_type": "ChannelSubscriber",
+                "constructor": {
+                    "parameters": ["topic", "message_type"],
+                    "message_type_kind": "IDL type class",
+                    "message_type_by_topic": {
+                        "rt/lowstate": "LowState_",
+                        "rt/sportmodestate": "SportModeState_",
+                    },
+                },
+                "operations": ["Init", "Read"],
+                "read_contract": {
+                    "returns_type_by_topic": {
+                        "rt/lowstate": "LowState_",
+                        "rt/sportmodestate": "SportModeState_",
+                    }
+                },
+            },
         ],
         "topics": copy.deepcopy(sdk["topics"]),
         "command": {
             "message_type": translation["dds"]["message_type"],
+            "default_factory": "unitree_go_msg_dds__LowCmd_",
             "slot_count": sdk["motor_slot_count"],
             "active_slot_count": sdk["active_motor_count"],
             "active_indices": copy.deepcopy(active_rule["indices"]),
@@ -1130,6 +1172,12 @@ def _implementation_projection_from_records(
             "active_mode": active_rule["mode"],
             "finite_fields": copy.deepcopy(active_rule["finite_fields"]),
             "inactive_slot_rule": copy.deepcopy(inactive_rule),
+            "write_contract": {
+                "message_instance_required": True,
+                "field_container": "motor_cmd",
+                "field_names": ["mode", "q", "dq", "kp", "kd", "tau"],
+                "crc_field": "crc",
+            },
         },
         "observation": {
             "message_type": "LowState_",

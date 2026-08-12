@@ -30,6 +30,7 @@ from autoadapter2.integrations.unitree_go2.bridge import (
     UnitreeSDK2Transport,
 )
 from autoadapter2.integrations.unitree_go2.session import (
+    Go2CandidateError,
     Go2SessionError,
     UnitreeGo2EvaluationRobotSession,
     _candidate_binding_from_config,
@@ -418,6 +419,11 @@ class InfiniteCandidate:
             time.sleep(0.01)
 
 
+class CandidateRaisesPythonError:
+    def _invoke(self, _capability_id, _arguments, _sdk):
+        raise AttributeError("ChannelPublisher.Init expects a bound endpoint")
+
+
 def _truth(backend: FakeBackend):
     sensors = backend.sensors()
     return {
@@ -679,6 +685,14 @@ def test_candidate_timeout_terminates_worker_and_allows_a_clean_next_trial(monke
     session.reset(phase="DEMO", execution_id="timeout-next-trial", initial_state={"task_id": "G01"})
     assert session.invoke(Candidate(), "low-level-command", {}) == {"status": "issued"}
     assert transport.write_count.value == 1
+    session.close()
+
+
+def test_candidate_python_error_is_distinguished_from_worker_infrastructure() -> None:
+    session, _backend, _transport, _sdk, _capture_count = _session(rollout_steps=1)
+    session.reset(phase="VALIDATION_B", execution_id="candidate-error", initial_state={"task_id": "G01"})
+    with pytest.raises(Go2CandidateError, match="candidate invocation failed: AttributeError"):
+        session.invoke(CandidateRaisesPythonError(), "low-level-command", {})
     session.close()
 
 
@@ -1167,6 +1181,7 @@ def test_real_shaped_session_binds_channel_factory_to_domain_one_loopback(monkey
     dds.LowState_ = LowStateType
     dds.SportModeState_ = SportModeStateType
     default = types.ModuleType("unitree_sdk2py.idl.default")
+    default.unitree_go_msg_dds__LowCmd_ = lambda: LowCmdType()
     default.unitree_go_msg_dds__LowState_ = LowStateType
     default.unitree_go_msg_dds__SportModeState_ = SportModeStateType
     crc = types.ModuleType("unitree_sdk2py.utils.crc")
@@ -1201,12 +1216,18 @@ def test_real_shaped_session_binds_channel_factory_to_domain_one_loopback(monkey
     session.start()
     assert factory_calls == [(1, "lo")]
     assert callable(session.sdk.ChannelFactoryInitialize)
+    assert session.sdk.LowCmd_ is LowCmdType
+    assert isinstance(session.sdk.unitree_go_msg_dds__LowCmd_(), LowCmdType)
     session.sdk.ChannelFactoryInitialize()
     assert factory_calls == [(1, "lo"), (1, "lo")]
     candidate_binding, close_candidate_binding = _candidate_binding_from_config(
         {"kind": "unitree_sdk2", "domain": 1, "interface": "lo"}
     )
     candidate_binding.ChannelFactoryInitialize()
+    assert candidate_binding.ChannelPublisher is Endpoint
+    assert candidate_binding.ChannelSubscriber is Endpoint
+    assert candidate_binding.LowState_ is LowStateType
+    assert isinstance(candidate_binding.unitree_go_msg_dds__LowCmd_(), LowCmdType)
     assert factory_calls == [(1, "lo"), (1, "lo"), (1, "lo"), (1, "lo")]
     close_candidate_binding()
     with pytest.raises(Go2SessionError, match="domain 1 on lo"):

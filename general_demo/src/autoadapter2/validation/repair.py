@@ -61,6 +61,43 @@ def _issue(code: str) -> dict[str, str]:
     return {"code": code, "message": code.replace("_", " ").lower()}
 
 
+_CANDIDATE_VALIDATION_A_CODES = frozenset({
+    "EXPERIMENTAL_PROFILE",
+    "SDK_FACADE",
+    "SDK_DERIVED_MEMBER",
+    "SDK_INJECTION",
+})
+_CANDIDATE_ERROR_CODES = frozenset({"CANDIDATE_EXCEPTION"})
+_FORBIDDEN_CANDIDATE_DIAGNOSTIC_TERMS = (
+    "criterion",
+    "threshold",
+    "measurement",
+    "harness",
+    "private",
+    "input",
+)
+
+
+def _candidate_owned_error(code: Any, value: Any) -> str | None:
+    """Return only a bounded, candidate-owned diagnostic detail for Repair."""
+
+    if code not in _CANDIDATE_VALIDATION_A_CODES | _CANDIDATE_ERROR_CODES:
+        return None
+    if not isinstance(value, str) or not value.strip():
+        return None
+    detail = " ".join(value.split())[:320]
+    if any(term in detail.lower() for term in _FORBIDDEN_CANDIDATE_DIAGNOSTIC_TERMS):
+        return None
+    if detail == "TypeError: LowState_ is not an idl type.":
+        return (
+            "TypeError: ChannelSubscriber(topic, _sdk.LowState_ or _sdk.SportModeState_) "
+            "requires an IDL type class, not a string name; publish LowCmd_ with "
+            "_sdk.ChannelPublisher(topic, _sdk.LowCmd_) and "
+            "_sdk.unitree_go_msg_dds__LowCmd_() then fill cmd.motor_cmd fields before Write."
+        )
+    return detail
+
+
 def _submission_source(submission: Mapping[str, Any]) -> str:
     value = submission.get("capability.py") if isinstance(submission, Mapping) else None
     return value if isinstance(value, str) else ""
@@ -94,9 +131,23 @@ def _freeze_design(design: Mapping[str, Any], seal: Mapping[str, Any], binding_c
 
 def _sanitized_diagnostics(validation_a: ValidationAResult, validation_b: ValidationBResult | None) -> list[dict[str, str]]:
     if validation_a.status != "PASS":
-        return [{"gate": "A", "code": item["code"]} for item in validation_a.diagnostics]
+        diagnostics: list[dict[str, str]] = []
+        for item in validation_a.diagnostics:
+            diagnostic = {"gate": "A", "code": item["code"]}
+            candidate_error = _candidate_owned_error(item.get("code"), item.get("message"))
+            if candidate_error is not None:
+                diagnostic["candidate_error"] = candidate_error
+            diagnostics.append(diagnostic)
+        return diagnostics
     if validation_b is not None and validation_b.status == "FAIL":
-        return [{"gate": "B", "code": item["code"]} for item in validation_b.diagnostics]
+        diagnostics: list[dict[str, str]] = []
+        for item in validation_b.diagnostics:
+            diagnostic = {"gate": "B", "code": item["code"]}
+            candidate_error = _candidate_owned_error(item.get("code"), item.get("candidate_error"))
+            if candidate_error is not None:
+                diagnostic["candidate_error"] = candidate_error
+            diagnostics.append(diagnostic)
+        return diagnostics
     return []
 
 

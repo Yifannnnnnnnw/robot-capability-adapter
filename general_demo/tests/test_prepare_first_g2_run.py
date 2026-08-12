@@ -35,6 +35,8 @@ from autoadapter2.orchestration.run_pack import (
     finalize_first_g2_run_snapshot,
     materialize_validation_a_profile,
 )
+from autoadapter2.validation import ValidationAProfile
+from autoadapter2.validation.validation_a import _profile_issues
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -350,6 +352,20 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert set(bundle) == {"artifact_type", "schema_version", "sdk_implementation_projection", "robot_implementation_facts", "implementation_experience"}
     assert bundle["sdk_implementation_projection"]["command"]["active_slot_count"] == 12
     assert bundle["sdk_implementation_projection"]["command"]["slot_count"] == 20
+    assert bundle["sdk_implementation_projection"]["permitted_factories"] == ["unitree_go_msg_dds__LowCmd_"]
+    assert bundle["sdk_implementation_projection"]["permitted_objects"][0]["constructor"] == {
+        "parameters": ["topic", "message_type"],
+        "message_type_kind": "IDL type class",
+        "message_type_by_topic": {"rt/lowcmd": "LowCmd_"},
+    }
+    assert bundle["sdk_implementation_projection"]["permitted_objects"][1]["read_contract"] == {
+        "returns_type_by_topic": {
+            "rt/lowstate": "LowState_",
+            "rt/sportmodestate": "SportModeState_",
+        }
+    }
+    assert bundle["sdk_implementation_projection"]["command"]["default_factory"] == "unitree_go_msg_dds__LowCmd_"
+    assert bundle["sdk_implementation_projection"]["command"]["write_contract"]["field_container"] == "motor_cmd"
     assert bundle["sdk_implementation_projection"]["observation"]["field_order"] == ["q", "dq", "tau_est", "imu_quaternion", "gyroscope", "accelerometer"]
     validate_implementation_bundle(bundle)
 
@@ -364,8 +380,10 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
         "LowState_",
         "SportModeState_",
         "CRC",
+        "unitree_go_msg_dds__LowCmd_",
     }
-    assert facade_members <= permitted_types
+    assert facade_members - permitted_types == {"unitree_go_msg_dds__LowCmd_"}
+    assert facade_members - permitted_types <= set(bundle["sdk_implementation_projection"]["permitted_factories"])
     assert "publisher" not in facade_members
     assert "CRC" in permitted_types
     assert "capability_id" not in json.dumps(validation_template)
@@ -388,7 +406,7 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert gate.run_id == run_id
 
 
-def test_go2_template_adds_only_the_injected_crc_helper_to_public_sdk_surface() -> None:
+def test_go2_template_adds_only_injected_helpers_and_default_factory_to_public_sdk_surface() -> None:
     template = json.loads(
         (PROJECT_ROOT / "general_demo/config/first_g2_demo/robots/unitree-go2.json").read_text(
             encoding="utf-8"
@@ -410,6 +428,7 @@ def test_go2_template_adds_only_the_injected_crc_helper_to_public_sdk_surface() 
         "LowState_",
         "SportModeState_",
         "CRC",
+        "unitree_go_msg_dds__LowCmd_",
     ]
     assert facade_members == {
         "ChannelFactoryInitialize",
@@ -419,13 +438,17 @@ def test_go2_template_adds_only_the_injected_crc_helper_to_public_sdk_surface() 
         "LowState_",
         "SportModeState_",
         "CRC",
+        "unitree_go_msg_dds__LowCmd_",
     }
-    assert facade_members <= permitted_types
+    assert facade_members - permitted_types == {"unitree_go_msg_dds__LowCmd_"}
+    assert set(template["implementation_projection"]["sdk_implementation_projection"]["permitted_factories"]) == {
+        "unitree_go_msg_dds__LowCmd_"
+    }
     assert "CRC" not in sdk_record["public_symbols"]
     assert "publisher" not in facade_members
 
 
-def test_go2_bundle_derivation_appends_injected_crc_without_mutating_sdk_record() -> None:
+def test_go2_bundle_derivation_appends_injected_sdk_surface_without_mutating_sdk_record() -> None:
     template = json.loads(
         (PROJECT_ROOT / "general_demo/config/first_g2_demo/robots/unitree-go2.json").read_text(
             encoding="utf-8"
@@ -469,9 +492,26 @@ def test_go2_bundle_derivation_appends_injected_crc_without_mutating_sdk_record(
         *formal_symbols,
         "CRC",
     ]
+    assert derived["sdk_implementation_projection"]["permitted_factories"] == [
+        "unitree_go_msg_dds__LowCmd_"
+    ]
     assert derived["sdk_implementation_projection"]["permitted_types"] == template[
         "implementation_projection"
     ]["sdk_implementation_projection"]["permitted_types"]
+
+
+def test_validation_a_accepts_the_canonical_go2_default_message_factory() -> None:
+    template = json.loads(
+        (PROJECT_ROOT / "general_demo/config/first_g2_demo/robots/unitree-go2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    members = tuple(template["validation_a_template"]["facade"]["members"])
+    profile = ValidationAProfile(
+        sdk_facade_members={"capability": members},
+        fixture_probes={"capability": {"inputs": {}}},
+    )
+    assert _profile_issues(profile, {"capability": {}}) == []
 
 
 def test_session_task_bindings_pin_exact_values_and_source_bytes(tmp_path: Path) -> None:

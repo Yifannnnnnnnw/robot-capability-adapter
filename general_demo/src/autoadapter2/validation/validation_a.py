@@ -362,13 +362,20 @@ def _manifest_issues(
     return manifest_hash, issues
 
 
+_CANONICAL_DEFAULT_FACTORY_MEMBER = "unitree_go_msg_dds__LowCmd_"
+
+
 def _profile_issues(profile: ValidationAProfile, contracts: Mapping[str, Mapping[str, Any]]) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
     if set(profile.sdk_facade_members) != set(contracts) or set(profile.fixture_probes) != set(contracts):
         return [_issue("A_PROFILE_COVERAGE", "Validation A profile must cover exactly every bound capability")]
     for capability_id in contracts:
         members = profile.sdk_facade_members[capability_id]
-        if not isinstance(members, (tuple, list)) or not members or not all(_text(member) and "__" not in member for member in members) or len(set(members)) != len(members):
+        if not isinstance(members, (tuple, list)) or not members or not all(
+            _text(member)
+            and ("__" not in member or member == _CANONICAL_DEFAULT_FACTORY_MEMBER)
+            for member in members
+        ) or len(set(members)) != len(members):
             issues.append(_issue("A_PROFILE_FACADE", f"{capability_id} has an invalid SDK facade"))
         probe = profile.fixture_probes[capability_id]
         if not isinstance(probe, Mapping) or set(probe) != {"inputs"} or not isinstance(probe.get("inputs"), Mapping):
@@ -377,7 +384,7 @@ def _profile_issues(profile: ValidationAProfile, contracts: Mapping[str, Mapping
 
 
 def _dunder(value: str) -> bool:
-    return "__" in value
+    return "__" in value and value != _CANONICAL_DEFAULT_FACTORY_MEMBER
 
 
 _SAFE_BUILTIN_NAMES = frozenset({

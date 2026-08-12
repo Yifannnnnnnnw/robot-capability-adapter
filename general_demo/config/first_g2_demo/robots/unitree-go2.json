@@ -74,7 +74,7 @@
     "profile_id": "experimental-python-a-v1",
     "robot_model_id": "unitree-go2",
     "robot_configuration_id": "unitree-go2-stock-12dof",
-    "facade": {"members": ["ChannelFactoryInitialize", "ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_", "CRC"], "lifecycle": "framework_injected_unitree_low_level_sdk_lifecycle"},
+    "facade": {"members": ["ChannelFactoryInitialize", "ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_", "CRC", "unitree_go_msg_dds__LowCmd_"], "lifecycle": "framework_injected_unitree_low_level_sdk_lifecycle"},
     "probe": {
       "input_value_policy": {"number": 0.0, "integer": 0, "boolean": false, "string": "fixture", "object": {}, "array": []},
       "metadata_policy": "copy sealed design field metadata exactly"
@@ -106,13 +106,47 @@
       "sdk_entry_id": "unitree-sdk2-go2-lowlevel",
       "sdk_entry_version": "1.0.0",
       "permitted_types": ["ChannelFactoryInitialize", "ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_", "CRC"],
+      "permitted_factories": ["unitree_go_msg_dds__LowCmd_"],
       "permitted_objects": [
-        {"object_type": "ChannelPublisher", "operations": ["Init", "Write"]},
-        {"object_type": "ChannelSubscriber", "operations": ["Init", "Read"]}
+        {
+          "object_type": "ChannelPublisher",
+          "constructor": {
+            "parameters": ["topic", "message_type"],
+            "message_type_kind": "IDL type class",
+            "message_type_by_topic": {"rt/lowcmd": "LowCmd_"}
+          },
+          "operations": ["Init", "Write"],
+          "write_contract": {
+            "message_factory": "unitree_go_msg_dds__LowCmd_",
+            "message_instance_required": true,
+            "field_container": "motor_cmd",
+            "field_names": ["mode", "q", "dq", "kp", "kd", "tau"],
+            "crc_field": "crc"
+          }
+        },
+        {
+          "object_type": "ChannelSubscriber",
+          "constructor": {
+            "parameters": ["topic", "message_type"],
+            "message_type_kind": "IDL type class",
+            "message_type_by_topic": {
+              "rt/lowstate": "LowState_",
+              "rt/sportmodestate": "SportModeState_"
+            }
+          },
+          "operations": ["Init", "Read"],
+          "read_contract": {
+            "returns_type_by_topic": {
+              "rt/lowstate": "LowState_",
+              "rt/sportmodestate": "SportModeState_"
+            }
+          }
+        }
       ],
       "topics": {"command": "rt/lowcmd", "state": "rt/lowstate", "sport_state_read_only": "rt/sportmodestate"},
       "command": {
         "message_type": "LowCmd_",
+        "default_factory": "unitree_go_msg_dds__LowCmd_",
         "slot_count": 20,
         "active_slot_count": 12,
         "active_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
@@ -127,7 +161,8 @@
         ],
         "active_mode": 1,
         "finite_fields": ["q", "dq", "kp", "kd", "tau"],
-        "inactive_slot_rule": {"indices": [12, 13, 14, 15, 16, 17, 18, 19], "mode": 1, "q": 2146000000.0, "dq": 16000.0, "kp": 0.0, "kd": 0.0, "tau": 0.0}
+        "inactive_slot_rule": {"indices": [12, 13, 14, 15, 16, 17, 18, 19], "mode": 1, "q": 2146000000.0, "dq": 16000.0, "kp": 0.0, "kd": 0.0, "tau": 0.0},
+        "write_contract": {"message_instance_required": true, "field_container": "motor_cmd", "field_names": ["mode", "q", "dq", "kp", "kd", "tau"], "crc_field": "crc"}
       },
       "observation": {
         "message_type": "LowState_",

@@ -36,6 +36,7 @@ from autoadapter2.validation import (
     bind_candidate_to_suite,
 )
 from autoadapter2.validation.validation_b import _evaluate_measurement, _route_evidence_is_valid
+from autoadapter2.validation.repair import _candidate_owned_error
 from autoadapter2.validation.validation_a import (
     _capability_contracts,
     _descriptor_match,
@@ -200,10 +201,11 @@ class _Sdk:
 
 
 class _Session:
-    def __init__(self, observation: HarnessMeasurement, *, invoke_error: Exception | None = None):
+    def __init__(self, observation: HarnessMeasurement, *, invoke_error: Exception | None = None, collect_error: Exception | None = None):
         self.sdk = _Sdk()
         self._observation = observation
         self._invoke_error = invoke_error
+        self._collect_error = collect_error
         self.invoke_calls = []
 
     def invoke(self, candidate, capability_id, inputs):
@@ -213,6 +215,8 @@ class _Session:
         return candidate._invoke(capability_id, inputs, self.sdk)
 
     def collect(self) -> HarnessMeasurement:
+        if self._collect_error is not None:
+            raise self._collect_error
         return self._observation
 
 
@@ -309,6 +313,22 @@ class _FixedHarness:
             ),
         )
         self.sessions.append(session)
+        return session
+
+
+class _CandidateOwnedError(RuntimeError):
+    candidate_owned = True
+    candidate_error = "AttributeError: ChannelPublisher.Init expects a bound endpoint"
+
+
+class _CandidateFailureHarness(_FixedHarness):
+    def open(self, invocation):
+        session = super().open(invocation)
+        session._invoke_error = _CandidateOwnedError()
+        session._collect_error = HarnessInfrastructureError(
+            "route evidence unavailable after candidate failure",
+            video_evidence=session._observation.video_evidence,
+        )
         return session
 
 
@@ -1028,6 +1048,91 @@ def test_validation_b_typed_session_infrastructure_is_not_candidate_failure() ->
     assert result.status == "INFRASTRUCTURE_ERROR"
     assert result.executions[0]["failure_codes"] == ["HARNESS_INFRASTRUCTURE"]
     assert "CANDIDATE_EXCEPTION" not in result.executions[0]["failure_codes"]
+
+
+def test_validation_b_preserves_candidate_error_when_collection_lacks_route() -> None:
+    design, design_seal, _stage2, blue, a_result = _a_result(_source("PASS"))
+    context = _context(design, design_seal, blue)
+    harness = _CandidateFailureHarness(context.run_snapshot, ["pass", "pass"])
+    result = ValidationBRunner(harness).run(
+        bind_candidate_to_suite(a_result, blue.suite_hash), context
+    )
+    assert result.status == "FAIL"
+    execution = result.executions[0]
+    assert execution["verdict"] == "FAIL"
+    assert execution["failure_codes"] == ["CANDIDATE_EXCEPTION"]
+    assert execution["video_manifest_hash"] is not None
+    assert execution["candidate_error"] == _CandidateOwnedError.candidate_error
+    diagnostic = next(item for item in result.diagnostics if item["code"] == "CANDIDATE_EXCEPTION")
+    assert diagnostic["candidate_error"] == _CandidateOwnedError.candidate_error
+
+    captured = {}
+    def repair(request):
+        captured.update(request)
+        return {"capability.py": request["capability.py"], "llm_calls": 0}
+
+    repaired = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_CandidateFailureHarness(context.run_snapshot, ["pass", "pass"])),
+        repair,
+    ).run(
+        design, design_seal, _stage2.binding_contract, _stage2.binding_seal,
+        {"capability.py": _source("PASS")}, _stage2.implementation_manifest,
+        _stage2.manifest_seal, context, _bundle(),
+    )
+    assert repaired.status == "NO_CHANGE"
+    assert captured["diagnostics"] == [{
+        "gate": "B",
+        "code": "CANDIDATE_EXCEPTION",
+        "candidate_error": _CandidateOwnedError.candidate_error,
+    }] * 2
+
+
+def test_repair_exposes_only_safe_candidate_sdk_validation_detail() -> None:
+    bad_source = _source().replace("_sdk.command", "_sdk.low_cmd_publisher.Write")
+    design, design_seal, stage2, blue = _stage2_submission(bad_source)
+    context = _context(design, design_seal, blue)
+    captured = {}
+
+    def repair(request):
+        captured.update(request)
+        return {"capability.py": request["capability.py"], "llm_calls": 0}
+
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["pass", "pass"])),
+        repair,
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": bad_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+
+    assert result.status == "NO_CHANGE"
+    diagnostics = captured["diagnostics"]
+    assert any(
+        item.get("code") == "SDK_FACADE"
+        and item.get("candidate_error")
+        and "low_cmd_publisher" in item["candidate_error"]
+        for item in diagnostics
+    )
+    assert all(set(item) <= {"gate", "code", "candidate_error"} for item in diagnostics)
+    assert all(
+        not any(term in str(item).lower() for term in ("criterion", "threshold", "measurement", "harness", "private", "input"))
+        for item in diagnostics
+    )
+    assert _candidate_owned_error(
+        "EXPERIMENTAL_PROFILE", "only approved local assignments are allowed"
+    ) == "only approved local assignments are allowed"
+    assert _candidate_owned_error("EXPERIMENTAL_PROFILE", "input threshold is private") is None
+    assert _candidate_owned_error(
+        "CANDIDATE_EXCEPTION", "TypeError: LowState_ is not an idl type."
+    ) == (
+        "TypeError: ChannelSubscriber(topic, _sdk.LowState_ or _sdk.SportModeState_) "
+        "requires an IDL type class, not a string name; publish LowCmd_ with "
+        "_sdk.ChannelPublisher(topic, _sdk.LowCmd_) and "
+        "_sdk.unitree_go_msg_dds__LowCmd_() then fill cmd.motor_cmd fields before Write."
+    )
 
 
 @pytest.mark.parametrize(

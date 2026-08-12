@@ -83,9 +83,24 @@ GO2_READINESS_PROFILE_RELATIVE_PATH = (
 class Go2SessionError(RuntimeError):
     """A lifecycle, evidence, or SDK-session contract failure."""
 
+    framework_infrastructure = True
+
 
 class Go2SDKError(Go2SessionError):
     """The narrow SDK2 façade could not construct or use a real endpoint."""
+
+
+class Go2CandidateError(Go2SessionError):
+    """A candidate raised after the worker completed SDK binding."""
+
+    framework_infrastructure = False
+    candidate_owned = True
+
+    def __init__(self, error_type: Any, error_text: Any) -> None:
+        normalized_type = " ".join(str(error_type).split())[:80] or "CandidateError"
+        normalized_text = " ".join(str(error_text).split())[:240] or "candidate invocation failed"
+        self.candidate_error = f"{normalized_type}: {normalized_text}"
+        super().__init__(f"candidate invocation failed: {self.candidate_error}")
 
 
 def _bound_channel_factory_initialize(
@@ -359,6 +374,7 @@ class _UnitreeGo2SDKConnection:
                 LowState_,
                 SportModeState_,
             )
+            from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
             from unitree_sdk2py.utils.crc import CRC
         except ImportError as exc:
             raise Go2SDKError(
@@ -388,6 +404,7 @@ class _UnitreeGo2SDKConnection:
             LowCmd_=LowCmd_,
             LowState_=LowState_,
             SportModeState_=SportModeState_,
+            unitree_go_msg_dds__LowCmd_=unitree_go_msg_dds__LowCmd_,
             CRC=CRC,
         )
         self._started = True
@@ -451,6 +468,7 @@ def _candidate_binding_from_config(config: Mapping[str, Any]) -> tuple[object, C
                 LowState_,
                 SportModeState_,
             )
+            from unitree_sdk2py.idl.default import unitree_go_msg_dds__LowCmd_
             from unitree_sdk2py.utils.crc import CRC
         except ImportError as exc:  # pragma: no cover - Linux production route
             raise Go2SDKError("pinned worker SDK2 symbols are unavailable") from exc
@@ -481,6 +499,7 @@ def _candidate_binding_from_config(config: Mapping[str, Any]) -> tuple[object, C
             LowCmd_=LowCmd_,
             LowState_=LowState_,
             SportModeState_=SportModeState_,
+            unitree_go_msg_dds__LowCmd_=unitree_go_msg_dds__LowCmd_,
             CRC=CRC,
             lowcmd_publisher=publisher,
             lowstate_subscriber=lowstate,
@@ -1386,7 +1405,11 @@ class UnitreeGo2EvaluationRobotSession:
         if payload.get("ok") is not True:
             error_type = payload.get("error_type", "candidate error")
             error_text = payload.get("error", "candidate invocation failed")
-            raise Go2SessionError(f"candidate invocation failed: {error_type}: {error_text}")
+            if candidate_ready:
+                raise Go2CandidateError(error_type, error_text)
+            raise Go2SDKError(
+                f"candidate worker failed before invocation: {error_type}: {error_text}"
+            )
         return payload.get("result")
 
     @staticmethod
@@ -2683,6 +2706,7 @@ Go2EvaluationRobotSession = UnitreeGo2EvaluationRobotSession
 
 __all__ = [
     "Go2EvaluationRobotSession",
+    "Go2CandidateError",
     "Go2SessionError",
     "Go2SDKError",
     "Go2TruthSample",
