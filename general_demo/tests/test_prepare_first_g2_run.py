@@ -31,6 +31,7 @@ from autoadapter2.libraries.tasks import TaskLibraryPackage
 from autoadapter2.orchestration import run_pack
 from autoadapter2.orchestration.run_pack import (
     RunPackError,
+    SO_KINEMATICS_PROJECTION_RELATIVE_PATH,
     _build_implementation_bundle,
     _build_robot_projection,
     _implementation_projection_from_records,
@@ -296,6 +297,16 @@ def _so_implementation_inputs(root: Path) -> tuple[dict[str, Any], dict[str, Any
         "unsupported_behavior": robot_projection["unsupported_behavior"],
     }
     return manifest, morphology, sdk, translation, template, kinematics, projection
+
+
+def _so_run_local_morphology(root: Path, morphology: dict[str, Any]) -> dict[str, Any]:
+    selected = copy.deepcopy(morphology)
+    runtime_lock_path = root / "general_demo/environments/so-arm101-linux-amd64/1.0.0/runtime-lock.json"
+    selected["mujoco"]["runtime_lock_ref"] = {
+        "path": "general_demo/environments/so-arm101-linux-amd64/1.0.0/runtime-lock.json",
+        "sha256": sha256_bytes(runtime_lock_path.read_bytes()),
+    }
+    return selected
 
 
 def _sealed_design(pack) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -572,6 +583,41 @@ def test_so_kinematics_projection_contains_exact_chain_and_separate_sdk_units(tm
         token for token in ("private", "criterion", "target", "task", "ik", "inverse", "algorithm")
         if token in kinematics_text
     )
+
+
+def test_so_kinematics_projection_accepts_run_local_runtime_binding(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    manifest, morphology, *_ = _so_implementation_inputs(tmp_path)
+    selected = _so_run_local_morphology(tmp_path, morphology)
+    selected_ref = _ref(tmp_path, "general_demo/run_artifacts/so-local/morphology.json", selected)
+
+    kinematics = _load_so_kinematics_projection(tmp_path, selected, selected_ref)
+
+    projection_path = tmp_path / SO_KINEMATICS_PROJECTION_RELATIVE_PATH
+    assert kinematics == json.loads(projection_path.read_text(encoding="utf-8"))["kinematics"]
+    assert manifest["morphology_ref"] != selected_ref
+
+
+def test_so_kinematics_projection_rejects_run_local_morphology_fact_drift(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    _manifest, morphology, *_ = _so_implementation_inputs(tmp_path)
+    selected = _so_run_local_morphology(tmp_path, morphology)
+    selected["joint_names"][0] = "changed_joint"
+    selected_ref = _ref(tmp_path, "general_demo/run_artifacts/so-local-drift/morphology.json", selected)
+
+    with pytest.raises(RunPackError, match="differs from the admitted morphology"):
+        _load_so_kinematics_projection(tmp_path, selected, selected_ref)
+
+
+def test_so_kinematics_projection_rejects_wrong_run_local_runtime_ref(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    _manifest, morphology, *_ = _so_implementation_inputs(tmp_path)
+    selected = _so_run_local_morphology(tmp_path, morphology)
+    selected["mujoco"]["runtime_lock_ref"]["sha256"] = "0" * 64
+    selected_ref = _ref(tmp_path, "general_demo/run_artifacts/so-local-wrong-lock/morphology.json", selected)
+
+    with pytest.raises(RunPackError, match="runtime_lock_ref is invalid"):
+        _load_so_kinematics_projection(tmp_path, selected, selected_ref)
 
 
 def test_so_kinematics_template_drift_is_rejected(tmp_path: Path) -> None:

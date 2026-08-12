@@ -1275,8 +1275,35 @@ def _load_so_kinematics_projection(
         raise RunPackError("SO kinematics projection artifact robot identity is invalid")
     if value["canonical_model_ref"] != SO_CANONICAL_MODEL_REF:
         raise RunPackError("SO kinematics projection is not bound to the pinned canonical model")
-    if not isinstance(value["admitted_morphology_ref"], Mapping) or dict(value["admitted_morphology_ref"]) != dict(morphology_ref):
+    admitted_morphology_ref = value["admitted_morphology_ref"]
+    if not isinstance(admitted_morphology_ref, Mapping):
         raise RunPackError("SO kinematics projection is not bound to the admitted morphology record")
+    if dict(admitted_morphology_ref) != dict(morphology_ref):
+        try:
+            admitted_morphology_path = verify_file_reference(root, admitted_morphology_ref)
+            admitted_morphology = load_json_artifact(admitted_morphology_path).value
+        except (OSError, ContractError, IntegrityError) as exc:
+            raise RunPackError(
+                "SO kinematics projection admitted morphology reference is invalid"
+            ) from exc
+
+        selected_morphology = copy.deepcopy(dict(morphology))
+        selected_mujoco = selected_morphology.get("mujoco")
+        if not isinstance(selected_mujoco, Mapping) or "runtime_lock_ref" not in selected_mujoco:
+            raise RunPackError(
+                "SO selected morphology must contain a valid mujoco.runtime_lock_ref"
+            )
+        runtime_lock_ref = selected_mujoco.pop("runtime_lock_ref")
+        try:
+            verify_file_reference(root, runtime_lock_ref)
+        except (OSError, ContractError, IntegrityError) as exc:
+            raise RunPackError(
+                "SO selected morphology mujoco.runtime_lock_ref is invalid"
+            ) from exc
+        if selected_morphology != admitted_morphology:
+            raise RunPackError(
+                "SO kinematics projection morphology differs from the admitted morphology record"
+            )
     return _validate_so_kinematics_projection(value["kinematics"], morphology)
 
 
