@@ -408,6 +408,10 @@ _ALLOWED_NUMPY_PATHS = frozenset({
     ("linalg", "solve"),
     ("linalg", "lstsq"),
 })
+_RELAXED_NUMPY_BLOCKED_ROOTS = frozenset({
+    "load", "save", "savez", "savez_compressed", "memmap", "loadtxt", "savetxt",
+    "genfromtxt", "recfromtxt", "fromfile", "tofile", "ctypeslib", "lib",
+})
 _ALLOWED_DERIVED_OBJECT_MEMBERS = frozenset({"Init", "Read", "Write", "Crc", "get"})
 _ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({
     "mode", "q", "dq", "kp", "kd", "tau", "motor_cmd", "crc", "motor_state", "position",
@@ -516,6 +520,23 @@ def _module_member_allowed(module: str, path: tuple[str | None, ...]) -> bool:
             or path in _ALLOWED_NUMPY_PATHS
         )
     return False
+
+
+def _relaxed_module_member_allowed(module: str, path: tuple[str | None, ...]) -> bool:
+    """Allow ordinary public numerical module members in the relaxed gate."""
+
+    if module not in _ALLOWED_MODULE_IMPORTS or not path or any(
+        segment is None or _dunder(segment) for segment in path
+    ):
+        return False
+    first = path[0]
+    if module == "numpy":
+        return first not in _RELAXED_NUMPY_BLOCKED_ROOTS
+    public_members = {
+        name for name in dir(math if module == "math" else time)
+        if not name.startswith("_")
+    }
+    return first in public_members
 
 
 def _expression_root(value: ast.AST) -> str | None:
@@ -1240,7 +1261,7 @@ class _RelaxedStaticAnalyzer(ast.NodeVisitor):
 
     def _check_module_member(self, value: ast.AST) -> None:
         module_path = _module_path(value, self.module_aliases)
-        if module_path is not None and not _module_member_allowed(*module_path):
+        if module_path is not None and not _relaxed_module_member_allowed(*module_path):
             self._add_issue("MODULE_MEMBER", "module member is not in the approved runtime allowlist")
 
     def _check_sdk_member(self, value: ast.AST) -> None:
@@ -1827,8 +1848,6 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
             expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
             if (
                 function.decorator_list
-                or function.returns is not None
-                or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
                 or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
                 or arguments.defaults
                 or any(default is not None for default in arguments.kw_defaults)

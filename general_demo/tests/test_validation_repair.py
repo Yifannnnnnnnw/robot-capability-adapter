@@ -917,7 +917,6 @@ def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> N
         _source().replace("    _sdk.command", "    eval('1')\n    _sdk.command"),
         "@x\n" + _source(),
         _source().replace("arg_target, *, _sdk", "arg_target=0.2, *, _sdk"),
-        _source().replace("arg_target, *, _sdk", "arg_target: float, *, _sdk"),
         _source().replace("_sdk.command", "_sdk.__getattribute__"),
     ]
     for source in cases:
@@ -927,6 +926,13 @@ def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> N
     extra_helper = "def extra_public():\n    return 1\n\n" + _source()
     _design, _seal, _stage2, _blue, extra_result = _a_result(extra_helper)
     assert extra_result.status == "PASS"
+
+    annotated = _source().replace(
+        "def capability_reach_joint_target(arg_target, *, _sdk):",
+        "def capability_reach_joint_target(arg_target: float, *, _sdk) -> dict:",
+    )
+    _design, _seal, _stage2, _blue, annotated_result = _a_result(annotated)
+    assert annotated_result.status == "PASS"
 
 
 def test_validation_a_relaxed_gate_keeps_only_generic_escape_hatches_closed() -> None:
@@ -959,6 +965,28 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     for source in unsafe_sources.values():
         _design, _seal, _stage2, _blue, unsafe_result = _a_result(source)
         assert unsafe_result.status == "FAIL"
+
+
+def test_validation_a_relaxed_numpy_members_are_open_but_file_roots_are_closed() -> None:
+    source = '''import numpy as np
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    angle = np.arctan2(arg_target, 1.0)
+    trace = np.trace(np.eye(2))
+    inverse = np.linalg.inv(np.eye(2))
+    _sdk.command(float(angle + trace + inverse[0][0]))
+    return {"reported_status": "PASS"}
+'''
+    design, design_seal, stage2, _blue, _result = _a_result()
+    _design, design_hash, design_capabilities = _verified_design(design, design_seal)
+    binding, _binding_hash = _verified_binding(stage2.binding_contract, stage2.binding_seal, design_hash)
+    contracts = _capability_contracts(design_capabilities, binding)
+    assert _static_issues(ast.parse(source, filename="capability.py"), contracts, PROFILE) == []
+
+    for expression in ("np.load('candidate.npy')", "np.save('candidate.npy', np.zeros(1))", "np.ctypeslib"):
+        unsafe = source.replace("    angle = np.arctan2(arg_target, 1.0)", f"    blocked = {expression}\n    angle = np.arctan2(arg_target, 1.0)")
+        unsafe_issues = _static_issues(ast.parse(unsafe, filename="capability.py"), contracts, PROFILE)
+        assert unsafe_issues, expression
 
 
 def test_validation_a_accepts_experiment_grade_imports_constants_and_private_helpers() -> None:
