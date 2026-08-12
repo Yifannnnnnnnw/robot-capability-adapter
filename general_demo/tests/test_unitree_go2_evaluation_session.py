@@ -10,7 +10,7 @@ import sys
 import time
 import types
 from queue import Empty
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -518,6 +518,62 @@ def _invocation(metric: str = "forward_displacement_m") -> HarnessInvocation:
     )
 
 
+def _g01_invocation() -> HarnessInvocation:
+    criteria = (
+        {
+            "criterion_id": "g01-body-height",
+            "measurement": {
+                "measurement_id": "go2-body-height",
+                "entity": "go2_body_origin",
+                "unit": "m",
+                "frame": "world",
+            },
+            "metric": "body_height_m",
+            "threshold": {"comparator": ">", "value": 0.15},
+            "dwell_s": 1.0,
+            "timeout_s": 8.0,
+            "aggregation": "ALL",
+        },
+        {
+            "criterion_id": "g01-upright",
+            "measurement": {
+                "measurement_id": "go2-upright",
+                "entity": "go2_body_orientation",
+                "unit": "score",
+                "frame": "world",
+            },
+            "metric": "upright_score",
+            "threshold": {"comparator": ">=", "value": 0.7},
+            "dwell_s": 1.0,
+            "timeout_s": 8.0,
+            "aggregation": "ALL",
+        },
+        {
+            "criterion_id": "g01-planar-speed",
+            "measurement": {
+                "measurement_id": "go2-planar-speed",
+                "entity": "go2_body_origin",
+                "unit": "m/s",
+                "frame": "world",
+            },
+            "metric": "planar_speed_m_s",
+            "threshold": {"comparator": "<=", "value": 0.05},
+            "dwell_s": 1.0,
+            "timeout_s": 8.0,
+            "aggregation": "ALL",
+        },
+    )
+    return replace(
+        _invocation(metric="body_height_m"),
+        initial_state={"task_id": "G01"},
+        dwell_s=1.0,
+        timeout_s=8.0,
+        criteria=criteria,
+        criterion_id=criteria[0]["criterion_id"],
+        criterion_ids=tuple(item["criterion_id"] for item in criteria),
+    )
+
+
 def _session(
     *,
     rollout_steps: int = 3,
@@ -607,6 +663,52 @@ def test_direct_validation_candidate_then_collect_advances_private_clock() -> No
     assert transport.write_count.value == 1
     assert not hasattr(session.sdk, "write_low_command")
     session.close()
+
+
+def test_validation_evidence_maps_each_g01_criterion_to_the_shared_truth_window() -> None:
+    session, _backend, _transport, _sdk, _capture_count = _session()
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="g01-criteria",
+            initial_state={"task_id": "G01"},
+        )
+        Candidate()._invoke("low-level-command", {}, session.sdk)
+        evidence = session.validation_evidence(_g01_invocation())
+
+        assert evidence.criterion_samples is not None
+        assert set(evidence.criterion_samples) == {
+            "g01-body-height",
+            "g01-upright",
+            "g01-planar-speed",
+        }
+        assert evidence.samples == evidence.criterion_samples["g01-body-height"]
+        primary_times = tuple(sample.time_s for sample in evidence.samples)
+        assert primary_times
+        for samples in evidence.criterion_samples.values():
+            assert tuple(sample.time_s for sample in samples) == primary_times
+        assert all(sample.value == pytest.approx(0.34) for sample in evidence.criterion_samples["g01-body-height"])
+        assert all(sample.value == pytest.approx(1.0) for sample in evidence.criterion_samples["g01-upright"])
+        assert all(sample.value == pytest.approx(0.5) for sample in evidence.criterion_samples["g01-planar-speed"])
+    finally:
+        session.close()
+
+
+def test_single_criterion_validation_evidence_keeps_existing_primary_samples() -> None:
+    session, _backend, _transport, _sdk, _capture_count = _session()
+    try:
+        session.reset(
+            phase="VALIDATION_B",
+            execution_id="single-criterion",
+            initial_state={"task_id": "G04"},
+        )
+        evidence = session.validation_evidence(_invocation(metric="body_height_m"))
+
+        assert evidence.criterion_samples is None
+        assert evidence.samples
+        assert all(sample.value == pytest.approx(0.34) for sample in evidence.samples)
+    finally:
+        session.close()
 
 
 def test_repaired_crc_shape_publishes_a_valid_command_under_fake_transport() -> None:

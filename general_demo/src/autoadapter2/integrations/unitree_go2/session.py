@@ -1004,13 +1004,27 @@ class UnitreeGo2EvaluationRobotSession:
         if not selected:
             selected = [self._truth_samples[-1]]
         metric = invocation.metric if isinstance(invocation.metric, str) else "body_height_m"
-        samples = tuple(
-            MeasurementSample(
-                max(0.0, sample.time_s - action_start),
-                self._metric_value(sample, metric),
+        samples_by_criterion: dict[str, tuple[MeasurementSample, ...]] | None = None
+        if invocation.criteria:
+            samples_by_criterion = {
+                criterion["criterion_id"]: tuple(
+                    MeasurementSample(
+                        max(0.0, sample.time_s - action_start),
+                        self._metric_value(sample, criterion["metric"]),
+                    )
+                    for sample in selected
+                )
+                for criterion in invocation.criteria
+            }
+            samples = samples_by_criterion[invocation.criteria[0]["criterion_id"]]
+        else:
+            samples = tuple(
+                MeasurementSample(
+                    max(0.0, sample.time_s - action_start),
+                    self._metric_value(sample, metric),
+                )
+                for sample in selected
             )
-            for sample in selected
-        )
         finite = all(self._sample_finite(sample) for sample in selected)
         no_contact = all(
             sample.body_floor_contact is False and sample.head_floor_contact is False
@@ -1029,6 +1043,7 @@ class UnitreeGo2EvaluationRobotSession:
             guard_results=guards,
             sdk_route_verified=bool(route["verified"]),
             route_evidence=copy.deepcopy(route),
+            criterion_samples=samples_by_criterion,
         )
 
     def demo_evidence(self, task_id: str) -> Mapping[str, Any]:
