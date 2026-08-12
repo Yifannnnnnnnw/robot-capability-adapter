@@ -459,7 +459,9 @@ class RecordingValidationHarness:
                 "required Validation video is incomplete", video_evidence=closed
             )
         if evidence_error is not None or evidence is None:
-            raise HarnessInfrastructureError("Validation evidence acquisition failed") from evidence_error
+            raise HarnessInfrastructureError(
+                "Validation evidence acquisition failed", video_evidence=closed
+            ) from evidence_error
         try:
             route_evidence = _route_evidence(evidence, self._route)
         except Exception as exc:

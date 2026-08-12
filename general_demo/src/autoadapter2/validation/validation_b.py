@@ -161,6 +161,17 @@ def _finite(value: Any, *, positive: bool = False) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and (value > 0 if positive else True)
 
 
+def _candidate_error_detail(error: BaseException | None) -> str | None:
+    """Return only the session-marked, bounded candidate-owned detail."""
+
+    if error is None or getattr(error, "candidate_owned", False) is not True:
+        return None
+    value = getattr(error, "candidate_error", None)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return " ".join(value.split())[:320]
+
+
 def _sealed_hash(value: Mapping[str, Any], seal: Mapping[str, Any], artifact_type: str) -> tuple[dict[str, Any], str]:
     frozen = copy.deepcopy(dict(value))
     digest = content_hash(canonical_bytes(frozen))
@@ -916,17 +927,51 @@ class ValidationBRunner:
                         ))
                         candidate_failure = True
                         continue
-                    candidate_exception = False
-                    candidate_infrastructure_error: HarnessInfrastructureError | None = None
+                    candidate_exception: BaseException | None = None
+                    candidate_infrastructure_error: BaseException | None = None
                     try:
                         session.invoke(candidate, group["capability_id"], case["inputs"])
                     except HarnessInfrastructureError as exc:
                         candidate_infrastructure_error = exc
-                    except Exception:
-                        candidate_exception = True
+                    except Exception as exc:
+                        if getattr(exc, "framework_infrastructure", False) is True:
+                            candidate_infrastructure_error = exc
+                        else:
+                            candidate_exception = exc
                     try:
                         observation = session.collect()
                     except HarnessInfrastructureError as exc:
+                        if candidate_exception is not None:
+                            try:
+                                _verify_video_evidence(exc.video_evidence, invocation)
+                            except HarnessInfrastructureError as evidence_exc:
+                                executions.append(_execution(
+                                    group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                                    "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"],
+                                    evidence_exc.video_evidence,
+                                    criterion_ids=criterion_ids,
+                                ))
+                                infrastructure_error = True
+                                break
+                            candidate_error = _candidate_error_detail(candidate_exception)
+                            candidate_failures = ["CANDIDATE_EXCEPTION"]
+                            candidate_results = [
+                                {
+                                    "criterion_id": rule["criterion_id"],
+                                    "verdict": "FAIL",
+                                    "failure_codes": list(candidate_failures),
+                                }
+                                for rule in rules
+                            ]
+                            executions.append(_execution(
+                                group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                                "FAIL", candidate_failures, exc.video_evidence,
+                                criterion_ids=criterion_ids,
+                                criterion_results=candidate_results,
+                                candidate_error=candidate_error,
+                            ))
+                            candidate_failure = True
+                            continue
                         executions.append(_execution(
                             group["capability_id"], criterion_ids[0], case["case_id"], repetition,
                             "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"], exc.video_evidence,
@@ -935,6 +980,14 @@ class ValidationBRunner:
                         infrastructure_error = True
                         break
                     except Exception:
+                        if candidate_exception is not None:
+                            executions.append(_execution(
+                                group["capability_id"], criterion_ids[0], case["case_id"], repetition,
+                                "INFRASTRUCTURE_ERROR", ["HARNESS_INFRASTRUCTURE"],
+                                criterion_ids=criterion_ids,
+                            ))
+                            infrastructure_error = True
+                            break
                         executions.append(_execution(
                             group["capability_id"], criterion_ids[0], case["case_id"], repetition,
                             "FAIL", ["HARNESS_PROTOCOL"], criterion_ids=criterion_ids,
@@ -949,7 +1002,7 @@ class ValidationBRunner:
                             repetition,
                             "INFRASTRUCTURE_ERROR",
                             ["HARNESS_INFRASTRUCTURE"],
-                            observation.video_evidence if isinstance(observation, HarnessMeasurement) else candidate_infrastructure_error.video_evidence,
+                            observation.video_evidence if isinstance(observation, HarnessMeasurement) else getattr(candidate_infrastructure_error, "video_evidence", None),
                             observation.sdk_route_evidence if isinstance(observation, HarnessMeasurement) else None,
                             criterion_ids=criterion_ids,
                         ))
@@ -994,7 +1047,8 @@ class ValidationBRunner:
                         _passed, failures, criterion_results = _evaluate_episode(
                             observation, rules, frozen.context.run_snapshot
                         )
-                    if candidate_exception:
+                    candidate_error = _candidate_error_detail(candidate_exception)
+                    if candidate_exception is not None:
                         failures = [*failures, "CANDIDATE_EXCEPTION"]
                         for criterion_result in criterion_results:
                             if "CANDIDATE_EXCEPTION" not in criterion_result["failure_codes"]:
@@ -1008,6 +1062,7 @@ class ValidationBRunner:
                         observation.sdk_route_evidence if isinstance(observation, HarnessMeasurement) else None,
                         criterion_ids=criterion_ids,
                         criterion_results=criterion_results,
+                        candidate_error=candidate_error,
                     ))
                     candidate_failure |= verdict == "FAIL"
                 if infrastructure_error:
@@ -1023,11 +1078,17 @@ class ValidationBRunner:
             if len(executions) != expected_count:
                 raise ContractError("Validation B did not cover every sealed case and repetition")
             status = "PASS"
-        diagnostics.extend(
-            _issue(code, code.replace("_", " ").lower())
-            for execution in executions
-            for code in execution["failure_codes"]
-        )
+        for execution in executions:
+            for code in execution["failure_codes"]:
+                candidate_error = execution.get("candidate_error")
+                if code == "CANDIDATE_EXCEPTION" and isinstance(candidate_error, str):
+                    diagnostics.append({
+                        "code": code,
+                        "message": f"candidate exception: {candidate_error}",
+                        "candidate_error": candidate_error,
+                    })
+                else:
+                    diagnostics.append(_issue(code, code.replace("_", " ").lower()))
         report = {
             "artifact_type": "validation_b_report",
             "schema_version": _SCHEMA_VERSION,
@@ -1085,9 +1146,10 @@ def _execution(
     *,
     criterion_ids: tuple[str, ...] = (),
     criterion_results: list[dict[str, Any]] | None = None,
+    candidate_error: str | None = None,
 ) -> dict[str, Any]:
     all_criterion_ids = criterion_ids or ((criterion_id,) if criterion_id else ())
-    return {
+    execution = {
         "capability_id": capability_id,
         "criterion_id": criterion_id,
         "criterion_ids": list(all_criterion_ids),
@@ -1100,3 +1162,6 @@ def _execution(
         "video_media_hash": video.media_content_hash if video is not None else None,
         "sdk_route_evidence": copy.deepcopy(dict(sdk_route_evidence)) if isinstance(sdk_route_evidence, Mapping) else None,
     }
+    if isinstance(candidate_error, str) and candidate_error:
+        execution["candidate_error"] = candidate_error
+    return execution
