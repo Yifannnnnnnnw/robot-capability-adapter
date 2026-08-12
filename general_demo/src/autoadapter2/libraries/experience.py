@@ -57,6 +57,21 @@ _DECLASSIFICATION_KEYS = {
     "excluded_categories",
     "checks",
 }
+_DECLASSIFICATION_EXCLUDED_CATEGORIES = [
+    "private_validation_criteria",
+    "private_cases",
+    "thresholds",
+    "seeds",
+    "mujoco_truth",
+    "translation_details",
+    "candidate_source",
+    "consumer_trace",
+    "raw_video",
+    "video_frames",
+    "video_manifests",
+    "model_prompts",
+    "credentials",
+]
 _REVIEW_KEYS = {
     "decision",
     "reviewer_kind",
@@ -277,18 +292,19 @@ def _validate_declassification(value: Any, candidate: dict[str, Any]) -> dict[st
     )
     if evidence_digest_hash != candidate["provenance"]["evidence_digest_hash"]:
         raise ContractError("Experience Library declassification evidence digest does not match candidate")
-    _string_list(
-        report["excluded_categories"],
-        "declassification report.excluded_categories",
-        nonempty=False,
-    )
+    if report["excluded_categories"] != _DECLASSIFICATION_EXCLUDED_CATEGORIES:
+        raise ContractError(
+            "Experience Library declassification report.excluded_categories must equal the fixed ordered categories"
+        )
     checks = report["checks"]
-    if not isinstance(checks, (Mapping, list)) or not checks:
-        raise ContractError("Experience Library declassification report.checks must be non-empty")
-    try:
-        canonical_bytes(checks)
-    except Exception as exc:
-        raise ContractError("Experience Library declassification report.checks must be JSON data") from exc
+    if not isinstance(checks, Mapping) or not checks:
+        raise ContractError(
+            "Experience Library declassification report.checks must be a non-empty object"
+        )
+    if any(value is not True for value in checks.values()):
+        raise ContractError(
+            "Experience Library declassification report.checks values must all be boolean true"
+        )
     return copy.deepcopy(report)
 
 

@@ -50,8 +50,22 @@ def _candidate_fixture(
         "candidate_id": candidate_id,
         "status": "PASS",
         "evidence_digest_hash": evidence_digest_hash,
-        "excluded_categories": ["private thresholds", "raw privileged state"],
-        "checks": {"private_material_removed": "PASS", "reconstruction_check": "PASS"},
+        "excluded_categories": [
+            "private_validation_criteria",
+            "private_cases",
+            "thresholds",
+            "seeds",
+            "mujoco_truth",
+            "translation_details",
+            "candidate_source",
+            "consumer_trace",
+            "raw_video",
+            "video_frames",
+            "video_manifests",
+            "model_prompts",
+            "credentials",
+        ],
+        "checks": {"private_material_removed": True, "reconstruction_check": True},
     }
     _, declassification_ref = _write_json(root, f"inputs/{candidate_id}-declassification.json", report)
     candidate = {
@@ -204,6 +218,44 @@ def test_tampered_or_wrong_declassification_file_is_rejected(tmp_path: Path) -> 
             wrong_declassification_ref,
             _human_review(),
             record_id="experience-demo-2",
+            version="1.0.0",
+        )
+
+
+@pytest.mark.parametrize(
+    ("case", "mutate"),
+    [
+        ("false-check", lambda report: report["checks"].__setitem__("private_material_removed", False)),
+        ("non-bool-check", lambda report: report["checks"].__setitem__("private_material_removed", "PASS")),
+        ("list-checks", lambda report: report.__setitem__("checks", [True, True])),
+        ("missing-category", lambda report: report["excluded_categories"].pop()),
+        ("reordered-category", lambda report: report["excluded_categories"].reverse()),
+        ("extra-category", lambda report: report["excluded_categories"].append("extra")),
+    ],
+)
+def test_declassification_report_requires_closed_checks_and_fixed_categories(
+    tmp_path: Path,
+    case: str,
+    mutate,
+) -> None:
+    root = tmp_path / case
+    candidate_ref, _, candidate, report = _candidate_fixture(root, candidate_id=f"candidate-{case}")
+    mutate(report)
+    _, invalid_declassification_ref = _write_json(
+        root,
+        "inputs/invalid-declassification.json",
+        report,
+    )
+    candidate["declassification_report_hash"] = invalid_declassification_ref["content_hash"]
+    _, invalid_candidate_ref = _write_json(root, "inputs/invalid-candidate.json", candidate)
+
+    with pytest.raises(ContractError):
+        review_and_include_candidate(
+            root,
+            invalid_candidate_ref,
+            invalid_declassification_ref,
+            _human_review(),
+            record_id="experience-invalid-declassification",
             version="1.0.0",
         )
 
