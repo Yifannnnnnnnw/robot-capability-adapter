@@ -6,7 +6,7 @@
   "robot_configuration_id": "pushbench",
   "source_collection_id": "pushbench-demo-five",
   "source_collection_version": "1.0.0",
-  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "tasks": [
     {

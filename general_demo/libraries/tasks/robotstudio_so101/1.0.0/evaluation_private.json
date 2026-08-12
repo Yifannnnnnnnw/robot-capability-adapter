@@ -7,7 +7,7 @@
   "catalog_version": "1.0.0",
   "robot_configuration_id": "robotstudio_so101",
   "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
-  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "forbidden_recipients": [
     "stage1",
@@ -38,7 +38,7 @@
     {
       "task_id": "S01",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Gripper-frame target error is at most 40 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
       "scene_assets": [
@@ -60,7 +60,7 @@
     {
       "task_id": "S02",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Maximum waypoint error is at most 40 mm and return error is at most 40 mm.",
       "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
       "scene_assets": [
@@ -87,7 +87,7 @@
     {
       "task_id": "S03",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "The gripper joint changes by at least 10 mrad in each commanded direction.",
       "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
       "scene_assets": [
@@ -114,7 +114,7 @@
     {
       "task_id": "S04",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "The box displacement is at most 50 mm and no unrelated contact is recorded.",
       "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
       "scene_assets": [
@@ -141,7 +141,7 @@
     {
       "task_id": "S05",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Offset error is at most 40 mm and home error is at most 40 mm.",
       "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
       "scene_assets": [

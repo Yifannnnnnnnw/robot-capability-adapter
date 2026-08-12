@@ -32,6 +32,24 @@ EXPECTED_RENDER_CAMERA = {
 }
 
 
+def _assert_approved_review_fields(value: object) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in {
+                "catalog_review_status",
+                "task_review_status",
+                "review_status",
+                "migration_review_status",
+            }:
+                assert item == "HUMAN_APPROVED", (key, item)
+            elif key == "criterion_status":
+                assert item == "HUMAN_APPROVED_EXPERIMENTAL", (key, item)
+            _assert_approved_review_fields(item)
+    elif isinstance(value, list):
+        for item in value:
+            _assert_approved_review_fields(item)
+
+
 def _read(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -150,8 +168,24 @@ def test_migrated_morphology_records_pin_source_and_closure() -> None:
         assert closure["mesh_materialization"] == "UPSTREAM_CACHE_REQUIRED"
 
 
-def test_migrated_task_packages_have_five_closed_tasks_and_load() -> None:
+def test_migrated_task_packages_are_approved_closed_tasks_and_load() -> None:
     library = TasksLibrary(TASK_ROOT)
+    index = _read(TASK_ROOT / "index.json")
+    indexed = {entry["robot_configuration_id"] for entry in index["catalogs"]}
+    index_by_configuration = {entry["robot_configuration_id"]: entry for entry in index["catalogs"]}
+    assert set(MIGRATIONS) <= indexed
+    assert {"so-arm101-follower-stock-gripper", "unitree-go2-stock-12dof"} <= indexed
+    assert index["experimental_migration_status"] == "HUMAN_APPROVED"
+    assert all(
+        index_by_configuration[configuration]["migration_review_status"] == "HUMAN_APPROVED"
+        for configuration in MIGRATIONS
+    )
+    assert "HUMAN_REVIEW_REQUIRED" not in json.dumps(index)
+    readme = (TASK_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "2026-08-12\nuser-approved Library task packages" in readme
+    assert "does not automatically add any of them to the first\ntwo-robot fixed Demo" in readme
+    assert "HUMAN_REVIEW_REQUIRED" not in readme
+
     for configuration in MIGRATIONS:
         package_dir = TASK_ROOT / configuration / "1.0.0"
         catalog = _read(package_dir / "catalog.json")
@@ -160,16 +194,27 @@ def test_migrated_task_packages_have_five_closed_tasks_and_load() -> None:
         private = _read(package_dir / "evaluation_private.json")
         instances = _read(package_dir / "task_instances_private.json")
 
+        for artifact in (catalog, collection, projection, private, instances):
+            _assert_approved_review_fields(artifact)
+            assert "HUMAN_REVIEW_REQUIRED" not in json.dumps(artifact)
+
         task_ids = [task["task_id"] for task in catalog["tasks"]]
         assert len(task_ids) == 5
         assert collection["task_ids"] == task_ids
         assert [task["task_id"] for task in projection["tasks"]] == task_ids
         assert [criterion["task_id"] for criterion in private["criteria"]] == task_ids
         assert [instance["task_id"] for instance in instances["instances"]] == task_ids
-        assert catalog["migration_review_status"] == "HUMAN_REVIEW_REQUIRED"
-        assert collection["migration_review_status"] == "HUMAN_REVIEW_REQUIRED"
-        assert private["review_status"] == "HUMAN_REVIEW_REQUIRED"
-        assert instances["review_status"] == "HUMAN_REVIEW_REQUIRED"
+        assert catalog["catalog_review_status"] == "HUMAN_APPROVED"
+        assert all(task["task_review_status"] == "HUMAN_APPROVED" for task in catalog["tasks"])
+        assert collection["review_status"] == "HUMAN_APPROVED"
+        assert private["review_status"] == "HUMAN_APPROVED"
+        assert all(
+            criterion["criterion_status"] == "HUMAN_APPROVED_EXPERIMENTAL"
+            and criterion["review_status"] == "HUMAN_APPROVED"
+            for criterion in private["criteria"]
+        )
+        assert projection["review_status"] == "HUMAN_APPROVED"
+        assert instances["review_status"] == "HUMAN_APPROVED"
         assert all(task["scene_entrypoint"] for task in catalog["tasks"])
         assert all(
             (ROOT / task["scene_entrypoint"].removeprefix("general_demo/")).is_file()

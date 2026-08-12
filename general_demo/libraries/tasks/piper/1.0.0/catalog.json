@@ -6,7 +6,7 @@
   "robot_model_id": "piper",
   "robot_configuration_id": "piper",
   "catalog_review_status": "HUMAN_APPROVED",
-  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "migration_review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "configuration_boundary": {
     "base_type": "fixed",
@@ -36,7 +36,7 @@
       "description": "Move the Piper end-effector 5 cm above the red cube in pickbench and hold.",
       "task_type": "reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
       ],
@@ -51,7 +51,7 @@
       "description": "Move the Piper end-effector 5 cm above the green cube in pickbench and hold.",
       "task_type": "reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
       ],
@@ -66,7 +66,7 @@
       "description": "Move the Piper end-effector 5 cm above the blue cube in pickbench and hold.",
       "task_type": "reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
       ],
@@ -81,7 +81,7 @@
       "description": "Grasp the red cube in pickbench and lift it by at least 5 cm while retaining the grasp.",
       "task_type": "grasp_and_lift",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
       ],
@@ -96,7 +96,7 @@
       "description": "Push the green cube to the specified planar goal region in Piper pushbench.",
       "task_type": "planar_pushing",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper/pickbench.xml"
       ],

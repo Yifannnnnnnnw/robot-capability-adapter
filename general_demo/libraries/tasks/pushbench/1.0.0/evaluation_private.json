@@ -7,7 +7,7 @@
   "catalog_version": "1.0.0",
   "robot_configuration_id": "pushbench",
   "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
-  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "forbidden_recipients": [
     "stage1",
@@ -38,7 +38,7 @@
     {
       "task_id": "B01",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "T-shape planar goal error is at most 40 mm and obstacle contact count is zero.",
       "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
       "scene_assets": [
@@ -66,7 +66,7 @@
     {
       "task_id": "B02",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Red-cube planar goal error is at most 40 mm and table support is true.",
       "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
       "scene_assets": [
@@ -93,7 +93,7 @@
     {
       "task_id": "B03",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Green-cube planar goal error is at most 40 mm and table support is true.",
       "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
       "scene_assets": [
@@ -120,7 +120,7 @@
     {
       "task_id": "B04",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Blue-cube planar goal error is at most 40 mm and obstacle contact count is zero.",
       "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
       "scene_assets": [
@@ -148,7 +148,7 @@
     {
       "task_id": "B05",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Waypoint error is at most 40 mm, obstacle contact count is zero, and return error is at most 40 mm.",
       "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
       "scene_assets": [

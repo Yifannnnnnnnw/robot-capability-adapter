@@ -6,7 +6,7 @@
   "robot_model_id": "kuka_iiwa_14",
   "robot_configuration_id": "kuka_iiwa_14",
   "catalog_review_status": "HUMAN_APPROVED",
-  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "migration_review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "configuration_boundary": {
     "base_type": "fixed",
@@ -35,7 +35,7 @@
       "description": "Move the KUKA attachment site to the specified reachable target and hold.",
       "task_type": "reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
       ],
@@ -50,7 +50,7 @@
       "description": "Trace a 4 cm square in the attachment site's XY plane and return to the start.",
       "task_type": "cartesian_trace",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
       ],
@@ -63,7 +63,7 @@
       "description": "Move the KUKA attachment site upward by 5 cm, hold briefly, and return home.",
       "task_type": "bounded_offset",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
       ],
@@ -78,7 +78,7 @@
       "description": "Visit three reachable attachment-site waypoints in order and finish at the final waypoint.",
       "task_type": "waypoint_sequence",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
       ],
@@ -93,7 +93,7 @@
       "description": "Attempt an unreachable attachment-site target, detect the failed reach, and return home without retrying.",
       "task_type": "negative_reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/kuka_iiwa_14/scene.xml"
       ],

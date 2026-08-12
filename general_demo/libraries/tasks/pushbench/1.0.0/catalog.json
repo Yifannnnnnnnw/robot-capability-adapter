@@ -6,7 +6,7 @@
   "robot_model_id": "pushbench_so101",
   "robot_configuration_id": "pushbench",
   "catalog_review_status": "HUMAN_APPROVED",
-  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "migration_review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "configuration_boundary": {
     "base_type": "fixed",
@@ -35,7 +35,7 @@
       "description": "Push the T-shaped object to its specified planar goal without touching the fixed obstacle.",
       "task_type": "planar_pushing",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/pushbench/so101_pushbench.xml"
       ],
@@ -51,7 +51,7 @@
       "description": "Push the red cube to its specified planar goal and leave it table-supported.",
       "task_type": "planar_pushing",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/pushbench/so101_pushbench.xml"
       ],
@@ -66,7 +66,7 @@
       "description": "Push the green cube to its specified planar goal and leave it table-supported.",
       "task_type": "planar_pushing",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/pushbench/so101_pushbench.xml"
       ],
@@ -81,7 +81,7 @@
       "description": "Push the blue cube to its specified planar goal while avoiding the obstacle.",
       "task_type": "planar_pushing",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/pushbench/so101_pushbench.xml"
       ],
@@ -97,7 +97,7 @@
       "description": "Move the push contactor to the declared free-space waypoint and return to its start.",
       "task_type": "collision_avoidance",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/pushbench/so101_pushbench.xml"
       ],

@@ -29,10 +29,13 @@ governs capability validation and neither owns nor replaces the downstream tasks
 
 ## Experimental AutoAdapter 1.0 migration population
 
-The following six packages are source-backed experimental candidates. Their loader-compatible
-catalog fields remain in the existing schema; the migration itself is explicitly
-HUMAN_REVIEW_REQUIRED and uses DIRECT_MUJOCO_EXPERIMENTAL. They are not SDK records and do not
-claim formal admission.
+The following six packages are source-backed experimental candidates and are **2026-08-12
+user-approved Library task packages for this exact experimental configuration/task package**. Their
+loader-compatible catalog fields remain in the existing schema, they remain on the
+DIRECT_MUJOCO_EXPERIMENTAL route, and their exact five-task packages are indexed for explicit
+loader/Stage 1/Demo selection. This approval does not automatically add any of them to the first
+two-robot fixed Demo; that fixed selection remains the SO-ARM101 and Go2 packages described below.
+It also does not create a real SDK record.
 
 | Configuration | Source-backed fixed five | MJCF scene facts |
 |---|---:|---|

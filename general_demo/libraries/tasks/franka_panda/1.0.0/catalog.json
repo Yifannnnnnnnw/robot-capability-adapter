@@ -6,7 +6,7 @@
   "robot_model_id": "franka_panda",
   "robot_configuration_id": "franka_panda",
   "catalog_review_status": "HUMAN_APPROVED",
-  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "migration_review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "configuration_boundary": {
     "base_type": "fixed",
@@ -35,7 +35,7 @@
       "description": "Move the Panda end-effector above the red cube in the pushbench scene and hold.",
       "task_type": "reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
       ],
@@ -50,7 +50,7 @@
       "description": "Move the Panda end-effector above the green cube in the pushbench scene and hold.",
       "task_type": "reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
       ],
@@ -65,7 +65,7 @@
       "description": "Push the red cube to the specified planar goal region without leaving the tabletop.",
       "task_type": "planar_pushing",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
       ],
@@ -80,7 +80,7 @@
       "description": "Push the blue cube to the specified planar goal region without contacting the fixed obstacle.",
       "task_type": "planar_pushing",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
       ],
@@ -96,7 +96,7 @@
       "description": "Trace a 4 cm square with the Panda end-effector above the pushbench, then return to the start.",
       "task_type": "cartesian_trace",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/franka_panda/pushbench.xml"
       ],

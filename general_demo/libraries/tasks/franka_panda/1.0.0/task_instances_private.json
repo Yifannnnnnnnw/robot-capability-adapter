@@ -5,7 +5,7 @@
   "instance_set_version": "1.0.0",
   "robot_configuration_id": "franka_panda",
   "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
-  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "source_task_catalog": "franka_panda-tasks",
   "selection_policy": "Exactly the five listed instances, in catalog order.",

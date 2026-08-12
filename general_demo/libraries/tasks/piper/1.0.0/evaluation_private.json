@@ -7,7 +7,7 @@
   "catalog_version": "1.0.0",
   "robot_configuration_id": "piper",
   "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
-  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "forbidden_recipients": [
     "stage1",
@@ -38,7 +38,7 @@
     {
       "task_id": "P01",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
       "scene_assets": [
@@ -60,7 +60,7 @@
     {
       "task_id": "P02",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
       "scene_assets": [
@@ -82,7 +82,7 @@
     {
       "task_id": "P03",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
       "scene_assets": [
@@ -104,7 +104,7 @@
     {
       "task_id": "P04",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "The red cube rises at least 50 mm and remains held during a 0.5 s observation window.",
       "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pickbench.xml",
       "scene_assets": [
@@ -131,7 +131,7 @@
     {
       "task_id": "P05",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Green-cube planar goal error is at most 50 mm and it remains table-supported.",
       "scene_entrypoint": "general_demo/libraries/assets/piper/1.0.0/pushbench.xml",
       "scene_assets": [

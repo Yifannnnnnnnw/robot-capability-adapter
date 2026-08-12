@@ -7,7 +7,7 @@
   "catalog_version": "1.0.0",
   "robot_configuration_id": "kuka_iiwa_14",
   "review_status": "HUMAN_APPROVED",
-  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "migration_review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "selection_policy": "Five source-backed experimental tasks execute in fixed order; none is held out.",
   "task_ids": [

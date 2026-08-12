@@ -6,7 +6,7 @@
   "robot_model_id": "universal_robots_ur5e",
   "robot_configuration_id": "universal_robots_ur5e",
   "catalog_review_status": "HUMAN_APPROVED",
-  "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+  "migration_review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "configuration_boundary": {
     "base_type": "fixed",
@@ -35,7 +35,7 @@
       "description": "Move the UR5e attachment site to a reachable target and hold.",
       "task_type": "reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/universal_robots_ur5e/scene.xml"
       ],
@@ -50,7 +50,7 @@
       "description": "Trace a 4 cm square in the UR5e attachment site's XY plane and return to start.",
       "task_type": "cartesian_trace",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/universal_robots_ur5e/scene.xml"
       ],
@@ -63,7 +63,7 @@
       "description": "Move the UR5e attachment site upward by 5 cm, hold, and return to the home keyframe.",
       "task_type": "bounded_offset",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/universal_robots_ur5e/scene.xml"
       ],
@@ -78,7 +78,7 @@
       "description": "Visit three reachable attachment-site waypoints in the declared order.",
       "task_type": "waypoint_sequence",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/universal_robots_ur5e/scene.xml"
       ],
@@ -93,7 +93,7 @@
       "description": "Attempt an unreachable UR5e target, detect the failure, and return home without retrying.",
       "task_type": "negative_reach",
       "task_review_status": "HUMAN_APPROVED",
-      "migration_review_status": "HUMAN_REVIEW_REQUIRED",
+      "migration_review_status": "HUMAN_APPROVED",
       "source_basis": [
         "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/universal_robots_ur5e/scene.xml"
       ],

@@ -7,7 +7,7 @@
   "catalog_version": "1.0.0",
   "robot_configuration_id": "franka_panda",
   "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
-  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "forbidden_recipients": [
     "stage1",
@@ -38,7 +38,7 @@
     {
       "task_id": "F01",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
@@ -60,7 +60,7 @@
     {
       "task_id": "F02",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
@@ -82,7 +82,7 @@
     {
       "task_id": "F03",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Red-cube planar goal error is at most 50 mm and the cube remains table-supported.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
@@ -109,7 +109,7 @@
     {
       "task_id": "F04",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Blue-cube planar goal error is at most 50 mm and obstacle contact count is zero.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
@@ -137,7 +137,7 @@
     {
       "task_id": "F05",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "All four square waypoints are within 40 mm and the final point is within 40 mm of the start.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [],

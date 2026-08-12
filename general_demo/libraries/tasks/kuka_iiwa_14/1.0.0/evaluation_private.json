@@ -7,7 +7,7 @@
   "catalog_version": "1.0.0",
   "robot_configuration_id": "kuka_iiwa_14",
   "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
-  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "forbidden_recipients": [
     "stage1",
@@ -38,7 +38,7 @@
     {
       "task_id": "K01",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Attachment-site error is at most 40 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
       "scene_assets": [
@@ -60,7 +60,7 @@
     {
       "task_id": "K02",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Maximum waypoint error is at most 40 mm and return error is at most 40 mm.",
       "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
       "scene_assets": [],
@@ -85,7 +85,7 @@
     {
       "task_id": "K03",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "The commanded offset is reached within 40 mm and the home error is at most 40 mm.",
       "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
       "scene_assets": [
@@ -112,7 +112,7 @@
     {
       "task_id": "K04",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "Every waypoint error is at most 50 mm and order is preserved.",
       "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
       "scene_assets": [
@@ -139,7 +139,7 @@
     {
       "task_id": "K05",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
-      "review_status": "HUMAN_REVIEW_REQUIRED",
+      "review_status": "HUMAN_APPROVED",
       "criterion_text": "The unreachable target is rejected, one attempt is recorded, and home error is at most 50 mm.",
       "scene_entrypoint": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/scene.xml",
       "scene_assets": [
