@@ -24,6 +24,7 @@ def test_experimental_arm64_image_is_native_and_smokes_the_renderer() -> None:
     assert "renderer.render()" in dockerfile
     assert "MUJOCO_GL=egl" in dockerfile
     assert "ffmpeg" in dockerfile
+    assert "cyclonedds-dev" in dockerfile
     assert "cyclonedds==0.10.2" in (ENVIRONMENT / "python-requirements.lock").read_text(
         encoding="utf-8"
     )

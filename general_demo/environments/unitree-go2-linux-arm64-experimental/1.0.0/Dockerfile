@@ -16,7 +16,7 @@ RUN test "$(uname -m)" = "aarch64"
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       ca-certificates git ffmpeg python3.10 python3.10-dev python3-pip \
-      build-essential cmake pkg-config \
+      build-essential cmake pkg-config cyclonedds-dev \
       libgl1 libegl1 libglib2.0-0 libglfw3 \
     && rm -rf /var/lib/apt/lists/*
 
