@@ -444,6 +444,11 @@ class _SimulationClock:
         self.accepted_commands = 0
         self.rejected_commands = 0
 
+    def time(self) -> float:
+        """Return monotonic simulated time without consulting the host clock."""
+
+        return float(self.steps * self._timestep)
+
     def sleep(self, seconds: object) -> None:
         if isinstance(seconds, bool) or not isinstance(seconds, Real):
             raise TypeError("sleep duration must be numeric")
@@ -468,6 +473,7 @@ def _safe_execution_globals(
     modules, facade = _fake_sdk_modules(transport)
     time_module = types.ModuleType("time")
     time_module.sleep = clock.sleep
+    time_module.time = clock.time
 
     def safe_import(name: str, globals_: object = None, locals_: object = None, fromlist: tuple[str, ...] = (), level: int = 0) -> object:
         del globals_, locals_
@@ -635,6 +641,19 @@ class Go2DevelopmentProbe:
             )
         except Go2DevelopmentProbeError as exc:
             return _error("Go2 probe execution failed.", str(exc), observations=observations)
+        except AttributeError as exc:
+            name = getattr(exc, "name", None)
+            if (
+                not isinstance(name, str)
+                or not name.isidentifier()
+                or name.startswith("_")
+                or len(name) > GO2_MAX_ID_LENGTH
+                or any(term in name.lower() for term in _FORBIDDEN_PUBLIC_TERMS)
+            ):
+                exception = "attribute_error"
+            else:
+                exception = f"attribute_error:{name}"
+            return _error("Go2 probe execution failed.", exception, observations=observations)
         except Exception:
             return _error("Go2 probe execution failed.", "probe_execution_error", observations=observations)
         finally:

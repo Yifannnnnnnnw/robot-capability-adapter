@@ -253,6 +253,32 @@ def test_go2_fake_sleep_advances_without_wall_delay_and_stale_clears() -> None:
     assert instances[0].controls[-1] == (0.0,) * 12
 
 
+def test_go2_time_time_uses_monotonic_simulated_time() -> None:
+    instances: list[_Go2Backend] = []
+    source = _go2_source().replace(
+        "time.sleep(0.2)",
+        "start = time.time()\n    time.sleep(0.2)\n    elapsed = time.time() - start\n    if elapsed != 0.2:\n        raise RuntimeError(\"unexpected simulated time\")",
+    )
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend(instances, path),
+    )(source, _go2_probe())
+
+    assert feedback["status"] == "OK"
+    assert feedback["observations"]["simulation_time_s"] == 0.2
+
+
+def test_go2_attribute_error_feedback_has_bounded_public_detail() -> None:
+    source = "import time\ndef capability_capability_1(target, *, _sdk):\n    return time.missing()\n"
+    feedback = Go2DevelopmentProbe(
+        "/pinned/go2/scene.xml",
+        backend_factory=lambda path: _Go2Backend([], path),
+    )(source, _go2_probe())
+
+    assert feedback["status"] == "ERROR"
+    assert feedback["exception"] == "attribute_error:missing"
+
+
 def test_go2_execution_is_bounded_for_a_tight_loop() -> None:
     source = "def capability_capability_1(target, *, _sdk):\n    while True:\n        pass\n"
     instances: list[_Go2Backend] = []
