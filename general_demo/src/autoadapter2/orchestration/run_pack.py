@@ -404,7 +404,7 @@ def _validate_budget(value: Mapping[str, Any]) -> dict[str, Any]:
             "min_successful_sandbox_calls_before_submit": 5,
             "require_all_design_capability_probes": True,
         },
-        "repair": {"max_repairs": 10, "max_infrastructure_retries": 1},
+        "repair": {"max_repairs": 3, "max_infrastructure_retries": 1},
         "consumer": {"max_steps": 4},
         "demo": {"repetitions": 1},
     }

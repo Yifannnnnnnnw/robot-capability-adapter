@@ -493,7 +493,7 @@ def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAda
             "blue_line": {"max_inference_calls": 3},
             "stage2": {"max_inference_calls": 30},
             "repair": {
-                "max_invocations": 10,
+                "max_invocations": 3,
                 "max_infrastructure_retries": 1,
             },
             "consumer": {"max_inference_calls": 4},
@@ -526,7 +526,7 @@ def _plan(root: Path, robot: str, width: int) -> tuple[DemoRunPlan, DemoModelAda
             "additionalProperties": False,
         },
         validation_harness_config={"profile": "fixture"},
-        repair_config=RepairConfig(max_repairs=10, max_infrastructure_retries=1),
+        repair_config=RepairConfig(max_repairs=3, max_infrastructure_retries=1),
     )
 
     consumer_calls: dict[str, int] = {}

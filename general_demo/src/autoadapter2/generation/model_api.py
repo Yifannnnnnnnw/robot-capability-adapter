@@ -68,6 +68,8 @@ _IMPLEMENTATION_DELTA_INPUTS = {
         "working_capability.py",
         "sandbox_feedback",
         "public_diagnostics",
+        "sandbox_contract",
+        "submission_requirements",
     }),
     "repair": frozenset({
         "repair_index",

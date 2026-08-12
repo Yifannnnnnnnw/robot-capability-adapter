@@ -507,7 +507,7 @@ class _ExplodingBlueLineModel(_FixtureModelClient):
 
 class _NonRepairingModel(_FixtureModelClient):
     def repair(self, request):
-        return {"capability.py": request["capability.py"], "llm_calls": 0}
+        raise AssertionError("production must use the continuous Stage 2 repair episode")
 
 
 class _FailingValidationSession(_FixedCriterionSession):
@@ -538,6 +538,7 @@ class _AbruptValidationSession(_FixedCriterionSession):
 
 def test_validation_failure_persists_a_verifiable_terminal_closure(tmp_path: Path) -> None:
     plan, models = _plan(tmp_path, "so-arm101", 6)
+    model_client = _NonRepairingModel(models)
     result = run_first_g2_demo(
         FirstG2DemoConfig(
             root=tmp_path,
@@ -555,13 +556,20 @@ def test_validation_failure_persists_a_verifiable_terminal_closure(tmp_path: Pat
             video_profile=FrozenVideoProfile(
                 "validation-failure-video", "1.0.0", "external", "scene", 5, 2, 2, "matroska", "ffv1"
             ),
-            model_client=_NonRepairingModel(models),
+            model_client=model_client,
             sandbox=_fixture_sandbox(),
             test_only_allow_fixture_session=True,
         )
     )
 
     assert result.status == "VALIDATION_FAILED"
+    assert "repair" not in model_client.stages
+    assert model_client.stages.count("stage2") == 10 + 3 * 20
+    stage_artifacts = json.loads(result.stage_artifacts_path.read_text(encoding="utf-8"))
+    repair_artifact = stage_artifacts["stages"]["validation_and_repair"]["repair"]
+    assert repair_artifact["repair_invocations_used"] == 3
+    assert repair_artifact["repair_llm_calls"] == 60
+    assert all(entry["episode_trace"]["sandbox_log"] == [] for entry in repair_artifact["repair_log"])
     summary = json.loads(result.summary_path.read_text(encoding="utf-8"))
     assert summary["status"] == "VALIDATION_FAILED"
     validation_refs = json.loads(
@@ -870,7 +878,7 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
             "min_successful_sandbox_calls_before_submit": 5,
             "require_all_design_capability_probes": True,
         },
-        "repair": {"max_repairs": 10, "max_infrastructure_retries": 1},
+        "repair": {"max_repairs": 3, "max_infrastructure_retries": 1},
         "consumer": {"max_steps": 4},
         "demo": {"demo_repetitions": 1},
     }
@@ -880,7 +888,7 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
     assert stage2.min_llm_calls_before_submit == 10
     assert stage2.min_successful_sandbox_calls_before_submit == 5
     assert stage2.require_all_design_capability_probes is True
-    assert repair.max_repairs == 10
+    assert repair.max_repairs == 3
     assert consumer["consumer_max_steps"] == 4
 
     unknown = json.loads(json.dumps(budget))
@@ -892,6 +900,11 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
     del missing["demo"]
     with pytest.raises(ContractError, match="closed"):
         _budgets(missing)
+
+    fourth_repair = json.loads(json.dumps(budget))
+    fourth_repair["repair"]["max_repairs"] = 4
+    with pytest.raises(ContractError, match="three repair"):
+        _budgets(fourth_repair)
 
 
 def test_production_rejects_caller_profile_override_as_snapshot_hash_mismatch(tmp_path: Path) -> None:

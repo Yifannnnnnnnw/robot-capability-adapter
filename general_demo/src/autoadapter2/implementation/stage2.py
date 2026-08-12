@@ -68,6 +68,8 @@ _PRIVATE_TERMS = (
     "private", "criterion", "validation", "suite", "threshold", "mujoco", "translation",
     "truth", "video", "score", "verdict",
 )
+_REPAIR_PRIVATE_TERMS = _PRIVATE_TERMS + ("measurement", "case", "seed", "input")
+REPAIR_MAX_LLM_CALLS = 20
 
 
 @dataclass(frozen=True)
@@ -164,6 +166,33 @@ class Stage2Result:
         return self.covered_sandbox_capability_ids
 
 
+@dataclass(frozen=True)
+class _ActionLoopResult:
+    """Public result of one continuous implementation action episode."""
+
+    status: str
+    source: str | None
+    calls: tuple[dict[str, Any], ...]
+    sandbox_log: tuple[dict[str, Any], ...]
+    successful_sandbox_calls: int
+    covered_capability_ids: tuple[str, ...]
+    diagnostics: tuple[dict[str, str], ...]
+    blocked_reason: str | None
+    submitted: bool
+
+
+@dataclass(frozen=True)
+class _Stage2Session:
+    """State shared by the initial Stage 2 and all Repair episodes."""
+
+    bundle: ImplementationBundle
+    binding: PythonBinding
+    base_inputs: dict[str, Any]
+    sandbox_contract: dict[str, Any]
+    required_capability_ids: tuple[str, ...]
+    known_capability_ids: tuple[str, ...]
+
+
 def _issue(code: str, message: str) -> dict[str, str]:
     return {"code": code, "message": message}
 
@@ -254,8 +283,56 @@ def _submission_issues(
     return issues
 
 
+def _public_repair_diagnostics(value: Any) -> list[dict[str, str]]:
+    """Keep only sanitized, candidate-facing Repair diagnostics."""
+
+    if not isinstance(value, list):
+        return []
+    diagnostics: list[dict[str, str]] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            continue
+        safe: dict[str, str] = {}
+        for field in ("gate", "code", "candidate_error"):
+            candidate = item.get(field)
+            if not isinstance(candidate, str) or not candidate.strip():
+                continue
+            if any(term in candidate.lower() for term in _REPAIR_PRIVATE_TERMS):
+                continue
+            safe[field] = " ".join(candidate.split())[:320]
+        if "gate" in safe and "code" in safe:
+            diagnostics.append(safe)
+    return diagnostics
+
+
+def _public_sandbox_feedback(value: Any) -> dict[str, Any]:
+    """Project callback feedback again before it reaches the implementation agent."""
+
+    def contains_private(item: Any) -> bool:
+        if isinstance(item, Mapping):
+            return any(
+                any(term in str(key).lower() for term in _REPAIR_PRIVATE_TERMS)
+                or contains_private(child)
+                for key, child in item.items()
+            )
+        if isinstance(item, list):
+            return any(contains_private(child) for child in item)
+        return isinstance(item, str) and any(
+            term in item.lower() for term in _REPAIR_PRIVATE_TERMS
+        )
+
+    if not isinstance(value, Mapping) or contains_private(value):
+        return {
+            "status": "ERROR",
+            "summary": "Sandbox returned non-public feedback.",
+            "observations": {},
+            "exception": "sandbox_feedback_contract_error",
+        }
+    return copy.deepcopy(dict(value))
+
+
 class Stage2Runner:
-    """A 30-accounted-call, action-only Stage 2 runner for the demo."""
+    """A continuous Stage 2 implementation agent with bounded action episodes."""
 
     def __init__(self, generator: JsonGenerator, sandbox: CallbackSandbox | None = None, config: Stage2Config = Stage2Config()):
         if sandbox is not None and not isinstance(sandbox, CallbackSandbox):
@@ -263,6 +340,15 @@ class Stage2Runner:
         self.generator = generator
         self.sandbox = sandbox
         self.config = config
+        self._session: _Stage2Session | None = None
+        self._working_source: str | None = None
+        self._last_repair_trace: dict[str, Any] | None = None
+
+    @property
+    def last_repair_trace(self) -> dict[str, Any] | None:
+        """Return the latest public inner Repair trace for orchestration evidence."""
+
+        return copy.deepcopy(self._last_repair_trace)
 
     def run(
         self,
@@ -286,27 +372,154 @@ class Stage2Runner:
                 design_capability_ids if self.config.require_all_design_capability_probes else ()
             ))
         ))
-        base_inputs = {
+        base_inputs: dict[str, Any] = {
             "capability_design": design,
             "binding_contract": copy.deepcopy(binding.contract),
             "starter_skeleton": binding.starter_skeleton,
             "blue_line_authorization": authorization,
             "implementation_bundle": bundle.artifact,
         }
+        sandbox_contract = self.sandbox.contract if self.sandbox is not None else get_sandbox_contract()
+        self._session = _Stage2Session(
+            bundle=bundle,
+            binding=binding,
+            base_inputs=copy.deepcopy(base_inputs),
+            sandbox_contract=copy.deepcopy(sandbox_contract),
+            required_capability_ids=required_capability_ids,
+            known_capability_ids=design_capability_ids,
+        )
+        self._working_source = None
+        self._last_repair_trace = None
+        episode = self._run_action_loop(
+            base_inputs=base_inputs,
+            sandbox_contract=sandbox_contract,
+            config=self.config,
+            required_capability_ids=required_capability_ids,
+            known_capability_ids=set(design_capability_ids),
+        )
+        self._working_source = episode.source
+        if episode.status != "SUBMITTED" or episode.source is None:
+            return self._result(
+                episode.status,
+                bundle.bundle_hash,
+                binding,
+                episode.source,
+                None,
+                None,
+                None,
+                list(episode.calls),
+                list(episode.sandbox_log),
+                episode.successful_sandbox_calls,
+                set(episode.covered_capability_ids),
+                list(episode.diagnostics),
+                episode.blocked_reason,
+            )
+        source = episode.source
+        symbols = verify_capability_source(source, binding.contract)
+        source_hash = content_hash(source.encode("utf-8"))
+        source_seal = create_seal(
+            "capability.py",
+            source_hash,
+            [binding.contract_hash, binding.contract["design_hash"]],
+        )
+        manifest, manifest_hash, manifest_seal = derive_implementation_manifest(
+            design_hash=binding.contract["design_hash"],
+            binding_hash=binding.contract_hash,
+            implementation_bundle_hash=bundle.bundle_hash,
+            source_hash=source_hash,
+            symbols=symbols,
+        )
+        return self._result(
+            "SUBMITTED",
+            bundle.bundle_hash,
+            binding,
+            source,
+            source_hash,
+            source_seal,
+            (manifest, manifest_hash, manifest_seal),
+            list(episode.calls),
+            list(episode.sandbox_log),
+            episode.successful_sandbox_calls,
+            set(episode.covered_capability_ids),
+            [],
+            None,
+        )
+
+    def repair_episode(self, request: Mapping[str, Any]) -> dict[str, Any]:
+        """Run one bounded Generate↔Sandbox Repair episode on the same agent state.
+
+        The callback intentionally returns only the legacy RepairRunner payload.  The
+        public inner trace is exposed through ``last_repair_trace`` so RepairRunner can
+        persist it without adding fields to the model-facing response contract.
+        """
+
+        session = self._session
+        if session is None:
+            raise ContractError("Stage 2 Repair requires a completed Stage 2 episode")
+        if not isinstance(request, Mapping):
+            raise ContractError("Stage 2 Repair request must be an object")
+        requested_source = request.get("capability.py")
+        if not isinstance(requested_source, str) or not requested_source.strip():
+            requested_source = self._working_source
+        if not isinstance(requested_source, str) or not requested_source.strip():
+            raise ContractError("Stage 2 Repair requires a working capability.py source")
+
+        diagnostics = _public_repair_diagnostics(request.get("diagnostics"))
+        repair_config = Stage2Config(
+            max_llm_calls=REPAIR_MAX_LLM_CALLS,
+            min_llm_calls_before_submit=1,
+            min_successful_sandbox_calls_before_submit=1,
+        )
+        episode = self._run_action_loop(
+            base_inputs=session.base_inputs,
+            sandbox_contract=session.sandbox_contract,
+            config=repair_config,
+            required_capability_ids=(),
+            known_capability_ids=set(session.known_capability_ids),
+            working_source=requested_source,
+            initial_diagnostics=diagnostics,
+            episode="repair",
+        )
+        self._working_source = episode.source or requested_source
+        self._last_repair_trace = {
+            "status": episode.status,
+            "submitted": episode.submitted,
+            "llm_calls": len(episode.calls),
+            "working_source": self._working_source,
+            "call_log": copy.deepcopy(list(episode.calls)),
+            "sandbox_log": copy.deepcopy(list(episode.sandbox_log)),
+            "diagnostics": copy.deepcopy(list(episode.diagnostics)),
+            "blocked_reason": episode.blocked_reason,
+        }
+        return {
+            "capability.py": self._working_source,
+            "llm_calls": len(episode.calls),
+        }
+
+    def _run_action_loop(
+        self,
+        *,
+        base_inputs: Mapping[str, Any],
+        sandbox_contract: Mapping[str, Any],
+        config: Stage2Config,
+        required_capability_ids: tuple[str, ...],
+        known_capability_ids: set[str],
+        working_source: str | None = None,
+        initial_diagnostics: list[dict[str, str]] | None = None,
+        episode: str = "stage2",
+    ) -> _ActionLoopResult:
         calls: list[dict[str, Any]] = []
         sandbox_log: list[dict[str, Any]] = []
-        diagnostics: list[dict[str, str]] = []
-        working_source: str | None = None
+        diagnostics = copy.deepcopy(initial_diagnostics or [])
         last_feedback: dict[str, Any] | None = None
         successful_sandbox_calls = 0
         covered_capability_ids: set[str] = set()
-        known_capability_ids = set(design_capability_ids)
-        sandbox_contract = self.sandbox.contract if self.sandbox is not None else get_sandbox_contract()
-        for attempt in range(self.config.max_llm_calls):
-            inputs: dict[str, Any] = copy.deepcopy(base_inputs)
-            inputs["sandbox_contract"] = copy.deepcopy(sandbox_contract)
+        blocked_reason: str | None = None
+        for attempt in range(config.max_llm_calls):
+            inputs: dict[str, Any] = copy.deepcopy(dict(base_inputs))
+            inputs["sandbox_contract"] = copy.deepcopy(dict(sandbox_contract))
             inputs["submission_requirements"] = _submission_requirements(
-                self.config, required_capability_ids
+                config, required_capability_ids
             )
             if working_source is not None:
                 inputs["working_capability.py"] = working_source
@@ -323,6 +536,7 @@ class Stage2Runner:
             calls.append({
                 "call": attempt + 1,
                 "stage": "stage2",
+                "episode": episode,
                 "action": action if isinstance(action, str) else None,
                 "input_hash": content_hash(canonical_bytes(inputs)),
                 "output_hash": content_hash(canonical_bytes(output_dict)),
@@ -345,13 +559,17 @@ class Stage2Runner:
                         "source_hash": content_hash(working_source.encode("utf-8")),
                         "probe_hash": content_hash(canonical_bytes(output_dict["probe"])),
                         "feedback_hash": content_hash(canonical_bytes(last_feedback)),
+                        "feedback": copy.deepcopy(last_feedback),
+                        "status": last_feedback["status"],
                         "successful": False,
                         "probe_id": output_dict["probe"].get("probe_id"),
                         "capability_id": output_dict["probe"].get("capability_id"),
                         "coverage_counted": False,
                     })
                     continue
-                last_feedback = self.sandbox.run(working_source, output_dict["probe"])
+                last_feedback = _public_sandbox_feedback(
+                    self.sandbox.run(working_source, output_dict["probe"])
+                )
                 identity = _coverage_identity(output_dict["probe"])
                 successful = last_feedback.get("status") == "OK"
                 coverage_counted = (
@@ -369,6 +587,8 @@ class Stage2Runner:
                     "source_hash": content_hash(working_source.encode("utf-8")),
                     "probe_hash": content_hash(canonical_bytes(output_dict["probe"])),
                     "feedback_hash": content_hash(canonical_bytes(last_feedback)),
+                    "feedback": copy.deepcopy(last_feedback),
+                    "status": last_feedback.get("status"),
                     "successful": successful,
                     "probe_id": identity[0] if identity is not None else None,
                     "capability_id": identity[1] if identity is not None else None,
@@ -376,10 +596,17 @@ class Stage2Runner:
                 })
                 continue
             if action == "blocked":
-                return self._result(
-                    "IMPLEMENTATION_BLOCKED", bundle.bundle_hash, binding, None, None, None, None,
-                    calls, sandbox_log, successful_sandbox_calls, covered_capability_ids,
-                    diagnostics, output_dict["reason"],
+                blocked_reason = output_dict["reason"]
+                return _ActionLoopResult(
+                    status="IMPLEMENTATION_BLOCKED",
+                    source=working_source,
+                    calls=tuple(copy.deepcopy(calls)),
+                    sandbox_log=tuple(copy.deepcopy(sandbox_log)),
+                    successful_sandbox_calls=successful_sandbox_calls,
+                    covered_capability_ids=tuple(sorted(covered_capability_ids)),
+                    diagnostics=tuple(copy.deepcopy(diagnostics)),
+                    blocked_reason=blocked_reason,
+                    submitted=False,
                 )
             # Submit starts the immutable candidate boundary.  Only basic parsing and
             # required-symbol presence are checked here; Validation A owns semantics.
@@ -390,35 +617,38 @@ class Stage2Runner:
                 successful_sandbox_calls=successful_sandbox_calls,
                 covered_capability_ids=covered_capability_ids,
                 required_capability_ids=required_capability_ids,
-                config=self.config,
+                config=config,
             )
             if diagnostics:
                 calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
                 continue
             try:
-                symbols = verify_capability_source(source, binding.contract)
+                verify_capability_source(source, self._session.binding.contract if self._session else {})
             except ContractError as exc:
                 diagnostics = [_issue("SOURCE_BINDING", str(exc))]
                 calls[-1]["diagnostics"] = copy.deepcopy(diagnostics)
-                working_source = source
                 continue
-            source_hash = content_hash(source.encode("utf-8"))
-            source_seal = create_seal("capability.py", source_hash, [binding.contract_hash, binding.contract["design_hash"]])
-            manifest, manifest_hash, manifest_seal = derive_implementation_manifest(
-                design_hash=binding.contract["design_hash"],
-                binding_hash=binding.contract_hash,
-                implementation_bundle_hash=bundle.bundle_hash,
-                source_hash=source_hash,
-                symbols=symbols,
+            return _ActionLoopResult(
+                status="SUBMITTED",
+                source=source,
+                calls=tuple(copy.deepcopy(calls)),
+                sandbox_log=tuple(copy.deepcopy(sandbox_log)),
+                successful_sandbox_calls=successful_sandbox_calls,
+                covered_capability_ids=tuple(sorted(covered_capability_ids)),
+                diagnostics=(),
+                blocked_reason=None,
+                submitted=True,
             )
-            return self._result(
-                "SUBMITTED", bundle.bundle_hash, binding, source, source_hash, source_seal,
-                (manifest, manifest_hash, manifest_seal), calls, sandbox_log,
-                successful_sandbox_calls, covered_capability_ids, [], None,
-            )
-        return self._result(
-            "CALL_LIMIT_EXHAUSTED", bundle.bundle_hash, binding, working_source, None, None, None,
-            calls, sandbox_log, successful_sandbox_calls, covered_capability_ids, diagnostics, None,
+        return _ActionLoopResult(
+            status="CALL_LIMIT_EXHAUSTED",
+            source=working_source,
+            calls=tuple(copy.deepcopy(calls)),
+            sandbox_log=tuple(copy.deepcopy(sandbox_log)),
+            successful_sandbox_calls=successful_sandbox_calls,
+            covered_capability_ids=tuple(sorted(covered_capability_ids)),
+            diagnostics=tuple(copy.deepcopy(diagnostics)),
+            blocked_reason=None,
+            submitted=False,
         )
 
     @staticmethod

@@ -508,8 +508,8 @@ def run_first_g2_demo(config: FirstG2DemoConfig) -> FirstG2DemoResult:
         input_values["budget"]
     )
     model_client = config.model_client or _model_client(input_values["model_prompt_config"])
-    if not all(callable(getattr(model_client, name, None)) for name in ("generate_json", "repair", "react")):
-        raise ContractError("first G2 Demo model client does not implement the ModelApiClient surface")
+    if not all(callable(getattr(model_client, name, None)) for name in ("generate_json", "react")):
+        raise ContractError("first G2 Demo model client does not implement the required model surface")
 
     run_directory = _new_run_directory(
         config.output_root or root / "general_demo/runs/first_g2_demo",
@@ -1371,6 +1371,8 @@ def _budgets(
     retry_count = integer(
         "repair", repair_values["max_infrastructure_retries"], "max_infrastructure_retries"
     )
+    if repair_calls != 3:
+        raise ContractError("budget.repair must freeze exactly three repair invocations")
 
     consumer_field, consumer_calls = one_alias(
         "consumer", ("max_inference_calls", "max_steps", "consumer_max_steps")

@@ -22,7 +22,7 @@ from autoadapter2.foundation.errors import ContractError
 from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.foundation.seals import create_seal, verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
-from autoadapter2.implementation import Stage2Runner
+from autoadapter2.implementation import CallbackSandbox, Stage2Runner
 from autoadapter2.integrations.unitree_go2.session import Go2CandidateError
 from autoadapter2.orchestration.demo_runner import _repair_artifact
 from autoadapter2.validation import (
@@ -743,6 +743,95 @@ def _a_result(source: str = _source()):
         stage2.implementation_bundle_hash,
     )
     return design, design_seal, stage2, blue, result
+
+
+def test_codeact_repair_without_sandbox_ok_is_exhausted_without_a_or_b_revision() -> None:
+    design, design_seal = _sealed_design()
+    blue = _blue_ready(design, design_seal)
+    source = _source("INITIAL")
+    generator = FixtureJsonGenerator(
+        lambda _stage, _prompt, _inputs: {"action": "submit", "capability.py": source}
+    )
+    sandbox_calls: list[dict] = []
+    stage2_runner = Stage2Runner(
+        generator,
+        sandbox=CallbackSandbox(
+            lambda _source, probe: sandbox_calls.append(dict(probe)) or {
+                "status": "OK", "summary": "unexpected public probe", "observations": {},
+            }
+        ),
+    )
+    stage2 = stage2_runner.run(design, design_seal, blue.stage2_authorization, _bundle())
+    assert stage2.status == "SUBMITTED"
+    context = _context(design, design_seal, blue)
+    harness = _FixedHarness(context.run_snapshot, ["fail", "pass"])
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(harness),
+        stage2_runner.repair_episode,
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+    assert result.status == "FAILED_AFTER_REPAIRS"
+    assert result.repair_invocations_used == result.repairs_consumed == 3
+    assert result.repair_llm_calls == 60
+    assert result.candidate_revisions_created == 0
+    assert len(result.run_ledger) == 1
+    assert len(result.validation_b_attempts) == 1
+    assert all(entry["status"] == "EPISODE_EXHAUSTED" for entry in result.repair_log)
+    assert sandbox_calls == []
+    assert all(
+        not any(term in json.dumps(call["inputs"]).lower() for term in (
+            "criterion", "threshold", "measurement", "case", "seed",
+        ))
+        for call in generator.calls[1:]
+    )
+
+
+def test_codeact_repair_submits_only_after_public_sandbox_ok_then_retests_ab() -> None:
+    design, design_seal = _sealed_design()
+    blue = _blue_ready(design, design_seal)
+    initial_source = _source("INITIAL")
+    repaired_source = _source("REPAIRED")
+    generator = FixtureJsonGenerator([
+        {"action": "submit", "capability.py": initial_source},
+        {"action": "sandbox", "capability.py": _source("REPAIRING"), "probe": {"probe_id": "repair-1", "capability_id": "reach-joint-target"}},
+        {"action": "sandbox", "capability.py": repaired_source, "probe": {"probe_id": "repair-2", "capability_id": "reach-joint-target"}},
+        {"action": "submit", "capability.py": repaired_source},
+    ])
+    feedbacks = iter((
+        {"status": "ERROR", "summary": "The public probe failed.", "observations": {}, "exception": "public_error"},
+        {"status": "OK", "summary": "The public probe completed.", "observations": {"progress": 1.0}, "exception": None},
+    ))
+    stage2_runner = Stage2Runner(
+        generator,
+        sandbox=CallbackSandbox(lambda _source, _probe: next(feedbacks)),
+        config=__import__("autoadapter2.implementation", fromlist=["Stage2Config"]).Stage2Config(max_llm_calls=1),
+    )
+    stage2 = stage2_runner.run(design, design_seal, blue.stage2_authorization, _bundle())
+    assert stage2.status == "SUBMITTED"
+    context = _context(design, design_seal, blue)
+    result = RepairRunner(
+        ValidationARunner(PROFILE),
+        ValidationBRunner(_FixedHarness(context.run_snapshot, ["fail", "fail", "pass", "pass"])),
+        stage2_runner.repair_episode,
+    ).run(
+        design, design_seal, stage2.binding_contract, stage2.binding_seal,
+        {"capability.py": stage2.capability_source}, stage2.implementation_manifest,
+        stage2.manifest_seal, context, _bundle(),
+    )
+    assert result.status == "PASS"
+    assert result.first_passing_repair_index == 1
+    assert result.repair_llm_calls == 3
+    assert result.candidate_revisions_created == 1
+    assert result.repair_log[0]["episode_trace"]["submitted"] is True
+    assert [item["status"] for item in result.repair_log[0]["episode_trace"]["sandbox_log"]] == [
+        "ERROR", "OK",
+    ]
+    assert result.final_validation_a is not None and result.final_validation_a.status == "PASS"
+    assert result.final_validation_b is not None and result.final_validation_b.status == "PASS"
 
 
 def test_validation_a_profile_checks_facade_envelopes_and_opaque_handle() -> None:
@@ -1646,9 +1735,9 @@ def test_validation_b_preserves_candidate_error_when_collection_lacks_route() ->
         _stage2.manifest_seal, context, _bundle(),
     )
     assert repaired.status == "FAILED_AFTER_REPAIRS"
-    assert repaired.repair_invocations_used == repaired.repairs_consumed == 10
+    assert repaired.repair_invocations_used == repaired.repairs_consumed == 3
     assert repaired.candidate_revisions_created == 0
-    assert len(repaired.repair_log) == 10
+    assert len(repaired.repair_log) == 3
     assert all(entry["status"] == "NO_CHANGE" for entry in repaired.repair_log)
     assert captured["diagnostics"] == [{
         "gate": "B",
@@ -1698,9 +1787,9 @@ def test_repair_exposes_only_safe_candidate_sdk_validation_detail() -> None:
     )
 
     assert result.status == "FAILED_AFTER_REPAIRS"
-    assert result.repair_invocations_used == result.repairs_consumed == 10
+    assert result.repair_invocations_used == result.repairs_consumed == 3
     assert result.candidate_revisions_created == 0
-    assert len(result.repair_log) == 10
+    assert len(result.repair_log) == 3
     diagnostics = captured["diagnostics"]
     assert any(
         item.get("code") == "SDK_FACADE"
@@ -1996,13 +2085,13 @@ def test_repair_repeated_source_consumes_invocation_and_continues_without_b() ->
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert capped.status == "FAILED_AFTER_REPAIRS"
-    assert capped.repair_invocations_used == capped.repairs_consumed == 10
+    assert capped.repair_invocations_used == capped.repairs_consumed == 3
     assert capped.candidate_revisions_created == 0
-    assert len(capped.repair_log) == 10
+    assert len(capped.repair_log) == 3
     assert all(entry["status"] == "NO_CHANGE" for entry in capped.repair_log)
     assert len(capped.run_ledger) == 1
-    assert len(repeated_requests) == 10
-    assert repeated_requests[-1]["ledger"]["repair_invocations_used"] == 9
+    assert len(repeated_requests) == 3
+    assert repeated_requests[-1]["ledger"]["repair_invocations_used"] == 2
 
     comment_only = RepairRunner(
         ValidationARunner(PROFILE),
@@ -2014,14 +2103,14 @@ def test_repair_repeated_source_consumes_invocation_and_continues_without_b() ->
         stage2.manifest_seal, context, _bundle(),
     )
     assert comment_only.status == "FAILED_AFTER_REPAIRS"
-    assert comment_only.repair_invocations_used == comment_only.repairs_consumed == 10
+    assert comment_only.repair_invocations_used == comment_only.repairs_consumed == 3
     assert comment_only.candidate_revisions_created == 0
-    assert [entry["status"] for entry in comment_only.repair_log] == ["NO_EXECUTABLE_CHANGE"] * 10
+    assert [entry["status"] for entry in comment_only.repair_log] == ["NO_EXECUTABLE_CHANGE"] * 3
     assert len(comment_only.run_ledger) == 1
     assert "candidate_source" not in comment_only.repair_log[0]
 
 
-def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_ten() -> None:
+def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_three() -> None:
     design, design_seal, stage2, blue = _stage2_submission(_source("INITIAL"))
     context = _context(design, design_seal, blue)
     harness = _FixedHarness(context.run_snapshot, ["fail", "fail", "infra", "pass", "pass"])
@@ -2065,8 +2154,8 @@ def test_repair_retries_infrastructure_on_same_revision_without_llm_and_caps_at_
         {"capability.py": stage2.capability_source}, stage2.implementation_manifest, stage2.manifest_seal, context, _bundle(),
     )
     assert capped.status == "FAILED_AFTER_REPAIRS"
-    assert capped.repair_invocations_used == capped.repairs_consumed == 10
-    assert capped.candidate_revisions_created == capped.repair_llm_calls == calls == 10
+    assert capped.repair_invocations_used == capped.repairs_consumed == 3
+    assert capped.candidate_revisions_created == capped.repair_llm_calls == calls == 3
 
 
 def test_repair_persists_every_b_report_with_canonical_hash_and_private_attempt_metadata() -> None:

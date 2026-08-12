@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 
 import pytest
 
@@ -237,6 +238,83 @@ def test_sandbox_is_callback_only_and_is_not_an_extra_llm_call() -> None:
     assert fixture.calls[1]["inputs"]["sandbox_feedback"] == {
         "status": "OK", "summary": "The public probe completed.", "observations": {"joint": 0.2}, "exception": None,
     }
+
+
+def test_repair_episode_reuses_stage2_agent_source_and_sandbox_until_public_ok() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    repaired_source = source + "\nREPAIR_MARKER = 1\n"
+    responses = [
+        {"action": "submit", "capability.py": source},
+        {"action": "sandbox", "capability.py": source + "\n# first repair\n", "probe": {"probe_id": "repair-1", "capability_id": "reach-joint-target"}},
+        {"action": "sandbox", "capability.py": source + "\n# second repair\n", "probe": {"probe_id": "repair-2", "capability_id": "reach-joint-target"}},
+        {"action": "sandbox", "capability.py": repaired_source, "probe": {"probe_id": "repair-3", "capability_id": "reach-joint-target"}},
+        {"action": "submit", "capability.py": repaired_source},
+    ]
+    generator = FixtureJsonGenerator(responses)
+    feedbacks = iter((
+        {"status": "ERROR", "summary": "The public probe failed.", "observations": {}, "exception": "public_error"},
+        {"status": "INCONCLUSIVE", "summary": "The public probe was inconclusive.", "observations": {"progress": 0.1}, "exception": None},
+        {"status": "OK", "summary": "The public probe completed.", "observations": {"progress": 1.0}, "exception": None},
+    ))
+    sandbox_sources: list[str] = []
+    sandbox = CallbackSandbox(
+        lambda candidate, _probe: (sandbox_sources.append(candidate) or next(feedbacks))
+    )
+    runner = Stage2Runner(
+        generator,
+        sandbox=sandbox,
+        config=Stage2Config(max_llm_calls=1),
+    )
+    initial = runner.run(design, seal, _authorization(design, seal), _bundle())
+    assert initial.status == "SUBMITTED"
+
+    repaired = runner.repair_episode({
+        "repair_index": 1,
+        "capability.py": source,
+        "diagnostics": [{"gate": "B", "code": "THRESHOLD", "message": "private threshold=0.1"}],
+    })
+    assert repaired == {"capability.py": repaired_source, "llm_calls": 4}
+    trace = runner.last_repair_trace
+    assert trace is not None
+    assert trace["submitted"] is True
+    assert trace["llm_calls"] == 4
+    assert [item["status"] for item in trace["sandbox_log"]] == ["ERROR", "INCONCLUSIVE", "OK"]
+    assert sandbox_sources == [
+        source + "\n# first repair\n",
+        source + "\n# second repair\n",
+        repaired_source,
+    ]
+    repair_inputs = [call["inputs"] for call in generator.calls[1:]]
+    assert all("THRESHOLD" not in json.dumps(inputs) for inputs in repair_inputs)
+    assert all("private threshold" not in json.dumps(inputs).lower() for inputs in repair_inputs)
+    assert all(call["stage"] == "stage2" for call in generator.calls)
+
+
+def test_repair_episode_exhausts_without_sandbox_ok_and_never_submits() -> None:
+    design, seal = _sealed_design()
+    binding = derive_python_binding(design, seal)
+    source = binding.starter_skeleton
+    generator = FixtureJsonGenerator(
+        lambda _stage, _prompt, _inputs: {"action": "submit", "capability.py": source}
+    )
+    sandbox_calls: list[dict] = []
+    runner = Stage2Runner(
+        generator,
+        sandbox=CallbackSandbox(lambda _source, probe: sandbox_calls.append(probe) or {
+            "status": "OK", "summary": "unexpected", "observations": {},
+        }),
+        config=Stage2Config(max_llm_calls=1),
+    )
+    assert runner.run(design, seal, _authorization(design, seal), _bundle()).status == "SUBMITTED"
+    result = runner.repair_episode({"capability.py": source, "diagnostics": []})
+    assert result["llm_calls"] == 20
+    assert result["capability.py"] == source
+    assert runner.last_repair_trace is not None
+    assert runner.last_repair_trace["submitted"] is False
+    assert runner.last_repair_trace["sandbox_log"] == []
+    assert sandbox_calls == []
 
 
 def test_sandbox_contract_is_closed_and_feedback_redacts_private_fields() -> None:

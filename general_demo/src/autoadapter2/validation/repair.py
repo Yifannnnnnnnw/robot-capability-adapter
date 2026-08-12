@@ -29,12 +29,12 @@ RepairCallback = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 
 @dataclass(frozen=True)
 class RepairConfig:
-    max_repairs: int = 10
+    max_repairs: int = 3
     max_infrastructure_retries: int = 1
 
     def __post_init__(self) -> None:
-        if not isinstance(self.max_repairs, int) or isinstance(self.max_repairs, bool) or not 1 <= self.max_repairs <= 10:
-            raise ContractError("Repair max_repairs must be 1..10")
+        if not isinstance(self.max_repairs, int) or isinstance(self.max_repairs, bool) or not 1 <= self.max_repairs <= 3:
+            raise ContractError("Repair max_repairs must be 1..3")
         if not isinstance(self.max_infrastructure_retries, int) or isinstance(self.max_infrastructure_retries, bool) or self.max_infrastructure_retries < 0:
             raise ContractError("Repair infrastructure retries must be non-negative")
 
@@ -70,12 +70,7 @@ _CANDIDATE_VALIDATION_A_CODES = frozenset({
 })
 _CANDIDATE_ERROR_CODES = frozenset({"CANDIDATE_EXCEPTION"})
 _FORBIDDEN_CANDIDATE_DIAGNOSTIC_TERMS = (
-    "criterion",
-    "threshold",
-    "measurement",
-    "harness",
-    "private",
-    "input",
+    "criterion", "threshold", "measurement", "harness", "private", "input", "case", "seed",
 )
 
 
@@ -131,10 +126,21 @@ def _freeze_design(design: Mapping[str, Any], seal: Mapping[str, Any], binding_c
 
 
 def _sanitized_diagnostics(validation_a: ValidationAResult, validation_b: ValidationBResult | None) -> list[dict[str, str]]:
+    def safe_code(value: Any) -> str | None:
+        if not isinstance(value, str) or not value.strip():
+            return None
+        normalized = value.strip()
+        if any(term in normalized.lower() for term in _FORBIDDEN_CANDIDATE_DIAGNOSTIC_TERMS):
+            return None
+        return normalized
+
     if validation_a.status != "PASS":
         diagnostics: list[dict[str, str]] = []
         for item in validation_a.diagnostics:
-            diagnostic = {"gate": "A", "code": item["code"]}
+            code = safe_code(item.get("code"))
+            if code is None:
+                continue
+            diagnostic = {"gate": "A", "code": code}
             candidate_error = _candidate_owned_error(item.get("code"), item.get("message"))
             if candidate_error is not None:
                 diagnostic["candidate_error"] = candidate_error
@@ -143,7 +149,10 @@ def _sanitized_diagnostics(validation_a: ValidationAResult, validation_b: Valida
     if validation_b is not None and validation_b.status == "FAIL":
         diagnostics: list[dict[str, str]] = []
         for item in validation_b.diagnostics:
-            diagnostic = {"gate": "B", "code": item["code"]}
+            code = safe_code(item.get("code"))
+            if code is None:
+                continue
+            diagnostic = {"gate": "B", "code": code}
             candidate_error = _candidate_owned_error(item.get("code"), item.get("candidate_error"))
             if candidate_error is not None:
                 diagnostic["candidate_error"] = candidate_error
@@ -162,6 +171,16 @@ def _repair_output(value: Any) -> tuple[str | None, int, dict[str, str] | None]:
     if set(output) != {"capability.py", "llm_calls"} or not isinstance(output.get("capability.py"), str) or not output["capability.py"].strip():
         return None, calls, _issue("REPAIR_OUTPUT")
     return output["capability.py"], calls, None
+
+
+def _callback_trace(callback: RepairCallback) -> dict[str, Any] | None:
+    """Read an optional public inner-episode trace from a bound callback owner."""
+
+    owner = getattr(callback, "__self__", None)
+    trace = getattr(owner, "last_repair_trace", None)
+    if isinstance(trace, Mapping):
+        return copy.deepcopy(dict(trace))
+    return None
 
 
 def _expected_symbols(binding_contract: Mapping[str, Any]) -> list[dict[str, str]]:
@@ -308,8 +327,9 @@ class RepairRunner:
                 )
             repaired_source, llm_calls, output_issue = _repair_output(raw)
             total_llm_calls += llm_calls
+            episode_trace = _callback_trace(self._repair_callback)
             if output_issue is not None:
-                repair_log.append({
+                log_entry = {
                     "repair_index": requested_index,
                     "candidate_revision_index": None,
                     "llm_calls": llm_calls,
@@ -317,11 +337,29 @@ class RepairRunner:
                     "diagnostics": [output_issue],
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
-                })
+                }
+                if episode_trace is not None:
+                    log_entry["episode_trace"] = episode_trace
+                repair_log.append(log_entry)
+                continue
+            if episode_trace is not None and episode_trace.get("submitted") is not True:
+                episode_source = episode_trace.get("working_source")
+                if isinstance(episode_source, str) and episode_source.strip():
+                    current_source = episode_source
+                log_entry = {
+                    "repair_index": requested_index,
+                    "candidate_revision_index": None,
+                    "llm_calls": llm_calls,
+                    "status": "EPISODE_EXHAUSTED",
+                    "invocation_consumed": True,
+                    "candidate_revision_created": False,
+                    "episode_trace": episode_trace,
+                }
+                repair_log.append(log_entry)
                 continue
             source_hash = content_hash(repaired_source.encode("utf-8"))
             if source_hash in source_history:
-                repair_log.append({
+                log_entry = {
                     "repair_index": requested_index,
                     "candidate_revision_index": None,
                     "llm_calls": llm_calls,
@@ -329,12 +367,15 @@ class RepairRunner:
                     "status": "NO_CHANGE",
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
-                })
+                }
+                if episode_trace is not None:
+                    log_entry["episode_trace"] = episode_trace
+                repair_log.append(log_entry)
                 continue
 
             executable_hash = _executable_source_hash(repaired_source)
             if executable_hash is None:
-                repair_log.append({
+                log_entry = {
                     "repair_index": requested_index,
                     "candidate_revision_index": None,
                     "llm_calls": llm_calls,
@@ -343,10 +384,13 @@ class RepairRunner:
                     "diagnostics": [_issue("REPAIR_SOURCE_SYNTAX")],
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
-                })
+                }
+                if episode_trace is not None:
+                    log_entry["episode_trace"] = episode_trace
+                repair_log.append(log_entry)
                 continue
             if executable_hash is not None and executable_hash in executable_history:
-                repair_log.append({
+                log_entry = {
                     "repair_index": requested_index,
                     "candidate_revision_index": None,
                     "llm_calls": llm_calls,
@@ -355,7 +399,10 @@ class RepairRunner:
                     "status": "NO_EXECUTABLE_CHANGE",
                     "invocation_consumed": True,
                     "candidate_revision_created": False,
-                })
+                }
+                if episode_trace is not None:
+                    log_entry["episode_trace"] = episode_trace
+                repair_log.append(log_entry)
                 continue
 
             candidate_revisions_created += 1
@@ -392,7 +439,7 @@ class RepairRunner:
                 ledger,
                 validation_b_attempts,
             )
-            repair_log.append({
+            log_entry = {
                 "repair_index": requested_index,
                 "candidate_revision_index": candidate_revisions_created,
                 "llm_calls": llm_calls,
@@ -409,7 +456,10 @@ class RepairRunner:
                 ),
                 "invocation_consumed": True,
                 "candidate_revision_created": True,
-            })
+            }
+            if episode_trace is not None:
+                log_entry["episode_trace"] = episode_trace
+            repair_log.append(log_entry)
             if current_b is not None and current_b.status == "PASS":
                 return self._result(
                     "PASS", requested_index, repair_invocations_used,

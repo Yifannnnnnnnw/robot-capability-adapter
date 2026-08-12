@@ -51,7 +51,7 @@ _SCALAR_TYPES = {"null", "boolean", "integer", "number", "string"}
 
 @dataclass(frozen=True)
 class DemoModelAdapters:
-    """Stage-scoped external model boundaries and one Repair callback."""
+    """Stage-scoped external model boundaries plus a legacy Repair callback surface."""
 
     stage1: JsonGenerator
     blue_line: JsonGenerator
@@ -592,11 +592,12 @@ class GeneralDemoRunner:
             implementation_bundle = validate_implementation_bundle(derived_artifact)
         parents.add(implementation_bundle.bundle_hash)
 
-        stage2 = Stage2Runner(
+        stage2_runner = Stage2Runner(
             self._models.stage2,
             sandbox=self._models.sandbox,
             config=plan.stage2_config,
-        ).run(
+        )
+        stage2 = stage2_runner.run(
             stage1.capability_design,
             stage1.seal,
             blue.stage2_authorization,
@@ -666,7 +667,7 @@ class GeneralDemoRunner:
         validation = RepairRunner(
             ValidationARunner(validation_a_profile),
             ValidationBRunner(validation_harness),
-            self._models.repair,
+            stage2_runner.repair_episode,
             plan.repair_config,
         ).run(
             stage1.capability_design,
