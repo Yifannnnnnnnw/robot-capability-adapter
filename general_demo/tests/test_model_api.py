@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -179,6 +180,64 @@ def test_public_implementation_bundle_renderer_is_deterministic_and_does_not_inv
     assert '"make_command"' in rendered_first
     assert '"Command"' in rendered_first
     assert '"missing_factory"' not in rendered_first
+
+
+def test_initial_stage2_request_includes_public_controller_family_experience(monkeypatch):
+    source = "def capability_example():\n    return 1\n"
+    payload = {
+        "choices": [{
+            "message": {
+                "content": json.dumps({"action": "submit", "capability.py": source}),
+            },
+        }],
+    }
+    captured: list[dict[str, object]] = []
+
+    def urlopen(request, **_kwargs):
+        captured.append(json.loads(request.data.decode("utf-8")))
+        return _Response(payload)
+
+    monkeypatch.setattr(model_api.urllib.request, "urlopen", urlopen)
+    template = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "config/first_g2_demo/robots/so-arm101.json"
+        ).read_text(encoding="utf-8")
+    )
+    bundle = {
+        "sdk_implementation_projection": {
+            "permitted_operations": ["send_action", "get_observation"],
+            "field_order": ["joint_1.pos", "gripper.pos"],
+        },
+        "robot_implementation_facts": {
+            "kinematics": {"joint_order": ["joint_1", "gripper"]},
+        },
+        "implementation_experience": template["implementation_experience"],
+    }
+
+    client = ModelApiClient(ModelApiConfig(api_key="test-only"))
+    client.generate_json("stage2", "STAGE2_GUIDANCE_MARKER", {"implementation_bundle": bundle})
+
+    request_text = captured[0]["messages"][-1]["content"]  # type: ignore[index]
+    assert '"implementation_experience": [' in request_text
+    assert '"controller_family": "serial_arm_dls_closed_loop"' in request_text
+    assert "fresh observation" in request_text
+    assert "state-dependent send" in request_text
+    assert "at least two" in request_text.lower()
+    for phrase in (
+        '"max_feedback_cycles": 32',
+        '"minimum_feedback_cycles": 2',
+        '"finite_difference_rad": 1e-05',
+        '"damping": 0.02',
+        '"gain": 0.7',
+        '"max_joint_step_rad": 0.12',
+        "exclude the `gripper` joint",
+        "current_obs + (desired_degree - float(current_obs))",
+        "current_gripper_obs + (desired_gripper - float(current_gripper_obs))",
+        "range(max_feedback_cycles)",
+        "one-read-many-write",
+    ):
+        assert phrase in request_text
 
 
 def test_implementation_agent_replays_public_stage2_and_repair_history(monkeypatch):

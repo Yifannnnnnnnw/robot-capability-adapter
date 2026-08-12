@@ -233,6 +233,19 @@
     }
   },
   "implementation_experience": [
-    {"experience_id": "unitree-go2-checked-in-public-surface-v1", "basis": "checked_in_sdk_morphology_route_records", "guidance": "Use only the admitted LowCmd and LowState route; do not expose a high-level behavior or gait facade."}
+    {"experience_id": "unitree-go2-checked-in-public-surface-v1", "basis": "checked_in_sdk_morphology_route_records", "guidance": "Use only the admitted LowCmd and LowState route; do not expose a high-level behavior or gait facade."},
+    {
+      "experience_id": "quadruped_joint_pd_feedback_v1",
+      "controller_family": "quadruped_joint_pd_closed_loop",
+      "basis": "pinned_public_quadruped_morphology_and_home_controller_config",
+      "family_scope": "Reusable four-legged joint-space feedback recipe; bind robot-specific names and counts from the selected public projection.",
+      "public_family_shape": {
+        "leg_order": ["FR", "FL", "RR", "RL"],
+        "joint_order_per_leg": ["hip", "thigh", "calf"],
+        "go2_home_controller_setpoint_rad_per_leg": [0.0, 0.9, -1.8],
+        "go2_home_controller_setpoint_layout": "repeat_for_FR_FL_RR_RL"
+      },
+      "guidance": "In one capability call, derive a fixed integer iteration bound from the public duration or a fixed safe cap and use range; never use an unbounded time.time() loop. Run at least 2 cycles. Every iteration must be: fresh LowState Read -> for every active joint construct q from that fresh _TrackedFloat q plus a bounded state-dependent correction toward the current phase target -> populate the correct 20-slot LowCmd_ from the unitree_go_msg_dds__LowCmd_ default factory -> assign CRC().Crc(message) -> Write -> small bounded time.sleep/advance -> fresh Read. Do not convert fresh q through float(), numpy, or list conversion and then replace it with a plain target; preserve the fresh-state dependency. kp/kd may be public controller constants, but q must depend on the fresh read. For move use a bounded phase oscillator plus feedback correction, not a fixed trajectory; for stand, sit, and height use joint PD target tracking; for hold use fresh q/velocity feedback; during stop use fresh-state feedback to decelerate. Do not use one-read-many-write behavior."
+    }
   ]
 }

@@ -136,10 +136,16 @@ def _render_public_implementation_bundle(bundle: Any) -> str:
 
     sections: dict[str, Any] = {}
     if isinstance(bundle, Mapping):
-        for name in ("sdk_implementation_projection", "robot_implementation_facts"):
+        for name in (
+            "sdk_implementation_projection",
+            "robot_implementation_facts",
+            "implementation_experience",
+        ):
             value = bundle.get(name)
             if isinstance(value, Mapping):
                 sections[name] = dict(value)
+            elif name == "implementation_experience" and isinstance(value, list):
+                sections[name] = copy.deepcopy(value)
     rendered = json.dumps(sections, ensure_ascii=False, indent=2, sort_keys=True)
     return (
         "PUBLIC IMPLEMENTATION BUNDLE (authoritative; do not invent absent facts):\n"

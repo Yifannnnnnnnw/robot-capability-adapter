@@ -151,6 +151,58 @@
     }
   },
   "implementation_experience": [
-    {"experience_id": "so-arm101-checked-in-public-surface-v1", "basis": "checked_in_sdk_morphology_route_records", "guidance": "Use the six ordered pos fields and direct injected facade operations; Framework owns SO session open/close and the actuator-only route is transport behavior."}
+    {
+      "experience_id": "serial-arm-dls-closed-loop-family-v1",
+      "controller_family": "serial_arm_dls_closed_loop",
+      "scope": {
+        "kind": "reusable_controller_family",
+        "robot_specific": false,
+        "applies_to": "serial open-chain arms with public ordered joint fields and a public kinematic chain"
+      },
+      "basis": "checked_in_public_numeric_control_experience",
+      "public_references": {
+        "sdk_facade_operations": "implementation_bundle.sdk_implementation_projection.permitted_operations",
+        "ordered_action_fields": "implementation_bundle.sdk_implementation_projection.field_order",
+        "ordered_observation_fields": "implementation_bundle.sdk_implementation_projection.observation_fields",
+        "kinematic_chain": "implementation_bundle.robot_implementation_facts.kinematics.chain",
+        "joint_order": "implementation_bundle.robot_implementation_facts.kinematics.joint_order",
+        "joint_limits": "implementation_bundle.robot_implementation_facts.kinematics.chain[*].range_rad"
+      },
+      "controller_parameters": {
+        "max_feedback_cycles": 32,
+        "minimum_feedback_cycles": 2,
+        "finite_difference_rad": 1e-5,
+        "damping": 0.02,
+        "gain": 0.7,
+        "max_joint_step_rad": 0.12
+      },
+      "control_recipe": {
+        "sdk_route": "Use the injected `_sdk.get_observation` and `_sdk.send_action` operations named by the public bundle; Framework owns session open and close.",
+        "fresh_observation": "At the start of every loop iteration call `_sdk.get_observation()` and read the six ordered `.pos` fields from that returned observation.",
+        "units": "The six arm values use the public degree unit: convert them to radians before FK and Jacobian work. Keep the gripper in its public normalized unit.",
+        "tip_chain": "Use only chain entries whose public group is `arm` for the tip FK and Jacobian; explicitly exclude the `gripper` joint from the tip chain. The gripper remains an action field, not a tip-chain DoF.",
+        "forward_kinematics": "Start from the public base frame and traverse the frozen public arm chain in order. For each joint use `T = T @ parent_to_joint @ Rz(q)`; after the arm chain, multiply the public `parent_to_reference` transform.",
+        "jacobian": "Form an analytical or finite-difference numerical Jacobian from that same public arm chain and the current observed arm configuration; use `finite_difference_rad` for numerical differences.",
+        "dls_step": "Compute `dq = gain * (J.T @ solve(J@J.T + damping**2 * I,error))` from the current public end-effector error, clip each joint step to `max_joint_step_rad`, then apply the public per-joint limits.",
+        "tainted_action": "For every arm field, retain the raw fresh value as `current_obs` and construct the command exactly as `current_obs + (desired_degree - float(current_obs))`; do not first convert current_obs to NumPy or float, because that strips Sandbox lineage.",
+        "ordered_send": "Send all six ordered fields through `_sdk.send_action`, preserving the public field order. For the gripper, retain the raw fresh `current_gripper_obs` and construct it the same way as `current_gripper_obs + (desired_gripper - float(current_gripper_obs))`, changing `desired_gripper` only when the public request requires.",
+        "closed_loop": [
+          "fresh observation",
+          "state-dependent send",
+          "allow Framework-owned execution time or physics to advance",
+          "fresh observation",
+          "state-dependent correction",
+          "repeat from the newest observation"
+        ],
+        "convergence": "Use the fixed integer bound `for feedback_cycle in range(max_feedback_cycles)`. Do not return after the first send: complete at least `minimum_feedback_cycles` read-to-state-dependent-send-to-fresh-read correction cycles before allowing convergence exit; at the bound return the public non-converged result or error."
+      },
+      "do_not_use": [
+        "one-read-many-write",
+        "fixed trajectories",
+        "pure polling",
+        "sleep-only behavior",
+        "self-report"
+      ]
+    }
   ]
 }

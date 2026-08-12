@@ -452,6 +452,71 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     assert gate.run_id == run_id
 
 
+def test_quadruped_family_experience_is_in_bundle_and_public_renderer(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    manifest = load_integration_manifest(
+        tmp_path / "general_demo/integrations/unitree-go2/integration_manifest.json"
+    ).value
+    morphology = json.loads(
+        (tmp_path / manifest["morphology_ref"]["path"]).read_text(encoding="utf-8")
+    )
+    sdk = json.loads(
+        (tmp_path / manifest["sdk_ref"]["path"]).read_text(encoding="utf-8")
+    )
+    translation = json.loads(
+        (tmp_path / manifest["translation_ref"]["path"]).read_text(encoding="utf-8")
+    )
+    template = json.loads(
+        (tmp_path / "general_demo/config/first_g2_demo/robots/unitree-go2.json").read_text(encoding="utf-8")
+    )
+    robot_projection = _build_robot_projection(manifest, morphology, sdk, template)
+    bundle = _build_implementation_bundle(
+        "unitree-go2", morphology, sdk, translation, robot_projection, template
+    )
+    experience = next(
+        item for item in bundle["implementation_experience"]
+        if item.get("experience_id") == "quadruped_joint_pd_feedback_v1"
+    )
+
+    assert experience["controller_family"] == "quadruped_joint_pd_closed_loop"
+    assert experience["public_family_shape"] == {
+        "leg_order": ["FR", "FL", "RR", "RL"],
+        "joint_order_per_leg": ["hip", "thigh", "calf"],
+        "go2_home_controller_setpoint_rad_per_leg": [0.0, 0.9, -1.8],
+        "go2_home_controller_setpoint_layout": "repeat_for_FR_FL_RR_RL",
+    }
+    guidance = experience["guidance"]
+    for phrase in (
+        "fixed integer iteration bound",
+        "range",
+        "time.time()",
+        "at least 2 cycles",
+        "fresh LowState Read",
+        "_TrackedFloat",
+        "bounded state-dependent correction",
+        "20-slot LowCmd_",
+        "unitree_go_msg_dds__LowCmd_",
+        "CRC().Crc(message)",
+        "small bounded time.sleep/advance",
+        "fresh Read",
+        "float()",
+        "numpy",
+        "one-read-many-write",
+        "bounded phase oscillator",
+        "joint PD target tracking",
+        "fresh q/velocity feedback",
+        "fresh-state feedback to decelerate",
+    ):
+        assert phrase in guidance
+    experience_text = json.dumps(experience, ensure_ascii=False).lower()
+    for forbidden in ("validation", "criteria", "cases", "threshold", "private", "mujoco"):
+        assert forbidden not in experience_text
+    rendered = _render_public_implementation_bundle(bundle)
+    assert '"implementation_experience": [' in rendered
+    assert "quadruped_joint_pd_closed_loop" in rendered
+    assert "_TrackedFloat" in rendered
+
+
 def test_experience_snapshot_rejects_wrong_robot_applicability(tmp_path: Path) -> None:
     snapshot = {
         "artifact_type": "experience_snapshot",
@@ -509,6 +574,59 @@ def test_so_bundle_exposes_only_validation_a_facade_operations(tmp_path: Path) -
         "latest_valid_action": "latest valid goal remains latched until reset or replacement",
         "invalid_input": "bad checksum, unknown ID/register, read-only write, wrong width, or malformed packet does not alter actuator control",
     }
+
+
+def test_so_bundle_contains_reusable_serial_arm_dls_closed_loop_family(tmp_path: Path) -> None:
+    _copy_project(tmp_path)
+    manifest, morphology, sdk, translation, template, kinematics, projection = _so_implementation_inputs(tmp_path)
+    bundle = _build_implementation_bundle(
+        "so-arm101",
+        morphology,
+        sdk,
+        translation,
+        projection,
+        template,
+        kinematics,
+    )
+
+    family = next(
+        item
+        for item in bundle["implementation_experience"]
+        if item.get("controller_family") == "serial_arm_dls_closed_loop"
+    )
+    assert family["scope"] == {
+        "kind": "reusable_controller_family",
+        "robot_specific": False,
+        "applies_to": "serial open-chain arms with public ordered joint fields and a public kinematic chain",
+    }
+    assert family["controller_parameters"] == {
+        "max_feedback_cycles": 32,
+        "minimum_feedback_cycles": 2,
+        "finite_difference_rad": 1e-5,
+        "damping": 0.02,
+        "gain": 0.7,
+        "max_joint_step_rad": 0.12,
+    }
+    recipe = family["control_recipe"]
+    assert recipe["sdk_route"] == "Use the injected `_sdk.get_observation` and `_sdk.send_action` operations named by the public bundle; Framework owns session open and close."
+    assert "exclude the `gripper` joint" in recipe["tip_chain"]
+    assert "T = T @ parent_to_joint @ Rz(q)" in recipe["forward_kinematics"]
+    assert "parent_to_reference" in recipe["forward_kinematics"]
+    assert "finite_difference_rad" in recipe["jacobian"]
+    assert "dq = gain * (J.T @ solve(J@J.T + damping**2 * I,error))" in recipe["dls_step"]
+    assert "max_joint_step_rad" in recipe["dls_step"]
+    assert "current_obs + (desired_degree - float(current_obs))" in recipe["tainted_action"]
+    assert "all six ordered fields" in recipe["ordered_send"]
+    assert "current_gripper_obs + (desired_gripper - float(current_gripper_obs))" in recipe["ordered_send"]
+    assert "range(max_feedback_cycles)" in recipe["convergence"]
+    assert "minimum_feedback_cycles" in recipe["convergence"]
+    assert "one-read-many-write" in family["do_not_use"]
+
+    family_text = json.dumps(family).lower()
+    assert not any(
+        marker in family_text
+        for marker in ("private", "criterion", "threshold", "case", "mujoco", "qpos", "ctrl")
+    )
 
 
 def test_so_kinematics_projection_contains_exact_chain_and_separate_sdk_units(tmp_path: Path) -> None:
