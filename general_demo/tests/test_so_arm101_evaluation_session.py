@@ -343,6 +343,7 @@ def test_default_capture_factory_uses_shared_time_indexed_slots() -> None:
 
 
 def test_sample_truth_uses_mujoco_object_velocity_not_site_xvelp() -> None:
+    np = pytest.importorskip("numpy", exc_type=ImportError)
     object_types = SimpleNamespace(
         mjOBJ_SITE="site",
         mjOBJ_BODY="body",
@@ -368,12 +369,14 @@ def test_sample_truth_uses_mujoco_object_velocity_not_site_xvelp() -> None:
             _data: object,
             object_type: str,
             object_id: int,
-            result: list[float],
+            result: Any,
             flg_local: int,
         ) -> None:
             assert object_type == "site"
             assert object_id == 0
             assert flg_local == 0
+            assert isinstance(result, np.ndarray)
+            assert result.shape == (6,)
             result[:] = [1.0, 2.0, 3.0, 0.1, 0.2, 0.3]
 
     model = SimpleNamespace(

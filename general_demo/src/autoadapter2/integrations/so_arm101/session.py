@@ -333,7 +333,9 @@ def _verify_external_model(model_raw: str, morphology: Mapping[str, Any]) -> Pat
 def _site_linear_velocity(mj: Any, model: Any, data: Any, site_id: int) -> list[float]:
     """Return a site's world-frame linear velocity from MuJoCo's public API."""
 
-    spatial_velocity = [0.0] * 6
+    import numpy as np
+
+    spatial_velocity = np.zeros(6, dtype=float)
     mj.mj_objectVelocity(
         model,
         data,
