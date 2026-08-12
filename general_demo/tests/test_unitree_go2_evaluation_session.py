@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import inspect
 import json
 import multiprocessing
 import os
@@ -752,11 +753,18 @@ def test_candidate_timeout_terminates_worker_and_allows_a_clean_next_trial(monke
 
     # Allow the fresh worker to finish its spawn/initialization window in the
     # clean-trial assertion; the timeout above remains the behavior under test.
-    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 8.0)
+    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 30.0)
     session.reset(phase="DEMO", execution_id="timeout-next-trial", initial_state={"task_id": "G01"})
     assert session.invoke(Candidate(), "low-level-command", {}) == {"status": "issued"}
     assert transport.write_count.value == 1
     session.close()
+
+
+def test_candidate_worker_deadline_is_framework_owned_and_30_seconds() -> None:
+    assert go2_session_module.DEFAULT_CANDIDATE_TIMEOUT_S == 30.0
+    assert "timeout_s" not in inspect.signature(
+        UnitreeGo2EvaluationRobotSession._invoke_with_clock
+    ).parameters
 
 
 def test_completed_result_is_sent_before_blocking_dds_cleanup(monkeypatch) -> None:
