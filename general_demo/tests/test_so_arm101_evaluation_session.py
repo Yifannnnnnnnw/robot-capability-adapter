@@ -16,7 +16,10 @@ from autoadapter2.demo import (
     evaluate_fixed_demo_criterion,
 )
 from autoadapter2.evaluation import FrozenVideoProfile, RGBFrame
+from autoadapter2.foundation.canonical import canonical_bytes
+from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.integrations.so_arm101.session import (
+    SOArm101SessionError,
     SOArm101EvaluationRobotSession,
     _load_frame_capture_factory,
 )
@@ -116,9 +119,16 @@ class _Translation:
 
 
 class _Follower:
-    def __init__(self, translation: _Translation, order: list[str]) -> None:
+    def __init__(
+        self,
+        translation: _Translation,
+        order: list[str],
+        *,
+        readback_mismatch: bool = False,
+    ) -> None:
         self.translation = translation
         self.order = order
+        self.readback_mismatch = readback_mismatch
         self.connected = False
 
     def connect(self, *, calibrate: bool = False) -> None:
@@ -136,14 +146,17 @@ class _Follower:
         return dict(action)
 
     def get_observation(self) -> dict[str, float]:
-        return {
-            f"{name}.pos": (
+        result: dict[str, float] = {}
+        for index, name in enumerate(MOTOR_NAMES):
+            value = (
                 math.degrees(self.translation.backend.qpos[index])
                 if name != "gripper"
                 else self.translation.backend.qpos[index] * 100.0
             )
-            for index, name in enumerate(MOTOR_NAMES)
-        }
+            if self.readback_mismatch and name == "shoulder_pan":
+                value += 45.0
+            result[f"{name}.pos"] = value
+        return result
 
 
 class _Candidate:
@@ -236,7 +249,9 @@ def _invocation(metric: str = "tip_position_error_m") -> HarnessInvocation:
     )
 
 
-def _session(order: list[str]) -> SOArm101EvaluationRobotSession:
+def _session(
+    order: list[str], *, readback_mismatch: bool = False
+) -> SOArm101EvaluationRobotSession:
     backend = _Backend(order)
     holder: dict[str, Any] = {"backend": backend}
 
@@ -249,7 +264,11 @@ def _session(order: list[str]) -> SOArm101EvaluationRobotSession:
         return translation
 
     def follower_factory(_port: str, _calibration: Path) -> _Follower:
-        follower = _Follower(holder["translation"], order)
+        follower = _Follower(
+            holder["translation"],
+            order,
+            readback_mismatch=readback_mismatch,
+        )
         holder["follower"] = follower
         return follower
 
@@ -516,6 +535,7 @@ def test_demo_evidence_passes_and_rejects_each_checked_in_fixed_criterion(task_i
             execution_id=f"demo-{task_id}-criteria",
             initial_state={"task_id": task_id},
         )
+        session.invoke(_Candidate(send_sdk_command=True), "public-effect", {})
         session._advance(DEMO_DURATIONS[task_id])  # type: ignore[attr-defined]
         evidence = dict(session.demo_evidence(task_id))
         assert evidence["duration_s"] >= DEMO_DURATIONS[task_id]
@@ -553,7 +573,95 @@ def test_protocol_reset_truth_and_route_require_real_session_traffic() -> None:
     with_traffic = session.validation_evidence(_invocation())
     assert with_traffic.sdk_route_verified is True
     assert with_traffic.guard_results["physics-progress-observed"] is True
+    assert with_traffic.route_evidence["candidate_invocation_count"] == 1
+    assert with_traffic.route_evidence["accepted_command_count"] > 0
+    assert with_traffic.route_evidence["present_position_read_count"] > 0
+    assert with_traffic.route_evidence["sdk_readback_max_tick_error"] <= 1
+    assert with_traffic.route_evidence["verified"] is True
+    assert content_hash(canonical_bytes(with_traffic.route_evidence)) == with_traffic.route_evidence_hash
     session.close()
+
+
+def test_demo_route_rejects_pre_satisfied_task_without_candidate_tool_call() -> None:
+    session = _session([])
+    try:
+        session.reset(phase="DEMO", execution_id="demo-T01-no-tool", initial_state={"task_id": "T01"})
+        session._advance(DEMO_DURATIONS["T01"])  # type: ignore[attr-defined]
+        evidence = dict(session.demo_evidence("T01"))
+        route = evidence["route_evidence"]
+        assert evidence["measurements"]["tip_position_error_m"] <= 0.02
+        assert evaluate_fixed_demo_criterion(PRIVATE_CRITERIA["T01"], evidence) is False
+        assert route["candidate_invocation_count"] == 0
+        assert route["accepted_command_count"] == 0
+        assert route["present_position_read_count"] > 0
+        assert route["verified"] is False
+        assert evidence["guard_results"]["trusted-external-verdict"] is False
+    finally:
+        session.close()
+
+
+def test_demo_route_detail_and_hash_pass_with_real_fixture_traffic() -> None:
+    session = _session([])
+    try:
+        session.reset(phase="DEMO", execution_id="demo-T01-positive", initial_state={"task_id": "T01"})
+        session.invoke(_Candidate(send_sdk_command=True), "public-effect", {})
+        session._advance(DEMO_DURATIONS["T01"])  # type: ignore[attr-defined]
+        evidence = dict(session.demo_evidence("T01"))
+        route = evidence["route_evidence"]
+        assert evaluate_fixed_demo_criterion(PRIVATE_CRITERIA["T01"], evidence) is True
+        assert route["phase"] == "DEMO"
+        assert route["execution_id"] == "demo-T01-positive"
+        assert route["candidate_invocation_count"] == 1
+        assert route["accepted_command_count"] > 0
+        assert route["physics_steps"] > 0
+        assert route["simulation_time_progressed"] is True
+        assert route["physics_progress"] is True
+        assert route["present_position_read_count"] > 0
+        assert route["state_route_observed"] is True
+        assert route["sdk_readback_max_tick_error"] <= 1
+        assert route["verified"] is True
+        assert content_hash(canonical_bytes(route)) == evidence["route_evidence_hash"]
+    finally:
+        session.close()
+
+
+def test_demo_route_fails_when_present_position_disagrees_with_named_qpos() -> None:
+    session = _session([], readback_mismatch=True)
+    try:
+        session.reset(phase="DEMO", execution_id="demo-T01-mismatch", initial_state={"task_id": "T01"})
+        session.invoke(_Candidate(send_sdk_command=True), "public-effect", {})
+        evidence = dict(session.demo_evidence("T01"))
+        route = evidence["route_evidence"]
+        assert route["state_route_observed"] is True
+        assert route["sdk_readback_max_tick_error"] > 1
+        assert route["verified"] is False
+        assert evidence["guard_results"]["trusted-external-verdict"] is False
+    finally:
+        session.close()
+
+
+def test_route_evidence_baseline_resets_and_tamper_is_detected() -> None:
+    session = _session([])
+    try:
+        session.reset(phase="DEMO", execution_id="demo-T01-first", initial_state={"task_id": "T01"})
+        session.invoke(_Candidate(send_sdk_command=True), "public-effect", {})
+        first = dict(session.demo_evidence("T01"))
+        assert first["route_evidence"]["candidate_invocation_count"] == 1
+
+        session.reset(phase="DEMO", execution_id="demo-T01-second", initial_state={"task_id": "T01"})
+        assert session.route_evidence == {}
+        assert session.route_evidence_hash is None
+        second = dict(session.demo_evidence("T01"))
+        assert second["route_evidence"]["execution_id"] == "demo-T01-second"
+        assert second["route_evidence"]["candidate_invocation_count"] == 0
+        assert second["route_evidence"]["accepted_command_count"] == 0
+        assert second["route_evidence"]["verified"] is False
+
+        session._last_route_evidence["physics_steps"] += 1  # type: ignore[attr-defined]
+        with pytest.raises(SOArm101SessionError, match="tampered"):
+            _ = session.route_evidence
+    finally:
+        session.close()
 
 
 def test_demo_evidence_is_private_and_cleanup_is_follower_then_pty_then_backend() -> None:

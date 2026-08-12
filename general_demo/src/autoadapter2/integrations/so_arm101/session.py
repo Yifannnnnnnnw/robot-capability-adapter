@@ -22,12 +22,16 @@ import math
 import os
 import tempfile
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
 
 from ...demo import ValidationEvidence
 from ...evaluation import FrozenVideoProfile, RGBFrame
+from ...foundation.canonical import canonical_bytes
+from ...foundation.errors import ContractError
+from ...foundation.hashing import content_hash
 from ...validation import HarnessInfrastructureError, HarnessInvocation, MeasurementSample
 from .feetech_protocol import MOTOR_NAMES
 from .readiness import (
@@ -83,6 +87,21 @@ _DEMO_METRIC_FIELDS = (
 
 class SOArm101SessionError(RuntimeError):
     """The private SO-ARM101 session could not open or collect evidence."""
+
+
+@dataclass(frozen=True)
+class _SOArm101ValidationEvidence(ValidationEvidence):
+    """Typed Validation evidence with a private route-detail integrity hash."""
+
+    route_evidence_hash: str = ""
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if (
+            not self.route_evidence
+            or content_hash(canonical_bytes(self.route_evidence)) != self.route_evidence_hash
+        ):
+            raise ContractError("SO-ARM101 route evidence hash does not match detail")
 
 
 def _repo_general_demo_root() -> Path:
@@ -431,6 +450,13 @@ class SOArm101EvaluationRobotSession:
         self._last_invocation_start_s = 0.0
         self._last_truth: dict[str, Any] | None = None
         self._candidate_invocation_observed = False
+        self._current_phase: str | None = None
+        self._current_execution_id: str | None = None
+        self._trial_baseline_time_s = 0.0
+        self._trial_candidate_invocations: list[dict[str, Any]] = []
+        self._present_position_read_count = 0
+        self._last_route_evidence: dict[str, Any] = {}
+        self._last_route_evidence_hash: str | None = None
 
         try:
             if backend_factory is None:
@@ -492,11 +518,40 @@ class SOArm101EvaluationRobotSession:
         if any(not callable(getattr(follower, name, None)) for name in required):
             raise SOArm101SessionError("SO101Follower does not expose the admitted public surface")
 
+    def _record_candidate_invocation(
+        self,
+        *,
+        source: str,
+        capability_id: str | None = None,
+        arguments: Mapping[str, Any] | None = None,
+    ) -> None:
+        record: dict[str, Any] = {"source": source}
+        if capability_id is not None:
+            record["capability_id"] = capability_id
+        if arguments is not None:
+            record["arguments"] = copy.deepcopy(dict(arguments))
+        self._trial_candidate_invocations.append(record)
+
     @property
     def sdk(self) -> object:
         if not self._opened or self._follower is None:
             raise SOArm101SessionError("the real SO101Follower is not open")
+        self._record_candidate_invocation(source="direct_sdk_binding")
         return self._follower
+
+    @property
+    def route_evidence(self) -> Mapping[str, Any]:
+        if not self._last_route_evidence:
+            return {}
+        evidence, _ = self._checked_route_evidence()
+        return evidence
+
+    @property
+    def route_evidence_hash(self) -> str | None:
+        if not self._last_route_evidence:
+            return None
+        _, evidence_hash = self._checked_route_evidence()
+        return evidence_hash
 
     @property
     def simulation_time_s(self) -> float:
@@ -617,8 +672,15 @@ class SOArm101EvaluationRobotSession:
         self._assert_open()
         if phase not in {"VALIDATION_B", "DEMO"}:
             raise SOArm101SessionError(f"unsupported session reset phase: {phase}")
-        _require_text(execution_id, "execution_id")
+        execution_id = _require_text(execution_id, "execution_id")
         state = _deepcopy_mapping(initial_state, "initial_state")
+        self._current_phase = phase
+        self._current_execution_id = execution_id
+        self._trial_baseline_time_s = 0.0
+        self._trial_candidate_invocations = []
+        self._present_position_read_count = 0
+        self._last_route_evidence = {}
+        self._last_route_evidence_hash = None
         task_id = state.get("task_id") or state.get("task_instance_id")
         if task_id is not None:
             task_id = _require_text(task_id, "initial_state.task_id")
@@ -654,6 +716,7 @@ class SOArm101EvaluationRobotSession:
         # tolerance before the route baseline is retained.
         self._verify_declared_reset(self._current_task)
         self._reset_snapshot = self._numeric_backend_snapshot()
+        self._trial_baseline_time_s = self._simulation_time_s
 
     def _reset_tolerance(self) -> float:
         value = self._scene_config.get("reset_qpos_qvel_abs_tolerance", RESET_TOLERANCE)
@@ -837,7 +900,7 @@ class SOArm101EvaluationRobotSession:
         state = self._backend.state()
         if not isinstance(state, Mapping):
             raise SOArm101SessionError("backend state is not an object")
-        result: dict[str, list[float]] = {}
+        result: dict[str, Any] = {}
         for field in ("qpos", "qvel", "ctrl"):
             raw = state.get(field, [])
             if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
@@ -903,11 +966,16 @@ class SOArm101EvaluationRobotSession:
         invoke_method = getattr(candidate, "_invoke", None)
         if not callable(invoke_method):
             raise SOArm101SessionError("candidate is not a Framework-validated candidate handle")
+        self._record_candidate_invocation(
+            source="session.invoke",
+            capability_id=capability_id,
+            arguments=arguments,
+        )
         before_goal = self._goal_writes()
         self._candidate_invocation_observed = True
         candidate_error: Exception | None = None
         try:
-            result = invoke_method(capability_id, copy.deepcopy(dict(arguments)), self.sdk)
+            result = invoke_method(capability_id, copy.deepcopy(dict(arguments)), self._follower)
         except Exception as exc:
             candidate_error = exc
         try:
@@ -949,11 +1017,8 @@ class SOArm101EvaluationRobotSession:
         if self._goal_writes() > self._reset_goal_writes:
             self._wait_for_goal_traffic(self._reset_goal_writes)
         self._advance(duration)
-        try:
-            observation = self._follower.get_observation() if self._follower is not None else None
-            sdk_readback_observed = isinstance(observation, Mapping)
-        except Exception:
-            sdk_readback_observed = False
+        observation = self._read_present_position_observation()
+        sdk_readback_observed = isinstance(observation, Mapping)
         selected = [item for item in self._episode_samples if float(item.get("time_s", 0.0)) >= start - 1e-12]
         if not selected:
             selected = [self._last_truth or self._sample_truth()]
@@ -971,24 +1036,16 @@ class SOArm101EvaluationRobotSession:
         primary_id = str(criteria[0].get("criterion_id", invocation.criterion_id))
         samples = samples_by_criterion[primary_id]
         route_verified, route_detail = self._route_verification()
-        present_position_consistent, max_tick_error = self._present_position_qpos_consistency(observation)
-        route_verified = bool(route_verified and present_position_consistent)
-        route_detail.update({
-            "candidate_invocation_observed": self._candidate_invocation_observed,
-            "accepted_command_count": route_detail["goal_writes_observed"],
-            "simulation_time_progressed": self.simulation_time_s > start,
-            "state_route_observed": bool(sdk_readback_observed and present_position_consistent),
-            "present_position_qpos_consistent": present_position_consistent,
-            "present_position_qpos_max_error_ticks": (
-                max_tick_error if math.isfinite(max_tick_error) else None
-            ),
-            "verified": route_verified,
-        })
+        route_verified, route_detail, route_detail_hash = self._finalize_route_evidence(
+            route_verified,
+            route_detail,
+            observation,
+        )
         guards = self._guard_results()
         guards["sdk-route-verified"] = route_verified
         guards["sdk-readback-observed"] = sdk_readback_observed
         guards["physics-progress-observed"] = route_detail["physics_progress"]
-        return ValidationEvidence(
+        return _SOArm101ValidationEvidence(
             samples=tuple(samples),
             elapsed_s=max(0.0, self.simulation_time_s - start),
             guard_results=guards,
@@ -999,6 +1056,7 @@ class SOArm101EvaluationRobotSession:
                 if invocation.criteria or invocation.criterion_id
                 else None
             ),
+            route_evidence_hash=route_detail_hash,
         )
 
     def _metric_value(self, truth: Mapping[str, Any], metric: str) -> float:
@@ -1022,6 +1080,16 @@ class SOArm101EvaluationRobotSession:
         if alias and alias in truth and _finite(truth[alias]):
             return float(truth[alias])
         raise SOArm101SessionError(f"independent MuJoCo truth does not provide metric {metric!r}")
+
+    def _read_present_position_observation(self) -> Mapping[str, Any] | None:
+        self._present_position_read_count += 1
+        if self._follower is None:
+            raise SOArm101SessionError("SO101Follower is unavailable for Present_Position readback")
+        try:
+            observation = self._follower.get_observation()
+        except Exception as exc:
+            raise SOArm101SessionError("SO101Follower Present_Position readback failed") from exc
+        return observation if isinstance(observation, Mapping) else None
 
     def _present_position_qpos_consistency(
         self,
@@ -1049,6 +1117,61 @@ class SOArm101EvaluationRobotSession:
             return maximum <= 1, maximum
         except Exception:
             return False, math.inf
+
+    def _checked_route_evidence(self) -> tuple[dict[str, Any], str]:
+        detail = copy.deepcopy(self._last_route_evidence)
+        detail_hash = self._last_route_evidence_hash
+        if not detail or not isinstance(detail_hash, str):
+            raise SOArm101SessionError("SO-ARM101 route evidence is unavailable")
+        if content_hash(canonical_bytes(detail)) != detail_hash:
+            raise SOArm101SessionError("SO-ARM101 route evidence was tampered with")
+        return detail, detail_hash
+
+    def _finalize_route_evidence(
+        self,
+        route_verified: bool,
+        route_detail: dict[str, Any],
+        observation: Mapping[str, Any] | None,
+    ) -> tuple[bool, dict[str, Any], str]:
+        sdk_readback_observed = isinstance(observation, Mapping)
+        present_position_consistent, max_tick_error = self._present_position_qpos_consistency(observation)
+        max_error = max_tick_error if math.isfinite(max_tick_error) else None
+        candidate_invocation_count = len(self._trial_candidate_invocations)
+        simulation_time_progressed = self.simulation_time_s > self._trial_baseline_time_s + 1e-12
+        state_route_observed = bool(sdk_readback_observed and max_error is not None)
+        accepted_command_count = route_detail["goal_writes_observed"]
+        route_verified = bool(
+            route_verified
+            and candidate_invocation_count == 1
+            and accepted_command_count > 0
+            and route_detail["physics_steps"] > 0
+            and simulation_time_progressed
+            and route_detail["physics_progress"]
+            and self._present_position_read_count > 0
+            and state_route_observed
+            and max_error is not None
+            and max_error <= 1
+        )
+        route_detail.update({
+            "phase": self._current_phase,
+            "execution_id": self._current_execution_id,
+            "candidate_invocation_count": candidate_invocation_count,
+            "candidate_invocation_observed": bool(
+                self._candidate_invocation_observed or candidate_invocation_count == 1
+            ),
+            "accepted_command_count": accepted_command_count,
+            "simulation_time_progressed": simulation_time_progressed,
+            "present_position_read_count": self._present_position_read_count,
+            "state_route_observed": state_route_observed,
+            "present_position_qpos_consistent": present_position_consistent,
+            "present_position_qpos_max_error_ticks": max_error,
+            "sdk_readback_max_tick_error": max_error,
+            "verified": route_verified,
+        })
+        self._last_route_evidence = copy.deepcopy(route_detail)
+        detail_hash = content_hash(canonical_bytes(route_detail))
+        self._last_route_evidence_hash = detail_hash
+        return route_verified, copy.deepcopy(route_detail), detail_hash
 
     def _route_verification(self) -> tuple[bool, dict[str, Any]]:
         current = self._numeric_backend_snapshot()
@@ -1467,7 +1590,7 @@ class SOArm101EvaluationRobotSession:
         finite_state = bool(self._episode_samples) and all(bool(item.get("finite_state", False)) for item in self._episode_samples)
         safety = not bool(self._event_state.get("safety_violation", True))
         return {
-            "trusted-external-verdict": bool(self._opened),
+            "trusted-external-verdict": bool(self._last_route_evidence.get("verified", False)),
             "so-safety-gate": safety,
             "finite-physical-state": finite_state,
         }
@@ -1527,6 +1650,13 @@ class SOArm101EvaluationRobotSession:
         sanitized_samples = self._sanitize_demo_samples(samples)
         if not sanitized_samples:
             raise SOArm101SessionError("demo truth produced no evaluator samples")
+        observation = self._read_present_position_observation()
+        route_verified, route_detail = self._route_verification()
+        route_verified, route_detail, route_detail_hash = self._finalize_route_evidence(
+            route_verified,
+            route_detail,
+            observation,
+        )
         duration_s = float(sanitized_samples[-1]["time_s"] - sanitized_samples[0]["time_s"])
         terminal = {
             "time_s": float(sanitized_samples[-1]["time_s"]),
@@ -1572,6 +1702,8 @@ class SOArm101EvaluationRobotSession:
             "measurements": safe_measurements,
             **safe_measurements,
             "guard_results": self._guard_results(),
+            "route_evidence": route_detail,
+            "route_evidence_hash": route_detail_hash,
             "duration_s": duration_s,
             "sample_start_time_s": 0.0,
             "sample_end_time_s": duration_s,
