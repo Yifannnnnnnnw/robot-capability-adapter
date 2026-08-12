@@ -108,6 +108,47 @@ def _capability_body() -> dict:
     }
 
 
+def _direct_public_projection() -> dict:
+    projection = copy.deepcopy(ROBOT)
+    projection["execution_route"] = "DIRECT_MUJOCO_EXPERIMENTAL"
+    projection["unit_allowlist"].append("native_mujoco_control")
+    return projection
+
+
+def test_stage1_accepts_exact_direct_public_projection_tokens() -> None:
+    projection = _direct_public_projection()
+    fixture = FixtureJsonGenerator([_capability_body()])
+
+    result = Stage1Runner(fixture, Stage1Config(max_correction_calls=0)).run(
+        "run-1", projection, TASKS, G2
+    )
+
+    assert result.status == "SEALED"
+    assert result.capability_design["robot_public_projection"] == projection
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("execution_route", "mujoco model path"),
+        ("execution_route", "direct mujoco data"),
+        ("execution_route", "translation layer"),
+        ("execution_route", "DIRECT_MUJOCO_EXPERIMENTAL_EXTRA"),
+        ("unit_allowlist", ["native_mujoco_control_extra"]),
+    ],
+)
+def test_stage1_rejects_non_exact_direct_private_projection_tokens(field: str, value: object) -> None:
+    projection = _direct_public_projection()
+    projection[field] = value
+    fixture = FixtureJsonGenerator([_capability_body()])
+
+    with pytest.raises(ContractError, match="not public"):
+        Stage1Runner(fixture, Stage1Config(max_correction_calls=0)).run(
+            "run-1", projection, TASKS, G2
+        )
+    assert fixture.calls == []
+
+
 def _design_experience_snapshot() -> dict:
     applicability = {
         "robot_model_id": ROBOT["robot_model_id"],

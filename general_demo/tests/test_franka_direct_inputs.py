@@ -64,11 +64,6 @@ def test_franka_blue_line_can_bind_all_five_effects() -> None:
     catalog = _read("measurement_catalog.json")
     policy = _read("blue_line_policy.json")
     projection = _read("robot_public_projection.json")
-    stage1_projection = copy.deepcopy(projection)
-    stage1_projection.pop("execution_route")
-    stage1_projection["unit_allowlist"] = [
-        unit for unit in stage1_projection["unit_allowlist"] if "mujoco" not in unit.lower()
-    ]
     task_package = TasksLibrary(PROJECT_ROOT / "general_demo/libraries/tasks").load(
         "franka_panda", "1.0.0"
     )
@@ -96,7 +91,7 @@ def test_franka_blue_line_can_bind_all_five_effects() -> None:
         "unsupported_requirement_ids": [],
         "blocking_requirement_ids": [],
     }]), Stage1Config(max_correction_calls=0)).run(
-        "franka-blue-line-test", stage1_projection, tasks, G2_PROFILE
+        "franka-blue-line-test", projection, tasks, G2_PROFILE
     )
     assert stage1.status == "SEALED" and stage1.capability_design and stage1.seal
 

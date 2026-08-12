@@ -106,6 +106,10 @@ _PRIVATE_TERMS = (
     "demo_result",
     "seed",
 )
+_DIRECT_PUBLIC_PROJECTION_TOKENS = frozenset({
+    "DIRECT_MUJOCO_EXPERIMENTAL",
+    "native_mujoco_control",
+})
 _EXPERIENCE_SNAPSHOT_FIELDS = {
     "artifact_type", "format_version", "snapshot_id", "recipient_class", "applicability", "records",
 }
@@ -154,21 +158,40 @@ def _issues(code: str, message: str) -> dict[str, str]:
     return {"code": code, "message": message}
 
 
-def _private_issues(value: Any, location: str = "$", *, allow_private_inputs: bool = False) -> list[dict[str, str]]:
+def _private_issues(
+    value: Any,
+    location: str = "$",
+    *,
+    allow_private_inputs: bool = False,
+    _in_robot_public_projection: bool = False,
+) -> list[dict[str, str]]:
     issues: list[dict[str, str]] = []
     if isinstance(value, dict):
         for key, item in value.items():
             lowered = str(key).lower()
             if not allow_private_inputs and any(term in lowered for term in _PRIVATE_TERMS):
                 issues.append(_issues("PRIVATE_FIELD", f"{location}.{key} is not public"))
-            issues.extend(_private_issues(item, f"{location}.{key}", allow_private_inputs=allow_private_inputs))
+            issues.extend(_private_issues(
+                item,
+                f"{location}.{key}",
+                allow_private_inputs=allow_private_inputs,
+                _in_robot_public_projection=(
+                    _in_robot_public_projection or str(key) == "robot_public_projection"
+                ),
+            ))
     elif isinstance(value, list):
         for index, item in enumerate(value):
-            issues.extend(_private_issues(item, f"{location}[{index}]", allow_private_inputs=allow_private_inputs))
+            issues.extend(_private_issues(
+                item,
+                f"{location}[{index}]",
+                allow_private_inputs=allow_private_inputs,
+                _in_robot_public_projection=_in_robot_public_projection,
+            ))
     elif isinstance(value, str):
         lowered = value.lower()
         if any(term in lowered for term in ("private criterion", "mujoco", "translation layer")):
-            issues.append(_issues("PRIVATE_CONTENT", f"{location} contains forbidden private content"))
+            if not (_in_robot_public_projection and value in _DIRECT_PUBLIC_PROJECTION_TOKENS):
+                issues.append(_issues("PRIVATE_CONTENT", f"{location} contains forbidden private content"))
     return issues
 
 
