@@ -17,20 +17,35 @@ RUN test "$(uname -m)" = "aarch64"
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       ca-certificates git ffmpeg python3.10 python3.10-dev python3-pip \
-      build-essential cmake pkg-config cyclonedds-dev \
+      build-essential cmake pkg-config \
       libgl1 libegl1 libglib2.0-0 libglfw3 \
     && rm -rf /var/lib/apt/lists/*
 
-# cyclonedds==0.10.2 searches CYCLONEDDS_HOME as a legacy prefix with
-# include/, bin/, and lib/libddsc.so.  Adapt the Ubuntu multiarch package
-# layout without changing the installed system paths.
-RUN test -d /usr/include/dds \
-    && test -f /usr/lib/aarch64-linux-gnu/libddsc.so \
-    && test -f /usr/lib/aarch64-linux-gnu/libcycloneddsidl.so \
-    && mkdir -p /opt/cyclonedds-system/bin /opt/cyclonedds-system/lib \
-    && ln -s /usr/include /opt/cyclonedds-system/include \
-    && ln -s /usr/lib/aarch64-linux-gnu/libddsc.so /opt/cyclonedds-system/lib/libddsc.so \
-    && ln -s /usr/lib/aarch64-linux-gnu/libcycloneddsidl.so /opt/cyclonedds-system/lib/libcycloneddsidl.so
+# EXPERIMENTAL: Ubuntu 22.04's packaged CycloneDDS is older than the pinned Python
+# binding. Build the matching upstream C runtime, including its private headers.
+RUN git clone https://github.com/eclipse-cyclonedds/cyclonedds.git /tmp/cyclonedds \
+    && git -C /tmp/cyclonedds checkout 9995905bce6c4cf9f740d6438bbf7fcfd1c83dfd \
+    && test "$(git -C /tmp/cyclonedds rev-parse HEAD)" = "9995905bce6c4cf9f740d6438bbf7fcfd1c83dfd" \
+    && cmake -S /tmp/cyclonedds -B /tmp/cyclonedds-build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/opt/cyclonedds-system \
+      -DCMAKE_INSTALL_BINDIR=bin \
+      -DCMAKE_INSTALL_INCLUDEDIR=include \
+      -DCMAKE_INSTALL_LIBDIR=lib \
+      -DBUILD_SHARED_LIBS=ON \
+      -DBUILD_IDLC=ON \
+      -DBUILD_IDLC_TESTING=OFF \
+      -DBUILD_DDSPERF=OFF \
+      -DBUILD_TESTING=OFF \
+      -DBUILD_EXAMPLES=OFF \
+      -DBUILD_DOCS=OFF \
+      -DENABLE_SSL=OFF \
+    && cmake --build /tmp/cyclonedds-build --parallel \
+    && cmake --install /tmp/cyclonedds-build \
+    && test -f /opt/cyclonedds-system/include/dds/ddsi/ddsi_typelib.h \
+    && test -f /opt/cyclonedds-system/lib/libddsc.so \
+    && test -f /opt/cyclonedds-system/lib/libcycloneddsidl.so \
+    && rm -rf /tmp/cyclonedds /tmp/cyclonedds-build
 
 WORKDIR /opt/autoadapter
 COPY general_demo/src /opt/autoadapter/general_demo/src
