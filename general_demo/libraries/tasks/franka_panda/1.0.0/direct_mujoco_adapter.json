@@ -3,10 +3,13 @@
   "schema_version": "1.0.0",
   "robot_configuration_id": "franka_panda",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source_repository": "https://github.com/981526092/auto-adapter",
+  "source_commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
   "tasks": [
     {
       "task_id": "F01",
       "robot_configuration_id": "franka_panda",
+      "source_scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_entrypoint": "assets/mjcf/franka_panda/pushbench.xml",
       "reset": {
         "mode": "source_scene_default",
@@ -25,12 +28,112 @@
         {
           "task_id": "F01",
           "metric": "ee_target_error_m",
+          "status": "RESOLVED",
           "operator": "distance",
           "observation_path": "bodies.hand.position",
           "reference": {
             "observation_path": "bodies.cube_red.position"
           },
           "reference_offset_path": "parameters.target_offset_m"
+        }
+      ]
+    },
+    {
+      "task_id": "F02",
+      "robot_configuration_id": "franka_panda",
+      "source_scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_entrypoint": "assets/mjcf/franka_panda/pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 102},
+      "parameters": {"target_object_id": "cube_green", "target_offset_m": [0, 0, 0.05]},
+      "frames": {"body_names": ["cube_green"], "site_names": [], "sensor_names": []},
+      "measurements": [
+        {
+          "metric": "ee_target_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "observation_path": "bodies.hand.position",
+          "reference": {"observation_path": "bodies.cube_green.position"},
+          "reference_offset_path": "parameters.target_offset_m"
+        }
+      ]
+    },
+    {
+      "task_id": "F03",
+      "robot_configuration_id": "franka_panda",
+      "source_scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_entrypoint": "assets/mjcf/franka_panda/pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 103},
+      "parameters": {"target_object_id": "cube_red", "goal_center_m": [0.55, 0.1]},
+      "frames": {"body_names": ["cube_red", "table"], "site_names": [], "sensor_names": []},
+      "measurements": [
+        {
+          "metric": "cube_goal_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "projection": "xy",
+          "observation_path": "bodies.cube_red.position",
+          "reference": {"value": [0.55, 0.1]}
+        },
+        {
+          "metric": "cube_table_supported",
+          "status": "RESOLVED",
+          "operator": "contact_boolean",
+          "scope": "trace",
+          "contact_groups": {"subject": ["cube_red"], "other": ["table"]}
+        }
+      ]
+    },
+    {
+      "task_id": "F04",
+      "robot_configuration_id": "franka_panda",
+      "source_scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_entrypoint": "assets/mjcf/franka_panda/pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 104},
+      "parameters": {"target_object_id": "cube_blue", "goal_center_m": [0.58, 0.15]},
+      "frames": {"body_names": ["cube_blue", "obs"], "site_names": [], "sensor_names": []},
+      "measurements": [
+        {
+          "metric": "cube_goal_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "projection": "xy",
+          "observation_path": "bodies.cube_blue.position",
+          "reference": {"value": [0.58, 0.15]}
+        },
+        {
+          "metric": "obstacle_contact_count",
+          "operator": "contact_count",
+          "status": "RESOLVED",
+          "scope": "trace",
+          "aggregation": "max",
+          "contact_groups": {"subject": ["obs"]}
+        }
+      ]
+    },
+    {
+      "task_id": "F05",
+      "robot_configuration_id": "franka_panda",
+      "source_scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
+      "scene_entrypoint": "assets/mjcf/franka_panda/pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 105},
+      "parameters": {"square_side_m": 0.04},
+      "frames": {"body_names": ["hand"], "site_names": [], "sensor_names": []},
+      "measurements": [
+        {
+          "metric": "waypoint_max_error_m",
+          "status": "RESOLVED",
+          "operator": "history_waypoint_max_error",
+          "projection": "xy",
+          "observation_path": "bodies.hand.position",
+          "waypoint_pattern": "square_xy",
+          "side_path": "parameters.square_side_m"
+        },
+        {
+          "metric": "final_return_error_m",
+          "status": "RESOLVED",
+          "operator": "history_final_return_error",
+          "projection": "xy",
+          "observation_path": "bodies.hand.position"
         }
       ]
     }

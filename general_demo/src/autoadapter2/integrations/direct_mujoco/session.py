@@ -267,6 +267,7 @@ class DirectMuJoCoEvaluationRobotSession:
         self._candidate_invocation_count = 0
         self._candidate_observation_reads = 0
         self._truth_trace: list[tuple[float, dict[str, Any]]] = []
+        self._contact_trace: list[tuple[float, tuple[dict[str, Any], ...]]] = []
         self._last_invocation: dict[str, Any] | None = None
         self._joint_ids: dict[str, int] = {}
         self._actuator_ids: dict[str, int] = {}
@@ -464,6 +465,7 @@ class DirectMuJoCoEvaluationRobotSession:
         self._candidate_invocation_count = 0
         self._candidate_observation_reads = 0
         self._truth_trace = []
+        self._contact_trace = []
         self._last_invocation = None
         self._record_truth_sample()
 
@@ -631,7 +633,56 @@ class DirectMuJoCoEvaluationRobotSession:
         }
 
     def _record_truth_sample(self) -> None:
-        self._truth_trace.append((float(self._data.time), copy.deepcopy(self._observation())))
+        time_s = float(self._data.time)
+        self._truth_trace.append((time_s, copy.deepcopy(self._observation())))
+        self._contact_trace.append((time_s, self._contact_snapshot()))
+
+    def _mujoco_name(self, object_type: Any, identifier: int, kind: str) -> str:
+        """Resolve a MuJoCo name while retaining stable IDs for unnamed objects."""
+
+        try:
+            name = self._mj.mj_id2name(self._model, object_type, int(identifier))
+        except Exception:
+            name = None
+        if isinstance(name, bytes):
+            name = name.decode("utf-8", errors="replace")
+        if isinstance(name, str) and name:
+            return name
+        return f"{kind}:{int(identifier)}"
+
+    def _contact_snapshot(self) -> tuple[dict[str, Any], ...]:
+        """Capture private contact truth as IDs plus names, including unnamed geoms."""
+
+        try:
+            contact_count = int(self._data.ncon)
+        except Exception as exc:
+            raise DirectMuJoCoSessionError("MuJoCo contact count is unavailable") from exc
+        contacts: list[dict[str, Any]] = []
+        obj = self._mj.mjtObj
+        for index in range(contact_count):
+            try:
+                contact = self._data.contact[index]
+                geom1 = int(contact.geom1)
+                geom2 = int(contact.geom2)
+                body1 = int(self._model.geom_bodyid[geom1])
+                body2 = int(self._model.geom_bodyid[geom2])
+            except Exception as exc:
+                raise DirectMuJoCoSessionError(
+                    f"could not resolve MuJoCo contact pair {index}"
+                ) from exc
+            contacts.append(
+                {
+                    "geom1_id": geom1,
+                    "geom2_id": geom2,
+                    "body1_id": body1,
+                    "body2_id": body2,
+                    "geom1": self._mujoco_name(obj.mjOBJ_GEOM, geom1, "geom"),
+                    "geom2": self._mujoco_name(obj.mjOBJ_GEOM, geom2, "geom"),
+                    "body1": self._mujoco_name(obj.mjOBJ_BODY, body1, "body"),
+                    "body2": self._mujoco_name(obj.mjOBJ_BODY, body2, "body"),
+                }
+            )
+        return tuple(contacts)
 
     def _candidate_observation(self) -> dict[str, Any]:
         self._candidate_observation_reads += 1
@@ -849,20 +900,16 @@ class DirectMuJoCoEvaluationRobotSession:
         context.update(copy.deepcopy(dict(inputs)))
         return context
 
-    @staticmethod
-    def _observation_operand(observation: Mapping[str, Any], source: Any, label: str) -> Any:
+    def _observation_operand(self, observation: Mapping[str, Any], source: Any, label: str) -> Any:
         if isinstance(source, Mapping):
-            return DirectMuJoCoEvaluationRobotSession._metric_spec_value(
-                observation, source, {}, {}, label
-            )
+            return self._metric_spec_value(observation, source, {}, {}, label)
         value = _path_value(observation, source, label)
         if value is _MISSING and isinstance(source, str):
             value = _find_named_value(observation, source)
         return value
 
-    @classmethod
     def _reference_value(
-        cls,
+        self,
         observation: Mapping[str, Any],
         spec: Mapping[str, Any],
         inputs: Mapping[str, Any],
@@ -871,50 +918,392 @@ class DirectMuJoCoEvaluationRobotSession:
     ) -> Any:
         for key in ("target_observation_path", "reference_observation_path"):
             if key in spec:
-                value = cls._observation_operand(observation, spec[key], f"{label}.{key}")
+                value = self._observation_operand(observation, spec[key], f"{label}.{key}")
                 if value is not _MISSING:
                     return value
                 raise DirectMuJoCoSessionError(f"{label}.{key} is unavailable")
         for key in ("target_path", "reference_path", "input_path", "target_input_path"):
             if key in spec:
-                value = cls._context_value(spec[key], inputs, initial_state, f"{label}.{key}")
+                value = self._context_value(spec[key], inputs, initial_state, f"{label}.{key}")
                 if value is not _MISSING:
                     return value
                 raise DirectMuJoCoSessionError(f"{label}.{key} does not resolve in task inputs")
         for key in ("target", "reference"):
-            if key in spec:
-                reference = spec[key]
-                if isinstance(reference, Mapping):
-                    if "observation_path" in reference:
-                        value = cls._observation_operand(
-                            observation,
-                            reference["observation_path"],
-                            f"{label}.{key}.observation_path",
-                        )
-                        if value is not _MISSING:
-                            return value
-                        raise DirectMuJoCoSessionError(
-                            f"{label}.{key}.observation_path is unavailable"
-                        )
-                    if "input_path" in reference or "path" in reference:
-                        path = reference.get("input_path", reference.get("path"))
-                        value = cls._context_value(path, inputs, initial_state, f"{label}.{key}")
-                        if value is not _MISSING:
-                            return value
-                    if "value" in reference:
-                        return reference["value"]
-                else:
-                    return reference
+            if key not in spec:
+                continue
+            reference = spec[key]
+            if isinstance(reference, Mapping):
+                if "observation_path" in reference:
+                    value = self._observation_operand(
+                        observation,
+                        reference["observation_path"],
+                        f"{label}.{key}.observation_path",
+                    )
+                    if value is not _MISSING:
+                        return value
+                    raise DirectMuJoCoSessionError(
+                        f"{label}.{key}.observation_path is unavailable"
+                    )
+                if "input_path" in reference or "path" in reference:
+                    path = reference.get("input_path", reference.get("path"))
+                    value = self._context_value(path, inputs, initial_state, f"{label}.{key}")
+                    if value is not _MISSING:
+                        return value
+                    raise DirectMuJoCoSessionError(
+                        f"{label}.{key} does not resolve in task inputs"
+                    )
+                if "value" in reference:
+                    return reference["value"]
+            else:
+                return reference
         raise DirectMuJoCoSessionError(f"{label} requires a declared target or reference")
 
+    @staticmethod
+    def _project_value(value: Any, spec: Mapping[str, Any], label: str) -> Any:
+        projection = str(spec.get("projection", "")).strip().lower()
+        if projection in {"xy", "planar_xy", "xy_projection"}:
+            values = _finite_vector(value, f"{label}.xy")
+            if len(values) < 2:
+                raise DirectMuJoCoSessionError(f"{label}.xy requires at least two components")
+            return values[:2]
+        if "components" in spec:
+            components = spec["components"]
+            if isinstance(components, (str, bytes, bytearray)) or not isinstance(components, Sequence):
+                raise DirectMuJoCoSessionError(f"{label}.components must be an integer array")
+            values = _finite_vector(value, label)
+            result: list[float] = []
+            for index, component in enumerate(components):
+                if isinstance(component, bool) or not isinstance(component, int):
+                    raise DirectMuJoCoSessionError(f"{label}.components[{index}] must be an integer")
+                if component < 0 or component >= len(values):
+                    raise DirectMuJoCoSessionError(
+                        f"{label}.components[{index}] is outside the observation vector"
+                    )
+                result.append(values[component])
+            if not result:
+                raise DirectMuJoCoSessionError(f"{label}.components must not be empty")
+            return result
+        return value
+
+    @staticmethod
+    def _component(value: Any, spec: Mapping[str, Any], label: str) -> float:
+        index = spec.get("component", spec.get("index"))
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise DirectMuJoCoSessionError(f"{label}.component must be an integer")
+        values = _finite_vector(value, label)
+        if index < 0 or index >= len(values):
+            raise DirectMuJoCoSessionError(f"{label}.component is outside the observation vector")
+        return values[index]
+
+    @staticmethod
+    def _distance(left: Any, right: Any, spec: Mapping[str, Any], label: str) -> float:
+        left = DirectMuJoCoEvaluationRobotSession._project_value(left, spec, f"{label}.source")
+        right = DirectMuJoCoEvaluationRobotSession._project_value(right, spec, f"{label}.reference")
+        if isinstance(left, Sequence) and not isinstance(left, (str, bytes, bytearray)):
+            left_values = _finite_vector(left, f"{label}.source")
+            right_values = _finite_vector(right, f"{label}.reference")
+            if len(left_values) != len(right_values):
+                raise DirectMuJoCoSessionError(f"{label} source and reference dimensions differ")
+            return math.sqrt(
+                sum((left_value - right_value) ** 2 for left_value, right_value in zip(left_values, right_values, strict=True))
+            )
+        delta = _finite_scalar(left, f"{label}.source") - _finite_scalar(right, f"{label}.reference")
+        return abs(delta)
+
+    def _trace_contacts(
+        self,
+        trace: Sequence[tuple[float, Mapping[str, Any]]],
+    ) -> tuple[tuple[dict[str, Any], ...], ...]:
+        if not self._contact_trace:
+            raise DirectMuJoCoSessionError("direct MuJoCo contact trace is empty")
+        result: list[tuple[dict[str, Any], ...]] = []
+        for time_s, _observation in trace:
+            closest_time, contacts = min(
+                self._contact_trace,
+                key=lambda item: abs(float(item[0]) - float(time_s)),
+            )
+            if not math.isfinite(float(closest_time)):
+                raise DirectMuJoCoSessionError("direct MuJoCo contact trace contains a non-finite time")
+            result.append(contacts)
+        return tuple(result)
+
+    @staticmethod
+    def _contact_group_tokens(group: Any, label: str) -> tuple[Any, ...]:
+        if isinstance(group, Mapping):
+            values: list[Any] = []
+            for key in ("body_names", "geom_names", "body_ids", "geom_ids"):
+                if key in group:
+                    item = group[key]
+                    if isinstance(item, (str, bytes, bytearray)) or not isinstance(item, Sequence):
+                        raise DirectMuJoCoSessionError(f"{label}.{key} must be an array")
+                    values.extend(item)
+            if not values:
+                raise DirectMuJoCoSessionError(f"{label} does not declare any contact names or IDs")
+            return tuple(values)
+        if isinstance(group, (str, bytes, bytearray)) or not isinstance(group, Sequence):
+            return (group,)
+        if not group:
+            raise DirectMuJoCoSessionError(f"{label} must not be empty")
+        return tuple(group)
+
     @classmethod
+    def _contact_endpoint_matches(cls, endpoint: Mapping[str, Any], group: Any, label: str) -> bool:
+        if isinstance(group, Mapping):
+            checks: list[bool] = []
+            for key, endpoint_key in (
+                ("body_names", "body"),
+                ("geom_names", "geom"),
+                ("body_ids", "body_id"),
+                ("geom_ids", "geom_id"),
+            ):
+                if key not in group:
+                    continue
+                tokens = cls._contact_group_tokens({key: group[key]}, f"{label}.{key}")
+                checks.append(any(endpoint[endpoint_key] == token for token in tokens))
+            if not checks:
+                raise DirectMuJoCoSessionError(f"{label} does not declare any contact names or IDs")
+            return any(checks)
+        tokens = cls._contact_group_tokens(group, label)
+        for token in tokens:
+            if isinstance(token, bool):
+                raise DirectMuJoCoSessionError(f"{label} contains a boolean contact identifier")
+            if isinstance(token, Real):
+                if endpoint["body_id"] == int(token) or endpoint["geom_id"] == int(token):
+                    return True
+                continue
+            if not isinstance(token, str) or not token.strip():
+                raise DirectMuJoCoSessionError(f"{label} contains an invalid contact identifier")
+            if token in {
+                endpoint["body"],
+                endpoint["geom"],
+                f"body:{endpoint['body_id']}",
+                f"geom:{endpoint['geom_id']}",
+            }:
+                return True
+        return False
+
+    @classmethod
+    def _contact_pair_matches(cls, pair: Mapping[str, Any], spec: Mapping[str, Any], label: str) -> bool:
+        endpoint1 = {
+            "body": pair["body1"],
+            "geom": pair["geom1"],
+            "body_id": pair["body1_id"],
+            "geom_id": pair["geom1_id"],
+        }
+        endpoint2 = {
+            "body": pair["body2"],
+            "geom": pair["geom2"],
+            "body_id": pair["body2_id"],
+            "geom_id": pair["geom2_id"],
+        }
+        matched_filter = False
+        if "contact_body_names" in spec:
+            matched_filter = True
+            group = spec["contact_body_names"]
+            if not (
+                cls._contact_endpoint_matches(endpoint1, {"body_names": group}, f"{label}.contact_body_names")
+                or cls._contact_endpoint_matches(endpoint2, {"body_names": group}, f"{label}.contact_body_names")
+            ):
+                return False
+        if "contact_geom_names" in spec:
+            matched_filter = True
+            group = spec["contact_geom_names"]
+            if not (
+                cls._contact_endpoint_matches(endpoint1, {"geom_names": group}, f"{label}.contact_geom_names")
+                or cls._contact_endpoint_matches(endpoint2, {"geom_names": group}, f"{label}.contact_geom_names")
+            ):
+                return False
+        if "contact_geom_ids" in spec:
+            matched_filter = True
+            group = spec["contact_geom_ids"]
+            if not (
+                cls._contact_endpoint_matches(endpoint1, {"geom_ids": group}, f"{label}.contact_geom_ids")
+                or cls._contact_endpoint_matches(endpoint2, {"geom_ids": group}, f"{label}.contact_geom_ids")
+            ):
+                return False
+        groups = spec.get("contact_groups")
+        if groups is not None:
+            if not isinstance(groups, Mapping):
+                raise DirectMuJoCoSessionError(f"{label}.contact_groups must be an object")
+            if not any(key in groups for key in ("subject", "other", "allowed", "excluded")):
+                raise DirectMuJoCoSessionError(
+                    f"{label}.contact_groups must declare a subject, other, allowed, or excluded group"
+                )
+            matched_filter = True
+            subject = groups.get("subject")
+            other = groups.get("other")
+            relation = str(groups.get("relation", "")).strip().lower()
+            if other is not None and subject is None:
+                raise DirectMuJoCoSessionError(
+                    f"{label}.contact_groups.subject is required with other"
+                )
+            if groups.get("allowed") is not None and relation != "outside_allowed":
+                raise DirectMuJoCoSessionError(
+                    f"{label}.contact_groups.relation must be outside_allowed with allowed"
+                )
+            if subject is not None and other is not None:
+                direct = (
+                    cls._contact_endpoint_matches(endpoint1, subject, f"{label}.contact_groups.subject")
+                    and cls._contact_endpoint_matches(endpoint2, other, f"{label}.contact_groups.other")
+                )
+                reverse = (
+                    cls._contact_endpoint_matches(endpoint2, subject, f"{label}.contact_groups.subject")
+                    and cls._contact_endpoint_matches(endpoint1, other, f"{label}.contact_groups.other")
+                )
+                if not (direct or reverse):
+                    return False
+            elif subject is not None:
+                subject_match = cls._contact_endpoint_matches(
+                    endpoint1, subject, f"{label}.contact_groups.subject"
+                ) or cls._contact_endpoint_matches(
+                    endpoint2, subject, f"{label}.contact_groups.subject"
+                )
+                if not subject_match:
+                    return False
+                if relation == "outside_allowed":
+                    allowed = groups.get("allowed")
+                    if allowed is None:
+                        raise DirectMuJoCoSessionError(
+                            f"{label}.contact_groups.allowed is required for outside_allowed"
+                        )
+                    outside = (
+                        cls._contact_endpoint_matches(endpoint1, subject, f"{label}.contact_groups.subject")
+                        and not cls._contact_endpoint_matches(endpoint2, allowed, f"{label}.contact_groups.allowed")
+                    ) or (
+                        cls._contact_endpoint_matches(endpoint2, subject, f"{label}.contact_groups.subject")
+                        and not cls._contact_endpoint_matches(endpoint1, allowed, f"{label}.contact_groups.allowed")
+                    )
+                    if not outside:
+                        return False
+            elif relation == "outside_allowed":
+                raise DirectMuJoCoSessionError(
+                    f"{label}.contact_groups.subject is required for outside_allowed"
+                )
+            if "excluded" in groups:
+                excluded = groups["excluded"]
+                if cls._contact_endpoint_matches(endpoint1, excluded, f"{label}.contact_groups.excluded") or cls._contact_endpoint_matches(
+                    endpoint2, excluded, f"{label}.contact_groups.excluded"
+                ):
+                    return False
+        if not matched_filter:
+            raise DirectMuJoCoSessionError(
+                f"{label} contact measurement requires declared body or geom filters"
+            )
+        return True
+
+    def _contact_count_value(
+        self,
+        spec: Mapping[str, Any],
+        trace: Sequence[tuple[float, Mapping[str, Any]]],
+        label: str,
+    ) -> float:
+        contacts_by_sample = self._trace_contacts(trace)
+        scope = str(spec.get("scope", "current")).strip().lower()
+        if scope in {"trace", "history", "terminal"}:
+            selected_contacts = contacts_by_sample
+        elif scope in {"current", "last"}:
+            selected_contacts = contacts_by_sample[-1:]
+        else:
+            raise DirectMuJoCoSessionError(f"{label}.scope is unsupported")
+        counts = [
+            sum(
+                1
+                for pair in contacts
+                if self._contact_pair_matches(pair, spec, label)
+            )
+            for contacts in selected_contacts
+        ]
+        if not counts:
+            raise DirectMuJoCoSessionError(f"{label} has no contact samples")
+        aggregation = str(spec.get("aggregation", "max" if scope in {"trace", "history", "terminal"} else "last")).strip().lower()
+        if aggregation in {"last", "terminal"}:
+            return float(counts[-1])
+        if aggregation == "max":
+            return float(max(counts))
+        if aggregation == "sum":
+            return float(sum(counts))
+        if aggregation in {"any", "boolean"}:
+            return float(any(counts))
+        raise DirectMuJoCoSessionError(f"{label}.aggregation is unsupported")
+
+    def _trace_source_values(
+        self,
+        trace: Sequence[tuple[float, Mapping[str, Any]]],
+        source: Any,
+        label: str,
+    ) -> list[Any]:
+        if source is None:
+            raise DirectMuJoCoSessionError(f"{label} has no declared observation path")
+        values: list[Any] = []
+        for _time_s, observation in trace:
+            value = self._observation_operand(observation, source, label)
+            if value is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} observation path is unavailable")
+            values.append(value)
+        if not values:
+            raise DirectMuJoCoSessionError(f"{label} has no physical history samples")
+        return values
+
+    def _waypoint_values(
+        self,
+        spec: Mapping[str, Any],
+        inputs: Mapping[str, Any],
+        initial_state: Mapping[str, Any],
+        baseline_observation: Mapping[str, Any],
+        label: str,
+    ) -> list[list[float]]:
+        raw = _MISSING
+        if "waypoints_path" in spec:
+            raw = self._context_value(spec["waypoints_path"], inputs, initial_state, f"{label}.waypoints_path")
+        elif "waypoints" in spec:
+            raw = spec["waypoints"]
+        if raw is _MISSING or raw is None:
+            pattern = str(spec.get("waypoint_pattern", "")).strip().lower()
+            if pattern != "square_xy":
+                raise DirectMuJoCoSessionError(f"{label} requires a declared waypoint sequence")
+            side_path = spec.get("side_path", spec.get("waypoint_side_path"))
+            if side_path is None:
+                raise DirectMuJoCoSessionError(f"{label}.side_path is required for square_xy")
+            side_value = self._context_value(side_path, inputs, initial_state, f"{label}.side_path")
+            side = _finite_scalar(side_value, f"{label}.side")
+            source = next(
+                (spec[key] for key in ("observation_path", "source_path", "source", "path") if key in spec),
+                None,
+            )
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no square waypoint source")
+            base = self._observation_operand(baseline_observation, source, f"{label}.baseline")
+            if base is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label}.baseline observation path is unavailable")
+            base_values = _finite_vector(self._project_value(base, spec, f"{label}.baseline"), f"{label}.baseline")
+            if len(base_values) != 2:
+                raise DirectMuJoCoSessionError(f"{label}.square_xy requires an XY projection")
+            return [
+                base_values,
+                [base_values[0] + side, base_values[1]],
+                [base_values[0] + side, base_values[1] + side],
+                [base_values[0], base_values[1] + side],
+            ]
+        if isinstance(raw, (str, bytes, bytearray)) or not isinstance(raw, Sequence) or not raw:
+            raise DirectMuJoCoSessionError(f"{label}.waypoints must be a non-empty array")
+        waypoints: list[list[float]] = []
+        for index, waypoint in enumerate(raw):
+            projected = self._project_value(waypoint, spec, f"{label}.waypoints[{index}]")
+            values = _finite_vector(projected, f"{label}.waypoints[{index}]")
+            if not values:
+                raise DirectMuJoCoSessionError(f"{label}.waypoints[{index}] must not be empty")
+            waypoints.append(values)
+        return waypoints
+
     def _metric_spec_value(
-        cls,
+        self,
         observation: Mapping[str, Any],
         spec: Mapping[str, Any],
         inputs: Mapping[str, Any],
         initial_state: Mapping[str, Any],
         label: str,
+        *,
+        trace: Sequence[tuple[float, Mapping[str, Any]]] | None = None,
     ) -> Any:
         operation = str(spec.get("operator", spec.get("op", "path"))).strip().lower()
         source = next(
@@ -923,42 +1312,47 @@ class DirectMuJoCoEvaluationRobotSession:
         )
         if source is None and "metric" in spec:
             source = spec["metric"]
+        active_trace = tuple(trace) if trace is not None else tuple(self._truth_trace)
+        if not active_trace:
+            raise DirectMuJoCoSessionError(f"{label} has no physical history")
         if operation in {"path", "read", "value"}:
             if source is None:
                 raise DirectMuJoCoSessionError(f"{label} has no declared observation path")
-            value = cls._observation_operand(observation, source, label)
+            value = self._observation_operand(observation, source, label)
             if value is _MISSING:
                 raise DirectMuJoCoSessionError(f"{label} observation path is unavailable")
             if "index" in spec:
-                index = spec["index"]
-                if isinstance(index, bool) or not isinstance(index, int):
-                    raise DirectMuJoCoSessionError(f"{label}.index must be an integer")
-                values = _finite_vector(value, label)
-                if index < 0 or index >= len(values):
-                    raise DirectMuJoCoSessionError(f"{label}.index is outside the observation vector")
-                return values[index]
-            return value
-        if operation == "component":
+                return self._component(value, {"index": spec["index"]}, label)
+            return self._project_value(value, spec, label)
+        if operation in {"component", "vector_component"}:
             if source is None:
                 raise DirectMuJoCoSessionError(f"{label} has no component source")
-            index = spec.get("index")
-            if isinstance(index, bool) or not isinstance(index, int):
-                raise DirectMuJoCoSessionError(f"{label}.index must be an integer")
-            values = _finite_vector(cls._observation_operand(observation, source, label), label)
-            if index < 0 or index >= len(values):
-                raise DirectMuJoCoSessionError(f"{label}.index is outside the observation vector")
-            return values[index]
+            value = self._observation_operand(observation, source, label)
+            if value is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} observation path is unavailable")
+            return self._component(value, spec, label)
+        if operation in {"xy", "project_xy", "xy_projection"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no vector source")
+            value = self._observation_operand(observation, source, label)
+            if value is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} observation path is unavailable")
+            return self._project_value(value, {"projection": "xy"}, label)
         if operation == "norm":
             if source is None:
                 raise DirectMuJoCoSessionError(f"{label} has no norm source")
-            return math.sqrt(sum(value * value for value in _finite_vector(
-                cls._observation_operand(observation, source, label), label
-            )))
+            value = self._observation_operand(observation, source, label)
+            if value is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} observation path is unavailable")
+            values = _finite_vector(self._project_value(value, spec, label), label)
+            return math.sqrt(sum(value * value for value in values))
         if operation in {"distance", "difference", "delta", "absolute_difference"}:
             if source is None:
                 raise DirectMuJoCoSessionError(f"{label} has no difference source")
-            left = cls._observation_operand(observation, source, label)
-            right = cls._reference_value(observation, spec, inputs, initial_state, label)
+            left = self._observation_operand(observation, source, label)
+            if left is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} observation path is unavailable")
+            right = self._reference_value(observation, spec, inputs, initial_state, label)
             offset_path = next(
                 (
                     spec[key]
@@ -968,7 +1362,7 @@ class DirectMuJoCoEvaluationRobotSession:
                 _MISSING,
             )
             if offset_path is not _MISSING:
-                offset = cls._context_value(offset_path, inputs, initial_state, f"{label}.offset")
+                offset = self._context_value(offset_path, inputs, initial_state, f"{label}.offset")
                 if offset is _MISSING:
                     raise DirectMuJoCoSessionError(f"{label}.offset does not resolve in task inputs")
                 if isinstance(right, Sequence) and not isinstance(right, (str, bytes, bytearray)):
@@ -976,42 +1370,172 @@ class DirectMuJoCoEvaluationRobotSession:
                     offset_values = _finite_vector(offset, f"{label}.offset")
                     if len(right_values) != len(offset_values):
                         raise DirectMuJoCoSessionError(f"{label} reference and offset dimensions differ")
-                    right = [right_value + offset_value for right_value, offset_value in zip(right_values, offset_values, strict=True)]
+                    right = [
+                        right_value + offset_value
+                        for right_value, offset_value in zip(right_values, offset_values, strict=True)
+                    ]
                 else:
                     right = _finite_scalar(right, f"{label}.reference") + _finite_scalar(offset, f"{label}.offset")
-            if isinstance(left, Sequence) and not isinstance(left, (str, bytes, bytearray)):
-                left_values = _finite_vector(left, f"{label}.source")
-                right_values = _finite_vector(right, f"{label}.reference")
-                if len(left_values) != len(right_values):
-                    raise DirectMuJoCoSessionError(f"{label} source and reference dimensions differ")
-                deltas = [left_value - right_value for left_value, right_value in zip(left_values, right_values, strict=True)]
-                if operation == "difference" and spec.get("absolute") is False:
-                    return deltas[0] if len(deltas) == 1 else deltas
-                return math.sqrt(sum(delta * delta for delta in deltas))
-            delta = _finite_scalar(left, f"{label}.source") - _finite_scalar(right, f"{label}.reference")
-            return abs(delta) if operation != "difference" or spec.get("absolute", True) else delta
+            if operation == "difference" and spec.get("absolute") is False:
+                left_projected = self._project_value(left, spec, f"{label}.source")
+                right_projected = self._project_value(right, spec, f"{label}.reference")
+                if isinstance(left_projected, Sequence) and not isinstance(left_projected, (str, bytes, bytearray)):
+                    left_values = _finite_vector(left_projected, f"{label}.source")
+                    right_values = _finite_vector(right_projected, f"{label}.reference")
+                    if len(left_values) != len(right_values):
+                        raise DirectMuJoCoSessionError(f"{label} source and reference dimensions differ")
+                    return [
+                        left_value - right_value
+                        for left_value, right_value in zip(left_values, right_values, strict=True)
+                    ]
+                return _finite_scalar(left_projected, f"{label}.source") - _finite_scalar(right_projected, f"{label}.reference")
+            return self._distance(left, right, spec, label)
+        if operation in {"baseline_distance", "reset_baseline_distance", "final_return_error", "history_final_return_error"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no baseline source")
+            baseline_observation = self._truth_trace[0][1]
+            baseline_source = spec.get("baseline_observation_path", source)
+            baseline = self._observation_operand(baseline_observation, baseline_source, f"{label}.baseline")
+            current = observation if operation in {"baseline_distance", "reset_baseline_distance"} else active_trace[-1][1]
+            current_value = self._observation_operand(current, source, label)
+            if baseline is _MISSING or current_value is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} baseline or source observation is unavailable")
+            return self._distance(current_value, baseline, spec, label)
+        if operation in {"offset_error", "baseline_offset_error"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no offset source")
+            baseline_observation = self._truth_trace[0][1]
+            baseline_source = spec.get("baseline_observation_path", source)
+            baseline = self._observation_operand(baseline_observation, baseline_source, f"{label}.baseline")
+            if baseline is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label}.baseline observation is unavailable")
+            offset_path = spec.get("offset_path", spec.get("reference_offset_path"))
+            if offset_path is None:
+                raise DirectMuJoCoSessionError(f"{label}.offset_path is required")
+            offset = self._context_value(offset_path, inputs, initial_state, f"{label}.offset")
+            if offset is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label}.offset does not resolve in task inputs")
+            baseline_values = _finite_vector(baseline, f"{label}.baseline") if isinstance(baseline, Sequence) else _finite_scalar(baseline, f"{label}.baseline")
+            offset_values = _finite_vector(offset, f"{label}.offset") if isinstance(offset, Sequence) else _finite_scalar(offset, f"{label}.offset")
+            if isinstance(baseline_values, list):
+                if not isinstance(offset_values, list) or len(baseline_values) != len(offset_values):
+                    raise DirectMuJoCoSessionError(f"{label} baseline and offset dimensions differ")
+                reference = [base + delta for base, delta in zip(baseline_values, offset_values, strict=True)]
+            else:
+                reference = baseline_values + offset_values
+            current = self._observation_operand(observation, source, label)
+            if current is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label} source observation is unavailable")
+            return self._distance(current, reference, spec, label)
+        if operation in {"trace_baseline_delta", "baseline_delta"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no history source")
+            baseline_source = spec.get("baseline_observation_path", source)
+            baseline = self._observation_operand(self._truth_trace[0][1], baseline_source, f"{label}.baseline")
+            if baseline is _MISSING:
+                raise DirectMuJoCoSessionError(f"{label}.baseline observation is unavailable")
+            values = self._trace_source_values(active_trace, source, label)
+            baseline_value = self._component(baseline, spec, f"{label}.baseline") if "component" in spec or "index" in spec else _finite_scalar(baseline, f"{label}.baseline")
+            deltas: list[float] = []
+            for value in values:
+                scalar = self._component(value, spec, label) if "component" in spec or "index" in spec else _finite_scalar(value, label)
+                delta = scalar - baseline_value
+                deltas.append(abs(delta) if spec.get("absolute") is True else delta)
+            aggregation = str(spec.get("aggregation", "max")).strip().lower()
+            if aggregation == "max":
+                return max(deltas)
+            if aggregation == "min":
+                return min(deltas)
+            if aggregation in {"last", "terminal"}:
+                return deltas[-1]
+            raise DirectMuJoCoSessionError(f"{label}.aggregation is unsupported")
+        if operation in {"history_waypoint_max_error", "history_max_distance", "history_waypoint_max_distance"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no waypoint source")
+            positions = [
+                _finite_vector(self._project_value(value, spec, label), label)
+                for value in self._trace_source_values(active_trace, source, label)
+            ]
+            waypoints = self._waypoint_values(
+                spec,
+                inputs,
+                initial_state,
+                self._truth_trace[0][1],
+                label,
+            )
+            errors: list[float] = []
+            for waypoint in waypoints:
+                nearest = min(
+                    self._distance(position, waypoint, {}, f"{label}.waypoint")
+                    for position in positions
+                )
+                errors.append(nearest)
+            return max(errors)
+        if operation in {"history_waypoint_order", "history_order"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no waypoint source")
+            positions = [
+                _finite_vector(self._project_value(value, spec, label), label)
+                for value in self._trace_source_values(active_trace, source, label)
+            ]
+            waypoints = self._waypoint_values(
+                spec,
+                inputs,
+                initial_state,
+                self._truth_trace[0][1],
+                label,
+            )
+            next_waypoint = 0
+            for position in positions:
+                nearest = min(
+                    range(len(waypoints)),
+                    key=lambda index: self._distance(position, waypoints[index], {}, f"{label}.waypoint"),
+                )
+                if nearest == next_waypoint:
+                    next_waypoint += 1
+                    if next_waypoint == len(waypoints):
+                        return True
+            return False
+        if operation in {"history_directional_delta", "directional_delta"}:
+            if source is None:
+                raise DirectMuJoCoSessionError(f"{label} has no directional source")
+            values = [_finite_scalar(value, label) for value in self._trace_source_values(active_trace, source, label)]
+            direction = str(spec.get("direction", "increase")).strip().lower()
+            if direction in {"increase", "up", "positive"}:
+                return max(values) - values[0]
+            if direction in {"decrease", "down", "negative"}:
+                return values[0] - min(values)
+            raise DirectMuJoCoSessionError(f"{label}.direction is unsupported")
+        if operation in {"contact_count", "contact_boolean", "contact_to_bool", "boolean_contact"}:
+            count = self._contact_count_value(spec, active_trace, label)
+            return bool(count > 0) if operation != "contact_count" else count
+        if operation in {"invocation_count", "attempt_count", "action_count"}:
+            return float(self._candidate_invocation_count)
         if operation in {"sum", "total"}:
             if "paths" in spec:
+                paths = spec["paths"]
+                if isinstance(paths, (str, bytes, bytearray)) or not isinstance(paths, Sequence):
+                    raise DirectMuJoCoSessionError(f"{label}.paths must be an array")
                 values = [
-                    cls._observation_operand(observation, path, f"{label}.paths[{index}]")
-                    for index, path in enumerate(spec["paths"])
+                    self._observation_operand(observation, path, f"{label}.paths[{index}]")
+                    for index, path in enumerate(paths)
                 ]
             elif source is not None:
-                values = cls._observation_operand(observation, source, label)
+                values = self._observation_operand(observation, source, label)
             else:
                 raise DirectMuJoCoSessionError(f"{label} has no sum source")
             return sum(_finite_vector(values, label))
         if operation == "count":
             if source is None:
                 raise DirectMuJoCoSessionError(f"{label} has no count source")
-            value = cls._observation_operand(observation, source, label)
+            value = self._observation_operand(observation, source, label)
             if isinstance(value, Mapping) or (isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray))):
                 return float(len(value))
             raise DirectMuJoCoSessionError(f"{label} count source is not a collection")
         if operation in {"any", "all"}:
             if source is None:
                 raise DirectMuJoCoSessionError(f"{label} has no boolean source")
-            value = cls._observation_operand(observation, source, label)
+            value = self._observation_operand(observation, source, label)
             values = value.values() if isinstance(value, Mapping) else value
             if isinstance(values, (str, bytes, bytearray)) or not isinstance(values, Sequence):
                 raise DirectMuJoCoSessionError(f"{label} boolean source is not a collection")
@@ -1139,6 +1663,7 @@ class DirectMuJoCoEvaluationRobotSession:
                     inputs,
                     initial_state,
                     f"criterion {criterion_id} metric {metric!r}",
+                    trace=selected,
                 )
                 scalar = _finite_scalar(value, f"criterion {criterion_id} metric {metric!r}")
                 samples.append(MeasurementSample(max(0.0, float(time_s) - origin), scalar))
@@ -1203,6 +1728,7 @@ class DirectMuJoCoEvaluationRobotSession:
                     task_inputs,
                     {},
                     f"Demo task {task_id} metric {metric!r}",
+                    trace=trace,
                 )
                 metrics[metric] = _finite_scalar(value, f"Demo task {task_id} metric {metric!r}")
             latest.update(metrics)

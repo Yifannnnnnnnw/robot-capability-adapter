@@ -206,6 +206,18 @@ class DirectMuJoCoTaskConfig:
             if isinstance(selected.get("validation"), Mapping)
             else None,
         )
+        measurement_declarations = _declarations(declarations, "task.measurements")
+        unresolved = tuple(
+            str(item.get("metric", item.get("name", "<unnamed>")))
+            for item in measurement_declarations
+            if item.get("unresolved") is True
+            or str(item.get("status", "")).strip().upper() == "UNRESOLVED"
+        )
+        if unresolved:
+            joined = ", ".join(unresolved)
+            raise DirectMuJoCoConfigurationError(
+                f"direct task {selected_task_id.strip()} has unresolved measurement mappings: {joined}"
+            )
         return cls(
             task_id=selected_task_id.strip(),
             scene_entrypoint=scene_entrypoint,
@@ -215,7 +227,7 @@ class DirectMuJoCoTaskConfig:
             body_names=body_names,
             site_names=site_names,
             sensor_names=sensor_names,
-            measurement_declarations=_declarations(declarations, "task.measurements"),
+            measurement_declarations=measurement_declarations,
             robot_configuration_id=(
                 selected.get("robot_configuration_id")
                 if selected.get("robot_configuration_id") is None
