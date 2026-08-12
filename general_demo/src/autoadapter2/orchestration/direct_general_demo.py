@@ -292,13 +292,20 @@ class DirectGeneralDemoSession:
             )
         )
         self._default_task_id = default_task_id
+        self._development_session: EvaluationRobotSession | None = None
         self._session: EvaluationRobotSession | None = None
         self._task_id: str | None = None
         self._closed = False
 
     @property
     def sdk(self) -> object:
-        return self._current().sdk
+        if self._closed:
+            raise DirectGeneralDemoResolutionError("direct General Demo session is closed")
+        if self._session is not None:
+            return self._session.sdk
+        if self._development_session is None:
+            self._development_session = self._create_session(self._base_config)
+        return self._development_session.sdk
 
     @property
     def simulation_time_s(self) -> float:
@@ -351,6 +358,14 @@ class DirectGeneralDemoSession:
             )
         return self._session
 
+    def _create_session(self, config: DirectMuJoCoLibraryConfig) -> EvaluationRobotSession:
+        session = self._session_factory(config)
+        if not isinstance(session, EvaluationRobotSession):
+            raise ContractError("direct session factory did not return an EvaluationRobotSession")
+        if not callable(getattr(session, "close", None)):
+            raise ContractError("direct session factory did not return a closeable session")
+        return session
+
     @staticmethod
     def _task_id_from_state(initial_state: Mapping[str, Any]) -> str | None:
         for key in ("task_id", "task"):
@@ -393,16 +408,16 @@ class DirectGeneralDemoSession:
             raise DirectGeneralDemoResolutionError("direct task initial_state must be an object")
         task = self._select_task(initial_state)
         old = self._session
+        development = self._development_session
         self._session = None
+        self._development_session = None
         if old is not None:
             old.close()
+        if development is not None and development is not old:
+            development.close()
         bound_config = self._base_config.bind_task(task)
         try:
-            session = self._session_factory(bound_config)
-            if not isinstance(session, EvaluationRobotSession):
-                raise ContractError("direct session factory did not return an EvaluationRobotSession")
-            if not callable(getattr(session, "close", None)):
-                raise ContractError("direct session factory did not return a closeable session")
+            session = self._create_session(bound_config)
             session.reset(
                 phase=phase,
                 execution_id=execution_id,
@@ -447,9 +462,13 @@ class DirectGeneralDemoSession:
             return
         self._closed = True
         session = self._session
+        development = self._development_session
         self._session = None
+        self._development_session = None
         if session is not None:
             session.close()
+        if development is not None and development is not session:
+            development.close()
 
 
 @dataclass(frozen=True)
