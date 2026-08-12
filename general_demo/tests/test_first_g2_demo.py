@@ -649,7 +649,7 @@ def _frozen_model_config() -> dict:
         "base_url": DEFAULT_BASE_URL,
         "endpoint_path": "/v1/chat/completions",
         "model": DEFAULT_MODEL,
-        "max_tokens": 4096,
+        "max_tokens": 8192,
         "temperature": 0,
         "timeout_s": 125,
         "credential_env": "AUTOADAPTER_MODEL_API_KEY",

@@ -1235,7 +1235,7 @@ def _model_client(model_prompt_config: Mapping[str, Any]) -> ModelApiClient:
         or model_prompt_config.get("base_url") != DEFAULT_BASE_URL
         or model_prompt_config.get("endpoint_path") != "/v1/chat/completions"
         or model_prompt_config.get("model") != DEFAULT_MODEL
-        or model_prompt_config.get("max_tokens") != 4096
+        or model_prompt_config.get("max_tokens") != 8192
         or model_prompt_config.get("temperature") != 0
         or model_prompt_config.get("timeout_s") != 125
         or model_prompt_config.get("credential_env") != "AUTOADAPTER_MODEL_API_KEY"
