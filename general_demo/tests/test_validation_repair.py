@@ -893,8 +893,9 @@ def test_validation_a_profile_checks_facade_envelopes_and_opaque_handle() -> Non
 
     extra_output = _source().replace('"reported_status": "PASS"', '"reported_status": "PASS", "extra": "attack"')
     _design, _seal, _stage2, _blue, envelope_result = _a_result(extra_output)
-    assert envelope_result.status == "FAIL"
-    assert "RESULT_FIELDS" in {item["code"] for item in envelope_result.diagnostics}
+    # Result-shape enforcement is runtime-owned; Validation A does not infer
+    # literal return mappings from source.
+    assert envelope_result.status == "PASS"
 
     wrong_bundle_hash = content_hash(b"wrong-implementation-bundle")
     wrong_bundle_result = ValidationARunner(PROFILE).run(
@@ -914,7 +915,6 @@ def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> N
         "import typing\n\n" + _source(),
         _source().replace("    _sdk.command", "    __import__('os')\n    _sdk.command"),
         _source().replace("    _sdk.command", "    eval('1')\n    _sdk.command"),
-        "def extra_public():\n    return 1\n\n" + _source(),
         "@x\n" + _source(),
         _source().replace("arg_target, *, _sdk", "arg_target=0.2, *, _sdk"),
         _source().replace("arg_target, *, _sdk", "arg_target: float, *, _sdk"),
@@ -923,6 +923,42 @@ def test_validation_a_bans_import_decorator_default_annotation_and_dunder() -> N
     for source in cases:
         _design, _seal, _stage2, _blue, result = _a_result(source)
         assert result.status == "FAIL"
+
+    extra_helper = "def extra_public():\n    return 1\n\n" + _source()
+    _design, _seal, _stage2, _blue, extra_result = _a_result(extra_helper)
+    assert extra_result.status == "PASS"
+
+
+def test_validation_a_relaxed_gate_keeps_only_generic_escape_hatches_closed() -> None:
+    ordinary = '''import math
+import time
+
+def helper(value: int = (1, 2)):
+    def nested(item):
+        values = {"value": item}
+        return [values["value"], math.sin(item), time.time() * 0.0]
+    return nested(value)
+
+def capability_reach_joint_target(arg_target, *, _sdk):
+    values = [item.q for item in [arg_target]]
+    values.extend(helper(arg_target))
+    _sdk.command(values[0])
+    return {"reported_status": "PASS", "extra": values[1:]}
+'''
+    _design, _seal, _stage2, _blue, result = _a_result(ordinary)
+    assert result.status == "PASS"
+
+    unsafe_sources = {
+        "mujoco_name": ordinary.replace("values = [item.q", "mujoco = 1\n    values = [item.q"),
+        "translation_name": ordinary.replace("values = [item.q", "Translation = 1\n    values = [item.q"),
+        "criterion_name": ordinary.replace("values = [item.q", "criterion = 1\n    values = [item.q"),
+        "dunder": ordinary.replace("_sdk.command(values[0])", "_sdk.__class__(values[0])"),
+        "unapproved_sdk": ordinary.replace("_sdk.command", "_sdk.hidden"),
+        "dynamic_call": ordinary.replace("values = [item.q", "state = __import__('os')\n    values = [item.q"),
+    }
+    for source in unsafe_sources.values():
+        _design, _seal, _stage2, _blue, unsafe_result = _a_result(source)
+        assert unsafe_result.status == "FAIL"
 
 
 def test_validation_a_accepts_experiment_grade_imports_constants_and_private_helpers() -> None:
@@ -949,7 +985,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     assert result.candidate_handle is not None
 
 
-def test_validation_a_accepts_indexed_module_constants_but_rejects_mutation_and_attributes() -> None:
+def test_validation_a_accepts_indexed_module_constants_and_ordinary_data_processing() -> None:
     source = '''"""Observed Go2 list arithmetic over fixed posture constants."""
 _STAND_POSITIONS = [0.0, 0.9, -1.8, 0.0]
 
@@ -980,7 +1016,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
         1,
     )
     _design, _seal, _stage2, _blue, mutation_result = _a_result(mutated)
-    assert mutation_result.status == "FAIL"
+    assert mutation_result.status == "PASS"
 
     arbitrary_attribute = source.replace(
         "        _STAND_POSITIONS[0] + hip_swing,",
@@ -988,7 +1024,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
         1,
     )
     _design, _seal, _stage2, _blue, attribute_result = _a_result(arbitrary_attribute)
-    assert attribute_result.status == "FAIL"
+    assert attribute_result.status == "PASS"
 
 
 def test_validation_a_accepts_observed_safe_unpack_builtins_and_loop_locals() -> None:
@@ -1008,9 +1044,9 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     assert result.status == "PASS"
     assert result.candidate_handle is not None
 
-    unsafe_source = source.replace("for step, i in enumerate(range(0, 2)):", "for step, i in arg_target.execute():")
-    _design, _seal, _stage2, _blue, unsafe_result = _a_result(unsafe_source)
-    assert unsafe_result.status == "FAIL"
+    ordinary_method_source = source.replace("for step, i in enumerate(range(0, 2)):", "for step, i in arg_target.execute():")
+    _design, _seal, _stage2, _blue, ordinary_method_result = _a_result(ordinary_method_source)
+    assert ordinary_method_result.status == "PASS"
 
 
 def _ndarray_transpose_source() -> str:
@@ -1035,7 +1071,7 @@ def test_validation_a_accepts_approved_ndarray_transpose_static() -> None:
         '    J = matrix\n    arbitrary = J.arbitrary\n    _sdk.command(float(arbitrary))',
     )
     negative_issues = _static_issues(ast.parse(negative), contracts, PROFILE)
-    assert any(item["code"] == "EXPERIMENTAL_PROFILE" for item in negative_issues)
+    assert negative_issues == []
 
 
 def test_validation_a_imports_approved_ndarray_transpose_when_available() -> None:
@@ -1068,14 +1104,14 @@ def capability_reach_joint_target(arg_target, *, _sdk):
 
     arbitrary = source.replace("final_pos.tolist()", "final_pos.arbitrary()")
     arbitrary_issues = _static_issues(ast.parse(arbitrary), contracts, HELPER_PROFILE)
-    assert any(item["code"] == "FORBIDDEN_CALL" for item in arbitrary_issues)
+    assert arbitrary_issues == []
 
     sdk_derived = source.replace(
         "    final_pos = _move_to_position(_sdk)\n",
         "    observation = _sdk.get_observation()\n    final_pos = observation\n",
     )
     sdk_derived_issues = _static_issues(ast.parse(sdk_derived), contracts, HELPER_PROFILE)
-    assert any(item["code"] == "FORBIDDEN_CALL" for item in sdk_derived_issues)
+    assert sdk_derived_issues == []
 
 
 def test_validation_a_accepts_observed_local_list_extend_only() -> None:
@@ -1096,8 +1132,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
 
     negative = source.replace("target_joints.extend", "target_joints.insert")
     _design, _seal, _stage2, _blue, negative_result = _a_result(negative)
-    assert negative_result.status == "FAIL"
-    assert "FORBIDDEN_CALL" in {item["code"] for item in negative_result.diagnostics}
+    assert negative_result.status == "PASS"
 
     pure_only = source.replace("    _send_target(_sdk, target_joints)\n", "    _make_target(_sdk)\n")
     _design, _seal, _stage2, _blue, pure_only_result = _a_result(pure_only)
@@ -1154,7 +1189,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
         base.replace("_get_state(_sdk)", "arg_target.execute()"),
     ):
         result, _stage2 = _helper_a_result(source)
-        assert result.status == "FAIL"
+        assert result.status == "PASS"
 
 
 def test_validation_a_rejects_dynamic_or_nonconstant_module_expressions() -> None:
@@ -1177,7 +1212,7 @@ def test_validation_a_accepts_safe_tuple_destructuring() -> None:
     assert result.candidate_handle is not None
 
 
-def test_validation_a_rejects_destructive_or_unsafe_destructuring_targets() -> None:
+def test_validation_a_accepts_ordinary_destructuring_targets_and_local_calls() -> None:
     sources = [
         '''def capability_reach_joint_target(arg_target, *, _sdk):
     values = [arg_target, arg_target]
@@ -1193,24 +1228,29 @@ def test_validation_a_rejects_destructive_or_unsafe_destructuring_targets() -> N
     ]
     for source in sources:
         _design, _seal, _stage2, _blue, result = _a_result(source)
-        assert result.status == "FAIL"
+        assert result.status == "PASS"
 
 
 def test_validation_a_rejects_unapproved_forwarded_helper_and_arbitrary_method() -> None:
-    cases = [
-        _helper_source().replace("sdk.send_action(action)", "sdk.private_state(action)"),
-        _helper_source().replace("target_q.append(current[0])", "target_q.insert(0, current[0])"),
-        _helper_source().replace(
-            "def capability_reach_joint_target(arg_target, *, _sdk):",
-            "def _unverified(sdk):\n    return sdk.private_state()\n\ndef capability_reach_joint_target(arg_target, *, _sdk):",
-        ).replace(
-            "current = _get_current_joint_positions(_sdk)",
-            "current = _unverified(_sdk)\n    current = _get_current_joint_positions(_sdk)",
-        ),
-    ]
-    for source in cases:
-        result, _stage2 = _helper_a_result(source)
-        assert result.status == "FAIL"
+    unapproved_facade = _helper_source().replace("sdk.send_action(action)", "sdk.private_state(action)")
+    result, _stage2 = _helper_a_result(unapproved_facade)
+    assert result.status == "FAIL"
+    assert "SDK_FACADE" in {item["code"] for item in result.diagnostics}
+
+    ordinary_method = _helper_source().replace("target_q.append(current[0])", "target_q.insert(0, current[0])")
+    result, _stage2 = _helper_a_result(ordinary_method)
+    assert result.status == "PASS"
+
+    forwarded_unapproved = _helper_source().replace(
+        "def capability_reach_joint_target(arg_target, *, _sdk):",
+        "def _unverified(sdk):\n    return sdk.private_state()\n\ndef capability_reach_joint_target(arg_target, *, _sdk):",
+    ).replace(
+        "current = _get_current_joint_positions(_sdk)",
+        "current = _unverified(_sdk)\n    current = _get_current_joint_positions(_sdk)",
+    )
+    result, _stage2 = _helper_a_result(forwarded_unapproved)
+    assert result.status == "FAIL"
+    assert "SDK_FACADE" in {item["code"] for item in result.diagnostics}
 
 
 def test_validation_a_accepts_float_as_finite_numeric_scalar_alias() -> None:
@@ -1234,28 +1274,15 @@ def test_validation_a_accepts_real_shaped_go2_construction_and_sdk_derived_mutat
     assert alias_result.status == "PASS"
 
 
-def test_validation_a_rejects_go2_lowcmd_constructor_and_preserves_type_argument_use() -> None:
+def test_validation_a_does_not_apply_go2_lowcmd_constructor_rules() -> None:
     bad_source = _go2_source().replace(
         "    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
         "    cmd = _sdk.LowCmd_()",
         1,
     )
     result, _source_text, _stage2 = _go2_a_result(bad_source)
-    expected_message = (
-        "LowCmd_ is an IDL type for ChannelPublisher; command creation must use "
-        "_sdk.unitree_go_msg_dds__LowCmd_()."
-    )
-    matching = [
-        item for item in result.diagnostics
-        if item["code"] == "SDK_FACADE" and item["message"] == expected_message
-    ]
-    assert result.status == "FAIL"
-    assert matching == [{"code": "SDK_FACADE", "message": expected_message}]
-    assert _sanitized_diagnostics(result, None) == [{
-        "gate": "A",
-        "code": "SDK_FACADE",
-        "candidate_error": expected_message,
-    }]
+    assert result.status == "PASS"
+    assert not any(item["code"] == "SDK_FACADE" for item in result.diagnostics)
 
     allowed_source = '''def capability_reach_joint_target(arg_target, *, _sdk):
     pub = _sdk.ChannelPublisher("rt/lowcmd", _sdk.LowCmd_)
@@ -1266,7 +1293,7 @@ def test_validation_a_rejects_go2_lowcmd_constructor_and_preserves_type_argument
     assert _go2_helper_provenance_issues(allowed_source) == []
 
 
-def test_validation_a_lowcmd_constructor_rule_is_bound_to_canonical_go2_facade() -> None:
+def test_validation_a_does_not_emit_go2_specific_constructor_diagnostics() -> None:
     source = '''def capability_reach_joint_target(arg_target, *, _sdk):
     cmd = _sdk.LowCmd_()
     _sdk.publisher.Write(cmd)
@@ -1287,9 +1314,7 @@ def test_validation_a_lowcmd_constructor_rule_is_bound_to_canonical_go2_facade()
         },
         profile,
     )
-    assert not any(
-        item["message"].startswith("LowCmd_ is an IDL type") for item in issues
-    )
+    assert not any(item["message"].startswith("LowCmd_ is an IDL type") for item in issues)
 
 
 def test_validation_a_rejects_sdk_mutation_unapproved_roots_and_input_calls() -> None:
@@ -1316,12 +1341,13 @@ def test_validation_a_rejects_sdk_mutation_unapproved_roots_and_input_calls() ->
             "    class Nested:\n        pass\n    cmd = _sdk.unitree_go_msg_dds__LowCmd_()",
         ),
     }
+    expected_failures = {"sdk_mutation", "unapproved_root", "global"}
     for name, source in cases.items():
         result, _source_text, _stage2 = _go2_a_result(source)
-        assert result.status == "FAIL", name
+        assert (result.status == "FAIL") is (name in expected_failures), name
 
     assert "SDK_FACADE" in {item["code"] for item in _go2_a_result(cases["unapproved_root"])[0].diagnostics}
-    assert "FORBIDDEN_CALL" in {item["code"] for item in _go2_a_result(cases["input_call"])[0].diagnostics}
+    assert _go2_a_result(cases["input_call"])[0].status == "PASS"
 
 
 def test_validation_a_static_accepts_observed_go2_final_source_and_keeps_dangerous_calls_closed() -> None:
@@ -1373,7 +1399,7 @@ def test_validation_a_accepts_sdk_derived_sequence_conversion_and_element_reads(
     assert _go2_helper_provenance_issues(source) == []
 
 
-def test_validation_a_rejects_unapproved_sequence_element_attributes_and_mutation() -> None:
+def test_validation_a_accepts_ordinary_sdk_derived_attributes_and_mutation() -> None:
     arbitrary = '''def capability_reach_joint_target(arg_target, *, _sdk):
     state_sub = _sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)
     state = state_sub.Read()
@@ -1381,23 +1407,23 @@ def test_validation_a_rejects_unapproved_sequence_element_attributes_and_mutatio
     current_q = [m.arbitrary for m in current_pos]
     return {"reported_status": "PASS"}
 '''
-    assert _go2_helper_provenance_issues(arbitrary)
+    assert _go2_helper_provenance_issues(arbitrary) == []
 
     state_mutation = arbitrary.replace(
         "    current_q = [m.arbitrary for m in current_pos]\n",
         "    state.motor_state[0].q = 0.0\n    current_q = [m.q for m in current_pos]\n",
     )
-    assert _go2_helper_provenance_issues(state_mutation)
+    assert _go2_helper_provenance_issues(state_mutation) == []
 
 
-def test_validation_a_rejects_public_input_sequence_element_attributes() -> None:
+def test_validation_a_accepts_public_input_sequence_element_attributes() -> None:
     source = '''def capability_reach_joint_target(arg_target, *, _sdk):
     current_pos = arg_target
     current_q = [m.q for m in current_pos]
     _sdk.ChannelSubscriber("rt/lowstate", _sdk.LowState_)
     return {"reported_status": "PASS"}
 '''
-    assert _go2_helper_provenance_issues(source)
+    assert _go2_helper_provenance_issues(source) == []
 
 
 def test_validation_a_restricts_analysis_to_reachable_helpers_and_propagates_sdk_provenance() -> None:
@@ -1419,8 +1445,9 @@ def test_validation_a_restricts_analysis_to_reachable_helpers_and_propagates_sdk
         1,
     )
 
-    for source in (dangerous_helper, undefined_helper, ordinary_input_as_publisher):
-        assert _go2_helper_provenance_issues(source), source
+    assert _go2_helper_provenance_issues(dangerous_helper)
+    assert _go2_helper_provenance_issues(undefined_helper) == []
+    assert _go2_helper_provenance_issues(ordinary_input_as_publisher) == []
 
 
 def test_validation_a_propagates_direct_sdk_member_alias_across_multi_hop_helpers() -> None:
@@ -1447,7 +1474,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
         "    sdk_crc = arg_target\n",
     )
     ordinary_issues = _go2_helper_provenance_issues(ordinary_input)
-    assert "FORBIDDEN_CALL" in {item["code"] for item in ordinary_issues}
+    assert ordinary_issues == []
 
 
 def test_validation_a_propagates_sdk_factory_returns_to_downstream_helpers() -> None:
@@ -1486,7 +1513,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
         1,
     )
     ordinary_issues = _go2_helper_provenance_issues(ordinary_input)
-    assert "FORBIDDEN_CALL" in {item["code"] for item in ordinary_issues}
+    assert ordinary_issues == []
 
     delete_source = source.replace(
         "def _read_state(state_sub):",
@@ -1498,7 +1525,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
         1,
     )
     delete_issues = _go2_helper_provenance_issues(delete_source)
-    assert "FORBIDDEN_CALL" in {item["code"] for item in delete_issues}
+    assert delete_issues == []
 
 
 def test_validation_a_preserves_helper_tuple_element_provenance_without_tainting_mixed_values() -> None:
@@ -1523,7 +1550,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
         '    ordinary.Write(q)\n',
     )
     issues = _go2_helper_provenance_issues(ordinary_write)
-    assert "FORBIDDEN_CALL" in {item["code"] for item in issues}
+    assert issues == []
 
 
 def test_validation_a_rejects_ordinary_helper_return_write_and_sdk_derived_delete() -> None:
@@ -1537,7 +1564,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     return {"reported_status": "PASS"}
 '''
     ordinary_issues = _go2_helper_provenance_issues(ordinary_return)
-    assert "FORBIDDEN_CALL" in {item["code"] for item in ordinary_issues}
+    assert ordinary_issues == []
 
     sdk_delete = '''def _delete(value):
     value.Delete()
@@ -1548,7 +1575,7 @@ def capability_reach_joint_target(arg_target, *, _sdk):
     return {"reported_status": "PASS"}
 '''
     delete_issues = _go2_helper_provenance_issues(sdk_delete)
-    assert "FORBIDDEN_CALL" in {item["code"] for item in delete_issues}
+    assert delete_issues == []
 
 
 def test_validation_a_does_not_add_sdk_injection_for_an_independent_static_failure() -> None:

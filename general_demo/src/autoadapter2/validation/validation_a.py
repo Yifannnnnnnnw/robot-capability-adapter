@@ -363,10 +363,6 @@ def _manifest_issues(
 
 
 _CANONICAL_DEFAULT_FACTORY_MEMBER = "unitree_go_msg_dds__LowCmd_"
-_GO2_LOW_CMD_CONSTRUCTOR_MESSAGE = (
-    "LowCmd_ is an IDL type for ChannelPublisher; command creation must use "
-    "_sdk.unitree_go_msg_dds__LowCmd_()."
-)
 
 
 def _profile_issues(profile: ValidationAProfile, contracts: Mapping[str, Mapping[str, Any]]) -> list[dict[str, str]]:
@@ -419,6 +415,26 @@ _ALLOWED_DERIVED_OBJECT_FIELDS = frozenset({
 _ALLOWED_DERIVED_SEQUENCE_FIELDS = frozenset({"motor_state", "position"})
 _ALLOWED_LOCAL_ARRAY_ATTRIBUTES = frozenset({"T"})
 _ALLOWED_LOCAL_CONVERSION_METHODS = frozenset({"tolist"})
+
+# Validation A is deliberately a generic artifact/safety gate.  It does not
+# attempt to infer the type or provenance of ordinary local values.  These
+# names are kept closed because they are direct escape hatches rather than
+# ordinary Python data processing.
+_FORBIDDEN_CANDIDATE_NAME_TOKENS = frozenset({
+    "translation", "mujoco", "harness", "criterion", "subprocess", "socket",
+    "requests", "urllib", "http", "ftplib", "ctypes", "importlib", "pickle",
+    "marshal", "shell", "dynamic", "reflection",
+})
+_FORBIDDEN_CANDIDATE_NAMES = frozenset({
+    "os", "sys", "typing", "pathlib", "shutil", "glob", "signal", "multiprocessing",
+    "asyncio", "builtins", "secrets", "random",
+})
+_FORBIDDEN_CALL_NAMES = frozenset({
+    "__import__", "eval", "exec", "open", "compile", "globals", "locals", "vars",
+    "dir", "getattr", "setattr", "delattr", "hasattr", "help", "input", "breakpoint",
+    "system", "popen", "Popen", "check_output", "check_call", "import_module",
+    "load_module", "find_spec", "exec_module",
+})
 
 
 @dataclass(frozen=True)
@@ -1046,11 +1062,6 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         sdk_root, member = _sdk_path_root(node.func, self.sdk_names)
         origin = self._call_origin(node.func)
         sdk_path = _sdk_member_path(node.func, self.sdk_names)
-        if (
-            sdk_path == ("LowCmd_",)
-            and {"LowCmd_", _CANONICAL_DEFAULT_FACTORY_MEMBER}.issubset(self.members)
-        ):
-            self._add_issue("SDK_FACADE", _GO2_LOW_CMD_CONSTRUCTOR_MESSAGE)
         if origin in {"sdk-root", "sdk-local", "sdk-derived-method"}:
             self.approved_sdk_use = True
         elif origin == "local-function" and isinstance(node.func, ast.Name) and node.func.id in self.sdk_forwarded_targets:
@@ -1155,6 +1166,203 @@ class _SdkStaticAnalyzer(ast.NodeVisitor):
         self._add_issue("EXPERIMENTAL_PROFILE", "nested functions are forbidden")
 
 
+def _forbidden_candidate_name(name: str) -> bool:
+    lowered = name.lower()
+    return lowered in _FORBIDDEN_CANDIDATE_NAMES or any(
+        token in lowered for token in _FORBIDDEN_CANDIDATE_NAME_TOKENS
+    )
+
+
+class _RelaxedStaticAnalyzer(ast.NodeVisitor):
+    """Generic Validation A safety checks without value/provenance inference."""
+
+    def __init__(
+        self,
+        function: ast.FunctionDef,
+        members: tuple[str, ...] | list[str] | set[str] | frozenset[str],
+        module_aliases: Mapping[str, str],
+        module_constants: set[str],
+        local_functions: set[str],
+        sdk_names: set[str] | frozenset[str],
+    ):
+        self.function = function
+        self.members = set(members)
+        self.module_aliases = dict(module_aliases)
+        self.module_constants = set(module_constants)
+        self.local_functions = set(local_functions)
+        self.sdk_names = set(sdk_names)
+        self.issues: list[dict[str, str]] = []
+        self._issue_keys: set[tuple[str, str]] = set()
+        self.approved_sdk_use = False
+        self.called_helpers: set[str] = set()
+
+    def _add_issue(self, code: str, message: str) -> None:
+        key = (code, message)
+        if key not in self._issue_keys:
+            self._issue_keys.add(key)
+            self.issues.append(_issue(code, message))
+
+    def _visit_signature(self, function: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        for decorator in function.decorator_list:
+            self.visit(decorator)
+        if function.returns is not None:
+            self.visit(function.returns)
+        arguments = function.args
+        for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs]:
+            if _dunder(argument.arg):
+                self._add_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile")
+            elif _forbidden_candidate_name(argument.arg):
+                self._add_issue("FORBIDDEN_NAME", "direct privileged, reflection, shell, network, or dynamic-loading names are forbidden")
+            if argument.annotation is not None:
+                self.visit(argument.annotation)
+        if arguments.vararg is not None:
+            if _dunder(arguments.vararg.arg):
+                self._add_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile")
+            elif _forbidden_candidate_name(arguments.vararg.arg):
+                self._add_issue("FORBIDDEN_NAME", "direct privileged, reflection, shell, network, or dynamic-loading names are forbidden")
+            if arguments.vararg.annotation is not None:
+                self.visit(arguments.vararg.annotation)
+        if arguments.kwarg is not None:
+            if _dunder(arguments.kwarg.arg):
+                self._add_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile")
+            elif _forbidden_candidate_name(arguments.kwarg.arg):
+                self._add_issue("FORBIDDEN_NAME", "direct privileged, reflection, shell, network, or dynamic-loading names are forbidden")
+            if arguments.kwarg.annotation is not None:
+                self.visit(arguments.kwarg.annotation)
+        for default in [*arguments.defaults, *(item for item in arguments.kw_defaults if item is not None)]:
+            self.visit(default)
+
+    def analyze(self) -> list[dict[str, str]]:
+        self._visit_signature(self.function)
+        for statement in self.function.body:
+            self.visit(statement)
+        return self.issues
+
+    def _check_module_member(self, value: ast.AST) -> None:
+        module_path = _module_path(value, self.module_aliases)
+        if module_path is not None and not _module_member_allowed(*module_path):
+            self._add_issue("MODULE_MEMBER", "module member is not in the approved runtime allowlist")
+
+    def _check_sdk_member(self, value: ast.AST) -> None:
+        path = _sdk_member_path(value, self.sdk_names)
+        if path is None:
+            return
+        if not path or path[0] not in self.members:
+            member = path[0] if path and path[0] is not None else None
+            self._add_issue("SDK_FACADE", f"{member} is not in the bound SDK facade")
+            return
+        self.approved_sdk_use = True
+
+    def _is_sdk_target(self, target: ast.AST) -> bool:
+        if _sdk_member_path(target, self.sdk_names) is not None:
+            return True
+        if isinstance(target, (ast.Tuple, ast.List)):
+            return any(self._is_sdk_target(item) for item in target.elts)
+        return False
+
+    def _check_name(self, name: str) -> None:
+        if _dunder(name):
+            self._add_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile")
+        elif _forbidden_candidate_name(name):
+            self._add_issue("FORBIDDEN_NAME", "direct privileged, reflection, shell, network, or dynamic-loading names are forbidden")
+
+    def visit_Name(self, node: ast.Name) -> None:
+        self._check_name(node.id)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        self._check_name(node.attr)
+        self._check_module_member(node)
+        self._check_sdk_member(node)
+        self.generic_visit(node)
+
+    def visit_Subscript(self, node: ast.Subscript) -> None:
+        self._check_module_member(node)
+        self._check_sdk_member(node)
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        called_name: str | None = None
+        if isinstance(node.func, ast.Name):
+            called_name = node.func.id
+            if called_name in self.local_functions:
+                self.called_helpers.add(called_name)
+        elif isinstance(node.func, ast.Attribute):
+            called_name = node.func.attr
+        if called_name in _FORBIDDEN_CALL_NAMES:
+            self._add_issue("FORBIDDEN_CALL", "reflection, shell, network, or dynamic-loading calls are forbidden")
+        elif called_name is not None and _forbidden_candidate_name(called_name):
+            self._add_issue("FORBIDDEN_NAME", "direct privileged, reflection, shell, network, or dynamic-loading names are forbidden")
+        self._check_sdk_member(node.func)
+        self.generic_visit(node)
+
+    def visit_keyword(self, node: ast.keyword) -> None:
+        if node.arg is not None:
+            self._check_name(node.arg)
+        self.generic_visit(node)
+
+    def visit_Import(self, _node: ast.Import) -> None:
+        self._add_issue("FORBIDDEN_IMPORT", "imports are allowed only at module scope")
+
+    def visit_ImportFrom(self, _node: ast.ImportFrom) -> None:
+        self._add_issue("FORBIDDEN_IMPORT", "imports are forbidden in the experimental profile")
+
+    def visit_Global(self, _node: ast.Global) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "global and namespace mutation are forbidden")
+
+    def visit_Nonlocal(self, _node: ast.Nonlocal) -> None:
+        self._add_issue("EXPERIMENTAL_PROFILE", "global and namespace mutation are forbidden")
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        self.visit(node.value)
+        for target in node.targets:
+            self.visit(target)
+            if self._is_sdk_target(target):
+                self._add_issue("SDK_FACADE", "the injected SDK facade is read-only")
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        if node.annotation is not None:
+            self.visit(node.annotation)
+        if node.value is not None:
+            self.visit(node.value)
+        self.visit(node.target)
+        if self._is_sdk_target(node.target):
+            self._add_issue("SDK_FACADE", "the injected SDK facade is read-only")
+
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self.visit(node.value)
+        self.visit(node.target)
+        if self._is_sdk_target(node.target):
+            self._add_issue("SDK_FACADE", "the injected SDK facade is read-only")
+
+    def visit_Delete(self, node: ast.Delete) -> None:
+        for target in node.targets:
+            self.visit(target)
+            if self._is_sdk_target(target):
+                self._add_issue("SDK_FACADE", "the injected SDK facade is read-only")
+
+    def visit_For(self, node: ast.For) -> None:
+        self.visit(node.iter)
+        self.visit(node.target)
+        if self._is_sdk_target(node.target):
+            self._add_issue("SDK_FACADE", "the injected SDK facade is read-only")
+        for statement in [*node.body, *node.orelse]:
+            self.visit(statement)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        # Local helper definitions are ordinary Python control flow.  Their
+        # bodies still receive the same generic safety checks.
+        self._check_name(node.name)
+        self._visit_signature(node)
+        for statement in node.body:
+            self.visit(statement)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._check_name(node.name)
+        self._visit_signature(node)
+        for statement in node.body:
+            self.visit(statement)
+
+
 def _safe_literal_ast(value: ast.AST) -> bool:
     if isinstance(value, ast.Constant):
         return value.value is None or isinstance(value.value, (bool, int, float, str, bytes))
@@ -1220,7 +1428,7 @@ def _module_import_issues(
         }[module_name]
         if imported.asname not in expected_alias:
             issues.append(_issue("FORBIDDEN_IMPORT", f"{module_name} has an unapproved alias"))
-        if _dunder(binding_name) or binding_name in symbols:
+        if _dunder(binding_name) or _forbidden_candidate_name(binding_name) or binding_name in symbols:
             issues.append(_issue("EXPERIMENTAL_PROFILE", "module imports must bind unique non-dunder names"))
         symbols.add(binding_name)
         aliases[binding_name] = module_name
@@ -1231,19 +1439,6 @@ def _function_shape_issues(function: ast.FunctionDef, *, public: bool, symbol: s
     all_arguments = [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs]
     if any(_dunder(argument.arg) and argument.arg != "_sdk" for argument in all_arguments):
         return [_issue("PUBLIC_SIGNATURE", f"{symbol} has a dunder parameter")]
-    if public:
-        return []
-    if (
-        function.decorator_list
-        or function.returns is not None
-        or any(argument.annotation is not None for argument in all_arguments)
-        or any(not _safe_literal_ast(default) for default in arguments.defaults)
-        or any(default is not None and not _safe_literal_ast(default) for default in arguments.kw_defaults)
-        or arguments.posonlyargs
-        or arguments.vararg is not None
-        or arguments.kwarg is not None
-    ):
-        return [_issue("EXPERIMENTAL_PROFILE", f"private helper {symbol} has an unsupported signature")]
     return []
 
 
@@ -1571,6 +1766,8 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
         if isinstance(node, ast.FunctionDef):
             if _dunder(node.name):
                 issues.append(_issue("FORBIDDEN_DUNDER", "dunder names are forbidden in the experimental profile"))
+            elif _forbidden_candidate_name(node.name):
+                issues.append(_issue("FORBIDDEN_NAME", "direct privileged or dunder helper names are forbidden"))
             if node.name in module_symbols:
                 issues.append(_issue("PUBLIC_SYMBOLS", "module symbols must not be redefined"))
             functions.setdefault(node.name, []).append(node)
@@ -1583,6 +1780,7 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
                 len(targets) != 1
                 or not isinstance(targets[0], ast.Name)
                 or _dunder(targets[0].id)
+                or _forbidden_candidate_name(targets[0].id)
                 or targets[0].id in module_symbols
                 or value is None
                 or not _safe_module_constant_ast(value, module_aliases, module_constants)
@@ -1600,134 +1798,75 @@ def _static_issues(tree: ast.Module, contracts: Mapping[str, Mapping[str, Any]],
     public_symbols = {name for name in functions if name in expected_symbols}
     if any(len(nodes) != 1 for nodes in functions.values()) or public_symbols != expected_symbols:
         issues.append(_issue("PUBLIC_SYMBOLS", "capability.py must define exactly the bound public functions"))
-    helper_names = {name for name in functions if name not in expected_symbols}
-    if any(not name.startswith("_") or _dunder(name) for name in helper_names):
-        issues.append(_issue("PUBLIC_SYMBOLS", "extra functions must be private non-dunder helpers"))
+    # Extra module-local helpers are ordinary implementation code.  They do
+    # not change the required public binding and are checked by the same
+    # generic safety visitor below.
     symbol_to_capability = {item["function_name"]: capability_id for capability_id, item in contracts.items()}
     all_sdk_members = frozenset(
         member
         for members in profile.sdk_facade_members.values()
         for member in members
     )
-    reachable_symbols = _reachable_function_symbols(functions, public_symbols)
-    reachable_functions = {
-        symbol: functions[symbol]
-        for symbol in reachable_symbols
-    }
-    sdk_parameter_names = _sdk_parameter_names(reachable_functions, public_symbols)
-    sdk_forwarded_calls = _sdk_forwarded_calls(reachable_functions, sdk_parameter_names)
-    analyzers: dict[str, _SdkStaticAnalyzer] = {}
-    helper_return_provenance: dict[str, _HelperReturnProvenance] = {}
-    sdk_derived_parameter_names: dict[str, set[str]] = {
-        symbol: set()
-        for symbol in reachable_functions
-    }
-    analysis_issues: list[dict[str, str]] = []
-    for _ in range(max(1, len(reachable_functions) + 1)):
-        next_sdk_derived_parameter_names = _sdk_derived_parameter_names(
-            reachable_functions,
-            sdk_parameter_names,
-            all_sdk_members,
-            helper_return_provenance,
-        )
-        round_analyzers: dict[str, _SdkStaticAnalyzer] = {}
-        round_issues: list[dict[str, str]] = []
-        for symbol, nodes in functions.items():
-            if symbol not in reachable_symbols or len(nodes) != 1:
-                continue
-            public = symbol in symbol_to_capability
-            capability_id = symbol_to_capability.get(symbol)
-            function = nodes[0]
-            round_issues.extend(_function_shape_issues(function, public=public, symbol=symbol))
-            if not public:
-                analyzer = _SdkStaticAnalyzer(
-                    function,
-                    _function_parameters(function),
-                    all_sdk_members,
-                    module_aliases,
-                    module_constants,
-                    set(reachable_functions),
-                    sdk_parameter_names.get(symbol, set()),
-                    sdk_forwarded_calls.get(symbol, set()),
-                    next_sdk_derived_parameter_names.get(symbol, set()),
-                    helper_return_provenance=helper_return_provenance,
-                )
-            else:
-                assert capability_id is not None
-                arguments = function.args
-                expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
-                if (
-                    function.decorator_list
-                    or function.returns is not None
-                    or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
-                    or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
-                    or arguments.defaults
-                    or any(default is not None for default in arguments.kw_defaults)
-                    or arguments.posonlyargs
-                    or [argument.arg for argument in arguments.args] != expected_parameters
-                    or [argument.arg for argument in arguments.kwonlyargs] != ["_sdk"]
-                    or arguments.vararg is not None
-                    or arguments.kwarg is not None
-                ):
-                    round_issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
-                analyzer = _SdkStaticAnalyzer(
-                    function,
-                    expected_parameters,
-                    profile.sdk_facade_members[capability_id],
-                    module_aliases,
-                    module_constants,
-                    set(reachable_functions),
-                    sdk_parameter_names.get(symbol, {"_sdk"}),
-                    sdk_forwarded_calls.get(symbol, set()),
-                    next_sdk_derived_parameter_names.get(symbol, set()),
-                    helper_return_provenance=helper_return_provenance,
-                    expected_result_names={field["name"] for field in contracts[capability_id]["outputs"]},
-                )
-            round_issues.extend(analyzer.analyze())
-            round_analyzers[symbol] = analyzer
-        next_returns = {
-            symbol: _merge_helper_return_provenance(analyzer.return_provenance)
-            for symbol, analyzer in round_analyzers.items()
-            if symbol not in symbol_to_capability
-        }
-        analyzers = round_analyzers
-        analysis_issues = round_issues
-        if (
-            next_returns == helper_return_provenance
-            and next_sdk_derived_parameter_names == sdk_derived_parameter_names
-        ):
-            break
-        sdk_derived_parameter_names = next_sdk_derived_parameter_names
-        helper_return_provenance = next_returns
-    issues.extend(_sdk_derived_argument_issues(
-        reachable_functions,
-        sdk_parameter_names,
-        sdk_derived_parameter_names,
-        all_sdk_members,
-        helper_return_provenance,
-    ))
-    issues.extend(analysis_issues)
-    verified_sdk_functions: set[str] = set()
-    changed = True
-    while changed:
-        changed = False
-        for symbol, analyzer in analyzers.items():
-            children = analyzer.forwarded_sdk_helpers
-            if not analyzer.issues and (
-                analyzer.approved_sdk_use
-                or any(child in verified_sdk_functions for child in children)
+    # The old analyzer tracked SDK-derived value provenance and rejected
+    # ordinary Python data processing.  Validation A intentionally does not
+    # infer those types: the source-coupled Sandbox and Validation B own
+    # runtime/type/physics correctness.  Every declared function is still
+    # scanned for generic escape hatches, including extra helpers.
+    sdk_parameter_names = _sdk_parameter_names(functions, public_symbols)
+    analyzers: dict[str, _RelaxedStaticAnalyzer] = {}
+    for symbol, nodes in functions.items():
+        if len(nodes) != 1:
+            continue
+        public = symbol in symbol_to_capability
+        capability_id = symbol_to_capability.get(symbol)
+        function = nodes[0]
+        issues.extend(_function_shape_issues(function, public=public, symbol=symbol))
+        if public:
+            assert capability_id is not None
+            arguments = function.args
+            expected_parameters = [parameter["parameter"] for parameter in contracts[capability_id]["parameters"]]
+            if (
+                function.decorator_list
+                or function.returns is not None
+                or any(argument.annotation is not None for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
+                or any(_dunder(argument.arg) for argument in [*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs])
+                or arguments.defaults
+                or any(default is not None for default in arguments.kw_defaults)
+                or arguments.posonlyargs
+                or [argument.arg for argument in arguments.args] != expected_parameters
+                or [argument.arg for argument in arguments.kwonlyargs] != ["_sdk"]
+                or arguments.vararg is not None
+                or arguments.kwarg is not None
             ):
-                if symbol not in verified_sdk_functions:
-                    verified_sdk_functions.add(symbol)
-                    changed = True
-    for symbol in symbol_to_capability:
+                issues.append(_issue("PUBLIC_SIGNATURE", f"{symbol} does not exactly match the Framework Binding"))
+            members = profile.sdk_facade_members[capability_id]
+        else:
+            members = all_sdk_members
+        analyzer = _RelaxedStaticAnalyzer(
+            function,
+            members,
+            module_aliases,
+            module_constants,
+            set(functions),
+            _sdk_alias_names(function, sdk_parameter_names.get(symbol, set())),
+        )
+        issues.extend(analyzer.analyze())
+        analyzers[symbol] = analyzer
+
+    def _uses_sdk(symbol: str, seen: set[str]) -> bool:
+        if symbol in seen:
+            return False
+        seen.add(symbol)
         analyzer = analyzers.get(symbol)
-        if analyzer is not None and not (
-            analyzer.approved_sdk_use
-            or symbol in verified_sdk_functions
-            or any(child in verified_sdk_functions for child in analyzer.forwarded_sdk_helpers)
-        ):
-            issues.append(_issue("SDK_INJECTION", f"{symbol} must call the injected _sdk facade"))
+        if analyzer is None:
+            return False
+        return analyzer.approved_sdk_use or any(
+            _uses_sdk(child, seen) for child in analyzer.called_helpers
+        )
+
+    for symbol in symbol_to_capability:
+        if symbol in analyzers and not _uses_sdk(symbol, set()):
+            issues.append(_issue("SDK_INJECTION", f"{symbol} must use the injected _sdk facade"))
     return issues
 
 
