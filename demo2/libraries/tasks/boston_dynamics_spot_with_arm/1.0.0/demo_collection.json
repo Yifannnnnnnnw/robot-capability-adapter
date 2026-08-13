@@ -1,0 +1,3 @@
+{
+  "artifact_type":"demo_task_collection","schema_version":"1.0.0","collection_id":"boston_dynamics_spot_with_arm-demo-five","collection_version":"1.0.0","catalog_id":"boston_dynamics_spot_with_arm-tasks","catalog_version":"1.0.0","robot_configuration_id":"boston_dynamics_spot_with_arm","review_status":"DRAFT","migration_review_status":"DRAFT","execution_route":"DIRECT_MUJOCO_EXPERIMENTAL","selection_policy":"Exactly five minimal source-referenced tasks in fixed order; this is a preparation package, not validation evidence.","task_ids":["S01","S02","S03","S04","S05"]
+}

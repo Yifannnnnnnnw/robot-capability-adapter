@@ -1,0 +1,34 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "boston_dynamics_spot_with_arm-tasks",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "boston_dynamics_spot",
+  "robot_configuration_id": "boston_dynamics_spot_with_arm",
+  "catalog_review_status": "DRAFT",
+  "migration_review_status": "DRAFT",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "configuration_boundary": {
+    "base_type": "free",
+    "actuated_dof": 19,
+    "source_entry": "boston_dynamics_spot/spot_arm.xml",
+    "scene_entrypoints": ["boston_dynamics_spot/scene_arm.xml"],
+    "mesh_policy": "UPSTREAM_CACHE_REQUIRED"
+  },
+  "source_registry": [{
+    "source_id": "official-mujoco-menagerie-boston-dynamics-spot-arm",
+    "kind": "official_mujoco_menagerie_model",
+    "repository": "https://github.com/google-deepmind/mujoco_menagerie",
+    "ref": "main",
+    "model_path": "boston_dynamics_spot/spot_arm.xml",
+    "scene_path": "boston_dynamics_spot/scene_arm.xml",
+    "source_note": "Official source reference only; MJCF and meshes are not vendored here. Pin before formal execution."
+  }],
+  "tasks": [
+    {"task_id":"S01","description":"Hold an upright Spot posture at the current location.","task_type":"posture_hold","task_review_status":"DRAFT","migration_review_status":"DRAFT","source_basis":["https://github.com/google-deepmind/mujoco_menagerie/tree/main/boston_dynamics_spot"],"scene_entrypoint":"boston_dynamics_spot/scene_arm.xml","scene_assets":[],"criterion_summary":"Experimental upright-score, planar-speed, and no-floor-contact checks."},
+    {"task_id":"S02","description":"Adjust Spot to the specified body height and hold upright at the current location.","task_type":"posture_hold","task_review_status":"DRAFT","migration_review_status":"DRAFT","source_basis":["https://github.com/google-deepmind/mujoco_menagerie/tree/main/boston_dynamics_spot"],"scene_entrypoint":"boston_dynamics_spot/scene_arm.xml","scene_assets":[],"criterion_summary":"Experimental body-height error and upright checks; threshold is not physically calibrated."},
+    {"task_id":"S03","description":"Move Spot forward in its initial body-yaw direction for a bounded distance, then stop upright.","task_type":"bounded_locomotion","task_review_status":"DRAFT","migration_review_status":"DRAFT","source_basis":["https://github.com/google-deepmind/mujoco_menagerie/tree/main/boston_dynamics_spot"],"scene_entrypoint":"boston_dynamics_spot/scene_arm.xml","scene_assets":[],"criterion_summary":"Experimental forward-displacement, lateral-drift, settle-speed, and contact checks."},
+    {"task_id":"S04","description":"Move Spot laterally in its initial body-yaw frame for a bounded distance, then stop upright.","task_type":"bounded_locomotion","task_review_status":"DRAFT","migration_review_status":"DRAFT","source_basis":["https://github.com/google-deepmind/mujoco_menagerie/tree/main/boston_dynamics_spot"],"scene_entrypoint":"boston_dynamics_spot/scene_arm.xml","scene_assets":[],"criterion_summary":"Experimental lateral-displacement, forward-drift, settle-speed, and contact checks."},
+    {"task_id":"S05","description":"Move Spot's arm to the specified joint posture and hold it.","task_type":"arm_posture_hold","task_review_status":"DRAFT","migration_review_status":"DRAFT","source_basis":["https://github.com/google-deepmind/mujoco_menagerie/tree/main/boston_dynamics_spot"],"scene_entrypoint":"boston_dynamics_spot/scene_arm.xml","scene_assets":[],"criterion_summary":"Experimental arm joint-vector error check; target and tolerance are not physically calibrated."}
+  ]
+}
