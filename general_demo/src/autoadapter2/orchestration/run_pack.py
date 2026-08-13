@@ -405,7 +405,7 @@ def _validate_budget(value: Mapping[str, Any]) -> dict[str, Any]:
             "min_successful_sandbox_calls_before_submit": 5,
             "require_all_design_capability_probes": True,
         },
-        "repair": {"max_repairs": 3, "max_infrastructure_retries": 1},
+        "repair": {"max_repairs": 10, "max_infrastructure_retries": 1},
         "consumer": {"max_steps": 4},
         "demo": {"repetitions": 1},
     }
@@ -1369,7 +1369,11 @@ def _implementation_projection_from_records(
     observation_mapping = translation.get("observation_mapping")
     if not isinstance(active_rule, Mapping) or not isinstance(inactive_rule, Mapping) or not isinstance(observation_mapping, Mapping):
         raise RunPackError("Go2 checked-in translation field rules are missing")
-    permitted_types = copy.deepcopy(sdk["public_symbols"])
+    permitted_types = [
+        symbol
+        for symbol in copy.deepcopy(sdk["public_symbols"])
+        if not (robot == "unitree-go2" and symbol == "ChannelFactoryInitialize")
+    ]
     permitted_factories: list[str] = []
     if robot == "unitree-go2":
         permitted_types.extend(
@@ -1393,6 +1397,11 @@ def _implementation_projection_from_records(
                 "write_contract": {
                     "message_factory": "unitree_go_msg_dds__LowCmd_",
                     "message_instance_required": True,
+                    "header_rule": {
+                        "head": [0xFE, 0xEF],
+                        "level_flag": 0xFF,
+                        "gpio": 0,
+                    },
                     "field_container": "motor_cmd",
                     "field_names": ["mode", "q", "dq", "kp", "kd", "tau"],
                     "crc_field": "crc",
@@ -1454,6 +1463,11 @@ def _implementation_projection_from_records(
             "inactive_slot_rule": copy.deepcopy(inactive_rule),
             "write_contract": {
                 "message_instance_required": True,
+                "header_rule": {
+                    "head": [0xFE, 0xEF],
+                    "level_flag": 0xFF,
+                    "gpio": 0,
+                },
                 "field_container": "motor_cmd",
                 "field_names": ["mode", "q", "dq", "kp", "kd", "tau"],
                 "crc_field": "crc",
@@ -1483,7 +1497,6 @@ def _implementation_projection_from_records(
             "record_mapping": copy.deepcopy(observation_mapping),
         },
         "lifecycle": [
-            "ChannelFactoryInitialize",
             "ChannelPublisher.Init",
             "ChannelSubscriber.Init",
             "ChannelPublisher.Write",

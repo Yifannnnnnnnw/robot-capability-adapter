@@ -34,8 +34,8 @@ class RepairConfig:
     max_infrastructure_retries: int = 1
 
     def __post_init__(self) -> None:
-        if not isinstance(self.max_repairs, int) or isinstance(self.max_repairs, bool) or not 1 <= self.max_repairs <= 3:
-            raise ContractError("Repair max_repairs must be 1..3")
+        if not isinstance(self.max_repairs, int) or isinstance(self.max_repairs, bool) or not 1 <= self.max_repairs <= 10:
+            raise ContractError("Repair max_repairs must be 1..10")
         if not isinstance(self.max_infrastructure_retries, int) or isinstance(self.max_infrastructure_retries, bool) or self.max_infrastructure_retries < 0:
             raise ContractError("Repair infrastructure retries must be non-negative")
 
@@ -145,7 +145,11 @@ def _freeze_design(design: Mapping[str, Any], seal: Mapping[str, Any], binding_c
     return frozen, design_hash
 
 
-def _sanitized_diagnostics(validation_a: ValidationAResult, validation_b: ValidationBResult | None) -> list[dict[str, str]]:
+def _sanitized_diagnostics(
+    validation_a: ValidationAResult,
+    validation_b: ValidationBResult | None,
+    context: FrozenValidationContext | None = None,
+) -> list[dict[str, Any]]:
     def safe_code(value: Any) -> str | None:
         if not isinstance(value, str) or not value.strip():
             return None
@@ -167,16 +171,78 @@ def _sanitized_diagnostics(validation_a: ValidationAResult, validation_b: Valida
             diagnostics.append(diagnostic)
         return diagnostics
     if validation_b is not None and validation_b.status == "FAIL":
-        diagnostics: list[dict[str, str]] = []
-        for item in validation_b.diagnostics:
-            code = safe_code(item.get("code"))
-            if code is None:
+        diagnostics: list[dict[str, Any]] = []
+        invocation_inputs: dict[tuple[str, str], dict[str, Any]] = {}
+        if context is not None:
+            for entry in context.suite_entries:
+                capability_id = entry.get("capability_id")
+                cases = entry.get("cases")
+                if not isinstance(capability_id, str) or not isinstance(cases, list):
+                    continue
+                for case in cases:
+                    if (
+                        isinstance(case, Mapping)
+                        and isinstance(case.get("case_id"), str)
+                        and isinstance(case.get("inputs"), Mapping)
+                    ):
+                        invocation_inputs[(capability_id, case["case_id"])] = copy.deepcopy(
+                            dict(case["inputs"])
+                        )
+        for execution in validation_b.executions:
+            if execution.get("verdict") != "FAIL":
                 continue
-            diagnostic = {"gate": "B", "code": code}
-            candidate_error = _candidate_owned_error(item.get("code"), item.get("candidate_error"))
-            if candidate_error is not None:
-                diagnostic["candidate_error"] = candidate_error
-            diagnostics.append(diagnostic)
+            capability_id = execution.get("capability_id")
+            case_id = execution.get("case_id")
+            criterion_results = execution.get("criterion_results")
+            if not isinstance(criterion_results, list) or not criterion_results:
+                for raw_code in execution.get("failure_codes", []):
+                    code = safe_code(raw_code)
+                    if code is None:
+                        continue
+                    diagnostic = {
+                        "gate": "B",
+                        "code": code,
+                        "capability_id": capability_id,
+                        "case_id": case_id,
+                        "public_invocation": invocation_inputs.get((capability_id, case_id), {}),
+                    }
+                    candidate_error = _candidate_owned_error(
+                        "CANDIDATE_EXCEPTION", execution.get("candidate_error")
+                    )
+                    if candidate_error is not None:
+                        diagnostic["candidate_error"] = candidate_error
+                    diagnostics.append(diagnostic)
+                continue
+            for criterion in criterion_results:
+                if not isinstance(criterion, Mapping) or criterion.get("verdict") != "FAIL":
+                    continue
+                failure_codes = [
+                    code
+                    for raw_code in criterion.get("failure_codes", [])
+                    if (code := safe_code(raw_code)) is not None
+                ]
+                if not failure_codes:
+                    continue
+                diagnostic = {
+                    "gate": "B",
+                    "code": failure_codes[0],
+                    "failure_codes": failure_codes,
+                    "capability_id": capability_id,
+                    "case_id": case_id,
+                    "criterion_id": criterion.get("criterion_id"),
+                    "public_invocation": invocation_inputs.get((capability_id, case_id), {}),
+                    "observed": copy.deepcopy(criterion.get("observed", {})),
+                    "expected": copy.deepcopy(criterion.get("expected", {})),
+                    "failed_guard_ids": copy.deepcopy(criterion.get("failed_guard_ids", [])),
+                    "sdk_route_valid": criterion.get("sdk_route_valid"),
+                    "video_evidence_available": bool(execution.get("video_media_hash")),
+                }
+                candidate_error = _candidate_owned_error(
+                    "CANDIDATE_EXCEPTION", execution.get("candidate_error")
+                )
+                if candidate_error is not None:
+                    diagnostic["candidate_error"] = candidate_error
+                diagnostics.append(diagnostic)
         return diagnostics
     return []
 
@@ -320,7 +386,7 @@ class RepairRunner:
                 "implementation_bundle_hash": bundle.bundle_hash,
                 "design_hash": design_hash,
                 "run_snapshot_hash": frozen_context.run_snapshot_hash,
-                "diagnostics": _sanitized_diagnostics(current_a, current_b),
+                "diagnostics": _sanitized_diagnostics(current_a, current_b, frozen_context),
                 "ledger": {
                     "repair_invocations_used": repair_invocations_used,
                     "candidate_revisions_created": candidate_revisions_created,

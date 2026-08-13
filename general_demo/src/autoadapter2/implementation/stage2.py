@@ -296,23 +296,45 @@ def _submission_issues(
     return issues
 
 
-def _public_repair_diagnostics(value: Any) -> list[dict[str, str]]:
-    """Keep only sanitized, candidate-facing Repair diagnostics."""
+def _public_repair_diagnostics(value: Any) -> list[dict[str, Any]]:
+    """Keep the whitelisted, candidate-facing physical Repair feedback."""
 
     if not isinstance(value, list):
         return []
-    diagnostics: list[dict[str, str]] = []
+    diagnostics: list[dict[str, Any]] = []
     for item in value:
         if not isinstance(item, Mapping):
             continue
-        safe: dict[str, str] = {}
-        for field in ("gate", "code", "candidate_error"):
+        safe: dict[str, Any] = {}
+        for field in ("gate", "code", "capability_id", "case_id", "criterion_id"):
             candidate = item.get(field)
             if not isinstance(candidate, str) or not candidate.strip():
                 continue
-            if any(term in candidate.lower() for term in _REPAIR_PRIVATE_TERMS):
-                continue
             safe[field] = " ".join(candidate.split())[:320]
+        candidate_error = item.get("candidate_error")
+        if (
+            isinstance(candidate_error, str)
+            and candidate_error.strip()
+            and not any(term in candidate_error.lower() for term in _REPAIR_PRIVATE_TERMS)
+        ):
+            safe["candidate_error"] = " ".join(candidate_error.split())[:320]
+        for field in ("failure_codes", "failed_guard_ids"):
+            candidate = item.get(field)
+            if isinstance(candidate, list):
+                safe[field] = [
+                    " ".join(entry.split())[:320]
+                    for entry in candidate
+                    if isinstance(entry, str)
+                    and entry.strip()
+                ]
+        for field in ("public_invocation", "observed", "expected"):
+            candidate = item.get(field)
+            if isinstance(candidate, Mapping):
+                safe[field] = copy.deepcopy(dict(candidate))
+        for field in ("sdk_route_valid", "video_evidence_available"):
+            candidate = item.get(field)
+            if field in item and (isinstance(candidate, bool) or candidate is None):
+                safe[field] = candidate
         if "gate" in safe and "code" in safe:
             diagnostics.append(safe)
     return diagnostics

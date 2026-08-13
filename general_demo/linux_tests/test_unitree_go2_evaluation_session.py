@@ -30,6 +30,10 @@ class _RealCommand:
             if state is None:
                 raise RuntimeError("real SDK2 LowState was not available")
             command = sdk.unitree_go_msg_dds__LowCmd_()
+            command.head[0] = 0xFE
+            command.head[1] = 0xEF
+            command.level_flag = 0xFF
+            command.gpio = 0
             assert len(command.motor_cmd) == 20
             for index, slot in enumerate(command.motor_cmd):
                 slot.mode = 0x01

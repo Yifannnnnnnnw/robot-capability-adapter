@@ -4,6 +4,7 @@ import ast
 import copy
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -23,6 +24,7 @@ from autoadapter2.foundation.hashing import content_hash
 from autoadapter2.foundation.seals import create_seal, verify_seal
 from autoadapter2.generation import FixtureJsonGenerator, Stage1Runner
 from autoadapter2.implementation import CallbackSandbox, Stage2Runner
+from autoadapter2.implementation.stage2 import _public_repair_diagnostics
 from autoadapter2.integrations.unitree_go2.session import Go2CandidateError
 from autoadapter2.orchestration.demo_runner import _repair_artifact
 from autoadapter2.validation import (
@@ -52,7 +54,6 @@ from autoadapter2.validation.validation_a import (
 
 GO2_FINAL_SOURCE_FIXTURE = Path(__file__).parent / "fixtures" / "unitree_go2_final_candidate.py"
 GO2_FINAL_FACADE = (
-    "ChannelFactoryInitialize",
     "ChannelPublisher",
     "ChannelSubscriber",
     "LowCmd_",
@@ -61,6 +62,39 @@ GO2_FINAL_FACADE = (
     "CRC",
     "unitree_go_msg_dds__LowCmd_",
 )
+
+
+def test_stage2_repair_keeps_rich_physical_diagnostics() -> None:
+    diagnostics = _public_repair_diagnostics([{
+        "gate": "B",
+        "code": "THRESHOLD",
+        "failure_codes": ["THRESHOLD", "MEASUREMENT_REFERENCE"],
+        "capability_id": "move-forward",
+        "case_id": "nominal-case",
+        "criterion_id": "distance-threshold",
+        "public_invocation": {"distance": 0.3},
+        "observed": {"final": 0.08, "elapsed_s": 1.0},
+        "expected": {"comparator": ">=", "threshold": 0.25, "dwell_s": 0.5},
+        "failed_guard_ids": ["upright-guard"],
+        "sdk_route_valid": True,
+        "video_evidence_available": True,
+        "not_whitelisted": "must not reach the implementation agent",
+    }])
+
+    assert diagnostics == [{
+        "gate": "B",
+        "code": "THRESHOLD",
+        "capability_id": "move-forward",
+        "case_id": "nominal-case",
+        "criterion_id": "distance-threshold",
+        "failure_codes": ["THRESHOLD", "MEASUREMENT_REFERENCE"],
+        "failed_guard_ids": ["upright-guard"],
+        "public_invocation": {"distance": 0.3},
+        "observed": {"final": 0.08, "elapsed_s": 1.0},
+        "expected": {"comparator": ">=", "threshold": 0.25, "dwell_s": 0.5},
+        "sdk_route_valid": True,
+        "video_evidence_available": True,
+    }]
 
 GO2_HELPER_PROVENANCE_SOURCE = '''"""Compressed regression for the observed Go2 helper shapes."""
 
@@ -372,7 +406,7 @@ class _FixedHarness:
                         entity=criterion["measurement"]["entity"],
                         unit=criterion["measurement"]["unit"],
                         frame=criterion["measurement"]["frame"],
-                        samples=(
+                        samples=(None if outcome == "malformed_samples" and index == 0 else (
                             MeasurementSample(
                                 0.0,
                                 0.5
@@ -385,7 +419,7 @@ class _FixedHarness:
                                 if outcome == "second_fail" and index == 1
                                 else value,
                             ),
-                        ),
+                        )),
                         elapsed_s=0.2,
                     )
                     for index, criterion in enumerate(invocation.criteria)
@@ -782,12 +816,19 @@ def test_codeact_repair_without_sandbox_ok_is_exhausted_without_a_or_b_revision(
     assert len(result.validation_b_attempts) == 1
     assert all(entry["status"] == "EPISODE_EXHAUSTED" for entry in result.repair_log)
     assert sandbox_calls == []
-    assert all(
-        not any(term in json.dumps(call["inputs"]).lower() for term in (
-            "criterion", "threshold", "measurement", "case", "seed",
-        ))
-        for call in generator.calls[1:]
-    )
+    repair_calls = [
+        call for call in generator.calls[1:]
+        if call["inputs"].get("public_diagnostics")
+    ]
+    assert repair_calls
+    diagnostic = repair_calls[0]["inputs"]["public_diagnostics"][0]
+    assert diagnostic["capability_id"] == "reach-joint-target"
+    assert diagnostic["case_id"] == "nominal"
+    assert diagnostic["criterion_id"] == "reach-joint-target:default"
+    assert diagnostic["public_invocation"] == {"target": 0.3}
+    assert diagnostic["observed"]["final"] == 0.5
+    assert diagnostic["expected"]["threshold"] == 0.05
+    assert diagnostic["sdk_route_valid"] is True
 
 
 def test_repair_callback_exception_is_auditable_without_revision() -> None:
@@ -1433,13 +1474,68 @@ def test_validation_a_static_accepts_observed_go2_final_source_and_keeps_dangero
 
     dangerous_sources = {
         "os_import": source.replace("import math", "import os", 1),
-        "open": source.replace("cmd_pub.Write(cmd)", "open('candidate.txt', 'w')", 1),
-        "eval": source.replace("cmd_pub.Write(cmd)", "eval('1')", 1),
-        "dunder": source.replace("_sdk.CRC(cmd)", "_sdk.__class__(cmd)", 1),
+        "open": source.replace("cmd_pub.Write(command)", "open('candidate.txt', 'w')", 1),
+        "eval": source.replace("cmd_pub.Write(command)", "eval('1')", 1),
+        "dunder": source.replace("_sdk.CRC()", "_sdk.__class__()", 1),
     }
     for name, dangerous_source in dangerous_sources.items():
         issues = _static_issues(ast.parse(dangerous_source, filename="capability.py"), contracts, profile)
         assert issues, name
+
+
+def test_go2_fixture_command_retains_real_fresh_state_feedback_and_header() -> None:
+    source = GO2_FINAL_SOURCE_FIXTURE.read_text(encoding="utf-8")
+    namespace: dict[str, object] = {}
+    exec(compile(source, str(GO2_FINAL_SOURCE_FIXTURE), "exec"), namespace)
+    namespace["time"] = SimpleNamespace(sleep=lambda _seconds: None)
+
+    def first_command(fresh_q: float):
+        writes: list[object] = []
+
+        class Publisher:
+            def Init(self) -> None:
+                return None
+
+            def Write(self, message: object) -> None:
+                writes.append(message)
+
+        class Subscriber:
+            def Init(self) -> None:
+                return None
+
+            def Read(self):
+                motor_state = [SimpleNamespace(q=fresh_q, dq=0.0) for _ in range(20)]
+                return SimpleNamespace(motor_state=motor_state)
+
+        def message():
+            motors = [
+                SimpleNamespace(mode=0, q=0.0, dq=0.0, kp=0.0, kd=0.0, tau=0.0)
+                for _ in range(20)
+            ]
+            return SimpleNamespace(
+                head=[0, 0], level_flag=0, gpio=0, motor_cmd=motors, crc=0,
+            )
+
+        sdk = SimpleNamespace(
+            ChannelPublisher=lambda _topic, _message_type: Publisher(),
+            ChannelSubscriber=lambda _topic, _message_type: Subscriber(),
+            LowCmd_=object(),
+            LowState_=object(),
+            unitree_go_msg_dds__LowCmd_=message,
+            CRC=lambda: SimpleNamespace(Crc=lambda _message: 123),
+        )
+        namespace["capability_cap_stand_up"](_sdk=sdk)
+        return writes[0]
+
+    low_state_command = first_command(0.2)
+    high_state_command = first_command(0.6)
+    assert low_state_command.head == [0xFE, 0xEF]
+    assert low_state_command.level_flag == 0xFF
+    assert low_state_command.gpio == 0
+    assert low_state_command.crc == 123
+    assert low_state_command.motor_cmd[0].q != high_state_command.motor_cmd[0].q
+    assert abs(low_state_command.motor_cmd[0].q) < 0.2
+    assert abs(high_state_command.motor_cmd[0].q) < 0.6
 
 
 @pytest.mark.parametrize("conversion", ["list", "tuple"])
@@ -1901,11 +1997,15 @@ def test_validation_b_preserves_candidate_error_when_collection_lacks_route() ->
     assert repaired.candidate_revisions_created == 0
     assert len(repaired.repair_log) == 3
     assert all(entry["status"] == "NO_CHANGE" for entry in repaired.repair_log)
-    assert captured["diagnostics"] == [{
-        "gate": "B",
-        "code": "CANDIDATE_EXCEPTION",
-        "candidate_error": _CandidateOwnedError.candidate_error,
-    }] * 2
+    assert len(captured["diagnostics"]) == 2
+    for diagnostic in captured["diagnostics"]:
+        assert diagnostic["gate"] == "B"
+        assert diagnostic["code"] == "CANDIDATE_EXCEPTION"
+        assert diagnostic["failure_codes"] == ["CANDIDATE_EXCEPTION"]
+        assert diagnostic["capability_id"] == "reach-joint-target"
+        assert diagnostic["case_id"] == "nominal"
+        assert diagnostic["public_invocation"] == {"target": 0.3}
+        assert diagnostic["candidate_error"] == _CandidateOwnedError.candidate_error
 
 
 def test_validation_b_classifies_go2_candidate_timeout_as_candidate_failure() -> None:
@@ -2001,6 +2101,30 @@ def test_validation_b_runs_all_criteria_in_one_episode(outcome: str, expected_st
             and execution["criterion_results"][1]["verdict"] == "FAIL"
             for execution in result.executions
         )
+        criterion = result.executions[0]["criterion_results"][1]
+        assert criterion["observed"] == {
+            "sample_count": 2,
+            "first": 0.5,
+            "final": 0.5,
+            "minimum": 0.5,
+            "maximum": 0.5,
+            "elapsed_s": 0.2,
+        }
+        assert criterion["expected"]["threshold"] == harness.invocations[0].criteria[1]["threshold"]["value"]
+        assert criterion["sdk_route_valid"] is True
+
+
+def test_validation_b_reports_malformed_criterion_samples_without_crashing() -> None:
+    design, design_seal, blue, _stage2, a_result = _multi_submission()
+    context = _context(design, design_seal, blue)
+    result = ValidationBRunner(
+        _FixedHarness(context.run_snapshot, ["malformed_samples", "malformed_samples"])
+    ).run(bind_candidate_to_suite(a_result, blue.suite_hash), context)
+
+    assert result.status == "FAIL"
+    first = result.executions[0]["criterion_results"][0]
+    assert "MEASUREMENT_SAMPLES" in first["failure_codes"]
+    assert first["observed"]["sample_count"] == 0
 
 
 def test_validation_b_routes_candidate_execution_through_typed_session() -> None:

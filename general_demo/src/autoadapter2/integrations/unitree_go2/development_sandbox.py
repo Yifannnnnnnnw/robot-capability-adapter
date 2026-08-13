@@ -281,6 +281,9 @@ class _FakeMotorCommand:
 
 class _FakeLowCmd:
     def __init__(self) -> None:
+        self.head = [0, 0]
+        self.level_flag = 0
+        self.gpio = 0
         self.motor_cmd = [_FakeMotorCommand() for _ in range(DDS_MOTOR_SLOT_COUNT)]
         self.crc = 0
 
@@ -318,7 +321,11 @@ class _FakeSportModeState:
 
 def _crc_payload(message: object) -> bytes:
     slots = getattr(message, "motor_cmd")
-    values = []
+    values = [
+        tuple(getattr(message, "head")),
+        getattr(message, "level_flag"),
+        getattr(message, "gpio"),
+    ]
     for slot in slots:
         values.append(tuple(getattr(slot, field) for field in ("mode", "q", "dq", "kp", "kd", "tau")))
     return repr(tuple(values)).encode("utf-8")

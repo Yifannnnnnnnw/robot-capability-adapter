@@ -39,7 +39,7 @@
       "body_position": {"unit": "m", "dimension": 3},
       "body_linear_velocity": {"unit": "m/s", "dimension": 3}
     },
-    "lifecycle": ["ChannelFactoryInitialize", "ChannelPublisher.Init", "ChannelSubscriber.Init", "ChannelPublisher.Write", "ChannelSubscriber.Read"],
+    "lifecycle": ["ChannelPublisher.Init", "ChannelSubscriber.Init", "ChannelPublisher.Write", "ChannelSubscriber.Read"],
     "limits": {
       "motor_slot_count": 20,
       "active_motor_count": 12,
@@ -74,7 +74,7 @@
     "profile_id": "experimental-python-a-v1",
     "robot_model_id": "unitree-go2",
     "robot_configuration_id": "unitree-go2-stock-12dof",
-    "facade": {"members": ["ChannelFactoryInitialize", "ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_", "CRC", "unitree_go_msg_dds__LowCmd_"], "lifecycle": "framework_injected_unitree_low_level_sdk_lifecycle"},
+    "facade": {"members": ["ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_", "CRC", "unitree_go_msg_dds__LowCmd_"], "lifecycle": "framework_owned_factory_then_candidate_owned_endpoints"},
     "probe": {
       "input_value_policy": {"number": 0.0, "integer": 0, "boolean": false, "string": "fixture", "object": {}, "array": []},
       "metadata_policy": "copy sealed design field metadata exactly"
@@ -105,7 +105,7 @@
     "sdk_implementation_projection": {
       "sdk_entry_id": "unitree-sdk2-go2-lowlevel",
       "sdk_entry_version": "1.0.0",
-      "permitted_types": ["ChannelFactoryInitialize", "ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_", "CRC"],
+      "permitted_types": ["ChannelPublisher", "ChannelSubscriber", "LowCmd_", "LowState_", "SportModeState_", "CRC"],
       "permitted_factories": ["unitree_go_msg_dds__LowCmd_"],
       "permitted_objects": [
         {
@@ -119,6 +119,7 @@
           "write_contract": {
             "message_factory": "unitree_go_msg_dds__LowCmd_",
             "message_instance_required": true,
+            "header_rule": {"head": [254, 239], "level_flag": 255, "gpio": 0},
             "field_container": "motor_cmd",
             "field_names": ["mode", "q", "dq", "kp", "kd", "tau"],
             "crc_field": "crc"
@@ -178,7 +179,7 @@
         "active_mode": 1,
         "finite_fields": ["q", "dq", "kp", "kd", "tau"],
         "inactive_slot_rule": {"indices": [12, 13, 14, 15, 16, 17, 18, 19], "mode": 1, "q": 2146000000.0, "dq": 16000.0, "kp": 0.0, "kd": 0.0, "tau": 0.0},
-        "write_contract": {"message_instance_required": true, "field_container": "motor_cmd", "field_names": ["mode", "q", "dq", "kp", "kd", "tau"], "crc_field": "crc"}
+        "write_contract": {"message_instance_required": true, "header_rule": {"head": [254, 239], "level_flag": 255, "gpio": 0}, "field_container": "motor_cmd", "field_names": ["mode", "q", "dq", "kp", "kd", "tau"], "crc_field": "crc"}
       },
       "observation": {
         "message_type": "LowState_",
@@ -200,7 +201,7 @@
         },
         "record_mapping": {"LowState": ["q", "dq", "tau_est", "imu quaternion", "gyroscope", "accelerometer"], "SportModeState": ["IMU-site frame_position", "IMU-site frame_linear_velocity"]}
       },
-      "lifecycle": ["ChannelFactoryInitialize", "ChannelPublisher.Init", "ChannelSubscriber.Init", "ChannelPublisher.Write", "ChannelSubscriber.Read"],
+      "lifecycle": ["ChannelPublisher.Init", "ChannelSubscriber.Init", "ChannelPublisher.Write", "ChannelSubscriber.Read"],
       "route_constraints": {
         "normal_motion_writes": "actuator_control_only",
         "reset_write_scope": "reset_only",
@@ -245,7 +246,7 @@
         "go2_home_controller_setpoint_rad_per_leg": [0.0, 0.9, -1.8],
         "go2_home_controller_setpoint_layout": "repeat_for_FR_FL_RR_RL"
       },
-      "guidance": "In one capability call, derive a fixed integer iteration bound from the public duration or a fixed safe cap and use range; never use an unbounded time.time() loop. Run at least 2 cycles. Every iteration must be: fresh LowState Read -> for every active joint retain the raw fresh SDK state numeric value as fresh_q and construct q exactly as fresh_q + (desired - float(fresh_q)), with desired a bounded state-dependent correction toward the current phase target -> populate the correct 20-slot LowCmd_ from the unitree_go_msg_dds__LowCmd_ default factory -> assign CRC().Crc(message) -> Write -> small bounded time.sleep/advance -> fresh Read. Do not convert fresh q through float(), numpy, or list conversion and then write a plain target into q; preserve the fresh-state dependency through the exact fresh_q + (desired - float(fresh_q)) construction. kp/kd may be public controller constants, but q must depend on the fresh read. For move use a bounded phase oscillator plus feedback correction, not a fixed trajectory; for stand, sit, and height use joint PD target tracking; for hold use fresh q/velocity feedback; during stop use fresh-state feedback to decelerate. Do not use one-read-many-write behavior."
+      "guidance": "In one capability call, derive a fixed integer iteration bound from the public duration or a fixed safe cap and use range; never use an unbounded time.time() loop. Run at least 2 cycles. Every iteration must be: fresh LowState Read -> for every active joint retain the raw fresh SDK state numeric value as fresh_q and construct q exactly as fresh_q + (desired - float(fresh_q)), with desired computed from fresh_q plus a bounded correction toward the current phase target -> populate the correct 20-slot LowCmd_ from the unitree_go_msg_dds__LowCmd_ default factory -> set head[0]=0xFE, head[1]=0xEF, level_flag=0xFF, and gpio=0 -> assign CRC().Crc(message) after all fields -> Write -> small bounded time.sleep/advance -> fresh Read. Do not convert fresh q through float(), numpy, or list conversion and then write a plain target into q; preserve the fresh-state dependency through the exact fresh_q + (desired - float(fresh_q)) construction. kp/kd may be public controller constants, but q must depend on the fresh read. For move use a bounded phase oscillator plus feedback correction, not a fixed trajectory; for stand, sit, and height use joint PD target tracking; for hold use fresh q/velocity feedback; during stop use fresh-state feedback to decelerate. Do not use one-read-many-write behavior."
     }
   ]
 }

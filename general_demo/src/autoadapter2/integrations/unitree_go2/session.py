@@ -519,22 +519,7 @@ def _candidate_binding_from_config(config: Mapping[str, Any]) -> tuple[object, C
             interface=config.get("interface", GO2_DDS_INTERFACE),
         )
         configured_factory_initialize()
-        publisher = ChannelPublisher("rt/lowcmd", LowCmd_)
-        lowstate = ChannelSubscriber("rt/lowstate", LowState_)
-        sport = ChannelSubscriber("rt/sportmodestate", SportModeState_)
-        endpoints = (publisher, lowstate, sport)
-        try:
-            publisher.Init()
-            lowstate.Init()
-            sport.Init()
-        except BaseException:
-            for endpoint in endpoints:
-                close = getattr(endpoint, "Close", None)
-                if callable(close):
-                    close()
-            raise
         binding = SimpleNamespace(
-            ChannelFactoryInitialize=configured_factory_initialize,
             ChannelPublisher=ChannelPublisher,
             ChannelSubscriber=ChannelSubscriber,
             LowCmd_=LowCmd_,
@@ -542,17 +527,13 @@ def _candidate_binding_from_config(config: Mapping[str, Any]) -> tuple[object, C
             SportModeState_=SportModeState_,
             unitree_go_msg_dds__LowCmd_=unitree_go_msg_dds__LowCmd_,
             CRC=CRC,
-            lowcmd_publisher=publisher,
-            lowstate_subscriber=lowstate,
-            sport_mode_state_subscriber=sport,
-            crc=CRC(),
         )
 
         def close() -> None:
-            for endpoint in endpoints:
-                endpoint_close = getattr(endpoint, "Close", None)
-                if callable(endpoint_close):
-                    endpoint_close()
+            # Candidate-created endpoints are process-local and are released
+            # when the bounded worker exits. DDS factory ownership remains
+            # exclusively in the Framework setup above.
+            return None
 
         return binding, close
     if kind == "fixture":

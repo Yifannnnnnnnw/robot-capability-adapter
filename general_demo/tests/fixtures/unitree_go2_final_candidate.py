@@ -18,9 +18,15 @@ def capability_cap_stand_up(*, _sdk):
             raise RuntimeError("lowstate unavailable")
         phase = min(1.0, cycle / 199.0)
         command = _sdk.unitree_go_msg_dds__LowCmd_()
+        command.head[0] = 0xFE
+        command.head[1] = 0xEF
+        command.level_flag = 0xFF
+        command.gpio = 0
         for i in range(12):
             fresh_q = state.motor_state[i].q
-            desired = STAND_Q[i] * phase
+            phase_target = STAND_Q[i] * phase
+            error = phase_target - float(fresh_q)
+            desired = float(fresh_q) + max(-0.05, min(0.05, 0.25 * error))
             command.motor_cmd[i].mode = 1
             command.motor_cmd[i].q = fresh_q + (desired - float(fresh_q))
             command.motor_cmd[i].dq = 0.0
@@ -35,10 +41,7 @@ def capability_cap_stand_up(*, _sdk):
             command.motor_cmd[i].kd = 0.0
             command.motor_cmd[i].tau = 0.0
         command.crc = _sdk.CRC().Crc(command)
-        cmd = command
-        cmd_pub.Write(cmd)
-        if False:
-            _sdk.CRC(cmd)
+        cmd_pub.Write(command)
         time.sleep(0.01)
     return {}
 
@@ -59,9 +62,15 @@ def capability_cap_sit_down(*, _sdk):
             raise RuntimeError("lowstate unavailable")
         phase = min(1.0, cycle / 199.0)
         command = _sdk.unitree_go_msg_dds__LowCmd_()
+        command.head[0] = 0xFE
+        command.head[1] = 0xEF
+        command.level_flag = 0xFF
+        command.gpio = 0
         for i in range(12):
             fresh_q = state.motor_state[i].q
-            desired = SIT_Q[i] * phase
+            phase_target = SIT_Q[i] * phase
+            error = phase_target - float(fresh_q)
+            desired = float(fresh_q) + max(-0.05, min(0.05, 0.25 * error))
             command.motor_cmd[i].mode = 1
             command.motor_cmd[i].q = fresh_q + (desired - float(fresh_q))
             command.motor_cmd[i].dq = 0.0
@@ -97,6 +106,10 @@ def capability_cap_hold_stance(arg_duration, *, _sdk):
         if state is None:
             raise RuntimeError("lowstate unavailable")
         command = _sdk.unitree_go_msg_dds__LowCmd_()
+        command.head[0] = 0xFE
+        command.head[1] = 0xEF
+        command.level_flag = 0xFF
+        command.gpio = 0
         for i in range(12):
             fresh_q = state.motor_state[i].q
             fresh_dq = state.motor_state[i].dq
@@ -145,9 +158,15 @@ def capability_cap_move_forward(arg_distance, *, _sdk):
         q_offset[4] = -amplitude * math.sin(phase + math.pi)
         q_offset[5] = amplitude * 1.5 * math.sin(phase + math.pi)
         command = _sdk.unitree_go_msg_dds__LowCmd_()
+        command.head[0] = 0xFE
+        command.head[1] = 0xEF
+        command.level_flag = 0xFF
+        command.gpio = 0
         for i in range(12):
             fresh_q = state.motor_state[i].q
-            desired = STAND_Q[i] + q_offset[i]
+            phase_target = STAND_Q[i] + q_offset[i]
+            error = phase_target - float(fresh_q)
+            desired = float(fresh_q) + max(-0.05, min(0.05, 0.25 * error))
             command.motor_cmd[i].mode = 1
             command.motor_cmd[i].q = fresh_q + (desired - float(fresh_q))
             command.motor_cmd[i].dq = 0.0
@@ -189,9 +208,15 @@ def capability_cap_adjust_body_height(arg_target_height, *, _sdk):
             raise RuntimeError("lowstate unavailable")
         phase = min(1.0, cycle / 149.0)
         command = _sdk.unitree_go_msg_dds__LowCmd_()
+        command.head[0] = 0xFE
+        command.head[1] = 0xEF
+        command.level_flag = 0xFF
+        command.gpio = 0
         for i in range(12):
             fresh_q = state.motor_state[i].q
-            desired = target_q[i] * phase
+            phase_target = target_q[i] * phase
+            error = phase_target - float(fresh_q)
+            desired = float(fresh_q) + max(-0.05, min(0.05, 0.25 * error))
             command.motor_cmd[i].mode = 1
             command.motor_cmd[i].q = fresh_q + (desired - float(fresh_q))
             command.motor_cmd[i].dq = 0.0

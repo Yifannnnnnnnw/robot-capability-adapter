@@ -565,11 +565,11 @@ def test_validation_failure_persists_a_verifiable_terminal_closure(tmp_path: Pat
 
     assert result.status == "VALIDATION_FAILED"
     assert "repair" not in model_client.stages
-    assert model_client.stages.count("stage2") == 10 + 3 * 20
+    assert model_client.stages.count("stage2") == 10 + 10 * 20
     stage_artifacts = json.loads(result.stage_artifacts_path.read_text(encoding="utf-8"))
     repair_artifact = stage_artifacts["stages"]["validation_and_repair"]["repair"]
-    assert repair_artifact["repair_invocations_used"] == 3
-    assert repair_artifact["repair_llm_calls"] == 60
+    assert repair_artifact["repair_invocations_used"] == 10
+    assert repair_artifact["repair_llm_calls"] == 200
     assert all(entry["episode_trace"]["sandbox_log"] == [] for entry in repair_artifact["repair_log"])
     summary = json.loads(result.summary_path.read_text(encoding="utf-8"))
     assert summary["status"] == "VALIDATION_FAILED"
@@ -1031,7 +1031,7 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
             "min_successful_sandbox_calls_before_submit": 5,
             "require_all_design_capability_probes": True,
         },
-        "repair": {"max_repairs": 3, "max_infrastructure_retries": 1},
+        "repair": {"max_repairs": 10, "max_infrastructure_retries": 1},
         "consumer": {"max_steps": 4},
         "demo": {"demo_repetitions": 1},
     }
@@ -1041,7 +1041,7 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
     assert stage2.min_llm_calls_before_submit == 10
     assert stage2.min_successful_sandbox_calls_before_submit == 5
     assert stage2.require_all_design_capability_probes is True
-    assert repair.max_repairs == 3
+    assert repair.max_repairs == 10
     assert consumer["consumer_max_steps"] == 4
 
     unknown = json.loads(json.dumps(budget))
@@ -1054,10 +1054,10 @@ def test_run_budget_accepts_run_pack_aliases_and_rejects_open_fields() -> None:
     with pytest.raises(ContractError, match="closed"):
         _budgets(missing)
 
-    fourth_repair = json.loads(json.dumps(budget))
-    fourth_repair["repair"]["max_repairs"] = 4
-    with pytest.raises(ContractError, match="three repair"):
-        _budgets(fourth_repair)
+    ninth_repair = json.loads(json.dumps(budget))
+    ninth_repair["repair"]["max_repairs"] = 9
+    with pytest.raises(ContractError, match="ten repair"):
+        _budgets(ninth_repair)
 
 
 def test_production_rejects_caller_profile_override_as_snapshot_hash_mismatch(tmp_path: Path) -> None:

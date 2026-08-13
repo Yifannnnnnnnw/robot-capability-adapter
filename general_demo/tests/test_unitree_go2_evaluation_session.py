@@ -59,6 +59,9 @@ class Slot:
 
 @dataclass
 class LowCmd:
+    head: list[int] = field(default_factory=lambda: [0, 0])
+    level_flag: int = 0
+    gpio: int = 0
     motor_cmd: list[Slot] = field(default_factory=lambda: [Slot() for _ in range(DDS_MOTOR_SLOT_COUNT)])
     crc: int = 0
 
@@ -135,7 +138,7 @@ class FakeTransport:
 
     @staticmethod
     def crc_for(message: LowCmd) -> int:
-        total = 0
+        total = sum(message.head) + message.level_flag + message.gpio
         for slot in message.motor_cmd:
             total += slot.mode
             total += sum(
@@ -157,6 +160,9 @@ class FakeTransport:
         # the spawn test does not rely on cross-process Python class identity.
         if isinstance(message, dict) and "motor_cmd" in message:
             decoded = LowCmd()
+            decoded.head[:] = message["head"]
+            decoded.level_flag = message["level_flag"]
+            decoded.gpio = message["gpio"]
             decoded.crc = message["crc"]
             for target, source in zip(decoded.motor_cmd, message["motor_cmd"]):
                 for name in ("mode", "q", "dq", "kp", "kd", "tau"):
@@ -258,6 +264,9 @@ class ProcessPublisher:
         self._write_count.value += 1
         self._queue.put(
             {
+                "head": list(message.head),
+                "level_flag": message.level_flag,
+                "gpio": message.gpio,
                 "crc": message.crc,
                 "motor_cmd": [
                     {
@@ -274,9 +283,6 @@ class ProcessPublisher:
 
 
 def _make_fake_candidate_binding(config):
-    def channel_factory_initialize(*_args, **_kwargs):
-        raise AssertionError("the candidate must not initialize the Framework-owned DDS factory")
-
     def channel_publisher(topic, message_type):
         assert topic == "rt/lowcmd"
         assert message_type is LowCmdIDL
@@ -292,7 +298,6 @@ def _make_fake_candidate_binding(config):
         raise AssertionError(f"unexpected candidate DDS topic: {topic}")
 
     binding = SimpleNamespace(
-        ChannelFactoryInitialize=channel_factory_initialize,
         ChannelPublisher=channel_publisher,
         ChannelSubscriber=channel_subscriber,
         LowCmd_=LowCmdIDL,
@@ -395,6 +400,10 @@ def _publish_command(
     tau: float = 0.0,
 ) -> None:
     command = sdk.unitree_go_msg_dds__LowCmd_()
+    command.head[0] = 0xFE
+    command.head[1] = 0xEF
+    command.level_flag = 0xFF
+    command.gpio = 0
     assert len(command.motor_cmd) == DDS_MOTOR_SLOT_COUNT
     for index, slot in enumerate(command.motor_cmd):
         slot.mode = 1
@@ -432,6 +441,10 @@ class RepairedCRCCandidate:
         publisher = sdk.ChannelPublisher("rt/lowcmd", sdk.LowCmd_)
         publisher.Init()
         command = sdk.unitree_go_msg_dds__LowCmd_()
+        command.head[0] = 0xFE
+        command.head[1] = 0xEF
+        command.level_flag = 0xFF
+        command.gpio = 0
         for index, slot in enumerate(command.motor_cmd):
             slot.mode = 1
             if index < 12:
@@ -729,7 +742,11 @@ def test_validation_candidate_then_collect_uses_the_invocation_clock() -> None:
     )
     # This is the Validation-B ordering: candidate code sees only connected
     # SDK2 objects, and invoke owns the shared physics clock.
-    result = session.invoke(Candidate(), "low-level-command", {"duration_s": 0.3})
+    result = session.invoke(
+        Candidate(yield_after_write=False),
+        "low-level-command",
+        {"duration_s": 0.3},
+    )
     evidence = session.validation_evidence(_invocation())
     assert result == {"status": "issued"}
     assert backend.time > 0.0
@@ -1645,6 +1662,7 @@ def test_real_shaped_session_binds_channel_factory_to_domain_one_loopback(monkey
     candidate_binding, close_candidate_binding = _candidate_binding_from_config(
         {"kind": "unitree_sdk2", "domain": 1, "interface": "lo"}
     )
+    assert not hasattr(candidate_binding, "ChannelFactoryInitialize")
     assert candidate_binding.ChannelPublisher is Endpoint
     assert candidate_binding.ChannelSubscriber is Endpoint
     assert candidate_binding.LowState_ is LowStateType

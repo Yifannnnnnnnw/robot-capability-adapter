@@ -1394,8 +1394,8 @@ def _budgets(
     retry_count = integer(
         "repair", repair_values["max_infrastructure_retries"], "max_infrastructure_retries"
     )
-    if repair_calls != 3:
-        raise ContractError("budget.repair must freeze exactly three repair invocations")
+    if repair_calls != 10:
+        raise ContractError("budget.repair must freeze exactly ten repair invocations")
 
     consumer_field, consumer_calls = one_alias(
         "consumer", ("max_inference_calls", "max_steps", "consumer_max_steps")

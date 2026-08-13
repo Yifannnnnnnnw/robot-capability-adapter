@@ -19,6 +19,9 @@ ACTIVE_MOTOR_COUNT = 12
 DDS_MOTOR_SLOT_COUNT = 20
 ACTIVE_MODE = 0x01
 STALE_LIMIT_SIMULATION_S = 0.100
+LOWCMD_HEAD = (0xFE, 0xEF)
+LOWCMD_LEVEL_FLAG = 0xFF
+LOWCMD_GPIO = 0
 
 LOWCMD_TOPIC = "rt/lowcmd"
 LOWSTATE_TOPIC = "rt/lowstate"
@@ -317,6 +320,29 @@ class Go2DDSMuJoCoBridge:
             raise LowCmdRejected("DDS type validation failed") from exc
         if not correct_type:
             raise LowCmdRejected("wrong DDS type; expected pinned Go2 LowCmd_")
+        head_value = _field(message, "head")
+        if isinstance(head_value, (str, bytes, bytearray)):
+            raise LowCmdRejected("LowCmd_.head must equal [0xFE, 0xEF]")
+        try:
+            head = tuple(head_value)  # type: ignore[arg-type]
+        except TypeError as exc:
+            raise LowCmdRejected("LowCmd_.head must equal [0xFE, 0xEF]") from exc
+        if (
+            len(head) != 2
+            or any(isinstance(value, bool) or not isinstance(value, int) for value in head)
+            or head != LOWCMD_HEAD
+        ):
+            raise LowCmdRejected("LowCmd_.head must equal [0xFE, 0xEF]")
+        level_flag = _field(message, "level_flag")
+        if (
+            isinstance(level_flag, bool)
+            or not isinstance(level_flag, int)
+            or level_flag != LOWCMD_LEVEL_FLAG
+        ):
+            raise LowCmdRejected("LowCmd_.level_flag must equal 0xFF")
+        gpio = _field(message, "gpio")
+        if isinstance(gpio, bool) or not isinstance(gpio, int) or gpio != LOWCMD_GPIO:
+            raise LowCmdRejected("LowCmd_.gpio must equal 0")
         slots_value = _field(message, "motor_cmd")
         if isinstance(slots_value, (str, bytes, bytearray)):
             raise LowCmdRejected("motor_cmd must be a 20-slot sequence")

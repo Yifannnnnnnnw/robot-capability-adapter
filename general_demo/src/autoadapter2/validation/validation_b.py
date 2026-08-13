@@ -802,10 +802,62 @@ def _evaluate_episode(
         if not route_ok:
             failures.append("SDK_ROUTE_EVIDENCE")
         criterion_failures = list(dict.fromkeys(failures))
+        criterion_measurement = _measurement_for_criterion(observation, rule)
+        raw_samples = (
+            criterion_measurement.samples
+            if criterion_measurement is not None
+            and isinstance(criterion_measurement.samples, tuple)
+            else ()
+        )
+        valid_samples = sorted(
+            (
+                sample
+                for sample in raw_samples
+                if isinstance(sample, MeasurementSample)
+                and _finite(sample.time_s)
+                and _finite(sample.value)
+            ),
+            key=lambda sample: sample.time_s,
+        )
+        observed = {
+            "sample_count": len(valid_samples),
+            "first": valid_samples[0].value if valid_samples else None,
+            "final": valid_samples[-1].value if valid_samples else None,
+            "minimum": min((sample.value for sample in valid_samples), default=None),
+            "maximum": max((sample.value for sample in valid_samples), default=None),
+            "elapsed_s": (
+                criterion_measurement.elapsed_s
+                if criterion_measurement is not None and _finite(criterion_measurement.elapsed_s)
+                else None
+            ),
+        }
+        expected = {
+            "measurement_id": rule["measurement"]["measurement_id"],
+            "metric": rule["metric"],
+            "unit": rule["measurement"]["unit"],
+            "frame": rule["measurement"]["frame"],
+            "comparator": rule["threshold"]["comparator"],
+            "threshold": rule["threshold"]["value"],
+            "dwell_s": rule["dwell_s"],
+            "timeout_s": rule["timeout_s"],
+            "aggregation": rule["aggregation"],
+        }
         criterion_results.append({
             "criterion_id": rule["criterion_id"],
             "verdict": "PASS" if not criterion_failures else "FAIL",
             "failure_codes": criterion_failures,
+            "observed": observed,
+            "expected": expected,
+            "failed_guard_ids": [
+                guard_id
+                for guard_id in rule["guard_ids"]
+                if not _guard_passes(
+                    guard_id,
+                    guards,
+                    measurement_reference_ok=measurement_reference_ok,
+                )
+            ],
+            "sdk_route_valid": route_ok,
         })
         for code in criterion_failures:
             if code not in overall_failures:

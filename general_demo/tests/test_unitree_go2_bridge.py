@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pytest
 
@@ -11,6 +11,9 @@ from autoadapter2.integrations.unitree_go2.bridge import (
     Go2BridgeError,
     Go2DDSMuJoCoBridge,
     INACTIVE_SAFE_FIELDS,
+    LOWCMD_GPIO,
+    LOWCMD_HEAD,
+    LOWCMD_LEVEL_FLAG,
     LowStateFrame,
     MuJoCoSensorFrame,
     SportModeStateFrame,
@@ -30,6 +33,9 @@ class Slot:
 @dataclass
 class LowCmd:
     motor_cmd: list[Slot]
+    head: list[int] = field(default_factory=lambda: list(LOWCMD_HEAD))
+    level_flag: int = LOWCMD_LEVEL_FLAG
+    gpio: int = LOWCMD_GPIO
     crc: int = 0
 
 
@@ -155,6 +161,9 @@ def test_exact_order_and_pd_tau_equation_before_step(route) -> None:
 @pytest.mark.parametrize(
     "mutate",
     [
+        lambda value: value.head.__setitem__(0, 0),
+        lambda value: setattr(value, "level_flag", 0),
+        lambda value: setattr(value, "gpio", 1),
         lambda value: setattr(value, "crc", value.crc + 1),
         lambda value: value.motor_cmd.pop(),
         lambda value: setattr(value.motor_cmd[0], "mode", 0),

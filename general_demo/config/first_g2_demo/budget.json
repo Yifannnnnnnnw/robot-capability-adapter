@@ -14,7 +14,7 @@
     "require_all_design_capability_probes": true
   },
   "repair": {
-    "max_repairs": 3,
+    "max_repairs": 10,
     "max_infrastructure_retries": 1
   },
   "consumer": {

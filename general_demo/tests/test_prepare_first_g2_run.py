@@ -412,6 +412,9 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     }
     assert bundle["sdk_implementation_projection"]["command"]["default_factory"] == "unitree_go_msg_dds__LowCmd_"
     assert bundle["sdk_implementation_projection"]["command"]["write_contract"]["field_container"] == "motor_cmd"
+    assert bundle["sdk_implementation_projection"]["command"]["write_contract"]["header_rule"] == {
+        "head": [0xFE, 0xEF], "level_flag": 0xFF, "gpio": 0,
+    }
     assert bundle["sdk_implementation_projection"]["observation"]["field_order"] == ["q", "dq", "tau_est", "imu_quaternion", "gyroscope", "accelerometer"]
     validate_implementation_bundle(bundle)
 
@@ -419,7 +422,6 @@ def test_go2_pack_is_replayable_and_gate_ready(tmp_path: Path) -> None:
     facade_members = set(validation_template["facade"]["members"])
     permitted_types = set(bundle["sdk_implementation_projection"]["permitted_types"])
     assert facade_members == {
-        "ChannelFactoryInitialize",
         "ChannelPublisher",
         "ChannelSubscriber",
         "LowCmd_",
@@ -494,9 +496,12 @@ def test_quadruped_family_experience_is_in_bundle_and_public_renderer(tmp_path: 
         "fresh LowState Read",
         "raw fresh SDK state numeric value",
         "fresh_q + (desired - float(fresh_q))",
-        "bounded state-dependent correction",
+        "bounded correction toward the current phase target",
         "20-slot LowCmd_",
         "unitree_go_msg_dds__LowCmd_",
+        "head[0]=0xFE",
+        "level_flag=0xFF",
+        "gpio=0",
         "CRC().Crc(message)",
         "small bounded time.sleep/advance",
         "fresh Read",
@@ -770,7 +775,6 @@ def test_go2_template_adds_only_injected_helpers_and_default_factory_to_public_s
     permitted_types = set(template["implementation_projection"]["sdk_implementation_projection"]["permitted_types"])
 
     assert template["validation_a_template"]["facade"]["members"] == [
-        "ChannelFactoryInitialize",
         "ChannelPublisher",
         "ChannelSubscriber",
         "LowCmd_",
@@ -780,7 +784,6 @@ def test_go2_template_adds_only_injected_helpers_and_default_factory_to_public_s
         "unitree_go_msg_dds__LowCmd_",
     ]
     assert facade_members == {
-        "ChannelFactoryInitialize",
         "ChannelPublisher",
         "ChannelSubscriber",
         "LowCmd_",
@@ -838,12 +841,15 @@ def test_go2_bundle_derivation_appends_injected_sdk_surface_without_mutating_sdk
     assert sdk["public_symbols"] == formal_symbols
     assert "CRC" not in sdk["public_symbols"]
     assert derived["sdk_implementation_projection"]["permitted_types"] == [
-        *formal_symbols,
+        *(symbol for symbol in formal_symbols if symbol != "ChannelFactoryInitialize"),
         "CRC",
     ]
     assert derived["sdk_implementation_projection"]["permitted_factories"] == [
         "unitree_go_msg_dds__LowCmd_"
     ]
+    assert derived["sdk_implementation_projection"]["command"]["write_contract"]["header_rule"] == {
+        "head": [0xFE, 0xEF], "level_flag": 0xFF, "gpio": 0,
+    }
     assert derived["sdk_implementation_projection"]["permitted_types"] == template[
         "implementation_projection"
     ]["sdk_implementation_projection"]["permitted_types"]
@@ -872,6 +878,7 @@ def test_go2_bundle_derivation_appends_injected_sdk_surface_without_mutating_sdk
     assert '"returns": "uint32_checksum"' in public_bundle
     assert '"target": "message.crc"' in public_bundle
     assert '"required_before": "ChannelPublisher.Write"' in public_bundle
+    assert '"head": [' in public_bundle and '"level_flag": 255' in public_bundle
 
 
 @pytest.mark.parametrize("drift", ["constructor", "operation"])

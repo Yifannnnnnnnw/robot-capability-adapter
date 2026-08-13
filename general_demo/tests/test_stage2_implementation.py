@@ -377,7 +377,9 @@ def test_repair_episode_reuses_stage2_agent_source_and_sandbox_until_public_ok()
         repaired_source,
     ]
     repair_inputs = [call["inputs"] for call in generator.calls[1:]]
-    assert all("THRESHOLD" not in json.dumps(inputs) for inputs in repair_inputs)
+    assert repair_inputs[0]["public_diagnostics"] == [
+        {"gate": "B", "code": "THRESHOLD"}
+    ]
     assert all("private threshold" not in json.dumps(inputs).lower() for inputs in repair_inputs)
     assert all(call["stage"] == "stage2" for call in generator.calls)
 

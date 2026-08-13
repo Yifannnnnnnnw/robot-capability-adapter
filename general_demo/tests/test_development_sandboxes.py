@@ -56,6 +56,10 @@ def capability_capability_1(target, *, _sdk):
         if state is None:
             raise RuntimeError('state unavailable')
         command = unitree_go_msg_dds__LowCmd_()
+        command.head[0] = 0xFE
+        command.head[1] = 0xEF
+        command.level_flag = 0xFF
+        command.gpio = 0
         for index, slot in enumerate(command.motor_cmd):
             slot.mode = 1
             if index == 0:
