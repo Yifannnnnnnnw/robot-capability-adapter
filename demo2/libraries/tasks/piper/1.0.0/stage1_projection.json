@@ -1,0 +1,33 @@
+{
+  "artifact_type": "task_description_projection_template",
+  "schema_version": "1.0.0",
+  "projection_id": "piper-demo-five-stage1",
+  "projection_version": "1.0.0",
+  "robot_configuration_id": "piper",
+  "source_collection_id": "piper-demo-five",
+  "source_collection_version": "1.0.0",
+  "review_status": "HUMAN_APPROVED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "tasks": [
+    {
+      "task_id": "P01",
+      "description": "Move the Piper end-effector 5 cm above the red cube in pickbench and hold."
+    },
+    {
+      "task_id": "P02",
+      "description": "Move the Piper end-effector 5 cm above the green cube in pickbench and hold."
+    },
+    {
+      "task_id": "P03",
+      "description": "Move the Piper end-effector 5 cm above the blue cube in pickbench and hold."
+    },
+    {
+      "task_id": "P04",
+      "description": "Grasp the red cube in pickbench and lift it by at least 5 cm while retaining the grasp."
+    },
+    {
+      "task_id": "P05",
+      "description": "Push the green cube to the specified planar goal region in Piper pushbench."
+    }
+  ]
+}

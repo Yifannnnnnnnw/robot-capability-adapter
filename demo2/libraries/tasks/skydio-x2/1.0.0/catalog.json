@@ -1,0 +1,172 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "skydio-x2-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "skydio-x2",
+  "catalog_review_status": "HUMAN_REVIEW_REQUIRED",
+  "formal_demo_status": "NOT_FORMAL_DEMO_APPROVED",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "path": "autoadapter_bench/spec/tasks_aerial.yaml"
+  },
+  "tasks": [
+    {
+      "task_id": "takeoff_to_05m",
+      "description": "Take off and climb to about 0.5 m altitude, then hold a stable hover. Stay upright.",
+      "task_type": "takeoff_to_height",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_aerial.yaml",
+          "locator": "suites.simple.tasks[0]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=skydio_x2]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "takeoff",
+        "move_to",
+        "hover",
+        "land",
+        "get_base_pose"
+      ]
+    },
+    {
+      "task_id": "hover_at_05m",
+      "description": "Take off to about 0.5 m and hover in place at that altitude; keep your horizontal position steady (do not drift away).",
+      "task_type": "hover_stability",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_aerial.yaml",
+          "locator": "suites.simple.tasks[1]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=skydio_x2]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "takeoff",
+        "move_to",
+        "hover",
+        "land",
+        "get_base_pose"
+      ]
+    },
+    {
+      "task_id": "goto_forward_40cm",
+      "description": "Take off, then fly to a point about 0.4 m forward (+X) of your launch point while holding altitude near 0.5 m. Stay upright.",
+      "task_type": "reach_3d_target",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_aerial.yaml",
+          "locator": "suites.simple.tasks[2]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=skydio_x2]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "takeoff",
+        "move_to",
+        "hover",
+        "land",
+        "get_base_pose"
+      ]
+    },
+    {
+      "task_id": "climb_to_1m",
+      "description": "Take off and climb to about 1.0 m altitude, then hold. Stay upright.",
+      "task_type": "takeoff_to_height",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_aerial.yaml",
+          "locator": "suites.simple.tasks[3]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=skydio_x2]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "takeoff",
+        "move_to",
+        "hover",
+        "land",
+        "get_base_pose"
+      ]
+    },
+    {
+      "task_id": "goto_and_return",
+      "description": "Take off to ~0.5 m, fly about 0.5 m forward in +X, then fly back and stop above your launch point. Stay upright the whole time.",
+      "task_type": "returned_to_start_xy",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_aerial.yaml",
+          "locator": "suites.hard.tasks[0]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=skydio_x2]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "takeoff",
+        "move_to",
+        "hover",
+        "land",
+        "get_base_pose"
+      ]
+    }
+  ]
+}

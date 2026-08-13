@@ -1,0 +1,34 @@
+{
+  "robot_id": "menagerie_so101",
+  "estimated_class": "arm",
+  "dof": 6,
+  "arm_joint_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll"
+  ],
+  "arm_actuator_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll"
+  ],
+  "joint_limits": {
+    "shoulder_pan":  [-1.91986,  1.91986],
+    "shoulder_lift": [-1.74533,  1.74533],
+    "elbow_flex":    [-1.69000,  1.69000],
+    "wrist_flex":    [-1.65806,  1.65806],
+    "wrist_roll":    [-2.74385,  2.74385],
+    "gripper":       [-0.17453,  1.74533]
+  },
+  "ee_site": "gripperframe",
+  "ee_body": "gripper",
+  "gripper_actuator_names": ["gripper"],
+  "gripper_ctrlrange": [-0.17453, 1.74533],
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "position",
+  "notes": "SO-101 5-DOF serial arm (shoulder_pan/lift, elbow_flex, wrist_flex/roll) + 1-DOF hinge gripper; all 6 joints are position-controlled STS3215 servos; EE site is 'gripperframe' inside body 'gripper'; no weld equality constraints or free-joint graspable objects defined in the MJCF."
+}

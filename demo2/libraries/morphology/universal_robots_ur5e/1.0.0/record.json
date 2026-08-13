@@ -1,0 +1,96 @@
+{
+  "record_type": "morphology",
+  "schema_version": "1.0.0",
+  "id": "universal_robots_ur5e",
+  "version": "1.0.0",
+  "robot_model_id": "universal_robots_ur5e",
+  "robot_configuration_id": "universal_robots_ur5e",
+  "tasks": {"robot_configuration_id": "universal_robots_ur5e", "catalog_version": "1.0.0"},
+  "stage1": {
+    "action_affordances": ["driver Cartesian motion"],
+    "observation_affordances": ["end-effector pose observation", "candidate outcome observation"],
+    "unit_allowlist": ["m", "s", "unitless"],
+    "frame_allowlist": ["world", "robot_base", "none"]
+  },
+  "driver": {"family": "ArmSerialDLSSkeleton", "source": "demo2/reference_drivers/universal_robots_ur5e/driver.py"},
+  "record_status": "HUMAN_REVIEW_REQUIRED",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "base_type": "fixed",
+  "actuated_dof": 6,
+  "joint_names": [
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint"
+  ],
+  "actuator_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow",
+    "wrist_1",
+    "wrist_2",
+    "wrist_3"
+  ],
+  "actuator_joint_map": {
+    "shoulder_pan": "shoulder_pan_joint",
+    "shoulder_lift": "shoulder_lift_joint",
+    "elbow": "elbow_joint",
+    "wrist_1": "wrist_1_joint",
+    "wrist_2": "wrist_2_joint",
+    "wrist_3": "wrist_3_joint"
+  },
+  "sensor_names": [],
+  "state": [
+    "joint_position",
+    "joint_velocity"
+  ],
+  "joint_unit": "rad",
+  "units": {
+    "joint_position": "rad",
+    "joint_velocity": "rad/s",
+    "actuator_command": "native_mujoco_control",
+    "length": "m",
+    "time": "s"
+  },
+  "end_effector_sites": [
+    "attachment_site"
+  ],
+  "mujoco": {
+    "version": "2.3.3",
+    "frames": {
+      "body_names": [
+        "wrist_3_link"
+      ],
+      "site_names": [
+        "attachment_site"
+      ]
+    },
+    "render": {
+      "camera": "free",
+      "width": 640,
+      "height": 480,
+      "fps": 30
+    },
+    "entrypoint": "universal_robots_ur5e/scene.xml",
+    "local_entrypoint": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/ur5e.xml",
+    "source_sha256": "ffd0a7b336d3c2d27c35a15cc0d4aaa95196769aca190ac8d6522d3318c345a0",
+    "simulation_entrypoint": "assets/mjcf/universal_robots_ur5e/scene.xml",
+    "simulation_entrypoint_sha256": "368d1ebb8453804554156dfd958cd8a00fa84816fb799150687858e8d2bac9ef",
+    "sensor_names": [],
+    "asset_closure_status": "RECORDED_UPSTREAM_CACHE_REQUIRED",
+    "asset_closure_path": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/asset_closure.json",
+    "asset_closure_sha256": "4de30a2eaabb9215434e2fdf2269e595aaeee36795d480b53e1495b962b1f950",
+    "reset": {
+      "policy": "model_default"
+    }
+  },
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "path": "assets/mjcf/universal_robots_ur5e/ur5e.xml",
+    "license": "BSD-3-Clause"
+  }
+}

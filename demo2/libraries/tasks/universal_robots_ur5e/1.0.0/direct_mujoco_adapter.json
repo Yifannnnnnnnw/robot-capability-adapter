@@ -1,0 +1,167 @@
+{
+  "artifact_type": "direct_mujoco_task_adapter",
+  "schema_version": "1.0.0",
+  "robot_configuration_id": "universal_robots_ur5e",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source_repository": "https://github.com/981526092/auto-adapter",
+  "source_commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+  "tasks": [
+    {
+      "task_id": "U01",
+      "robot_configuration_id": "universal_robots_ur5e",
+      "source_scene_entrypoint": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/scene.xml",
+      "scene_entrypoint": "assets/mjcf/universal_robots_ur5e/scene.xml",
+      "reset": {"mode": "source_scene_default", "seed": 101},
+      "parameters": {"target_position_m": [0.3, 0, 0.45]},
+      "frames": {"body_names": [], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "reach_target",
+        "effect": "reach_target",
+        "duration_s": 1.0,
+        "hold_s": 0.5
+      },
+      "measurements": [
+        {
+          "metric": "attachment_target_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "observation_path": "sites.attachment_site.position",
+          "reference_path": "parameters.target_position_m"
+        }
+      ]
+    },
+    {
+      "task_id": "U02",
+      "robot_configuration_id": "universal_robots_ur5e",
+      "source_scene_entrypoint": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/scene.xml",
+      "scene_entrypoint": "assets/mjcf/universal_robots_ur5e/scene.xml",
+      "reset": {"mode": "source_scene_default", "seed": 102},
+      "parameters": {"square_side_m": 0.04},
+      "frames": {"body_names": [], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "trace_square_and_return",
+        "effect": "trace_cartesian_path",
+        "duration_per_segment_s": 0.5
+      },
+      "measurements": [
+        {
+          "metric": "waypoint_max_error_m",
+          "status": "RESOLVED",
+          "operator": "history_waypoint_max_error",
+          "projection": "xy",
+          "observation_path": "sites.attachment_site.position",
+          "waypoint_pattern": "square_xy",
+          "side_path": "parameters.square_side_m"
+        },
+        {
+          "metric": "final_return_error_m",
+          "status": "RESOLVED",
+          "operator": "history_final_return_error",
+          "projection": "xy",
+          "observation_path": "sites.attachment_site.position"
+        }
+      ]
+    },
+    {
+      "task_id": "U03",
+      "robot_configuration_id": "universal_robots_ur5e",
+      "source_scene_entrypoint": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/scene.xml",
+      "scene_entrypoint": "assets/mjcf/universal_robots_ur5e/scene.xml",
+      "reset": {"mode": "source_scene_default", "seed": 103},
+      "parameters": {"offset_m": [0, 0, 0.05]},
+      "frames": {"body_names": [], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "offset_and_return",
+        "effect": "move_cartesian_offset_and_return",
+        "duration_s": 1.0,
+        "hold_s": 0.25
+      },
+      "measurements": [
+        {
+          "metric": "offset_error_m",
+          "status": "RESOLVED",
+          "operator": "offset_error",
+          "observation_path": "sites.attachment_site.position",
+          "offset_path": "parameters.offset_m"
+        },
+        {
+          "metric": "home_error_m",
+          "status": "RESOLVED",
+          "operator": "history_final_return_error",
+          "observation_path": "sites.attachment_site.position"
+        }
+      ]
+    },
+    {
+      "task_id": "U04",
+      "robot_configuration_id": "universal_robots_ur5e",
+      "source_scene_entrypoint": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/scene.xml",
+      "scene_entrypoint": "assets/mjcf/universal_robots_ur5e/scene.xml",
+      "reset": {"mode": "source_scene_default", "seed": 104},
+      "parameters": {
+        "waypoints_m": [[0.28, 0, 0.4], [0.32, 0.04, 0.43], [0.3, -0.04, 0.4]]
+      },
+      "frames": {"body_names": [], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "visit_waypoints",
+        "effect": "visit_cartesian_waypoints",
+        "duration_per_segment_s": 0.5
+      },
+      "measurements": [
+        {
+          "metric": "waypoint_max_error_m",
+          "status": "RESOLVED",
+          "operator": "history_waypoint_max_error",
+          "projection": "xy",
+          "observation_path": "sites.attachment_site.position",
+          "waypoints_path": "parameters.waypoints_m"
+        },
+        {
+          "metric": "sequence_order_preserved",
+          "status": "RESOLVED",
+          "operator": "history_waypoint_order",
+          "projection": "xy",
+          "observation_path": "sites.attachment_site.position",
+          "waypoints_path": "parameters.waypoints_m"
+        }
+      ]
+    },
+    {
+      "task_id": "U05",
+      "robot_configuration_id": "universal_robots_ur5e",
+      "source_scene_entrypoint": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/scene.xml",
+      "scene_entrypoint": "assets/mjcf/universal_robots_ur5e/scene.xml",
+      "reset": {"mode": "source_scene_default", "seed": 105},
+      "parameters": {"target_position_m": [3, 3, 3]},
+      "frames": {"body_names": [], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "reject_unreachable_and_return_home",
+        "effect": "reject_unreachable_and_return_home",
+        "duration_s": 1.0,
+        "home_duration_s": 1.0
+      },
+      "measurements": [
+        {
+          "metric": "target_rejected",
+          "status": "RESOLVED",
+          "operator": "candidate_outcome",
+          "result_path": "outcome",
+          "expected": "rejected",
+          "reason_path": "reason",
+          "expected_reason": "unreachable_target"
+        },
+        {
+          "metric": "attempt_count",
+          "status": "RESOLVED",
+          "operator": "invocation_count"
+        },
+        {
+          "metric": "home_error_m",
+          "status": "RESOLVED",
+          "operator": "history_final_return_error",
+          "observation_path": "sites.attachment_site.position"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "artifact_type": "task_description_projection_template",
+  "schema_version": "1.0.0",
+  "projection_id": "unitree-a1-experimental-five-stage1",
+  "projection_version": "1.0.0",
+  "robot_configuration_id": "unitree-a1",
+  "source_collection_id": "unitree-a1-experimental-five",
+  "source_collection_version": "1.0.0",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "tasks": [
+    {
+      "task_id": "sit_down_from_home",
+      "description": "You are standing. Sit down to a folded/low pose."
+    },
+    {
+      "task_id": "sit_then_stand_to_nominal",
+      "description": "Sit down, then stand back up to approximately your starting standing height."
+    },
+    {
+      "task_id": "walk_forward_5cm",
+      "description": "Walk forward a short distance and remain upright. If you are not already standing, stand up first."
+    },
+    {
+      "task_id": "walk_forward_10cm",
+      "description": "Walk forward at least 10 cm from your starting pose and remain upright. Stand up first if needed."
+    },
+    {
+      "task_id": "two_short_walks",
+      "description": "Take two short forward walks. Check your base pose between them."
+    }
+  ]
+}

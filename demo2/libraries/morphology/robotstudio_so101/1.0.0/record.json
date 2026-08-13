@@ -2,8 +2,18 @@
   "record_type": "morphology",
   "id": "demo2-robotstudio-so101",
   "version": "1.0.0",
-  "robot_model_id": "so-arm101",
+  "robot_model_id": "robotstudio_so101",
   "robot_configuration_id": "robotstudio_so101",
+  "tasks": {
+    "robot_configuration_id": "robotstudio_so101",
+    "catalog_version": "1.0.0"
+  },
+  "stage1": {
+    "action_affordances": ["driver Cartesian motion", "driver gripper motion"],
+    "observation_affordances": ["end-effector pose observation", "joint state observation", "object pose observation", "contact observation"],
+    "unit_allowlist": ["m", "rad", "s", "unitless"],
+    "frame_allowlist": ["robot_base", "world", "joint", "none"]
+  },
   "joint_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"],
   "actuator_names": ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"],
   "driver": {
@@ -12,7 +22,7 @@
     "legacy_reference": "demo2/legacy_references/robotstudio_so101"
   },
   "mujoco": {
-    "entrypoint": "robotstudio_so101/scene.xml",
+    "entrypoint": "robotstudio_so101/scene_box.xml",
     "version": "3.3.6",
     "reset": {"policy": "model_default"},
     "frames": {"body_names": ["gripper"], "site_names": ["gripperframe"]},

@@ -39,7 +39,8 @@
       "task_id": "F01",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
       "review_status": "HUMAN_APPROVED",
-      "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "End-effector target error is at most 10 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
         "cube_red"
@@ -48,7 +49,7 @@
         {
           "metric": "ee_target_error_m",
           "comparator": "<=",
-          "value": 0.04
+          "value": 0.01
         }
       ],
       "guard_ids": [
@@ -61,7 +62,8 @@
       "task_id": "F02",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
       "review_status": "HUMAN_APPROVED",
-      "criterion_text": "End-effector target error is at most 40 mm for 0.5 s.",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "End-effector target error is at most 10 mm for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
         "cube_green"
@@ -70,7 +72,7 @@
         {
           "metric": "ee_target_error_m",
           "comparator": "<=",
-          "value": 0.04
+          "value": 0.01
         }
       ],
       "guard_ids": [
@@ -83,7 +85,8 @@
       "task_id": "F03",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
       "review_status": "HUMAN_APPROVED",
-      "criterion_text": "Red-cube planar goal error is at most 50 mm and the cube remains table-supported.",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "Red-cube planar goal error is at most 10 mm for 0.5 s and the cube remains table-supported.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
         "cube_red"
@@ -92,7 +95,7 @@
         {
           "metric": "cube_goal_error_m",
           "comparator": "<=",
-          "value": 0.05
+          "value": 0.01
         },
         {
           "metric": "cube_table_supported",
@@ -110,7 +113,8 @@
       "task_id": "F04",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
       "review_status": "HUMAN_APPROVED",
-      "criterion_text": "Blue-cube planar goal error is at most 50 mm and obstacle contact count is zero.",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "Blue-cube planar goal error is at most 10 mm for 0.5 s and obstacle contact count is zero.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [
         "cube_blue",
@@ -120,7 +124,7 @@
         {
           "metric": "cube_goal_error_m",
           "comparator": "<=",
-          "value": 0.05
+          "value": 0.01
         },
         {
           "metric": "obstacle_contact_count",
@@ -138,19 +142,20 @@
       "task_id": "F05",
       "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
       "review_status": "HUMAN_APPROVED",
-      "criterion_text": "All four square waypoints are within 40 mm and the final point is within 40 mm of the start.",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "All four square waypoints are within 10 mm and the final point remains within 10 mm of the start for 0.5 s.",
       "scene_entrypoint": "general_demo/libraries/assets/franka_panda/1.0.0/pushbench.xml",
       "scene_assets": [],
       "checks": [
         {
           "metric": "waypoint_max_error_m",
           "comparator": "<=",
-          "value": 0.04
+          "value": 0.01
         },
         {
           "metric": "final_return_error_m",
           "comparator": "<=",
-          "value": 0.04
+          "value": 0.01
         }
       ],
       "guard_ids": [

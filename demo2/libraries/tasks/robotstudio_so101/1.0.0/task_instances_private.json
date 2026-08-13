@@ -1,0 +1,88 @@
+{
+  "artifact_type": "task_instances_private",
+  "schema_version": "1.0.0",
+  "instance_set_id": "robotstudio_so101-demo-five-instances",
+  "instance_set_version": "1.0.0",
+  "robot_configuration_id": "robotstudio_so101",
+  "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+  "review_status": "HUMAN_APPROVED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source_task_catalog": "robotstudio_so101-tasks",
+  "selection_policy": "Exactly the five listed instances, in catalog order.",
+  "instances": [
+    {
+      "task_id": "S01",
+      "instance_id": "robotstudio_so101-s01-seed-101",
+      "task_type": "reach",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 101
+      },
+      "parameters": {
+        "target_object_id": "box",
+        "target_offset_m": [
+          0,
+          0,
+          0.05
+        ]
+      }
+    },
+    {
+      "task_id": "S02",
+      "instance_id": "robotstudio_so101-s02-seed-102",
+      "task_type": "cartesian_trace",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 102
+      },
+      "parameters": {
+        "square_side_m": 0.04
+      }
+    },
+    {
+      "task_id": "S03",
+      "instance_id": "robotstudio_so101-s03-seed-103",
+      "task_type": "gripper_cycle",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 103
+      },
+      "parameters": {
+        "joint_name": "gripper"
+      }
+    },
+    {
+      "task_id": "S04",
+      "instance_id": "robotstudio_so101-s04-seed-104",
+      "task_type": "controlled_contact",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 104
+      },
+      "parameters": {
+        "target_object_id": "box"
+      }
+    },
+    {
+      "task_id": "S05",
+      "instance_id": "robotstudio_so101-s05-seed-105",
+      "task_type": "bounded_offset",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 105
+      },
+      "parameters": {
+        "offset_m": [
+          0,
+          0,
+          0.05
+        ]
+      }
+    }
+  ]
+}

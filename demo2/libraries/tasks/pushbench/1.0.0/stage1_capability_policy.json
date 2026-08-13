@@ -1,0 +1,37 @@
+{
+  "artifact_type": "demo2_stage1_capability_policy",
+  "schema_version": "1.0.0",
+  "robot_configuration_id": "pushbench",
+  "effect_contracts": {
+    "push_object_to_goal": {
+      "kind": "action",
+      "description": "Approach a supplied object position and push it toward a supplied world-frame goal position.",
+      "inputs": [
+        {"name": "object_position", "type": "number", "shape": "vector:3", "unit": "m", "frame": "world", "required": true},
+        {"name": "goal_position", "type": "number", "shape": "vector:3", "unit": "m", "frame": "world", "required": true},
+        {"name": "duration", "type": "number", "shape": "scalar", "unit": "s", "frame": "none", "required": false}
+      ],
+      "outputs": [],
+      "required_action_affordances": ["driver Cartesian motion"],
+      "required_observation_affordances": ["end-effector pose observation", "object pose observation", "contact observation"]
+    },
+    "move_to_waypoint_and_return": {
+      "kind": "action",
+      "description": "Move the end effector to a supplied free-space world-frame waypoint and return to its starting position.",
+      "inputs": [
+        {"name": "waypoint", "type": "number", "shape": "vector:3", "unit": "m", "frame": "world", "required": true},
+        {"name": "duration", "type": "number", "shape": "scalar", "unit": "s", "frame": "none", "required": false}
+      ],
+      "outputs": [],
+      "required_action_affordances": ["driver Cartesian motion"],
+      "required_observation_affordances": ["end-effector pose observation", "contact observation"]
+    }
+  },
+  "task_effect_allowlist": {
+    "B01": ["push_object_to_goal"],
+    "B02": ["push_object_to_goal"],
+    "B03": ["push_object_to_goal"],
+    "B04": ["push_object_to_goal"],
+    "B05": ["move_to_waypoint_and_return"]
+  }
+}

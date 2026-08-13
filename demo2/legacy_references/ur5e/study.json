@@ -1,0 +1,36 @@
+{
+  "robot_id": "ur5e_onboard",
+  "estimated_class": "arm",
+  "dof": 6,
+  "arm_joint_names": [
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint"
+  ],
+  "arm_actuator_names": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow",
+    "wrist_1",
+    "wrist_2",
+    "wrist_3"
+  ],
+  "joint_limits": {
+    "shoulder_pan_joint": [-6.28319, 6.28319],
+    "shoulder_lift_joint": [-6.28319, 6.28319],
+    "elbow_joint": [-3.1415, 3.1415],
+    "wrist_1_joint": [-6.28319, 6.28319],
+    "wrist_2_joint": [-6.28319, 6.28319],
+    "wrist_3_joint": [-6.28319, 6.28319]
+  },
+  "ee_site": "attachment_site",
+  "ee_body": "wrist_3_link",
+  "gripper_actuator_names": null,
+  "gripper_ctrlrange": null,
+  "weld_graspable_bodies": null,
+  "actuator_type_hint": "position",
+  "notes": "UR5e 6-DOF arm with position-controlled general actuators, end-effector at attachment_site, no gripper"
+}

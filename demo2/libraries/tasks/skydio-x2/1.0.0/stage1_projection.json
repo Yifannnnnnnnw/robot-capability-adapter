@@ -1,0 +1,33 @@
+{
+  "artifact_type": "task_description_projection_template",
+  "schema_version": "1.0.0",
+  "projection_id": "skydio-x2-experimental-five-stage1",
+  "projection_version": "1.0.0",
+  "robot_configuration_id": "skydio-x2",
+  "source_collection_id": "skydio-x2-experimental-five",
+  "source_collection_version": "1.0.0",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "tasks": [
+    {
+      "task_id": "takeoff_to_05m",
+      "description": "Take off and climb to about 0.5 m altitude, then hold a stable hover. Stay upright."
+    },
+    {
+      "task_id": "hover_at_05m",
+      "description": "Take off to about 0.5 m and hover in place at that altitude; keep your horizontal position steady (do not drift away)."
+    },
+    {
+      "task_id": "goto_forward_40cm",
+      "description": "Take off, then fly to a point about 0.4 m forward (+X) of your launch point while holding altitude near 0.5 m. Stay upright."
+    },
+    {
+      "task_id": "climb_to_1m",
+      "description": "Take off and climb to about 1.0 m altitude, then hold. Stay upright."
+    },
+    {
+      "task_id": "goto_and_return",
+      "description": "Take off to ~0.5 m, fly about 0.5 m forward in +X, then fly back and stop above your launch point. Stay upright the whole time."
+    }
+  ]
+}

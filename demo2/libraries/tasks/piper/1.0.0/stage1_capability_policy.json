@@ -1,0 +1,49 @@
+{
+  "artifact_type": "demo2_stage1_capability_policy",
+  "schema_version": "1.0.0",
+  "robot_configuration_id": "piper",
+  "effect_contracts": {
+    "reach_above_object": {
+      "kind": "action",
+      "description": "Move the end effector to a supplied world-frame position above a task object and hold it.",
+      "inputs": [
+        {"name": "target_position", "type": "number", "shape": "vector:3", "unit": "m", "frame": "world", "required": true},
+        {"name": "duration", "type": "number", "shape": "scalar", "unit": "s", "frame": "none", "required": false}
+      ],
+      "outputs": [],
+      "required_action_affordances": ["driver Cartesian motion"],
+      "required_observation_affordances": ["end-effector pose observation"]
+    },
+    "grasp_and_lift": {
+      "kind": "action",
+      "description": "Approach a supplied object position, close the gripper, lift by a supplied distance, and retain the grasp.",
+      "inputs": [
+        {"name": "object_position", "type": "number", "shape": "vector:3", "unit": "m", "frame": "world", "required": true},
+        {"name": "lift_distance", "type": "number", "shape": "scalar", "unit": "m", "frame": "world", "required": true},
+        {"name": "duration", "type": "number", "shape": "scalar", "unit": "s", "frame": "none", "required": false}
+      ],
+      "outputs": [],
+      "required_action_affordances": ["driver Cartesian motion", "driver gripper motion"],
+      "required_observation_affordances": ["end-effector pose observation", "object pose observation", "contact observation"]
+    },
+    "push_object_to_goal": {
+      "kind": "action",
+      "description": "Approach a supplied object position and push it toward a supplied world-frame goal position.",
+      "inputs": [
+        {"name": "object_position", "type": "number", "shape": "vector:3", "unit": "m", "frame": "world", "required": true},
+        {"name": "goal_position", "type": "number", "shape": "vector:3", "unit": "m", "frame": "world", "required": true},
+        {"name": "duration", "type": "number", "shape": "scalar", "unit": "s", "frame": "none", "required": false}
+      ],
+      "outputs": [],
+      "required_action_affordances": ["driver Cartesian motion"],
+      "required_observation_affordances": ["end-effector pose observation", "object pose observation", "contact observation"]
+    }
+  },
+  "task_effect_allowlist": {
+    "P01": ["reach_above_object"],
+    "P02": ["reach_above_object"],
+    "P03": ["reach_above_object"],
+    "P04": ["grasp_and_lift"],
+    "P05": ["push_object_to_goal"]
+  }
+}

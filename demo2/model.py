@@ -117,6 +117,7 @@ class OpenAICompatibleConfig:
     endpoint_path: str = "/v1/chat/completions"
     auth_header: str = "Authorization"
     auth_prefix: str = "Bearer "
+    thinking: str | None = None
     timeout_s: float = 300.0
 
     @property
@@ -127,9 +128,12 @@ class OpenAICompatibleConfig:
 
 
 def _post_chat(config: OpenAICompatibleConfig, body: Mapping[str, Any]) -> dict[str, Any]:
+    request_body = dict(body)
+    if config.thinking is not None:
+        request_body["thinking"] = {"type": config.thinking}
     request = urllib.request.Request(
         config.endpoint_url,
-        data=json.dumps(dict(body), ensure_ascii=False).encode("utf-8"),
+        data=json.dumps(request_body, ensure_ascii=False).encode("utf-8"),
         headers={
             config.auth_header: config.auth_prefix + config.api_key,
             "Content-Type": "application/json",
@@ -299,7 +303,6 @@ class _OpenAIMessages:
                 }
                 for tool in tools
             ]
-            body["tool_choice"] = "auto"
         payload = _post_chat(self.config, body)
         choice = _first_choice(payload)
         message = choice.get("message")

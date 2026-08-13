@@ -1,0 +1,172 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "unitree-a1-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "unitree-a1",
+  "catalog_review_status": "HUMAN_REVIEW_REQUIRED",
+  "formal_demo_status": "NOT_FORMAL_DEMO_APPROVED",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source": {
+    "repository": "https://github.com/981526092/auto-adapter",
+    "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "path": "autoadapter_bench/spec/tasks_quadruped.yaml"
+  },
+  "tasks": [
+    {
+      "task_id": "sit_down_from_home",
+      "description": "You are standing. Sit down to a folded/low pose.",
+      "task_type": "body_height_transition",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_quadruped.yaml",
+          "locator": "suites.simple.tasks[0]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=unitree_a1]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "stand_up",
+        "sit",
+        "walk_forward",
+        "get_base_pose",
+        "get_body_height"
+      ]
+    },
+    {
+      "task_id": "sit_then_stand_to_nominal",
+      "description": "Sit down, then stand back up to approximately your starting standing height.",
+      "task_type": "body_height_transition",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_quadruped.yaml",
+          "locator": "suites.simple.tasks[1]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=unitree_a1]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "stand_up",
+        "sit",
+        "walk_forward",
+        "get_base_pose",
+        "get_body_height"
+      ]
+    },
+    {
+      "task_id": "walk_forward_5cm",
+      "description": "Walk forward a short distance and remain upright. If you are not already standing, stand up first.",
+      "task_type": "forward_progress",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_quadruped.yaml",
+          "locator": "suites.simple.tasks[2]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=unitree_a1]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "stand_up",
+        "sit",
+        "walk_forward",
+        "get_base_pose",
+        "get_body_height"
+      ]
+    },
+    {
+      "task_id": "walk_forward_10cm",
+      "description": "Walk forward at least 10 cm from your starting pose and remain upright. Stand up first if needed.",
+      "task_type": "forward_progress",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_quadruped.yaml",
+          "locator": "suites.simple.tasks[3]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=unitree_a1]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "stand_up",
+        "sit",
+        "walk_forward",
+        "get_base_pose",
+        "get_body_height"
+      ]
+    },
+    {
+      "task_id": "two_short_walks",
+      "description": "Take two short forward walks. Check your base pose between them.",
+      "task_type": "phase_trajectory",
+      "source_refs": [
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/tasks_quadruped.yaml",
+          "locator": "suites.simple.tasks[4]"
+        },
+        {
+          "repository": "https://github.com/981526092/auto-adapter",
+          "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+          "path": "autoadapter_bench/spec/robot_zoo.yaml",
+        "locator": "robots[id=unitree_a1]"
+        }
+      ],
+      "task_review_status": "HUMAN_REVIEW_REQUIRED",
+      "execution_status": "EXECUTABLE_EXPERIMENTAL",
+      "threshold_status": "HUMAN_REVIEW_REQUIRED",
+      "applicability_status": "HUMAN_REVIEW_REQUIRED",
+      "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+      "required_primitives": [
+        "stand_up",
+        "sit",
+        "walk_forward",
+        "get_base_pose",
+        "get_body_height"
+      ]
+    }
+  ]
+}

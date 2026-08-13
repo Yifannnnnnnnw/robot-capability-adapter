@@ -1,0 +1,482 @@
+{
+  "artifact_type": "task_catalog",
+  "schema_version": "1.0.0",
+  "catalog_id": "unitree-go2-stock-12dof-tasks",
+  "catalog_version": "1.0.0",
+  "robot_model_id": "unitree-go2",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "catalog_review_status": "HUMAN_APPROVED",
+  "approval_date": "2026-08-11",
+  "configuration_boundary": {
+    "base_type": "free",
+    "actuated_dof": 12,
+    "actuation_route": "LowCmd joint-level control synthesized by AutoAdapter capabilities",
+    "state_route": "LowState plus admitted physical-state observations",
+    "excluded_as_implementation_shortcuts": [
+      "SportClient.Sit",
+      "SportClient.StandUp",
+      "SportClient.Move",
+      "other high-level Sport requests"
+    ],
+    "source_interpretation": "Official high-level examples establish task concepts only. The General Demo must synthesize behavior through the admitted low-level SDK route."
+  },
+  "source_registry": [
+    {
+      "source_id": "unitree-sdk2py-go2-examples",
+      "kind": "official_robot_sdk_examples",
+      "url": "https://github.com/unitreerobotics/unitree_sdk2_python/tree/65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5/example",
+      "concepts": [
+        "stand_and_lie",
+        "velocity_move",
+        "balance_attitude",
+        "trajectory_follow"
+      ]
+    },
+    {
+      "source_id": "unitree-sdk2-go2-sport-interface",
+      "kind": "official_robot_sdk_interface",
+      "url": "https://github.com/unitreerobotics/unitree_sdk2/blob/main/include/unitree/robot/go2/sport/sport_client.hpp",
+      "concepts": [
+        "stop",
+        "recovery",
+        "euler_attitude",
+        "planar_move",
+        "gait"
+      ]
+    },
+    {
+      "source_id": "unitree-rl-lab-go2-velocity",
+      "kind": "official_robot_benchmark_environment",
+      "url": "https://github.com/unitreerobotics/unitree_rl_lab/blob/main/source/unitree_rl_lab/unitree_rl_lab/tasks/locomotion/robots/go2/velocity_env_cfg.py",
+      "concepts": [
+        "planar_velocity_tracking",
+        "standing",
+        "push_disturbance",
+        "rough_terrain",
+        "slope",
+        "stairs",
+        "boxes"
+      ]
+    },
+    {
+      "source_id": "unitree-mujoco-go2",
+      "kind": "official_robot_simulator",
+      "url": "https://github.com/unitreerobotics/unitree_mujoco/tree/ae6a8403e272733e9996ef59990880330496177f",
+      "concepts": [
+        "low_level_simulation",
+        "terrain_scene",
+        "terrain_tool"
+      ]
+    },
+    {
+      "source_id": "eth-legged-gym",
+      "kind": "primary_benchmark_repository",
+      "url": "https://github.com/leggedrobotics/legged_gym",
+      "concepts": [
+        "rough_terrain_velocity_tracking",
+        "random_push_robustness",
+        "sim_to_real"
+      ]
+    },
+    {
+      "source_id": "deepmind-control-suite-quadruped",
+      "kind": "primary_benchmark_repository",
+      "url": "https://github.com/google-deepmind/dm_control/blob/master/dm_control/suite/README.md",
+      "concepts": [
+        "self_right_then_walk",
+        "self_right_then_run",
+        "terrain_escape",
+        "moving_object_fetch"
+      ]
+    },
+    {
+      "source_id": "deepmind-barkour",
+      "kind": "primary_benchmark_paper_and_repository",
+      "url": "https://github.com/google-deepmind/barkour_robot",
+      "paper_url": "https://arxiv.org/abs/2305.14654",
+      "concepts": [
+        "weave_poles",
+        "a_frame",
+        "broad_jump",
+        "composed_agility_course"
+      ]
+    },
+    {
+      "source_id": "extreme-parkour",
+      "kind": "primary_research_paper",
+      "url": "https://arxiv.org/abs/2309.14341",
+      "concepts": [
+        "high_obstacle",
+        "long_gap",
+        "tilted_ramp",
+        "composed_obstacle_course"
+      ]
+    }
+  ],
+  "difficulty_policy": "All 26 task descriptions and exact-configuration applicability decisions are human approved. No ordinal Go2 difficulty level is assigned; each record retains only its approved qualitative rationale.",
+  "tasks": [
+    {
+      "task_id": "G01",
+      "description": "Stand up from the specified supported starting posture and hold a stable upright stance.",
+      "task_type": "posture_transition",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-sdk2-go2-low-level-stand"
+      ],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "A single posture transition with a stationary terminal state.",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G02",
+      "description": "Sit down from a stable standing posture and hold the supported sitting posture without falling.",
+      "task_type": "posture_transition",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface"
+      ],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "A controlled lowering transition with a stationary terminal state.",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G03",
+      "description": "Maintain a stable upright stance at the current location for the requested interval.",
+      "task_type": "state_maintenance",
+      "source_ids": [
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity"
+      ],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Stationary posture maintenance without a commanded displacement.",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G04",
+      "description": "Move forward in the robot's initial heading direction, then stop in a stable upright stance.",
+      "task_type": "bounded_locomotion",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity"
+      ],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "One straight translation followed by a controlled stop.",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G05",
+      "description": "Adjust the robot body to the specified target height and hold it upright at the current location.",
+      "task_type": "body_height_control",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface"
+      ],
+      "task_review_status": "HUMAN_APPROVED",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Requires coordinated whole-body posture adjustment while constraining orientation and drift.",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G06",
+      "description": "Move backward in the robot's initial heading frame, then stop in a stable upright stance.",
+      "task_type": "bounded_locomotion",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity"
+      ],
+      "adaptation_note": "Use the initial-body-yaw frame and the admitted low-level route; no high-level Move call is permitted.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "A reverse translation adds braking and heading control without adding terrain complexity.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G07",
+      "description": "Move left in the robot's initial heading frame, then stop in a stable upright stance.",
+      "task_type": "bounded_locomotion",
+      "source_ids": [
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity"
+      ],
+      "adaptation_note": "Evaluate lateral displacement in the initial-body-yaw frame and synthesize all leg behavior from LowCmd.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Lateral translation requires coordinated stepping while holding forward position and heading.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G08",
+      "description": "Move right in the robot's initial heading frame, then stop in a stable upright stance.",
+      "task_type": "bounded_locomotion",
+      "source_ids": [
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity"
+      ],
+      "adaptation_note": "Mirror the leftward task semantically, but preserve a separate robot-conditioned execution and evaluation record.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Lateral translation requires coordinated stepping while holding forward position and heading.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G09",
+      "description": "Turn in place to the specified yaw heading and stop upright.",
+      "task_type": "yaw_control",
+      "source_ids": [
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity"
+      ],
+      "adaptation_note": "The task target is semantic yaw; capability generation must decide how to synthesize it from joint-level commands.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Primarily commands yaw while constraining unintended translation and roll/pitch motion.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G10",
+      "description": "Track the specified forward, lateral, and yaw velocity command for the requested interval.",
+      "task_type": "velocity_tracking",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity",
+        "eth-legged-gym"
+      ],
+      "adaptation_note": "Command bounds and evaluation windows must be selected for this exact Go2 LowCmd/MuJoCo route rather than copied from training environments.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Simultaneously tracks three planar velocity components over time.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G11",
+      "description": "Visit the specified ordered sequence of planar waypoints and finish upright at the final waypoint.",
+      "task_type": "waypoint_following",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface"
+      ],
+      "adaptation_note": "Waypoints and their ordering are public task state; any trajectory-follow API remains provenance only.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Requires multiple sequential spatial goals and a stable terminal state.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G12",
+      "description": "Stop from the specified ongoing planar motion and settle into a stable upright stance.",
+      "task_type": "motion_arrest",
+      "source_ids": [
+        "unitree-sdk2-go2-sport-interface",
+        "unitree-rl-lab-go2-velocity"
+      ],
+      "adaptation_note": "The initial motion is established by the trusted Harness before capability invocation; StopMove is not callable by the generated implementation.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Requires deceleration and balance recovery from a nonstationary initial state.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G13",
+      "description": "Adjust to the specified body roll while maintaining support and location.",
+      "task_type": "body_attitude_control",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface"
+      ],
+      "adaptation_note": "The approved roll range must respect the exact morphology and support constraints; Euler/BalanceAttitude calls are not available to the implementation.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Changes one body attitude axis while constraining translation and support loss.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G14",
+      "description": "Adjust to the specified body pitch while maintaining support and location.",
+      "task_type": "body_attitude_control",
+      "source_ids": [
+        "unitree-sdk2py-go2-examples",
+        "unitree-sdk2-go2-sport-interface"
+      ],
+      "adaptation_note": "The approved pitch range must respect the exact morphology and support constraints; Euler/BalanceAttitude calls are provenance only.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Changes one body attitude axis while constraining translation and support loss.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G15",
+      "description": "Recover from the specified permitted fallen starting pose to a stable upright stance.",
+      "task_type": "fall_recovery",
+      "source_ids": [
+        "unitree-sdk2-go2-sport-interface",
+        "deepmind-control-suite-quadruped"
+      ],
+      "adaptation_note": "Only explicitly admitted initial poses may be used; source robots and self-righting protocols are not assumed equivalent to Go2.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "A large contact-rich whole-body transition whose feasibility depends on the initial-pose set.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G16",
+      "description": "Maintain and recover the specified stance after the declared external planar disturbance.",
+      "task_type": "disturbance_rejection",
+      "source_ids": [
+        "unitree-rl-lab-go2-velocity",
+        "eth-legged-gym"
+      ],
+      "adaptation_note": "The trusted Harness applies a frozen disturbance; candidate code cannot choose or observe hidden evaluation parameters.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Tests balance recovery from an externally imposed perturbation rather than nominal tracking alone.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G17",
+      "description": "Traverse the specified irregular rough-terrain segment and finish upright in the goal region.",
+      "task_type": "rough_terrain_locomotion",
+      "source_ids": [
+        "unitree-rl-lab-go2-velocity",
+        "unitree-mujoco-go2",
+        "eth-legged-gym"
+      ],
+      "adaptation_note": "Terrain geometry and seeds require new frozen scene assets; source training ranges are not evaluation thresholds.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Irregular support heights require continuing foothold and body stabilization.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G18",
+      "description": "Ascend the specified slope and finish upright on its goal platform.",
+      "task_type": "slope_traversal",
+      "source_ids": [
+        "unitree-rl-lab-go2-velocity",
+        "unitree-mujoco-go2"
+      ],
+      "adaptation_note": "Slope geometry and friction must be frozen for the Go2 MuJoCo scene before admission.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Changes gravitational loading and pitch demands throughout locomotion.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G19",
+      "description": "Descend the specified slope and finish upright on its goal platform.",
+      "task_type": "slope_traversal",
+      "source_ids": [
+        "unitree-rl-lab-go2-velocity",
+        "unitree-mujoco-go2"
+      ],
+      "adaptation_note": "Use a separately reviewed downhill task because braking and impact risks differ from ascent.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Requires controlled braking and posture regulation under downhill loading.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G20",
+      "description": "Traverse the specified staircase and finish upright on its goal platform.",
+      "task_type": "stair_traversal",
+      "source_ids": [
+        "unitree-rl-lab-go2-velocity",
+        "unitree-mujoco-go2"
+      ],
+      "adaptation_note": "Stair direction, geometry, friction, and collision assets must be frozen; ascent and descent may be split during human review.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Repeated discrete elevation changes impose foothold, clearance, and impact constraints.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G21",
+      "description": "Traverse the specified sparse box-and-step field and finish upright in the goal region.",
+      "task_type": "discrete_obstacle_terrain",
+      "source_ids": [
+        "unitree-rl-lab-go2-velocity",
+        "unitree-mujoco-go2"
+      ],
+      "adaptation_note": "Requires a new frozen scene asset and an approved public representation of obstacle geometry for the no-camera configuration.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Irregular discrete supports require clearance, foothold selection, and balance.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G22",
+      "description": "Weave through the specified ordered poles and stop upright in the goal region.",
+      "task_type": "agility_slalom",
+      "source_ids": [
+        "deepmind-barkour"
+      ],
+      "adaptation_note": "Adapt the Barkour weave-poles concept to Go2 dimensions; do not inherit Barkour geometry, scoring, or timing. The current no-camera configuration needs an approved public pole-state representation.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Requires repeated direction changes, collision avoidance, and ordered progress through a constrained path.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G23",
+      "description": "Traverse the specified A-frame obstacle and stop upright in the goal region.",
+      "task_type": "agility_ramp",
+      "source_ids": [
+        "deepmind-barkour",
+        "extreme-parkour"
+      ],
+      "adaptation_note": "Adapt only the obstacle concept. Go2-specific geometry, friction, observation, and safety limits require separate review and scene admission.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Combines steep ascent, crest transition, descent, and terminal balance.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G24",
+      "description": "Cross the specified broad-jump obstacle and land in a stable upright state in the goal region.",
+      "task_type": "agility_jump",
+      "source_ids": [
+        "deepmind-barkour",
+        "extreme-parkour"
+      ],
+      "adaptation_note": "The source tasks use different robots and perception. Go2-specific gap geometry, takeoff state, landing surface, and safety envelope must be independently piloted and approved.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "A dynamic flight and landing task with tight safety and morphology dependence.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G25",
+      "description": "Cross the specified high obstacle and land in a stable upright state in the goal region.",
+      "task_type": "agility_high_obstacle",
+      "source_ids": [
+        "extreme-parkour"
+      ],
+      "adaptation_note": "Extreme Parkour establishes a task concept, not Go2 feasibility. The current robot configuration lacks the paper's front depth camera, so admission requires an approved public geometry representation or a distinct sensor configuration.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Highly dynamic clearance and landing behavior with strong perception and morphology dependencies.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    },
+    {
+      "task_id": "G26",
+      "description": "Complete the specified ordered quadruped agility course and stop upright in the final goal region.",
+      "task_type": "compound_agility_course",
+      "source_ids": [
+        "deepmind-barkour",
+        "extreme-parkour"
+      ],
+      "adaptation_note": "This is a future compound task. Each obstacle, transition, observation, safety rule, and Go2-specific scoring rule must first be separately admitted.",
+      "difficulty_status": "HUMAN_APPROVED_RATIONALE_ONLY",
+      "difficulty_rationale": "Composes multiple locomotion and agility skills with ordering and transition constraints.",
+      "task_review_status": "HUMAN_APPROVED",
+      "applicability_status": "HUMAN_APPROVED_FOR_EXACT_CONFIGURATION"
+    }
+  ]
+}

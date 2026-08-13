@@ -1,35 +1,173 @@
 {
-  "suite_id": "demo2-so101-legacy-validator-v1",
-  "standards": [
+  "artifact_type": "task_evaluation_private",
+  "schema_version": "1.0.0",
+  "evaluation_id": "robotstudio_so101-task-evaluation",
+  "evaluation_version": "1.0.0",
+  "catalog_id": "robotstudio_so101-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "robotstudio_so101",
+  "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+  "review_status": "HUMAN_APPROVED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "forbidden_recipients": [
+    "stage1",
+    "stage2",
+    "generated_capability_layer",
+    "repair",
+    "demo_consumer"
+  ],
+  "common_guards": [
     {
-      "standard_id": "so-g1-joint-arrival-v1",
-      "effect": "move_joints",
-      "measurement": "joint_position_l2_error_rad",
-      "comparator": "<=",
-      "threshold": 0.03
+      "guard_id": "trusted-external-verdict",
+      "rule": "Only trusted physical state may support success; model self-report and command receipts are not outcome evidence."
     },
     {
-      "standard_id": "so-g2-cartesian-arrival-v1",
-      "effect": "move_to_cartesian",
-      "measurement": "end_effector_position_l2_error_m",
-      "comparator": "<=",
-      "threshold": 0.02
+      "guard_id": "finite-required-state",
+      "rule": "NaN, infinity, missing required measurement, or unavailable required observation fails the trial."
+    },
+    {
+      "guard_id": "scene-entrypoint-bound",
+      "rule": "The task must execute only in its declared source-backed MJCF scene."
     }
   ],
-  "cases": {
-    "move_joints": {
-      "case_id": "small-joint-offset",
-      "inputs": {
-        "target": [0.05, -0.04, 0.03, -0.02, 0.01],
-        "duration": 0.5
-      }
+  "definitions": {
+    "continuous_dwell": "Every stated terminal check holds at every required harness sample.",
+    "task_instance_parameters": "Target, reset, timeout, and scene-specific limits are frozen before a trial."
+  },
+  "criteria": [
+    {
+      "task_id": "S01",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_APPROVED",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "Gripper-frame target error is at most 10 mm for 0.5 s.",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "scene_assets": [
+        "box"
+      ],
+      "checks": [
+        {
+          "metric": "gripper_target_error_m",
+          "comparator": "<=",
+          "value": 0.01
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
     },
-    "move_to_cartesian": {
-      "case_id": "one-centimeter-up",
-      "inputs": {
-        "position": [0.3913615, -0.0009794652, 0.2563451767],
-        "duration": 1.0
-      }
+    {
+      "task_id": "S02",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_APPROVED",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "Maximum waypoint error is at most 10 mm and return error remains at most 10 mm for 0.5 s.",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "scene_assets": [
+        "box"
+      ],
+      "checks": [
+        {
+          "metric": "waypoint_max_error_m",
+          "comparator": "<=",
+          "value": 0.01
+        },
+        {
+          "metric": "final_return_error_m",
+          "comparator": "<=",
+          "value": 0.01
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    },
+    {
+      "task_id": "S03",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_APPROVED",
+      "criterion_text": "The gripper joint changes by at least 10 mrad in each commanded direction.",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "scene_assets": [
+        "gripper"
+      ],
+      "checks": [
+        {
+          "metric": "open_motion_rad",
+          "comparator": ">=",
+          "value": 0.01
+        },
+        {
+          "metric": "close_motion_rad",
+          "comparator": ">=",
+          "value": 0.01
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    },
+    {
+      "task_id": "S04",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_APPROVED",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "The box displacement remains at most 10 mm for 0.5 s and no unrelated contact is recorded.",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "scene_assets": [
+        "box"
+      ],
+      "checks": [
+        {
+          "metric": "box_displacement_m",
+          "comparator": "<=",
+          "value": 0.01
+        },
+        {
+          "metric": "unrelated_contact_count",
+          "comparator": "==",
+          "value": 0
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
+    },
+    {
+      "task_id": "S05",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENTAL",
+      "review_status": "HUMAN_APPROVED",
+      "continuous_dwell_s": 0.5,
+      "criterion_text": "Offset error is at most 10 mm and home error remains at most 10 mm for 0.5 s.",
+      "scene_entrypoint": "general_demo/libraries/assets/robotstudio_so101/1.0.0/scene_box.xml",
+      "scene_assets": [
+        "gripper"
+      ],
+      "checks": [
+        {
+          "metric": "offset_error_m",
+          "comparator": "<=",
+          "value": 0.01
+        },
+        {
+          "metric": "home_error_m",
+          "comparator": "<=",
+          "value": 0.01
+        }
+      ],
+      "guard_ids": [
+        "trusted-external-verdict",
+        "finite-required-state",
+        "scene-entrypoint-bound"
+      ]
     }
-  }
+  ]
 }

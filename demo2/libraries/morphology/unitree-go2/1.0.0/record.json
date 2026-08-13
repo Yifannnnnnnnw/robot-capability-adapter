@@ -3,7 +3,17 @@
   "id": "demo2-unitree-go2",
   "version": "1.0.0",
   "robot_model_id": "unitree-go2",
-  "robot_configuration_id": "unitree-go2-direct",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "tasks": {
+    "robot_configuration_id": "unitree-go2-stock-12dof",
+    "catalog_version": "1.0.0"
+  },
+  "stage1": {
+    "action_affordances": ["driver posture motion", "driver gait motion"],
+    "observation_affordances": ["body pose observation", "body velocity observation", "contact observation"],
+    "unit_allowlist": ["m", "m/s", "s", "unitless"],
+    "frame_allowlist": ["body", "world", "initial_body_yaw", "none"]
+  },
   "joint_names": ["FL_hip_joint", "FL_thigh_joint", "FL_calf_joint", "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint", "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint", "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"],
   "actuator_names": ["FL_hip", "FL_thigh", "FL_calf", "FR_hip", "FR_thigh", "FR_calf", "RL_hip", "RL_thigh", "RL_calf", "RR_hip", "RR_thigh", "RR_calf"],
   "driver": {

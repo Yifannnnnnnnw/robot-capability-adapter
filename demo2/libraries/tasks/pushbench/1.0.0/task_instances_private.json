@@ -1,0 +1,99 @@
+{
+  "artifact_type": "task_instances_private",
+  "schema_version": "1.0.0",
+  "instance_set_id": "pushbench-demo-five-instances",
+  "instance_set_version": "1.0.0",
+  "robot_configuration_id": "pushbench",
+  "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+  "review_status": "HUMAN_APPROVED",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source_task_catalog": "pushbench-tasks",
+  "selection_policy": "Exactly the five listed instances, in catalog order.",
+  "instances": [
+    {
+      "task_id": "B01",
+      "instance_id": "pushbench-b01-seed-101",
+      "task_type": "planar_pushing",
+      "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 101
+      },
+      "parameters": {
+        "target_object_id": "tee",
+        "goal_center_m": [
+          0.26,
+          -0.05
+        ]
+      }
+    },
+    {
+      "task_id": "B02",
+      "instance_id": "pushbench-b02-seed-102",
+      "task_type": "planar_pushing",
+      "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 102
+      },
+      "parameters": {
+        "target_object_id": "cube_red",
+        "goal_center_m": [
+          0.18,
+          0.1
+        ]
+      }
+    },
+    {
+      "task_id": "B03",
+      "instance_id": "pushbench-b03-seed-103",
+      "task_type": "planar_pushing",
+      "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 103
+      },
+      "parameters": {
+        "target_object_id": "cube_green",
+        "goal_center_m": [
+          0.26,
+          0.12
+        ]
+      }
+    },
+    {
+      "task_id": "B04",
+      "instance_id": "pushbench-b04-seed-104",
+      "task_type": "planar_pushing",
+      "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 104
+      },
+      "parameters": {
+        "target_object_id": "cube_blue",
+        "goal_center_m": [
+          0.22,
+          0.18
+        ]
+      }
+    },
+    {
+      "task_id": "B05",
+      "instance_id": "pushbench-b05-seed-105",
+      "task_type": "collision_avoidance",
+      "scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "reset": {
+        "mode": "source_scene_default",
+        "seed": 105
+      },
+      "parameters": {
+        "waypoint_m": [
+          0.12,
+          -0.12,
+          0.08
+        ]
+      }
+    }
+  ]
+}

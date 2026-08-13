@@ -1,0 +1,82 @@
+{
+  "artifact_type": "task_instances_private",
+  "schema_version": "1.0.0",
+  "instance_set_id": "anybotics-anymal-c-experimental-instances",
+  "instance_set_version": "1.0.0",
+  "catalog_id": "anybotics-anymal-c-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "anybotics-anymal-c",
+  "visibility": "EXPERIMENTAL_HARNESS_ONLY",
+  "forbidden_recipients": [
+    "stage1",
+    "stage2",
+    "generated_capability_layer",
+    "repair",
+    "demo_consumer"
+  ],
+  "review_status": "HUMAN_REVIEW_REQUIRED",
+  "formal_demo_status": "NOT_FORMAL_DEMO_APPROVED",
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "reset_contract": {
+    "keyframe": null,
+    "reset_mode": "controller_home_then_mj_forward",
+    "initial_base_position_m": [
+      0,
+      0,
+      0.5
+    ],
+    "floor_z_m": 0
+  },
+  "instances": [
+    {
+      "task_id": "sit_down_from_home",
+      "parameters": {
+        "timeout_s": 8,
+        "n_trials": 5,
+        "reset_keyframe": null,
+        "threshold_status": "HUMAN_REVIEW_REQUIRED",
+        "route": "DIRECT_MUJOCO_EXPERIMENTAL"
+      }
+    },
+    {
+      "task_id": "sit_then_stand_to_nominal",
+      "parameters": {
+        "timeout_s": 12,
+        "n_trials": 5,
+        "reset_keyframe": null,
+        "threshold_status": "HUMAN_REVIEW_REQUIRED",
+        "route": "DIRECT_MUJOCO_EXPERIMENTAL"
+      }
+    },
+    {
+      "task_id": "walk_forward_5cm",
+      "parameters": {
+        "timeout_s": 10,
+        "n_trials": 5,
+        "reset_keyframe": null,
+        "threshold_status": "HUMAN_REVIEW_REQUIRED",
+        "route": "DIRECT_MUJOCO_EXPERIMENTAL"
+      }
+    },
+    {
+      "task_id": "walk_forward_10cm",
+      "parameters": {
+        "timeout_s": 12,
+        "n_trials": 5,
+        "reset_keyframe": null,
+        "threshold_status": "HUMAN_REVIEW_REQUIRED",
+        "route": "DIRECT_MUJOCO_EXPERIMENTAL"
+      }
+    },
+    {
+      "task_id": "two_short_walks",
+      "parameters": {
+        "timeout_s": 14,
+        "n_trials": 5,
+        "reset_keyframe": null,
+        "threshold_status": "HUMAN_REVIEW_REQUIRED",
+        "route": "DIRECT_MUJOCO_EXPERIMENTAL"
+      }
+    }
+  ]
+}

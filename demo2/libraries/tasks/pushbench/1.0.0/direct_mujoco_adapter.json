@@ -1,0 +1,184 @@
+{
+  "artifact_type": "direct_mujoco_task_adapter",
+  "schema_version": "1.0.0",
+  "robot_configuration_id": "pushbench",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "source_repository": "https://github.com/981526092/auto-adapter",
+  "source_commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+  "tasks": [
+    {
+      "task_id": "B01",
+      "robot_configuration_id": "pushbench",
+      "source_scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "scene_entrypoint": "mjcf/pushbench/so101_pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 101},
+      "parameters": {"target_object_id": "tee", "goal_center_m": [0.26, -0.05]},
+      "frames": {"body_names": ["tee", "obs"], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "push_object_to_goal",
+        "effect": "push_object_to_goal",
+        "approach_height_m": 0.06,
+        "contact_height_offset_m": 0.015,
+        "duration_s": 1.0
+      },
+      "measurements": [
+        {
+          "metric": "tee_goal_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "projection": "xy",
+          "observation_path": "bodies.tee.position",
+          "reference": {"value": [0.26, -0.05]}
+        },
+        {
+          "metric": "obstacle_contact_count",
+          "operator": "contact_count",
+          "status": "RESOLVED",
+          "scope": "trace",
+          "aggregation": "max",
+          "contact_groups": {"subject": ["obs"]}
+        }
+      ]
+    },
+    {
+      "task_id": "B02",
+      "robot_configuration_id": "pushbench",
+      "source_scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "scene_entrypoint": "mjcf/pushbench/so101_pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 102},
+      "parameters": {"target_object_id": "cube_red", "goal_center_m": [0.18, 0.1]},
+      "frames": {"body_names": ["cube_red", "table"], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "push_object_to_goal",
+        "effect": "push_object_to_goal",
+        "approach_height_m": 0.06,
+        "contact_height_offset_m": 0.015,
+        "duration_s": 1.0
+      },
+      "measurements": [
+        {
+          "metric": "cube_goal_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "projection": "xy",
+          "observation_path": "bodies.cube_red.position",
+          "reference": {"value": [0.18, 0.1]}
+        },
+        {
+          "metric": "cube_table_supported",
+          "status": "RESOLVED",
+          "operator": "contact_boolean",
+          "scope": "trace",
+          "contact_groups": {"subject": ["cube_red"], "other": ["table"]}
+        }
+      ]
+    },
+    {
+      "task_id": "B03",
+      "robot_configuration_id": "pushbench",
+      "source_scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "scene_entrypoint": "mjcf/pushbench/so101_pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 103},
+      "parameters": {"target_object_id": "cube_green", "goal_center_m": [0.26, 0.12]},
+      "frames": {"body_names": ["cube_green", "table"], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "push_object_to_goal",
+        "effect": "push_object_to_goal",
+        "approach_height_m": 0.06,
+        "contact_height_offset_m": 0.015,
+        "duration_s": 1.0
+      },
+      "measurements": [
+        {
+          "metric": "cube_goal_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "projection": "xy",
+          "observation_path": "bodies.cube_green.position",
+          "reference": {"value": [0.26, 0.12]}
+        },
+        {
+          "metric": "cube_table_supported",
+          "status": "RESOLVED",
+          "operator": "contact_boolean",
+          "scope": "trace",
+          "contact_groups": {"subject": ["cube_green"], "other": ["table"]}
+        }
+      ]
+    },
+    {
+      "task_id": "B04",
+      "robot_configuration_id": "pushbench",
+      "source_scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "scene_entrypoint": "mjcf/pushbench/so101_pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 104},
+      "parameters": {"target_object_id": "cube_blue", "goal_center_m": [0.22, 0.18]},
+      "frames": {"body_names": ["cube_blue", "obs"], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "push_object_to_goal",
+        "effect": "push_object_to_goal",
+        "approach_height_m": 0.06,
+        "contact_height_offset_m": 0.015,
+        "duration_s": 1.0
+      },
+      "measurements": [
+        {
+          "metric": "cube_goal_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "projection": "xy",
+          "observation_path": "bodies.cube_blue.position",
+          "reference": {"value": [0.22, 0.18]}
+        },
+        {
+          "metric": "obstacle_contact_count",
+          "operator": "contact_count",
+          "status": "RESOLVED",
+          "scope": "trace",
+          "aggregation": "max",
+          "contact_groups": {"subject": ["obs"]}
+        }
+      ]
+    },
+    {
+      "task_id": "B05",
+      "robot_configuration_id": "pushbench",
+      "source_scene_entrypoint": "general_demo/libraries/assets/pushbench/1.0.0/so101_pushbench.xml",
+      "scene_entrypoint": "mjcf/pushbench/so101_pushbench.xml",
+      "reset": {"mode": "source_scene_default", "seed": 105},
+      "parameters": {"waypoint_m": [0.12, -0.12, 0.08]},
+      "frames": {"body_names": ["obs"], "site_names": [], "sensor_names": []},
+      "invocation": {
+        "operator": "move_to_waypoint_and_return",
+        "effect": "move_to_waypoint_and_return",
+        "duration_s": 1.0,
+        "hold_s": 0.25
+      },
+      "measurements": [
+        {
+          "metric": "waypoint_error_m",
+          "status": "RESOLVED",
+          "operator": "distance",
+          "projection": "xy",
+          "observation_path": "sites.ee_site.position",
+          "reference_path": "parameters.waypoint_m"
+        },
+        {
+          "metric": "obstacle_contact_count",
+          "operator": "contact_count",
+          "status": "RESOLVED",
+          "scope": "trace",
+          "aggregation": "max",
+          "contact_groups": {"subject": ["obs"]}
+        },
+        {
+          "metric": "final_return_error_m",
+          "status": "RESOLVED",
+          "operator": "history_final_return_error",
+          "projection": "xy",
+          "observation_path": "sites.ee_site.position"
+        }
+      ]
+    }
+  ]
+}
