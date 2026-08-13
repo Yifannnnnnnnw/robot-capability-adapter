@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 
 from autoadapter2.evaluation import FrozenVideoProfile
 from autoadapter2.integrations.unitree_go2.bridge import INACTIVE_SAFE_FIELDS
@@ -19,21 +20,32 @@ from autoadapter2.integrations.unitree_go2.session import (
 
 class _RealCommand:
     def _invoke(self, _capability_id, _arguments, sdk):
-        command = sdk.LowCmd_()
-        assert len(command.motor_cmd) == 20
-        for index, slot in enumerate(command.motor_cmd):
-            slot.mode = 0x01
-            if index < 12:
-                slot.q = 0.0
-                slot.dq = 0.0
-                slot.kp = 0.0
-                slot.kd = 0.0
-                slot.tau = 0.0
-            else:
-                for name, value in INACTIVE_SAFE_FIELDS.items():
-                    setattr(slot, name, value)
-        command.crc = sdk.crc.Crc(command)
-        sdk.lowcmd_publisher.Write(command)
+        publisher = sdk.ChannelPublisher("rt/lowcmd", sdk.LowCmd_)
+        publisher.Init()
+        subscriber = sdk.ChannelSubscriber("rt/lowstate", sdk.LowState_)
+        subscriber.Init()
+        crc = sdk.CRC()
+        for _ in range(2):
+            state = subscriber.Read()
+            if state is None:
+                raise RuntimeError("real SDK2 LowState was not available")
+            command = sdk.unitree_go_msg_dds__LowCmd_()
+            assert len(command.motor_cmd) == 20
+            for index, slot in enumerate(command.motor_cmd):
+                slot.mode = 0x01
+                if index < 12:
+                    fresh_q = state.motor_state[index].q
+                    slot.q = fresh_q + (0.0 - float(fresh_q))
+                    slot.dq = 0.0
+                    slot.kp = 20.0
+                    slot.kd = 0.5
+                    slot.tau = 0.0
+                else:
+                    for name, value in INACTIVE_SAFE_FIELDS.items():
+                        setattr(slot, name, value)
+            command.crc = crc.Crc(command)
+            publisher.Write(command)
+            time.sleep(0.01)
         return {"status": "issued"}
 
 

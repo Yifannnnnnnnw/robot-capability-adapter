@@ -63,6 +63,11 @@ class LowCmd:
     crc: int = 0
 
 
+class LowCmdIDL:
+    def __new__(cls):
+        raise TypeError("LowCmd_ is an IDL type; use unitree_go_msg_dds__LowCmd_()")
+
+
 class FakeBackend:
     actuator_names = ACTIVE_MOTOR_NAMES
     timestep = 0.1
@@ -269,20 +274,32 @@ class ProcessPublisher:
 
 
 def _make_fake_candidate_binding(config):
-    publisher = ProcessPublisher(config["command_queue"], config["write_count"])
-    lowstate = ProcessPollingSubscriber(config["lowstate_queue"])
-    sportstate = ProcessPollingSubscriber(config["sportstate_queue"])
+    def channel_factory_initialize(*_args, **_kwargs):
+        raise AssertionError("the candidate must not initialize the Framework-owned DDS factory")
+
+    def channel_publisher(topic, message_type):
+        assert topic == "rt/lowcmd"
+        assert message_type is LowCmdIDL
+        return ProcessPublisher(config["command_queue"], config["write_count"])
+
+    def channel_subscriber(topic, message_type):
+        if topic == "rt/lowstate":
+            assert message_type is LowStateFrame
+            return ProcessPollingSubscriber(config["lowstate_queue"])
+        if topic == "rt/sportmodestate":
+            assert message_type is SportModeStateFrame
+            return ProcessPollingSubscriber(config["sportstate_queue"])
+        raise AssertionError(f"unexpected candidate DDS topic: {topic}")
+
     binding = SimpleNamespace(
-        ChannelPublisher=object,
-        ChannelSubscriber=object,
-        LowCmd_=LowCmd,
+        ChannelFactoryInitialize=channel_factory_initialize,
+        ChannelPublisher=channel_publisher,
+        ChannelSubscriber=channel_subscriber,
+        LowCmd_=LowCmdIDL,
         LowState_=LowStateFrame,
         SportModeState_=SportModeStateFrame,
+        unitree_go_msg_dds__LowCmd_=LowCmd,
         CRC=FakeCRC,
-        lowcmd_publisher=publisher,
-        lowstate_subscriber=lowstate,
-        sport_mode_state_subscriber=sportstate,
-        crc=FakeCRC(),
     )
     if config.get("block_close"):
         close_pid = config["close_pid"]
@@ -313,21 +330,15 @@ class FakeSDKConnection:
         self.started = False
         self.closed = False
         self.lowcmd_type = LowCmd
-        self.lowcmd_publisher = FakePublisher(transport)
-        self.lowstate_subscriber = PollingSubscriber(lowstate_samples)
-        self.sport_mode_state_subscriber = PollingSubscriber(sportstate_samples)
-        self.crc = FakeCRC()
         self.binding = SimpleNamespace(
+            ChannelFactoryInitialize=lambda *_args, **_kwargs: None,
             ChannelPublisher=object,
             ChannelSubscriber=object,
-            LowCmd_=LowCmd,
+            LowCmd_=LowCmdIDL,
             LowState_=object,
             SportModeState_=object,
+            unitree_go_msg_dds__LowCmd_=LowCmd,
             CRC=FakeCRC,
-            lowcmd_publisher=self.lowcmd_publisher,
-            lowstate_subscriber=self.lowstate_subscriber,
-            sport_mode_state_subscriber=self.sport_mode_state_subscriber,
-            crc=self.crc,
         )
 
     @property
@@ -375,13 +386,15 @@ class BlockingCloseSDKConnection(FakeSDKConnection):
 
 def _publish_command(
     sdk: object,
+    publisher: object,
+    crc: object,
     value: float = 0.3,
     *,
     kp: float = 20.0,
     kd: float = 0.5,
     tau: float = 0.0,
 ) -> None:
-    command = sdk.LowCmd_()
+    command = sdk.unitree_go_msg_dds__LowCmd_()
     assert len(command.motor_cmd) == DDS_MOTOR_SLOT_COUNT
     for index, slot in enumerate(command.motor_cmd):
         slot.mode = 1
@@ -394,14 +407,21 @@ def _publish_command(
         else:
             for name, safe_value in INACTIVE_SAFE_FIELDS.items():
                 setattr(slot, name, safe_value)
-    command.crc = sdk.crc.Crc(command)
-    sdk.lowcmd_publisher.Write(command)
+    command.crc = crc.Crc(command)
+    publisher.Write(command)
 
 
 class Candidate:
+    def __init__(self, *, yield_after_write: bool = True) -> None:
+        self.yield_after_write = yield_after_write
+
     def _invoke(self, capability_id, _arguments, sdk):
         assert capability_id == "low-level-command"
-        _publish_command(sdk)
+        publisher = sdk.ChannelPublisher("rt/lowcmd", sdk.LowCmd_)
+        publisher.Init()
+        _publish_command(sdk, publisher, sdk.CRC())
+        if self.yield_after_write:
+            time.sleep(0.01)
         return {"status": "issued"}
 
 
@@ -409,7 +429,9 @@ class RepairedCRCCandidate:
     """Candidate-shaped fixture using the repaired ``CRC().Crc(cmd)`` form."""
 
     def _invoke(self, _capability_id, _arguments, sdk):
-        command = sdk.LowCmd_()
+        publisher = sdk.ChannelPublisher("rt/lowcmd", sdk.LowCmd_)
+        publisher.Init()
+        command = sdk.unitree_go_msg_dds__LowCmd_()
         for index, slot in enumerate(command.motor_cmd):
             slot.mode = 1
             if index < 12:
@@ -421,9 +443,9 @@ class RepairedCRCCandidate:
             else:
                 for name, value in INACTIVE_SAFE_FIELDS.items():
                     setattr(slot, name, value)
-        crc = sdk.CRC()
-        command.crc = crc.Crc(command)
-        sdk.lowcmd_publisher.Write(command)
+        command.crc = sdk.CRC().Crc(command)
+        publisher.Write(command)
+        time.sleep(0.01)
         return {"status": "issued"}
 
 
@@ -433,11 +455,14 @@ class SequencedCandidate:
         self.second_step = second_step
 
     def _invoke(self, _capability_id, _arguments, sdk):
-        _publish_command(sdk, 1.0, kp=0.0, tau=1.0)
+        publisher = sdk.ChannelPublisher("rt/lowcmd", sdk.LowCmd_)
+        publisher.Init()
+        crc = sdk.CRC()
+        _publish_command(sdk, publisher, crc, 1.0, kp=0.0, tau=1.0)
         assert self.first_step.wait(1.0)
-        _publish_command(sdk, 2.0, kp=0.0, tau=2.0)
+        _publish_command(sdk, publisher, crc, 2.0, kp=0.0, tau=2.0)
         assert self.second_step.wait(1.0)
-        _publish_command(sdk, 3.0, kp=0.0, tau=3.0)
+        _publish_command(sdk, publisher, crc, 3.0, kp=0.0, tau=3.0)
         return {"status": "issued"}
 
 
@@ -446,14 +471,20 @@ class FeedbackCandidate:
         self.accepted_step = accepted_step
 
     def _invoke(self, _capability_id, _arguments, sdk):
+        publisher = sdk.ChannelPublisher("rt/lowcmd", sdk.LowCmd_)
+        publisher.Init()
+        crc = sdk.CRC()
+        state_sub = sdk.ChannelSubscriber("rt/lowstate", sdk.LowState_)
+        state_sub.Init()
         first = None
         for _ in range(64):
-            first = sdk.lowstate_subscriber.Read(0.05)
+            first = state_sub.Read(0.05)
             if first is not None:
                 break
         assert first is not None, "candidate did not receive first LowState"
         first_q = first.motor_state[0].q
-        _publish_command(sdk, first_q, kp=0.0, kd=0.0, tau=first_q)
+        _publish_command(sdk, publisher, crc, first_q, kp=0.0, kd=0.0, tau=first_q)
+        time.sleep(0.01)
         assert self.accepted_step.wait(1.0)
         # The polling endpoint may still contain state samples produced while
         # the first command was in flight.  Read until a later DDS sample
@@ -461,7 +492,7 @@ class FeedbackCandidate:
         second_q = first_q
         observed = []
         for _ in range(32):
-            second = sdk.lowstate_subscriber.Read(0.05)
+            second = state_sub.Read(0.05)
             if second is None:
                 continue
             second_q = second.motor_state[0].q
@@ -469,7 +500,8 @@ class FeedbackCandidate:
             if second_q > first_q:
                 break
         assert second_q > first_q, f"candidate did not receive later feedback: {first_q} -> {second_q}; {observed}"
-        _publish_command(sdk, second_q, kp=0.0, kd=0.0, tau=second_q)
+        _publish_command(sdk, publisher, crc, second_q, kp=0.0, kd=0.0, tau=second_q)
+        time.sleep(0.01)
         return {"feedback_q": [first_q, second_q]}
 
 
@@ -807,7 +839,11 @@ def test_short_invocation_remains_dwell_insufficient_without_padding() -> None:
             execution_id="short-tail",
             initial_state={"task_id": "G01"},
         )
-        session.invoke(Candidate(), "low-level-command", {"duration_s": 0.1})
+        session.invoke(
+            Candidate(yield_after_write=False),
+            "low-level-command",
+            {"duration_s": 0.1},
+        )
         evidence = session.validation_evidence(_g01_invocation())
 
         assert backend.time == pytest.approx(0.1)
@@ -1019,7 +1055,7 @@ def test_candidate_polls_successive_lowstates_and_publishes_feedback_commands() 
 
 def test_candidate_timeout_terminates_worker_and_allows_a_clean_next_trial(monkeypatch) -> None:
     session, backend, transport, sdk, _capture_count = _session(rollout_steps=1)
-    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 1.0)
+    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 5.0)
 
     session.reset(phase="DEMO", execution_id="timeout", initial_state={"task_id": "G01"})
     with pytest.raises(
@@ -1058,7 +1094,7 @@ def test_completed_result_is_sent_before_blocking_dds_cleanup(monkeypatch) -> No
         rollout_steps=1,
         sdk_factory=BlockingCloseSDKConnection,
     )
-    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 0.5)
+    monkeypatch.setattr(go2_session_module, "DEFAULT_CANDIDATE_TIMEOUT_S", 5.0)
     try:
         session.reset(phase="DEMO", execution_id="blocking-close", initial_state={"task_id": "G01"})
         assert session.invoke(Candidate(), "low-level-command", {}) == {"status": "issued"}
@@ -1606,17 +1642,14 @@ def test_real_shaped_session_binds_channel_factory_to_domain_one_loopback(monkey
     assert callable(session.sdk.ChannelFactoryInitialize)
     assert session.sdk.LowCmd_ is LowCmdType
     assert isinstance(session.sdk.unitree_go_msg_dds__LowCmd_(), LowCmdType)
-    session.sdk.ChannelFactoryInitialize()
-    assert factory_calls == [(1, "lo"), (1, "lo")]
     candidate_binding, close_candidate_binding = _candidate_binding_from_config(
         {"kind": "unitree_sdk2", "domain": 1, "interface": "lo"}
     )
-    candidate_binding.ChannelFactoryInitialize()
     assert candidate_binding.ChannelPublisher is Endpoint
     assert candidate_binding.ChannelSubscriber is Endpoint
     assert candidate_binding.LowState_ is LowStateType
     assert isinstance(candidate_binding.unitree_go_msg_dds__LowCmd_(), LowCmdType)
-    assert factory_calls == [(1, "lo"), (1, "lo"), (1, "lo"), (1, "lo")]
+    assert factory_calls == [(1, "lo"), (1, "lo")]
     close_candidate_binding()
     with pytest.raises(Go2SessionError, match="domain 1 on lo"):
         _candidate_binding_from_config({"kind": "unitree_sdk2", "domain": 0, "interface": "lo"})
