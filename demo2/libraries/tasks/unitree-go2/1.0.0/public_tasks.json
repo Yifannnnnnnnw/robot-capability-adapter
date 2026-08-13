@@ -1,0 +1,16 @@
+{
+  "robot_public_projection": {
+    "robot_model_id": "unitree-go2",
+    "robot_configuration_id": "unitree-go2-direct",
+    "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+    "action_affordances": ["driver posture motion"],
+    "observation_affordances": ["body pose observation"],
+    "effect_allowlist": ["stand_up", "sit"],
+    "unit_allowlist": ["m", "s", "unitless", "native_mujoco_control"],
+    "frame_allowlist": ["world", "body", "none"]
+  },
+  "tasks": [
+    {"requirement_id": "go2-g1-stand-up", "description": "Move to and hold a stable standing posture over an optional requested duration."},
+    {"requirement_id": "go2-g2-sit", "description": "Lower the body into a stable seated posture over an optional requested duration."}
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "record_type": "morphology",
+  "id": "demo2-franka-panda",
+  "version": "1.0.0",
+  "robot_model_id": "franka_panda",
+  "robot_configuration_id": "franka_panda",
+  "joint_names": ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7", "finger_joint1"],
+  "actuator_names": ["actuator1", "actuator2", "actuator3", "actuator4", "actuator5", "actuator6", "actuator7", "actuator8"],
+  "driver": {
+    "family": "ArmSerialDLSSkeleton",
+    "source": "demo2/reference_drivers/franka_panda/driver.py",
+    "legacy_reference": "demo2/legacy_references/franka_panda"
+  },
+  "mujoco": {
+    "entrypoint": "franka_panda/scene.xml",
+    "version": "3.3.6",
+    "reset": {"keyframe": "home"},
+    "frames": {"body_names": ["hand"], "site_names": []},
+    "sensor_names": [],
+    "render": {"camera": "free", "width": 160, "height": 120, "fps": 10},
+    "validation": {
+      "measurements": [
+        {"measurement_id": "arm-joint-vector-error", "metric": "joint_vector_error_rad", "operator": "distance", "observation_path": "joint_vector", "target_input_path": "target"},
+        {"measurement_id": "end-effector-position-error", "metric": "end_effector_position_error_m", "operator": "distance", "observation_path": "bodies.hand.position", "target_input_path": "position"}
+      ]
+    }
+  },
+  "source": {"repository": "https://github.com/981526092/auto-adapter", "commit": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586"}
+}

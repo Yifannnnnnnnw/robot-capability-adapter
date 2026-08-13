@@ -1,0 +1,21 @@
+{
+  "robot_public_projection": {
+    "robot_model_id": "so-arm101",
+    "robot_configuration_id": "robotstudio_so101",
+    "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+    "action_affordances": ["driver joint-space motion", "driver Cartesian motion"],
+    "observation_affordances": ["joint vector observation", "end-effector pose observation"],
+    "effect_allowlist": ["move_joints", "move_to_cartesian"],
+    "unit_allowlist": ["rad", "m", "s", "unitless", "native_mujoco_control"],
+    "frame_allowlist": ["joint", "robot_base", "none"]
+  },
+  "tasks": [
+    {"requirement_id": "so-g1-move-joints", "description": "Move all five arm joints to a requested reusable joint configuration over an optional requested duration."},
+    {"requirement_id": "so-g2-move-to-cartesian", "description": "Move the end effector to a requested reusable Cartesian position over an optional requested duration."}
+  ],
+  "reference_only_tasks": [
+    {"requirement_id": "so-g3-contact", "description": "Establish target contact; retained from 1.0 but excluded from this MVP verdict."},
+    {"requirement_id": "so-g3-grasp-lift", "description": "Grasp and lift an object; retained from 1.0 but excluded from this MVP verdict."},
+    {"requirement_id": "so-g3-button", "description": "Actuate a target button; retained from 1.0 but excluded from this MVP verdict."}
+  ]
+}
