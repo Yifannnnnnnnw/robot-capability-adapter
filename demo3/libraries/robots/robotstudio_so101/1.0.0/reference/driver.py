@@ -311,6 +311,8 @@ class ReferenceSO101Driver:
         contact = _vector(parameters["contact_position"], name="contact_position")
         if task_id == "mw_button_press":
             approach_offset = np.asarray((0.0, -0.07, 0.0))
+        elif task_id in {"mw_door_open", "mw_door_close"}:
+            approach_offset = np.asarray((0.0, 0.0, 0.08))
         else:
             approach_offset = np.asarray((0.0, 0.0, 0.07))
         approach = _vector(
@@ -319,15 +321,39 @@ class ReferenceSO101Driver:
         )
         self._set_gripper(GRIPPER_CLOSED)
         self._idle(20)
-        self._step_to(approach, residual_tolerance=0.08)
+        self._step_to(
+            approach,
+            residual_tolerance=(
+                0.07 if task_id in {"mw_door_open", "mw_door_close"} else 0.08
+            ),
+        )
         self._step_to(
             contact,
-            residual_tolerance=0.08,
+            residual_tolerance=(
+                0.06 if task_id in {"mw_door_open", "mw_door_close"} else 0.08
+            ),
         )
+        if "route_position" in parameters:
+            self._step_to(
+                _vector(parameters["route_position"], name="route_position"),
+                steps=700,
+                residual_tolerance=(
+                    0.07
+                    if task_id in {"mw_door_open", "mw_door_close"}
+                    else 0.10
+                ),
+                gain=0.4,
+                max_joint_delta=0.025,
+            )
+        if task_id == "mw_door_open":
+            self._idle(60)
+            return
         self._step_to(
             self._tool_target(parameters),
             steps=1000,
-            residual_tolerance=0.10,
+            residual_tolerance=(
+                0.08 if task_id in {"mw_door_open", "mw_door_close"} else 0.10
+            ),
             gain=0.3,
             max_joint_delta=0.02,
         )
@@ -335,12 +361,35 @@ class ReferenceSO101Driver:
 
     def rotation_task(self, *, request: Any) -> None:
         _, parameters = _request(request)
-        self._set_gripper(GRIPPER_OPEN)
-        self._step_to(
-            _vector(parameters["contact_position"], name="contact_position"),
-            residual_tolerance=0.25,
+        contact = _vector(parameters["contact_position"], name="contact_position")
+        approach = _vector(
+            parameters.get(
+                "approach_position", contact + np.asarray((0.0, 0.0, 0.08))
+            ),
+            name="approach_position",
         )
-        self._step_to(self._tool_target(parameters), steps=900, residual_tolerance=0.25)
+        self._set_gripper(GRIPPER_CLOSED)
+        self._idle(20)
+        self._step_to(approach, residual_tolerance=0.10)
+        self._step_to(
+            contact,
+            residual_tolerance=0.10,
+        )
+        if "route_position" in parameters:
+            self._step_to(
+                _vector(parameters["route_position"], name="route_position"),
+                steps=800,
+                residual_tolerance=0.12,
+                gain=0.4,
+                max_joint_delta=0.025,
+            )
+        self._step_to(
+            self._tool_target(parameters),
+            steps=1000,
+            residual_tolerance=0.12,
+            gain=0.3,
+            max_joint_delta=0.02,
+        )
         self._idle(90)
 
 

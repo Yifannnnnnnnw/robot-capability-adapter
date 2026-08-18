@@ -1523,7 +1523,7 @@
       "description": "Move a door handle or door mechanism to the source open target.",
       "source_task_or_operation": "Meta-World sawyer_door_v3 door-open",
       "applicability": "The SO-101 can pull a small hinged door or handle fixture when it is placed within the arm workspace.",
-      "adaptation": "Use a private hinged door fixture. The source success is an axis-specific x error; the runnable binding uses Euclidean door-body target distance with the same 0.08 m bound, which is stricter because it implies the source x-axis obligation.",
+      "adaptation": "Use a scaled private hinged door inside the SO-101 workspace. Preserve the source success formula exactly as the absolute x-coordinate error of the door handle, with the unchanged 0.08 m bound.",
       "scene_assumptions": [
         "A small hinged door with a reachable handle is fixed to the tabletop.",
         "The hinge axis and handle placement allow the 5-DoF SO-101 to open the door without self-collision."
@@ -1535,7 +1535,7 @@
       "scoring": [
         {
           "clause_id": "door_open_axis_error",
-          "metric": "door_target_distance",
+          "metric": "door_x_axis_error",
           "unit": "m",
           "comparator": "<=",
           "threshold": 0.08,
@@ -1548,9 +1548,9 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_door_v3.py, evaluate_state, lines 772-794: success uses abs(obs[4] - target_pos[0]) <= 0.08.",
+              "specific_reference": "metaworld/envs/sawyer_door_v3.py, evaluate_state lines 68-89, especially line 79: success is abs(obs[4] - self._target_pos[0]) <= 0.08.",
               "support": "adapted",
-              "adaptation": "Retain the 0.08 m source x-axis bound and use a Euclidean body-target distance with the same bound in the SO-101 fixture; Euclidean distance <= 0.08 implies absolute x error <= 0.08, so the adaptation cannot weaken the source obligation."
+              "adaptation": "Measure abs(door_handle_site.x - target_position.x) in the scaled SO-101 fixture and retain the source 0.08 m threshold, terminal evaluation, and single-trial aggregation."
             }
           ]
         }
@@ -1673,7 +1673,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_door_close_v3.py, evaluate_state, lines 778-792: success uses obj_to_target <= 0.08.",
+              "specific_reference": "metaworld/envs/sawyer_door_close_v3.py, evaluate_state lines 104-118 and compute_reward lines 120-134: obj_to_target is the Euclidean norm and success is obj_to_target <= 0.08.",
               "support": "adapted",
               "adaptation": "Retain the 0.08 m terminal object-to-target obligation and apply it to the private SO-101 door fixture; the door mechanism and robot model are the only substitutions."
             }
@@ -1798,7 +1798,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_faucet_open_v3.py, target radius at lines 692-695 and evaluate_state at lines 744-769: success uses target_to_obj <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_faucet_open_v3.py, evaluate_state lines 62-85 and compute_reward lines 125-140: target_to_obj is the Euclidean norm and success is target_to_obj <= 0.07.",
               "support": "adapted",
               "adaptation": "Retain the source 0.07 m target bound and apply it to the private SO-101 faucet handle; fixture torque and placement are private applicability conditions, not changes to the scoring threshold."
             }
@@ -1923,7 +1923,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_dial_turn_v3.py, TARGET_RADIUS at lines 618-620 and evaluate_state at lines 697-723: success uses target_to_obj <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_dial_turn_v3.py, TARGET_RADIUS lines 15-16, evaluate_state lines 62-85, and compute_reward lines 122-135: target_to_obj is the Euclidean norm and success uses the 0.07 m radius.",
               "support": "adapted",
               "adaptation": "Preserve the source 0.07 m target-radius criterion and bind it to the private SO-101 dial body; the fixture is adapted for the available wrist and gripper motion without relaxing the bound."
             }
@@ -2048,7 +2048,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_lever_pull_v3.py, evaluate_state, lines 821-843: success uses lever_error <= np.pi / 24.",
+              "specific_reference": "metaworld/envs/sawyer_lever_pull_v3.py, evaluate_state lines 79-101 and compute_reward lines 162-168: lever_error is abs(current joint angle - pi/2) and success is lever_error <= np.pi / 24.",
               "support": "adapted",
               "adaptation": "Preserve the exact source expression pi/24; encode its decimal value 0.1308996939 in the JSON numeric threshold and measure the analogous SO-101 lever joint in radians."
             }

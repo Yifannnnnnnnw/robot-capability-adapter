@@ -400,6 +400,90 @@ def test_so101_drawer_button_and_handle_fixtures_match_source_axes() -> None:
     assert all(trial["trial_passed"] for trial in report["trials"])
 
 
+def test_so101_door_and_rotary_fixtures_match_source_formulas() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    design = _design(package)
+    complete_suite = _suite(package, design)
+    task_ids = {
+        "mw_door_open",
+        "mw_door_close",
+        "mw_faucet_open",
+        "mw_dial_turn",
+        "mw_lever_pull",
+    }
+    suite = {
+        **complete_suite,
+        "cases": [
+            case for case in complete_suite["cases"] if case["task_id"] in task_ids
+        ],
+    }
+    instances = {
+        item["task_id"]: item
+        for item in json.loads(
+            (package.private_dir / "instances.json").read_text(encoding="utf-8")
+        )["instances"]
+        if item["task_id"] in task_ids
+    }
+    assert instances["mw_door_open"]["scene_entrypoint"] == instances[
+        "mw_door_close"
+    ]["scene_entrypoint"]
+    assert instances["mw_door_open"]["reset"] == {"kind": "default"}
+    assert instances["mw_door_close"]["reset"]["joint_positions"] == {
+        "door_hinge": 1.2
+    }
+    assert len({item["scene_entrypoint"] for item in instances.values()}) == 4
+
+    binding_by_id = {
+        item["binding_id"]: item
+        for item in json.loads(
+            (package.private_dir / "bindings.json").read_text(encoding="utf-8")
+        )["bindings"]
+    }
+    door_open = binding_by_id["binding-mw_door_open"]
+    assert door_open["kind"] == "final_site_axis_error"
+    assert door_open["metric"] == "door_x_axis_error"
+    assert door_open["parameters"]["axis"] == 0
+    for binding_id in (
+        "binding-mw_door_close",
+        "binding-mw_faucet_open",
+        "binding-mw_dial_turn",
+    ):
+        assert binding_by_id[binding_id]["kind"] == "final_site_position_error"
+    lever = binding_by_id["binding-mw_lever_pull"]
+    assert lever["kind"] == "final_joint_position_error"
+    assert lever["parameters"]["joint_name"] == "lever_hinge"
+
+    expected_fixture_objects = {
+        "mw_door_open": (mujoco.mjtObj.mjOBJ_SITE, "door_handle_site"),
+        "mw_faucet_open": (mujoco.mjtObj.mjOBJ_SITE, "faucet_tip_site"),
+        "mw_dial_turn": (mujoco.mjtObj.mjOBJ_SITE, "dial_tip_site"),
+        "mw_lever_pull": (mujoco.mjtObj.mjOBJ_JOINT, "lever_hinge"),
+    }
+    for task_id, (object_type, name) in expected_fixture_objects.items():
+        model = mujoco.MjModel.from_xml_path(
+            str((package.root / instances[task_id]["scene_entrypoint"]).resolve())
+        )
+        assert mujoco.mj_name2id(model, object_type, name) >= 0
+
+    with tempfile.TemporaryDirectory(prefix="so101-rotary-scenes-") as temporary:
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=package.reference_driver,
+            condition="from-scratch",
+            output_dir=temporary,
+            record_video=False,
+            wall_timeout_s=90.0,
+            run_id="so101-rotary-calibration",
+            attempt=0,
+        )
+
+    assert report["validation_passed"]
+    assert {trial["task_id"] for trial in report["trials"]} == task_ids
+    assert all(trial["trial_passed"] for trial in report["trials"])
+
+
 def test_so101_private_reset_fails_every_task_criterion() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     instances = json.loads(

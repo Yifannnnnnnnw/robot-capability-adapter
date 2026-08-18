@@ -574,25 +574,30 @@
     {
       "instance_id": "so101-mw_door_open",
       "task_id": "mw_door_open",
-      "scene_entrypoint": "assets/hinge_scene.xml",
+      "scene_entrypoint": "assets/door_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_door_open",
           "task_parameters": {
             "contact_position": [
-              0.49,
-              -0.07,
-              0.2
+              0.337,
+              0.08,
+              0.24
+            ],
+            "route_position": [
+              0.316,
+              0.159,
+              0.24
             ],
             "target_position": [
-              0.419,
-              -0.145,
-              0.21
+              0.20,
+              0.22,
+              0.22
             ],
             "tool_target_position": [
-              0.43,
-              0.0,
-              0.21
+              0.20,
+              0.22,
+              0.24
             ]
           }
         }
@@ -615,30 +620,35 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_door_close",
       "task_id": "mw_door_close",
-      "scene_entrypoint": "assets/hinge_scene.xml",
+      "scene_entrypoint": "assets/door_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_door_close",
           "task_parameters": {
             "contact_position": [
-              0.42,
-              -0.145,
-              0.2
+              0.251,
+              0.211,
+              0.24
+            ],
+            "route_position": [
+              0.316,
+              0.159,
+              0.24
             ],
             "target_position": [
-              0.48,
-              -0.07,
-              0.21
+              0.34,
+              0.08,
+              0.22
             ],
             "tool_target_position": [
-              0.47,
-              -0.07,
-              0.21
+              0.34,
+              0.08,
+              0.24
             ]
           }
         }
@@ -646,7 +656,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "fixture_joint": -1.2
+          "door_hinge": 1.2
         }
       },
       "clause_bindings": {
@@ -664,30 +674,35 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_faucet_open",
       "task_id": "mw_faucet_open",
-      "scene_entrypoint": "assets/rotate_scene.xml",
+      "scene_entrypoint": "assets/faucet_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_faucet_open",
           "task_parameters": {
             "contact_position": [
-              0.49,
+              0.427,
               0.12,
-              0.2
+              0.24
+            ],
+            "route_position": [
+              0.413,
+              0.165,
+              0.24
             ],
             "target_position": [
-              0.45,
-              0.06,
-              0.2
+              0.379,
+              0.195,
+              0.22
             ],
             "tool_target_position": [
-              0.47,
-              0.16,
-              0.2
+              0.376,
+              0.195,
+              0.24
             ]
           }
         }
@@ -710,30 +725,35 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_dial_turn",
       "task_id": "mw_dial_turn",
-      "scene_entrypoint": "assets/rotate_scene.xml",
+      "scene_entrypoint": "assets/dial_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_dial_turn",
           "task_parameters": {
             "contact_position": [
-              0.49,
-              0.12,
-              0.2
+              0.397,
+              0.07,
+              0.29
+            ],
+            "route_position": [
+              0.397,
+              0.0875,
+              0.2335
             ],
             "target_position": [
-              0.45,
-              0.06,
-              0.2
+              0.40,
+              0.134,
+              0.177
             ],
             "tool_target_position": [
-              0.47,
-              0.16,
-              0.2
+              0.397,
+              0.134,
+              0.197
             ]
           }
         }
@@ -756,32 +776,37 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_lever_pull",
       "task_id": "mw_lever_pull",
-      "scene_entrypoint": "assets/rotate_scene.xml",
+      "scene_entrypoint": "assets/lever_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_lever_pull",
           "task_parameters": {
             "contact_position": [
-              0.49,
+              0.357,
               0.12,
-              0.225
+              0.30
+            ],
+            "route_position": [
+              0.377,
+              0.12,
+              0.298
             ],
             "target_position": [
-              0.476,
-              0.159,
-              0.2
+              0.424,
+              0.12,
+              0.256
             ],
             "tool_target_position": [
-              0.47,
-              0.16,
-              0.225
+              0.396,
+              0.12,
+              0.292
             ],
-            "target_angle": 0.703
+            "target_angle": 0.7
           }
         }
       },
@@ -803,7 +828,7 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_peg_insertion_side",

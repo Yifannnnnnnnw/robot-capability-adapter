@@ -129,11 +129,12 @@
     },
     {
       "binding_id": "binding-mw_door_open",
-      "metric": "door_target_distance",
+      "metric": "door_x_axis_error",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_axis_error",
       "parameters": {
-        "body_name": "door_panel",
+        "site_name": "door_handle_site",
+        "axis": 0,
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -141,9 +142,9 @@
       "binding_id": "binding-mw_door_close",
       "metric": "door_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_position_error",
       "parameters": {
-        "body_name": "door_panel",
+        "site_name": "door_handle_site",
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -151,9 +152,9 @@
       "binding_id": "binding-mw_faucet_open",
       "metric": "faucet_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_position_error",
       "parameters": {
-        "body_name": "rotary_tip",
+        "site_name": "faucet_tip_site",
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -161,9 +162,9 @@
       "binding_id": "binding-mw_dial_turn",
       "metric": "dial_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_position_error",
       "parameters": {
-        "body_name": "rotary_tip",
+        "site_name": "dial_tip_site",
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -173,7 +174,7 @@
       "unit": "rad",
       "kind": "final_joint_position_error",
       "parameters": {
-        "joint_name": "fixture_joint",
+        "joint_name": "lever_hinge",
         "target_argument": "request.task_parameters.target_angle"
       }
     },
