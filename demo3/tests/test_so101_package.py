@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 import mujoco
+import numpy as np
 
 from autoadapter2.driver_synthesis import audit_driver_source
 from autoadapter2.harness import run_private_suite
@@ -196,6 +197,27 @@ def test_so101_reference_source_and_ivc_contract() -> None:
     suite = _suite(package, design)
     checked = validate_private_suite(suite, package=package, design=design)
     assert len(checked["cases"]) == len(package.tasks)
+
+
+def test_so101_reference_idle_holds_the_last_actuator_target() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    model = mujoco.MjModel.from_xml_path(str(package.mjcf_path))
+    data = mujoco.MjData(model)
+    spec = importlib.util.spec_from_file_location(
+        "so101_reference_hold",
+        package.reference_driver,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    driver = module.build(model=model, data=data)
+
+    driver._step_to(np.asarray([0.42, 0.0, 0.22]), residual_tolerance=0.08)
+    before = driver._ee_position()
+    driver._idle(300)
+    after = driver._ee_position()
+
+    assert np.linalg.norm(after - before) <= 0.015
 
 
 def test_so101_private_reset_fails_every_task_criterion() -> None:

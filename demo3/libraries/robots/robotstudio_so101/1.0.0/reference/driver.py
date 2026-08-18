@@ -75,6 +75,7 @@ class ReferenceSO101Driver:
         self._upper = np.asarray(
             [model.jnt_range[index, 1] for index in self._joint_ids], dtype=float
         )
+        self._arm_target = self._current_q()
         self._timestep = float(model.opt.timestep)
         if self._timestep <= 0:
             raise ValueError("canonical model timestep must be positive")
@@ -94,6 +95,7 @@ class ReferenceSO101Driver:
         )
 
     def _set_arm_target(self, target: np.ndarray) -> None:
+        self._arm_target = np.asarray(target, dtype=float).copy()
         for actuator_id, value in zip(self._actuator_ids, target):
             self.data.ctrl[actuator_id] = float(value)
 
@@ -101,7 +103,8 @@ class ReferenceSO101Driver:
         self.data.ctrl[self._gripper_id] = float(value)
 
     def _hold_arm(self) -> None:
-        self._set_arm_target(self._current_q())
+        for actuator_id, value in zip(self._actuator_ids, self._arm_target):
+            self.data.ctrl[actuator_id] = float(value)
 
     def _step_to(
         self,
