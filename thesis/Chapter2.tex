@@ -1,0 +1,728 @@
+\chapter[Background and Literature Review]{Background and Literature Review}
+\label{chapter:background}
+
+\begin{quote}\itshape
+This chapter introduces the robot capability layer studied in the thesis and
+reviews the research traditions needed to understand its synthesis and
+qualification. The first part defines the application domain: the execution
+stack beneath robot policies and agents, the distinction between primitives,
+skills, controllers, and adapters, the information supplied by robot and
+runtime specifications, and the meaning of execution evidence. The second part
+critically reviews robot software abstractions, generalist robot intelligence,
+agentic robot programming, tool and driver synthesis, generated-code repair,
+and robot software verification. The chapter concludes by deriving the
+specific gap addressed by Auto-Adapter.
+\end{quote}
+
+The literature relevant to Auto-Adapter is distributed across robotics,
+machine learning, software engineering, programming languages, and language
+agents. A review organised only around recent model families would obscure the
+research object, because Auto-Adapter does not propose a new policy, VLA, or
+task planner. Conversely, a review restricted to device drivers would miss the
+reason a reusable robot interface has become increasingly important: a growing
+range of downstream systems expects such an interface to exist.
+
+The chapter therefore follows the lifecycle of a robot capability adapter.
+It first asks what layer is being generated and which information that layer
+must preserve. It then considers who consumes the layer, how comparable
+software artefacts have been synthesised, how generated robot code has been
+tested and repaired, and why validation itself must not become a new
+per-robot engineering bottleneck. This organisation keeps policy generation,
+primitive implementation, runtime binding, and behavioural judgement as
+separate research problems.
+
+
+\section[Application Domain]{Application Domain: Robot Capability Interfaces}
+\label{sec:application-domain}
+
+\subsection[Robot Execution Stack]{The Path from Robot Intelligence to Execution}
+\label{sec:intelligence-to-execution}
+
+A robot task begins with an objective and ends with a physical state change,
+but several software layers intervene between these points. An objective may
+be encoded as a natural-language instruction, reward, goal image, symbolic
+state, or reference trajectory. A policy or planner converts that objective
+and current observations into an action. The action is interpreted by a
+robot-specific execution interface, passed through middleware or an SDK, and
+ultimately realised by a controller and physical mechanism.
+
+The output of the intelligence layer varies. A learned policy may produce
+joint targets, end-effector displacements, velocities, or action chunks. A VLA
+model may decode continuous actions from language and visual observations. An
+agentic controller may select a named skill or generate a program that invokes
+robot functions. These outputs differ in abstraction and frequency, but none
+is self-executing. A number such as $0.1$ can represent metres, radians,
+normalised motor range, velocity, or gripper closure depending on the
+interface. A call such as \texttt{home()} has no physical semantics until an
+implementation defines target state, motion order, tolerance, timeout,
+readback, and failure behaviour.
+
+The thesis uses the following conceptual stack:
+
+\begin{enumerate}[leftmargin=*,itemsep=0.35em]
+  \item a task objective and environment observation;
+  \item a policy, VLA, planner, or task agent;
+  \item a stable consumer-facing action or primitive contract;
+  \item an embodiment- and runtime-specific capability adapter;
+  \item middleware, vendor SDK, transport, and controller; and
+  \item the simulator or physical robot.
+\end{enumerate}
+
+Auto-Adapter operates primarily at Layers 3 and 4. It takes a declared
+capability surface and produces the robot-specific artefact that gives that
+surface an executable meaning. The surrounding layers are important because
+they provide inputs, consumers, and evidence, but they are not collapsed into
+the generated adapter.
+
+\begin{table}[htp]
+\centering
+\small
+\caption{Different forms of robot intelligence expose the same underlying
+need for an embodiment-specific action-realisation path.}
+\label{tab:intelligence-interface}
+\begin{tabularx}{\textwidth}{p{0.18\textwidth}p{0.25\textwidth}X}
+\toprule
+\textbf{Paradigm} & \textbf{Typical output} &
+\textbf{Embodiment-specific execution work} \\
+\midrule
+Learned policy & Joint target, end-effector command, or trajectory &
+Action-space definition, normalisation, observation wrapper, control rate,
+controller and hardware binding. \\
+VLA model & Action token, chunk, waypoint, or Cartesian delta &
+Action decoding, denormalisation, coordinate frame, calibration, controller
+convention and runtime interface. \\
+Agentic robot & Skill selection, tool call, or task program &
+Primitive and skill library, perception and control APIs, middleware or SDK
+binding, and success feedback. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Table~\ref{tab:intelligence-interface} is not intended to make the three
+paradigms equivalent. Their learning objectives and action abstractions remain
+different. The common denominator is narrower: each assumes or requires an
+executable path beneath the model. This observation motivates the capability
+adapter without making any one family of upstream models the centre of the
+thesis.
+
+
+\subsection[Terminology]{Actions, Primitives, Skills, Controllers, and Adapters}
+\label{sec:terminology}
+
+Robotics uses overlapping terms for behaviour at different temporal and
+software scales. A precise vocabulary is needed because an apparent novelty at
+one level may be established practice at another.
+
+The word \emph{primitive} has at least two relevant traditions. In motor
+control, a movement primitive can denote a parameterised motion generator;
+dynamical movement primitives, for example, represent motor behaviours as
+stable dynamical systems with learned forcing terms
+\citep{ijspeert2013dmp}. In capability-oriented robot software, a primitive is
+instead an atomic executable unit beneath a skill or task. A structured review
+of 210 industrial robot-skill papers finds broad convergence on a
+task--skill--primitive hierarchy, while also documenting substantial variation
+in terminology and representation \citep{pantano2022capabilitysurvey}.
+Auto-Adapter uses the second meaning. Its primitive may invoke a trajectory
+generator or controller, but it is defined by the software contract exposed to
+a caller rather than by one particular motion representation.
+
+A \emph{policy} maps an observation, and optionally a goal or instruction, to
+an action. It may be learned from reward, demonstrations, or heterogeneous
+pre-training data. A \emph{task program} represents decision logic explicitly,
+for example as code, a behaviour tree, or a sequence of tool calls. A
+\emph{skill} is a temporally extended behaviour such as grasping, navigating
+to a location, or opening a drawer. Skills may be learned, scripted, or
+composed from lower-level operations. Skill frameworks already use explicit
+parameters and pre-, hold-, and postconditions to support planning and reactive
+execution; SkiROS2 is a representative example \citep{mayr2023skiros2}. Thus,
+neither the hierarchy nor behavioural conditions are claimed as novel here.
+The research question concerns the embodiment- and runtime-specific
+implementation and qualification beneath such abstractions.
+
+A \emph{controller} owns a feedback loop that converts a reference into
+actuator commands. Its update frequency, latency, stability, and safety
+requirements often make it unsuitable for direct implementation by a
+general-purpose language model. An approved vendor or simulator controller can
+therefore remain beneath the layer generated in this thesis.
+
+A \emph{primitive} is the smallest stable operation exposed by the capability
+layer to a downstream caller. Stability here refers to semantics rather than
+duration: a bounded joint command may be short and non-blocking, while a homing
+primitive may own a longer completion loop. A primitive contract specifies:
+
+\begin{itemize}[leftmargin=*,itemsep=0.25em]
+  \item its name, arguments, return value, and errors;
+  \item physical units and coordinate frames;
+  \item valid inputs, limits, and safety preconditions;
+  \item whether the caller or primitive owns the feedback loop;
+  \item observable postconditions and required evidence; and
+  \item lifecycle, timeout, cleanup, and failure semantics.
+\end{itemize}
+
+A \emph{primitive implementation} realises one contract operation for a
+particular robot and route. A \emph{capability adapter} is the reusable
+software artefact that implements a suite of such primitives. A simulator
+driver that implements its own inverse kinematics or gait is one form of
+capability adapter. A thin runtime adapter that binds the same contract to an
+existing vendor controller is another. The unifying property is not code
+thickness, but the stable interface presented to downstream consumers.
+
+The adapter excludes task-specific compositions such as
+\texttt{pick\_cube()}, \texttt{place\_in\_drawer()}, or
+\texttt{inspect\_shelf()}. Encoding benchmark tasks inside the adapter would
+make synthesis appear successful by moving task logic into the supposedly
+reusable layer. It also excludes certified braking and low-level torque loops,
+which remain the responsibility of approved runtime components. These
+boundaries allow adapter reuse to be evaluated independently of both task
+planning and firmware control.
+
+
+\subsection[Robot Software and Runtime Routes]{Robot Software Abstractions and Runtime Routes}
+\label{sec:robot-software-stack}
+
+Robot software frameworks have long sought to isolate reusable algorithms from
+device-specific implementation. ROS introduced a modular, message-oriented
+ecosystem for composing perception, planning, and control components
+\citep{quigley2009ros}. ROS~2 extended this architecture with managed
+lifecycle, multiple communication qualities of service, and stronger support
+for production deployments \citep{macenski2022ros2}. Planning frameworks and
+controller managers further define common interfaces above hardware-specific
+plugins.
+
+The \texttt{ros2\_control} architecture illustrates both the benefit and limit
+of standardisation. Reusable controllers interact with declared state and
+command interfaces, but a new device still requires a hardware component that
+implements initialisation, lifecycle transitions, state reads, and command
+writes \citep{ros2control2026hardware}. LeRobot similarly defines a common
+robot interface for dataset collection and policy execution, while its
+bring-your-own-hardware procedure asks the integrator to implement connection,
+calibration, observation features, action features, command transmission, and
+safety constraints \citep{lerobot2026hardware}. The abstraction is shared;
+its executable realisation is robot-specific.
+
+An adapter may reach the robot through several \emph{runtime routes}. A
+simulator route calls a physics-engine API and may expose complete state. A
+software or transport shim exercises the same SDK-facing calls while a
+simulator or bridge supplies observations. A middleware route may publish ROS
+messages or invoke actions and services. A hardware route may call a vendor
+SDK, communicate through CAN or serial transport, or contact a controller
+service. These routes differ not only in latency and fidelity but also in what
+can be observed and therefore what can be validated.
+
+Protocol bridges occupy a related but distinct layer. They describe how an
+agent discovers or invokes capabilities that already exist in a robot stack.
+RoboNeuron derives agent-facing tools from ROS schemas, and the Robot Context
+Protocol proposes a runtime-agnostic interface for agent-aware control
+\citep{roboneuron2025,rcp2025}. Such bridges improve access to an existing
+capability, but a message schema alone does not establish whether its units,
+joint mapping, calibration, or physical postcondition are correct. Interface
+exposure and interface implementation should therefore not be conflated.
+
+
+\subsection[Specification Sources]{Structural Description, Runtime Profile, and Primitive Contract}
+\label{sec:specification-sources}
+
+Auto-Adapter separates three sources of specification that are often embedded
+implicitly in hand-written integration code.
+
+First, a robot description such as URDF or MJCF represents morphology. It can
+record links, joints, limits, inertial properties, collision geometry,
+actuators, and sensors. MJCF also provides an executable model for the MuJoCo
+physics engine \citep{todorov2012mujoco}. These descriptions allow software to
+infer kinematic structure and constraints without relying entirely on prose.
+
+Second, a runtime profile represents the deployment route. It identifies the
+approved SDK or middleware surface, installed packages, joint and device
+bindings, command and observation schemas, absolute or relative semantics,
+calibration resources, control rate, available sensing, lifecycle, and safety
+limits. These properties cannot generally be inferred from geometry. Two
+deployments of the same robot may use different profiles, while two robots
+with similar kinematics may have incompatible runtime semantics.
+
+Third, the primitive contract specifies what downstream software expects. It
+defines stable behaviour independently of the structural and runtime details
+used to implement that behaviour. The same arm contract might be instantiated
+through simulator actuators, a ROS action, or a vendor SDK, provided that each
+route supplies compatible semantics and evidence.
+
+The separation establishes a stable--variable boundary. Primitive semantics
+are human-designed and reused. Morphology and runtime facts vary by robot and
+route. The generated adapter binds the two. This is more constrained than
+asking an LLM to invent an arbitrary robot program, but less labour-intensive
+than hand-writing every binding if the specifications contain enough
+information.
+
+
+\subsection[Execution Evidence]{Correctness, Observability, and Execution Evidence}
+\label{sec:execution-evidence}
+
+Robot-facing software can be correct at one layer and incorrect at another. A
+file may be syntactically valid but export the wrong method. A method may
+satisfy its Python signature while interpreting degrees as radians. A command
+may cross the intended transport while addressing the wrong joint. The correct
+command may reach a controller without producing motion because of calibration
+error, deadband, stiction, an inactive servo, collision, or a stale observation
+route. A useful evidence model must preserve these distinctions.
+
+This thesis uses four broad levels of qualification:
+
+\begin{description}[leftmargin=2.2em,style=nextline,itemsep=0.55em]
+  \item[\textbf{Static and source evidence.}]
+  Syntax, imports, required artefacts, allowed dependencies, and prohibited
+  operations are checked before execution.
+
+  \item[\textbf{Interface and contract evidence.}]
+  Signatures, aliases, units, frames, bounds, lifecycle, error behaviour, and
+  declared observations are checked against the primitive contract.
+
+  \item[\textbf{Transport evidence.}]
+  Commands and observations are shown to pass through the declared route with
+  the expected schema and without bypassing safety checks.
+
+  \item[\textbf{Behavioural evidence.}]
+  Observed state is compared with the postcondition of the commanded
+  primitive, for example through joint displacement, end-effector error,
+  gripper aperture, contact, image availability, or recovery state.
+\end{description}
+
+Behavioural evidence is bounded by observability. Simulator state may provide
+joint, pose, and contact facts that are unavailable on hardware. Hardware
+readback may reveal stiction and transport delay absent from simulation, while
+lacking a reliable task-success label. An obligation that cannot be observed
+should be reported as blocked or unassessed; absence of evidence should not be
+converted into a pass.
+
+The party that records facts should also be distinguished from the party that
+judges them. An environment executor can record command, observation, time,
+route, and artefact identity. A validator applies thresholds and contract
+semantics to those facts. Keeping verdict language out of raw evidence enables
+replay, alternative analysis, and clearer responsibility, while preventing the
+generating model from becoming its own judge.
+
+
+\section[Literature Review]{Literature Review}
+\label{sec:literature-review}
+
+\subsection[Robot Capabilities]{Robot Capabilities and Skill Abstractions}
+\label{sec:lit-capabilities}
+
+Capability-based robot software predates LLM-generated code. Its central aim
+is to separate reusable descriptions of what a robot can do from the concrete
+programs that realise those descriptions. Pantano et al.'s structured review
+finds that most industrial skill frameworks can be organised around tasks,
+skills, and primitives, while differing in how parameters, world state, and
+hardware dependencies are represented \citep{pantano2022capabilitysurvey}.
+This literature provides the conceptual ancestry of the primitive contract
+used in this thesis; Auto-Adapter does not claim the hierarchy itself as a new
+ontology.
+
+SkiROS2 shows how explicit parameters and pre-, hold-, and postconditions can
+support task planning, reactive execution, and skill composition
+\citep{mayr2023skiros2}. Such conditions are useful both for selecting a skill
+and for checking its execution. The platform nevertheless assumes that the
+skills, resource managers, and low-level ROS capabilities needed by a concrete
+robot have been implemented. It standardises the semantics above this
+boundary, but does not automatically instantiate the boundary for each concrete
+integration.
+
+Capability-driven skill generation moves closer to automation. Silva et al.
+encode capabilities in machine-readable form and use retrieval-augmented
+generation over existing libraries and resource interfaces to produce ROS~2
+skills \citep{silva2025capabilityskill}. This is an important precedent for
+using a contract to guide robot code generation. Its generated skill still
+builds on supplied ROS resources and libraries. The lower question retained by
+Auto-Adapter is how the reusable joint, gripper, observation, lifecycle, and
+transport primitives themselves are instantiated for a declared embodiment
+and runtime, and how that implementation is qualified.
+
+\subsection[Generalist Robot Policies]{Generalist Policies as Consumers of an Execution Interface}
+\label{sec:lit-policies}
+
+Learned robot policies address the problem of producing actions from
+observations and goals. Diffusion Policy models multi-modal visuomotor action
+distributions through diffusion, while Action Chunking with Transformers
+predicts temporally extended action sequences for fine-grained bimanual
+manipulation \citep{chi2023diffusionpolicy,zhao2023act}. These methods can be
+highly effective within the action and observation space supplied by the
+training and deployment environment. They do not aim to generate that
+environment's hardware binding.
+
+Robot foundation models broaden the scope of policy reuse. RT-1 and RT-2
+demonstrate language-conditioned control at increasing data and model scales
+\citep{brohan2022rt1,brohan2023rt2}. Open X-Embodiment aggregates trajectories
+across many robot platforms and trains RT-X models on a coarsely aligned
+seven-dimensional gripper-frame action representation
+\citep{openxembodiment2024}. Octo, OpenVLA, and $\pi_0$ further investigate
+open or generalist policies trained from heterogeneous robot data
+\citep{octo2024,kim2024openvla,black2024pi0}.
+
+These works make action heterogeneity a central modelling problem, but do not
+eliminate the execution interface. Open X-Embodiment normalises actions per
+dataset while retaining differences in coordinate frames and whether values
+denote positions, deltas, or velocities. Octo supports a new action space by
+adapting its output head and fine-tuning on a target setup. UniVLA learns
+task-centric latent actions across embodiments, but executable control still
+requires a robot-specific decoder \citep{bu2025univla}. Recent deployment
+analysis shows why this distinction matters: the same VLA checkpoint can
+produce physically different policies when unnormalisation metadata or
+controller conventions change, as illustrated in a recent deployment-focused
+preprint \citep{tai2026sameweights}.
+
+These methods address generalisation above an already defined action boundary
+rather than constructing that boundary. A policy can transfer
+perception and action knowledge only after its output has been assigned valid
+semantics on the target robot. Auto-Adapter treats policies and VLAs as
+potential consumers of a capability adapter and focuses on the executable
+binding that their evaluations normally supply in advance.
+
+
+\subsection[Agentic Robotics]{Agentic Robotics and Code over Existing Capabilities}
+\label{sec:lit-agentic}
+
+Language-model robotics often operates at a higher semantic level. SayCan
+combines an LLM's task knowledge with affordance values associated with
+pre-trained robot skills \citep{ahn2022saycan}. This grounds planning in what
+the particular robot can execute, but the skill policies and their value
+functions are inputs to the method. The contribution is skill selection and
+composition, not construction of the underlying execution layer.
+
+Code as Policies generates executable programs that manipulate perception
+outputs, perform geometric reasoning, and call existing robot control APIs
+\citep{liang2023codeaspolicies}. The program can express richer logic than a
+flat skill sequence, yet it still depends on a supplied interface. RoboCodeX
+similarly generates task behaviour using multimodal reasoning and existing
+planning and control utilities \citep{mu2024robocodex}. These works show that
+code is an effective representation for task policy, while also exposing the
+importance of the primitives made available to the code generator.
+
+VoxPoser explicitly identifies predefined motion primitives as a bottleneck
+and moves generation towards control by composing three-dimensional value maps
+and producing end-effector trajectories \citep{huang2023voxposer}. It avoids
+requiring a named macro for every task, but its trajectories still rely on a
+known robot model, motion optimisation, inverse kinematics, and an operational
+space controller. The result narrows the gap between task intent and motion,
+without generating the controller and runtime binding for a declared robot--runtime integration.
+
+Recent preprints extend code-based robotics with iterative improvement. CaP-X
+reports a benchmark of coding agents under different robot API abstractions
+and finds that human-designed scaffolding strongly affects task performance
+\citep{fu2026capx}. RHO searches over multi-file robot policy repositories
+using environment feedback while retaining supplied low-level primitives
+\citep{elmaaroufi2026rho}. ASPIRE diagnoses failures from multimodal traces,
+repairs task programs, and accumulates successful behaviours in a reusable
+skill library \citep{lu2026aspire}. These systems demonstrate
+increasingly capable automation above the primitive API. They also make the
+boundary studied by Auto-Adapter sharper: reusable task skills can grow only
+within the capabilities and runtime semantics exposed beneath them.
+
+
+\subsection[Interface Generation]{Robot Middleware, Skills, and Interface Generation}
+\label{sec:lit-interface-generation}
+
+Middleware and skill frameworks seek reuse through stable contracts. ROS and
+ROS~2 provide communication and lifecycle abstractions, while controller and
+planning frameworks provide standard command surfaces
+\citep{quigley2009ros,macenski2022ros2}. As discussed in
+Section~\ref{sec:robot-software-stack}, their new-hardware procedures still
+require a device-specific component. This is not an incidental omission: only
+the integrator knows the concrete SDK, calibration, controller ownership, and
+safety context unless those facts are made machine-readable.
+
+ROS-LLM connects a language agent to ROS, supports several execution
+representations, and can add atomic actions through imitation and feedback
+\citep{mower2026rosllm}. It broadens who can program an existing robot and how
+new skills enter a library, but continues to rely on an operational ROS stack,
+controllers, and action implementations. RoboNeuron and RCP likewise improve
+tool discovery and invocation above an existing runtime
+\citep{roboneuron2025,rcp2025}. They are complementary consumers or exposure
+layers for a generated adapter.
+
+The literature therefore contains several partial forms of interface
+automation: learning an action decoder, wrapping a message schema, learning a
+demonstrated skill, or generating code over existing resources. The remaining
+question is whether a declared suite of consumer-facing primitive
+implementations can be synthesised and behaviourally qualified for a
+declared robot--runtime integration from structural and runtime specifications.
+
+
+\subsection[Program and Driver Synthesis]{Program, Tool, and Driver Synthesis}
+\label{sec:lit-synthesis}
+
+The synthesis problem has roots beyond recent LLMs. Program sketching combines
+a partial program with a specification and searches for an implementation that
+satisfies the specification
+\citep{solarlezama2006combinatorial,solarlezama2013sketching}.
+Counterexample-guided inductive synthesis follows a related
+generate--check--refine pattern: a candidate is proposed, checked against a
+specification, and revised using a counterexample. Auto-Adapter resembles this
+shape, but its validator executes a finite set of execution tests rather than
+proving a universally
+quantified formal specification. The method should therefore be described as
+specification-guided or CEGIS-inspired, not as formal synthesis with a
+correctness proof.
+
+Automatic driver generation also predates LLM coding agents. Termite-2
+synthesises operating-system device drivers from device, operating-system, and
+driver specifications, using abstraction refinement to diagnose incomplete
+models \citep{ryzhyk2014termite}. It demonstrates that repetitive interface
+implementation can be made a synthesis target and that specification quality
+is part of the problem. Robot capability adapters differ in their continuous
+state, kinematics, calibration, partial observability, contact, and physical
+postconditions, but Termite prevents an overbroad claim that Auto-Adapter is
+the first system to generate any kind of driver.
+
+LLM tool-creation work replaces or supplements formal search with executable
+code generation. Large Language Models as Tool Makers has a model produce a
+reusable software function that another model can call, and CREATOR generates
+tools to separate abstract reasoning from concrete computation
+\citep{cai2023latm,qian2023creator}. Coding-agent work such as CodeAct and
+SWE-agent shows how tool access, repository interaction, execution, and tests
+support iterative code production \citep{wang2024codeact,yang2024sweagent}.
+These methods justify treating the generated artefact as reusable and allowing
+the agent to inspect its environment. Their common software benchmarks,
+however, do not require commands to produce safe, observable physical state
+transitions.
+
+The initial Auto-Adapter study combines these ideas in the simulator domain:
+an LLM agent reads MJCF or URDF, produces a reusable driver, and is checked
+against simulator physics before a downstream agent uses the API
+\citep{wang2026autoadapter}. The thesis retains this contribution as prior
+evidence and develops the unresolved specification and assurance questions:
+how runtime facts beyond morphology are represented, how a shared contract is
+instantiated through an approved route, and how validation can scale without a
+new hand-written oracle for each adapter.
+
+
+\subsection[Test Oracles and Assurance]{Test Oracles and Robot Software Assurance}
+\label{sec:lit-assurance}
+
+Robot testing and assurance span model checking, simulation, scenario
+generation, runtime monitoring, and testing at multiple system levels. A
+systematic review of 192 robotic and autonomous-system studies finds diverse
+models and interventions but limited shared adequacy measures and industrial
+evidence \citep{araujo2023rasreview}. The present review therefore selects the
+parts most directly relevant to generated capability adapters: property-based
+input generation, runtime observation, simulation-based behavioural testing,
+runtime assurance, and construction of the test oracle.
+
+Testing generated code requires inputs, execution, observations, and an oracle
+that decides whether the observations are acceptable. The oracle problem is
+well established in software engineering: for many systems, correct output is
+not available automatically for every input \citep{barr2015oracle}. In
+robotics, the problem is intensified by continuous state, noise, partial
+observation, asynchronous transport, and environmental variation. A function
+returning without exception is not a sufficient behavioural oracle.
+
+Property-based testing addresses part of the problem by expressing general
+properties and generating test cases that seek counterexamples. QuickCheck
+established this pattern for software functions \citep{claessen2000quickcheck}.
+Property-based testing has subsequently been applied to ROS systems and to
+robot actions in simulation \citep{santos2018pbtros,sohail2021pbt}. The latter
+work generates scenes and checks action-execution properties, showing how
+semantic robot failures can be revealed beyond a fixed demonstration.
+
+Runtime verification provides another perspective. ROSRV generates monitors
+for ROS message traffic from formal properties \citep{huang2014rosrv}. HAROS
+extracts models from ROS source and supports static analysis, model checking,
+runtime verification, and property-based testing \citep{santos2021haros}.
+SOTER places uncertified high-performance components behind a runtime-assurance
+architecture containing a certified safe controller and explicit safety
+specification \citep{desai2019soter}. These systems demonstrate stronger
+assurance models than ordinary testing. Auto-Adapter does not provide their
+formal guarantees: its generated candidates are subject to bounded validation,
+and vendor safety mechanisms remain beneath the adapter.
+
+The relevant lesson is the separation of authority. The component under test
+should not define its own success criterion, and a monitor should consume
+facts rather than a candidate's claim of success. Auto-Adapter applies this
+principle by separating environment execution and raw session facts from
+deterministic verdicts. Here \emph{candidate-independent} means that the
+generated adapter cannot alter the validator, thresholds, evidence record, or
+final verdict, and that a repaired candidate is re-evaluated by the same
+external gates. It does not mean that the contract and validator compiler were
+designed by a different research organisation. At the same time, the thesis
+confronts an additional scaling question: whether behavioural obligations can
+be compiled from primitive contract $\times$ runtime profile $\times$ route
+capabilities, so that external judgement does not require a second
+robot-specific codebase as large as the adapter itself. The relevant measures
+include robot-specific validator code, manual overrides, unobservable
+obligations, and onboarding effort.
+
+
+\subsection[Execution Feedback and Repair]{Execution Feedback and Program Repair}
+\label{sec:lit-repair}
+
+Iterative repair is common in both language agents and program synthesis.
+Reflexion stores verbal feedback from previous attempts, CodeAct executes code
+as an action, and SWE-agent interacts with repositories and tests
+\citep{shinn2023reflexion,wang2024codeact,yang2024sweagent}. These approaches
+show that an LLM can use external signals to revise an artefact, but also that
+the content and independence of the signal matter.
+
+Physics-based simulation is particularly useful in robotics because it offers
+a safe, repeatable, and highly observable setting for development and testing
+\citep{liu2021simulators}. Simulator state can expose joint motion, pose,
+collision, and contact evidence that would be costly or unavailable on
+hardware. Its value is nevertheless bounded by model, actuator, contact, and
+sensor fidelity. Simulator measurements are therefore physics-grounded
+execution evidence, not hardware evidence or a guarantee of sim-to-real
+transfer.
+
+Robot code repair introduces physical feedback. Tripathi et al. generate and
+repair a navigation controller using structured tests
+\citep{tripathi2026testdriven}. RoboInspector analyses failures of generated
+manipulation policy code and uses execution feedback for refinement
+\citep{ying2025roboinspector}. Neuro-symbolic Code-as-Policies combines
+symbolic verification with interactive validation
+\citep{ahn2025reliablecap}. ASPIRE records multimodal per-primitive traces,
+uses them to diagnose and repair task programs, and retains successful
+behaviours as skills \citep{lu2026aspire}. These methods assume an execution
+engine that already exposes the underlying robot operations.
+
+Kim et al. are a particularly close precedent for physics-guided correction.
+Their closed-loop method detects collision, misalignment, pose, and contact
+failures in simulation and iteratively corrects LLM-generated tool-use
+primitives before real-robot execution \citep{kim2026physicalcorrection}.
+Their target is a task-specific tool-use program and its motion parameters over
+a fixed manipulation stack. Auto-Adapter instead targets a declared,
+cross-task capability adapter for a declared embodiment and runtime route, and separately
+asks who defines the acceptance oracle and how much per-robot validation work
+remains. Physics feedback, iterative correction, and real-robot replay are
+therefore not claimed as firsts. The proposed contribution lies in applying
+candidate-independent, contract-derived evidence to the lower adapter layer
+and measuring qualification reuse. A generic generate--test--repair loop is
+consequently not novel by itself.
+
+Auto-Adapter's repair question is specific to capability onboarding. A failed
+primitive may involve the wrong joint order, sign, unit, frame, calibration,
+sensor route, lifecycle, or stall response. Binary pass/fail identifies that
+an obligation failed but may not distinguish these causes. Textual diagnostics
+can help, but may repeat assumptions embedded in a hand-written test.
+Measurement-grounded feedback instead records commanded value, observed
+value, expected postcondition, residual, route, and evidence identity. The
+coding agent can use this evidence within a restricted repair budget, after
+which the candidate must pass the same candidate-independent validator.
+
+Whether measurement-grounded feedback improves repair is an empirical
+question, as is whether the validator detects the relevant fault classes. The
+thesis therefore treats repair as one stage in the lifecycle and evaluates it
+against conditions such as no repair, verdict-only feedback, or less structured
+diagnostics. Repair success is not inferred from the architecture alone.
+
+
+\subsection[Comparative Synthesis]{Comparative Synthesis}
+\label{sec:comparative-synthesis}
+
+Table~\ref{tab:related-comparison} compares representative lines of work by
+their generated artefact and the lowest robot-specific layer they assume.
+The table is deliberately organised by software boundary rather than by model
+date. It shows that several neighbouring approaches generate useful robot code
+while beginning from an already instantiated interface.
+
+\begin{table}[htp]
+\centering
+\footnotesize
+\caption{Representative related work positioned by generated artefact,
+assumed execution layer, and source of evaluation or oracle evidence.}
+\label{tab:related-comparison}
+\begin{tabularx}{\textwidth}{p{0.17\textwidth}p{0.19\textwidth}p{0.27\textwidth}X}
+\toprule
+\textbf{Work} & \textbf{Generated or learned artefact} &
+\textbf{Robot-specific layer supplied in advance} &
+\textbf{Evaluation or oracle basis} \\
+\midrule
+Capability frameworks \citep{pantano2022capabilitysurvey,mayr2023skiros2} &
+Task, skill, and primitive abstractions &
+Concrete skills, resources, and robot stack &
+Declared conditions and application-specific execution checks. \\
+Generalist policies \citep{openxembodiment2024,octo2024,kim2024openvla} &
+Cross-task or cross-embodiment action policy &
+Action encoding, runtime wrapper, controller, and deployment mapping &
+Task success after integrated training or deployment. \\
+Agentic robot code \citep{ahn2022saycan,liang2023codeaspolicies,fu2026capx} &
+Skill sequence, waypoint plan, or task program &
+Callable skills, perception and control APIs, and robot stack &
+Affordance scores, tests, or task outcome over the supplied API. \\
+Interface and skill generation \citep{silva2025capabilityskill,roboneuron2025,rcp2025} &
+ROS skill, tool schema, or protocol bridge &
+Existing resource interfaces and executable capabilities &
+Schema invocation, demonstrations, or skill-specific checks. \\
+Termite-2 \citep{ryzhyk2014termite} &
+Operating-system device driver &
+Formal device, operating-system, and driver models &
+Specification checking and abstraction refinement. \\
+Robot assurance \citep{huang2014rosrv,santos2021haros,desai2019soter} &
+Monitors, properties, and assurance architecture &
+System model, property set, and instrumented runtime &
+Specified properties over static or runtime observations. \\
+Physics-guided repair \citep{kim2026physicalcorrection,lu2026aspire} &
+Task primitive, program, or reusable skill &
+Fixed robot API, execution engine, and task evaluator &
+Task goals, contact or visual traces, and execution outcomes. \\
+\textbf{Auto-Adapter} & \textbf{Robot capability adapter} &
+\textbf{Shared contract, robot description, runtime profile, route, and
+underlying controller} &
+\textbf{Evaluation target: candidate-independent route-aware obligations,
+held-out reuse, and marginal validator effort.} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+No single table entry is intended to imply that one layer is more important
+than another. Policies, task programs, middleware bridges, and adapters solve
+complementary problems. The comparison instead prevents a category error:
+task success over a supplied robot API does not demonstrate that the API can
+be instantiated for a concrete integration, and generating an API wrapper does not demonstrate
+that the wrapped capability has the promised physical semantics.
+
+
+\section[Synthesis of the Research Gap]{Synthesis of the Research Gap}
+\label{sec:research-gap}
+
+The literature establishes four important facts. First, robot intelligence is
+becoming more reusable across tasks and, to a growing extent, across
+embodiments, but deployment still supplies an action-realisation interface.
+Second, middleware and standard contracts improve reuse while leaving a
+hardware- and runtime-specific component to the integrator. Third, program,
+tool, skill, and driver synthesis show that executable artefacts can be
+generated from specifications and context. Fourth, robot testing and runtime
+verification show that robot-facing software must be judged by external
+properties and observations rather than by source plausibility or self-report.
+
+What remains underexplored is the intersection of these findings. For an integration instance---whether it involves a new robot or an existing
+platform being connected to a different runtime, contract, or downstream
+stack---the reviewed strands do not yet jointly evaluate
+a method that:
+
+\begin{enumerate}[leftmargin=*,itemsep=0.45em]
+  \item instantiates a shared, consumer-facing primitive contract from both a
+  structural robot description and explicit runtime information;
+  \item produces a reusable adapter rather than a task-specific policy or a
+  schema-only wrapper;
+  \item derives candidate-independent, route-aware behavioural obligations
+  while measuring the robot-specific validation work that remains;
+  \item uses observed hardware or physics-grounded simulator residuals to
+  support bounded repair while retaining external pass/fail authority; and
+  \item evaluates the resulting layer in terms of synthesis success,
+  downstream reuse, remaining manual effort, and failure boundaries across
+  morphology and runtime.
+\end{enumerate}
+
+The gap is therefore more precise than the statement that robot primitives are
+hand-written. Some skills are learned, some trajectories are generated, and
+some interfaces are derived automatically. The repeated bottleneck is that the
+\emph{executable realisation and qualification of a stable primitive contract}
+remain largely manual, demonstrated, or assumed to exist for each embodiment
+and route, including repeated developer-specific integrations of established
+robots.
+
+Auto-Adapter investigates how far that bottleneck can be automated. The
+initial work supplies simulator-side evidence that LLM agents can synthesise
+reusable drivers from robot descriptions \citep{wang2026autoadapter}. The
+thesis extends this foundation to explicit contracts and runtime profiles,
+candidate-independent and potentially amortised qualification,
+evidence-grounded repair, and a boundary-oriented evaluation of capability
+reuse. In this framing,
+VLA models, learned policies, and agentic robot systems are important examples
+of the intelligence that may consume a generated adapter; the scientific
+object remains the adapter lifecycle itself.
