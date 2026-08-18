@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
-  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v2",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v3",
   "instances": [
     {
       "instance_id": "go2-go2-t01",
@@ -30,6 +30,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetition_variants": [
@@ -76,6 +77,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 10,
@@ -112,6 +114,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 10,
@@ -148,6 +151,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 10,
@@ -183,6 +187,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -239,6 +244,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -274,6 +280,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -309,6 +316,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -344,6 +352,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -379,6 +388,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -414,6 +424,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -470,6 +481,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 18,
@@ -526,6 +538,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 18,
@@ -582,6 +595,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 18,
@@ -638,6 +652,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 18,
@@ -678,6 +693,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -739,6 +755,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -774,6 +791,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -810,6 +828,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,
@@ -899,6 +918,7 @@
         "go2_physics",
         "go2_no_state_write",
         "go2_canonical",
+        "go2_terminal_stability",
         "go2_video"
       ],
       "repetitions": 1,

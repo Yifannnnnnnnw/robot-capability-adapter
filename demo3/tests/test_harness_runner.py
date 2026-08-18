@@ -12,6 +12,7 @@ import mujoco
 
 from autoadapter2.harness import run_private_suite
 from autoadapter2.harness import runner as harness_runner
+from autoadapter2.harness.measurements import evaluate_guards
 from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.libraries import RobotPackage
 
@@ -416,6 +417,38 @@ class HarnessRunnerTests(unittest.TestCase):
         marker_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "marker")
         self.assertAlmostEqual(float(data.geom_xpos[marker_id, 0]), 0.0, places=7)
         self.assertAlmostEqual(float(data.geom_xpos[marker_id, 1]), 1.0, places=7)
+
+    def test_terminal_body_stability_rejects_a_fallen_sliding_pose(self) -> None:
+        guard = {
+            "guard_id": "stable",
+            "kind": "terminal_body_stability",
+            "body_name": "base_link",
+            "minimum_height_m": 0.18,
+            "minimum_upright_cosine": 0.7,
+        }
+        upright = self._worker_result(
+            [
+                {
+                    "time": 1.0,
+                    "body_positions": {"base_link": [1.0, 0.0, 0.27]},
+                    "body_quaternions": {"base_link": [1.0, 0.0, 0.0, 0.0]},
+                }
+            ]
+        )
+        fallen = self._worker_result(
+            [
+                {
+                    "time": 1.0,
+                    "body_positions": {"base_link": [1.0, 0.0, 0.12]},
+                    "body_quaternions": {
+                        "base_link": [math.sqrt(0.5), math.sqrt(0.5), 0.0, 0.0]
+                    },
+                }
+            ]
+        )
+
+        self.assertEqual(evaluate_guards([guard], worker_result=upright), {"stable": True})
+        self.assertEqual(evaluate_guards([guard], worker_result=fallen), {"stable": False})
 
     def test_physical_execution_requires_clean_canonical_stepped_trials(self) -> None:
         base_samples = [{"time": 0.0, "joint_positions": {"shoulder_pan": 0.2}}]

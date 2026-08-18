@@ -45,7 +45,10 @@ _REQUIRED_GUARD_KINDS = {
     "no_direct_state_write",
     "canonical_model_data",
 }
-_SUPPORTED_GUARD_KINDS = _REQUIRED_GUARD_KINDS | {"complete_video"}
+_SUPPORTED_GUARD_KINDS = _REQUIRED_GUARD_KINDS | {
+    "complete_video",
+    "terminal_body_stability",
+}
 
 
 @dataclass(frozen=True)
@@ -407,6 +410,22 @@ def _validate_private_inputs(
             raise RobotPackageError(f"duplicate guard_id {guard_id!r}")
         if kind not in _SUPPORTED_GUARD_KINDS:
             raise RobotPackageError(f"{where}.kind is not implemented by the trusted Harness")
+        if kind == "terminal_body_stability":
+            _required_text(guard, "body_name", where=where)
+            for field in ("minimum_height_m", "minimum_upright_cosine"):
+                value = guard.get(field)
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(float(value))
+                ):
+                    raise RobotPackageError(f"{where}.{field} must be a finite number")
+            if float(guard["minimum_height_m"]) <= 0.0:
+                raise RobotPackageError(f"{where}.minimum_height_m must be positive")
+            if not 0.0 <= float(guard["minimum_upright_cosine"]) <= 1.0:
+                raise RobotPackageError(
+                    f"{where}.minimum_upright_cosine must be in [0, 1]"
+                )
         guards[guard_id] = guard
 
     tasks_by_id = {str(task["task_id"]): task for task in tasks}

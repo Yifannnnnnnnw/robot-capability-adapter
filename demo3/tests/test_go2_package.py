@@ -184,6 +184,7 @@ def test_go2_package_snapshot_and_private_coverage() -> None:
     )["instances"]
     instance_tasks = {item["task_id"] for item in instances}
     assert instance_tasks == {task["task_id"] for task in package.tasks}
+    assert all("go2_terminal_stability" in item["guard_ids"] for item in instances)
     assert all(item["video_width"] >= 800 for item in instances)
     assert all(item["video_height"] >= 600 for item in instances)
     for source in package.sources:

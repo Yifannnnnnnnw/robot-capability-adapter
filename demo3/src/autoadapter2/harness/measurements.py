@@ -664,6 +664,39 @@ def evaluate_guards(
             outcomes[guard_id] = bool(worker_result.get("canonical_model_data"))
         elif kind == "complete_video":
             outcomes[guard_id] = bool(video.get("complete"))
+        elif kind == "terminal_body_stability":
+            samples = evidence.get("samples")
+            body_name = guard.get("body_name")
+            outcome = False
+            if (
+                isinstance(samples, list)
+                and samples
+                and isinstance(samples[-1], Mapping)
+                and isinstance(body_name, str)
+            ):
+                final = samples[-1]
+                positions = final.get("body_positions")
+                quaternions = final.get("body_quaternions")
+                if (
+                    isinstance(positions, Mapping)
+                    and body_name in positions
+                    and isinstance(quaternions, Mapping)
+                    and body_name in quaternions
+                ):
+                    try:
+                        height = _vector(positions[body_name], size=3)[2]
+                        w, x, y, z = _vector(quaternions[body_name], size=4)
+                        norm_squared = w * w + x * x + y * y + z * z
+                        upright_cosine = 1.0 - 2.0 * (x * x + y * y) / norm_squared
+                        outcome = (
+                            norm_squared > 0.0
+                            and height >= float(guard["minimum_height_m"])
+                            and upright_cosine
+                            >= float(guard["minimum_upright_cosine"])
+                        )
+                    except (KeyError, TypeError, ValueError, ZeroDivisionError):
+                        outcome = False
+            outcomes[guard_id] = outcome
         else:
             raise MeasurementError(f"unsupported private guard kind {kind!r}")
     return outcomes
