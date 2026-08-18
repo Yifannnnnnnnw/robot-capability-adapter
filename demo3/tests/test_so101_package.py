@@ -273,6 +273,61 @@ def test_so101_pick_place_uses_a_physical_fixture_and_reference_passes() -> None
     assert not trial["physical_evidence"]["direct_state_write_detected"]
 
 
+def test_so101_reach_push_and_sweep_use_distinct_physical_scenes() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    design = _design(package)
+    complete_suite = _suite(package, design)
+    task_ids = {"mw_reach_target", "mw_push_to_goal", "mw_sweep_into_goal"}
+    suite = {
+        **complete_suite,
+        "cases": [
+            case for case in complete_suite["cases"] if case["task_id"] in task_ids
+        ],
+    }
+    instances = {
+        item["task_id"]: item
+        for item in json.loads(
+            (package.private_dir / "instances.json").read_text(encoding="utf-8")
+        )["instances"]
+        if item["task_id"] in task_ids
+    }
+    assert len({item["scene_entrypoint"] for item in instances.values()}) == 3
+
+    push_model = mujoco.MjModel.from_xml_path(
+        str((package.root / instances["mw_push_to_goal"]["scene_entrypoint"]).resolve())
+    )
+    sweep_model = mujoco.MjModel.from_xml_path(
+        str((package.root / instances["mw_sweep_into_goal"]["scene_entrypoint"]).resolve())
+    )
+    assert mujoco.mj_name2id(
+        push_model, mujoco.mjtObj.mjOBJ_GEOM, "workpiece_geom"
+    ) >= 0
+    assert mujoco.mj_name2id(
+        sweep_model, mujoco.mjtObj.mjOBJ_GEOM, "goal_catch"
+    ) >= 0
+    assert mujoco.mj_name2id(
+        sweep_model, mujoco.mjtObj.mjOBJ_GEOM, "table_front"
+    ) >= 0
+
+    with tempfile.TemporaryDirectory(prefix="so101-contact-scenes-") as temporary:
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=package.reference_driver,
+            condition="from-scratch",
+            output_dir=temporary,
+            record_video=False,
+            wall_timeout_s=60.0,
+            run_id="so101-contact-scene-calibration",
+            attempt=0,
+        )
+
+    assert report["validation_passed"]
+    assert {trial["task_id"] for trial in report["trials"]} == task_ids
+    assert all(trial["trial_passed"] for trial in report["trials"])
+
+
 def test_so101_private_reset_fails_every_task_criterion() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     instances = json.loads(

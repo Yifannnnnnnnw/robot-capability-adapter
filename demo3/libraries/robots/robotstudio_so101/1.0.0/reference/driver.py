@@ -115,8 +115,14 @@ class ReferenceSO101Driver:
         tolerance: float = 0.004,
         residual_tolerance: float = 0.05,
         wrist_roll: float | None = None,
+        gain: float = 1.8,
+        max_joint_delta: float = 0.12,
     ) -> None:
         target = _vector(target, name="target_position")
+        if not math.isfinite(gain) or gain <= 0.0:
+            raise ValueError("gain must be a positive finite number")
+        if not math.isfinite(max_joint_delta) or max_joint_delta <= 0.0:
+            raise ValueError("max_joint_delta must be a positive finite number")
         if wrist_roll is not None:
             wrist_roll = float(wrist_roll)
             if not math.isfinite(wrist_roll):
@@ -138,13 +144,13 @@ class ReferenceSO101Driver:
             system = arm_jacobian @ arm_jacobian.T + (damping * damping) * np.eye(3)
             delta = arm_jacobian.T @ np.linalg.solve(system, error)
             delta_norm = float(np.linalg.norm(delta))
-            if delta_norm > 0.12:
-                delta *= 0.12 / delta_norm
+            if delta_norm > max_joint_delta:
+                delta *= max_joint_delta / delta_norm
             desired = self._current_q()
             if wrist_roll is None:
-                desired += 1.8 * delta
+                desired += gain * delta
             else:
-                desired[:-1] += 1.8 * delta
+                desired[:-1] += gain * delta
                 desired[-1] = wrist_roll
             desired = np.clip(desired, self._lower, self._upper)
             self._set_arm_target(desired)
@@ -182,10 +188,19 @@ class ReferenceSO101Driver:
 
     def contact_task(self, *, request: Any) -> None:
         _, parameters = _request(request)
-        self._set_gripper(GRIPPER_OPEN)
+        contact = _vector(parameters["contact_position"], name="contact_position")
+        approach = _vector(
+            parameters.get(
+                "approach_position", contact + np.asarray((0.0, 0.0, 0.08))
+            ),
+            name="approach_position",
+        )
+        self._set_gripper(GRIPPER_CLOSED)
+        self._idle(20)
+        self._step_to(approach, residual_tolerance=0.08)
         self._step_to(
-            _vector(parameters["contact_position"], name="contact_position"),
-            residual_tolerance=0.25,
+            contact,
+            residual_tolerance=0.08,
         )
         if "route_position" in parameters:
             self._step_to(
@@ -193,7 +208,13 @@ class ReferenceSO101Driver:
                 steps=700,
                 residual_tolerance=0.25,
             )
-        self._step_to(self._tool_target(parameters), steps=700, residual_tolerance=0.25)
+        self._step_to(
+            self._tool_target(parameters),
+            steps=1200,
+            residual_tolerance=0.12,
+            gain=0.2,
+            max_joint_delta=0.012,
+        )
 
     def object_task(self, *, request: Any) -> None:
         _, parameters = _request(request)

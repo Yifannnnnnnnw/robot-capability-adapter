@@ -37,30 +37,30 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_push_to_goal",
       "task_id": "mw_push_to_goal",
-      "scene_entrypoint": "assets/push_scene.xml",
+      "scene_entrypoint": "assets/push_to_goal_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_push_to_goal",
           "task_parameters": {
             "contact_position": [
-              0.46,
-              0.0,
-              0.225
+              0.38,
+              0.03,
+              0.188
             ],
             "target_position": [
-              0.515,
-              0.0,
-              0.185
+              0.38,
+              0.18,
+              0.166
             ],
             "tool_target_position": [
-              0.36,
-              0.0,
-              0.225
+              0.38,
+              0.18,
+              0.188
             ]
           }
         }
@@ -83,7 +83,7 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_pick_place",
@@ -246,25 +246,25 @@
     {
       "instance_id": "so101-mw_sweep_into_goal",
       "task_id": "mw_sweep_into_goal",
-      "scene_entrypoint": "assets/push_scene.xml",
+      "scene_entrypoint": "assets/sweep_into_goal_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_sweep_into_goal",
           "task_parameters": {
             "contact_position": [
-              0.46,
-              0.0,
-              0.225
+              0.38,
+              0.03,
+              0.20
             ],
             "target_position": [
-              0.515,
-              0.0,
-              0.185
+              0.38,
+              0.18,
+              0.135
             ],
             "tool_target_position": [
-              0.36,
-              0.0,
-              0.225
+              0.38,
+              0.21,
+              0.20
             ]
           }
         }
@@ -287,7 +287,7 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_drawer_open",

@@ -34,7 +34,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 688-695: success uses reach_dist <= 0.05.",
+              "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 74-98 at pinned commit: success is reach_dist <= 0.05.",
               "support": "adapted",
               "adaptation": "Retain the 0.05 m Euclidean endpoint obligation and apply it to the SO-101 end-effector and private target body in the canonical MuJoCo metre frame; only robot and scene identities change."
             }
@@ -157,7 +157,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_push_v3.py, TARGET_RADIUS at line 722 and evaluate_state success at lines 837-840: target_to_obj <= TARGET_RADIUS with TARGET_RADIUS = 0.05.",
+              "specific_reference": "metaworld/envs/sawyer_push_v3.py, line 31 and evaluate_state lines 88-112 at pinned commit: TARGET_RADIUS is 0.05 and success is target_to_obj <= TARGET_RADIUS.",
               "support": "adapted",
               "adaptation": "Keep the source 0.05 m object-to-goal obligation and measure it between SO-101 scene bodies after contact-driven pushing; replace only Sawyer geometry and private object placement."
             }
@@ -636,10 +636,10 @@
       "description": "Use a sweeping contact motion to move a tabletop object into a goal region.",
       "source_task_or_operation": "Meta-World sawyer_sweep_into_goal_v3 sweep-into-goal",
       "applicability": "The SO-101 end effector can make planar sweeping contact with a small object without requiring a precision grasp.",
-      "adaptation": "Use a private planar object and goal in the SO-101 scene. Preserve the source 0.05 m object-to-goal criterion and the contact-based sweep interpretation.",
+      "adaptation": "Use a private free planar object and a collidable tabletop opening with a lower catch surface, matching the source table-with-hole operation. Preserve the source 0.05 m object-to-goal criterion and contact-based sweep interpretation.",
       "scene_assumptions": [
-        "A small movable object and goal region lie on a common tabletop plane.",
-        "The object is not constrained by a wall or container and can be moved by a lateral sweep."
+        "A small movable object starts on the upper tabletop and the goal lies inside a physical opening with a lower catch surface.",
+        "The opening has collidable edges, and the object can enter it only after a lateral contact sweep."
       ],
       "observation_assumptions": [
         "The observation exposes the object and goal positions in the tabletop frame.",
@@ -661,9 +661,9 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_sweep_into_goal_v3.py, evaluate_state, lines 894-922: success uses target_to_obj <= 0.05.",
+              "specific_reference": "metaworld/envs/sawyer_sweep_into_goal_v3.py, model_name lines 63-66 and evaluate_state lines 68-91 at pinned commit: the source uses sawyer_table_with_hole.xml and success is target_to_obj <= 0.05.",
               "support": "adapted",
-              "adaptation": "Retain the 0.05 m terminal object-to-goal requirement and apply the source sweep operation to an SO-101 end-effector contact on a private tabletop object."
+              "adaptation": "Retain the 0.05 m terminal object-to-goal requirement and instantiate a physical opening and lower catch surface at SO-101 scale; only morphology and fixture dimensions change."
             }
           ]
         }
