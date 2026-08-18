@@ -22,8 +22,8 @@
           friction="1 0.01 0.001" rgba="0.18 0.59 0.78 1"/>
     <geom name="map_limit" type="box" pos="5 0 0.002" size="0.02 0.72 0.002"
           contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
-    <camera name="evidence" mode="targetbody" target="base_link"
-            pos="2.5 -7.0 3.6" fovy="47"/>
+    <camera name="evidence" mode="trackcom" pos="0 -3.2 1.7"
+            zaxis="0 -0.923 0.385" fovy="47"/>
   </worldbody>
   <keyframe>
     <key name="task_start"

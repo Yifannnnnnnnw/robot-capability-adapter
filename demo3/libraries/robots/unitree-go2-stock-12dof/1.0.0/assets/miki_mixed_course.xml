@@ -30,8 +30,8 @@
           friction="1 0.01 0.001" rgba="0.70 0.28 0.58 1"/>
     <geom name="finish_line" type="box" pos="4.8 0 0.002" size="0.02 0.68 0.002"
           contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
-    <camera name="evidence" mode="targetbody" target="base_link"
-            pos="2.5 -6.2 3.1" fovy="50"/>
+    <camera name="evidence" mode="trackcom" pos="0 -3.5 1.9"
+            zaxis="0 -0.920 0.391" fovy="50"/>
   </worldbody>
   <keyframe>
     <key name="task_start"

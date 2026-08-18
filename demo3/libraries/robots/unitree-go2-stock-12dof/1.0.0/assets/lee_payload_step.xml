@@ -16,8 +16,8 @@
       <geom name="lee_payload_geom" type="box" size="0.12 0.08 0.035" mass="3.540616437"
             friction="1 0.01 0.001" rgba="0.82 0.16 0.19 1"/>
     </body>
-    <camera name="evidence" mode="targetbody" target="base_link"
-            pos="1.5 -3.8 1.8" fovy="43"/>
+    <camera name="evidence" mode="trackcom" pos="0 -3.2 1.7"
+            zaxis="0 -0.923 0.385" fovy="43"/>
   </worldbody>
   <equality>
     <weld name="payload_weld" body1="base_link" body2="lee_payload"/>

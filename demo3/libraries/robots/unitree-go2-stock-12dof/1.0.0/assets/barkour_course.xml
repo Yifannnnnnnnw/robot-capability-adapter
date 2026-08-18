@@ -32,8 +32,8 @@
           friction="1 0.01 0.001" rgba="0.25 0.68 0.46 1"/>
     <geom name="course_hold_radius" type="cylinder" pos="-0.5 1.6 0.103" size="0.4 0.003"
           contype="0" conaffinity="0" rgba="0.14 0.80 0.46 0.25"/>
-    <camera name="evidence" mode="targetbody" target="base_link"
-            pos="0 -6.7 5.3" fovy="50"/>
+    <camera name="evidence" mode="trackcom" pos="0 -4.0 2.8"
+            zaxis="0 -0.860 0.510" fovy="50"/>
   </worldbody>
   <keyframe>
     <key name="task_start"

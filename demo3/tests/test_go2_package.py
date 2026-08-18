@@ -182,6 +182,7 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
         camera_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "evidence")
         assert key_id >= 0, scene.name
         assert camera_id >= 0, scene.name
+        assert model.cam_mode[camera_id] == mujoco.mjtCamLight.mjCAMLIGHT_TRACKCOM, scene.name
         mujoco.mj_resetDataKeyframe(model, data, key_id)
         mujoco.mj_forward(model, data)
         assert np.all(np.isfinite(data.qpos)), scene.name

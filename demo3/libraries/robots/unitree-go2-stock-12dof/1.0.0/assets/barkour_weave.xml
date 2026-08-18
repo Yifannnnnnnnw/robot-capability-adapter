@@ -17,8 +17,8 @@
           friction="1 0.01 0.001" rgba="0.69 0.29 0.59 1"/>
     <geom name="weave_pole_5" type="cylinder" pos="3.05 0 0.50" size="0.025 0.50"
           friction="1 0.01 0.001" rgba="0.18 0.59 0.78 1"/>
-    <camera name="evidence" mode="targetbody" target="base_link"
-            pos="1.8 -5.2 2.6" fovy="45"/>
+    <camera name="evidence" mode="trackcom" pos="0 -3.2 1.7"
+            zaxis="0 -0.923 0.385" fovy="45"/>
   </worldbody>
   <keyframe>
     <key name="task_start"

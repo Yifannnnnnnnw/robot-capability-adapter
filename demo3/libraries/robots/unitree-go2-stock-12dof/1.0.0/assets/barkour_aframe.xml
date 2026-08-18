@@ -17,8 +17,8 @@
           contype="0" conaffinity="0" rgba="0.86 0.26 0.28 1"/>
     <geom name="exit_line" type="box" pos="1.73205 0 0.002" size="0.02 0.54 0.002"
           contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
-    <camera name="evidence" mode="targetbody" target="base_link"
-            pos="0 -5.0 2.8" fovy="46"/>
+    <camera name="evidence" mode="trackcom" pos="0 -3.5 1.9"
+            zaxis="0 -0.920 0.391" fovy="46"/>
   </worldbody>
   <keyframe>
     <key name="task_start"

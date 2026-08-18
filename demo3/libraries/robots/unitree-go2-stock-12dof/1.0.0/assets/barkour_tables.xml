@@ -15,8 +15,8 @@
           contype="0" conaffinity="0" rgba="0.24 0.64 0.94 0.20"/>
     <geom name="hold_radius" type="cylinder" pos="1.8 0 0.103" size="0.4 0.003"
           contype="0" conaffinity="0" rgba="0.14 0.80 0.46 0.25"/>
-    <camera name="evidence" mode="targetbody" target="base_link"
-            pos="0.9 -4.0 2.1" fovy="43"/>
+    <camera name="evidence" mode="trackcom" pos="0 -3.2 1.7"
+            zaxis="0 -0.923 0.385" fovy="43"/>
   </worldbody>
   <keyframe>
     <key name="task_start"
