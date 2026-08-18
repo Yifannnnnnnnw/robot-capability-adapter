@@ -64,33 +64,56 @@ provides an inspectable experiment in which models design reusable robot
 capabilities and generate executable drivers while an external harness retains
 acceptance authority.
 
-The thesis makes the following scientific contributions:
+Within the evaluated scope, the thesis makes three scientific contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
-  \item A task-independent robot \textbf{interface} as the target of generation.
-  The generated artefact implements a human-defined capability set for one
-  robot and execution route, rather than one downstream task.
-  \item An \textbf{evidence}-backed acceptance and repair process. Fixed checks
-  and observations outside the generated adapter determine the result, while
-  missing evidence cannot become a pass.
-  \item A controlled evaluation of adapter \textbf{reuse}. The evaluation
-  reports interface generation, repair outcomes, and downstream task success
-  separately, and holds the qualified adapter fixed when tasks or decision
-  makers change.
+
+  \item AutoAdapter-Bench separates capability-layer \textbf{synthesis} from
+  \textbf{use}. It evaluates the same LLM backbones in separate tracks and
+  treats the two outcomes as different evidence categories, without assuming
+  that they are statistically independent.
+
+  \item Auto-Adapter makes capability and pass-criteria \textbf{design} part of
+  capability-layer synthesis. The LLM derives both from source-backed tasks and
+  reviewed task-level standards, while independent components control
+  validation and Repair remains separate from later-run Evolution. A generated
+  or successfully compiled criterion is not treated as reliable without the
+  declared validation evidence.
+
+  \item A controlled \textbf{cross-morphology} analysis studies low-level
+  motion-control capability synthesis across the declared robot cohort. It
+  compares validation outcomes, failure patterns, and resource use under
+  matched conditions, and reports the observed differences as associations
+  rather than causal morphology effects.
+
 \end{enumerate}
-It also makes the following industry contributions:
+
+Within the declared Direct-MuJoCo scope, the thesis also makes three bounded,
+industry-relevant contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
-  \item A repeatable robot \textbf{integration} workflow. Robot descriptions,
-  approved control information, declared operations, and acceptance checks are
-  recorded as explicit inputs rather than being hidden in one-off scripts.
-  \item \textbf{Traceability} for LLM-generated robot code. Validation reports,
-  execution observations, and failure ownership make the basis of each
-  acceptance or rejection inspectable.
-  \item Stable robot interfaces for downstream \textbf{reuse}. A qualified
-  adapter can be shared by different tasks and decision makers without folding
-  their task logic into the robot-specific implementation.
+
+  \item \textbf{Traceability} links reviewed task-level standards to
+  model-authored capability-level pass criteria, independent compilation, and
+  Harness verdicts for the declared tasks and validation cases.
+
+  \item A repeatable robot \textbf{integration} package supports scoped
+  \textbf{reuse}. It records the robot assets, control facts, source-backed
+  tasks, validation inputs, capability interfaces, and generated driver needed
+  to reproduce the declared integration.
+
+  \item Comparable \textbf{evidence} supports failure \textbf{diagnosis}.
+  AutoAdapter-Bench records synthesis and use separately, together with the
+  LLM backbone, robot configuration, generation condition, outcomes, failure
+  patterns, resource use, and per-trial evidence under matched conditions.
+
 \end{enumerate}
+
+These contributions are limited to the declared tasks, robot configurations,
+generation conditions, and Direct-MuJoCo evaluation protocol. They do not
+establish standards compliance, industrial certification, real-SDK fidelity,
+hardware safety, sim-to-real transfer, reduced integration time, production
+reliability, universal LLM superiority, or a causal morphology effect.
 \end{abstract}
 
 \begin{acknowledgements}
