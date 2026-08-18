@@ -1,0 +1,144 @@
+\chapter[Multi-Agent Workflow for Adapter Synthesis and Evolution]{Multi-Agent Workflow for Adapter Synthesis and Evolution}\label{chapter:multi-agent}
+
+\begin{quote}\itshape
+This chapter presents Exp. 2. It tests how bounded multi-agent roles
+coordinate adapter generation, repair, downstream tool use, quality-evidence
+collection, review, monitoring, and diagnosis inside the harness pipeline. The
+deterministic harness remains the process controller and pass/fail authority.
+\end{quote}
+
+\section[Introduction]{Introduction}
+Exp. 1 tests the harness as the pipeline that controls adapter
+synthesis. Exp. 2 tests how multi-agent roles operate inside that
+pipeline. The central claim is that agents should not be treated as a single
+self-evaluating loop. Adapter authorship, deterministic validation, downstream
+tool use, quality evidence, diagnosis, and review have different purposes and
+different risks. The harness therefore assigns each role a bounded input,
+bounded tool surface, budget, output artifact, and evidence record.
+
+The objective of this chapter is to describe the agent collaboration design
+used by Auto-Adapter. The coding agent writes and repairs the adapter. The
+validation layer is not an agent and retains pass/fail authority. A downstream
+tool-use agent tests whether a validated adapter can support robot-facing
+execution. An evolution or quality-evidence role can exercise the finished
+adapter and propose improvement directions, but its output remains advisory
+unless later tested by deterministic validation.
+
+\section[Background Literature]{Background Literature}
+The experiment is informed by work on LLM agents, coding agents, tool-use
+systems, program repair, and multi-agent workflows. These areas motivate an
+architecture in which the coding agent can author and repair code while
+deterministic validators retain pass/fail authority.
+
+\subsection[LLM Agents and Tool Use]{LLM Agents and Tool Use}
+LLM agents can plan, call tools, observe feedback, and revise behaviour. In
+robotics, tool use depends on whether a reliable robot-facing adapter already
+exists. This experiment distinguishes the agent that creates such a tool layer
+from the agent that later uses it.
+
+\subsection[Coding Agents and Program Repair]{Coding Agents and Program Repair}
+Coding agents provide the mechanism for generating and revising adapter code.
+Program repair motivates the use of structured validation feedback as an input
+to later generation attempts.
+
+\subsection[Role Separation in Multi-Agent Workflows]{Role Separation in Multi-Agent Workflows}
+Role separation prevents the LLM from becoming its own judge. It also makes it
+possible to analyse whether a failure arises from code synthesis, downstream
+tool use, diagnosis, validation coverage, or runtime integration. In this
+thesis, role separation is not used to remove the harness boundary. It is used
+to make agent collaboration inspectable within that boundary.
+
+\section[Study Materials]{Study Materials}
+The study materials are the resolved profile context, generated adapter
+artifacts, validation reports, downstream task traces, evolution evidence, and
+optional review or monitoring notes. These artifacts are passed between roles
+through the harness rather than being hidden inside a single conversational
+loop.
+
+\subsection[Generation Context]{Generation Context}
+The generation context contains robot-and-runtime specifications, primitive
+contracts, backend assumptions, approved APIs, and examples or documentation
+available to the coding agent.
+
+\subsection[Validation and Task Evidence]{Validation and Task Evidence}
+Validation evidence includes static checks, import results, primitive tests,
+transport traces, and composition outcomes. Task and evolution evidence
+includes downstream execution logs, tool-call traces, demonstrations, images,
+videos, observed errors, and non-authoritative quality summaries.
+
+\section[Aims of Study and Analysis Approach]{Aims of Study and Analysis Approach}
+The aim of this experiment is to evaluate a role-separated agent workflow in
+which each role is defined by the artifacts it receives, the tools it may use,
+and the evidence it produces. The analysis focuses on whether this separation
+makes synthesis, repair, downstream use, quality review, and failure
+interpretation easier to control.
+
+\subsection[Agent Role Definitions]{Agent Role Definitions}
+The main roles are the adapter-generation coding agent, the deterministic
+validation layer, the downstream tool-use agent, and the evolution
+quality-evidence role. A review or monitoring role is treated as an advisory
+extension: it may inspect evidence and propose alternative hypotheses or future
+improvement directions, but it must not override validation or write directly
+to the adapter without passing through the harness workflow. Each role has a
+distinct input-output contract.
+
+\subsection[Evaluation Criteria]{Evaluation Criteria}
+The workflow is evaluated by whether generated adapters can be repaired using
+structured validation evidence, whether validated adapters can be used
+downstream, whether evolution evidence adds useful quality information, and
+whether failures can be attributed to specific parts of the workflow without
+letting an agent self-certify success.
+
+\section[Multi-Agent Workflow Analysis]{Multi-Agent Workflow Analysis}
+The workflow proceeds from specification to adapter code, then to deterministic
+validation, repair where needed, downstream tool use, and evolution evidence.
+The harness controls the transition between these stages. Agents can perform
+specialised tasks, but the harness decides when evidence is sufficient to move
+from one stage to the next.
+
+\subsection[Adapter-Generation Coding Role]{Adapter-Generation Coding Role}
+The coding role writes the runtime adapter, typically including files such as
+\texttt{runtime\_adapter.py}, from the robot-and-runtime specification and then
+revises the implementation using validation feedback. Its output is an adapter
+artifact and trace evidence. Its boundary is that it may author code, but it
+does not decide whether that code is accepted.
+
+\subsection[Tool-Use and Execution Roles]{Tool-Use and Execution Roles}
+A downstream tool-use or execution role calls the packaged adapter as a tool.
+This role assumes that the adapter interface exists and focuses on task
+execution, demonstration, or interaction with the environment. This separates
+the ability to use an existing primitive API from the ability to synthesize
+that API.
+
+\subsection[Evolution, Review, and Monitoring Roles]{Evolution, Review, and Monitoring Roles}
+The evolution role records the final adapter outcome and may collect
+non-authoritative quality evidence after deterministic validation has passed.
+It can exercise the adapter through a contract-filtered tool surface and record
+tool traces, videos, observed errors, and qualitative summaries. This evidence
+can support later analysis of adapter quality, but it does not change the hard
+validation result.
+
+A review or monitoring role is a planned extension of the same design
+principle. Such a role can inspect accumulated evidence, identify repeated
+failure patterns, propose alternative repair hypotheses, and suggest broader
+quality-improvement directions. Its output is advisory. The harness must still
+control what evidence it can see, what tools it can call, and whether any
+suggestion is later tested by deterministic validation.
+
+\section[Results]{Results}
+Exp. 2 produces a role-based workflow in which adapter synthesis,
+adapter validation, adapter use, and adapter quality review are separable. This
+allows the thesis to avoid conflating a model's ability to use an existing
+adapter with its ability to synthesize a new adapter that passes validation. It
+also makes evidence quality easier to inspect because each role produces a
+different artifact: generated code, validation feedback, downstream traces, or
+evolution records.
+
+\section[Discussion]{Discussion}
+The multi-agent workflow strengthens interpretability, but it remains bounded
+by the role definitions, the tool surfaces exposed to each agent, the
+validation evidence available, and the downstream tasks used to test adapter
+utility. Advisory evolution or review agents can improve diagnosis and propose
+new directions, but their suggestions only become evidence if they are tested
+through the harness. The contribution is therefore a controlled collaboration
+model, not a claim that unconstrained agent debate improves robot autonomy.

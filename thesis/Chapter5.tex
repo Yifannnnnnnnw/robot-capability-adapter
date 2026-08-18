@@ -1,0 +1,102 @@
+\chapter[Validated Adapter Utility Across Robots and Tasks]{Validated Adapter Utility Across Robots and Tasks}\label{chapter:bench-evaluation}
+
+\begin{quote}\itshape
+This chapter presents Exp. 3. It tests whether validated adapters remain
+useful across robot morphologies, model families, runtime routes, task
+settings, and baselines.
+\end{quote}
+
+\section[Introduction]{Introduction}
+This experiment tests whether the harness and role-separated agent workflow can
+produce adapters that satisfy declared contracts and remain useful beyond a
+single generation run. It addresses RQ1 and RQ2 by separating adapter synthesis
+performance from downstream adapter use.
+
+\section[Background Literature]{Background Literature}
+The evaluation is informed by software benchmarks, coding-agent evaluation,
+robot task benchmarks, and tool-use evaluation. These areas motivate the need
+to measure not only whether code is generated, but whether the resulting tool
+layer is reusable and valid under robot-specific constraints.
+
+\subsection[Coding and Program Synthesis Benchmarks]{Coding and Program Synthesis Benchmarks}
+Coding benchmarks measure whether models can produce working software
+artifacts. AutoAdapter-Bench extends this logic to robot runtime adapters,
+where generated code must satisfy morphology, backend, and primitive
+constraints.
+
+\subsection[Robot Task and Tool-Use Evaluation]{Robot Task and Tool-Use Evaluation}
+Robot task evaluation measures whether an agent can execute behaviours in an
+environment. Tool-use evaluation measures whether an agent can call an existing
+interface effectively. This chapter keeps these questions separate from the
+synthesis of the interface itself.
+
+\subsection[Validation as Evaluation Evidence]{Validation as Evaluation Evidence}
+Validation outcomes serve as evidence for contract conformance. They do not by
+themselves prove physical deployment success, but they provide a consistent way
+to compare models, robots, and specification conditions.
+
+\section[Data Set and Benchmark Design]{Data Set and Benchmark Design}
+The benchmark data set consists of robot specifications, runtime profiles,
+primitive requirements, model outputs, generated adapter artifacts, validation
+reports, and downstream task evidence. These materials allow the experiment to
+compare synthesis success and downstream utility across conditions.
+
+\subsection[Robot and Task Coverage]{Robot and Task Coverage}
+The benchmark covers variation in robot morphology, control surface, primitive
+set, and runtime assumptions. Such variation is necessary because a reusable
+adapter claim is only meaningful if it survives embodiment and backend
+differences.
+
+\subsection[Model Families and Prompt Conditions]{Model Families and Prompt Conditions}
+The benchmark compares model families and generation conditions. This helps
+separate failures caused by insufficient model capability from failures caused
+by weak specifications, missing context, or inadequate validation feedback.
+
+\subsection[Baselines]{Baselines}
+Baselines distinguish direct task scripting from reusable adapter synthesis and
+compare harness-supported generation against weaker specification or feedback
+conditions.
+
+\section[Aims of Study and Analysis Approach]{Aims of Study and Analysis Approach}
+The aim of the experiment is to evaluate whether generated adapters satisfy
+declared contracts, whether validated adapters can be reused across tasks, and
+how performance varies across robots, models, and baselines.
+
+\subsection[Adapter Synthesis Metrics]{Adapter Synthesis Metrics}
+Adapter synthesis is evaluated through validation pass rates, failure
+categories, repair outcomes, contract conformance, and evidence of reuse.
+
+\subsection[Downstream Utility Metrics]{Downstream Utility Metrics}
+Downstream utility is evaluated by whether task agents can call validated
+adapters as tool layers and whether performance differs from direct scripting
+or weaker interface conditions.
+
+\section[Benchmark Analysis]{Benchmark Analysis}
+The analysis distinguishes three questions: whether an adapter can be
+synthesized, whether it passes validation, and whether it remains useful for
+downstream task execution.
+
+\subsection[Reusable Adapter Synthesis]{Reusable Adapter Synthesis}
+This analysis reports adapter generation success, validation outcomes, repair
+patterns, and failure categories. It provides the primary evidence for the
+claim that the harness can produce reusable adapters.
+
+\subsection[Downstream Adapter Utility]{Downstream Adapter Utility}
+This analysis reports whether validated adapters can serve as tool layers for
+downstream agents. It keeps downstream use separate from synthesis so the
+thesis does not confuse using an interface with generating one.
+
+\subsection[Use Versus Synthesis]{Use Versus Synthesis}
+Some models may use an existing adapter effectively while failing to synthesize
+one. This distinction is central to the thesis because tool use and tool
+synthesis are different capabilities.
+
+\section[Results]{Results}
+The expected results report adapter generation success, validation outcomes,
+downstream utility, baseline comparisons, and recurring failure categories
+across robot morphologies and model families.
+
+\section[Discussion]{Discussion}
+The benchmark evaluation supports claims about reusable adapter synthesis only
+within the benchmark and validation boundaries. Its findings motivate the
+boundary and runtime integration analysis in Chapter~\ref{chapter:runtime-improvement}.

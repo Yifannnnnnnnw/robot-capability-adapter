@@ -1,0 +1,293 @@
+\chapter[Introduction]{Introduction}\label{chapter:introduction}
+
+\begin{quote}\itshape
+The purpose of this chapter is to introduce the research problem addressed by
+this thesis and explain how the study investigates it. It begins by motivating
+the need to synthesise reusable software interfaces through which high-level
+controllers can operate different robots, rather than assuming that such
+interfaces already exist. The chapter then defines the research objectives and
+questions, outlines the three experiments used to answer them, and states the
+scientific contributions supported by the study.
+\end{quote}
+
+\section[Motivation]{Motivation}
+\label{sec:intro-motivation}
+
+Recent robot-learning systems have made task-level behaviour more reusable.
+Visuomotor policies learn actions from observations
+\citep{chi2023diffusionpolicy}, while vision--language--action models seek to
+transfer behaviour across tasks and robots
+\citep{brohan2023rt2,openxembodiment2024}. Large language model (LLM) systems
+can also interpret instructions and compose supplied robot operations
+\citep{ahn2022saycan,liang2023codeaspolicies}. These advances reduce
+task-specific programming, but they generally assume that an executable
+software interface to the target robot already exists.
+
+That interface must translate requested operations into the joint commands,
+actuator inputs, coordinate frames, limits, and observations used by a
+particular robot. These details vary with the robot and its control
+configuration, so a new platform can require new integration even when the
+task-level logic is unchanged. Robotics frameworks expose this remaining work
+directly: adding hardware still requires connections, calibration, state
+reading, and command writing
+\citep{lerobot2026hardware,ros2control2026hardware}. This thesis calls the
+decision-making program that chooses robot operations the
+\emph{high-level controller}, and the reusable interface that hides
+robot-specific execution details the \emph{robot capability layer}. Each
+operation exposed by this layer is a \emph{capability}; the word \emph{skill}
+is reserved for a task-level, temporally extended behaviour such as a
+pick-and-place sequence.
+
+Auto-Adapter 1.0 provided initial evidence that an LLM can generate this
+missing layer from machine-readable robot descriptions. Across eight simulated
+robot configurations, it produced self-contained drivers that all passed its
+structural-and-smoke onboarding harness, at a mean LLM-inference cost of
+US\$\(2.98 \pm 0.84\) and \(7.8 \pm 1.6\) minutes of wall-clock time per robot
+\citep{wang2026autoadapter}. This onboarding result did not establish full
+behavioural assurance. The same study also separated use from synthesis: all
+seven evaluated LLMs could operate a fixed synthesised interface, whereas only
+three produced a driver that passed its synthesis validation
+\citep{wang2026autoadapter}. Using an available robot capability layer
+therefore does not establish that the same model can construct one reliably.
+
+Auto-Adapter 2.0 addresses decisions that the earlier system left
+prespecified. Instead of receiving a human-written capability set, the model
+must derive five to ten reusable capabilities from at least twenty
+source-backed tasks with reviewed task-level pass standards. It must then
+design measurable conditions for accepting each capability---the
+\emph{capability-level pass criteria}---without weakening those standards.
+Robot code can run while controlling the wrong joints, using incorrect units,
+or producing the wrong physical outcome: a form of the software test-oracle
+problem \citep{barr2015oracle,araujo2023rasreview}. Auto-Adapter therefore uses
+an independent evaluation program, the \emph{Harness}, to own the private
+validation cases, observe simulator outcomes, and issue final verdicts.
+Structured failures may guide bounded corrections to the current driver,
+called \emph{Repair}; reviewed evidence from completed runs may instead inform
+later runs through \emph{Evolution}, but cannot alter the run that produced
+it.
+
+Three uncertainties then become central. First, LLM backbones may differ both
+in synthesising a robot capability layer and in using the same validated layer
+through fixed high-level controllers. Second, the value of task-grounded
+capability design, source-grounded capability-level pass-criteria design, and
+continued Evolution must be established rather than assumed. Third, different
+physical forms and joint arrangements---their \emph{morphologies}---may
+present different difficulties when the model synthesises operations that
+directly produce robot motion, termed
+\emph{low-level motion-control capabilities}. With the available robot cases,
+this comparison can identify associations and failure patterns, but cannot
+establish a causal morphology effect.
+
+These uncertainties motivate a controlled study of when Auto-Adapter can
+design, generate, and validate reusable robot capability layers. The thesis
+evaluates synthesis and use separately, analyses the framework's principal
+components, and compares synthesis across robot morphologies under matched
+conditions. The next section converts this motivation into explicit research
+objectives and questions.
+
+
+\section[Research Objectives]{Research Objectives}
+\label{sec:research-objectives}
+\label{sec:research-questions}
+
+The aim of this thesis is to determine, under controlled conditions, when LLMs
+can synthesise and use reusable robot capability layers. Auto-Adapter provides
+the experimental framework for examining three sources of variation: the LLM
+backbone, selected framework mechanisms, and robot morphology. Chapter~3 uses
+AutoAdapter-Bench to evaluate capability-layer synthesis and capability-layer
+use as separate outcomes. Evidence that a model can operate an available
+capability layer does not establish that it can construct one, or vice versa.
+
+This aim is expressed through three research questions:
+
+\begin{enumerate}
+    \item \textbf{RQ1---Comparison of LLM backbones in capability-layer
+    synthesis and use.}
+    To what extent do LLM backbones differ in synthesising a reusable robot
+    capability layer under skeleton-assisted and from-scratch generation
+    conditions, and in using a fixed and validated per-robot capability layer
+    through the same high-level controller to complete matched tasks?
+
+    \item \textbf{RQ2---Component analysis of the Auto-Adapter framework.}
+    Do selected Auto-Adapter mechanisms produce measurable differences in
+    synthesis quality?
+    \textbf{(a)} Can an LLM derive five to ten reusable capabilities from at
+    least twenty source-backed tasks without receiving a pre-authored
+    capability catalogue?
+    \textbf{(b)} Can it formulate source-grounded capability-level pass
+    criteria, without human predefinition at the capability level, that an
+    independent and implementation-blind process can audit and compile into
+    executable validation?
+    \textbf{(c)} Does reviewed evidence from completed runs improve synthesis
+    quality in matched later runs relative to the same condition without that
+    Experience?
+
+    \item \textbf{RQ3---Cross-morphology analysis of low-level
+    motion-control capability synthesis.}
+    With the LLM backbone, high-level controller, Auto-Adapter configuration,
+    generation condition, evaluation protocol, and resource budget held
+    fixed, how are differences in robot morphology associated with validation
+    success, failure patterns, and resource use?
+\end{enumerate}
+
+\label{sec:intro-scope}
+These questions concern declared robot configurations evaluated through the
+Direct-MuJoCo simulation route. The resulting evidence can support controlled
+comparisons and cross-morphology associations within this scope, but not
+hardware validity, sim-to-real transfer, universal model or robot superiority,
+or a causal morphology effect. The following section translates these
+questions into three controlled experiments.
+
+
+\section[Research Experiments]{Research Experiments}
+\label{sec:research-experiments}
+\label{sec:research-programme}
+
+The thesis begins with a broad comparison of LLM backbones in
+capability-layer synthesis and use through AutoAdapter-Bench. It then narrows
+the analysis to three mechanisms within Auto-Adapter: task-grounded capability
+design, source-grounded capability-level pass-criteria design, and Continued
+Evolution. Finally, it extends the synthesis analysis across robot
+morphologies under matched conditions. The empirical programme is organised
+into three experiments, reported in Chapters~3--5:
+
+\begin{enumerate}[leftmargin=*,itemsep=1em]
+    \item \textbf{Experiment 1---Comparison of LLM backbones in
+    capability-layer synthesis and use (AutoAdapter-Bench, Chapter~3).}
+    AutoAdapter-Bench compares the same set of LLM backbones in two tracks.
+    The \textbf{synthesis track} holds the Auto-Adapter framework, robot
+    inputs, source-task pass standards, private-case construction policy,
+    Harness measurement and verdict rules, and resource budget fixed within
+    each generation condition. Each backbone synthesises a robot capability
+    layer under both skeleton-assisted and from-scratch conditions, which
+    differ only in authorised access to the trusted skeleton. We compare
+    independent validation outcomes, failure patterns, and resource use; the
+    capability-level pass criteria authored by each model remain evaluated
+    outputs rather than fixed inputs. The \textbf{use track} gives the same
+    backbones a fixed and validated per-robot capability layer, the same
+    high-level controller, matched tasks, evaluation protocol, and budget. It
+    compares task completion while preventing successful capability use from
+    being interpreted as evidence of synthesis ability.
+
+    \item \textbf{Experiment 2---Component analysis of the Auto-Adapter
+    framework (Chapter~4).}
+    This experiment examines three framework mechanisms and the evidence each
+    must produce.
+    \textbf{(a) Task-grounded capability design.} We test whether an LLM can
+    derive five to ten reusable capabilities from at least twenty
+    source-backed tasks without receiving a pre-authored capability catalogue
+    or task-to-capability mapping. The analysis examines complete task
+    coverage and whether the grouping represents reusable robot operations
+    rather than task-specific programs.
+    \textbf{(b) Source-grounded capability-level pass-criteria design.} The
+    Task Library supplies task-level pass standards derived from traceable
+    robotics industry standards and standardised benchmark protocols. We test
+    whether an LLM can translate these obligations into source-preserving
+    criteria for the capabilities it designs, without receiving human-authored
+    capability-level criteria. An independent, implementation-blind process
+    then audits the criteria against their source obligations and compiles
+    accepted criteria into executable validation.
+    \textbf{(c) Continued Evolution.} We compare matched later runs with and
+    without reviewed Experience derived from completed runs, and measure
+    whether access to that Experience improves later synthesis outcomes.
+
+    \item \textbf{Experiment 3---Cross-morphology analysis of low-level
+    motion-control capability synthesis (Chapter~5).}
+    We compare synthesis across declared robot configurations with different
+    morphologies while holding the LLM backbone, high-level controller,
+    Auto-Adapter configuration, generation condition, evaluation protocol,
+    and resource budget fixed. Validation success, failure patterns, and
+    resource use are compared across morphologies. This design identifies
+    descriptive associations between morphology and synthesis outcomes; it
+    does not identify morphology as their causal source.
+\end{enumerate}
+
+Together, the experiments provide the evidence used to answer the three
+research questions. The following section states the scientific contributions
+that this evidence is designed to support.
+
+
+\section[Scientific Contributions]{Scientific Contributions}
+\label{sec:intro-contributions}
+
+The thesis contributes an engineering method for building and accepting
+LLM-generated robot software without trusting the generated code's own account
+of success. A behavioural pass is accepted only when the declared operation,
+executed command, observation outside the module, and independent verdict can
+be traced to the same test. The contribution has three parts:
+
+\begin{enumerate}[leftmargin=*,itemsep=0.8em]
+
+  \item \textbf{A task-independent target for robot software generation.} The
+  generated artefact is the robot-specific implementation of a human-defined
+  capability set for one robot and execution route. Its boundary excludes task
+  programs, raw transport code, high-rate controllers, and validation logic.
+  It therefore targets the software layer that downstream policies and agents
+  normally assume is already available.
+
+  \item \textbf{An evidence-backed acceptance and repair process.} The
+  operation requirements and route information are converted into a frozen
+  test plan before generation begins. The generated module then executes
+  through the selected simulator or approved SDK path. For supported SDK
+  routes, commands and readback follow the normal SDK path rather than a direct
+  simulator shortcut. Observations outside the module and deterministic checks
+  determine the result. Missing coverage, route capability, or independent
+  observation cannot become a pass. Only failures attributed to the module
+  can authorise bounded repair.
+
+  \item \textbf{A controlled evaluation of module quality and reuse.} The
+  evaluation reports interface generation, independently observed behaviour,
+  repair outcomes, and downstream task success separately. It compares
+  pass/fail feedback with commanded--observed measurements and holds the
+  qualified module fixed when tasks or decision makers change. This design
+  shows whether Auto-Adapter creates reusable robot infrastructure rather than
+  optimising one program for one test or task.
+
+\end{enumerate}
+
+These contributions automate the implementation of robot capability modules
+inside a human-defined
+engineering boundary. They do not automate new runtime backends, independent
+observers, or safety mechanisms. Current simulator-based evidence also does
+not establish physical-hardware performance or safety certification. Within
+these limits, Auto-Adapter provides a controlled way to generate a reusable
+robot capability module and to state exactly why it was or was not accepted.
+
+
+\section[Thesis Structure]{Thesis Structure}
+\label{sec:intro-structure}
+
+The remainder of the thesis is organised as follows:
+
+\begin{itemize}[leftmargin=*,itemsep=0.7em]
+
+  \item \textbf{Chapter~\ref{chapter:background}---Background and Literature
+  Review} defines the robot execution stack and reviews robot capability
+  interfaces, generalist policies, agentic robotics, interface and program
+  synthesis, software assurance, and execution-guided repair. It concludes by
+  locating the research gap addressed by Auto-Adapter.
+
+  \item \textbf{Chapter~\ref{chapter:harness}---Harness Control for Robot
+  Adapter Synthesis} presents Experiment 1. It compares independently qualified
+  capability-module synthesis under the contract-governed lifecycle and a
+  predefined direct coding-agent workflow, with resource use reported
+  separately.
+
+  \item \textbf{Chapter~\ref{chapter:multi-agent}---Multi-Agent Workflow for
+  Adapter Synthesis and Evolution} presents Experiment 2. It evaluates
+  candidate-independent qualification and bounded, evidence-grounded repair
+  across language-model backbones, robot--runtime integrations, and controller
+  scaffolding conditions.
+
+  \item \textbf{Chapter~\ref{chapter:bench-evaluation}---Validated Adapter
+  Utility Across Robots and Tasks} presents Experiment 3. It withholds task
+  specifications and task-derived feedback during synthesis and repair, then
+  evaluates each fixed capability module across downstream tasks and decision
+  makers.
+
+  \item \textbf{Chapter~\ref{chapter:conclusion}---Conclusion and Future Work}
+  answers the research questions, analyses the limits of the evidence, and
+  identifies the runtime, hardware, validation, and research extensions that
+  remain open.
+
+\end{itemize}

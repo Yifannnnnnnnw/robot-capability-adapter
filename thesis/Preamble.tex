@@ -1,0 +1,106 @@
+\makeatletter
+\renewcommand {\@degree@string} {Master of Science}
+\makeatother
+
+\title{Auto-Adapter: Robot-Specific Capability-Set Synthesis and Autonomous Closed-Loop Qualification}
+\author{Yifan Wang}
+\department{Department of Computer Science}
+
+\maketitle
+\makedeclaration
+
+\begin{abstract}
+Tool-using large language model (LLM) agents require a robot-specific
+software interface that converts requested actions into simulator or
+controller commands. Implementing this interface manually delays deployment
+on every new robot and execution route. Auto-Adapter 1.0 showed that an LLM
+could generate this layer from machine-readable robot descriptions: across
+eight simulated robots, it produced structurally validated, smoke-tested
+drivers at US\$\(2.98 \pm 0.84\) and \(7.8 \pm 1.6\) minutes per robot. Yet
+all seven evaluated models could use a synthesised interface, while only three
+generated a driver that passed validation.
+
+Auto-Adapter 2.0 asks whether the model can also design the reusable capability
+interface and its acceptance tests. Given public robot facts and at least
+twenty tasks with documented pass conditions drawn from public sources, an LLM
+defines five to ten reusable robot operations and validation criteria
+traceable to those sources. It then generates a robot-specific driver either
+with access to a trusted controller skeleton or from the required interface
+alone. A separate harness controls MuJoCo actuators and advances physics
+directly, applies hidden behavioural criteria that the generated code cannot
+modify, and permits bounded repair from structured failures.
+
+The evaluation comprises three experiments.
+\textbf{Experiment 1---LLM backbone comparison.} We compare LLM backbones
+when \textbf{synthesising} a reusable robot capability layer with a provided
+controller skeleton or from scratch, and when \textbf{using} the same fixed,
+validated capability layer with the same high-level controllers to complete
+matched physical tasks.
+
+\textbf{Experiment 2---Auto-Adapter framework analysis.} We analyse three
+components of the framework.
+\textbf{(a) Task-grounded capability design.} We test whether an LLM can
+derive reusable capabilities from at least twenty source-backed tasks.
+\textbf{(b) Capability-level pass-criteria design.} We test whether
+source-grounded capability-level pass criteria can be generated without human
+predefinition.
+\textbf{(c) Continued Evolution.} We test whether reviewed evidence from
+completed runs improves synthesis quality in later runs.
+
+\textbf{Experiment 3---Cross-morphology analysis.} We hold the LLM backbone,
+high-level controller, Auto-Adapter configuration, evaluation protocol, and
+resource budget fixed while comparing low-level motion-control skill synthesis
+across \textbf{different robot morphologies}.
+
+Across an SO-101 arm and a Unitree Go2 quadruped, [RESULT NEEDED: report
+initial and post-repair outcomes, failure modes, and resource use for all four
+combinations of robot and generation condition]. [TRIANGULATION RESULT NEEDED:
+report coverage of documented source requirements, agreement between aggregate
+verdicts and per-capability video evidence, and any missing evidence]. The
+study is limited to two Direct-MuJoCo case studies and does not establish
+real-SDK fidelity, hardware safety, sim-to-real transfer, universal robot
+support, or a causal morphology effect. Within these bounds, Auto-Adapter 2.0
+provides an inspectable experiment in which models design reusable robot
+capabilities and generate executable drivers while an external harness retains
+acceptance authority.
+
+The thesis makes the following scientific contributions:
+\vspace{-.65\baselineskip}
+\begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
+  \item A task-independent robot \textbf{interface} as the target of generation.
+  The generated artefact implements a human-defined capability set for one
+  robot and execution route, rather than one downstream task.
+  \item An \textbf{evidence}-backed acceptance and repair process. Fixed checks
+  and observations outside the generated adapter determine the result, while
+  missing evidence cannot become a pass.
+  \item A controlled evaluation of adapter \textbf{reuse}. The evaluation
+  reports interface generation, repair outcomes, and downstream task success
+  separately, and holds the qualified adapter fixed when tasks or decision
+  makers change.
+\end{enumerate}
+It also makes the following industry contributions:
+\vspace{-.65\baselineskip}
+\begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
+  \item A repeatable robot \textbf{integration} workflow. Robot descriptions,
+  approved control information, declared operations, and acceptance checks are
+  recorded as explicit inputs rather than being hidden in one-off scripts.
+  \item \textbf{Traceability} for LLM-generated robot code. Validation reports,
+  execution observations, and failure ownership make the basis of each
+  acceptance or rejection inspectable.
+  \item Stable robot interfaces for downstream \textbf{reuse}. A qualified
+  adapter can be shared by different tasks and decision makers without folding
+  their task logic into the robot-specific implementation.
+\end{enumerate}
+\end{abstract}
+
+\begin{acknowledgements}
+Replace this placeholder with your acknowledgements.
+\end{acknowledgements}
+
+\setcounter{tocdepth}{2}
+% Setting this higher means you get contents entries for
+%  more minor section headers.
+
+\tableofcontents
+\listoffigures
+\listoftables
