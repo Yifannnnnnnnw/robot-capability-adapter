@@ -10,6 +10,7 @@ import pytest
 from autoadapter2 import __main__ as cli
 from autoadapter2.driver_synthesis.generation import (
     DriverSourceAuditError,
+    GenerationError,
     ModelCallEvidence,
     StudyResult,
 )
@@ -18,6 +19,7 @@ from autoadapter2.pipeline import (
     ExperimentConfig,
     PipelineError,
     PipelineHooks,
+    _stage_evidence,
     _public_experience,
     render_reference_driver,
     run_experiment,
@@ -90,6 +92,7 @@ def _fake_hooks(
     reject_initial_source: bool = False,
     fail_model_probe: bool = False,
     study_raises: bool = False,
+    generation_raises: bool = False,
     in_conversation_study_probe: bool = False,
 ) -> tuple[PipelineHooks, dict[str, Any]]:
     packages = {robot: _package(tmp_path, robot) for robot in ("r-arm", "r-quad")}
@@ -215,6 +218,20 @@ def _fake_hooks(
 
     def generate_runner(model: Any, package: Any, design: Any, study: Any, **kwargs: Any) -> Any:
         events.append(("generate", package.robot_configuration_id, kwargs["condition"], 0))
+        if generation_raises:
+            candidate = (
+                Path(kwargs["workspace"]) / "generate-development" / "driver.py"
+            )
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            candidate.write_text("# unfinished model-authored candidate\n", encoding="utf-8")
+            raise GenerationError(
+                "interactive GENERATE did not submit",
+                react_trace=({"turn": 40, "event": "final_submission_turn"},),
+                probe_results=({"probe_id": "smoke", "physics_steps": 1},),
+                candidate_path=candidate,
+                model_turns=40,
+                tool_calls=30,
+            )
         if reject_initial_source:
             source = "def build(*, model, data):\n    return getattr(data, 'qpos')\n"
             raise DriverSourceAuditError(
@@ -446,6 +463,64 @@ def test_pipeline_does_not_rerun_an_in_conversation_study_probe(tmp_path: Path) 
     for cell in result["cells"]:
         assert cell["development_probe"]["successful_physics_probe"] is True
         assert len(cell["development_probe"]["results"]) == 1
+
+
+def test_unsubmitted_generation_preserves_trace_and_candidate(tmp_path: Path) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(
+        tmp_path,
+        events,
+        generation_raises=True,
+        in_conversation_study_probe=True,
+    )
+
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=tmp_path / "run",
+        run_id="generation-trace",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+    )
+
+    assert not any(item[0] == "harness" for item in events)
+    for cell in result["cells"]:
+        assert cell["attempt_count"] == 0
+        assert cell["driver_generated_in_run"] is True
+        rejected = cell["development_rejections"][0]
+        assert rejected["formal_attempt_submitted"] is False
+        assert rejected["candidate_preserved"] is True
+        evidence = cell["outcomes"]["GENERATE"]
+        assert evidence["react_model_turns"] == 40
+        assert evidence["react_tool_calls"] == 30
+        assert evidence["react_trace"][-1]["event"] == "final_submission_turn"
+        assert evidence["probe_results"][0]["physics_steps"] == 1
+
+
+def test_stage_evidence_carries_react_failure_details(tmp_path: Path) -> None:
+    error = GenerationError(
+        "did not submit",
+        react_trace=({"turn": 2, "event": "submission_required"},),
+        probe_results=({"probe_id": "p", "physics_steps": 1},),
+        candidate_path=tmp_path / "driver.py",
+        model_turns=2,
+        tool_calls=1,
+    )
+
+    evidence = _stage_evidence(
+        SimpleNamespace(calls=[]),
+        stage="generate",
+        before=0,
+        completed=False,
+        error=error,
+    )
+
+    assert evidence["react_model_turns"] == 2
+    assert evidence["react_tool_calls"] == 1
+    assert evidence["react_trace"][0]["event"] == "submission_required"
+    assert evidence["probe_results"][0]["physics_steps"] == 1
+    assert evidence["candidate_path"].endswith("driver.py")
 
 
 def test_failed_model_probe_keeps_diagnostics_and_uses_canonical_liveness(

@@ -299,6 +299,29 @@ def _stage_evidence(
             "type": type(error).__name__,
             "message": str(error)[:1000],
         }
+        react_trace = getattr(error, "react_trace", ())
+        if isinstance(react_trace, Sequence) and not isinstance(
+            react_trace, (str, bytes)
+        ):
+            result["react_trace"] = [
+                _copy(dict(item)) for item in react_trace if isinstance(item, Mapping)
+            ]
+        probe_results = getattr(error, "probe_results", ())
+        if isinstance(probe_results, Sequence) and not isinstance(
+            probe_results, (str, bytes)
+        ):
+            result["probe_results"] = [
+                _copy(dict(item)) for item in probe_results if isinstance(item, Mapping)
+            ]
+        model_turns = getattr(error, "model_turns", 0)
+        tool_calls = getattr(error, "tool_calls", 0)
+        if isinstance(model_turns, int) and model_turns > 0:
+            result["react_model_turns"] = model_turns
+        if isinstance(tool_calls, int) and tool_calls > 0:
+            result["react_tool_calls"] = tool_calls
+        candidate_path = getattr(error, "candidate_path", None)
+        if isinstance(candidate_path, (str, Path)):
+            result["candidate_path"] = str(candidate_path)
     return result
 
 
@@ -682,6 +705,10 @@ def _run_cell(
         model_stage_log.append({"robot": robot, "condition": condition, **evidence})
         dynamic_model_called = True
         failure = {"stage": "study", **_failure_record(exc)}
+        _write(
+            workspace / "study_error.json",
+            {"failure": failure, "evidence": evidence},
+        )
 
     if study_result is not None:
         try:
@@ -743,6 +770,7 @@ def _run_cell(
         for attempt in range(config.max_driver_attempts_per_condition):
             attempt_dir = workspace / f"attempt-{attempt}"
             attempt_dir.mkdir(parents=True, exist_ok=True)
+            before: int | None = None
             generation_evidence: dict[str, Any] | None = None
             repair_evidence: dict[str, Any] | None = None
             try:
@@ -906,7 +934,54 @@ def _run_cell(
                 _write(attempt_dir / "generation_error.json", failure)
                 break
             except Exception as exc:
-                failure = {"stage": "generate" if attempt == 0 else "repair", **_failure_record(exc)}
+                stage = "generate" if attempt == 0 else "repair"
+                evidence = _stage_evidence(
+                    client,
+                    stage=stage,
+                    before=before,
+                    completed=False,
+                    error=exc,
+                )
+                model_stage_log.append(
+                    {"robot": robot, "condition": condition, **evidence}
+                )
+                failure = {"stage": stage, **_failure_record(exc)}
+                candidate_preserved = False
+                candidate_path = getattr(exc, "candidate_path", None)
+                if isinstance(candidate_path, (str, Path)):
+                    candidate: Path | None = Path(candidate_path).resolve()
+                    try:
+                        candidate.relative_to(attempt_dir.resolve())
+                    except ValueError:
+                        candidate = None
+                    if candidate is not None and candidate.is_file():
+                        try:
+                            current_source = candidate.read_text(encoding="utf-8")
+                            candidate_preserved = bool(current_source.strip())
+                            driver_generated = driver_generated or candidate_preserved
+                        except (OSError, UnicodeDecodeError):
+                            candidate_preserved = False
+                development_rejections.append(
+                    {
+                        "stage": stage,
+                        "formal_attempt_submitted": False,
+                        "source_audit_passed": None,
+                        "candidate_preserved": candidate_preserved,
+                        "failure": failure,
+                        "evidence": evidence,
+                    }
+                )
+                _write(
+                    attempt_dir / "generation_evidence.json",
+                    {
+                        "attempt": attempt,
+                        "driver_filename": "driver.py",
+                        "evidence": evidence,
+                        "development_probe_results": evidence.get("probe_results", []),
+                        "candidate_preserved": candidate_preserved,
+                        "formal_attempt_submitted": False,
+                    },
+                )
                 _write(attempt_dir / "generation_error.json", failure)
                 break
 

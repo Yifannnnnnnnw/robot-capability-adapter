@@ -54,6 +54,25 @@ class JsonGenerator(Protocol):
 class GenerationError(RuntimeError):
     """Raised when a model-authored generation artifact is unusable."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        react_trace: Sequence[Mapping[str, Any]] = (),
+        probe_results: Sequence[Mapping[str, Any]] = (),
+        candidate_path: str | Path | None = None,
+        model_turns: int = 0,
+        tool_calls: int = 0,
+    ) -> None:
+        super().__init__(message)
+        self.react_trace = tuple(_copy(dict(item)) for item in react_trace)
+        self.probe_results = tuple(_copy(dict(item)) for item in probe_results)
+        self.candidate_path = (
+            Path(candidate_path) if candidate_path is not None else None
+        )
+        self.model_turns = int(model_turns)
+        self.tool_calls = int(tool_calls)
+
 
 class DriverSourceAuditError(GenerationError):
     """A model returned driver source, but source audit rejected it pre-Harness."""
@@ -604,7 +623,13 @@ def study(
                 max_tool_calls=STUDY_REACT_MAX_TOOL_CALLS,
             )
         except ReactLoopError as exc:
-            raise GenerationError(f"interactive STUDY did not submit: {exc}") from exc
+            raise GenerationError(
+                f"interactive STUDY did not submit: {exc}",
+                react_trace=exc.trace,
+                probe_results=session.probe_results,
+                model_turns=exc.model_turns,
+                tool_calls=exc.tool_calls,
+            ) from exc
         if not isinstance(react_result.submission, Mapping):
             raise GenerationError("submit_study must return one study object")
         output = _copy(dict(react_result.submission))
@@ -715,7 +740,14 @@ def generate(
                 max_tool_calls=DRIVER_REACT_MAX_TOOL_CALLS,
             )
         except ReactLoopError as exc:
-            raise GenerationError(f"interactive GENERATE did not submit: {exc}") from exc
+            raise GenerationError(
+                f"interactive GENERATE did not submit: {exc}",
+                react_trace=exc.trace,
+                probe_results=session.probe_results,
+                candidate_path=session.candidate_path,
+                model_turns=exc.model_turns,
+                tool_calls=exc.tool_calls,
+            ) from exc
         if not isinstance(react_result.submission, Mapping):
             raise GenerationError("submit_driver must return one driver object")
         output = _copy(dict(react_result.submission))
