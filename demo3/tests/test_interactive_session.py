@@ -8,6 +8,7 @@ from pathlib import Path
 from autoadapter2.driver_synthesis.interactive import (
     DevelopmentSessionError,
     PublicDevelopmentSession,
+    render_interface_stub,
 )
 from autoadapter2.driver_synthesis.probe import ProbeBudget
 from autoadapter2.libraries import RobotPackage
@@ -103,6 +104,34 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertNotIn("private", packed.lower())
         self.assertNotIn("reference", packed.lower())
         self.assertIn("assets/scene.xml", packed)
+
+    def test_interface_stub_contains_only_sealed_signatures_and_placeholders(self) -> None:
+        source = render_interface_stub(("drive", "hold_position"))
+        self.assertIn("def drive(self, request):", source)
+        self.assertIn("def hold_position(self, request):", source)
+        self.assertIn("def build(model, data):", source)
+        self.assertEqual(source.count("NotImplementedError"), 3)
+        self.assertNotIn("mujoco", source)
+        self.assertNotIn("ctrl", source)
+        self.assertNotIn("mj_step", source)
+
+    def test_generation_session_can_start_from_interface_stub_revision_zero(self) -> None:
+        session = PublicDevelopmentSession(
+            package=self.package,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "stub-session",
+            budget=ProbeBudget(max_requests=1, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+            capability_methods=("drive",),
+            seed_interface_stub=True,
+        )
+
+        initial = session.read_driver({})
+        self.assertEqual(initial["revision"], 0)
+        self.assertIn("def drive(self, request):", initial["source"])
+        self.assertIn("NotImplementedError", initial["source"])
+        written = session.write_driver({"source": DRIVER_SOURCE})
+        self.assertEqual(written["revision"], 1)
 
     def test_study_probe_executes_real_public_mujoco_physics(self) -> None:
         result = self.session.run_mujoco_probe(

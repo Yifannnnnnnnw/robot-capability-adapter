@@ -19,6 +19,7 @@ from .probe import (
     prepare_public_probe_workspace,
     run_probes,
 )
+from .skeleton_contract import validate_capability_names
 from .source_check import DriverSourceAudit, audit_driver_source
 
 
@@ -54,6 +55,35 @@ def _successful_probe(result: Mapping[str, Any], *, require_physics: bool) -> bo
     )
 
 
+def render_interface_stub(capability_methods: Sequence[str]) -> str:
+    """Render only the sealed callable surface, with no control implementation."""
+
+    methods = validate_capability_names(capability_methods)
+    lines = [
+        '"""Interface-only stub generated from the sealed Capability Design."""',
+        "",
+        "",
+        "class CapabilityDriver:",
+    ]
+    for method in methods:
+        lines.extend(
+            (
+                f"    def {method}(self, request):",
+                f'        raise NotImplementedError("implement {method}")',
+                "",
+            )
+        )
+    lines.extend(
+        (
+            "",
+            "def build(model, data):",
+            '    raise NotImplementedError("implement build")',
+            "",
+        )
+    )
+    return "\n".join(lines)
+
+
 class PublicDevelopmentSession:
     """One condition-local, budgeted view of public files and candidate source."""
 
@@ -67,6 +97,8 @@ class PublicDevelopmentSession:
         source_root: str | Path,
         capability_methods: Sequence[str] = (),
         capability_task_ids: Mapping[str, Sequence[str]] | None = None,
+        seed_interface_stub: bool = False,
+        initial_driver_source: str | None = None,
     ) -> None:
         if condition not in {"skeleton-assisted", "from-scratch"}:
             raise DevelopmentSessionError(f"unknown generation condition {condition!r}")
@@ -83,7 +115,11 @@ class PublicDevelopmentSession:
             framework_source_root=self.source_root,
         )
         self.candidate_path = self.workspace / "driver.py"
-        self.capability_methods = tuple(str(name) for name in capability_methods)
+        self.capability_methods = (
+            validate_capability_names(capability_methods)
+            if capability_methods
+            else ()
+        )
         self.capability_task_ids = {
             str(name): frozenset(str(task_id) for task_id in task_ids)
             for name, task_ids in (capability_task_ids or {}).items()
@@ -94,6 +130,23 @@ class PublicDevelopmentSession:
         self._revision = 0
         self._audited_revision: int | None = None
         self._smoked_revision: dict[str, int] = {}
+        if seed_interface_stub and initial_driver_source is not None:
+            raise DevelopmentSessionError(
+                "seed_interface_stub and initial_driver_source are mutually exclusive"
+            )
+        if seed_interface_stub:
+            if not self.capability_methods:
+                raise DevelopmentSessionError(
+                    "an interface stub requires sealed capability methods"
+                )
+            self.candidate_path.write_text(
+                render_interface_stub(self.capability_methods),
+                encoding="utf-8",
+            )
+        elif initial_driver_source is not None:
+            if not isinstance(initial_driver_source, str) or not initial_driver_source.strip():
+                raise DevelopmentSessionError("initial_driver_source must be non-empty")
+            self.candidate_path.write_text(initial_driver_source, encoding="utf-8")
 
     @property
     def revision(self) -> int:
@@ -360,7 +413,7 @@ class PublicDevelopmentSession:
             *self.public_tools(),
             ToolSpec(
                 "write_driver",
-                "Write or completely replace the model-authored driver.py. No interface stub is provided.",
+                "Write or completely replace driver.py. The initial file is an interface-only stub with no control implementation.",
                 _object_schema(
                     {"source": {"type": "string"}},
                     required=("source",),
@@ -429,4 +482,5 @@ __all__ = [
     "DevelopmentSessionError",
     "PublicDevelopmentSession",
     "capability_task_ids",
+    "render_interface_stub",
 ]
