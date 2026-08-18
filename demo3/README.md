@@ -6,10 +6,15 @@ not import or copy runtime code from Demo2 or `general_demo`.
 ## Experiment
 
 - `robotstudio_so101`: 20 sourced manipulation tasks.
-- `unitree-go2-stock-12dof`: 22 sourced locomotion tasks.
+- `unitree-go2-stock-12dof`: 20 sourced locomotion tasks.
 - Real-model TGCD reads each public Task Library and authors 5-10 capability
-  methods plus source-grounded validation contracts.
-- Trusted IVC compiles a private suite that generation cannot read.
+  groupings, effects, methods, and typed interfaces. Every task scoring clause
+  is copied into the capability validation contract without changing its
+  source-backed metric, threshold, temporal rule, or aggregation.
+- Trusted IVC receives the same task and source records, then compiles exactly
+  one private case per designed source clause. The Framework uniformly samples
+  five cases without replacement from that complete pool; generation cannot
+  read the pool or the sample.
 - Both package-local references must pass the generated suites before dynamic
   Driver Synthesis starts.
 - The four dynamic cells are the two robots crossed with the preserved
@@ -84,7 +89,8 @@ Harness-private suites, reference calibration reports, condition-local model
 and probe evidence, candidate attempts, validation reports, per-case videos,
 cell reports, and the final paired `experiment_report.json`. These fields keep
 pipeline completion, physical execution, validation verdicts, and video
-completeness separate.
+completeness separate. Task counts distinguish tasks touched by the selected
+cases from tasks whose complete set of scoring clauses was physically evaluated.
 
 See `EVIDENCE.md` for the historical complete run, current local verification,
 and the latest real-model launch result.
