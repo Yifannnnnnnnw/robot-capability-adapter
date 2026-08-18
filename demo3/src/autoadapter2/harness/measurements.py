@@ -117,6 +117,29 @@ def measure(
         actual = _site_position(final, str(parameters["site_name"]))
         target = _vector(_argument(public_arguments, str(parameters["target_argument"])), size=3)
         return _distance(actual, target)
+    if kind == "final_site_axis_error":
+        axis = int(parameters["axis"])
+        if axis not in {0, 1, 2}:
+            raise MeasurementError("site-axis measurement requires axis 0, 1, or 2")
+        actual = _site_position(final, str(parameters["site_name"]))
+        target = _vector(
+            _argument(public_arguments, str(parameters["target_argument"])), size=3
+        )
+        return abs(actual[axis] - target[axis])
+    if kind == "final_weighted_site_position_error":
+        actual = _site_position(final, str(parameters["site_name"]))
+        target = _vector(
+            _argument(public_arguments, str(parameters["target_argument"])), size=3
+        )
+        weights = _vector(parameters["weights"], size=3)
+        weighted_error = tuple(
+            (value - goal) * weight
+            for value, goal, weight in zip(actual, target, weights)
+        )
+        return _distance(
+            weighted_error,
+            (0.0, 0.0, 0.0),
+        )
     if kind == "final_body_position_error":
         actual = _body_position(final, str(parameters["body_name"]))
         target = _vector(_argument(public_arguments, str(parameters["target_argument"])), size=3)
@@ -187,6 +210,8 @@ def compare(value: float, *, comparator: str, threshold: Any) -> bool:
 
 _STATE_BINDING_KINDS = {
     "final_site_position_error",
+    "final_site_axis_error",
+    "final_weighted_site_position_error",
     "final_body_position_error",
     "final_joint_position_error",
     "body_height",

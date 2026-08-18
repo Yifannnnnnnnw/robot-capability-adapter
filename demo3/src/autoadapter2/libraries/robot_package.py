@@ -16,6 +16,8 @@ class RobotPackageError(ValueError):
 
 _SUPPORTED_BINDING_KINDS = {
     "final_site_position_error",
+    "final_site_axis_error",
+    "final_weighted_site_position_error",
     "final_body_position_error",
     "final_joint_position_error",
     "joint_range",
