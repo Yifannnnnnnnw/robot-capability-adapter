@@ -66,6 +66,11 @@ To exercise only the newly generated four-cell path without rerunning reference
 calibration, add `--skip-reference-calibration`. This is explicitly diagnostic:
 the report records the skip and can never claim formal mainline success.
 
+After an API interruption, `--reuse-sealed-inputs-from runs/<prior-run>` reuses
+that run's audited capability designs, complete case pools, and exact sealed
+five-case samples. The new report records the source run and still keeps all
+private suite files outside candidate workspaces.
+
 ## Evidence
 
 The current robot models have pinned upstream provenance, but a post-run audit

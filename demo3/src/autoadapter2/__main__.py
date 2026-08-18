@@ -39,6 +39,12 @@ def _parser() -> argparse.ArgumentParser:
                 action="store_true",
                 help="run dynamic cells diagnostically without the formal reference gate",
             )
+            command.add_argument(
+                "--reuse-sealed-inputs-from",
+                type=Path,
+                default=None,
+                help="reuse audited TGCD/IVC artifacts from a prior demo3 run",
+            )
     return parser
 
 
@@ -74,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
             output_dir=args.output,
             run_id=args.run_id,
             skip_reference_calibration=args.skip_reference_calibration,
+            sealed_inputs_from=args.reuse_sealed_inputs_from,
         )
         _print(
             {

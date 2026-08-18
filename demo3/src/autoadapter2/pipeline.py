@@ -21,7 +21,11 @@ from pathlib import Path
 from typing import Any
 
 from autoadapter2 import __version__
-from autoadapter2.capability_design import run_tgcd, write_capability_design
+from autoadapter2.capability_design import (
+    run_tgcd,
+    validate_capability_design,
+    write_capability_design,
+)
 from autoadapter2.driver_synthesis.generation import (
     DriverSourceAuditError,
     GenerationCondition,
@@ -59,6 +63,7 @@ from autoadapter2.validation_compiler import (
     PRIVATE_CASE_SAMPLE_SIZE,
     run_ivc,
     sample_private_suite,
+    validate_private_suite,
     write_private_suite,
 )
 
@@ -204,6 +209,10 @@ class PipelineHooks:
     """
 
     package_loader: Callable[..., RobotPackage] = load_indexed_robot_package
+    capability_design_validator: Callable[..., Mapping[str, Any]] = (
+        validate_capability_design
+    )
+    private_suite_validator: Callable[..., Mapping[str, Any]] = validate_private_suite
     tgcd_runner: Callable[..., Mapping[str, Any]] = run_tgcd
     ivc_runner: Callable[..., Mapping[str, Any]] = run_ivc
     study_runner: Callable[..., StudyResult] = study
@@ -236,6 +245,122 @@ def _json_safe(value: Any) -> Any:
 
 def _write(path: Path, value: Mapping[str, Any]) -> None:
     write_json(path, _json_safe(value))
+
+
+def _read_object(path: Path, *, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PipelineError(f"cannot read {label} from {path}") from exc
+    if not isinstance(value, dict):
+        raise PipelineError(f"{label} must contain one JSON object")
+    return value
+
+
+def _reuse_sealed_inputs(
+    *,
+    source_dir: str | Path,
+    demo_root: Path,
+    destination: Path,
+    config: ExperimentConfig,
+    packages: Mapping[str, RobotPackage],
+    hooks: PipelineHooks,
+) -> tuple[
+    dict[str, Mapping[str, Any]],
+    dict[str, Mapping[str, Any]],
+    list[dict[str, Any]],
+    dict[str, Any],
+]:
+    source = Path(source_dir).resolve()
+    runs_root = (demo_root / "runs").resolve()
+    try:
+        source.relative_to(runs_root)
+    except ValueError as exc:
+        raise PipelineError("reused sealed inputs must come from demo3/runs") from exc
+    if source == destination.resolve():
+        raise PipelineError("sealed-input source and destination run must differ")
+
+    report = _read_object(source / "experiment_report.json", label="source run report")
+    source_run_id = report.get("run_id")
+    if not isinstance(source_run_id, str) or not source_run_id.strip():
+        raise PipelineError("source run report lacks run_id")
+    source_evidence = report.get("stage_evidence")
+    if not isinstance(source_evidence, list):
+        raise PipelineError("source run report lacks stage_evidence")
+
+    designs: dict[str, Mapping[str, Any]] = {}
+    suites: dict[str, Mapping[str, Any]] = {}
+    reused_evidence: list[dict[str, Any]] = []
+    for robot in config.robots:
+        for stage in ("tgcd", "ivc"):
+            evidence = next(
+                (
+                    item
+                    for item in source_evidence
+                    if isinstance(item, Mapping)
+                    and item.get("robot") == robot
+                    and item.get("stage") == stage
+                    and item.get("completed") is True
+                ),
+                None,
+            )
+            if evidence is None:
+                raise PipelineError(
+                    f"source run lacks completed {stage} evidence for {robot!r}"
+                )
+            reused_evidence.append(
+                {
+                    **_copy(dict(evidence)),
+                    "reused": True,
+                    "reused_from_run_id": source_run_id,
+                }
+            )
+
+        package = packages[robot]
+        design_path = source / "designs" / robot / "capability_design.json"
+        pool_path = source / "private" / robot / "private_case_pool.json"
+        suite_path = source / "private" / robot / "private_validation_suite.json"
+        design = dict(
+            hooks.capability_design_validator(
+                _read_object(design_path, label=f"{robot} capability design"),
+                package,
+            )
+        )
+        pool = dict(
+            hooks.private_suite_validator(
+                _read_object(pool_path, label=f"{robot} private case pool"),
+                package=package,
+                design=design,
+            )
+        )
+        suite = _read_object(suite_path, label=f"{robot} sampled private suite")
+        selection = suite.get("selection")
+        seed = selection.get("seed") if isinstance(selection, Mapping) else None
+        if not isinstance(seed, str) or not seed:
+            raise PipelineError(f"{robot} sampled private suite lacks its selection seed")
+        if sample_private_suite(pool, seed=seed) != suite:
+            raise PipelineError(f"{robot} sampled private suite differs from its sealed pool")
+
+        write_capability_design(
+            destination / "designs" / robot / "capability_design.json", design
+        )
+        write_private_suite(
+            destination / "private" / robot / "private_case_pool.json", pool
+        )
+        write_private_suite(
+            destination / "private" / robot / "private_validation_suite.json", suite
+        )
+        designs[robot] = design
+        suites[robot] = suite
+
+    provenance = {
+        "reused": True,
+        "source_run_id": source_run_id,
+        "source_run_directory": str(source),
+        "robots": list(config.robots),
+    }
+    _write(destination / "sealed_input_reuse.json", provenance)
+    return designs, suites, reused_evidence, provenance
 
 
 def _default_root() -> Path:
@@ -1240,6 +1365,7 @@ def run_experiment(
     hooks: PipelineHooks | None = None,
     check_self_containment: bool = True,
     skip_reference_calibration: bool = False,
+    sealed_inputs_from: str | Path | None = None,
 ) -> dict[str, Any]:
     """Run TGCD/IVC and four cells, with the formal reference gate by default."""
 
@@ -1282,8 +1408,24 @@ def run_experiment(
     stage_log: list[dict[str, Any]] = []
     designs: dict[str, Mapping[str, Any]] = {}
     suites: dict[str, Mapping[str, Any]] = {}
+    sealed_input_provenance: dict[str, Any] | None = None
+    if sealed_inputs_from is not None:
+        (
+            designs,
+            suites,
+            reused_evidence,
+            sealed_input_provenance,
+        ) = _reuse_sealed_inputs(
+            source_dir=sealed_inputs_from,
+            demo_root=root,
+            destination=destination,
+            config=config,
+            packages=packages,
+            hooks=selected_hooks,
+        )
+        stage_log.extend(reused_evidence)
     # Both robots complete TGCD and IVC before either condition receives a driver workspace.
-    for robot in config.robots:
+    for robot in (() if sealed_inputs_from is not None else config.robots):
         package = packages[robot]
         robot_design_dir = destination / "designs" / robot
         robot_private_dir = destination / "private" / robot
@@ -1447,6 +1589,7 @@ def run_experiment(
             "configuration": config.as_dict(),
             "package_check": package_check,
             "references": references,
+            "sealed_input_provenance": sealed_input_provenance,
             "reference_calibration_passed": False,
             "cells": [],
             "paired_report": build_paired_report(
@@ -1505,6 +1648,7 @@ def run_experiment(
         "configuration": config.as_dict(),
         "package_check": package_check,
         "references": references,
+        "sealed_input_provenance": sealed_input_provenance,
         "reference_calibration_skipped": skip_reference_calibration,
         "reference_calibration_passed": references_passed,
         "cells": cell_reports,

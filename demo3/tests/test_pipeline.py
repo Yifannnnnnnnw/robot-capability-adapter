@@ -290,6 +290,8 @@ def _fake_hooks(
 
     hooks = PipelineHooks(
         package_loader=load,
+        capability_design_validator=lambda design, package: dict(design),
+        private_suite_validator=lambda suite, **kwargs: dict(suite),
         tgcd_runner=tgcd,
         ivc_runner=ivc,
         study_runner=study_runner,
@@ -616,6 +618,55 @@ def test_explicit_reference_skip_runs_dynamic_cells_but_never_claims_success(
     assert result["claim"] == (
         "dynamic cells completed without reference calibration; formal mainline claim unavailable"
     )
+
+
+def test_reuse_sealed_inputs_skips_tgcd_ivc_and_preserves_five_case_suite(
+    tmp_path: Path,
+) -> None:
+    source_events: list[tuple[Any, ...]] = []
+    source_hooks, source_state = _fake_hooks(
+        tmp_path, source_events, validation_pass_at=1
+    )
+    source = tmp_path / "runs" / "sealed-source"
+    run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=source,
+        run_id="sealed-source",
+        client=source_state["client"],
+        hooks=source_hooks,
+        check_self_containment=False,
+    )
+
+    resumed_events: list[tuple[Any, ...]] = []
+    resumed_hooks, resumed_state = _fake_hooks(
+        tmp_path, resumed_events, validation_pass_at=1
+    )
+    destination = tmp_path / "runs" / "resumed"
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=destination,
+        run_id="resumed",
+        client=resumed_state["client"],
+        hooks=resumed_hooks,
+        check_self_containment=False,
+        skip_reference_calibration=True,
+        sealed_inputs_from=source,
+    )
+
+    assert not any(item[0] in {"tgcd", "ivc"} for item in resumed_events)
+    assert len([item for item in resumed_events if item[0] == "study"]) == 4
+    assert result["sealed_input_provenance"]["source_run_id"] == "sealed-source"
+    for robot in ("r-arm", "r-quad"):
+        original = json.loads(
+            (source / "private" / robot / "private_validation_suite.json").read_text()
+        )
+        reused = json.loads(
+            (destination / "private" / robot / "private_validation_suite.json").read_text()
+        )
+        assert reused == original
+        assert len(reused["cases"]) == 5
 
 
 def test_package_failure_happens_before_model_calls(tmp_path: Path) -> None:
