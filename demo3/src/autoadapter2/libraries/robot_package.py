@@ -6,6 +6,7 @@ import json
 import math
 import re
 import xml.etree.ElementTree as ET
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -210,6 +211,78 @@ def _validate_scoring_clause(
     _validate_source_refs(clause, where=where, source_ids=source_ids)
 
 
+def _validate_parameter_schema(schema: Any, *, where: str) -> None:
+    if not isinstance(schema, dict):
+        raise RobotPackageError(f"{where} must be an object")
+    kind = _required_text(schema, "type", where=where)
+    _required_text(schema, "unit", where=where)
+    _required_text(schema, "frame", where=where)
+
+    def validate_shape(value: Any, *, shape_where: str) -> None:
+        if not isinstance(value, dict):
+            raise RobotPackageError(f"{shape_where} must be an object")
+        value_kind = value.get("type")
+        if value_kind not in {
+            "array",
+            "boolean",
+            "integer",
+            "number",
+            "object",
+            "string",
+        }:
+            raise RobotPackageError(f"{shape_where}.type is unsupported")
+        if value_kind != "array":
+            return
+        if "items" not in value:
+            raise RobotPackageError(f"{shape_where}.items must declare a supported type")
+        validate_shape(value["items"], shape_where=f"{shape_where}.items")
+        length = value.get("length")
+        if length is not None and (
+            isinstance(length, bool) or not isinstance(length, int) or length < 1
+        ):
+            raise RobotPackageError(f"{shape_where}.length must be a positive integer")
+
+    validate_shape(schema, shape_where=where)
+
+
+def _validate_parameter_value(
+    value: Any, schema: Mapping[str, Any], *, where: str
+) -> None:
+    kind = schema["type"]
+    if kind == "number":
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
+            raise RobotPackageError(f"{where} must be a finite number")
+        return
+    if kind == "integer":
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise RobotPackageError(f"{where} must be an integer")
+        return
+    if kind == "boolean":
+        if not isinstance(value, bool):
+            raise RobotPackageError(f"{where} must be boolean")
+        return
+    if kind == "string":
+        if not isinstance(value, str):
+            raise RobotPackageError(f"{where} must be text")
+        return
+    if kind == "object":
+        if not isinstance(value, dict):
+            raise RobotPackageError(f"{where} must be an object")
+        return
+    if not isinstance(value, list):
+        raise RobotPackageError(f"{where} must be an array")
+    length = schema.get("length")
+    if isinstance(length, int) and len(value) != length:
+        raise RobotPackageError(f"{where} must contain exactly {length} items")
+    item_schema = schema["items"]
+    for index, item in enumerate(value):
+        _validate_parameter_value(item, item_schema, where=f"{where}[{index}]")
+
+
 def _validate_tasks(
     document: dict[str, Any],
     *,
@@ -260,7 +333,12 @@ def _validate_tasks(
             )
         required_parameters = parameters.get("required")
         properties = parameters.get("properties")
-        if not isinstance(required_parameters, list) or not required_parameters:
+        if (
+            not isinstance(required_parameters, list)
+            or not required_parameters
+            or any(not isinstance(name, str) or not name.strip() for name in required_parameters)
+            or len(set(required_parameters)) != len(required_parameters)
+        ):
             raise RobotPackageError(
                 f"{where}.invocation_schema task_parameters must declare required fields"
             )
@@ -269,6 +347,19 @@ def _validate_tasks(
         ):
             raise RobotPackageError(
                 f"{where}.invocation_schema required task parameters need property schemas"
+            )
+        if parameters.get("additional_properties") is not False:
+            raise RobotPackageError(
+                f"{where}.invocation_schema task_parameters must forbid additional properties"
+            )
+        for name, schema in properties.items():
+            if not isinstance(name, str) or not name.strip():
+                raise RobotPackageError(
+                    f"{where}.invocation_schema task_parameters has an invalid property name"
+                )
+            _validate_parameter_schema(
+                schema,
+                where=f"{where}.invocation_schema.request.task_parameters.properties.{name}",
             )
         _required_list(value, "scene_assumptions", where=where)
         _required_list(value, "observation_assumptions", where=where)
@@ -451,6 +542,19 @@ def _validate_private_inputs(
         if missing_parameters:
             raise RobotPackageError(
                 f"{where}.request.task_parameters misses {sorted(missing_parameters)}"
+            )
+        property_schemas = schema_parameters["properties"]
+        unexpected_parameters = set(parameters) - set(property_schemas)
+        if unexpected_parameters:
+            raise RobotPackageError(
+                f"{where}.request.task_parameters contains undeclared fields "
+                f"{sorted(unexpected_parameters)}"
+            )
+        for name, value in parameters.items():
+            _validate_parameter_value(
+                value,
+                property_schemas[name],
+                where=f"{where}.request.task_parameters.{name}",
             )
 
     def validate_reset(reset: Any, *, where: str) -> None:

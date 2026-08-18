@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
-  "snapshot_id": "unitree-go2-source-protocols-2026-08-18-v3",
+  "snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
   "tasks": [
     {
       "task_id": "GO2-T01",
@@ -83,7 +83,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive command window"
+                "description": "positive command window",
+                "frame": "none"
               },
               "target_speed_m_s": {
                 "type": "number",
@@ -164,7 +165,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "source 10 second trial window"
+                "description": "source 10 second trial window",
+                "frame": "none"
               },
               "command_speed_m_s": {
                 "type": "number",
@@ -175,7 +177,8 @@
               "step_height_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "morphology-scaled source step height"
+                "description": "morphology-scaled source step height",
+                "frame": "task_fixture"
               }
             },
             "additional_properties": false
@@ -244,7 +247,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "source 10 second trial window"
+                "description": "source 10 second trial window",
+                "frame": "none"
               },
               "command_speed_m_s": {
                 "type": "number",
@@ -255,7 +259,8 @@
               "step_height_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "morphology-scaled source step height"
+                "description": "morphology-scaled source step height",
+                "frame": "task_fixture"
               }
             },
             "additional_properties": false
@@ -324,17 +329,20 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "source 10 second trial window"
+                "description": "source 10 second trial window",
+                "frame": "none"
               },
               "payload_mass_ratio": {
                 "type": "number",
                 "unit": "ratio",
-                "description": "payload divided by nominal MJCF robot mass"
+                "description": "payload divided by nominal MJCF robot mass",
+                "frame": "none"
               },
               "step_height_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "morphology-scaled 13.4 cm source step"
+                "description": "morphology-scaled 13.4 cm source step",
+                "frame": "task_fixture"
               }
             },
             "additional_properties": false
@@ -401,7 +409,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "turn-rate measurement window"
+                "description": "turn-rate measurement window",
+                "frame": "none"
               },
               "target_yaw_rate_rad_s": {
                 "type": "number",
@@ -474,13 +483,21 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive course execution budget"
+                "description": "positive course execution budget",
+                "frame": "none"
               },
               "path_waypoints_m": {
                 "type": "array",
                 "unit": "m",
                 "description": "fixed ordered path centers",
-                "frame": "world"
+                "frame": "world",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "length": 2
+                }
               }
             },
             "additional_properties": false
@@ -546,7 +563,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive lane execution budget"
+                "description": "positive lane execution budget",
+                "frame": "none"
               },
               "lane_length_m": {
                 "type": "number",
@@ -618,7 +636,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive lane execution budget"
+                "description": "positive lane execution budget",
+                "frame": "none"
               },
               "lane_length_m": {
                 "type": "number",
@@ -690,7 +709,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive lane execution budget"
+                "description": "positive lane execution budget",
+                "frame": "none"
               },
               "lane_length_m": {
                 "type": "number",
@@ -762,7 +782,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive lane execution budget"
+                "description": "positive lane execution budget",
+                "frame": "none"
               },
               "lane_length_m": {
                 "type": "number",
@@ -834,7 +855,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive lane execution budget"
+                "description": "positive lane execution budget",
+                "frame": "none"
               },
               "lane_length_m": {
                 "type": "number",
@@ -907,7 +929,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive travel window"
+                "description": "positive travel window",
+                "frame": "none"
               },
               "direction_rad": {
                 "type": "number",
@@ -918,7 +941,8 @@
               "map_limit_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "source maximum travel distance"
+                "description": "source maximum travel distance",
+                "frame": "terrain"
               }
             },
             "additional_properties": false
@@ -985,7 +1009,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive travel window"
+                "description": "positive travel window",
+                "frame": "none"
               },
               "direction_rad": {
                 "type": "number",
@@ -996,7 +1021,8 @@
               "map_limit_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "source maximum travel distance"
+                "description": "source maximum travel distance",
+                "frame": "terrain"
               }
             },
             "additional_properties": false
@@ -1063,7 +1089,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive travel window"
+                "description": "positive travel window",
+                "frame": "none"
               },
               "direction_rad": {
                 "type": "number",
@@ -1074,7 +1101,8 @@
               "map_limit_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "source maximum travel distance"
+                "description": "source maximum travel distance",
+                "frame": "terrain"
               }
             },
             "additional_properties": false
@@ -1141,7 +1169,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive travel window"
+                "description": "positive travel window",
+                "frame": "none"
               },
               "direction_rad": {
                 "type": "number",
@@ -1152,7 +1181,8 @@
               "map_limit_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "source maximum travel distance"
+                "description": "source maximum travel distance",
+                "frame": "terrain"
               }
             },
             "additional_properties": false
@@ -1239,13 +1269,18 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "movement plus five-second hold window"
+                "description": "movement plus five-second hold window",
+                "frame": "none"
               },
               "end_table_center_m": {
                 "type": "array",
                 "unit": "m",
                 "description": "end-table center",
-                "frame": "world"
+                "frame": "world",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3
               }
             },
             "additional_properties": false
@@ -1331,13 +1366,21 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive weave execution window"
+                "description": "positive weave execution window",
+                "frame": "none"
               },
               "path_waypoints_m": {
                 "type": "array",
                 "unit": "m",
                 "description": "ordered weave path",
-                "frame": "world"
+                "frame": "world",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "length": 2
+                }
               }
             },
             "additional_properties": false
@@ -1403,12 +1446,14 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive A-frame execution window"
+                "description": "positive A-frame execution window",
+                "frame": "none"
               },
               "incline_deg": {
                 "type": "number",
                 "unit": "deg",
-                "description": "source A-frame incline"
+                "description": "source A-frame incline",
+                "frame": "task_fixture"
               }
             },
             "additional_properties": false
@@ -1494,7 +1539,8 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive broad-jump window"
+                "description": "positive broad-jump window",
+                "frame": "none"
               },
               "board_length_m": {
                 "type": "number",
@@ -1629,24 +1675,37 @@
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "course execution and final dwell window"
+                "description": "course execution and final dwell window",
+                "frame": "none"
               },
               "allotted_time_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "source score allotted time"
+                "description": "source score allotted time",
+                "frame": "none"
               },
               "path_waypoints_m": {
                 "type": "array",
                 "unit": "m",
                 "description": "source-order course path",
-                "frame": "world"
+                "frame": "world",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "length": 2
+                }
               },
               "end_table_center_m": {
                 "type": "array",
                 "unit": "m",
                 "description": "end-table center",
-                "frame": "world"
+                "frame": "world",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3
               }
             },
             "additional_properties": false

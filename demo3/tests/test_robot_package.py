@@ -49,7 +49,16 @@ def _task(index: int) -> dict[str, object]:
                 "task_parameters": {
                     "type": "object",
                     "required": ["target"],
-                    "properties": {"target": {"type": "array"}},
+                    "properties": {
+                        "target": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "length": 3,
+                            "unit": "m",
+                            "frame": "world",
+                        }
+                    },
+                    "additional_properties": False,
                 },
             },
         },
@@ -191,6 +200,35 @@ class RobotPackageTests(unittest.TestCase):
         _write_json(catalog_path, catalog)
 
         with self.assertRaisesRegex(RobotPackageError, "unknown source"):
+            load_robot_package(self.root)
+
+    def test_task_parameter_schema_requires_units_frames_and_closed_fields(self) -> None:
+        catalog_path = self.root / "tasks" / "catalog.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        parameters = catalog["tasks"][0]["invocation_schema"]["request"][
+            "task_parameters"
+        ]
+        parameters["properties"]["target"].pop("frame")
+        _write_json(catalog_path, catalog)
+
+        with self.assertRaisesRegex(RobotPackageError, "frame must be a non-empty string"):
+            load_robot_package(self.root)
+
+        parameters["properties"]["target"]["frame"] = "world"
+        parameters.pop("additional_properties")
+        _write_json(catalog_path, catalog)
+        with self.assertRaisesRegex(RobotPackageError, "forbid additional properties"):
+            load_robot_package(self.root)
+
+    def test_private_instance_cannot_add_an_undeclared_task_parameter(self) -> None:
+        instances_path = self.root / "tasks" / "private" / "instances.json"
+        document = json.loads(instances_path.read_text(encoding="utf-8"))
+        document["instances"][0]["public_arguments"]["request"]["task_parameters"][
+            "hidden_hint"
+        ] = 1.0
+        _write_json(instances_path, document)
+
+        with self.assertRaisesRegex(RobotPackageError, "undeclared fields"):
             load_robot_package(self.root)
 
     def test_mjcf_include_cannot_escape_assets(self) -> None:

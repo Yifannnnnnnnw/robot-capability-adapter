@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
-  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v3",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
   "instances": [
     {
       "instance_id": "go2-go2-t01",

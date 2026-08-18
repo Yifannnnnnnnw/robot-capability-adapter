@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
-  "snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v3",
+  "snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v4",
   "tasks": [
     {
       "task_id": "mw_reach_target",
@@ -121,7 +121,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -246,7 +247,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -307,7 +309,10 @@
               "start_position",
               "target_position",
               "release_position",
-              "tool_target_position"
+              "tool_target_position",
+              "grasp_position",
+              "grasp_wrist_roll",
+              "grasp_gripper"
             ],
             "properties": {
               "start_position": {
@@ -371,8 +376,31 @@
                 "unit": "m",
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
+              },
+              "grasp_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "public grasp point for prehensile manipulation"
+              },
+              "grasp_wrist_roll": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public wrist-roll target for grasp alignment"
+              },
+              "grasp_gripper": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public gripper target used to acquire the object"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -434,7 +462,10 @@
               "target_position",
               "release_position",
               "tool_target_position",
-              "route_position"
+              "route_position",
+              "grasp_position",
+              "grasp_wrist_roll",
+              "grasp_gripper"
             ],
             "properties": {
               "start_position": {
@@ -498,8 +529,31 @@
                 "unit": "m",
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
+              },
+              "grasp_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "public grasp point for prehensile manipulation"
+              },
+              "grasp_wrist_roll": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public wrist-roll target for grasp alignment"
+              },
+              "grasp_gripper": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public gripper target used to acquire the object"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -625,7 +679,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -750,7 +805,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -875,7 +931,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1006,7 +1063,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1131,7 +1189,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1256,7 +1315,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1381,7 +1441,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1512,7 +1573,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1637,7 +1699,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1762,7 +1825,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -1887,7 +1951,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -2012,7 +2077,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -2138,7 +2204,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -2264,7 +2331,8 @@
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -2325,7 +2393,10 @@
               "start_position",
               "target_position",
               "release_position",
-              "tool_target_position"
+              "tool_target_position",
+              "grasp_position",
+              "grasp_wrist_roll",
+              "grasp_gripper"
             ],
             "properties": {
               "start_position": {
@@ -2389,8 +2460,31 @@
                 "unit": "m",
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
+              },
+              "grasp_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "public grasp point for prehensile manipulation"
+              },
+              "grasp_wrist_roll": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public wrist-roll target for grasp alignment"
+              },
+              "grasp_gripper": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public gripper target used to acquire the object"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
@@ -2451,7 +2545,10 @@
               "start_position",
               "target_position",
               "release_position",
-              "tool_target_position"
+              "tool_target_position",
+              "grasp_position",
+              "grasp_wrist_roll",
+              "grasp_gripper"
             ],
             "properties": {
               "start_position": {
@@ -2471,7 +2568,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private grasp point for extraction from the shallow hole"
+                "description": "public grasp point for prehensile manipulation"
               },
               "contact_position": {
                 "type": "array",
@@ -2525,8 +2622,21 @@
                 "unit": "m",
                 "frame": "world",
                 "description": "private collision-free route waypoint for obstacle tasks"
+              },
+              "grasp_wrist_roll": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public wrist-roll target for grasp alignment"
+              },
+              "grasp_gripper": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "public gripper target used to acquire the object"
               }
-            }
+            },
+            "additional_properties": false
           }
         }
       }
