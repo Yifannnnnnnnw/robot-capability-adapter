@@ -2149,14 +2149,14 @@
       "description": "Grasp a peg and align and insert it into a side-entry hole.",
       "source_task_or_operation": "Meta-World sawyer_peg_insertion_side_v3 peg-insertion-side",
       "applicability": "The SO-101 can grasp a small peg and perform a constrained alignment and insertion motion in a tabletop fixture.",
-      "adaptation": "Use a private peg and side-entry hole sized for the SO-101 gripper. Preserve the source 0.07 m peg-to-target terminal distance and make the insertion fixture physically reachable.",
+      "adaptation": "Use a scaled peg and four rigid frame pieces forming a side-entry hole. Preserve the source weighted peg-head formula norm((peg_head - target) * [1, 2, 2]) and its 0.07 m bound.",
       "scene_assumptions": [
         "A rigid peg and side-entry hole are mounted in a reachable tabletop fixture.",
         "The peg diameter, clearance, and approach direction permit insertion with the SO-101's 5-DoF arm."
       ],
       "observation_assumptions": [
         "The observation exposes peg and insertion target positions.",
-        "The private binding can evaluate the terminal peg-to-target distance and insertion state."
+        "The private binding evaluates the terminal peg-head error with the source axis weights."
       ],
       "scoring": [
         {
@@ -2174,9 +2174,9 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_peg_insertion_side_v3.py, evaluate_state, lines 1039-1078: success uses obj_to_target <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_peg_insertion_side_v3.py, evaluate_state lines 93-128 and compute_reward lines 164-177: obj_to_target is norm((pegHead - target) * [1, 2, 2]) and success is obj_to_target <= 0.07.",
               "support": "adapted",
-              "adaptation": "Retain the 0.07 m source terminal alignment bound and apply it to the private SO-101 peg and side-entry fixture; fixture dimensions are adapted for morphology but the public distance obligation is unchanged."
+              "adaptation": "Bind the source formula to peg_head_site in the scaled SO-101 fixture, preserving weights [1, 2, 2], the 0.07 m threshold, terminal evaluation, and single-trial aggregation."
             }
           ]
         }
@@ -2275,14 +2275,14 @@
       "description": "Grasp an object in a bin and place it at the specified target location.",
       "source_task_or_operation": "Meta-World sawyer_bin_picking_v3 bin-picking",
       "applicability": "The SO-101 gripper can reach into a shallow tabletop bin, grasp a small object, and transport it to a nearby goal.",
-      "adaptation": "Use a private shallow bin, object, and goal. Preserve the source 0.05 m object-to-goal terminal criterion while choosing bin depth and object clearance that fit the SO-101 workspace.",
+      "adaptation": "Use distinct shallow source and target bins sized for the SO-101 gripper. Preserve the source Euclidean object-to-target-bin-center formula and 0.05 m terminal bound.",
       "scene_assumptions": [
         "A shallow bin contains one graspable rigid object and is placed within the SO-101 reachable workspace.",
         "The bin walls leave enough clearance for the gripper to enter, close, and withdraw the object."
       ],
       "observation_assumptions": [
         "The observation exposes object and target positions and the gripper state.",
-        "The private binding can determine that the object was lifted or transported from the bin before scoring placement."
+        "The private binding measures the terminal object center against the target-bin center."
       ],
       "scoring": [
         {
@@ -2300,7 +2300,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_bin_picking_v3.py, evaluate_state, lines 1010-1033: success uses obj_to_target <= 0.05.",
+              "specific_reference": "metaworld/envs/sawyer_bin_picking_v3.py, evaluate_state lines 93-116 and compute_reward lines 161-172: obj_to_target is the Euclidean object-to-target norm and success is obj_to_target <= 0.05.",
               "support": "adapted",
               "adaptation": "Preserve the 0.05 m source placement threshold and apply it after physical SO-101 removal from a shallow bin; bin depth and object geometry are selected for morphology without changing the bound."
             }
@@ -2401,14 +2401,14 @@
       "description": "Extract a graspable object from a hole and move it to its target position.",
       "source_task_or_operation": "Meta-World sawyer_pick_out_of_hole_v3 pick-out-of-hole",
       "applicability": "The SO-101 can align its gripper over a shallow hole, grasp a small object, and extract it vertically or along a reachable path.",
-      "adaptation": "Use a private shallow hole and object sized for the SO-101 gripper. Preserve the source 0.07 m object-to-target terminal criterion and require physical extraction before placement is evaluated.",
+      "adaptation": "Use a raised four-piece platform that leaves a recessed opening around the object. Preserve the source Euclidean object-to-target formula and 0.07 m terminal bound; the target remains above and outside the recess.",
       "scene_assumptions": [
         "A shallow hole fixture contains one graspable rigid object and leaves a reachable clearance for the gripper.",
         "The hole depth and object geometry permit extraction by the SO-101 without a second contact tool."
       ],
       "observation_assumptions": [
         "The observation exposes object and goal positions plus gripper state.",
-        "The private binding can distinguish extraction from merely moving the gripper above the hole."
+        "The private binding measures the terminal object center against the elevated target outside the recess."
       ],
       "scoring": [
         {
@@ -2426,7 +2426,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_pick_out_of_hole_v3.py, evaluate_state, lines 886-907: success uses obj_to_target <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_pick_out_of_hole_v3.py, evaluate_state lines 66-93 and compute_reward lines 138-147: obj_to_target is the Euclidean object-to-target norm and success is obj_to_target <= 0.07.",
               "support": "adapted",
               "adaptation": "Keep the 0.07 m terminal object-to-goal obligation and add the physical SO-101 extraction applicability condition; the public numeric criterion remains the source criterion."
             }

@@ -217,7 +217,7 @@ class ReferenceSO101Driver:
         )
 
     def object_task(self, *, request: Any) -> None:
-        _, parameters = _request(request)
+        task_id, parameters = _request(request)
         start = _vector(parameters["start_position"], name="start_position")
         target = self._reach_parameter(parameters)
         grasp = _vector(
@@ -274,6 +274,9 @@ class ReferenceSO101Driver:
             residual_tolerance=0.12,
             wrist_roll=grasp_wrist_roll,
         )
+        if task_id == "mw_peg_insertion_side":
+            self._idle(90)
+            return
         self._set_gripper(GRIPPER_OPEN)
         self._idle(90)
 

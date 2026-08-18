@@ -182,9 +182,14 @@
       "binding_id": "binding-mw_peg_insertion_side",
       "metric": "peg_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_weighted_site_position_error",
       "parameters": {
-        "body_name": "workpiece",
+        "site_name": "peg_head_site",
+        "weights": [
+          1.0,
+          2.0,
+          2.0
+        ],
         "target_argument": "request.task_parameters.target_position"
       }
     },

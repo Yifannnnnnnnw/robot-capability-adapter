@@ -833,30 +833,35 @@
     {
       "instance_id": "so101-mw_peg_insertion_side",
       "task_id": "mw_peg_insertion_side",
-      "scene_entrypoint": "assets/insert_scene.xml",
+      "scene_entrypoint": "assets/peg_insertion_side_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_peg_insertion_side",
           "task_parameters": {
             "start_position": [
-              0.46,
+              0.38,
               0.08,
               0.18
             ],
             "target_position": [
-              0.529,
-              0.033,
-              0.178
+              0.38,
+              -0.092,
+              0.23
             ],
             "release_position": [
-              0.48,
-              0.08,
-              0.225
+              0.355,
+              -0.040,
+              0.266
             ],
             "tool_target_position": [
-              0.48,
-              0.08,
-              0.225
+              0.355,
+              -0.040,
+              0.266
+            ],
+            "route_position": [
+              0.355,
+              -0.005,
+              0.266
             ]
           }
         }
@@ -879,35 +884,40 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_bin_picking",
       "task_id": "mw_bin_picking",
-      "scene_entrypoint": "assets/object_scene.xml",
+      "scene_entrypoint": "assets/bin_picking_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_bin_picking",
           "task_parameters": {
             "start_position": [
-              0.46,
+              0.38,
               0.08,
               0.18
             ],
             "target_position": [
-              0.529,
-              0.033,
-              0.178
+              0.38,
+              -0.08,
+              0.18
             ],
             "release_position": [
-              0.48,
-              0.08,
-              0.225
+              0.371,
+              -0.078,
+              0.235
             ],
             "tool_target_position": [
-              0.48,
-              0.08,
-              0.225
+              0.371,
+              -0.078,
+              0.235
+            ],
+            "route_position": [
+              0.38,
+              0.0,
+              0.30
             ]
           }
         }
@@ -930,66 +940,51 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_pick_out_of_hole",
       "task_id": "mw_pick_out_of_hole",
-      "scene_entrypoint": "assets/pickout_scene.xml",
+      "scene_entrypoint": "assets/pick_out_of_hole_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_pick_out_of_hole",
           "task_parameters": {
             "start_position": [
-              0.46,
-              0.08,
-              0.178
-            ],
-            "grasp_position": [
-              0.5,
-              0.08,
-              0.195
-            ],
-            "route_position": [
-              0.54,
-              0.08,
-              0.225
-            ],
-            "target_position": [
-              0.54,
+              0.38,
               0.08,
               0.18
             ],
-            "release_position": [
-              0.54,
+            "grasp_position": [
+              0.38,
               0.08,
-              0.225
+              0.185
+            ],
+            "route_position": [
+              0.36,
+              0.0,
+              0.32
+            ],
+            "target_position": [
+              0.34,
+              -0.08,
+              0.30
+            ],
+            "release_position": [
+              0.331,
+              -0.078,
+              0.312
             ],
             "tool_target_position": [
-              0.54,
-              0.08,
-              0.225
+              0.331,
+              -0.078,
+              0.312
             ]
           }
         }
       },
       "reset": {
-        "kind": "default",
-        "qpos": [
-          0.0,
-          0.0,
-          0.0,
-          0.0,
-          0.0,
-          0.0,
-          0.46,
-          0.08,
-          0.178,
-          1.0,
-          0.0,
-          0.0,
-          0.0
-        ]
+        "kind": "default"
       },
       "clause_bindings": {
         "extracted_object_distance": "binding-mw_pick_out_of_hole"
@@ -1006,7 +1001,7 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     }
   ]
 }

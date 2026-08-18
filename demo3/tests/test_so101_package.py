@@ -346,6 +346,98 @@ def test_so101_wall_tasks_use_physical_obstacles_and_reference_passes() -> None:
     assert all(trial["trial_passed"] for trial in report["trials"])
 
 
+def test_so101_peg_bin_and_hole_fixtures_match_source_metrics() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    design = _design(package)
+    complete_suite = _suite(package, design)
+    task_ids = {
+        "mw_peg_insertion_side",
+        "mw_bin_picking",
+        "mw_pick_out_of_hole",
+    }
+    suite = {
+        **complete_suite,
+        "cases": [
+            case for case in complete_suite["cases"] if case["task_id"] in task_ids
+        ],
+    }
+    instances = {
+        item["task_id"]: item
+        for item in json.loads(
+            (package.private_dir / "instances.json").read_text(encoding="utf-8")
+        )["instances"]
+        if item["task_id"] in task_ids
+    }
+    assert len({item["scene_entrypoint"] for item in instances.values()}) == 3
+    assert instances["mw_pick_out_of_hole"]["reset"] == {"kind": "default"}
+
+    binding_by_id = {
+        item["binding_id"]: item
+        for item in json.loads(
+            (package.private_dir / "bindings.json").read_text(encoding="utf-8")
+        )["bindings"]
+    }
+    peg_binding = binding_by_id["binding-mw_peg_insertion_side"]
+    assert peg_binding["kind"] == "final_weighted_site_position_error"
+    assert peg_binding["parameters"]["site_name"] == "peg_head_site"
+    assert peg_binding["parameters"]["weights"] == [1.0, 2.0, 2.0]
+
+    peg_model = mujoco.MjModel.from_xml_path(
+        str(
+            (
+                package.root
+                / instances["mw_peg_insertion_side"]["scene_entrypoint"]
+            ).resolve()
+        )
+    )
+    assert mujoco.mj_name2id(
+        peg_model, mujoco.mjtObj.mjOBJ_SITE, "peg_head_site"
+    ) >= 0
+    for name in ("hole_left", "hole_right", "hole_bottom", "hole_top"):
+        geom_id = mujoco.mj_name2id(peg_model, mujoco.mjtObj.mjOBJ_GEOM, name)
+        assert geom_id >= 0
+        assert peg_model.geom_contype[geom_id] != 0
+
+    bin_model = mujoco.MjModel.from_xml_path(
+        str((package.root / instances["mw_bin_picking"]["scene_entrypoint"]).resolve())
+    )
+    for name in ("bin_front", "goal_bin_back"):
+        geom_id = mujoco.mj_name2id(bin_model, mujoco.mjtObj.mjOBJ_GEOM, name)
+        assert geom_id >= 0
+        assert bin_model.geom_contype[geom_id] != 0
+
+    hole_model = mujoco.MjModel.from_xml_path(
+        str(
+            (
+                package.root
+                / instances["mw_pick_out_of_hole"]["scene_entrypoint"]
+            ).resolve()
+        )
+    )
+    for name in ("hole_platform_left", "hole_platform_right"):
+        geom_id = mujoco.mj_name2id(hole_model, mujoco.mjtObj.mjOBJ_GEOM, name)
+        assert geom_id >= 0
+        assert hole_model.geom_contype[geom_id] != 0
+
+    with tempfile.TemporaryDirectory(prefix="so101-object-fixtures-") as temporary:
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=package.reference_driver,
+            condition="from-scratch",
+            output_dir=temporary,
+            record_video=False,
+            wall_timeout_s=90.0,
+            run_id="so101-object-fixture-calibration",
+            attempt=0,
+        )
+
+    assert report["validation_passed"]
+    assert {trial["task_id"] for trial in report["trials"]} == task_ids
+    assert all(trial["trial_passed"] for trial in report["trials"])
+
+
 def test_so101_reach_push_and_sweep_use_distinct_physical_scenes() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design = _design(package)
