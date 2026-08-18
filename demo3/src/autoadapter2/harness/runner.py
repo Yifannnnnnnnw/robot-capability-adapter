@@ -112,6 +112,28 @@ def _physical_execution_completed(worker: Mapping[str, Any]) -> bool:
     )
 
 
+def _designed_task_clauses(design: Mapping[str, Any]) -> dict[str, set[str]]:
+    result: dict[str, set[str]] = {}
+    capabilities = design.get("capabilities")
+    if not isinstance(capabilities, list):
+        raise HarnessError("Capability Design has no capabilities")
+    for capability in capabilities:
+        if not isinstance(capability, Mapping):
+            raise HarnessError("Capability Design contains an invalid capability")
+        clauses = capability.get("validation_contract")
+        if not isinstance(clauses, list):
+            raise HarnessError("Capability Design capability has no validation contract")
+        for clause in clauses:
+            if not isinstance(clause, Mapping):
+                raise HarnessError("Capability Design contains an invalid validation clause")
+            task_id = clause.get("source_task_id")
+            clause_id = clause.get("source_clause_id")
+            if not isinstance(task_id, str) or not isinstance(clause_id, str):
+                raise HarnessError("Capability Design validation clause has invalid source IDs")
+            result.setdefault(task_id, set()).add(clause_id)
+    return result
+
+
 def run_private_suite(
     *,
     package: RobotPackage,
@@ -368,7 +390,7 @@ def run_private_suite(
         task_totals[str(trial["task_id"])] += 1
         if trial["trial_passed"]:
             task_passes[str(trial["task_id"])] += 1
-    passed_tasks = sum(
+    passed_selected_tasks = sum(
         1 for task_id, total in task_totals.items() if task_passes[task_id] == total
     )
     clause_trials: dict[tuple[str, str], list[dict[str, Any]]] = {}
@@ -381,6 +403,20 @@ def run_private_suite(
     passed_clauses = sum(
         1 for values in clause_trials.values() if all(value["trial_passed"] for value in values)
     )
+    designed_task_clauses = _designed_task_clauses(design)
+    selected_task_clauses: dict[str, set[str]] = {}
+    for task_id, clause_id in clause_trials:
+        selected_task_clauses.setdefault(task_id, set()).add(clause_id)
+    fully_evaluated_tasks = {
+        task_id
+        for task_id, selected_clauses in selected_task_clauses.items()
+        if designed_task_clauses.get(task_id) == selected_clauses
+    }
+    passed_fully_evaluated_tasks = sum(
+        1
+        for task_id in fully_evaluated_tasks
+        if task_passes[task_id] == task_totals[task_id]
+    )
     physical_executed = bool(trials) and all(
         trial["physical_execution_passed"] for trial in trials
     )
@@ -392,8 +428,12 @@ def run_private_suite(
         "pipeline_completed": pipeline_completed,
         "physical_validation_executed": physical_executed,
         "validation_passed": validation_passed,
-        "passed_task_count": passed_tasks,
-        "task_count": len(task_totals),
+        "passed_task_count": passed_fully_evaluated_tasks,
+        "task_count": len(fully_evaluated_tasks),
+        "selected_task_count": len(task_totals),
+        "passed_selected_task_count": passed_selected_tasks,
+        "fully_evaluated_task_count": len(fully_evaluated_tasks),
+        "passed_fully_evaluated_task_count": passed_fully_evaluated_tasks,
         "passed_source_clause_count": passed_clauses,
         "source_clause_count": len(clause_trials),
         "passed_private_case_count": passed_cases,

@@ -126,6 +126,13 @@ class HarnessRunnerTests(unittest.TestCase):
                 {
                     "capability_id": "capability-1",
                     "method_name": "command_joint",
+                    "covered_task_ids": ["task-1"],
+                    "validation_contract": [
+                        {
+                            "source_task_id": "task-1",
+                            "source_clause_id": "joint-error",
+                        }
+                    ],
                 }
             ]
         }
@@ -500,6 +507,34 @@ class HarnessRunnerTests(unittest.TestCase):
                 }
             },
         )
+
+    def test_partial_clause_selection_does_not_count_a_whole_task_as_passed(self) -> None:
+        design = json.loads(json.dumps(self.design))
+        design["capabilities"][0]["validation_contract"].append(
+            {
+                "source_task_id": "task-1",
+                "source_clause_id": "stability",
+            }
+        )
+        worker = self._worker_result(
+            [{"time": 0.0, "joint_positions": {"shoulder_pan": 0.2}}]
+        )
+        with mock.patch.object(harness_runner, "_run_worker", return_value=worker):
+            report = run_private_suite(
+                package=self.package,
+                design=design,
+                suite=self.suite,
+                driver_path=self.candidate,
+                condition="from-scratch",
+                output_dir=Path(self.temporary.name) / "evidence-partial-task",
+                record_video=False,
+            )
+
+        self.assertTrue(report["validation_passed"])
+        self.assertEqual(report["selected_task_count"], 1)
+        self.assertEqual(report["passed_selected_task_count"], 1)
+        self.assertEqual(report["fully_evaluated_task_count"], 0)
+        self.assertEqual(report["passed_task_count"], 0)
 
     def test_candidate_executes_outside_generation_workspace(self) -> None:
         source = self.candidate.read_text(encoding="utf-8")
