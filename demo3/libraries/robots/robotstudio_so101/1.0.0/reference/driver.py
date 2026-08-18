@@ -234,7 +234,7 @@ class ReferenceSO101Driver:
         grasp_wrist_roll = float(parameters.get("grasp_wrist_roll", math.pi / 2.0))
         if not math.isfinite(grasp_wrist_roll):
             raise ValueError("grasp_wrist_roll must be finite")
-        grasp_gripper = float(parameters.get("grasp_gripper", 0.15))
+        grasp_gripper = float(parameters.get("grasp_gripper", 0.25))
         if not math.isfinite(grasp_gripper):
             raise ValueError("grasp_gripper must be finite")
         pregrasp = grasp + np.asarray((0.0, 0.0, approach_height))
@@ -261,12 +261,16 @@ class ReferenceSO101Driver:
                 steps=700,
                 residual_tolerance=0.25,
                 wrist_roll=grasp_wrist_roll,
+                gain=0.4,
+                max_joint_delta=0.025,
             )
         self._step_to(
             release,
             steps=700,
             residual_tolerance=0.12,
             wrist_roll=grasp_wrist_roll,
+            gain=0.5,
+            max_joint_delta=0.03,
         )
         self._step_to(
             _vector(parameters.get("tool_target_position", release), name="tool_target_position"),

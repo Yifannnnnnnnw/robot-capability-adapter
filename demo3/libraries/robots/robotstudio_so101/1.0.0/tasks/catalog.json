@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
-  "snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v2",
+  "snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v3",
   "tasks": [
     {
       "task_id": "mw_reach_target",

@@ -251,6 +251,8 @@ def test_so101_pick_place_uses_a_physical_fixture_and_reference_passes() -> None
     assert model.body_dofnum[workpiece_body] == 6
     assert workpiece_geom >= 0
     assert model.geom_contype[workpiece_geom] != 0
+    assert model.geom_type[workpiece_geom] == mujoco.mjtGeom.mjGEOM_CYLINDER
+    assert model.body_mass[workpiece_body] == 0.10
 
     with tempfile.TemporaryDirectory(prefix="so101-pick-place-") as temporary:
         report = run_private_suite(
@@ -320,6 +322,10 @@ def test_so101_wall_tasks_use_physical_obstacles_and_reference_passes() -> None:
     pick_wall_id = mujoco.mj_name2id(
         pick_model, mujoco.mjtObj.mjOBJ_GEOM, "wall"
     )
+    pick_workpiece_id = mujoco.mj_name2id(
+        pick_model, mujoco.mjtObj.mjOBJ_GEOM, "workpiece_geom"
+    )
+    assert pick_model.geom_type[pick_workpiece_id] == mujoco.mjtGeom.mjGEOM_CYLINDER
     wall_top = pick_model.geom_pos[pick_wall_id, 2] + pick_model.geom_size[
         pick_wall_id, 2
     ]
@@ -402,10 +408,19 @@ def test_so101_peg_bin_and_hole_fixtures_match_source_metrics() -> None:
     bin_model = mujoco.MjModel.from_xml_path(
         str((package.root / instances["mw_bin_picking"]["scene_entrypoint"]).resolve())
     )
-    for name in ("bin_front", "goal_bin_back"):
+    for name in ("bin_bottom", "bin_front", "bin_back", "goal_bin_bottom", "goal_bin_back"):
         geom_id = mujoco.mj_name2id(bin_model, mujoco.mjtObj.mjOBJ_GEOM, name)
         assert geom_id >= 0
         assert bin_model.geom_contype[geom_id] != 0
+    bin_workpiece_body = mujoco.mj_name2id(
+        bin_model, mujoco.mjtObj.mjOBJ_BODY, "workpiece"
+    )
+    bin_workpiece_geom = mujoco.mj_name2id(
+        bin_model, mujoco.mjtObj.mjOBJ_GEOM, "workpiece_geom"
+    )
+    assert bin_model.geom_type[bin_workpiece_geom] == mujoco.mjtGeom.mjGEOM_BOX
+    np.testing.assert_allclose(bin_model.geom_size[bin_workpiece_geom], [0.02] * 3)
+    assert bin_model.body_mass[bin_workpiece_body] == 0.10
 
     hole_model = mujoco.MjModel.from_xml_path(
         str(
@@ -419,6 +434,28 @@ def test_so101_peg_bin_and_hole_fixtures_match_source_metrics() -> None:
         geom_id = mujoco.mj_name2id(hole_model, mujoco.mjtObj.mjOBJ_GEOM, name)
         assert geom_id >= 0
         assert hole_model.geom_contype[geom_id] != 0
+    hole_workpiece_body = mujoco.mj_name2id(
+        hole_model, mujoco.mjtObj.mjOBJ_BODY, "workpiece"
+    )
+    hole_workpiece_geom = mujoco.mj_name2id(
+        hole_model, mujoco.mjtObj.mjOBJ_GEOM, "workpiece_geom"
+    )
+    assert hole_model.geom_type[hole_workpiece_geom] == mujoco.mjtGeom.mjGEOM_CYLINDER
+    np.testing.assert_allclose(hole_model.geom_size[hole_workpiece_geom, :2], [0.02, 0.02])
+    assert hole_model.body_mass[hole_workpiece_body] == 0.01
+    left_id = mujoco.mj_name2id(
+        hole_model, mujoco.mjtObj.mjOBJ_GEOM, "hole_platform_left"
+    )
+    right_id = mujoco.mj_name2id(
+        hole_model, mujoco.mjtObj.mjOBJ_GEOM, "hole_platform_right"
+    )
+    opening_width = (
+        hole_model.geom_pos[right_id, 0]
+        - hole_model.geom_size[right_id, 0]
+        - hole_model.geom_pos[left_id, 0]
+        - hole_model.geom_size[left_id, 0]
+    )
+    assert opening_width >= 0.16 - 1e-9
 
     with tempfile.TemporaryDirectory(prefix="so101-object-fixtures-") as temporary:
         report = run_private_suite(

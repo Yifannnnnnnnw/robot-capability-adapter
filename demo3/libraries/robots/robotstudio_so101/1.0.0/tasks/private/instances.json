@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
-  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v2",
+  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v3",
   "instances": [
     {
       "instance_id": "so101-mw_reach_target",
@@ -98,6 +98,13 @@
               0.08,
               0.18
             ],
+            "grasp_position": [
+              0.38,
+              0.07,
+              0.195
+            ],
+            "grasp_wrist_roll": -1.5707963267948966,
+            "grasp_gripper": 0.35,
             "target_position": [
               0.38,
               -0.08,
@@ -149,25 +156,32 @@
               0.08,
               0.18
             ],
-            "target_position": [
+            "grasp_position": [
               0.38,
-              -0.12,
+              0.07,
+              0.195
+            ],
+            "grasp_wrist_roll": -1.5707963267948966,
+            "grasp_gripper": 0.25,
+            "target_position": [
+              0.50,
+              0.08,
               0.26
             ],
             "release_position": [
-              0.371,
-              -0.118,
+              0.491,
+              0.082,
               0.272
             ],
             "tool_target_position": [
-              0.371,
-              -0.118,
+              0.491,
+              0.082,
               0.272
             ],
             "route_position": [
-              0.38,
-              -0.02,
-              0.34
+              0.44,
+              0.08,
+              0.30
             ]
           }
         }
@@ -896,23 +910,30 @@
           "task_parameters": {
             "start_position": [
               0.38,
-              0.08,
-              0.18
+              0.11,
+              0.19
             ],
+            "grasp_position": [
+              0.38,
+              0.105,
+              0.19
+            ],
+            "grasp_wrist_roll": 1.5707963267948966,
+            "grasp_gripper": 0.25,
             "target_position": [
               0.38,
-              -0.08,
-              0.18
+              -0.11,
+              0.19
             ],
             "release_position": [
               0.371,
-              -0.078,
-              0.235
+              -0.108,
+              0.25
             ],
             "tool_target_position": [
               0.371,
-              -0.078,
-              0.235
+              -0.108,
+              0.25
             ],
             "route_position": [
               0.38,
@@ -957,9 +978,11 @@
             ],
             "grasp_position": [
               0.38,
-              0.08,
-              0.185
+              0.105,
+              0.19
             ],
+            "grasp_wrist_roll": -1.5707963267948966,
+            "grasp_gripper": 0.25,
             "route_position": [
               0.36,
               0.0,

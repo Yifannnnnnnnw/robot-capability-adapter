@@ -11,8 +11,9 @@
           rgba="0.50 0.52 0.55 1"/>
     <body name="workpiece" pos="0.38 0.08 0.18">
       <freejoint/>
-      <geom name="workpiece_geom" type="box" size="0.018 0.018 0.018" mass="0.02"
-            conaffinity="2" friction="1.5 0.1 0.01" condim="4" rgba="0.95 0.42 0.08 1"/>
+      <geom name="workpiece_geom" type="cylinder" size="0.02 0.02" mass="0.10"
+            conaffinity="2" friction="1 0.1 0.002" condim="4"
+            solimp="0.99 0.99 0.01" solref="0.01 1" rgba="0.95 0.42 0.08 1"/>
       <site name="workpiece_center" size="0.004" rgba="1 1 1 0"/>
     </body>
     <geom name="goal_pedestal" type="box" pos="0.38 -0.08 0.201" size="0.045 0.045 0.041"
