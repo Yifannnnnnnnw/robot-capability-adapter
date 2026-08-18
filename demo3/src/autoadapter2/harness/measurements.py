@@ -251,6 +251,39 @@ def measure(
             if _distance(position[:2], points[completed]) <= tolerance:
                 completed += 1
         return completed / len(points)
+    if kind == "ordered_body_axis_gate_completion_ratio":
+        name = str(parameters["body_name"])
+        gates = parameters.get("gates")
+        if not isinstance(gates, Sequence) or isinstance(gates, (str, bytes)) or not gates:
+            raise MeasurementError("ordered gate measurement requires gates")
+        completed = 0
+        for sample in samples:
+            if completed == len(gates):
+                break
+            gate = gates[completed]
+            if not isinstance(gate, Mapping):
+                raise MeasurementError("ordered gate definition must be an object")
+            axis = int(gate.get("axis", 0))
+            direction = int(gate.get("direction", 1))
+            if axis not in {0, 1, 2} or direction not in {-1, 1}:
+                raise MeasurementError("ordered gate axis or direction is invalid")
+            coordinate = _body_position(sample, name)[axis]
+            threshold = float(gate["coordinate"])
+            crossed = coordinate >= threshold if direction > 0 else coordinate <= threshold
+            if crossed:
+                completed += 1
+        return completed / len(gates)
+    if kind == "minimum_body_point_clearance":
+        name = str(parameters["body_name"])
+        points = parameters.get("points")
+        if not isinstance(points, Sequence) or isinstance(points, (str, bytes)) or not points:
+            raise MeasurementError("point-clearance measurement requires points")
+        planar_points = [_vector(point, size=2) for point in points]
+        return min(
+            _distance(_body_position(sample, name)[:2], point)
+            for sample in samples
+            for point in planar_points
+        )
     if kind == "named_geom_contact_step_count":
         names = parameters.get("geom_names")
         if not isinstance(names, Sequence) or isinstance(names, (str, bytes)) or not names:

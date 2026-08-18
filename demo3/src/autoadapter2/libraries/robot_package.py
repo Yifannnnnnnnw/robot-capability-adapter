@@ -31,6 +31,8 @@ _SUPPORTED_BINDING_KINDS = {
     "named_bodies_axis_completion",
     "mean_body_yaw_rate",
     "ordered_body_waypoint_completion_ratio",
+    "ordered_body_axis_gate_completion_ratio",
+    "minimum_body_point_clearance",
     "named_geom_contact_step_count",
     "contact_sample_count",
     "physics_step_count",

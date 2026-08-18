@@ -187,3 +187,45 @@ def test_named_contact_uses_every_physics_step_not_video_samples() -> None:
         public_arguments={},
     )
     assert value == 3.0
+
+
+def test_ordered_axis_gates_require_the_source_order() -> None:
+    binding = {
+        "kind": "ordered_body_axis_gate_completion_ratio",
+        "parameters": {
+            "body_name": "base_link",
+            "gates": [
+                {"axis": 0, "coordinate": 1.0, "direction": 1},
+                {"axis": 1, "coordinate": 1.0, "direction": 1},
+            ],
+        },
+    }
+    evidence = {
+        "samples": [
+            _body_sample(0.0, [0.0, 1.1, 0.3]),
+            _body_sample(1.0, [1.1, 0.0, 0.3]),
+        ]
+    }
+    assert measure(binding, evidence=evidence, public_arguments={}) == 0.5
+
+
+def test_point_clearance_checks_the_whole_trajectory() -> None:
+    evidence = {
+        "samples": [
+            _body_sample(0.0, [0.0, 0.0, 0.3]),
+            _body_sample(1.0, [0.9, 0.0, 0.3]),
+            _body_sample(2.0, [2.0, 0.0, 0.3]),
+        ]
+    }
+    value = measure(
+        {
+            "kind": "minimum_body_point_clearance",
+            "parameters": {
+                "body_name": "base_link",
+                "points": [[1.0, 0.0], [3.0, 0.0]],
+            },
+        },
+        evidence=evidence,
+        public_arguments={},
+    )
+    assert value == pytest.approx(0.1)
