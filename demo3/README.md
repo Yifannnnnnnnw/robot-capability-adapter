@@ -63,6 +63,12 @@ python -m autoadapter2 full --run-id <run-id>
 
 ## Evidence
 
+The current robot models have pinned upstream provenance, but a post-run audit
+found that several task fixtures and measurements are local proxies that do not
+yet satisfy the Authority's source-faithful Task Library admission rule. Current
+real-model results are diagnostic only and must not be described as official
+MetaWorld, locomotion-paper, or industrial benchmark results.
+
 Each retained `runs/<run-id>/` package contains public capability designs,
 Harness-private suites, reference calibration reports, condition-local model
 and probe evidence, candidate attempts, validation reports, per-case videos,

@@ -1,135 +1,128 @@
-# Demo3 Reviewed Evidence
+# Demo3 Evidence Status
 
-## Current implementation status
+## Current Qualification
 
-Demo3 now implements a self-contained AutoAdapter 1.0-style multi-turn ReAct
-loop for STUDY, GENERATE/GEN_ALGO, and Repair. The current path includes:
+Demo3's real-model, Direct-MuJoCo orchestration is operational, but the current
+robot Task Libraries and private scenes have not passed the Authority's required
+human source-and-applicability review. The latest run is therefore retained as a
+diagnostic engineering baseline, not as formal benchmark evidence.
 
-- an interface-only `driver.py` stub generated from sealed capability names and
-  exact `(self, request)` signatures, with no control implementation;
-- staged public-only file inspection and bounded Python/MuJoCo probes;
-- iterative model-authored driver writes with source-audit and import feedback;
-- mandatory public physics smoke for every sealed capability on the submitted
-  revision; and
-- formal attempt counting only after explicit model submission, so rejected
-  development revisions do not consume a Harness attempt.
+The implementation includes:
 
-This implementation passed `119` tests and `31` subtests. The package check
-passed under Python 3.11.9, MuJoCo 3.9.0, and NumPy 2.4.6, including a real
-MuJoCo physics smoke, both runnable robot packages, and a self-containment scan
-of 60 Python files with no symlinks.
+- real-model TGCD over the complete public Task Library;
+- AutoAdapter 1.0-style multi-turn STUDY, GENERATE/GEN_ALGO, and Repair;
+- interface-only stubs generated from sealed capability names and exact
+  `(self, request)` signatures;
+- bounded public Python/MuJoCo development probes;
+- source audit, import checks, and mandatory public physics smoke for every
+  capability on the submitted revision;
+- explicit submission before a candidate consumes a Harness attempt;
+- Framework-owned canonical MuJoCo sessions, actuator/physics-step guards, and
+  direct-state-write rejection; and
+- independent per-case video and separate pipeline, physical, validation, and
+  video verdicts.
 
-## Latest real-model launch
+## Latest Diagnostic Run
 
-- Run: `deepseek-react-20260818T101705Z`
+- Run: `deepseek-full-convergence-20260818T144502Z`
 - Model/provider: `deepseek-v4-pro` through the configured DeepSeek API
-- Package check: passed for both robots
-- Result: the first real TGCD request returned HTTP 402
-- Dynamic model called: yes
-- Driver generated: no
-- Physical validation executed: no
-
-The run failed closed at TGCD in about two seconds. It did not start reference
-calibration or any dynamic cell, and therefore provides no new synthesis
-verdict. Its local evidence is retained at
-`runs/deepseek-react-20260818T101705Z/experiment_report.json`. A fresh four-cell
-result for the current code requires restored DeepSeek API credit.
-
-## Historical reviewed run
-
-- Run: `deepseek-v4-pro-20260818T020155Z`
-- Model/provider: `deepseek-v4-pro` through the DeepSeek API
 - Matrix: `robotstudio_so101` and `unitree-go2-stock-12dof`, each under
   `skeleton-assisted` and `from-scratch`
-- Result: the paired experiment completed, but no dynamic cell passed its final
-  private suite. This run is not evidence of successful synthesis.
-- Primary report: [experiment_report.json](runs/deepseek-v4-pro-20260818T020155Z/experiment_report.json)
+- Package checks: passed
+- Reference gate: 5/5 sampled cases for both robots
+- Real model called: yes
+- Driver generated in-run: yes in all four cells
+- Physical validation executed: yes in all four cells
+- Pipeline completed: yes
+- Overall strict verdict: fail, because one of four cells did not pass its final
+  five-case suite
+- Primary report:
+  [experiment_report.json](runs/deepseek-full-convergence-20260818T144502Z/experiment_report.json)
 
-The run used real TGCD, STUDY, GENERATE, Repair, and Evolution model calls. It
-used package-local MuJoCo assets, Framework-owned canonical sessions, isolated
-candidate workers, and independently recorded video for every Harness case
-that reached validation.
+| Cell | Attempt trajectory | Final physical verdict |
+|---|---|---|
+| SO-101 / skeleton-assisted | `1/5 -> 3/5 -> 3/5` | fail |
+| SO-101 / from-scratch | `3/5 -> 3/5 -> 5/5` | pass |
+| Go2 / skeleton-assisted | `5/5` | pass on first submission |
+| Go2 / from-scratch | `5/5` | pass on first submission |
 
-This run predates the current interactive ReAct implementation and used the
-earlier one-shot generation path. It remains useful as a failure baseline, but
-it is not evidence for the current pre-submission development loop.
+These results demonstrate that the interactive generation and report-driven
+Repair mechanism can complete and can improve a real generated driver. They do
+not establish performance on the cited benchmarks because the current private
+MuJoCo instances are local proxies.
 
-## Task and source basis
+## Video Evidence
 
-| Robot | Public tasks | Source basis | Qualification |
-|---|---:|---|---|
-| SO-101 | 20 | Meta-World, pinned at commit `7ea2b501c4a698c8533cdc55a396fe2734e2649d` | Task operations and success definitions are adapted to the package-local SO-101 MJCF and trusted measurable bindings. |
-| Go2 | 22 | Unitree Go2 specifications; Hoeller et al. 2020; Miki et al. 2022; Shi et al. 2023; pinned MuJoCo Menagerie Go2 model | Each catalog clause labels its source support and any local adaptation. Local short-horizon thresholds are experiment calibrations, not claims of reproducing the papers' full benchmark protocols or industrial certification. |
+The original SO-101 skeleton attempts were recorded at `160x120`, which is too
+small for useful visual inspection. Commit `880faac` raises both robot packages,
+the Harness fallback, and package render helpers to `640x480` and adds focused
+regression checks. A trusted replay of the frozen SO-101 skeleton final driver
+produced five complete `640x480` videos without changing its `3/5` physical
+result:
 
-TGCD generated five capabilities for each robot and covered every public task.
-Trusted IVC compiled 20 private SO-101 clauses and 31 private Go2 clauses.
+`runs/deepseek-full-convergence-20260818T144502Z/cells/robotstudio_so101/skeleton-assisted/high-resolution-replay/`
 
-## Reference calibration
+SO-101 from-scratch attempt 2 and both later Go2 cells were recorded directly at
+`640x480`. Visual inspection also found that the SO-101 default camera is too
+distant. Camera framing must be corrected as part of the scene rebuild; raising
+resolution alone is not sufficient evidence quality.
 
-| Robot | Tasks | Source clauses | Physical execution | Videos | Verdict |
-|---|---:|---:|---|---|---|
-| SO-101 | 20/20 | 20/20 | yes | 20/20 complete | pass |
-| Go2 | 22/22 | 31/31 | yes | 31/31 complete | pass |
+## Source And Scene Audit
 
-Both references passed before the dynamic matrix started. Reference source was
-kept outside every candidate-facing model context and workspace.
+The robot morphology assets have traceable pinned upstreams:
 
-## Dynamic cells
+- SO-101: TheRobotStudio SO-ARM100/SO-101 MJCF asset lineage recorded in its
+  `morphology.json`;
+- Go2: Google DeepMind MuJoCo Menagerie commit
+  `71f066ad0be9cd271f7ed58c030243ef157af9f4`.
 
-| Cell | Attempts | Physical result | Video result | Final verdict |
-|---|---:|---|---|---|
-| SO-101 / skeleton-assisted | 1 | 17/20 tasks and clauses passed | 20/20 complete | fail: three physical criteria failed; the next Repair probe was rejected for importing `sys` |
-| SO-101 / from-scratch | 0 | Harness not reached | none required | fail: STUDY returned a non-canonical condition spelling and the then-current strict parser stopped the cell |
-| Go2 / skeleton-assisted | 3 | Harness not reached | none required | fail: all candidates placed capabilities outside the required `build()` object ABI |
-| Go2 / from-scratch | 1 | 0/22 tasks and 0/31 clauses passed; candidate failed before a physics step | historical report says 31/31 complete, but each file has one frame and zero simulated duration; current Harness classifies these as incomplete | fail: candidate treated the request mapping as an object; Repair then received HTTP 402 from DeepSeek |
+The validation environments do not currently have equivalent fidelity:
 
-The SO-101 skeleton cell is the only generated driver in this run that both
-passed source audit and produced successful physical task outcomes. It still
-failed the suite and therefore is not an admitted driver.
+- the 20 SO-101 tasks map to ten locally authored primitive fixture scenes,
+  rather than the pinned MetaWorld task environments;
+- pick-place/bin-picking, push/sweep, faucet/dial, three slide-fixture tasks,
+  and three press-fixture tasks contain pairs or groups with the same scene,
+  reset, and task parameters;
+- faucet and dial consequently produced identical physical measurements;
+- the local peg-insertion object is a cube, and its ordinary body-centre
+  Euclidean metric does not reproduce MetaWorld's peg-head, axis-weighted
+  distance;
+- MetaWorld scoring values are generally traceable, but catalog line anchors
+  refer to an older source layout and do not match the pinned v3.1.1 files; and
+- Go2 uses the pinned Menagerie robot model, but its terrains and several
+  progress, body-height, and joint-range thresholds are local experimental
+  proxies rather than reproductions of the cited papers' full protocols.
 
-## Post-run corrections
+Under `AUTOADAPTER_2_AUTHORITY.md` section 2.4, unresolved source lineage or an
+adaptation that changes task meaning must fail closed. Accordingly, the current
+`5/5` cell verdicts mean only "passed the current local proxy suite." They must
+not be reported as MetaWorld, locomotion-paper, industrial-standard, or formal
+AutoAdapter 2.0 benchmark success.
 
-The run exposed several orchestration and evidence defects. The current code now:
+## Required Before Formal Evidence
 
-- canonicalizes the Framework-selected condition while retaining the model's
-  original spelling as evidence;
-- states and audits the exact instance-method ABI, `method(self, request)`, with
-  `request` as a plain mapping;
-- records and rejects an unsafe optional Repair probe but still proceeds to the
-  Repair generation call with the complete candidate-facing report;
-- sends Evolution a bounded diagnostic projection instead of multi-megabyte
-  repeated trajectory samples; and
-- marks a decodable recording incomplete when candidate execution ends before
-  a clean actuator-controlled physics step, closing the one-frame false-positive
-  exposed by the Go2 from-scratch cell;
-- runs STUDY, GENERATE/GEN_ALGO, and Repair as bounded multi-turn tool
-  conversations rather than one-shot JSON generation;
-- supplies the same control-free interface stub to both generation conditions;
-- returns tool failures to the same model conversation and requires successful
-  capability-by-capability public physics smoke before submission; and
-- separates development rejections from submitted Harness attempts.
+1. Verify every task clause against a pinned primary source and correct its exact
+   section, table, protocol, or source-line anchor.
+2. Port or faithfully adapt task-distinct fixtures and initialization semantics;
+   document every robot-specific transform without weakening the source task.
+3. Bind source-equivalent metrics, temporal rules, and aggregation, including
+   geometry-specific measurements such as peg-head alignment.
+4. Add close evidence cameras and verify readable per-case videos.
+5. Obtain the required human task-admission review, then freeze the two Task
+   Library snapshots.
+6. Recalibrate the references and rerun all four real-model cells from the
+   beginning.
 
-The current code also records a failed STUDY invocation as a real model call.
-These corrections are covered by local and real-MuJoCo integration tests, but
-are not presented as a replacement four-cell real-model run. The fresh launch
-described above stopped at the first TGCD request because the DeepSeek API still
-returned HTTP 402.
+## Local Verification
 
-## Final local verification
+- Full suite after the orchestration fixes: `129 passed, 32 subtests passed`.
+- Video-resolution focused checks: `3 passed`.
+- Current video-resolution commit: `880faac`.
+- The unrelated dirty Demo2 worktree was not staged or modified by these Demo3
+  changes.
 
-- `python -m pytest demo3/tests -q`: 119 tests and 31 subtests passed.
-- `python -m autoadapter2 check-only`: package check and MuJoCo physics smoke
-  passed under Python 3.11.9, MuJoCo 3.9.0, and NumPy 2.4.6.
-- Self-containment scan: 60 Python files checked, no symlinks, and no runtime
-  dependency on Demo2 or `general_demo`.
-- The reviewed run retains 102 per-case MP4 files across reference and dynamic
-  validation attempts.
+## Historical Runs
 
-## Interpretation
-
-Demo3 now demonstrates the complete experiment architecture and produces an
-honest, inspectable failed experiment. The references, task grounding, private
-Harness, actuator/physics guards, isolation, videos, bounded attempts, Repair,
-and Evolution paths all have concrete evidence. The reviewed run does not yet
-satisfy the Authority's synthesis-success condition because all four dynamic
-cells ended with `final_validation_passed=false`.
+`deepseek-v4-pro-20260818T020155Z` remains a pre-interactive-loop failure
+baseline. `deepseek-react-20260818T101705Z` stopped at TGCD with HTTP 402. Neither
+run is synthesis-success evidence.
