@@ -1667,7 +1667,15 @@ def run_experiment(
         "final_validation_passed": all_cells_passed,
         "success": references_passed and all_cells_passed,
         "claim": (
-            "dynamic cells completed without reference calibration; formal mainline claim unavailable"
+            (
+                "dynamic cells completed without reference calibration; "
+                "formal mainline claim unavailable"
+                if all_cells_completed
+                else (
+                    "dynamic-only experiment ended before all cells completed; "
+                    "formal mainline claim unavailable"
+                )
+            )
             if skip_reference_calibration
             else (
                 "two-condition, two-robot mainline succeeded"

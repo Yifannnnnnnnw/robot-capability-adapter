@@ -620,6 +620,31 @@ def test_explicit_reference_skip_runs_dynamic_cells_but_never_claims_success(
     )
 
 
+def test_reference_skip_does_not_call_incomplete_cells_completed(
+    tmp_path: Path,
+) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, study_raises=True)
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=tmp_path / "run",
+        run_id="dynamic-only-incomplete",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+        skip_reference_calibration=True,
+    )
+
+    assert len(result["cells"]) == 4
+    assert result["pipeline_completed"] is False
+    assert result["success"] is False
+    assert result["claim"] == (
+        "dynamic-only experiment ended before all cells completed; "
+        "formal mainline claim unavailable"
+    )
+
+
 def test_reuse_sealed_inputs_skips_tgcd_ivc_and_preserves_five_case_suite(
     tmp_path: Path,
 ) -> None:
