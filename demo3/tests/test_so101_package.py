@@ -273,6 +273,79 @@ def test_so101_pick_place_uses_a_physical_fixture_and_reference_passes() -> None
     assert not trial["physical_evidence"]["direct_state_write_detected"]
 
 
+def test_so101_wall_tasks_use_physical_obstacles_and_reference_passes() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    design = _design(package)
+    complete_suite = _suite(package, design)
+    task_ids = {"mw_pick_place_wall", "mw_push_wall"}
+    suite = {
+        **complete_suite,
+        "cases": [
+            case for case in complete_suite["cases"] if case["task_id"] in task_ids
+        ],
+    }
+    instances = {
+        item["task_id"]: item
+        for item in json.loads(
+            (package.private_dir / "instances.json").read_text(encoding="utf-8")
+        )["instances"]
+        if item["task_id"] in task_ids
+    }
+    assert instances["mw_pick_place_wall"]["scene_entrypoint"] != instances[
+        "mw_push_wall"
+    ]["scene_entrypoint"]
+
+    for instance in instances.values():
+        model = mujoco.MjModel.from_xml_path(
+            str((package.root / instance["scene_entrypoint"]).resolve())
+        )
+        wall_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "wall")
+        workpiece_id = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_BODY, "workpiece"
+        )
+        assert wall_id >= 0
+        assert model.geom_contype[wall_id] != 0
+        assert workpiece_id >= 0
+        assert model.body_dofnum[workpiece_id] == 6
+
+    pick_model = mujoco.MjModel.from_xml_path(
+        str(
+            (
+                package.root
+                / instances["mw_pick_place_wall"]["scene_entrypoint"]
+            ).resolve()
+        )
+    )
+    pick_wall_id = mujoco.mj_name2id(
+        pick_model, mujoco.mjtObj.mjOBJ_GEOM, "wall"
+    )
+    wall_top = pick_model.geom_pos[pick_wall_id, 2] + pick_model.geom_size[
+        pick_wall_id, 2
+    ]
+    pick_route = instances["mw_pick_place_wall"]["public_arguments"]["request"][
+        "task_parameters"
+    ]["route_position"]
+    assert pick_route[2] > wall_top
+
+    with tempfile.TemporaryDirectory(prefix="so101-wall-scenes-") as temporary:
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=package.reference_driver,
+            condition="from-scratch",
+            output_dir=temporary,
+            record_video=False,
+            wall_timeout_s=60.0,
+            run_id="so101-wall-calibration",
+            attempt=0,
+        )
+
+    assert report["validation_passed"]
+    assert {trial["task_id"] for trial in report["trials"]} == task_ids
+    assert all(trial["trial_passed"] for trial in report["trials"])
+
+
 def test_so101_reach_push_and_sweep_use_distinct_physical_scenes() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design = _design(package)

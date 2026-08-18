@@ -383,10 +383,10 @@
       "description": "Pick up an object, route it around a tabletop wall, and place it in the goal region.",
       "source_task_or_operation": "Meta-World sawyer_pick_place_wall_v3 pick-place-wall",
       "applicability": "The SO-101 can grasp a small object and use a collision-aware arm path around a fixed tabletop obstacle.",
-      "adaptation": "Add a private rigid wall fixture and object to the SO-101 scene, with the target on the opposite side of the wall. Preserve the source 0.07 m object-to-goal criterion and retain the wall as a physical route constraint.",
+      "adaptation": "Add a scaled rigid wall and place the goal on its opposite side. The SO-101 must grasp, lift above the wall, and release; the source Euclidean object-to-goal formula and 0.07 m bound are unchanged.",
       "scene_assumptions": [
-        "A low rigid wall separates the initial object region from the goal while leaving a reachable route around its end.",
-        "The wall, object, and goal are sized so the SO-101 gripper can pass around the wall without requiring a second arm."
+        "A low rigid wall separates the initial object region from the elevated goal.",
+        "The wall, object, and goal are sized so the SO-101 can lift the object above the wall without requiring a second arm."
       ],
       "observation_assumptions": [
         "The observation exposes object and goal positions and the obstacle geometry or equivalent collision state.",
@@ -408,7 +408,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_pick_place_wall_v3.py, evaluate_state, lines 962-987: success uses obj_to_target <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_pick_place_wall_v3.py, evaluate_state lines 85-116 and compute_reward lines 177-200: obj_to_target is the Euclidean norm and success is obj_to_target <= 0.07.",
               "support": "adapted",
               "adaptation": "Retain the 0.07 m source placement criterion and add the wall as a physical SO-101 scene constraint; obstacle routing changes the scene and motion feasibility, not the source terminal metric."
             }
@@ -512,7 +512,7 @@
       "applicability": "The SO-101 can make repeated planar contact and push a small rigid object along a route around a fixed obstacle.",
       "adaptation": "Use the SO-101 model with a private wall, object, and goal. Preserve the source 0.07 m object-to-goal threshold and make the wall a physical obstacle rather than a symbolic penalty.",
       "scene_assumptions": [
-        "A tabletop wall blocks a direct push but leaves a continuous route around one end.",
+        "A tabletop wall occupies the nominal start-to-goal corridor while the selected reset leaves a narrow continuous route around its left end.",
         "The object remains stable on the tabletop during planar contact."
       ],
       "observation_assumptions": [
@@ -535,7 +535,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_push_wall_v3.py, evaluate_state, lines 902-925: success uses obj_to_target <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_push_wall_v3.py, evaluate_state lines 88-119 and compute_reward lines 173-194: obj_to_target is the Euclidean norm and success is obj_to_target <= 0.07.",
               "support": "adapted",
               "adaptation": "Keep the 0.07 m object-to-goal criterion and instantiate the source wall-routing obligation with a rigid SO-101 tabletop obstacle; only morphology, scene geometry, and private reset are substituted."
             }

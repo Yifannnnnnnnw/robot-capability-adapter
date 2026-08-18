@@ -187,7 +187,7 @@ class ReferenceSO101Driver:
         self._step_to(self._reach_parameter(parameters))
 
     def contact_task(self, *, request: Any) -> None:
-        _, parameters = _request(request)
+        task_id, parameters = _request(request)
         contact = _vector(parameters["contact_position"], name="contact_position")
         approach = _vector(
             parameters.get(
@@ -206,7 +206,7 @@ class ReferenceSO101Driver:
             self._step_to(
                 _vector(parameters["route_position"], name="route_position"),
                 steps=700,
-                residual_tolerance=0.25,
+                residual_tolerance=0.08 if task_id == "mw_push_wall" else 0.25,
             )
         self._step_to(
             self._tool_target(parameters),

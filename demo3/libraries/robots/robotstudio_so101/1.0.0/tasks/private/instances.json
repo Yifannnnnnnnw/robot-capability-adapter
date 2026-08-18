@@ -139,35 +139,35 @@
     {
       "instance_id": "so101-mw_pick_place_wall",
       "task_id": "mw_pick_place_wall",
-      "scene_entrypoint": "assets/wall_scene.xml",
+      "scene_entrypoint": "assets/pick_place_wall_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_pick_place_wall",
           "task_parameters": {
             "start_position": [
-              0.46,
+              0.38,
               0.08,
               0.18
             ],
             "target_position": [
-              0.529,
-              0.033,
-              0.178
+              0.38,
+              -0.12,
+              0.26
             ],
             "release_position": [
-              0.48,
-              0.08,
-              0.225
+              0.371,
+              -0.118,
+              0.272
             ],
             "tool_target_position": [
-              0.48,
-              0.08,
-              0.225
+              0.371,
+              -0.118,
+              0.272
             ],
             "route_position": [
-              0.48,
-              0.02,
-              0.23
+              0.38,
+              -0.02,
+              0.34
             ]
           }
         }
@@ -190,7 +190,7 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_push_wall",
@@ -201,24 +201,24 @@
           "task_id": "mw_push_wall",
           "task_parameters": {
             "contact_position": [
-              0.46,
-              0.08,
-              0.225
+              0.36,
+              0.03,
+              0.188
             ],
             "target_position": [
-              0.515,
-              0.033,
-              0.185
+              0.36,
+              0.18,
+              0.18
             ],
             "tool_target_position": [
               0.36,
-              0.02,
-              0.225
+              0.18,
+              0.188
             ],
             "route_position": [
-              0.46,
-              0.02,
-              0.225
+              0.36,
+              0.16,
+              0.188
             ]
           }
         }
@@ -241,7 +241,7 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_sweep_into_goal",
