@@ -1,0 +1,246 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from autoadapter2.capability_design import (
+    CapabilityDesignError,
+    run_tgcd,
+    validate_capability_design,
+)
+from autoadapter2.libraries import RobotPackage
+
+
+def _task(index: int) -> dict:
+    clause = {
+        "clause_id": "terminal-error",
+        "metric": "terminal_error",
+        "unit": "m",
+        "comparator": "<=",
+        "threshold": 0.02,
+        "temporal": {"kind": "terminal"},
+        "aggregation": {"kind": "all"},
+        "source_refs": [
+            {
+                "source_id": "source-1",
+                "specific_reference": "Section 2",
+                "support": "direct",
+            }
+        ],
+    }
+    task_id = f"task-{index:02d}"
+    return {
+        "task_id": task_id,
+        "scoring": [clause],
+        "invocation_schema": {
+            "envelope": "request",
+            "required": ["request"],
+            "request": {
+                "type": "object",
+                "required": ["task_id", "task_parameters"],
+                "task_id": task_id,
+                "task_parameters": {
+                    "type": "object",
+                    "required": ["target"],
+                    "properties": {"target": {"type": "array"}},
+                },
+            },
+        },
+    }
+
+
+def _package(root: Path) -> RobotPackage:
+    tasks = tuple(_task(index) for index in range(20))
+    return RobotPackage(
+        root=root,
+        robot_configuration_id="example-arm",
+        package_version="1.0.0",
+        snapshot_id="snapshot-1",
+        morphology={"robot_configuration_id": "example-arm"},
+        sources=({"source_id": "source-1"},),
+        tasks=tasks,
+        mjcf_path=root / "scene.xml",
+        skeleton_dir=root / "skeleton",
+        reference_driver=root / "reference" / "driver.py",
+        private_dir=root / "private",
+    )
+
+
+def _design(package: RobotPackage) -> dict:
+    capabilities = []
+    for group in range(5):
+        tasks = package.tasks[group * 4 : group * 4 + 4]
+        contracts = []
+        for task in tasks:
+            clause = task["scoring"][0]
+            contracts.append(
+                {
+                    "source_task_id": task["task_id"],
+                    "source_clause_id": clause["clause_id"],
+                    **{key: clause[key] for key in (
+                        "metric",
+                        "unit",
+                        "comparator",
+                        "threshold",
+                        "temporal",
+                        "aggregation",
+                        "source_refs",
+                    )},
+                }
+            )
+        capabilities.append(
+            {
+                "capability_id": f"capability-{group}",
+                "effect": f"shared effect {group}",
+                "method_name": f"perform_effect_{group}",
+                "description": "One reusable physical effect.",
+                "covered_task_ids": [task["task_id"] for task in tasks],
+                "abstraction_rationale": "The tasks share the same robot motion.",
+                "interface": {
+                    "inputs": [{"name": "target", "type": "vector3", "unit": "m", "frame": "world"}],
+                    "outputs": [{"name": "completed", "type": "bool", "unit": "unitless", "frame": "none"}],
+                },
+                "preconditions": ["Canonical scene is active."],
+                "temporal_semantics": {"kind": "bounded"},
+                "invariants": ["Actuator-driven motion only."],
+                "required_affordances": {
+                    "actions": ["joint actuator control"],
+                    "observations": ["joint state"],
+                },
+                "failure_behavior": "Raise a public runtime error.",
+                "validation_contract": contracts,
+            }
+        )
+    return {
+        "artifact_type": "capability_design",
+        "schema_version": "1.0",
+        "robot_configuration_id": package.robot_configuration_id,
+        "package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+        "invocation_abi": {
+            "kind": "keyword_request",
+            "method_call": "method(request=request)",
+            "request_required": ["task_id", "task_parameters"],
+        },
+        "capabilities": capabilities,
+    }
+
+
+class _CapturingModel:
+    def __init__(self, response: dict) -> None:
+        self.response = response
+        self.inputs = None
+
+    def generate_json(self, *, stage, prompt, inputs):
+        self.inputs = inputs
+        return self.response
+
+
+class _SequenceModel:
+    def __init__(self, responses: list[dict]) -> None:
+        self.responses = responses
+        self.calls = []
+
+    def generate_json(self, *, stage, prompt, inputs):
+        self.calls.append({"stage": stage, "inputs": inputs})
+        return self.responses[len(self.calls) - 1]
+
+
+class TGCDTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.package = _package(Path(self.temporary.name))
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def test_valid_design_preserves_all_tasks_and_clauses(self) -> None:
+        design = validate_capability_design(_design(self.package), self.package)
+
+        self.assertEqual(len(design["capabilities"]), 5)
+
+    def test_keyed_interface_objects_are_canonicalized_to_typed_lists(self) -> None:
+        design = _design(self.package)
+        design["capabilities"][0]["interface"] = {
+            "inputs": {
+                "request": {"type": "object", "unit": "unitless", "frame": "none"}
+            },
+            "outputs": {
+                "completed": {"type": "bool", "unit": "unitless", "frame": "none"}
+            },
+        }
+
+        validated = validate_capability_design(design, self.package)
+
+        self.assertEqual(validated["capabilities"][0]["interface"]["inputs"][0]["name"], "request")
+
+    def test_scalar_semantic_containers_are_canonicalized_without_content_change(self) -> None:
+        design = _design(self.package)
+        capability = design["capabilities"][0]
+        capability["preconditions"] = "Canonical scene is active."
+        capability["temporal_semantics"] = "Complete within the request duration."
+        capability["invariants"] = "Actuator-driven motion only."
+        capability["required_affordances"] = {
+            "actions": "joint actuator control",
+            "observations": "joint state",
+        }
+
+        validated = validate_capability_design(design, self.package)
+
+        normalized = validated["capabilities"][0]
+        self.assertEqual(normalized["preconditions"], ["Canonical scene is active."])
+        self.assertEqual(
+            normalized["temporal_semantics"]["description"],
+            "Complete within the request duration.",
+        )
+
+    def test_missing_task_is_rejected(self) -> None:
+        design = _design(self.package)
+        design["capabilities"][0]["covered_task_ids"].pop()
+
+        with self.assertRaisesRegex(
+            CapabilityDesignError,
+            "outside this capability|covered exactly once",
+        ):
+            validate_capability_design(design, self.package)
+
+    def test_weakened_source_threshold_is_rejected(self) -> None:
+        design = _design(self.package)
+        design["capabilities"][0]["validation_contract"][0]["threshold"] = 0.2
+
+        with self.assertRaisesRegex(CapabilityDesignError, "changes a source pass standard"):
+            validate_capability_design(design, self.package)
+
+    def test_nonstandard_invocation_abi_is_rejected(self) -> None:
+        design = _design(self.package)
+        design["invocation_abi"]["method_call"] = "method(target=target)"
+
+        with self.assertRaisesRegex(CapabilityDesignError, "fixed public request envelope"):
+            validate_capability_design(design, self.package)
+
+    def test_model_receives_no_private_package_data(self) -> None:
+        model = _CapturingModel(_design(self.package))
+
+        run_tgcd(model, self.package)
+
+        self.assertEqual(set(model.inputs), {"morphology", "task_library", "experience"})
+        self.assertNotIn("private", repr(model.inputs).lower())
+
+    def test_one_structural_correction_remains_public(self) -> None:
+        invalid = _design(self.package)
+        invalid["capabilities"][0]["covered_task_ids"].pop()
+        model = _SequenceModel([invalid, _design(self.package)])
+
+        result = run_tgcd(model, self.package)
+
+        self.assertEqual(len(result["capabilities"]), 5)
+        self.assertEqual([call["stage"] for call in model.calls], [
+            "tgcd",
+            "tgcd-structure-correction",
+        ])
+        self.assertNotIn("private", repr(model.calls).lower())
+
+
+if __name__ == "__main__":
+    unittest.main()

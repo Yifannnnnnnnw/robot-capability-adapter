@@ -1,0 +1,496 @@
+"""Trusted measurements and criteria over worker-produced MuJoCo evidence."""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Mapping, Sequence
+from typing import Any
+
+
+class MeasurementError(ValueError):
+    """Raised when a private binding cannot be evaluated from trusted evidence."""
+
+
+def _samples(evidence: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    values = evidence.get("samples")
+    if not isinstance(values, list) or not values or not all(
+        isinstance(item, Mapping) for item in values
+    ):
+        raise MeasurementError("worker evidence contains no trusted samples")
+    return values
+
+
+def _sample_times(samples: Sequence[Mapping[str, Any]]) -> list[float]:
+    times: list[float] = []
+    for index, sample in enumerate(samples):
+        try:
+            time = float(sample["time"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise MeasurementError(f"sample {index} has no valid time") from exc
+        if not math.isfinite(time):
+            raise MeasurementError(f"sample {index} time must be finite")
+        if times and time < times[-1]:
+            raise MeasurementError("trusted sample times must be non-decreasing")
+        times.append(time)
+    return times
+
+
+def _evidence_with_samples(
+    evidence: Mapping[str, Any], samples: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    window = dict(evidence)
+    window["samples"] = list(samples)
+    return window
+
+
+def _argument(arguments: Mapping[str, Any], name: str) -> Any:
+    value: Any = arguments
+    for part in name.split("."):
+        if not isinstance(value, Mapping) or part not in value:
+            raise MeasurementError(f"public argument {name!r} is unavailable")
+        value = value[part]
+    return value
+
+
+def _vector(value: Any, *, size: int | None = None) -> tuple[float, ...]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise MeasurementError("measurement expected a numeric vector")
+    result = tuple(float(item) for item in value)
+    if size is not None and len(result) != size:
+        raise MeasurementError(f"measurement expected a vector of length {size}")
+    if not all(math.isfinite(item) for item in result):
+        raise MeasurementError("measurement vector must be finite")
+    return result
+
+
+def _distance(left: Sequence[float], right: Sequence[float]) -> float:
+    if len(left) != len(right):
+        raise MeasurementError("cannot compare vectors with different lengths")
+    return math.sqrt(sum((float(a) - float(b)) ** 2 for a, b in zip(left, right)))
+
+
+def _body_position(sample: Mapping[str, Any], name: str) -> tuple[float, float, float]:
+    positions = sample.get("body_positions")
+    if not isinstance(positions, Mapping) or name not in positions:
+        raise MeasurementError(f"body {name!r} is unavailable")
+    return _vector(positions[name], size=3)  # type: ignore[return-value]
+
+
+def _site_position(sample: Mapping[str, Any], name: str) -> tuple[float, float, float]:
+    positions = sample.get("site_positions")
+    if not isinstance(positions, Mapping) or name not in positions:
+        raise MeasurementError(f"site {name!r} is unavailable")
+    return _vector(positions[name], size=3)  # type: ignore[return-value]
+
+
+def _joint_position(sample: Mapping[str, Any], name: str) -> float:
+    positions = sample.get("joint_positions")
+    if not isinstance(positions, Mapping) or name not in positions:
+        raise MeasurementError(f"joint {name!r} is unavailable")
+    return float(positions[name])
+
+
+def _yaw_deg(quaternion: Sequence[float]) -> float:
+    w, x, y, z = _vector(quaternion, size=4)
+    sin_yaw = 2.0 * (w * z + x * y)
+    cos_yaw = 1.0 - 2.0 * (y * y + z * z)
+    return math.degrees(math.atan2(sin_yaw, cos_yaw))
+
+
+def measure(
+    binding: Mapping[str, Any],
+    *,
+    evidence: Mapping[str, Any],
+    public_arguments: Mapping[str, Any],
+) -> float:
+    """Evaluate one explicitly named private measurement binding."""
+
+    kind = binding.get("kind")
+    parameters = binding.get("parameters", {})
+    if not isinstance(parameters, Mapping):
+        raise MeasurementError("binding parameters must be an object")
+    samples = _samples(evidence)
+    first = samples[0]
+    final = samples[-1]
+
+    if kind == "final_site_position_error":
+        actual = _site_position(final, str(parameters["site_name"]))
+        target = _vector(_argument(public_arguments, str(parameters["target_argument"])), size=3)
+        return _distance(actual, target)
+    if kind == "final_body_position_error":
+        actual = _body_position(final, str(parameters["body_name"]))
+        target = _vector(_argument(public_arguments, str(parameters["target_argument"])), size=3)
+        return _distance(actual, target)
+    if kind == "final_joint_position_error":
+        actual = _joint_position(final, str(parameters["joint_name"]))
+        target = float(_argument(public_arguments, str(parameters["target_argument"])))
+        return abs(actual - target)
+    if kind == "joint_range":
+        values = [_joint_position(sample, str(parameters["joint_name"])) for sample in samples]
+        return max(values) - min(values)
+    if kind == "body_height":
+        return _body_position(final, str(parameters["body_name"]))[2]
+    if kind == "minimum_body_height":
+        return min(
+            _body_position(sample, str(parameters["body_name"]))[2] for sample in samples
+        )
+    if kind == "body_planar_displacement":
+        start = _body_position(first, str(parameters["body_name"]))
+        end = _body_position(final, str(parameters["body_name"]))
+        return _distance(start[:2], end[:2])
+    if kind == "body_axis_displacement":
+        axis = int(parameters.get("axis", 0))
+        start = _body_position(first, str(parameters["body_name"]))
+        end = _body_position(final, str(parameters["body_name"]))
+        return end[axis] - start[axis]
+    if kind == "mean_body_planar_speed":
+        start = _body_position(first, str(parameters["body_name"]))
+        end = _body_position(final, str(parameters["body_name"]))
+        elapsed = float(final["time"]) - float(first["time"])
+        if elapsed <= 0:
+            raise MeasurementError("mean speed requires positive elapsed time")
+        return _distance(start[:2], end[:2]) / elapsed
+    if kind == "body_yaw_change_deg":
+        name = str(parameters["body_name"])
+        first_quaternions = first.get("body_quaternions")
+        final_quaternions = final.get("body_quaternions")
+        if not isinstance(first_quaternions, Mapping) or not isinstance(
+            final_quaternions, Mapping
+        ):
+            raise MeasurementError("body quaternion observations are unavailable")
+        return abs(_yaw_deg(final_quaternions[name]) - _yaw_deg(first_quaternions[name]))
+    if kind == "contact_sample_count":
+        return float(sum(1 for sample in samples if sample.get("contacts")))
+    if kind == "physics_step_count":
+        return float(evidence.get("step_count", 0))
+    raise MeasurementError(f"unsupported private measurement kind {kind!r}")
+
+
+def compare(value: float, *, comparator: str, threshold: Any) -> bool:
+    if not math.isfinite(value):
+        return False
+    if comparator == "<":
+        return value < float(threshold)
+    if comparator == "<=":
+        return value <= float(threshold)
+    if comparator == ">":
+        return value > float(threshold)
+    if comparator == ">=":
+        return value >= float(threshold)
+    if comparator == "==":
+        return math.isclose(value, float(threshold), rel_tol=0.0, abs_tol=1e-9)
+    if comparator == "between":
+        low, high = _vector(threshold, size=2)
+        return low <= value <= high
+    raise MeasurementError(f"unsupported comparator {comparator!r}")
+
+
+_STATE_BINDING_KINDS = {
+    "final_site_position_error",
+    "final_body_position_error",
+    "final_joint_position_error",
+    "body_height",
+    "body_yaw_change_deg",
+}
+
+
+def _prefix_value(
+    binding: Mapping[str, Any],
+    *,
+    evidence: Mapping[str, Any],
+    public_arguments: Mapping[str, Any],
+    index: int,
+) -> float:
+    samples = _samples(evidence)
+    return measure(
+        binding,
+        evidence=_evidence_with_samples(evidence, samples[: index + 1]),
+        public_arguments=public_arguments,
+    )
+
+
+def _continuous_value(
+    binding: Mapping[str, Any],
+    *,
+    evidence: Mapping[str, Any],
+    public_arguments: Mapping[str, Any],
+    duration_s: float,
+) -> tuple[float, float, int] | None:
+    samples = _samples(evidence)
+    times = _sample_times(samples)
+    start = times[0]
+    for end_index, end in enumerate(times):
+        elapsed = end - start
+        if elapsed + 1e-12 >= duration_s:
+            value = measure(
+                binding,
+                evidence=_evidence_with_samples(evidence, samples[: end_index + 1]),
+                public_arguments=public_arguments,
+            )
+            return value, elapsed, end_index
+    return None
+
+
+def evaluate_temporal(
+    binding: Mapping[str, Any],
+    *,
+    criterion: Mapping[str, Any],
+    evidence: Mapping[str, Any],
+    public_arguments: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Reduce trusted samples according to the criterion's temporal contract.
+
+    The returned value is still compared by the case aggregation. Dwell and
+    eventual/within additionally use the comparator while deciding whether a
+    state was reached or held in the trusted time series.
+    """
+
+    temporal = criterion.get("temporal")
+    if not isinstance(temporal, Mapping):
+        raise MeasurementError("criterion temporal rule must be an object")
+    kind = temporal.get("kind")
+    if not isinstance(kind, str):
+        raise MeasurementError("criterion temporal kind must be a string")
+    comparator = criterion.get("comparator")
+    threshold = criterion.get("threshold")
+    if not isinstance(comparator, str) or "threshold" not in criterion:
+        raise MeasurementError("criterion comparator and threshold are required")
+    samples = _samples(evidence)
+
+    if kind == "terminal_state" or kind.startswith("terminal_state_"):
+        return {
+            "kind": kind,
+            "passed": True,
+            "value": measure(
+                binding, evidence=evidence, public_arguments=public_arguments
+            ),
+        }
+
+    def duration() -> float:
+        value = temporal.get("duration_s")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise MeasurementError(f"{kind} requires numeric duration_s")
+        value = float(value)
+        if not math.isfinite(value) or value <= 0:
+            raise MeasurementError(f"{kind} requires positive duration_s")
+        return value
+
+    if kind in {"dwell", "eventual", "within"}:
+        times = _sample_times(samples)
+        values: list[tuple[int, float]] = []
+        last_error: MeasurementError | None = None
+        for index in range(len(samples)):
+            try:
+                value = _prefix_value(
+                    binding,
+                    evidence=evidence,
+                    public_arguments=public_arguments,
+                    index=index,
+                )
+            except MeasurementError as exc:
+                last_error = exc
+                continue
+            values.append((index, value))
+        if not values:
+            if last_error is not None:
+                raise last_error
+            raise MeasurementError("temporal rule has no measurable samples")
+
+        if kind == "eventual":
+            passing = [
+                (index, value)
+                for index, value in values
+                if compare(value, comparator=comparator, threshold=threshold)
+            ]
+            if passing:
+                index, value = passing[0]
+                return {
+                    "kind": kind,
+                    "passed": True,
+                    "value": value,
+                    "sample_index": index,
+                }
+            return {
+                "kind": kind,
+                "passed": False,
+                "value": values[-1][1],
+            }
+
+        if kind == "within":
+            limit = times[0] + duration()
+            passing = [
+                (index, value)
+                for index, value in values
+                if times[index] <= limit + 1e-12
+                and compare(value, comparator=comparator, threshold=threshold)
+            ]
+            if passing:
+                index, value = passing[0]
+                return {
+                    "kind": kind,
+                    "passed": True,
+                    "value": value,
+                    "sample_index": index,
+                    "valid_duration_s": times[index] - times[0],
+                }
+            return {
+                "kind": kind,
+                "passed": False,
+                "value": values[-1][1],
+                "valid_duration_s": min(times[-1] - times[0], duration()),
+            }
+
+        # Dwell is a contiguous run of sampled states. A single passing sample
+        # contributes zero duration; every counted interval has passing states
+        # at both endpoints.
+        state_by_index = {index: compare(value, comparator=comparator, threshold=threshold)
+                          for index, value in values}
+        best_duration = 0.0
+        best_end_index: int | None = None
+        run_duration = 0.0
+        for index in range(len(samples) - 1):
+            if state_by_index.get(index) and state_by_index.get(index + 1):
+                run_duration += times[index + 1] - times[index]
+                if run_duration > best_duration:
+                    best_duration = run_duration
+                    best_end_index = index + 1
+            else:
+                run_duration = 0.0
+        required = duration()
+        if best_end_index is None:
+            value = values[-1][1]
+        else:
+            value = next(
+                value for index, value in values if index == best_end_index
+            )
+        return {
+            "kind": kind,
+            "passed": best_duration + 1e-12 >= required,
+            "value": value,
+            "valid_duration_s": best_duration,
+            "required_duration_s": required,
+        }
+
+    if kind == "continuous":
+        required = duration()
+        window = _continuous_value(
+            binding,
+            evidence=evidence,
+            public_arguments=public_arguments,
+            duration_s=required,
+        )
+        if window is None:
+            return {
+                "kind": kind,
+                "passed": False,
+                "value": None,
+                "valid_duration_s": _sample_times(samples)[-1]
+                - _sample_times(samples)[0],
+                "required_duration_s": required,
+            }
+        value, valid_duration, end_index = window
+        if binding.get("kind") in _STATE_BINDING_KINDS:
+            times = _sample_times(samples)
+            state_values = [
+                _prefix_value(
+                    binding,
+                    evidence=evidence,
+                    public_arguments=public_arguments,
+                    index=index,
+                )
+                for index in range(end_index + 1)
+            ]
+            state_passed = all(
+                compare(item, comparator=comparator, threshold=threshold)
+                for item in state_values
+            )
+            value = state_values[-1]
+        else:
+            state_passed = True
+        return {
+            "kind": kind,
+            "passed": state_passed,
+            "value": value,
+            "valid_duration_s": valid_duration,
+            "required_duration_s": required,
+        }
+
+    raise MeasurementError(f"unsupported temporal kind {kind!r}")
+
+
+def aggregate_criterion(
+    aggregation: Mapping[str, Any],
+    *,
+    comparator: str,
+    threshold: Any,
+    values: Sequence[Any],
+    temporal_passes: Sequence[bool],
+) -> dict[str, Any]:
+    """Apply the private case aggregation to trusted per-trial values."""
+
+    kind = aggregation.get("kind")
+    if not isinstance(kind, str):
+        raise MeasurementError("criterion aggregation kind must be a string")
+    if not values or len(values) != len(temporal_passes):
+        raise MeasurementError("aggregation inputs must cover every trial")
+    if any(not isinstance(item, bool) for item in temporal_passes):
+        raise MeasurementError("aggregation pass inputs must be boolean")
+    if any(not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(float(value))
+           for value in values):
+        return {"kind": kind, "passed": False, "value": None}
+
+    numeric_values = [float(value) for value in values]
+    if kind == "single_trial":
+        if len(numeric_values) != 1:
+            return {"kind": kind, "passed": False, "value": None}
+        passed = bool(temporal_passes[0]) and compare(
+            numeric_values[0], comparator=comparator, threshold=threshold
+        )
+        return {"kind": kind, "passed": passed, "value": numeric_values[0]}
+    if kind == "per_trial":
+        passed = all(
+            temporal_passed and compare(
+                value, comparator=comparator, threshold=threshold
+            )
+            for value, temporal_passed in zip(numeric_values, temporal_passes)
+        )
+        return {"kind": kind, "passed": passed, "value": None}
+    if kind == "per_trial_mean":
+        mean_value = math.fsum(numeric_values) / len(numeric_values)
+        passed = all(temporal_passes) and compare(
+            mean_value, comparator=comparator, threshold=threshold
+        )
+        return {"kind": kind, "passed": passed, "value": mean_value}
+    raise MeasurementError(f"unsupported aggregation kind {kind!r}")
+
+
+def evaluate_guards(
+    guard_definitions: Sequence[Mapping[str, Any]],
+    *,
+    worker_result: Mapping[str, Any],
+) -> dict[str, bool]:
+    evidence = worker_result.get("physical_evidence")
+    if not isinstance(evidence, Mapping):
+        evidence = {}
+    video = worker_result.get("video")
+    if not isinstance(video, Mapping):
+        video = {}
+    outcomes: dict[str, bool] = {}
+    for guard in guard_definitions:
+        guard_id = str(guard["guard_id"])
+        kind = guard.get("kind")
+        if kind == "actuator_and_physics_step_required":
+            outcomes[guard_id] = (
+                int(evidence.get("step_count", 0)) > 0
+                and bool(evidence.get("ctrl_observed_before_step"))
+                and bool(evidence.get("ctrl_changed_from_reset"))
+            )
+        elif kind == "no_direct_state_write":
+            outcomes[guard_id] = not bool(evidence.get("direct_state_write_detected"))
+        elif kind == "canonical_model_data":
+            outcomes[guard_id] = bool(worker_result.get("canonical_model_data"))
+        elif kind == "complete_video":
+            outcomes[guard_id] = bool(video.get("complete"))
+        else:
+            raise MeasurementError(f"unsupported private guard kind {kind!r}")
+    return outcomes
