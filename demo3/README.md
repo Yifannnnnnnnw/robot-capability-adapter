@@ -62,6 +62,10 @@ export MUJOCO_GL=cgl
 pyenv exec python -m autoadapter2 full --run-id <run-id>
 ```
 
+To exercise only the newly generated four-cell path without rerunning reference
+calibration, add `--skip-reference-calibration`. This is explicitly diagnostic:
+the report records the skip and can never claim formal mainline success.
+
 ## Evidence
 
 The current robot models have pinned upstream provenance, but a post-run audit

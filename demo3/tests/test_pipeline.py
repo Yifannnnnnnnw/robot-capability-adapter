@@ -589,6 +589,35 @@ def test_failed_reference_gate_starts_no_dynamic_cell(tmp_path: Path) -> None:
     assert not any(item[0] == "study" for item in events)
 
 
+def test_explicit_reference_skip_runs_dynamic_cells_but_never_claims_success(
+    tmp_path: Path,
+) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=tmp_path / "run",
+        run_id="dynamic-only",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+        skip_reference_calibration=True,
+    )
+
+    assert not any(item[0] in {"render_reference", "reference"} for item in events)
+    assert len(result["cells"]) == 4
+    assert result["pipeline_completed"] is True
+    assert result["reference_calibration_skipped"] is True
+    assert result["reference_calibration_passed"] is False
+    assert result["final_validation_passed"] is True
+    assert result["success"] is False
+    assert success_claim(result) is False
+    assert result["claim"] == (
+        "dynamic cells completed without reference calibration; formal mainline claim unavailable"
+    )
+
+
 def test_package_failure_happens_before_model_calls(tmp_path: Path) -> None:
     events: list[tuple[Any, ...]] = []
     client = SimpleNamespace(calls=[])

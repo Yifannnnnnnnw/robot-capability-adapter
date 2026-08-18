@@ -34,6 +34,11 @@ def _parser() -> argparse.ArgumentParser:
         if name == "full":
             command.add_argument("--output", type=Path, default=None)
             command.add_argument("--run-id", default=None)
+            command.add_argument(
+                "--skip-reference-calibration",
+                action="store_true",
+                help="run dynamic cells diagnostically without the formal reference gate",
+            )
     return parser
 
 
@@ -68,6 +73,7 @@ def main(argv: list[str] | None = None) -> int:
             config=config,
             output_dir=args.output,
             run_id=args.run_id,
+            skip_reference_calibration=args.skip_reference_calibration,
         )
         _print(
             {

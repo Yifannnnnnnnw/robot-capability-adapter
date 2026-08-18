@@ -1239,8 +1239,9 @@ def run_experiment(
     experience: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None,
     hooks: PipelineHooks | None = None,
     check_self_containment: bool = True,
+    skip_reference_calibration: bool = False,
 ) -> dict[str, Any]:
-    """Run TGCD/IVC, reference calibration, and the four dynamic cells."""
+    """Run TGCD/IVC and four cells, with the formal reference gate by default."""
 
     root = Path(demo_root).resolve()
     if config is None:
@@ -1366,63 +1367,79 @@ def run_experiment(
                 f"IVC failed for {robot!r}; no dynamic driver generation started: {exc}"
             ) from exc
 
-    # Reference calibration is a gate.  It is complete for both robots before any STUDY call.
     references: dict[str, Any] = {}
-    for robot in config.robots:
-        package = packages[robot]
-        reference_dir = destination / "references" / robot
-        try:
-            driver_path = render_reference_driver(
-                package,
-                designs[robot],
-                reference_dir,
-                renderer=selected_hooks.reference_renderer,
-            )
-            if selected_hooks.reference_runner is None:
-                reference = _default_reference_run(
-                    package=package,
-                    design=designs[robot],
-                    suite=suites[robot],
-                    driver_path=driver_path,
-                    output_dir=reference_dir / "validation",
-                    config=config,
-                    run_id=selected_run_id,
-                )
-            else:
-                reference = selected_hooks.reference_runner(
-                    package=package,
-                    design=_copy(dict(designs[robot])),
-                    suite=_copy(dict(suites[robot])),
-                    driver_path=driver_path,
-                    output_dir=reference_dir / "validation",
-                    record_video=config.record_video,
-                    wall_timeout_s=config.worker_wall_timeout_s,
-                    run_id=selected_run_id,
-                    attempt=0,
-                )
-            reference = _copy(dict(reference))
-            reference["robot_configuration_id"] = robot
-            reference["reference_driver"] = str(driver_path)
-            reference["passed"] = _reference_passed(
-                reference,
-                video_required=config.record_video,
-            )
-        except Exception as exc:
+    if skip_reference_calibration:
+        for robot in config.robots:
             reference = {
                 "robot_configuration_id": robot,
                 "reference_driver": None,
+                "skipped": True,
+                "skip_reason": "explicit diagnostic dynamic-only run",
                 "pipeline_completed": False,
                 "physical_validation_executed": False,
                 "validation_passed": False,
-                "video_complete": not config.record_video,
+                "video_complete": False,
                 "passed": False,
-                "failure": _failure_record(exc),
             }
-        references[robot] = reference
-        _write(reference_dir / "reference_report.json", reference)
+            references[robot] = reference
+            _write(destination / "references" / robot / "reference_report.json", reference)
+    else:
+        # The formal reference gate completes for both robots before any STUDY call.
+        for robot in config.robots:
+            package = packages[robot]
+            reference_dir = destination / "references" / robot
+            try:
+                driver_path = render_reference_driver(
+                    package,
+                    designs[robot],
+                    reference_dir,
+                    renderer=selected_hooks.reference_renderer,
+                )
+                if selected_hooks.reference_runner is None:
+                    reference = _default_reference_run(
+                        package=package,
+                        design=designs[robot],
+                        suite=suites[robot],
+                        driver_path=driver_path,
+                        output_dir=reference_dir / "validation",
+                        config=config,
+                        run_id=selected_run_id,
+                    )
+                else:
+                    reference = selected_hooks.reference_runner(
+                        package=package,
+                        design=_copy(dict(designs[robot])),
+                        suite=_copy(dict(suites[robot])),
+                        driver_path=driver_path,
+                        output_dir=reference_dir / "validation",
+                        record_video=config.record_video,
+                        wall_timeout_s=config.worker_wall_timeout_s,
+                        run_id=selected_run_id,
+                        attempt=0,
+                    )
+                reference = _copy(dict(reference))
+                reference["robot_configuration_id"] = robot
+                reference["reference_driver"] = str(driver_path)
+                reference["passed"] = _reference_passed(
+                    reference,
+                    video_required=config.record_video,
+                )
+            except Exception as exc:
+                reference = {
+                    "robot_configuration_id": robot,
+                    "reference_driver": None,
+                    "pipeline_completed": False,
+                    "physical_validation_executed": False,
+                    "validation_passed": False,
+                    "video_complete": not config.record_video,
+                    "passed": False,
+                    "failure": _failure_record(exc),
+                }
+            references[robot] = reference
+            _write(reference_dir / "reference_report.json", reference)
 
     references_passed = all(bool(references[robot].get("passed")) for robot in config.robots)
-    if not references_passed:
+    if not references_passed and not skip_reference_calibration:
         result = {
             "experiment_id": config.experiment_id,
             "code_version": __version__,
@@ -1488,6 +1505,7 @@ def run_experiment(
         "configuration": config.as_dict(),
         "package_check": package_check,
         "references": references,
+        "reference_calibration_skipped": skip_reference_calibration,
         "reference_calibration_passed": references_passed,
         "cells": cell_reports,
         "paired_report": paired,
@@ -1505,9 +1523,13 @@ def run_experiment(
         "final_validation_passed": all_cells_passed,
         "success": references_passed and all_cells_passed,
         "claim": (
-            "two-condition, two-robot mainline succeeded"
-            if references_passed and all_cells_passed
-            else "paired two-condition experiment completed; named cell synthesis failures remain"
+            "dynamic cells completed without reference calibration; formal mainline claim unavailable"
+            if skip_reference_calibration
+            else (
+                "two-condition, two-robot mainline succeeded"
+                if references_passed and all_cells_passed
+                else "paired two-condition experiment completed; named cell synthesis failures remain"
+            )
         ),
         "stage_evidence": stage_log,
     }
