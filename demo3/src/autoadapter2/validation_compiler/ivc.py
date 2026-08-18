@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import random
 from collections import Counter
 from collections.abc import Mapping
 from pathlib import Path
@@ -11,10 +12,14 @@ from typing import Any, Protocol
 from autoadapter2.libraries import RobotPackage
 
 
+PRIVATE_CASE_SAMPLE_SIZE = 5
+
+
 IVC_SYSTEM_PROMPT = """You are the implementation-blind Independent Validation Compiler.
 Compile the sealed public Capability Design and the supplied Framework-private instances,
-measurement bindings, and guards into one exact private physical validation suite. You cannot see
-and must not infer any candidate driver implementation, trace, report, Repair history, or verdict.
+measurement bindings, and guards into one complete private physical validation case pool. You
+cannot see and must not infer any candidate driver implementation, trace, report, Repair history,
+or verdict.
 
 Return one JSON object with artifact_type='private_validation_suite', schema_version='1.0', the
 supplied robot_configuration_id, package_version, task_snapshot_id, and cases[]. Each case must
@@ -23,7 +28,8 @@ capability_id, method_name, task_id, source_clause_id, instance_id, binding_id, 
 repetitions, timeout_sim_s, and criterion. criterion must copy metric, unit, comparator, threshold,
 temporal, aggregation, and source_refs exactly from the sealed public clause. Use only supplied IDs.
 Cover every designed source clause with at least one case. Set whole_suite_aggregation to
-{'kind':'all_cases'}. Do not return driver code, implementation advice, or a self-reported verdict."""
+{'kind':'all_cases'}. Do not sample the pool; the Framework performs the later private five-case
+selection. Do not return driver code, implementation advice, or a self-reported verdict."""
 
 
 class IVCError(ValueError):
@@ -287,6 +293,44 @@ def run_ivc(
                 "Do not change, omit, or weaken any source clause or private binding selection."
             )
     raise AssertionError("unreachable")
+
+
+def sample_private_suite(
+    case_pool: Mapping[str, Any],
+    *,
+    seed: str,
+) -> dict[str, Any]:
+    """Select the sealed executable cases from an already audited complete pool."""
+
+    cases = case_pool.get("cases")
+    if not isinstance(cases, list) or len(cases) < PRIVATE_CASE_SAMPLE_SIZE:
+        raise IVCError(
+            f"private case pool must contain at least {PRIVATE_CASE_SAMPLE_SIZE} cases"
+        )
+    if not isinstance(seed, str) or not seed:
+        raise IVCError("private case selection seed must be non-empty text")
+
+    selected_indexes = random.Random(seed).sample(
+        range(len(cases)), PRIVATE_CASE_SAMPLE_SIZE
+    )
+    selected_cases = [dict(cases[index]) for index in selected_indexes]
+    selected_ids = [
+        _text(case, "case_id", where=f"selected_cases[{index}]")
+        for index, case in enumerate(selected_cases)
+    ]
+    if len(set(selected_ids)) != PRIVATE_CASE_SAMPLE_SIZE:
+        raise IVCError("selected private case IDs must be unique")
+
+    suite = dict(case_pool)
+    suite["cases"] = selected_cases
+    suite["selection"] = {
+        "kind": "uniform_without_replacement",
+        "seed": seed,
+        "source_case_count": len(cases),
+        "selected_case_count": PRIVATE_CASE_SAMPLE_SIZE,
+        "selected_case_ids": selected_ids,
+    }
+    return suite
 
 
 def write_private_suite(path: str | Path, suite: Mapping[str, Any]) -> None:

@@ -95,6 +95,7 @@ def _fake_hooks(
     packages = {robot: _package(tmp_path, robot) for robot in ("r-arm", "r-quad")}
     suites: dict[str, dict[str, Any]] = {}
     harness_inputs: list[dict[str, Any]] = []
+    reference_inputs: list[dict[str, Any]] = []
     repair_calls: list[tuple[str, int]] = []
     client = SimpleNamespace(calls=[])
 
@@ -111,7 +112,11 @@ def _fake_hooks(
         suite = {
             "artifact_type": "private_validation_suite",
             "robot_configuration_id": package.robot_configuration_id,
-            "cases": [{"case_id": f"{package.robot_configuration_id}-case"}],
+            "whole_suite_aggregation": {"kind": "all_cases"},
+            "cases": [
+                {"case_id": f"{package.robot_configuration_id}-case-{index}"}
+                for index in range(8)
+            ],
         }
         suites[package.robot_configuration_id] = suite
         return suite
@@ -126,6 +131,7 @@ def _fake_hooks(
     def reference_runner(**kwargs: Any) -> dict[str, Any]:
         robot = kwargs["package"].robot_configuration_id
         events.append(("reference", robot))
+        reference_inputs.append({"robot": robot, "suite": kwargs["suite"]})
         return {
             "pipeline_completed": True,
             "physical_validation_executed": True,
@@ -243,17 +249,18 @@ def _fake_hooks(
             }
         )
         passed = validation_pass_at is not None and attempt >= validation_pass_at - 1
+        case_count = len(kwargs["suite"]["cases"])
         return {
             "pipeline_completed": True,
             "physical_validation_executed": True,
             "validation_passed": passed,
             "video_complete": True,
-            "passed_task_count": int(passed),
-            "task_count": 1,
-            "passed_source_clause_count": int(passed),
-            "source_clause_count": 1,
-            "passed_private_case_count": int(passed),
-            "private_case_count": 1,
+            "passed_task_count": case_count if passed else 0,
+            "task_count": case_count,
+            "passed_source_clause_count": case_count if passed else 0,
+            "source_clause_count": case_count,
+            "passed_private_case_count": case_count if passed else 0,
+            "private_case_count": case_count,
             "trials": [],
             "video_manifest": [],
         }
@@ -281,6 +288,7 @@ def _fake_hooks(
         "client": client,
         "suites": suites,
         "harness_inputs": harness_inputs,
+        "reference_inputs": reference_inputs,
         "repair_calls": repair_calls,
     }
 
@@ -329,6 +337,22 @@ def test_conditions_are_isolated_and_share_only_the_sealed_suite(tmp_path: Path)
         }
         assert len({item["workspace"] for item in inputs}) == 2
         assert inputs[0]["suite"] == inputs[1]["suite"]
+        assert len(inputs[0]["suite"]["cases"]) == 5
+        reference = next(
+            item for item in state["reference_inputs"] if item["robot"] == robot
+        )
+        assert reference["suite"] == inputs[0]["suite"]
+        assert len(state["suites"][robot]["cases"]) == 8
+        private_dir = tmp_path / "run" / "private" / robot
+        pool = json.loads(
+            (private_dir / "private_case_pool.json").read_text(encoding="utf-8")
+        )
+        assert len(pool["cases"]) == 8
+        selected = json.loads(
+            (private_dir / "private_validation_suite.json").read_text(encoding="utf-8")
+        )
+        assert len(selected["cases"]) == 5
+        assert selected["selection"]["selected_case_count"] == 5
     private_root = (tmp_path / "run" / "private").resolve()
     for item in state["harness_inputs"]:
         workspace = Path(item["workspace"]).resolve()

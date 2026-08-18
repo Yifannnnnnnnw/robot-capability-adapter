@@ -5,7 +5,12 @@ import unittest
 from pathlib import Path
 
 from autoadapter2.libraries import RobotPackage
-from autoadapter2.validation_compiler import IVCError, run_ivc, validate_private_suite
+from autoadapter2.validation_compiler import (
+    IVCError,
+    run_ivc,
+    sample_private_suite,
+    validate_private_suite,
+)
 
 
 def _package(root: Path) -> RobotPackage:
@@ -201,6 +206,30 @@ class IVCTests(unittest.TestCase):
         )
 
         self.assertEqual(len(result["cases"]), 20)
+
+    def test_formal_suite_samples_exactly_five_cases_from_complete_pool(self) -> None:
+        first = sample_private_suite(self.suite, seed="run-1:example-arm")
+        repeated = sample_private_suite(self.suite, seed="run-1:example-arm")
+
+        self.assertEqual(len(self.suite["cases"]), 20)
+        self.assertEqual(len(first["cases"]), 5)
+        self.assertEqual(first, repeated)
+        self.assertEqual(
+            first["selection"],
+            {
+                "kind": "uniform_without_replacement",
+                "seed": "run-1:example-arm",
+                "source_case_count": 20,
+                "selected_case_count": 5,
+                "selected_case_ids": [case["case_id"] for case in first["cases"]],
+            },
+        )
+
+    def test_formal_suite_rejects_a_pool_smaller_than_five(self) -> None:
+        too_small = {**self.suite, "cases": self.suite["cases"][:4]}
+
+        with self.assertRaisesRegex(IVCError, "at least 5 cases"):
+            sample_private_suite(too_small, seed="run-1:example-arm")
 
     def test_weaker_private_criterion_is_rejected(self) -> None:
         self.suite["cases"][0]["criterion"]["threshold"] = 0.2

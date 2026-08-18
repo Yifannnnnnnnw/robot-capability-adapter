@@ -55,7 +55,12 @@ from autoadapter2.reporting import (
     write_json,
 )
 from autoadapter2.self_containment import check_self_contained
-from autoadapter2.validation_compiler import run_ivc, write_private_suite
+from autoadapter2.validation_compiler import (
+    PRIVATE_CASE_SAMPLE_SIZE,
+    run_ivc,
+    sample_private_suite,
+    write_private_suite,
+)
 
 
 DEFAULT_ROBOTS = ("robotstudio_so101", "unitree-go2-stock-12dof")
@@ -1247,14 +1252,19 @@ def run_experiment(
 
         try:
             before = _call_count(client)
-            suite = selected_hooks.ivc_runner(
+            case_pool = selected_hooks.ivc_runner(
                 client,
                 package=package,
                 design=_copy(dict(design)),
             )
-            suite = _copy(dict(suite))
+            case_pool = _copy(dict(case_pool))
+            selection_seed = f"{selected_run_id}:{robot}"
+            suite = sample_private_suite(case_pool, seed=selection_seed)
             evidence = _stage_evidence(client, stage="ivc", before=before, completed=True)
+            evidence["compiled_private_case_count"] = len(case_pool.get("cases", []))
+            evidence["selected_private_case_count"] = PRIVATE_CASE_SAMPLE_SIZE
             stage_log.append({"robot": robot, **evidence})
+            write_private_suite(robot_private_dir / "private_case_pool.json", case_pool)
             write_private_suite(robot_private_dir / "private_validation_suite.json", suite)
             suites[robot] = suite
         except Exception as exc:
