@@ -27,6 +27,11 @@ _SUPPORTED_BINDING_KINDS = {
     "body_axis_displacement",
     "mean_body_planar_speed",
     "body_yaw_change_deg",
+    "mean_body_heading_error_deg",
+    "named_bodies_axis_completion",
+    "mean_body_yaw_rate",
+    "ordered_body_waypoint_completion_ratio",
+    "named_geom_contact_step_count",
     "contact_sample_count",
     "physics_step_count",
 }

@@ -97,6 +97,10 @@ def _yaw_deg(quaternion: Sequence[float]) -> float:
     return math.degrees(math.atan2(sin_yaw, cos_yaw))
 
 
+def _wrapped_angle_deg(value: float) -> float:
+    return (value + 180.0) % 360.0 - 180.0
+
+
 def measure(
     binding: Mapping[str, Any],
     *,
@@ -182,6 +186,86 @@ def measure(
         ):
             raise MeasurementError("body quaternion observations are unavailable")
         return abs(_yaw_deg(final_quaternions[name]) - _yaw_deg(first_quaternions[name]))
+    if kind == "mean_body_heading_error_deg":
+        name = str(parameters["body_name"])
+        start = _body_position(first, name)
+        end = _body_position(final, name)
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        minimum = float(parameters.get("minimum_displacement", 1e-6))
+        if math.hypot(dx, dy) < minimum:
+            return 180.0
+        actual = math.degrees(math.atan2(dy, dx))
+        desired = math.degrees(
+            float(_argument(public_arguments, str(parameters["direction_argument"])))
+        )
+        return abs(_wrapped_angle_deg(actual - desired))
+    if kind == "named_bodies_axis_completion":
+        names = parameters.get("body_names")
+        if not isinstance(names, Sequence) or isinstance(names, (str, bytes)) or not names:
+            raise MeasurementError("axis completion requires body_names")
+        axis = int(parameters.get("axis", 0))
+        if axis not in {0, 1, 2}:
+            raise MeasurementError("axis completion requires axis 0, 1, or 2")
+        finish = float(parameters["finish_coordinate"])
+        direction = int(parameters.get("direction", 1))
+        if direction not in {-1, 1}:
+            raise MeasurementError("axis completion direction must be -1 or 1")
+        coordinates = [_body_position(final, str(name))[axis] for name in names]
+        completed = all(value >= finish for value in coordinates)
+        if direction < 0:
+            completed = all(value <= finish for value in coordinates)
+        return 1.0 if completed else 0.0
+    if kind == "mean_body_yaw_rate":
+        name = str(parameters["body_name"])
+        times = _sample_times(samples)
+        elapsed = times[-1] - times[0]
+        if elapsed <= 0.0:
+            raise MeasurementError("mean yaw rate requires positive elapsed time")
+        yaws: list[float] = []
+        for sample in samples:
+            quaternions = sample.get("body_quaternions")
+            if not isinstance(quaternions, Mapping) or name not in quaternions:
+                raise MeasurementError("body quaternion observations are unavailable")
+            yaws.append(math.radians(_yaw_deg(quaternions[name])))
+        total = 0.0
+        for previous, current in zip(yaws, yaws[1:]):
+            total += (current - previous + math.pi) % (2.0 * math.pi) - math.pi
+        return abs(total / elapsed)
+    if kind == "ordered_body_waypoint_completion_ratio":
+        name = str(parameters["body_name"])
+        waypoints = parameters.get("waypoints")
+        if not isinstance(waypoints, Sequence) or isinstance(waypoints, (str, bytes)):
+            raise MeasurementError("ordered waypoint measurement requires waypoints")
+        points = [_vector(point, size=2) for point in waypoints]
+        if not points:
+            raise MeasurementError("ordered waypoint measurement requires waypoints")
+        tolerance = float(parameters["tolerance"])
+        if not math.isfinite(tolerance) or tolerance <= 0.0:
+            raise MeasurementError("ordered waypoint tolerance must be positive")
+        completed = 0
+        for sample in samples:
+            if completed == len(points):
+                break
+            position = _body_position(sample, name)
+            if _distance(position[:2], points[completed]) <= tolerance:
+                completed += 1
+        return completed / len(points)
+    if kind == "named_geom_contact_step_count":
+        names = parameters.get("geom_names")
+        if not isinstance(names, Sequence) or isinstance(names, (str, bytes)) or not names:
+            raise MeasurementError("named contact measurement requires geom_names")
+        selected = {str(name) for name in names}
+        records = evidence.get("contact_pair_step_counts")
+        if not isinstance(records, list):
+            raise MeasurementError("per-step contact evidence is unavailable")
+        count = 0
+        for record in records:
+            if not isinstance(record, Mapping):
+                raise MeasurementError("per-step contact evidence is invalid")
+            if selected.intersection({str(record.get("geom1")), str(record.get("geom2"))}):
+                count += int(record.get("step_count", 0))
+        return float(count)
     if kind == "contact_sample_count":
         return float(sum(1 for sample in samples if sample.get("contacts")))
     if kind == "physics_step_count":

@@ -92,6 +92,7 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
         self.ctrl_observed = False
         self.ctrl_changed = False
         self.samples: list[dict[str, Any]] = []
+        self.contact_pair_step_counts: dict[tuple[str, str], int] = {}
         self.initial_time = float(self.data.time)
         self.initial_ctrl = np.array(self.data.ctrl, dtype=float, copy=True)
         self._last_qpos = np.array(self.data.qpos, dtype=float, copy=True)
@@ -152,6 +153,22 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
         import numpy as np
 
         self.step_count += 1
+        pairs: set[tuple[str, str]] = set()
+        for index in range(int(self.data.ncon)):
+            contact = self.data.contact[index]
+            names = []
+            for geom_id in (int(contact.geom1), int(contact.geom2)):
+                names.append(
+                    self.mujoco.mj_id2name(
+                        self.model, self.mujoco.mjtObj.mjOBJ_GEOM, geom_id
+                    )
+                    or f"geom_{geom_id}"
+                )
+            pairs.add(tuple(sorted(names)))
+        for pair in pairs:
+            self.contact_pair_step_counts[pair] = (
+                self.contact_pair_step_counts.get(pair, 0) + 1
+            )
         elapsed = float(self.data.time) - self.initial_time
         if elapsed > self.max_sim_time_s + 1e-12:
             raise StepBudgetExceeded(
@@ -252,5 +269,9 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
             "ctrl_changed_from_reset": self.ctrl_changed,
             "direct_state_write_detected": self.direct_state_write_detected,
             "direct_state_write_fields": sorted(self.direct_state_write_fields),
+            "contact_pair_step_counts": [
+                {"geom1": pair[0], "geom2": pair[1], "step_count": count}
+                for pair, count in sorted(self.contact_pair_step_counts.items())
+            ],
             "samples": self.samples,
         }
