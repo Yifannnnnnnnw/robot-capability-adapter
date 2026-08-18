@@ -9,6 +9,7 @@ advances only with mujoco.mj_step.
 from __future__ import annotations
 
 from collections.abc import Mapping
+import math
 from typing import Any
 
 import numpy as np
@@ -113,24 +114,39 @@ class ReferenceSO101Driver:
         steps: int = 900,
         tolerance: float = 0.004,
         residual_tolerance: float = 0.05,
+        wrist_roll: float | None = None,
     ) -> None:
         target = _vector(target, name="target_position")
+        if wrist_roll is not None:
+            wrist_roll = float(wrist_roll)
+            if not math.isfinite(wrist_roll):
+                raise ValueError("wrist_roll must be finite")
+            wrist_roll = float(np.clip(wrist_roll, self._lower[-1], self._upper[-1]))
         for _ in range(int(steps)):
             error = target - self._ee_position()
             jacobian = np.zeros((3, int(self.model.nv)), dtype=float)
             self._mujoco.mj_jacSite(
                 self.model, self.data, jacobian, None, self._ee_site
             )
-            arm_jacobian = jacobian[:, self._qvel_addresses]
+            controlled_addresses = (
+                self._qvel_addresses
+                if wrist_roll is None
+                else self._qvel_addresses[:-1]
+            )
+            arm_jacobian = jacobian[:, controlled_addresses]
             damping = 0.02
             system = arm_jacobian @ arm_jacobian.T + (damping * damping) * np.eye(3)
             delta = arm_jacobian.T @ np.linalg.solve(system, error)
             delta_norm = float(np.linalg.norm(delta))
             if delta_norm > 0.12:
                 delta *= 0.12 / delta_norm
-            desired = np.clip(
-                self._current_q() + 1.8 * delta, self._lower, self._upper
-            )
+            desired = self._current_q()
+            if wrist_roll is None:
+                desired += 1.8 * delta
+            else:
+                desired[:-1] += 1.8 * delta
+                desired[-1] = wrist_roll
+            desired = np.clip(desired, self._lower, self._upper)
             self._set_arm_target(desired)
             mujoco.mj_step(self.model, self.data)
             if float(np.linalg.norm(error)) <= tolerance:
@@ -184,29 +200,58 @@ class ReferenceSO101Driver:
         start = _vector(parameters["start_position"], name="start_position")
         target = self._reach_parameter(parameters)
         grasp = _vector(
-            parameters.get("grasp_position", start + np.asarray((0.0, 0.0, 0.045))),
+            parameters.get("grasp_position", start + np.asarray((0.0, 0.0, 0.005))),
             name="grasp_position",
         )
         release = _vector(
             parameters.get("release_position", target + np.asarray((0.0, 0.0, 0.07))),
             name="release_position",
         )
+        approach_height = float(parameters.get("approach_height", 0.095))
+        if not np.isfinite(approach_height) or approach_height <= 0.0:
+            raise ValueError("approach_height must be a positive finite number")
+        grasp_wrist_roll = float(parameters.get("grasp_wrist_roll", math.pi / 2.0))
+        if not math.isfinite(grasp_wrist_roll):
+            raise ValueError("grasp_wrist_roll must be finite")
+        grasp_gripper = float(parameters.get("grasp_gripper", 0.15))
+        if not math.isfinite(grasp_gripper):
+            raise ValueError("grasp_gripper must be finite")
+        pregrasp = grasp + np.asarray((0.0, 0.0, approach_height))
+        lift = grasp + np.asarray((0.0, 0.0, approach_height))
         self._set_gripper(GRIPPER_OPEN)
         self._idle(20)
-        self._step_to(grasp, residual_tolerance=0.25)
-        self._set_gripper(GRIPPER_CLOSED)
+        self._step_to(
+            pregrasp, residual_tolerance=0.08, wrist_roll=grasp_wrist_roll
+        )
+        self._step_to(
+            grasp, residual_tolerance=0.08, wrist_roll=grasp_wrist_roll
+        )
+        self._set_gripper(grasp_gripper)
         self._idle(90)
+        self._step_to(
+            lift,
+            steps=700,
+            residual_tolerance=0.12,
+            wrist_roll=grasp_wrist_roll,
+        )
         if "route_position" in parameters:
             self._step_to(
                 _vector(parameters["route_position"], name="route_position"),
                 steps=700,
                 residual_tolerance=0.25,
+                wrist_roll=grasp_wrist_roll,
             )
-        self._step_to(release, steps=700, residual_tolerance=0.25)
+        self._step_to(
+            release,
+            steps=700,
+            residual_tolerance=0.12,
+            wrist_roll=grasp_wrist_roll,
+        )
         self._step_to(
             _vector(parameters.get("tool_target_position", release), name="tool_target_position"),
             steps=500,
-            residual_tolerance=0.25,
+            residual_tolerance=0.12,
+            wrist_roll=grasp_wrist_roll,
         )
         self._set_gripper(GRIPPER_OPEN)
         self._idle(90)

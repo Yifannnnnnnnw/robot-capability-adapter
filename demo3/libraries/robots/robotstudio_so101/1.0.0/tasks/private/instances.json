@@ -88,30 +88,30 @@
     {
       "instance_id": "so101-mw_pick_place",
       "task_id": "mw_pick_place",
-      "scene_entrypoint": "assets/object_scene.xml",
+      "scene_entrypoint": "assets/pick_place_scene.xml",
       "public_arguments": {
         "request": {
           "task_id": "mw_pick_place",
           "task_parameters": {
             "start_position": [
-              0.46,
+              0.38,
               0.08,
               0.18
             ],
             "target_position": [
-              0.529,
-              0.033,
-              0.178
+              0.38,
+              -0.08,
+              0.26
             ],
             "release_position": [
-              0.48,
-              0.08,
-              0.225
+              0.371,
+              -0.078,
+              0.272
             ],
             "tool_target_position": [
-              0.48,
-              0.08,
-              0.225
+              0.371,
+              -0.078,
+              0.272
             ]
           }
         }
@@ -134,7 +134,7 @@
       "video_width": 640,
       "video_height": 480,
       "video_fps": 10.0,
-      "camera": -1
+      "camera": "evidence"
     },
     {
       "instance_id": "so101-mw_pick_place_wall",

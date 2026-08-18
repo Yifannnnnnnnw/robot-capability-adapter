@@ -220,6 +220,59 @@ def test_so101_reference_idle_holds_the_last_actuator_target() -> None:
     assert np.linalg.norm(after - before) <= 0.015
 
 
+def test_so101_pick_place_uses_a_physical_fixture_and_reference_passes() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    design = _design(package)
+    complete_suite = _suite(package, design)
+    pick_place_case = next(
+        case
+        for case in complete_suite["cases"]
+        if case["task_id"] == "mw_pick_place"
+    )
+    suite = {**complete_suite, "cases": [pick_place_case]}
+    instance = next(
+        item
+        for item in json.loads(
+            (package.private_dir / "instances.json").read_text(encoding="utf-8")
+        )["instances"]
+        if item["task_id"] == "mw_pick_place"
+    )
+    model = mujoco.MjModel.from_xml_path(
+        str((package.root / instance["scene_entrypoint"]).resolve())
+    )
+    workpiece_body = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_BODY, "workpiece"
+    )
+    workpiece_geom = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_GEOM, "workpiece_geom"
+    )
+    assert workpiece_body >= 0
+    assert model.body_dofnum[workpiece_body] == 6
+    assert workpiece_geom >= 0
+    assert model.geom_contype[workpiece_geom] != 0
+
+    with tempfile.TemporaryDirectory(prefix="so101-pick-place-") as temporary:
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=package.reference_driver,
+            condition="from-scratch",
+            output_dir=temporary,
+            record_video=False,
+            wall_timeout_s=30.0,
+            run_id="so101-pick-place-calibration",
+            attempt=0,
+        )
+
+    assert report["validation_passed"]
+    trial = report["trials"][0]
+    assert trial["trial_passed"]
+    assert trial["measurement_value"] <= 0.07
+    assert trial["physical_evidence"]["ctrl_observed_before_step"]
+    assert not trial["physical_evidence"]["direct_state_write_detected"]
+
+
 def test_so101_private_reset_fails_every_task_criterion() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     instances = json.loads(

@@ -257,9 +257,9 @@
       "description": "Grasp a tabletop object, transport it, and release it at a specified goal position.",
       "source_task_or_operation": "Meta-World sawyer_pick_place_v3 pick-place",
       "applicability": "The SO-101 has one physical gripper actuator and a serial arm suitable for grasping and transporting a small rigid tabletop object.",
-      "adaptation": "Use a private object, goal, and reset in the SO-101 Direct MuJoCo scene. Preserve the source object-to-goal terminal distance criterion of 0.07 m and require the object to be transported by the physical gripper before release.",
+      "adaptation": "Use a private free object and an elevated goal pedestal in the SO-101 Direct MuJoCo scene. Preserve the source object-to-goal terminal distance criterion of 0.07 m. The target height is selected from the source goal-z range and makes physical lifting necessary before release.",
       "scene_assumptions": [
-        "A graspable rigid object and a receiving goal region are placed within the reachable tabletop workspace.",
+        "A graspable free rigid object and an elevated receiving pedestal are placed within the reachable tabletop workspace.",
         "The object dimensions and mass permit a stable grasp with the single gripper actuator."
       ],
       "observation_assumptions": [
@@ -282,9 +282,9 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_pick_place_v3.py, evaluate_state, line 1079: success uses obj_to_target <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_pick_place_v3.py, evaluate_state, lines 84-114 at pinned commit: success is obj_to_target <= 0.07; __init__, lines 25-70, defines goal z in [0.05, 0.30] m.",
               "support": "adapted",
-              "adaptation": "Preserve the 0.07 m terminal object-to-goal requirement and apply it after an SO-101 gripper-mediated transport; the gripper and transport checks are physical applicability bindings, while the numeric pass criterion remains the source criterion."
+              "adaptation": "Preserve the 0.07 m Euclidean terminal object-to-goal requirement. Substitute the SO-101 morphology and choose a reachable elevated target within the source goal-z range; no numeric success tolerance is relaxed."
             }
           ]
         }
