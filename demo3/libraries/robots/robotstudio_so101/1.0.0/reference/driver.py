@@ -341,14 +341,14 @@ class ReferenceSO101Driver:
             ),
         )
         if "route_position" in parameters:
+            route_tolerance = {
+                "mw_door_open": 0.09,
+                "mw_door_close": 0.07,
+            }.get(task_id, 0.10)
             self._step_to(
                 _vector(parameters["route_position"], name="route_position"),
                 steps=700,
-                residual_tolerance=(
-                    0.07
-                    if task_id in {"mw_door_open", "mw_door_close"}
-                    else 0.10
-                ),
+                residual_tolerance=route_tolerance,
                 gain=0.4,
                 max_joint_delta=0.025,
             )
