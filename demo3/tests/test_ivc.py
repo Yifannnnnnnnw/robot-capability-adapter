@@ -39,7 +39,7 @@ def _package(root: Path) -> RobotPackage:
         package_version="1.0.0",
         snapshot_id="snapshot-1",
         morphology={},
-        sources=(),
+        sources=({"source_id": "source-1", "title": "Source standard"},),
         tasks=tuple(tasks),
         mjcf_path=root / "scene.xml",
         skeleton_dir=root / "skeleton",
@@ -242,6 +242,19 @@ class IVCTests(unittest.TestCase):
                 private_inputs=self.private,
             )
 
+    def test_duplicate_source_clause_case_is_rejected(self) -> None:
+        duplicate = dict(self.suite["cases"][0])
+        duplicate["case_id"] = "duplicate-case"
+        self.suite["cases"].append(duplicate)
+
+        with self.assertRaisesRegex(IVCError, "exactly once"):
+            validate_private_suite(
+                self.suite,
+                package=self.package,
+                design=self.design,
+                private_inputs=self.private,
+            )
+
     def test_ivc_model_receives_no_candidate_implementation(self) -> None:
         model = _CapturingModel(self.suite)
         self.package.private_dir.mkdir(parents=True)
@@ -256,6 +269,7 @@ class IVCTests(unittest.TestCase):
 
         self.assertNotIn("driver", repr(model.inputs).lower())
         self.assertNotIn("candidate", repr(model.inputs).lower())
+        self.assertEqual(model.inputs["task_library"]["sources"], list(self.package.sources))
 
     def test_one_structure_correction_still_receives_no_candidate(self) -> None:
         self.package.private_dir.mkdir(parents=True)

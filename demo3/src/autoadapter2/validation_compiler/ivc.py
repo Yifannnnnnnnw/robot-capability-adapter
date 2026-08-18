@@ -27,9 +27,10 @@ select an existing private instance and one source validation clause and contain
 capability_id, method_name, task_id, source_clause_id, instance_id, binding_id, guard_ids,
 repetitions, timeout_sim_s, and criterion. criterion must copy metric, unit, comparator, threshold,
 temporal, aggregation, and source_refs exactly from the sealed public clause. Use only supplied IDs.
-Cover every designed source clause with at least one case. Set whole_suite_aggregation to
-{'kind':'all_cases'}. Do not sample the pool; the Framework performs the later private five-case
-selection. Do not return driver code, implementation advice, or a self-reported verdict."""
+Produce exactly one case for every designed source clause: do not omit or duplicate a clause. Set
+whole_suite_aggregation to {'kind':'all_cases'}. Do not sample the pool; the Framework performs the
+later private five-case selection. Do not return driver code, implementation advice, or a
+self-reported verdict."""
 
 
 class IVCError(ValueError):
@@ -237,8 +238,8 @@ def validate_private_suite(
             raise IVCError(f"{where} changes private timeout")
         coverage[(task_id, clause_id)] += 1
 
-    if set(coverage) != set(source_clauses):
-        raise IVCError("private suite does not cover every designed source clause")
+    if set(coverage) != set(source_clauses) or any(count != 1 for count in coverage.values()):
+        raise IVCError("private suite must cover every designed source clause exactly once")
     return dict(suite)
 
 
@@ -260,7 +261,10 @@ def run_ivc(
         "package_version": package.package_version,
         "task_snapshot_id": package.snapshot_id,
         "capability_design": dict(design),
-        "task_library": {"tasks": list(package.tasks)},
+        "task_library": {
+            "sources": list(package.sources),
+            "tasks": list(package.tasks),
+        },
         "private_instances": private["instances"],
         "private_bindings": private["bindings"],
         "private_guards": private["guards"],
