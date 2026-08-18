@@ -4,18 +4,31 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.0`<br>
-> **Effective date / 生效日期：** 2026-08-18<br>
+> **Document revision / 文档版本：** `0.19.1`<br>
+> **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
 
-Revision `0.19.0` aligns the Authority with the three thesis experiments. It separates
-capability-layer synthesis from capability-layer use, defines the three Auto-Adapter component
+Revision `0.19.1` locks the generated software product as the **robot-specific driver**. The robot
+capability layer is the reusable caller-facing interface and set of capability contracts; it is
+designed and exposed, not treated as a separate executable artefact. Driver Synthesis produces a
+candidate robot-specific driver for one declared robot configuration, and independent validation
+determines whether that driver passes the sealed sampled validation suite. Capability-layer use
+therefore holds both the public layer and the validated driver that implements it fixed.
+
+**中文辅助说明。** `0.19.1` 将生成的软件产物锁定为 **robot-specific driver**。Robot capability
+layer 是面向调用方的可复用接口和 capability contract 集合；它被设计和暴露，不作为独立的可执行
+产物。Driver Synthesis 为一个明确的机器人配置生成 candidate robot-specific driver，随后由独立
+validation 判断该 driver 是否通过封存的抽样 validation suite。因此，capability-layer use 必须
+同时固定公开 layer 及实现它的已验证 driver。
+
+Revision `0.19.0` aligns the Authority with the three thesis experiments. It separates the
+robot-software synthesis track from capability-layer use, defines the three Auto-Adapter component
 analyses, and distinguishes the initial two-case engineering acceptance milestone from the
 declared cross-morphology experiment. It also makes explicit that cross-morphology results describe
 associations rather than causal morphology effects.
 
-**中文辅助说明。** `0.19.0` 使本 Authority 与论文的三个实验保持一致。它区分 capability-layer
-synthesis 与 capability-layer use，明确 Auto-Adapter 的三项组件分析，并把首轮双案例工程验收
+**中文辅助说明。** `0.19.0` 使本 Authority 与论文的三个实验保持一致。它区分 robot-software
+synthesis track 与 capability-layer use，明确 Auto-Adapter 的三项组件分析，并把首轮双案例工程验收
 里程碑与正式声明的 cross-morphology 实验区分开。它同时明确：cross-morphology 结果描述关联，
 而不能解释为 morphology 的因果效应。
 
@@ -38,8 +51,8 @@ Revision `0.18.4` changes the normative phase names to match their actual output
 Capability Design` (`TGCD`) replaces `Stage 1`; `Independent Validation Compiler` (`IVC`) replaces
 `Blue Line`; and `Driver Synthesis` names the later phase that produces executable code. The term
 `synthesis` is not used for TGCD because TGCD outputs a design contract, not an executable
-capability. Historical Demo2 code and evidence may retain the former names only when describing
-that historical implementation.
+robot-specific driver. Historical Demo2 code and evidence may retain the former names only when
+describing that historical implementation.
 
 Revision `0.18.5` designates `demo3/` as the active implementation workspace and makes a complete,
 source-backed Task Library an admission condition for every robot exposed as runnable by Demo3,
@@ -68,7 +81,7 @@ validation definitions and unrelated secrets remain unavailable.
 
 Revision `0.18.9` makes the calibration/reference boundary explicit. A package reference driver is
 trusted positive-control material used only by the Framework for pre-dynamic calibration. Its source,
-derived controller logic, and generated wrappers are never inputs to TGCD, IVC, STUDY, GENERATE, Repair,
+derived driver logic, and generated wrappers are never inputs to TGCD, IVC, STUDY, GENERATE, Repair,
 Evolution, or a dynamic development probe, and cannot be admitted as Experience. This prevents
 either generation condition from copying the positive control.
 
@@ -81,9 +94,10 @@ instances from having to predict model-authored Python parameter names.
 
 Revision `0.18.11` clarifies bounded model-facing transports observed in the first complete Demo3
 run. The Framework owns and canonicalizes the generation-condition enum and public `request`
-envelope; generated capabilities are instance methods on the object returned by `build()` and
-receive `request` as a plain mapping. A development-probe source-audit rejection is reported but
-never executed and does not by itself prevent Repair from producing revised source. Evolution may
+envelope; the generated driver exposes each capability as an instance method on the object returned
+by `build()`, and each method receives `request` as a plain mapping. A development-probe source-audit
+rejection is reported but never executed and does not by itself prevent Repair from producing revised
+source. Evolution may
 receive a bounded terminal projection that preserves outcome counts and failed-trial diagnostics
 while omitting repeated full trajectory samples; the complete report remains retained as evidence
 and the complete attempt report remains available to Repair.
@@ -126,8 +140,8 @@ effect 和接口，以及可追溯到来源的公开 validation contract。Indep
 
 `0.18.4` 根据各阶段的真实产物统一规范名称：`Task-Grounded Capability Design`（`TGCD`）取代
 `Stage 1`；`Independent Validation Compiler`（`IVC`）取代 `Blue Line`；后续真正生成可执行
-代码的阶段称为 `Driver Synthesis`。TGCD 只输出设计合同而不输出可执行 capability，因此不使用
-`synthesis` 一词。旧名称只允许在明确描述历史 Demo2 代码或证据时保留。
+代码的阶段称为 `Driver Synthesis`。TGCD 只输出设计合同而不输出可执行 robot-specific driver，
+因此不使用 `synthesis` 一词。旧名称只允许在明确描述历史 Demo2 代码或证据时保留。
 
 `0.18.5` 指定 `demo3/` 为活动实现 workspace，并把完整、有来源依据的 Task Library 设为 Demo3
 每个 runnable 机器人的准入条件，而不只约束首轮验收机器人对。每条评分 clause 都必须标明支持
@@ -156,8 +170,8 @@ Python/MuJoCo 开发 probe。一次 attempt 结束后，Repair 可以读取完�
 task→effect allowlist；它避免私有 instance 必须预先猜测模型生成的 Python 参数名。
 
 `0.18.11` 明确首次完整 Demo3 run 暴露出的有界模型接口：Framework 负责规范化 generation
-condition 枚举和公开 `request` 信封；生成 capability 必须是 `build()` 返回对象上的实例方法，
-并把 `request` 当作普通 mapping。未通过公开源码审计的 development probe 只返回拒绝诊断，
+condition 枚举和公开 `request` 信封；生成 driver 必须把每个 capability 暴露为 `build()` 返回对象
+上的实例方法，并把 `request` 当作普通 mapping。未通过公开源码审计的 development probe 只返回拒绝诊断，
 不得执行，也不应单独阻止 Repair 继续生成修订源码。Evolution 可以读取保留终态、计数和完整
 失败 trial 诊断的有界投影，并用 sample count 代替重复轨迹 sample；完整报告仍作为证据保留，
 完整 attempt 报告仍提供给 Repair。
@@ -251,12 +265,12 @@ The following terms are locked across this Authority, experiment reports, and th
 |---|---|
 | **Auto-Adapter** | The current research framework. Research and design prose uses the hyphenated form. `AutoAdapter` is retained only in code or directory identifiers and when naming the historical `AutoAdapter 1.0` system or its preserved artefacts. |
 | **high-level controller** | The task-level component that selects and sequences robot capabilities. In an LLM-backbone comparison, its architecture, prompt, tool exposure, and decision loop remain fixed while only the LLM backbone changes. |
-| **robot capability layer** | The reusable software interface through which a high-level controller invokes robot operations while robot-specific execution details remain behind the interface. |
-| **capability** | One callable robot operation exposed by the robot capability layer, defined by its semantics, inputs, outputs, preconditions, and measurable acceptance obligations. `Skill` is reserved for a task-level, temporally extended behaviour and is not a synonym for a capability. |
-| **robot-specific driver** | The executable implementation of the robot capability layer for one declared robot configuration. |
+| **robot capability layer** | The reusable, caller-facing software interface formed by the public capability contracts through which a high-level controller invokes robot operations. It is designed, exposed, and used; it is not the executable software product. |
+| **capability** | One implementation-independent contract for a callable robot operation exposed by the robot capability layer, defined by its semantics, inputs, outputs, preconditions, and measurable acceptance obligations. `Skill` is reserved for a task-level, temporally extended behaviour and is not a synonym for a capability. |
+| **robot-specific driver** | The primary executable, application-level robot-integration artefact initially produced by Driver Synthesis and, when required, revised by Repair for one declared robot configuration. It implements the robot capability layer; it is not an operating-system device driver. |
 | **capability-level pass criterion** | A measurable acceptance condition for one capability. It is derived from source-backed task pass standards and is independently audited, compiled, and evaluated outside the candidate driver. |
-| **capability-layer synthesis** | The experiment-level process of designing a robot capability layer, defining its capability-level pass criteria, implementing its robot-specific driver, and subjecting the result to independent validation. This term does not rename TGCD: `Driver Synthesis` remains the phase that produces executable code. |
-| **capability-layer use** | The use of a fixed, validated robot capability layer by an otherwise matched high-level controller whose LLM backbone is the experimental variable. Use evidence is reported separately and does not establish synthesis. |
+| **robot-software synthesis** | The experiment-level process of designing a robot capability layer and its capability-level pass criteria, synthesising a robot-specific driver that implements the layer, and independently validating that driver. The primary executable product is the robot-specific driver; TGCD still produces only a design contract, and `Driver Synthesis` remains the phase that produces executable code. |
+| **capability-layer use** | The use of a fixed robot capability layer, backed by the same fixed and validated robot-specific driver, by an otherwise matched high-level controller whose LLM backbone is the experimental variable. Use evidence is reported separately and does not establish driver synthesis. |
 | **low-level motion-control capability** | A capability whose implementation converts a requested robot operation into robot-specific actuation, kinematic or locomotion control, and physics stepping. It must not be called a low-level motion-control skill. |
 | **trusted skeleton** | Robot-control implementation assistance available only in the skeleton-assisted generation condition. It is distinct from the high-level controller. |
 | **robot morphology** | A robot's physical form and joint arrangement. It is distinct from a **robot configuration**, which identifies the exact model, assets, actuators, and control setup used in a run. |
@@ -270,11 +284,14 @@ Compiler`, `Driver Synthesis`, `Repair`, and `Evolution` retain the meanings def
 写作 `Auto-Adapter`；`AutoAdapter` 仅保留给代码或目录标识，以及历史系统 `AutoAdapter 1.0`
 及其产物。`high-level controller` 负责在任务层选择和编排 capability；在 LLM backbone 对比中，
 其架构、prompt、tool exposure 和 decision loop 保持固定，只有 backbone 改变。`robot capability
-layer` 是该 controller 调用机器人操作的可复用接口，`robot-specific driver` 是该接口在一个准确
-机器人配置上的可执行实现。`capability` 表示能力层暴露的一项可调用机器人操作；`skill` 只表示
-任务层的时间扩展行为，不得作为 capability 的同义词。`capability-layer synthesis` 表示从能力层
-设计、capability-level pass criteria 设计、driver 实现到独立验证的实验级过程，但 TGCD 本身仍
-不称为 synthesis。`capability-layer use` 的证据不能代替 synthesis 证据。`low-level
+layer` 是由公开 capability contract 构成、供该 controller 调用机器人操作的可复用接口；它不是
+可执行软件产物。`capability` 表示能力层暴露的一项与实现无关的可调用机器人操作合同；`skill`
+只表示任务层的时间扩展行为，不得作为 capability 的同义词。`robot-specific driver` 是针对一个
+准确机器人配置、由 Driver Synthesis 首次生成并在需要时由 Repair 修订的主要可执行、应用层
+机器人集成产物；它负责实现该 layer，不是操作系统 device driver。
+`robot-software synthesis` 表示从能力层设计、capability-level pass criteria 设计、driver 合成到
+独立验证的实验级过程，但 TGCD 本身仍不称为 synthesis。`capability-layer use` 必须同时固定公开
+layer 及实现它的同一套固定且已验证的 driver；其证据不能代替 driver-synthesis 证据。`low-level
 motion-control capability` 不得写作 low-level motion-control skill。`trusted skeleton` 是
 skeleton-assisted 条件中的机器人控制实现辅助，不是 high-level controller。`robot morphology`
 指物理形态和关节排列；`robot configuration` 指一次运行使用的准确模型、资产、actuator 和控制
@@ -287,39 +304,44 @@ skeleton-assisted 条件中的机器人控制实现辅助，不是 high-level co
 ### 1.1 Research objective / 研究目标
 
 Build the simplest experiment-grade Auto-Adapter 2.0 framework and evaluation needed to determine,
-under controlled conditions, when LLM backbones can synthesise and use reusable robot capability
-layers, which selected Auto-Adapter components produce measurable differences in synthesis quality,
-and how low-level motion-control capability synthesis varies across robot morphologies.
+under controlled conditions, when LLM backbones can synthesise robot-specific drivers and use the
+reusable robot capability layers those drivers implement, which selected Auto-Adapter components
+produce measurable differences in robot-software synthesis quality, and how robot-specific driver
+synthesis for low-level motion-control capabilities varies across robot morphologies.
 
-The research programme separates two outcomes that must not be conflated. Capability-layer
-synthesis concerns whether an LLM can design and implement a robot capability layer that passes
-independent validation. Capability-layer use concerns whether an LLM, acting through the same fixed
-and validated layer and the same high-level-controller implementation, can complete matched MuJoCo
-tasks. Success in one outcome is not evidence of success in the other.
+The research programme separates two outcomes that must not be conflated. The robot-specific
+driver-synthesis outcome concerns whether, under the Auto-Adapter workflow, the generated driver
+implements the sealed layer design and passes independent validation. Capability-layer use concerns
+whether an LLM, acting through the same fixed layer, the same fixed and validated driver, and the
+same high-level-controller implementation, can complete matched MuJoCo tasks. Success in one outcome
+is not evidence of success in the other.
 
 The initial two-robot, two-generation-condition mainline remains an engineering acceptance
 milestone. It is not the complete thesis experiment set, a production platform, or a claim of
 universal robot support.
 
 **中文辅助说明。** 构建最简单的实验级 Auto-Adapter 2.0 框架和评估，以在受控条件下研究：
-不同 LLM backbone 何时能够合成和使用可复用 robot capability layer；所选 Auto-Adapter 组件在
-匹配比较中是否产生可测量的合成质量差异；以及 low-level motion-control capability 的合成结果
-如何随 robot morphology 而变化。研究必须区分两种不能混为一谈的结果：capability-layer
-synthesis 研究 LLM 能否设计并实现通过独立验证的 robot capability layer；capability-layer use
-研究 LLM 能否通过同一套固定且已验证的 layer 和相同 high-level-controller 实现完成匹配的
-MuJoCo 任务。任一结果成功都不能作为另一结果成功的证据。首轮双机器人、双生成条件主线仍是
-工程验收里程碑；它不是完整论文实验集、生产平台或通用机器人支持主张。
+不同 LLM backbone 何时能够合成 robot-specific driver，并使用这些 driver 所实现的可复用 robot
+capability layer；所选 Auto-Adapter 组件在匹配比较中是否产生可测量的 robot-software synthesis
+质量差异；以及为 low-level motion-control capabilities 合成 robot-specific driver 的结果如何随
+robot morphology 而变化。研究必须区分两种不能混为一谈的结果：robot-specific driver-synthesis
+outcome 研究在 Auto-Adapter workflow 下，生成的 driver 是否实现封存的 layer 设计并通过独立验证；
+capability-layer use 研究 LLM 能否通过同一套固定 layer、实现它的同一套固定且已验证的 driver，
+以及相同 high-level-controller 实现完成匹配的 MuJoCo 任务。任一结果成功都不能作为另一结果成功
+的证据。首轮双机器人、双生成条件主线仍是工程验收里程碑；它不是完整论文实验集、生产平台或
+通用机器人支持主张。
 
 ### 1.2 Claim boundary / 主张边界
 
 The project may claim only what the corresponding experiment evidence directly supports:
 
-- comparative synthesis outcomes for the declared LLM backbones under the skeleton-assisted and
-  from-scratch generation conditions, with the Auto-Adapter configuration, robot inputs,
-  source-task pass standards, evaluation protocol, and resource budgets fixed within each
-  condition;
-- comparative capability-use outcomes for the declared LLM backbones using the same fixed and
-  validated robot capability layer and the same high-level-controller implementation;
+- comparative robot-specific driver-synthesis outcomes for the declared LLM backbones under the
+  skeleton-assisted and from-scratch generation conditions, with the Auto-Adapter configuration,
+  robot inputs, source-backed Task Library, source-task pass standards, evaluation protocol, and
+  resource budgets fixed within each condition;
+- comparative outcomes for capability-layer use by the declared LLM backbones using the same fixed robot
+  capability layer, the same fixed and validated robot-specific driver that implements it, and the
+  same high-level-controller implementation;
 - task-grounded model design of reusable capabilities from at least twenty source-backed tasks;
 - model-authored and source-grounded capability-level pass criteria that the implementation-blind
   IVC independently audits and compiles, and that the Harness evaluates under declared calibration
@@ -339,10 +361,11 @@ syntax. A cross-morphology comparison is associational because morphology co-var
 dynamics, task applicability, and MuJoCo control structure.
 
 **中文辅助说明。** 项目只能提出对应实验直接证据支持的结论：在每种生成条件内固定
-Auto-Adapter 配置、机器人输入、来源 task 通过标准、评估协议和资源预算后，不同 LLM backbone
-在 skeleton-assisted 与 from-scratch 条件中的合成结果；不同 backbone 通过同一套固定且已验证
-的 robot capability layer 和相同 high-level-controller 实现所得的 capability-use 结果；模型根据
-至少二十项有来源任务完成的 task-grounded capability 设计；由模型设计、具有来源依据且由实现
+Auto-Adapter 配置、机器人输入、有来源 Task Library、来源 task 通过标准、评估协议和资源预算后，
+不同 LLM backbone 在 skeleton-assisted 与 from-scratch 条件中的 robot-specific driver 合成结果；
+不同 backbone 通过同一套固定 robot capability layer、实现它的同一套固定且已验证的
+robot-specific driver，以及相同 high-level-controller 实现所得的 capability-layer use 结果；模型根据至少
+二十项有来源任务完成的 task-grounded capability 设计；由模型设计、具有来源依据且由实现
 不可见 IVC 独立审计和编译，并由 Harness 在已声明校准和 false-success 检查下评估的
 capability-level pass criteria；只有在 Experience-enabled run 与匹配的 no-Experience control
 比较时，才能报告与 reviewed Evolution Experience 相关的后续运行差异；独立 Direct-MuJoCo
@@ -374,9 +397,9 @@ and expansion assets. Their execution does not block repository migration or the
 two-condition, two-robot mainline acceptance. Incomplete research candidates are not runnable
 packages.
 
-The two configurations above define only the first synthesis-mainline engineering acceptance
-milestone. They do not define the complete Experiment 3 cohort and do not by themselves support a
-general or causal morphology claim.
+The two configurations above define only the first mainline engineering-acceptance milestone for
+robot-specific driver synthesis. They do not define the complete Experiment 3 cohort and do not by
+themselves support a general or causal morphology claim.
 
 Before Experiment 3 begins, a versioned experiment manifest must declare every included robot
 configuration and its morphology category. Each included configuration must satisfy the same Task
@@ -391,8 +414,8 @@ package 可以通过版本化 experiment manifest 声明为 Experiment 3 cohort 
 中声明的 package 仍属于覆盖与扩展资产。它们的执行不阻塞仓库迁移或首轮双条件、双机器人主线
 验收。不完整 research candidate 不是 runnable package。
 
-上述两个配置只定义首轮 synthesis-mainline 工程验收里程碑，不构成 Experiment 3 的完整 cohort，
-也不能单独支持一般性或因果性的 morphology 主张。Experiment 3 开始前，版本化 experiment
+上述两个配置只定义首轮 robot-specific driver synthesis 主线工程验收里程碑，不构成 Experiment 3
+的完整 cohort，也不能单独支持一般性或因果性的 morphology 主张。Experiment 3 开始前，版本化 experiment
 manifest 必须声明全部纳入的机器人配置及其 morphology 类别。每个配置必须满足相同的 Task
 Library、来源 lineage、asset closure、validation 和 evidence 要求。只有 MJCF 或 URDF asset
 的机器人不属于已准入实验案例。
@@ -401,17 +424,18 @@ Library、来源 lineage、asset closure、validation 和 evidence 要求。只�
 
 The project evaluates three controlled research questions:
 
-1. **RQ1---Comparison of LLM backbones in capability-layer synthesis and use.**
+1. **RQ1---Comparison of LLM backbones in robot-specific driver synthesis and capability-layer use.**
 
-   **Synthesis.** With the Auto-Adapter framework, robot inputs, source-backed Task Library,
+   **Driver synthesis.** With the Auto-Adapter framework, robot inputs, source-backed Task Library,
    source-task pass standards, private-case construction policy, Harness measurement and verdict
-   rules, and resource budget held fixed, how do LLM backbones differ in synthesising a reusable
-   robot capability layer under the skeleton-assisted and from-scratch generation conditions?
+   rules, and resource budget held fixed, how do LLM backbones differ in synthesising a
+   robot-specific driver that implements the designed reusable robot capability layer under the
+   skeleton-assisted and from-scratch generation conditions?
 
-   **Use.** For each robot configuration, with the validated robot capability layer,
-   high-level-controller implementation, matched task inputs, evaluation protocol, and resource
-   budget held fixed, how do the same LLM backbones differ in using that layer to complete the
-   tasks?
+   **Use.** For each robot configuration, with the same fixed robot capability layer, the same fixed
+   and validated robot-specific driver that implements it, high-level-controller implementation,
+   matched task inputs, evaluation protocol, and resource budget held fixed, how do the same LLM
+   backbones differ in using that layer to complete the tasks?
 
 2. **RQ2---Component analysis of the Auto-Adapter framework.**
 
@@ -424,36 +448,39 @@ The project evaluates three controlled research questions:
    implementation-blind IVC independently audit and compile those criteria into executable
    validation?
 
-   **(c) Continued Evolution.** Does reviewed evidence from completed runs improve synthesis
-   quality in matched later runs relative to the same condition without that Experience?
+   **(c) Continued Evolution.** Does reviewed evidence from completed runs improve robot-software
+   synthesis quality in matched later runs relative to the same condition without that Experience?
 
-3. **RQ3---Cross-morphology analysis of low-level motion-control capability synthesis.**
+3. **RQ3---Cross-morphology analysis of robot-specific driver synthesis for low-level
+   motion-control capabilities.**
 
    With the LLM backbone, high-level-controller implementation, Auto-Adapter configuration,
    generation condition, evaluation protocol, and resource budget held fixed, how are
    robot-morphology differences associated with validation success, failure patterns, and resource
-   use when synthesising low-level motion-control capabilities?
+   use when synthesising robot-specific drivers that implement low-level motion-control
+   capabilities?
 
-For RQ1 synthesis, fixed validation criteria means fixed source-task pass standards, private task
-instances, measurement semantics, and Harness verdict rules. Model-authored capability-level pass
-criteria remain an evaluated output and may therefore differ across LLM backbones. Within each
+For RQ1 driver synthesis, fixed validation criteria means fixed source-task pass standards, private
+task instances, measurement semantics, and Harness verdict rules. Model-authored capability-level
+pass criteria remain an evaluated output and may therefore differ across LLM backbones. Within each
 generation condition, all backbones receive the same public inputs; the two generation conditions
 differ only in their authorised access to the trusted skeleton.
 
 Reference drivers are positive controls for the Framework and Direct-MuJoCo execution route. They
-are not model conditions and cannot be counted as model synthesis or capability-use results. RQ3
-is descriptive and associational: the declared design does not identify a causal morphology
-effect.
+are not model conditions and cannot be counted as evidence of model-based robot-specific driver
+synthesis or capability-layer use. RQ3 is descriptive and associational: the declared design does
+not identify a causal morphology effect.
 
 **中文辅助说明。** 项目评估三个受控研究问题：
 
-1. **RQ1——LLM backbone 在 capability-layer synthesis 与 use 中的比较。**
-   **Synthesis：** 在固定 Auto-Adapter framework、机器人输入、有来源 Task Library、来源 task
+1. **RQ1——LLM backbone 在 robot-specific driver synthesis 与 capability-layer use 中的比较。**
+   **Driver synthesis：** 在固定 Auto-Adapter framework、机器人输入、有来源 Task Library、来源 task
    通过标准、private-case 构造 policy、Harness 测量与判定规则以及资源预算时，不同 LLM backbone
-   在 skeleton-assisted 与 from-scratch 条件下合成可复用 robot capability layer 的能力有何差异？
-   **Use：** 对每个机器人配置，在固定已验证 robot capability layer、high-level-controller 实现、
-   匹配任务输入、评估协议和资源预算时，相同的一组 LLM backbone 使用该 layer 完成任务的能力
-   有何差异？
+   在 skeleton-assisted 与 from-scratch 条件下合成实现已设计 robot capability layer 的
+   robot-specific driver，其能力有何差异？
+   **Use：** 对每个机器人配置，在固定 robot capability layer、实现它的同一套固定且已验证的
+   robot-specific driver、high-level-controller 实现、匹配任务输入、评估协议和资源预算时，相同的
+   一组 LLM backbone 使用该 layer 完成任务的能力有何差异？
 2. **RQ2——Auto-Adapter framework 的组件分析。**
    **(a) Task-grounded capability design：** 在不接收预写 capability catalogue 或
    task-to-capability mapping 的情况下，LLM 能否从至少二十项有来源任务中归纳五至十项可复用
@@ -462,18 +489,21 @@ effect.
    LLM 能否设计有来源依据的 capability-level pass criteria，且实现不可见的 IVC 能否独立审计并
    将其编译为可执行 validation？
    **(c) Continued Evolution：** 与不使用该 Experience 的匹配条件相比，来自已完成运行且经过
-   审查的证据能否提升后续匹配运行的合成质量？
-3. **RQ3——Low-level motion-control capability synthesis 的 cross-morphology 分析。**
+   审查的证据能否提升后续匹配运行的 robot-software synthesis 质量？
+3. **RQ3——为 low-level motion-control capabilities 合成 robot-specific driver 的
+   cross-morphology 分析。**
    在固定 LLM backbone、high-level-controller 实现、Auto-Adapter 配置、生成条件、评估协议和
-   资源预算时，不同 robot morphology 与 low-level motion-control capability 合成中的 validation
-   success、failure pattern 和 resource use 差异具有何种关联？
+   资源预算时，不同 robot morphology 与实现 low-level motion-control capabilities 的
+   robot-specific driver 合成中的 validation success、failure pattern 和 resource use 差异具有何种
+   关联？
 
-在 RQ1 synthesis 中，固定 validation criteria 是指固定来源 task 通过标准、私有 task instance、
+在 RQ1 driver synthesis 中，固定 validation criteria 是指固定来源 task 通过标准、私有 task instance、
 测量语义和 Harness 判定规则。由模型生成的 capability-level pass criteria 仍是被评估输出，因此
 可以随 LLM backbone 不同而变化。在每种生成条件内，所有 backbone 接收相同公开输入；两种生成
 条件只在是否获准访问 trusted skeleton 这一点上不同。Reference driver 是 Framework 和
-Direct-MuJoCo 执行路径的正向对照，不是模型条件，不能计为 model synthesis 或 capability-use
-结果。RQ3 只能进行描述性和关联性解释；当前设计不能识别 morphology 的因果效应。
+Direct-MuJoCo 执行路径的正向对照，不是模型条件，不能计为 model-based robot-specific driver
+synthesis 或 capability-layer use 的证据。RQ3 只能进行描述性和关联性解释；当前设计不能识别
+morphology 的因果效应。
 
 ---
 
@@ -755,7 +785,7 @@ reuse the same sealed `capability_design.json`, the same pre-generated sampled f
 `private_validation_suite.json`, frozen Task Library snapshot, model identity, and environment.
 They run in isolated workspaces; neither condition may
 inspect or reuse the other condition's candidate, trace, validation result, Repair history, or
-generated controller. Each condition has its own maximum of three submitted driver attempts and
+generated driver. Each condition has its own maximum of three submitted driver attempts and
 receives an independent Harness verdict. Results are never merged into one ambiguous driver result.
 
 **中文辅助说明。** 主线必须遵循以下流程：
@@ -811,7 +841,7 @@ Morphology + >=20 项有来源 Tasks/通过标准 + 已审查 Experience
 `capability_design.json`、同一套预先生成的抽样五-case `private_validation_suite.json`、已封存
 Task Library 快照、模型身份和环境，
 并在隔离的 workspace 中运行；任一条件都不得检查或复用另一条件的 candidate、trace、验证结果、
-Repair 历史或生成的 controller。每种条件各自最多提交三个 driver attempt，并分别获得 Harness
+Repair 历史或生成的 driver。每种条件各自最多提交三个 driver attempt，并分别获得 Harness
 verdict；结果不得合并成一个含糊的 driver 结果。
 
 ### 3.1 Task-Grounded Capability Design / 任务驱动的能力设计
@@ -1079,7 +1109,8 @@ The first submitted driver is attempt `0` for scientific reporting. The mainline
 three generated driver attempts in total: one initial generation and no more than two Repair
 attempts. A Repair may change only `driver.py`.
 
-Repair uses the same bounded AutoAdapter 1.0-style ReAct development loop as initial synthesis.
+Repair uses the same bounded AutoAdapter 1.0-style ReAct development loop as initial Driver
+Synthesis.
 Within one Repair attempt, the model may repeatedly inspect the preceding candidate-facing report,
 edit `driver.py`, run public-only probes, and react to audit/import/smoke diagnostics before it
 explicitly submits the replacement. These development turns remain part of one Repair attempt and
@@ -1113,7 +1144,7 @@ suite estimate.
 **中文辅助说明。** 首次提交的 driver 在科研报告中记为 attempt `0`。主线最多允许三个生成
 driver attempt：一次首次生成，加上最多两次 Repair。Repair 只能修改 `driver.py`。
 
-Repair 使用与首次 synthesis 相同的有预算 AutoAdapter 1.0 式 ReAct 开发循环。在一次 Repair
+Repair 使用与首次 Driver Synthesis 相同的有预算 AutoAdapter 1.0 式 ReAct 开发循环。在一次 Repair
 attempt 内，模型可以反复检查上一 attempt 的 candidate-facing 报告、修改 `driver.py`、运行仅含
 公开输入的 probe，并根据 audit/import/smoke 诊断继续修正，直到明确提交替代版本。这些开发 turn
 仍属于同一次 Repair attempt，且不能检查或调用私有 Harness。
@@ -1140,13 +1171,13 @@ terminal execution/verdict facts, attempt summaries, outcome counts, and complet
 diagnostics, but may replace repeated full trajectory samples with sample counts because the full
 report remains retained as evidence and has already been available to Repair. Evolution cannot
 change the current driver, suite, criterion, verdict, retry decision, or run inputs. Failure of
-Evolution does not turn a completed validation run into a synthesis failure.
+Evolution does not turn a completed validation run into a driver-synthesis failure.
 
 **中文辅助说明。** Evolution 是非阻塞 sidecar：它读取最终结构化报告的有界投影，并可为后续
 运行提出一条经过审查的 Experience 记录。该投影保留终态执行/verdict 事实、attempt 摘要、结果
 计数和完整失败 trial 诊断；由于完整报告已保留且已提供给 Repair，重复的完整轨迹 sample 可以
 替换为 sample count。Evolution 不得改变当前 driver、suite、criterion、verdict、retry 决定或
-运行输入。Evolution 失败不会把已经完成的验证运行变成一次 synthesis failure。
+运行输入。Evolution 失败不会把已经完成的验证运行变成一次 driver-synthesis failure。
 
 ---
 
@@ -1289,7 +1320,7 @@ persistent state machine.
 |---|---|---|---|
 | Reference calibration | Reviewed reference driver, real MuJoCo, Harness verdicts, and complete videos for the sampled five cases | The selected assets, controller baseline, sampled cases, Harness, and recording path are feasible | Any model generated the driver or unselected tasks were physically validated |
 | Dynamic generation-condition executed | Source-backed 20+ task snapshot, real-model TGCD design of 5–10 capability contracts without a pre-authored effect policy, complete IVC-audited case pool, sealed sampled five-case `private_validation_suite.json`, named skeleton-assisted or from-scratch condition, real model identities/calls, model-generated `driver.py`, condition-appropriate STUDY/GENERATE trace, and real MuJoCo validation reaching a terminal verdict | That capability-design and generation condition executed end to end | The selected physical requirements passed, unselected tasks were physically run, or the other condition executed |
-| Single-robot condition success | Dynamic condition evidence plus all five selected private cases pass within that condition's declared attempt budget | Model synthesis passed the sampled suite for that robot, condition, and run | Unselected tasks passed physical validation, or the paired condition, two-robot mainline, or SDK path succeeded |
+| Single-robot condition success | Dynamic condition evidence plus all five selected private cases pass within that condition's declared attempt budget | The generated robot-specific driver passed the sampled suite for that robot, condition, and run | Unselected tasks passed physical validation, or the paired condition, two-robot mainline, or SDK path succeeded |
 | Paired two-condition experiment completed | Both generation conditions reach terminal verdicts for both fixed robots using the same sealed per-robot `capability_design.json` and `private_validation_suite.json` and declared experiment configuration | The four-cell Direct-MuJoCo comparison executed | Every cell passed |
 | Two-condition, two-robot mainline success | All four robot-by-generation-condition cells independently satisfy single-robot condition success | The first paired Direct-MuJoCo mainline experiment succeeded | SDK fidelity, hardware validity, sim-to-real, or universal applicability |
 | SDK-grounded extension evidence | Real SDK application logic and robot-specific Translation execute bidirectionally with MuJoCo | The named SDK-extension route executed | Hardware equivalence or mainline replacement |
@@ -1300,7 +1331,7 @@ persistent state machine.
 |---|---|---|---|
 | 参考校准 | 经审查的 reference driver、真实 MuJoCo、抽样五个 case 的 Harness verdict 和完整视频 | 所选资产、controller baseline、抽样 case、Harness 和录像路径可行 | driver 由任何模型生成，或未抽中 task 已被物理验证 |
 | 动态生成条件已执行 | 有来源的 20+ task 快照、没有预写 effect policy 的真实模型 TGCD 五至十项 capability contract 设计、IVC 完整审计的 case pool、封存的抽样五-case `private_validation_suite.json`、明确的 skeleton-assisted 或 from-scratch 条件、真实模型身份和调用、模型生成的 `driver.py`、符合该条件的 STUDY/GENERATE trace，以及到达最终 verdict 的真实 MuJoCo 验证 | capability 设计及该生成条件已完成端到端执行 | 抽中的物理要求已通过、未抽中的 task 已物理执行，或另一条件已执行 |
-| 单机器人条件成功 | 具备动态条件证据，且抽中的五个 private case 均在该条件声明的 attempt 预算内通过 | 该机器人、该生成条件和该 run 通过抽样 suite | 未抽中 task 已通过物理验证，或配对条件、双机器人主线或 SDK 路径成功 |
+| 单机器人条件成功 | 具备动态条件证据，且抽中的五个 private case 均在该条件声明的 attempt 预算内通过 | 该机器人、该生成条件和该 run 生成的 robot-specific driver 通过抽样 suite | 未抽中 task 已通过物理验证，或配对条件、双机器人主线或 SDK 路径成功 |
 | 双条件配对实验已完成 | 两种生成条件在两个固定机器人上均使用相同的每机器人封存 `capability_design.json`、`private_validation_suite.json` 和声明的实验配置到达最终 verdict | 四个 Direct-MuJoCo 实验 cell 已执行 | 每个 cell 均通过 |
 | 双条件双机器人主线成功 | 四个机器人×生成条件 cell 均独立满足单机器人条件成功 | 首次配对 Direct-MuJoCo 主线实验成功 | SDK 保真度、硬件有效性、sim-to-real 或普遍适用性 |
 | 基于真实 SDK 的扩展证据 | 真实 SDK 应用逻辑和机器人专用 Translation 与 MuJoCo 双向执行 | 指定的 SDK 扩展路径已执行 | 与硬件等效，或可替代主线 |
@@ -1436,7 +1467,8 @@ The implementation may move from `demo3/` to `general_demo/` after all of the fo
    the focused checks, and run the canary without undeclared packages or files.
 
 Directory movement is mechanical and uses separate commits from behavioral repair. Moving the
-implementation to the canonical path does not itself prove paired two-condition synthesis success.
+implementation to the canonical path does not itself prove paired two-condition driver-synthesis
+success.
 
 **中文辅助说明。** 只有满足以下全部条件，实现才可以从 `demo3/` 迁移到 `general_demo/`：
 
@@ -1456,7 +1488,7 @@ implementation to the canonical path does not itself prove paired two-condition 
    的情况下运行聚焦检查和 canary。
 
 目录移动必须是机械操作，并与行为修复分开提交。实现移动到 canonical path 本身，并不能证明
-双条件配对合成成功。
+双条件配对 driver synthesis 成功。
 
 ### 6.2 Two-condition, two-robot mainline success / 双条件双机器人主线成功
 
@@ -1492,9 +1524,9 @@ The project may state that the new mainline has run successfully end to end only
     and no formal evaluation step downloads code, data, standards, or robot assets.
 
 If all four cells reach terminal verdicts but any cell fails one or more requirements, the correct
-claim is “the paired two-condition experiment completed; the named cell or cells failed synthesis,”
-not “the two-condition mainline succeeded.” If only a reference driver passes, the correct claim is
-“reference calibration passed.”
+claim is “the paired two-condition experiment completed; the named cell or cells failed driver
+synthesis,” not “the two-condition mainline succeeded.” If only a reference driver passes, the
+correct claim is “reference calibration passed.”
 
 **中文辅助说明。** 只有满足以下全部条件，项目才可以声明新主线已经成功完成端到端运行：
 
@@ -1523,8 +1555,8 @@ not “the two-condition mainline succeeded.” If only a reference driver passe
     不下载代码、数据、标准或机器人资产。
 
 如果四个 cell 都到达最终 verdict，但任何 cell 未通过一项或多项要求，正确表述是“双条件配对
-实验已完成；所指明的 cell 合成失败”，不能表述为“双条件主线成功”。如果只有 reference driver
-通过，正确表述是“参考校准通过”。
+实验已完成；所指明的 cell driver synthesis 失败”，不能表述为“双条件主线成功”。如果只有
+reference driver 通过，正确表述是“参考校准通过”。
 
 ---
 
