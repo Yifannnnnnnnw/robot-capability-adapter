@@ -2,15 +2,15 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
-  "snapshot_id": "unitree-go2-source-protocols-2026-08-18",
+  "snapshot_id": "unitree-go2-source-protocols-2026-08-18-v2",
   "tasks": [
     {
       "task_id": "GO2-T01",
       "name": "Eight-direction flat-ground velocity tracking",
-      "description": "Track a 0.4 m/s planar command in one of the source protocol's eight directions while keeping mean heading error within 10 degrees.",
+      "description": "Track a 0.4 m/s planar command in all eight directions of the source protocol while keeping the across-direction mean heading error within 10 degrees.",
       "source_task_or_operation": "Lee et al. Fig. 3F-G eight-direction 0.4 m/s flat-ground tracking experiment.",
       "applicability": "Go2 exposes the same free planar base and twelve actuated leg joints as the source quadruped.",
-      "adaptation": "The private instance selects one of the eight source directions. The 0.4 m/s command and 10 degree bound are unchanged.",
+      "adaptation": "The Framework executes all eight source directions as independently reset repetitions. The 0.4 m/s command and 10 degree bound are unchanged.",
       "scene_assumptions": [
         "A level rigid floor provides at least 4 m of unobstructed travel in the commanded direction."
       ],
@@ -29,7 +29,7 @@
             "kind": "terminal_state"
           },
           "aggregation": {
-            "kind": "single_trial"
+            "kind": "per_trial"
           },
           "source_refs": [
             {
@@ -49,7 +49,7 @@
             "kind": "terminal_state"
           },
           "aggregation": {
-            "kind": "single_trial"
+            "kind": "per_trial_mean"
           },
           "source_refs": [
             {
@@ -851,10 +851,10 @@
     {
       "task_id": "GO2-T12",
       "name": "Six-direction block-terrain travel",
-      "description": "Travel through the source block terrain under one of six benchmark direction commands and retain the three-run mean-distance protocol.",
+      "description": "Travel through the source block terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
       "source_task_or_operation": "Shi et al. Section IV-A block terrain maximum-travel-distance experiment.",
       "applicability": "The source robot and Go2 both use a roughly 0.28 m nominal foot-to-base height and twelve actuated leg joints.",
-      "adaptation": "The private instance selects one of the six published directions; terrain dimensions, three repetitions, 5 m cap, and the published mean-distance value are unchanged.",
+      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
       "scene_assumptions": [
         "The private shi_blocks.xml fixture provides a 5 m source-family terrain lane and a finish line at the map limit."
       ],
@@ -929,10 +929,10 @@
     {
       "task_id": "GO2-T13",
       "name": "Six-direction stair-terrain travel",
-      "description": "Travel through the source stair terrain under one of six benchmark direction commands and retain the three-run mean-distance protocol.",
+      "description": "Travel through the source stair terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
       "source_task_or_operation": "Shi et al. Section IV-A stair terrain maximum-travel-distance experiment.",
       "applicability": "The source robot and Go2 both use a roughly 0.28 m nominal foot-to-base height and twelve actuated leg joints.",
-      "adaptation": "The private instance selects one of the six published directions; terrain dimensions, three repetitions, 5 m cap, and the published mean-distance value are unchanged.",
+      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
       "scene_assumptions": [
         "The private shi_stairs.xml fixture provides a 5 m source-family terrain lane and a finish line at the map limit."
       ],
@@ -1007,10 +1007,10 @@
     {
       "task_id": "GO2-T14",
       "name": "Six-direction stepping-stone travel",
-      "description": "Travel through the source stepping-stone terrain under one of six benchmark direction commands and retain the three-run mean-distance protocol.",
+      "description": "Travel through the source stepping-stone terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
       "source_task_or_operation": "Shi et al. Section IV-A stepping-stone terrain maximum-travel-distance experiment.",
       "applicability": "The source robot and Go2 both use a roughly 0.28 m nominal foot-to-base height and twelve actuated leg joints.",
-      "adaptation": "The private instance selects one of the six published directions; terrain dimensions, three repetitions, 5 m cap, and the published mean-distance value are unchanged.",
+      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
       "scene_assumptions": [
         "The private shi_stones.xml fixture provides a 5 m source-family terrain lane and a finish line at the map limit."
       ],
@@ -1085,10 +1085,10 @@
     {
       "task_id": "GO2-T15",
       "name": "Six-direction pole-terrain travel",
-      "description": "Travel through the source pole terrain under one of six benchmark direction commands and retain the three-run mean-distance protocol.",
+      "description": "Travel through the source pole terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
       "source_task_or_operation": "Shi et al. Section IV-A pole terrain maximum-travel-distance experiment.",
       "applicability": "The source robot and Go2 both use a roughly 0.28 m nominal foot-to-base height and twelve actuated leg joints.",
-      "adaptation": "The private instance selects one of the six published directions; terrain dimensions, three repetitions, 5 m cap, and the published mean-distance value are unchanged.",
+      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
       "scene_assumptions": [
         "The private shi_poles.xml fixture provides a 5 m source-family terrain lane and a finish line at the map limit."
       ],

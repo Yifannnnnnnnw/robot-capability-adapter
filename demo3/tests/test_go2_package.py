@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 import mujoco
 import numpy as np
 
 from autoadapter2.driver_synthesis import audit_driver_source
+from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.libraries import load_robot_package
 from autoadapter2.pipeline import render_reference_driver
 from autoadapter2.validation_compiler import sample_private_suite, validate_private_suite
@@ -170,9 +173,54 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
     assert all(instance_by_task[task_id]["repetitions"] == 10 for task_id in {
         "GO2-T02", "GO2-T03", "GO2-T04"
     })
-    assert all(instance_by_task[task_id]["repetitions"] == 3 for task_id in {
+    task_by_id = {task["task_id"]: task for task in package.tasks}
+    assert instance_by_task["GO2-T01"]["repetitions"] == 8
+    assert task_by_id["GO2-T01"]["scoring"][0]["aggregation"] == {
+        "kind": "per_trial"
+    }
+    assert task_by_id["GO2-T01"]["scoring"][1]["aggregation"] == {
+        "kind": "per_trial_mean"
+    }
+    eight_directions = {
+        round(index * math.pi / 4.0, 12)
+        for index in (-3, -2, -1, 0, 1, 2, 3, 4)
+    }
+    assert {
+        round(
+            variant["public_arguments"]["request"]["task_parameters"]["direction_rad"],
+            12,
+        )
+        for variant in instance_by_task["GO2-T01"]["repetition_variants"]
+    } == eight_directions
+
+    shi_task_ids = {
         "GO2-T12", "GO2-T13", "GO2-T14", "GO2-T15"
-    })
+    }
+    source_directions = {
+        round(value, 12)
+        for value in (
+            0.0,
+            math.pi / 4.0,
+            -math.pi / 4.0,
+            -math.pi,
+            -5.0 * math.pi / 4.0,
+            -3.0 * math.pi / 4.0,
+        )
+    }
+    for task_id in shi_task_ids:
+        instance = instance_by_task[task_id]
+        assert instance["repetitions"] == 18
+        directions = [
+            round(
+                variant["public_arguments"]["request"]["task_parameters"][
+                    "direction_rad"
+                ],
+                12,
+            )
+            for variant in instance["repetition_variants"]
+        ]
+        assert set(directions) == source_directions
+        assert set(Counter(directions).values()) == {3}
 
     for instance in instances:
         scene = package.root / instance["scene_entrypoint"]
@@ -187,6 +235,26 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
         mujoco.mj_forward(model, data)
         assert np.all(np.isfinite(data.qpos)), scene.name
         assert np.all(np.isfinite(data.xpos)), scene.name
+
+    for task_id in shi_task_ids:
+        instance = instance_by_task[task_id]
+        scene = package.root / instance["scene_entrypoint"]
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        data = mujoco.MjData(model)
+        map_limit_id = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_GEOM, "map_limit"
+        )
+        assert map_limit_id >= 0
+        for variant in instance["repetition_variants"]:
+            direction = variant["public_arguments"]["request"]["task_parameters"][
+                "direction_rad"
+            ]
+            apply_framework_reset(mujoco, model, data, variant["reset"])
+            assert np.allclose(
+                data.geom_xpos[map_limit_id, :2],
+                [5.0 * math.cos(direction), 5.0 * math.sin(direction)],
+                atol=1e-9,
+            )
 
     nominal = mujoco.MjModel.from_xml_path(str(package.root / "assets" / "go2.xml"))
     payload = mujoco.MjModel.from_xml_path(

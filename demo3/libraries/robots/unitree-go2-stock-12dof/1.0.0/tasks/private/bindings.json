@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
-  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v2",
   "bindings": [
     {
       "binding_id": "go2-t01-speed",
@@ -229,40 +229,40 @@
       "binding_id": "go2-go2-t12-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_axis_displacement",
+      "kind": "body_directional_displacement",
       "parameters": {
         "body_name": "base_link",
-        "axis": 0
+        "direction_argument": "request.task_parameters.direction_rad"
       }
     },
     {
       "binding_id": "go2-go2-t13-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_axis_displacement",
+      "kind": "body_directional_displacement",
       "parameters": {
         "body_name": "base_link",
-        "axis": 0
+        "direction_argument": "request.task_parameters.direction_rad"
       }
     },
     {
       "binding_id": "go2-go2-t14-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_axis_displacement",
+      "kind": "body_directional_displacement",
       "parameters": {
         "body_name": "base_link",
-        "axis": 0
+        "direction_argument": "request.task_parameters.direction_rad"
       }
     },
     {
       "binding_id": "go2-go2-t15-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_axis_displacement",
+      "kind": "body_directional_displacement",
       "parameters": {
         "body_name": "base_link",
-        "axis": 0
+        "direction_argument": "request.task_parameters.direction_rad"
       }
     },
     {

@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
-  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v2",
   "instances": [
     {
       "instance_id": "go2-go2-t01",
@@ -32,7 +32,17 @@
         "go2_canonical",
         "go2_video"
       ],
-      "repetitions": 1,
+      "repetition_variants": [
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": 0.0}}}},
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": 0.7853981633974483}}}},
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": 1.5707963267948966}}}},
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": 2.356194490192345}}}},
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": 3.141592653589793}}}},
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": -2.356194490192345}}}},
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": -1.5707963267948966}}}},
+        {"public_arguments": {"request": {"task_id": "GO2-T01", "task_parameters": {"duration_s": 2.0, "target_speed_m_s": 0.4, "direction_rad": -0.7853981633974483}}}}
+      ],
+      "repetitions": 8,
       "timeout_sim_s": 4.0,
       "max_steps": 1500,
       "sample_hz": 20,
@@ -433,6 +443,26 @@
           }
         }
       },
+      "repetition_variants": [
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T12","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}}
+      ],
       "clause_bindings": {
         "travel_distance": "go2-go2-t12-distance"
       },
@@ -442,7 +472,7 @@
         "go2_canonical",
         "go2_video"
       ],
-      "repetitions": 3,
+      "repetitions": 18,
       "timeout_sim_s": 14.0,
       "max_steps": 6500,
       "sample_hz": 20,
@@ -469,6 +499,26 @@
           }
         }
       },
+      "repetition_variants": [
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T13","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}}
+      ],
       "clause_bindings": {
         "travel_distance": "go2-go2-t13-distance"
       },
@@ -478,7 +528,7 @@
         "go2_canonical",
         "go2_video"
       ],
-      "repetitions": 3,
+      "repetitions": 18,
       "timeout_sim_s": 14.0,
       "max_steps": 6500,
       "sample_hz": 20,
@@ -505,6 +555,26 @@
           }
         }
       },
+      "repetition_variants": [
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T14","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}}
+      ],
       "clause_bindings": {
         "travel_distance": "go2-go2-t14-distance"
       },
@@ -514,7 +584,7 @@
         "go2_canonical",
         "go2_video"
       ],
-      "repetitions": 3,
+      "repetitions": 18,
       "timeout_sim_s": 14.0,
       "max_steps": 6500,
       "sample_hz": 20,
@@ -541,6 +611,26 @@
           }
         }
       },
+      "repetition_variants": [
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":0,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[1,0,0,0]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-0.7853981633974483,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.9238795325112867,0,0,-0.3826834323650898]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-3.141592653589793,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0,0,0,-1]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-3.9269908169872414,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[-0.3826834323650897,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}},
+        {"public_arguments":{"request":{"task_id":"GO2-T15","task_parameters":{"duration_s":12,"direction_rad":-2.356194490192345,"map_limit_m":5}}},"reset":{"kind":"keyframe","name":"task_start","body_quaternions":{"terrain_frame":[0.3826834323650898,0,0,-0.9238795325112867]}}}
+      ],
       "clause_bindings": {
         "travel_distance": "go2-go2-t15-distance"
       },
@@ -550,7 +640,7 @@
         "go2_canonical",
         "go2_video"
       ],
-      "repetitions": 3,
+      "repetitions": 18,
       "timeout_sim_s": 14.0,
       "max_steps": 6500,
       "sample_hz": 20,
