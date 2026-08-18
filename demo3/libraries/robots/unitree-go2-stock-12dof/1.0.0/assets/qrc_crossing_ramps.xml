@@ -1,0 +1,28 @@
+<mujoco model="go2_qrc_crossing_ramps">
+  <include file="go2.xml"/>
+  <visual>
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0"/>
+  </visual>
+  <worldbody>
+    <light pos="0 -4 7" dir="0 0 -1" directional="true"/>
+    <geom name="lane_floor" type="box" pos="0 0 -0.03" size="4.5 0.72 0.03"
+          friction="1 0.01 0.001" rgba="0.24 0.27 0.30 1"/>
+    <geom name="pitch_ramp" type="box" pos="-1.9 0 0.220" size="0.75 0.70 0.025"
+          euler="0 -0.261799 0" friction="1 0.01 0.001" rgba="0.15 0.57 0.78 1"/>
+    <geom name="roll_ramp" type="box" pos="0.4 0 0.181" size="0.75 0.70 0.025"
+          euler="0.261799 0 0" friction="1 0.01 0.001" rgba="0.92 0.55 0.12 1"/>
+    <geom name="counter_pitch_ramp" type="box" pos="2.2 0 0.220" size="0.75 0.70 0.025"
+          euler="0 0.261799 0" friction="1 0.01 0.001" rgba="0.18 0.67 0.47 1"/>
+    <geom name="start_line" type="box" pos="-3.6 0 0.002" size="0.02 0.74 0.002"
+          contype="0" conaffinity="0" rgba="0.24 0.64 0.94 1"/>
+    <geom name="finish_line" type="box" pos="3.6 0 0.002" size="0.02 0.74 0.002"
+          contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
+    <camera name="evidence" mode="targetbody" target="base_link"
+            pos="0 -9.0 5.1" fovy="48"/>
+  </worldbody>
+  <keyframe>
+    <key name="task_start"
+         qpos="-3.6 0 0.27 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
+         ctrl="0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"/>
+  </keyframe>
+</mujoco>

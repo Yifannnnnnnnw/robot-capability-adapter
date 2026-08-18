@@ -1,0 +1,30 @@
+<mujoco model="go2_qrc_krails">
+  <include file="go2.xml"/>
+  <visual>
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0"/>
+  </visual>
+  <worldbody>
+    <light pos="0 -4 7" dir="0 0 -1" directional="true"/>
+    <geom name="slippery_lane" type="box" pos="0 0 -0.03" size="4.5 0.72 0.03"
+          friction="0.25 0.005 0.0005" rgba="0.20 0.40 0.52 1"/>
+    <geom name="krail_1" type="box" pos="-2.0 0 0.05" size="0.58 0.05 0.05"
+          euler="0 0 0.785398" friction="0.8 0.01 0.001" rgba="0.94 0.57 0.12 1"/>
+    <geom name="krail_2" type="box" pos="-0.7 0 0.05" size="0.58 0.05 0.05"
+          euler="0 0 -0.785398" friction="0.8 0.01 0.001" rgba="0.94 0.57 0.12 1"/>
+    <geom name="krail_3" type="box" pos="0.7 0 0.05" size="0.58 0.05 0.05"
+          euler="0 0 0.785398" friction="0.8 0.01 0.001" rgba="0.94 0.57 0.12 1"/>
+    <geom name="krail_4" type="box" pos="2.0 0 0.05" size="0.58 0.05 0.05"
+          euler="0 0 -0.785398" friction="0.8 0.01 0.001" rgba="0.94 0.57 0.12 1"/>
+    <geom name="start_line" type="box" pos="-3.6 0 0.002" size="0.02 0.74 0.002"
+          contype="0" conaffinity="0" rgba="0.24 0.64 0.94 1"/>
+    <geom name="finish_line" type="box" pos="3.6 0 0.002" size="0.02 0.74 0.002"
+          contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
+    <camera name="evidence" mode="targetbody" target="base_link"
+            pos="0 -9.0 5.1" fovy="48"/>
+  </worldbody>
+  <keyframe>
+    <key name="task_start"
+         qpos="-3.6 0 0.27 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
+         ctrl="0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"/>
+  </keyframe>
+</mujoco>

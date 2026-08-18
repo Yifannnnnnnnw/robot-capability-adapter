@@ -2,55 +2,10 @@
   "schema_version": "1.0",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
-  "task_snapshot_id": "unitree-go2-stock-12dof-task-library-1.0.0",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18",
   "bindings": [
     {
-      "binding_id": "go2-binding-go2-t01-1",
-      "metric": "body_height",
-      "unit": "m",
-      "kind": "body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t02-1",
-      "metric": "body_height",
-      "unit": "m",
-      "kind": "body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t03-1",
-      "metric": "body_height",
-      "unit": "m",
-      "kind": "body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t04-1",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t05-1",
-      "metric": "joint_range",
-      "unit": "rad",
-      "kind": "joint_range",
-      "parameters": {
-        "joint_name": "FR_thigh_joint"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t06-1",
+      "binding_id": "go2-t01-speed",
       "metric": "mean_body_planar_speed",
       "unit": "m/s",
       "kind": "mean_body_planar_speed",
@@ -59,62 +14,220 @@
       }
     },
     {
-      "binding_id": "go2-binding-go2-t07-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t08-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t09-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t10-1",
-      "metric": "body_yaw_change_deg",
+      "binding_id": "go2-t01-heading",
+      "metric": "mean_body_heading_error",
       "unit": "deg",
-      "kind": "body_yaw_change_deg",
+      "kind": "mean_body_heading_error_deg",
+      "parameters": {
+        "body_name": "base_link",
+        "direction_argument": "request.task_parameters.direction_rad",
+        "minimum_displacement": 0.1
+      }
+    },
+    {
+      "binding_id": "go2-go2-t02-feet",
+      "metric": "all_feet_step_completion",
+      "unit": "binary",
+      "kind": "named_bodies_axis_completion",
+      "parameters": {
+        "body_names": [
+          "FL_foot",
+          "FR_foot",
+          "RL_foot",
+          "RR_foot"
+        ],
+        "axis": 0,
+        "finish_coordinate": 1.0,
+        "direction": 1
+      }
+    },
+    {
+      "binding_id": "go2-go2-t03-feet",
+      "metric": "all_feet_step_completion",
+      "unit": "binary",
+      "kind": "named_bodies_axis_completion",
+      "parameters": {
+        "body_names": [
+          "FL_foot",
+          "FR_foot",
+          "RL_foot",
+          "RR_foot"
+        ],
+        "axis": 0,
+        "finish_coordinate": 1.0,
+        "direction": 1
+      }
+    },
+    {
+      "binding_id": "go2-go2-t04-feet",
+      "metric": "all_feet_step_completion",
+      "unit": "binary",
+      "kind": "named_bodies_axis_completion",
+      "parameters": {
+        "body_names": [
+          "FL_foot",
+          "FR_foot",
+          "RL_foot",
+          "RR_foot"
+        ],
+        "axis": 0,
+        "finish_coordinate": 1.0,
+        "direction": 1
+      }
+    },
+    {
+      "binding_id": "go2-t05-yaw-rate",
+      "metric": "mean_body_yaw_rate",
+      "unit": "rad/s",
+      "kind": "mean_body_yaw_rate",
       "parameters": {
         "body_name": "base_link"
       }
     },
     {
-      "binding_id": "go2-binding-go2-t11-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
+      "binding_id": "go2-t06-course",
+      "metric": "ordered_obstacle_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_axis_gate_completion_ratio",
       "parameters": {
-        "body_name": "base_link"
+        "body_name": "base_link",
+        "gates": [
+          {
+            "axis": 0,
+            "coordinate": 0.5,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 1.5,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 2.6,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 3.7,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 4.8,
+            "direction": 1
+          }
+        ]
       }
     },
     {
-      "binding_id": "go2-binding-go2-t12-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
+      "binding_id": "go2-go2-t07-lane",
+      "metric": "ordered_lane_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_axis_gate_completion_ratio",
       "parameters": {
-        "body_name": "base_link"
+        "body_name": "base_link",
+        "gates": [
+          {
+            "axis": 0,
+            "coordinate": -3.0,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 3.6,
+            "direction": 1
+          }
+        ]
       }
     },
     {
-      "binding_id": "go2-binding-go2-t13-1",
-      "metric": "body_axis_displacement",
+      "binding_id": "go2-go2-t08-lane",
+      "metric": "ordered_lane_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_axis_gate_completion_ratio",
+      "parameters": {
+        "body_name": "base_link",
+        "gates": [
+          {
+            "axis": 0,
+            "coordinate": -3.0,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 3.6,
+            "direction": 1
+          }
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-go2-t09-lane",
+      "metric": "ordered_lane_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_axis_gate_completion_ratio",
+      "parameters": {
+        "body_name": "base_link",
+        "gates": [
+          {
+            "axis": 0,
+            "coordinate": -3.0,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 3.6,
+            "direction": 1
+          }
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-go2-t10-lane",
+      "metric": "ordered_lane_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_axis_gate_completion_ratio",
+      "parameters": {
+        "body_name": "base_link",
+        "gates": [
+          {
+            "axis": 0,
+            "coordinate": -3.0,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 3.6,
+            "direction": 1
+          }
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-go2-t11-lane",
+      "metric": "ordered_lane_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_axis_gate_completion_ratio",
+      "parameters": {
+        "body_name": "base_link",
+        "gates": [
+          {
+            "axis": 0,
+            "coordinate": -3.0,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 3.6,
+            "direction": 1
+          }
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-go2-t12-distance",
+      "metric": "maximum_travel_distance",
       "unit": "m",
       "kind": "body_axis_displacement",
       "parameters": {
@@ -123,8 +236,8 @@
       }
     },
     {
-      "binding_id": "go2-binding-go2-t14-1",
-      "metric": "body_axis_displacement",
+      "binding_id": "go2-go2-t13-distance",
+      "metric": "maximum_travel_distance",
       "unit": "m",
       "kind": "body_axis_displacement",
       "parameters": {
@@ -133,17 +246,8 @@
       }
     },
     {
-      "binding_id": "go2-binding-go2-t14-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t15-1",
-      "metric": "body_axis_displacement",
+      "binding_id": "go2-go2-t14-distance",
+      "metric": "maximum_travel_distance",
       "unit": "m",
       "kind": "body_axis_displacement",
       "parameters": {
@@ -152,17 +256,8 @@
       }
     },
     {
-      "binding_id": "go2-binding-go2-t15-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t16-1",
-      "metric": "body_axis_displacement",
+      "binding_id": "go2-go2-t15-distance",
+      "metric": "maximum_travel_distance",
       "unit": "m",
       "kind": "body_axis_displacement",
       "parameters": {
@@ -171,36 +266,8 @@
       }
     },
     {
-      "binding_id": "go2-binding-go2-t16-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t17-1",
-      "metric": "body_axis_displacement",
-      "unit": "m",
-      "kind": "body_axis_displacement",
-      "parameters": {
-        "body_name": "base_link",
-        "axis": 0
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t17-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t18-1",
-      "metric": "body_planar_displacement",
+      "binding_id": "go2-t16-step-off",
+      "metric": "start_table_center_distance",
       "unit": "m",
       "kind": "body_planar_displacement",
       "parameters": {
@@ -208,85 +275,267 @@
       }
     },
     {
-      "binding_id": "go2-binding-go2-t18-2",
-      "metric": "minimum_body_height",
+      "binding_id": "go2-t16-end-hold",
+      "metric": "end_table_center_error",
       "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t19-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t19-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t20-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t20-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t21-1",
-      "metric": "body_planar_displacement",
-      "unit": "m",
-      "kind": "body_planar_displacement",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t21-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
-      "parameters": {
-        "body_name": "base_link"
-      }
-    },
-    {
-      "binding_id": "go2-binding-go2-t22-1",
-      "metric": "body_axis_displacement",
-      "unit": "m",
-      "kind": "body_axis_displacement",
+      "kind": "final_body_position_error",
       "parameters": {
         "body_name": "base_link",
-        "axis": 0
+        "target_argument": "request.task_parameters.end_table_center_m"
       }
     },
     {
-      "binding_id": "go2-binding-go2-t22-2",
-      "metric": "minimum_body_height",
-      "unit": "m",
-      "kind": "minimum_body_height",
+      "binding_id": "go2-t17-order",
+      "metric": "ordered_waypoint_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_waypoint_completion_ratio",
       "parameters": {
-        "body_name": "base_link"
+        "body_name": "base_link",
+        "waypoints": [
+          [
+            0.55,
+            0.28
+          ],
+          [
+            1.25,
+            -0.28
+          ],
+          [
+            1.9,
+            0.28
+          ],
+          [
+            2.45,
+            -0.28
+          ],
+          [
+            3.05,
+            0.28
+          ],
+          [
+            3.65,
+            0.0
+          ]
+        ],
+        "tolerance": 0.3
+      }
+    },
+    {
+      "binding_id": "go2-t17-clearance",
+      "metric": "minimum_torso_pole_clearance",
+      "unit": "m",
+      "kind": "minimum_body_point_clearance",
+      "parameters": {
+        "body_name": "base_link",
+        "points": [
+          [
+            0.55,
+            0.0
+          ],
+          [
+            1.25,
+            0.0
+          ],
+          [
+            1.9,
+            0.0
+          ],
+          [
+            2.45,
+            0.0
+          ],
+          [
+            3.05,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-t18-lines",
+      "metric": "ordered_a_frame_line_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_axis_gate_completion_ratio",
+      "parameters": {
+        "body_name": "base_link",
+        "gates": [
+          {
+            "axis": 0,
+            "coordinate": -1.7,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 0.0,
+            "direction": 1
+          },
+          {
+            "axis": 0,
+            "coordinate": 1.7,
+            "direction": 1
+          }
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-t19-landing",
+      "metric": "all_feet_jump_completion",
+      "unit": "binary",
+      "kind": "named_bodies_axis_completion",
+      "parameters": {
+        "body_names": [
+          "FL_foot",
+          "FR_foot",
+          "RL_foot",
+          "RR_foot"
+        ],
+        "axis": 0,
+        "finish_coordinate": 0.5,
+        "direction": 1
+      }
+    },
+    {
+      "binding_id": "go2-t19-contact",
+      "metric": "jump_board_contact_steps",
+      "unit": "physics_steps",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {
+        "geom_names": [
+          "broad_jump_board"
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-t20-order",
+      "metric": "ordered_course_completion",
+      "unit": "ratio",
+      "kind": "ordered_body_waypoint_completion_ratio",
+      "parameters": {
+        "body_name": "base_link",
+        "waypoints": [
+          [
+            -1.25,
+            -1.05
+          ],
+          [
+            -1.45,
+            -0.55
+          ],
+          [
+            -1.25,
+            -0.05
+          ],
+          [
+            -1.45,
+            0.45
+          ],
+          [
+            -1.25,
+            0.95
+          ],
+          [
+            -1.25,
+            0.6
+          ],
+          [
+            0.4,
+            0.6
+          ],
+          [
+            2.13,
+            0.6
+          ],
+          [
+            1.3,
+            1.6
+          ],
+          [
+            0.1,
+            1.6
+          ],
+          [
+            -0.5,
+            1.6
+          ]
+        ],
+        "tolerance": 0.35
+      }
+    },
+    {
+      "binding_id": "go2-t20-time",
+      "metric": "course_completion_time",
+      "unit": "s",
+      "kind": "ordered_body_waypoint_completion_time",
+      "parameters": {
+        "body_name": "base_link",
+        "waypoints": [
+          [
+            -1.25,
+            -1.05
+          ],
+          [
+            -1.45,
+            -0.55
+          ],
+          [
+            -1.25,
+            -0.05
+          ],
+          [
+            -1.45,
+            0.45
+          ],
+          [
+            -1.25,
+            0.95
+          ],
+          [
+            -1.25,
+            0.6
+          ],
+          [
+            0.4,
+            0.6
+          ],
+          [
+            2.13,
+            0.6
+          ],
+          [
+            1.3,
+            1.6
+          ],
+          [
+            0.1,
+            1.6
+          ],
+          [
+            -0.5,
+            1.6
+          ]
+        ],
+        "tolerance": 0.35
+      }
+    },
+    {
+      "binding_id": "go2-t20-contact",
+      "metric": "jump_board_contact_steps",
+      "unit": "physics_steps",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {
+        "geom_names": [
+          "course_broad_jump_board"
+        ]
+      }
+    },
+    {
+      "binding_id": "go2-t20-end-hold",
+      "metric": "end_table_center_error",
+      "unit": "m",
+      "kind": "final_body_position_error",
+      "parameters": {
+        "body_name": "base_link",
+        "target_argument": "request.task_parameters.end_table_center_m"
       }
     }
   ]

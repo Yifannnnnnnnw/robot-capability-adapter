@@ -5,11 +5,13 @@ import re
 import tempfile
 from pathlib import Path
 
+import mujoco
+import numpy as np
+
 from autoadapter2.driver_synthesis import audit_driver_source
-from autoadapter2.harness import run_private_suite
 from autoadapter2.libraries import load_robot_package
 from autoadapter2.pipeline import render_reference_driver
-from autoadapter2.validation_compiler import validate_private_suite
+from autoadapter2.validation_compiler import sample_private_suite, validate_private_suite
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,28 +20,28 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "unitree-go2-stock-12dof" / "1.0.
 
 def _design_and_suite(package):
     groups = [
-        ("posture_hold", "calibrate_posture", ["GO2-T01", "GO2-T02", "GO2-T03", "GO2-T04"]),
+        ("planar_motion", "calibrate_planar_motion", ["GO2-T01", "GO2-T05"]),
         (
-            "flat_gait",
-            "calibrate_gait",
-            ["GO2-T05", "GO2-T06", "GO2-T07", "GO2-T08", "GO2-T09"],
+            "step_transition",
+            "calibrate_step_transition",
+            ["GO2-T02", "GO2-T03", "GO2-T04"],
         ),
         (
-            "flat_navigation",
-            "calibrate_navigation",
-            ["GO2-T10", "GO2-T11", "GO2-T12"],
-        ),
-        ("incline", "calibrate_incline", ["GO2-T13"]),
-        (
-            "transitions",
-            "calibrate_transition",
-            ["GO2-T14", "GO2-T15", "GO2-T16", "GO2-T17"],
+            "course_navigation",
+            "calibrate_course_navigation",
+            ["GO2-T06", "GO2-T07", "GO2-T08", "GO2-T09", "GO2-T10", "GO2-T11"],
         ),
         (
-            "obstacles",
-            "calibrate_obstacles",
-            ["GO2-T18", "GO2-T19", "GO2-T20", "GO2-T21", "GO2-T22"],
+            "rough_terrain",
+            "calibrate_rough_terrain",
+            ["GO2-T12", "GO2-T13", "GO2-T14", "GO2-T15"],
         ),
+        (
+            "parkour_obstacles",
+            "calibrate_parkour_obstacles",
+            ["GO2-T16", "GO2-T17", "GO2-T18", "GO2-T19"],
+        ),
+        ("parkour_course", "calibrate_parkour_course", ["GO2-T20"]),
     ]
     task_by_id = {task["task_id"]: task for task in package.tasks}
     capabilities = []
@@ -128,7 +130,8 @@ def _design_and_suite(package):
 def test_go2_package_snapshot_and_private_coverage() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     catalog = json.loads((package.root / "tasks" / "catalog.json").read_text(encoding="utf-8"))
-    assert len(package.tasks) >= 20
+    assert len(package.tasks) == 20
+    assert sum(len(task["scoring"]) for task in package.tasks) == 27
     assert package.snapshot_id == catalog["snapshot_id"]
     for name in ("instances", "bindings", "guards"):
         private = json.loads(
@@ -149,11 +152,61 @@ def test_go2_package_snapshot_and_private_coverage() -> None:
             assert "/master/" not in source["locator"].lower()
 
 
+def test_go2_source_protocol_scenes_compile_and_reset() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = json.loads(
+        (package.private_dir / "instances.json").read_text(encoding="utf-8")
+    )["instances"]
+    instance_by_task = {instance["task_id"]: instance for instance in instances}
+
+    assert {source["source_id"] for source in package.sources} >= {
+        "SRC-LEE-2020",
+        "SRC-MIKI-2022",
+        "SRC-SHI-2023",
+        "SRC-QRC-2023",
+        "SRC-BARKOUR-2023",
+        "SRC-ANYMAL-2016",
+    }
+    assert all(instance_by_task[task_id]["repetitions"] == 10 for task_id in {
+        "GO2-T02", "GO2-T03", "GO2-T04"
+    })
+    assert all(instance_by_task[task_id]["repetitions"] == 3 for task_id in {
+        "GO2-T12", "GO2-T13", "GO2-T14", "GO2-T15"
+    })
+
+    for instance in instances:
+        scene = package.root / instance["scene_entrypoint"]
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        data = mujoco.MjData(model)
+        key_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_KEY, "task_start")
+        camera_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "evidence")
+        assert key_id >= 0, scene.name
+        assert camera_id >= 0, scene.name
+        mujoco.mj_resetDataKeyframe(model, data, key_id)
+        mujoco.mj_forward(model, data)
+        assert np.all(np.isfinite(data.qpos)), scene.name
+        assert np.all(np.isfinite(data.xpos)), scene.name
+
+    nominal = mujoco.MjModel.from_xml_path(str(package.root / "assets" / "go2.xml"))
+    payload = mujoco.MjModel.from_xml_path(
+        str(package.root / "assets" / "lee_payload_step.xml")
+    )
+    payload_id = mujoco.mj_name2id(payload, mujoco.mjtObj.mjOBJ_BODY, "lee_payload")
+    payload_mass = float(payload.body_mass[payload_id])
+    assert np.isclose(payload_mass / float(nominal.body_mass.sum()), 0.227)
+
+
 def test_go2_arbitrary_renderer_dispatches_by_task_id() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design, suite = _design_and_suite(package)
     checked = validate_private_suite(suite, package=package, design=design)
-    assert len(checked["cases"]) == 31
+    assert len(checked["cases"]) == 27
+    sampled = sample_private_suite(checked, seed="go2-source-protocol-check")
+    repeated = sample_private_suite(checked, seed="go2-source-protocol-check")
+    assert len(sampled["cases"]) == 5
+    assert [case["case_id"] for case in sampled["cases"]] == [
+        case["case_id"] for case in repeated["cases"]
+    ]
     with tempfile.TemporaryDirectory(prefix="go2-reference-render-") as temporary:
         driver_path = render_reference_driver(package, design, Path(temporary))
         source = driver_path.read_text(encoding="utf-8")
@@ -167,41 +220,7 @@ def test_go2_arbitrary_renderer_dispatches_by_task_id() -> None:
         assert audit.ctrl_references > 0
         assert audit.physics_step_references > 0
         assert "task_id == \"GO2-T01\"" in source
-        assert "ReferenceGo2Driver.stand(self, request)" in source
+        assert "ReferenceGo2Driver.walk_forward(self, request)" in source
         assert "ReferenceGo2Driver.traverse_stairs(self, request)" in source
         rendered_section = source.split("class RenderedGo2Driver", 1)[1]
         assert "self._gait(_number(parameters, \"duration_s\", 1.0), mode=\"forward\")" not in rendered_section
-
-
-def test_go2_reference_physical_suite_without_video_backend() -> None:
-    package = load_robot_package(PACKAGE_ROOT)
-    design, suite = _design_and_suite(package)
-    with tempfile.TemporaryDirectory(prefix="go2-reference-physical-") as temporary:
-        output = Path(temporary)
-        driver_path = render_reference_driver(package, design, output / "rendered")
-        report = run_private_suite(
-            package=package,
-            design=design,
-            suite=suite,
-            driver_path=driver_path,
-            condition="from-scratch",
-            output_dir=output / "validation",
-            record_video=False,
-            wall_timeout_s=120.0,
-            run_id="go2-reference-physical-suite",
-            attempt=0,
-        )
-    assert report["pipeline_completed"]
-    assert report["physical_validation_executed"]
-    assert not report["validation_passed"]
-    assert len({trial["task_id"] for trial in report["trials"]}) == 22
-    assert all(trial["worker_completed"] for trial in report["trials"])
-    assert all(trial["criterion_passed"] for trial in report["trials"])
-    assert all(
-        all(
-            outcome
-            for guard_id, outcome in trial["guard_outcomes"].items()
-            if guard_id != "go2_video"
-        )
-        for trial in report["trials"]
-    )

@@ -1,0 +1,41 @@
+<mujoco model="go2_miki_mixed_course">
+  <include file="go2.xml"/>
+  <visual>
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0"/>
+  </visual>
+  <worldbody>
+    <light pos="2 -3 6" dir="0 0 -1" directional="true"/>
+    <geom name="floor" type="plane" size="8 3 0.05" friction="1 0.01 0.001"
+          rgba="0.23 0.26 0.29 1"/>
+
+    <!-- 15 degree rigid approach, followed by the 0.108 m scaled raised platform. -->
+    <geom name="inclined_platform" type="box" pos="0.55 0 0.111" size="0.42 0.65 0.025"
+          euler="0 -0.261799 0" friction="1 0.01 0.001" rgba="0.16 0.56 0.78 1"/>
+    <geom name="raised_platform" type="box" pos="1.40 0 0.054" size="0.42 0.65 0.054"
+          friction="1 0.01 0.001" rgba="0.17 0.64 0.48 1"/>
+
+    <!-- Source 17 cm rise and 29 cm depth, uniformly scaled by 0.54. -->
+    <geom name="stair_1" type="box" pos="2.10 0 0.0153" size="0.0783 0.65 0.0153"
+          friction="1 0.01 0.001" rgba="0.92 0.59 0.14 1"/>
+    <geom name="stair_2" type="box" pos="2.2566 0 0.0306" size="0.0783 0.65 0.0306"
+          friction="1 0.01 0.001" rgba="0.92 0.59 0.14 1"/>
+    <geom name="stair_3" type="box" pos="2.4132 0 0.0459" size="0.0783 0.65 0.0459"
+          friction="1 0.01 0.001" rgba="0.92 0.59 0.14 1"/>
+
+    <geom name="block_1" type="box" pos="3.15 0.22 0.054" size="0.22 0.24 0.054"
+          friction="1 0.01 0.001" rgba="0.70 0.28 0.58 1"/>
+    <geom name="block_2" type="box" pos="3.62 -0.20 0.041" size="0.20 0.25 0.041"
+          friction="1 0.01 0.001" rgba="0.70 0.28 0.58 1"/>
+    <geom name="block_3" type="box" pos="4.08 0.18 0.054" size="0.20 0.24 0.054"
+          friction="1 0.01 0.001" rgba="0.70 0.28 0.58 1"/>
+    <geom name="finish_line" type="box" pos="4.8 0 0.002" size="0.02 0.68 0.002"
+          contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
+    <camera name="evidence" mode="targetbody" target="base_link"
+            pos="2.5 -6.2 3.1" fovy="50"/>
+  </worldbody>
+  <keyframe>
+    <key name="task_start"
+         qpos="0 0 0.27 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
+         ctrl="0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"/>
+  </keyframe>
+</mujoco>

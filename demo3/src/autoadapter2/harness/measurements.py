@@ -251,6 +251,26 @@ def measure(
             if _distance(position[:2], points[completed]) <= tolerance:
                 completed += 1
         return completed / len(points)
+    if kind == "ordered_body_waypoint_completion_time":
+        name = str(parameters["body_name"])
+        waypoints = parameters.get("waypoints")
+        if not isinstance(waypoints, Sequence) or isinstance(waypoints, (str, bytes)):
+            raise MeasurementError("ordered waypoint time requires waypoints")
+        points = [_vector(point, size=2) for point in waypoints]
+        if not points:
+            raise MeasurementError("ordered waypoint time requires waypoints")
+        tolerance = float(parameters["tolerance"])
+        if not math.isfinite(tolerance) or tolerance <= 0.0:
+            raise MeasurementError("ordered waypoint tolerance must be positive")
+        times = _sample_times(samples)
+        completed = 0
+        for index, sample in enumerate(samples):
+            position = _body_position(sample, name)
+            if _distance(position[:2], points[completed]) <= tolerance:
+                completed += 1
+                if completed == len(points):
+                    return times[index] - times[0]
+        raise MeasurementError("ordered waypoints were not completed")
     if kind == "ordered_body_axis_gate_completion_ratio":
         name = str(parameters["body_name"])
         gates = parameters.get("gates")

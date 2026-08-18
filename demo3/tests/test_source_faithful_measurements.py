@@ -209,6 +209,32 @@ def test_ordered_axis_gates_require_the_source_order() -> None:
     assert measure(binding, evidence=evidence, public_arguments={}) == 0.5
 
 
+def test_ordered_body_waypoint_completion_time_uses_first_complete_sample() -> None:
+    binding = {
+        "kind": "ordered_body_waypoint_completion_time",
+        "parameters": {
+            "body_name": "base_link",
+            "waypoints": [[1.0, 0.0], [2.0, 0.0]],
+            "tolerance": 0.15,
+        },
+    }
+    evidence = {
+        "samples": [
+            _body_sample(0.0, [0.0, 0.0, 0.3]),
+            _body_sample(1.5, [1.0, 0.0, 0.3]),
+            _body_sample(3.25, [2.0, 0.0, 0.3]),
+            _body_sample(4.0, [2.4, 0.0, 0.3]),
+        ]
+    }
+    assert measure(binding, evidence=evidence, public_arguments={}) == 3.25
+    with pytest.raises(MeasurementError, match="were not completed"):
+        measure(
+            binding,
+            evidence={"samples": evidence["samples"][:2]},
+            public_arguments={},
+        )
+
+
 def test_point_clearance_checks_the_whole_trajectory() -> None:
     evidence = {
         "samples": [

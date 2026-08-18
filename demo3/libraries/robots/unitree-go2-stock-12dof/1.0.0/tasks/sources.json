@@ -12,7 +12,7 @@
       "specific_reference": "Mechanical Specifications and Performance Parameters tables: 12 knee joint motors, standing and crouching dimensions, nominal body weight, maximum climb/drop height, and maximum climb angle."
     },
     {
-      "source_id": "SRC-HOELLER-2020",
+      "source_id": "SRC-LEE-2020",
       "title": "Learning Quadrupedal Locomotion over Challenging Terrain",
       "organization": "Science Robotics",
       "version_or_date": "2020, Science Robotics 5(47), eabc5986; DOI 10.1126/scirobotics.abc5986",
@@ -50,6 +50,14 @@
       "version_or_date": "2023-05-24, arXiv:2305.14654v1",
       "locator": "https://arxiv.org/abs/2305.14654v1",
       "specific_reference": "Section III, Table I, Fig. 2, and Appendix B-C: 1 x 1 x 0.1 m pause tables, five weave poles spaced 0.5-0.8 m with 0.1 m torso clearance, a 30 degree 1 m-high A-frame, and a 0.5 x 1 m broad-jump board that must not be touched; full-course score and 10.64 s allotted time; a valid run ends with 5 s standing on the end table."
+    },
+    {
+      "source_id": "SRC-ANYMAL-2016",
+      "title": "ANYmal - a Highly Mobile and Dynamic Quadrupedal Robot",
+      "organization": "IEEE/RSJ International Conference on Intelligent Robots and Systems",
+      "version_or_date": "2016; DOI 10.1109/IROS.2016.7758092",
+      "locator": "https://doi.org/10.1109/IROS.2016.7758092",
+      "specific_reference": "Abstract and platform description: the source ANYmal platform is 0.5 m tall. This dimension is used only to make the recorded 0.54 morphology scale conversion to the Go2 package's 0.27 m nominal base height."
     },
     {
       "source_id": "SRC-MENAGERIE-GO2",
