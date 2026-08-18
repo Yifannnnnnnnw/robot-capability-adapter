@@ -23,7 +23,7 @@ def check_environment() -> dict[str, Any]:
         import numpy
     except Exception as exc:
         raise EnvironmentError(f"cannot import declared runtime: {type(exc).__name__}: {exc}") from exc
-    expected = {"mujoco": "3.9.0", "numpy": "2.4.6"}
+    expected = {"mujoco": "3.3.6", "numpy": "2.4.6"}
     actual = {"mujoco": mujoco.__version__, "numpy": numpy.__version__}
     for name, version in expected.items():
         if actual[name] != version:

@@ -36,7 +36,7 @@ pre-submission checks do not consume one of the three Harness attempts.
 
 ## Environment
 
-Demo3 pins Python 3.11.9 through `.python-version`, and MuJoCo 3.9.0, NumPy
+Demo3 pins Python 3.11.9 through `.python-version`, and MuJoCo 3.3.6, NumPy
 2.4.6, and pytest 9.1.1 in `pyproject.toml`. `pyenv`, `ffmpeg`, and `ffprobe`
 are the required system tools. Using `pyenv exec` makes the selected Python
 independent of shell shim initialization.
