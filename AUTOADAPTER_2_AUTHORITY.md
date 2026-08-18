@@ -4,7 +4,7 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.18.12`<br>
+> **Document revision / 文档版本：** `0.18.13`<br>
 > **Effective date / 生效日期：** 2026-08-18<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
 
@@ -82,9 +82,16 @@ Synthesis. STUDY, GENERATE/GEN_ALGO, and Repair are bounded multi-turn ReAct pha
 model can inspect public files, run public-only Python/MuJoCo probes, write and revise its own
 candidate, and react to source-audit, import, and public smoke diagnostics before explicitly
 submitting a formal driver attempt. A one-shot model response followed immediately by Framework
-submission is not the mainline Driver Synthesis path. The Framework exposes the sealed Capability
-Design and diagnostics but does not generate a Python interface stub, method scaffold, dispatch, or
-candidate source for the model.
+submission is not the mainline Driver Synthesis path.
+
+Revision `0.18.13` permits one mechanical interface-only starting stub derived from the sealed
+Capability Design. The same stub is supplied to both generation conditions and may contain only a
+generic driver class, `build(model, data)`, each exact model-authored capability name, the
+`(self, request)` ABI, and `NotImplementedError` bodies. It contains no task dispatch, controller,
+actuator mapping, state target, control value, physics step, skeleton choice, or reference-derived
+logic. The model must replace the placeholder bodies with its own executable implementation before
+explicit submission; the stub is not a submitted attempt and cannot satisfy source audit or public
+physics smoke by itself.
 
 **中文辅助说明。** 本次修订构成项目方向的实质性变更。它取代此前“首个正式双机器人路径
 必须经过真实 SDK 和 SDK 专属 Translation Layer 执行”的规则。AutoAdapter 2.0 的默认实验
@@ -140,8 +147,14 @@ condition 枚举和公开 `request` 信封；生成 capability 必须是 `build(
 GENERATE/GEN_ALGO 和 Repair 都是有预算的多轮 ReAct phase；模型可以读取公开文件、运行仅含
 公开输入的 Python/MuJoCo probe、编写并反复修改自己的 candidate，并在明确提交正式 driver
 attempt 前根据 source audit、import 和公开 smoke 诊断自行修正。一次模型调用直接输出代码并由
-Framework 立即提交，不再是主线 Driver Synthesis。Framework 只提供已封存 Capability Design
-和诊断，不为模型生成 Python interface stub、method scaffold、dispatch 或 candidate 源码。
+Framework 立即提交，不再是主线 Driver Synthesis。
+
+`0.18.13` 允许 Framework 根据已封存 Capability Design 机械生成一份纯接口起始 stub，并向
+两种生成条件提供完全相同的版本。stub 只能包含通用 driver class、`build(model, data)`、每个
+模型设计的准确 capability 名称、`(self, request)` ABI 和 `NotImplementedError` 占位体；不得
+包含 task dispatch、controller、actuator mapping、状态目标、控制值、physics step、skeleton
+选择或任何 reference 派生逻辑。模型必须在明确提交前把占位体替换成自己创作的可执行实现；stub
+本身不是正式 attempt，也不能独自通过 source audit 或公开 physics smoke。
 
 **中文摘要。** 新主线研究模型能否先根据 Morphology、至少二十项有来源任务及通过标准和
 Experience，自主归纳五至十项 capability 及 validation contract，再分别在可信 skeleton 辅助
@@ -783,10 +796,14 @@ it can revise the candidate before submission. The Framework counts a formal att
 model explicitly submits `driver.py`; development rewrites and rejected pre-submission audits do not
 consume one of the three Harness attempts.
 
-The Framework may mechanically report the exact method names and `(self, request)` ABI already
-present in the sealed Capability Design, but it must not pre-write an interface stub, candidate
-class, method body, task dispatch, or other candidate source. The model remains the sole author of
-the submitted executable in both conditions.
+The Framework mechanically generates the same interface-only starting stub for both conditions
+from the sealed Capability Design. It may contain only a generic candidate class,
+`build(model, data)`, every exact capability method with `(self, request)`, and placeholder bodies
+that raise `NotImplementedError`. It must not contain task dispatch, control implementation,
+actuator mapping, state targets, control values, physics stepping, a selected skeleton, or any
+reference-derived logic. The model may inspect and edit or replace this stub, and remains the sole
+author of the executable implementation submitted in both conditions. An unchanged or partially
+implemented stub is rejected before Harness submission.
 
 The conditions differ only in implementation assistance:
 
@@ -838,9 +855,12 @@ STUDY 与 GENERATE/GEN_ALGO 必须通过 Demo3 自包含的 AutoAdapter 1.0 式 
 只有模型明确提交 `driver.py` 后，Framework 才计入一次正式 attempt；开发过程中的改写和未通过的
 提交前 audit 不消耗最多三次 Harness attempt。
 
-Framework 可以机械报告已封存 Capability Design 中本来就公开的准确 method name 和
-`(self, request)` ABI，但不得预写 interface stub、candidate class、method body、task dispatch 或
-其他 candidate source。两种条件中提交的 executable 都必须完全由模型创作。
+Framework 根据已封存 Capability Design 为两种条件机械生成完全相同的纯接口起始 stub。它只能
+包含通用 candidate class、`build(model, data)`、每个准确 capability method 的
+`(self, request)` 和抛出 `NotImplementedError` 的占位体；不得包含 task dispatch、控制实现、
+actuator mapping、状态目标、控制值、physics step、选定 skeleton 或任何 reference 派生逻辑。
+模型可以检查、修改或完全替换该 stub，并且仍是两种条件最终提交的 executable implementation
+的唯一作者。未修改或未完整实现的 stub 必须在进入 Harness 前被拒绝。
 
 两种条件仅在实现辅助上不同：
 
