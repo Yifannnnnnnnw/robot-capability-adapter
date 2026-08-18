@@ -207,7 +207,6 @@ class PublicDevelopmentSession:
             )
         self._probe_calls += 1
         request = {"probe_id": probe_id, "script": script}
-        self.probe_requests.append(request)
         result = run_probes(
             (request,),
             package=self.package,
@@ -217,6 +216,7 @@ class PublicDevelopmentSession:
             source_root=self.source_root,
             candidate_source=candidate_source,
         )[0]
+        self.probe_requests.append(request)
         result = dict(result)
         self.probe_results.append(result)
         return result

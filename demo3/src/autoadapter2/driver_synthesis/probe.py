@@ -39,7 +39,7 @@ class ProbeSourceError(ProbeError):
 class ProbeBudget:
     """Hard limits shared by one condition's local probe batch."""
 
-    max_requests: int = 4
+    max_requests: int = 12
     timeout_s: float = 30.0
     max_output_chars: int = 24000
     max_steps: int = 4000
