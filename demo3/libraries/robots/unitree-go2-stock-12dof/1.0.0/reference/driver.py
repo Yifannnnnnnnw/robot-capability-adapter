@@ -11,6 +11,7 @@ actuator commands to ``data.ctrl`` and advances the supplied session with
 from __future__ import annotations
 
 import math
+from collections import namedtuple
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -20,6 +21,39 @@ import numpy as np
 
 _MODEL_LEG_ORDER = ("FR", "FL", "RR", "RL")
 _HOME = np.asarray([0.0, 0.9, -1.8] * 4, dtype=float)
+
+
+_GaitPreset = namedtuple(
+    "_GaitPreset",
+    (
+        "swing_thigh",
+        "swing_calf",
+        "stance_thigh",
+        "stance_calf",
+        "hip_delta",
+        "hip_offset",
+        "period_s",
+    ),
+    defaults=(0.25,),
+)
+
+
+# Source protocol order: 0, 45, 90, 135, 180, -135, -90, -45 degrees.
+_DIRECTIONAL_GAITS = (
+    _GaitPreset(1.00, -1.35, -0.55, -1.95, -0.10, 0.05),
+    _GaitPreset(1.00, -1.70, -1.70, -1.80, 0.24, 0.00),
+    _GaitPreset(1.00, -1.70, -1.70, -1.80, 0.08, 0.00),
+    _GaitPreset(0.35, -1.50, 0.85, -1.70, 0.25, -0.10),
+    _GaitPreset(-0.40, -1.45, 0.70, -2.00, 0.35, -0.10),
+    _GaitPreset(0.60, -1.05, 0.55, -1.60, 0.15, 0.15),
+    _GaitPreset(0.65, -1.55, 0.15, -1.85, 0.25, 0.10, period_s=0.20),
+    _GaitPreset(-1.15, -1.90, 0.90, -1.65, 0.15, 0.00),
+)
+
+
+def _directional_gait(direction_rad: float) -> _GaitPreset:
+    octant = int(math.floor(direction_rad / (math.pi / 4.0) + 0.5)) % 8
+    return _DIRECTIONAL_GAITS[octant]
 
 
 def _request(value: Any) -> dict[str, Any]:
@@ -130,11 +164,22 @@ class ReferenceGo2Driver:
         mode: str,
         hip_bias: float = 0.0,
         turn_pattern: Sequence[float] | None = None,
+        directional_preset: _GaitPreset | None = None,
     ) -> np.ndarray:
         target = np.zeros(12, dtype=float)
         for leg_index, phase_offset in enumerate((0.5, 0.0, 0.0, 0.5)):
             leg_phase = (phase + phase_offset) % 1.0
-            if mode == "backward":
+            swing = leg_phase < 0.4
+            if directional_preset is not None:
+                if swing:
+                    thigh = directional_preset.swing_thigh
+                    calf = directional_preset.swing_calf
+                    hip = directional_preset.hip_offset + directional_preset.hip_delta
+                else:
+                    thigh = directional_preset.stance_thigh
+                    calf = directional_preset.stance_calf
+                    hip = directional_preset.hip_offset - directional_preset.hip_delta
+            elif mode == "backward":
                 swing_thigh, swing_calf = 1.3, -1.3
                 stance_thigh, stance_calf = 0.5, -1.8
             elif mode == "clearance":
@@ -143,13 +188,14 @@ class ReferenceGo2Driver:
             else:
                 swing_thigh, swing_calf = 1.0, -1.7
                 stance_thigh, stance_calf = -1.7, -1.8
-            if leg_phase < 0.4:
-                thigh, calf = swing_thigh, swing_calf
-            else:
-                thigh, calf = stance_thigh, stance_calf
-            hip = hip_bias
-            if turn_pattern is not None:
-                hip = float(turn_pattern[leg_index])
+            if directional_preset is None:
+                if swing:
+                    thigh, calf = swing_thigh, swing_calf
+                else:
+                    thigh, calf = stance_thigh, stance_calf
+                hip = hip_bias
+                if turn_pattern is not None:
+                    hip = float(turn_pattern[leg_index])
             target[3 * leg_index : 3 * leg_index + 3] = (hip, thigh, calf)
         return target
 
@@ -160,9 +206,17 @@ class ReferenceGo2Driver:
         mode: str = "forward",
         hip_bias: float = 0.0,
         turn_pattern: Sequence[float] | None = None,
+        direction_rad: float | None = None,
     ) -> None:
         steps = self._steps(duration_s)
-        period_s = 0.25
+        directional_preset = (
+            _directional_gait(direction_rad) if direction_rad is not None else None
+        )
+        period_s = (
+            directional_preset.period_s
+            if directional_preset is not None
+            else 0.25
+        )
         timestep = float(self.model.opt.timestep)
         for index in range(steps):
             phase = ((index * timestep) % period_s) / period_s
@@ -172,6 +226,7 @@ class ReferenceGo2Driver:
                     mode=mode,
                     hip_bias=hip_bias,
                     turn_pattern=turn_pattern,
+                    directional_preset=directional_preset,
                 )
             )
             mujoco.mj_step(self.model, self.data)
@@ -197,7 +252,11 @@ class ReferenceGo2Driver:
 
     def walk_forward(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 1.0), mode="forward")
+        self._gait(
+            _number(parameters, "duration_s", 1.0),
+            mode="forward",
+            direction_rad=_number(parameters, "direction_rad", 0.0),
+        )
 
     def walk_backward(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)

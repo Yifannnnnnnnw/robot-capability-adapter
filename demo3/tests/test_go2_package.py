@@ -367,55 +367,71 @@ def test_go2_forward_reference_exercises_ctrl_step_and_direction_measurement() -
     spec.loader.exec_module(module)
 
     scene = package.root / "assets" / "lee_flat.xml"
-    model = mujoco.MjModel.from_xml_path(str(scene))
-    data = mujoco.MjData(model)
-    apply_framework_reset(
-        mujoco, model, data, {"kind": "keyframe", "name": "task_start"}
+    directions = (
+        0.0,
+        math.pi / 4.0,
+        math.pi / 2.0,
+        3.0 * math.pi / 4.0,
+        math.pi,
+        -3.0 * math.pi / 4.0,
+        -math.pi / 2.0,
+        -math.pi / 4.0,
     )
-    tracker = TrackedMuJoCoSession(
-        mujoco=mujoco,
-        model=model,
-        data=data,
-        max_steps=1500,
-        max_sim_time_s=4.0,
-        sample_hz=20.0,
-    )
-    request = {
-        "task_id": "GO2-T01",
-        "task_parameters": {
-            "duration_s": 2.0,
-            "target_speed_m_s": 0.4,
-            "direction_rad": 0.0,
-        },
-    }
-    with tracker:
-        module.build(model=model, data=data).walk_forward(request)
-        tracker.finish()
-    evidence = tracker.evidence()
-    speed = measure(
-        {
-            "kind": "mean_body_planar_speed",
-            "parameters": {"body_name": "base_link"},
-        },
-        evidence=evidence,
-        public_arguments={"request": request},
-    )
-    heading_error = measure(
-        {
-            "kind": "mean_body_heading_error_deg",
-            "parameters": {
-                "body_name": "base_link",
-                "direction_argument": "request.task_parameters.direction_rad",
-                "minimum_displacement": 0.1,
+    for direction in directions:
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        data = mujoco.MjData(model)
+        base_id = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_BODY, "base_link"
+        )
+        apply_framework_reset(
+            mujoco, model, data, {"kind": "keyframe", "name": "task_start"}
+        )
+        tracker = TrackedMuJoCoSession(
+            mujoco=mujoco,
+            model=model,
+            data=data,
+            max_steps=1500,
+            max_sim_time_s=4.0,
+            sample_hz=20.0,
+        )
+        request = {
+            "task_id": "GO2-T01",
+            "task_parameters": {
+                "duration_s": 2.0,
+                "target_speed_m_s": 0.4,
+                "direction_rad": direction,
             },
-        },
-        evidence=evidence,
-        public_arguments={"request": request},
-    )
+        }
+        with tracker:
+            module.build(model=model, data=data).walk_forward(request)
+            tracker.finish()
+        evidence = tracker.evidence()
+        speed = measure(
+            {
+                "kind": "mean_body_planar_speed",
+                "parameters": {"body_name": "base_link"},
+            },
+            evidence=evidence,
+            public_arguments={"request": request},
+        )
+        heading_error = measure(
+            {
+                "kind": "mean_body_heading_error_deg",
+                "parameters": {
+                    "body_name": "base_link",
+                    "direction_argument": "request.task_parameters.direction_rad",
+                    "minimum_displacement": 0.1,
+                },
+            },
+            evidence=evidence,
+            public_arguments={"request": request},
+        )
 
-    assert speed >= 0.4
-    assert heading_error <= 10.0
-    assert evidence["step_count"] > 0
-    assert evidence["ctrl_observed_before_step"]
-    assert evidence["ctrl_changed_from_reset"]
-    assert not evidence["direct_state_write_detected"]
+        assert speed >= 0.4, direction
+        assert heading_error <= 10.0, direction
+        assert data.xpos[base_id, 2] >= 0.20
+        assert data.xmat[base_id, 8] >= 0.70
+        assert evidence["step_count"] > 0
+        assert evidence["ctrl_observed_before_step"]
+        assert evidence["ctrl_changed_from_reset"]
+        assert not evidence["direct_state_write_detected"]
