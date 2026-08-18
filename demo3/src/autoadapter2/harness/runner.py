@@ -161,6 +161,14 @@ def run_private_suite(
         binding = private_bindings[str(case["binding_id"])]
         guards = [private_guards[str(guard_id)] for guard_id in case["guard_ids"]]
         repetitions = int(case["repetitions"])
+        repetition_variants = instance.get("repetition_variants")
+        if repetition_variants is not None and (
+            not isinstance(repetition_variants, list)
+            or len(repetition_variants) != repetitions
+        ):
+            raise HarnessError(
+                "private repetition variants must contain one entry per repetition"
+            )
         scene_relative = str(instance.get("scene_entrypoint", package.morphology["mjcf_entrypoint"]))
         scene_path = (package.root / scene_relative).resolve()
         try:
@@ -168,6 +176,17 @@ def run_private_suite(
         except ValueError as exc:
             raise HarnessError("private instance scene escapes package assets") from exc
         for repetition in range(repetitions):
+            variant = (
+                repetition_variants[repetition]
+                if isinstance(repetition_variants, list)
+                else {}
+            )
+            if not isinstance(variant, Mapping):
+                raise HarnessError("private repetition variant must be an object")
+            public_arguments = variant.get(
+                "public_arguments", instance.get("public_arguments", {})
+            )
+            reset = variant.get("reset", instance.get("reset", {"kind": "default"}))
             trial_id = f"{case['case_id']}-r{repetition:02d}"
             video_path = destination / "videos" / f"{trial_id}.mp4"
             video_path.parent.mkdir(parents=True, exist_ok=True)
@@ -175,8 +194,8 @@ def run_private_suite(
                 "scene_path": str(scene_path),
                 "capability_methods": capability_methods,
                 "method_name": case["method_name"],
-                "public_arguments": instance.get("public_arguments", {}),
-                "reset": instance.get("reset", {"kind": "default"}),
+                "public_arguments": public_arguments,
+                "reset": reset,
                 "max_steps": int(instance.get("max_steps", 10000)),
                 "max_sim_time_s": float(case["timeout_sim_s"]),
                 "sample_hz": float(
@@ -226,7 +245,7 @@ def run_private_suite(
                         binding,
                         criterion=criterion,
                         evidence=worker["physical_evidence"],
-                        public_arguments=instance.get("public_arguments", {}),
+                        public_arguments=public_arguments,
                     )
                     measurement_value = temporal_evidence.get("value")
                     temporal_passed = bool(temporal_evidence.get("passed"))
@@ -278,7 +297,7 @@ def run_private_suite(
                     "source_clause_id": case["source_clause_id"],
                     "worker_completed": bool(worker.get("worker_completed")),
                     "method_invoked": bool(worker.get("method_invoked")),
-                    "public_arguments": instance.get("public_arguments", {}),
+                    "public_arguments": public_arguments,
                     "measurement_value": measurement_value,
                     "measurement_error": measurement_error,
                     "criterion_passed": False,

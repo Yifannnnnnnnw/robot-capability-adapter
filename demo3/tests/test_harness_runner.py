@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import json
+import math
 import tempfile
 import textwrap
 import unittest
 from pathlib import Path
 from unittest import mock
 
+import mujoco
+
 from autoadapter2.harness import run_private_suite
 from autoadapter2.harness import runner as harness_runner
+from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.libraries import RobotPackage
 
 
@@ -320,6 +324,98 @@ class HarnessRunnerTests(unittest.TestCase):
         self.assertTrue(report["validation_passed"])
         self.assertAlmostEqual(report["trials"][0]["aggregation_value"], 0.1)
         self.assertTrue(all(trial["trial_passed"] for trial in report["trials"]))
+
+    def test_repetition_variants_drive_each_worker_and_measurement(self) -> None:
+        instances_path = self.package.private_dir / "instances.json"
+        instances = json.loads(instances_path.read_text(encoding="utf-8"))
+        instance = instances["instances"][0]
+        instance["repetitions"] = 2
+        instance["repetition_variants"] = [
+            {
+                "public_arguments": {
+                    "request": {
+                        "task_id": "task-1",
+                        "task_parameters": {"target": 0.1},
+                    }
+                }
+            },
+            {
+                "public_arguments": {
+                    "request": {
+                        "task_id": "task-1",
+                        "task_parameters": {"target": 0.2},
+                    }
+                }
+            },
+        ]
+        _write(instances_path, instances)
+        suite = self._suite_with_criterion(
+            {
+                "comparator": "<=",
+                "threshold": 0.0,
+                "temporal": {"kind": "terminal_state"},
+                "aggregation": {"kind": "per_trial_mean"},
+            }
+        )
+        suite["cases"][0]["repetitions"] = 2
+        workers = [
+            self._worker_result(
+                [{"time": 0.0, "joint_positions": {"shoulder_pan": target}}]
+            )
+            for target in (0.1, 0.2)
+        ]
+
+        with mock.patch.object(
+            harness_runner, "_run_worker", side_effect=workers
+        ) as run_worker:
+            report = run_private_suite(
+                package=self.package,
+                design=self.design,
+                suite=suite,
+                driver_path=self.candidate,
+                condition="from-scratch",
+                output_dir=Path(self.temporary.name) / "evidence-variants",
+                record_video=False,
+            )
+
+        targets = [
+            call.args[0]["public_arguments"]["request"]["task_parameters"]["target"]
+            for call in run_worker.call_args_list
+        ]
+        self.assertEqual(targets, [0.1, 0.2])
+        self.assertEqual(
+            [
+                trial["public_arguments"]["request"]["task_parameters"]["target"]
+                for trial in report["trials"]
+            ],
+            [0.1, 0.2],
+        )
+        self.assertTrue(report["validation_passed"])
+
+    def test_framework_reset_rotates_a_private_static_terrain(self) -> None:
+        model = mujoco.MjModel.from_xml_string(
+            """<mujoco><worldbody>
+  <body name="terrain"><geom name="marker" type="sphere" pos="1 0 0" size="0.01"/></body>
+</worldbody></mujoco>"""
+        )
+        data = mujoco.MjData(model)
+        half_angle = math.pi / 4.0
+
+        apply_framework_reset(
+            mujoco,
+            model,
+            data,
+            {
+                "kind": "default",
+                "body_quaternions": {
+                    "terrain": [math.cos(half_angle), 0.0, 0.0, math.sin(half_angle)]
+                },
+            },
+        )
+
+        marker_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "marker")
+        self.assertAlmostEqual(float(data.geom_xpos[marker_id, 0]), 0.0, places=7)
+        self.assertAlmostEqual(float(data.geom_xpos[marker_id, 1]), 1.0, places=7)
 
     def test_physical_execution_requires_clean_canonical_stepped_trials(self) -> None:
         base_samples = [{"time": 0.0, "joint_positions": {"shoulder_pan": 0.2}}]

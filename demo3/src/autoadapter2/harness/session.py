@@ -54,6 +54,15 @@ def apply_framework_reset(
     for name, value in definition.get("actuator_controls", {}).items():
         actuator_id = _name_id(mujoco, model, mujoco.mjtObj.mjOBJ_ACTUATOR, str(name))
         data.ctrl[actuator_id] = float(value)
+    for name, values in definition.get("body_quaternions", {}).items():
+        body_id = _name_id(mujoco, model, mujoco.mjtObj.mjOBJ_BODY, str(name))
+        quaternion = [float(value) for value in values]
+        if len(quaternion) != 4 or not all(math.isfinite(value) for value in quaternion):
+            raise ValueError("reset body quaternion must contain four finite values")
+        norm = math.sqrt(sum(value * value for value in quaternion))
+        if not math.isclose(norm, 1.0, rel_tol=0.0, abs_tol=1e-6):
+            raise ValueError("reset body quaternion must be normalized")
+        model.body_quat[body_id] = quaternion
     mujoco.mj_forward(model, data)
 
 

@@ -222,6 +222,41 @@ class RobotPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(RobotPackageError, "pin a GitHub revision"):
             load_robot_package(self.root)
 
+    def test_repetition_variants_must_match_repetitions(self) -> None:
+        instances_path = self.root / "tasks" / "private" / "instances.json"
+        document = json.loads(instances_path.read_text(encoding="utf-8"))
+        instance = document["instances"][0]
+        instance["repetitions"] = 2
+        instance["repetition_variants"] = [
+            {
+                "public_arguments": {
+                    "request": {
+                        "task_id": "task-00",
+                        "task_parameters": {"target": [0.1, 0.0, 0.0]},
+                    }
+                },
+                "reset": {
+                    "kind": "default",
+                    "body_quaternions": {"terrain": [1.0, 0.0, 0.0, 0.0]},
+                },
+            },
+            {
+                "public_arguments": {
+                    "request": {
+                        "task_id": "task-00",
+                        "task_parameters": {"target": [0.2, 0.0, 0.0]},
+                    }
+                }
+            },
+        ]
+        _write_json(instances_path, document)
+        self.assertEqual(load_robot_package(self.root).robot_configuration_id, "example-arm")
+
+        instance["repetition_variants"].pop()
+        _write_json(instances_path, document)
+        with self.assertRaisesRegex(RobotPackageError, "one entry per repetition"):
+            load_robot_package(self.root)
+
     def test_only_explicit_index_entry_is_runnable(self) -> None:
         demo_root = Path(self.temporary.name) / "demo3"
         indexed = demo_root / "libraries" / "robots" / "example" / "1.0.0"

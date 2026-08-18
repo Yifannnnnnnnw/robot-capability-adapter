@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ _SUPPORTED_BINDING_KINDS = {
     "minimum_body_height",
     "body_planar_displacement",
     "body_axis_displacement",
+    "body_directional_displacement",
     "mean_body_planar_speed",
     "body_yaw_change_deg",
     "mean_body_heading_error_deg",
@@ -408,6 +410,58 @@ def _validate_private_inputs(
         guards[guard_id] = guard
 
     tasks_by_id = {str(task["task_id"]): task for task in tasks}
+
+    def validate_public_arguments(
+        public_arguments: Any,
+        *,
+        task_id: str,
+        where: str,
+    ) -> None:
+        if not isinstance(public_arguments, dict) or set(public_arguments) != {"request"}:
+            raise RobotPackageError(f"{where} must contain only request")
+        request = public_arguments.get("request")
+        if not isinstance(request, dict) or request.get("task_id") != task_id:
+            raise RobotPackageError(f"{where}.request has the wrong task_id")
+        parameters = request.get("task_parameters")
+        if not isinstance(parameters, dict):
+            raise RobotPackageError(f"{where}.request.task_parameters must be an object")
+        schema_parameters = tasks_by_id[task_id]["invocation_schema"]["request"][
+            "task_parameters"
+        ]
+        missing_parameters = set(schema_parameters["required"]) - set(parameters)
+        if missing_parameters:
+            raise RobotPackageError(
+                f"{where}.request.task_parameters misses {sorted(missing_parameters)}"
+            )
+
+    def validate_reset(reset: Any, *, where: str) -> None:
+        if not isinstance(reset, dict) or reset.get("kind") not in {"default", "keyframe"}:
+            raise RobotPackageError(f"{where} must select a supported Framework reset")
+        quaternions = reset.get("body_quaternions", {})
+        if not isinstance(quaternions, dict):
+            raise RobotPackageError(f"{where}.body_quaternions must be an object")
+        for body_name, quaternion in quaternions.items():
+            if not isinstance(body_name, str) or not body_name.strip():
+                raise RobotPackageError(f"{where}.body_quaternions has an invalid body name")
+            if (
+                not isinstance(quaternion, list)
+                or len(quaternion) != 4
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(float(value))
+                    for value in quaternion
+                )
+            ):
+                raise RobotPackageError(
+                    f"{where}.body_quaternions.{body_name} must be four finite numbers"
+                )
+            norm = math.sqrt(sum(float(value) ** 2 for value in quaternion))
+            if not math.isclose(norm, 1.0, rel_tol=0.0, abs_tol=1e-6):
+                raise RobotPackageError(
+                    f"{where}.body_quaternions.{body_name} must be normalized"
+                )
+
     instance_values = _required_list(
         documents["instances"], "instances", where="instances.json"
     )
@@ -429,27 +483,13 @@ def _validate_private_inputs(
         instance_ids.add(instance_id)
         covered_tasks.add(task_id)
 
-        public_arguments = instance.get("public_arguments")
-        if not isinstance(public_arguments, dict) or set(public_arguments) != {"request"}:
-            raise RobotPackageError(f"{where}.public_arguments must contain only request")
-        request = public_arguments.get("request")
-        if not isinstance(request, dict) or request.get("task_id") != task_id:
-            raise RobotPackageError(f"{where}.public_arguments.request has the wrong task_id")
-        parameters = request.get("task_parameters")
-        if not isinstance(parameters, dict):
-            raise RobotPackageError(f"{where}.request.task_parameters must be an object")
-        schema_parameters = tasks_by_id[task_id]["invocation_schema"]["request"][
-            "task_parameters"
-        ]
-        missing_parameters = set(schema_parameters["required"]) - set(parameters)
-        if missing_parameters:
-            raise RobotPackageError(
-                f"{where}.request.task_parameters misses {sorted(missing_parameters)}"
-            )
+        validate_public_arguments(
+            instance.get("public_arguments"),
+            task_id=task_id,
+            where=f"{where}.public_arguments",
+        )
 
-        reset = instance.get("reset")
-        if not isinstance(reset, dict) or reset.get("kind") not in {"default", "keyframe"}:
-            raise RobotPackageError(f"{where}.reset must select a supported Framework reset")
+        validate_reset(instance.get("reset"), where=f"{where}.reset")
         clause_bindings = instance.get("clause_bindings")
         if not isinstance(clause_bindings, dict):
             raise RobotPackageError(f"{where}.clause_bindings must be an object")
@@ -479,6 +519,28 @@ def _validate_private_inputs(
         max_steps = instance.get("max_steps")
         if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 1:
             raise RobotPackageError(f"{where}.repetitions must be a positive integer")
+        repetition_variants = instance.get("repetition_variants")
+        if repetition_variants is not None:
+            if not isinstance(repetition_variants, list) or len(repetition_variants) != repetitions:
+                raise RobotPackageError(
+                    f"{where}.repetition_variants must contain one entry per repetition"
+                )
+            for variant_index, variant in enumerate(repetition_variants):
+                variant_where = f"{where}.repetition_variants[{variant_index}]"
+                if not isinstance(variant, dict) or not variant:
+                    raise RobotPackageError(f"{variant_where} must be a non-empty object")
+                if not set(variant) <= {"public_arguments", "reset"}:
+                    raise RobotPackageError(
+                        f"{variant_where} may contain only public_arguments and reset"
+                    )
+                if "public_arguments" in variant:
+                    validate_public_arguments(
+                        variant["public_arguments"],
+                        task_id=task_id,
+                        where=f"{variant_where}.public_arguments",
+                    )
+                if "reset" in variant:
+                    validate_reset(variant["reset"], where=f"{variant_where}.reset")
         if (
             isinstance(timeout_sim_s, bool)
             or not isinstance(timeout_sim_s, (int, float))

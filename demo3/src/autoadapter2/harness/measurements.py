@@ -170,6 +170,17 @@ def measure(
         start = _body_position(first, str(parameters["body_name"]))
         end = _body_position(final, str(parameters["body_name"]))
         return end[axis] - start[axis]
+    if kind == "body_directional_displacement":
+        start = _body_position(first, str(parameters["body_name"]))
+        end = _body_position(final, str(parameters["body_name"]))
+        direction = float(
+            _argument(public_arguments, str(parameters["direction_argument"]))
+        )
+        if not math.isfinite(direction):
+            raise MeasurementError("body displacement direction must be finite")
+        return (end[0] - start[0]) * math.cos(direction) + (
+            end[1] - start[1]
+        ) * math.sin(direction)
     if kind == "mean_body_planar_speed":
         start = _body_position(first, str(parameters["body_name"]))
         end = _body_position(final, str(parameters["body_name"]))

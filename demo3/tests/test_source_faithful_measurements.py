@@ -116,6 +116,38 @@ def test_heading_error_uses_commanded_world_direction() -> None:
     assert value == pytest.approx(0.0)
 
 
+def test_directional_displacement_projects_onto_each_command() -> None:
+    evidence = {
+        "samples": [
+            _body_sample(0.0, [0.0, 0.0, 0.3]),
+            _body_sample(1.0, [-3.0, 4.0, 0.3]),
+        ]
+    }
+    binding = {
+        "kind": "body_directional_displacement",
+        "parameters": {
+            "body_name": "base_link",
+            "direction_argument": "request.task_parameters.direction_rad",
+        },
+    }
+    backward = measure(
+        binding,
+        evidence=evidence,
+        public_arguments={
+            "request": {"task_parameters": {"direction_rad": math.pi}}
+        },
+    )
+    lateral = measure(
+        binding,
+        evidence=evidence,
+        public_arguments={
+            "request": {"task_parameters": {"direction_rad": math.pi / 2.0}}
+        },
+    )
+    assert backward == pytest.approx(3.0)
+    assert lateral == pytest.approx(4.0)
+
+
 def test_step_completion_requires_all_four_feet_past_finish() -> None:
     binding = {
         "kind": "named_bodies_axis_completion",
