@@ -11,6 +11,8 @@ from typing import Any
 from autoadapter2.react import ReactLoopError, run_react
 
 from .generation import (
+    DRIVER_REACT_MAX_TOOL_CALLS,
+    DRIVER_REACT_MAX_TURNS,
     DriverSourceAuditError,
     GenerationCondition,
     GenerationError,
@@ -79,8 +81,10 @@ private suite construction, reference code, the other condition, or a final Harn
 
 REPAIR_REACT_TASK = """Repair the previous driver interactively from the supplied report. Read the
 current driver, write the revised complete source, react to tool diagnostics, and successfully smoke
-every sealed capability on the current revision before submit_driver. Do not merely print or return
-source in a JSON answer."""
+every sealed capability on the current revision before submit_driver. Make one coherent revision
+before broad smoke testing because every later write invalidates all earlier capability smokes. The
+development session reserves enough remaining probe calls for one smoke of every still-missing
+capability. Do not merely print or return source in a JSON answer."""
 
 
 _PRIVATE_DEFINITION_KEYS = frozenset(
@@ -504,8 +508,8 @@ def _interactive_repair(
             system_prompt=REPAIR_REACT_SYSTEM,
             user_prompt=_react_user_prompt(REPAIR_REACT_TASK, repair_inputs),
             tools=session.driver_tools(),
-            max_turns=24,
-            max_tool_calls=72,
+            max_turns=DRIVER_REACT_MAX_TURNS,
+            max_tool_calls=DRIVER_REACT_MAX_TOOL_CALLS,
         )
     except ReactLoopError as exc:
         raise RepairError(f"interactive Repair did not submit: {exc}") from exc

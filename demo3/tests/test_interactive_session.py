@@ -17,7 +17,7 @@ from autoadapter2.driver_synthesis.interactive import (
     PublicDevelopmentSession,
     render_interface_stub,
 )
-from autoadapter2.driver_synthesis.probe import ProbeBudget
+from autoadapter2.driver_synthesis.probe import ProbeBudget, ProbeError
 from autoadapter2.driver_synthesis.repair import repair_with_probes
 from autoadapter2.libraries import RobotPackage
 from autoadapter2.react import ToolCall, ToolTurn
@@ -195,6 +195,45 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertEqual(result["exit_code"], 0)
         self.assertEqual(result["physics_steps"], 1)
         self.assertTrue(self.session.has_successful_physics_probe())
+
+    def test_discretionary_probes_preserve_one_smoke_per_missing_capability(self) -> None:
+        session = PublicDevelopmentSession(
+            package=self.package,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "reserved-smoke-session",
+            budget=ProbeBudget(max_requests=2, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+            capability_methods=("drive",),
+            capability_task_ids={"drive": ("task-1",)},
+        )
+        probe = {
+            "probe_id": "one-discretionary-step",
+            "script": (
+                "import os\nimport mujoco\n"
+                "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
+                "data = mujoco.MjData(model)\n"
+                "mujoco.mj_step(model, data)\n"
+            ),
+        }
+
+        first = session.run_mujoco_probe(probe)
+        self.assertEqual(first["development_status"]["probe_calls_remaining"], 1)
+        with self.assertRaisesRegex(ProbeError, "reserved"):
+            session.run_mujoco_probe({**probe, "probe_id": "blocked-extra-step"})
+
+        session.write_driver({"source": DRIVER_SOURCE})
+        smoke = session.smoke_driver(
+            {
+                "method_name": "drive",
+                "request": {
+                    "task_id": "task-1",
+                    "task_parameters": {"target": 0.1},
+                },
+            }
+        )
+        self.assertTrue(smoke["successful"])
+        self.assertEqual(smoke["development_status"]["probe_calls_remaining"], 0)
+        self.assertEqual(smoke["development_status"]["missing_current_revision_smokes"], [])
 
     def test_submit_requires_current_revision_smoke_for_every_capability(self) -> None:
         self.session.write_driver({"source": DRIVER_SOURCE})

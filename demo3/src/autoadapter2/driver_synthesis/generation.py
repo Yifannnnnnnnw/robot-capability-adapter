@@ -33,6 +33,11 @@ from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_sou
 
 GenerationCondition = Literal["skeleton-assisted", "from-scratch"]
 
+STUDY_REACT_MAX_TURNS = 24
+STUDY_REACT_MAX_TOOL_CALLS = 72
+DRIVER_REACT_MAX_TURNS = 40
+DRIVER_REACT_MAX_TOOL_CALLS = 120
+
 
 class JsonGenerator(Protocol):
     """The small protocol implemented by the real model client and unit fakes."""
@@ -126,12 +131,16 @@ reference code, the other condition, or credentials, and never claim the final v
 
 STUDY_REACT_TASK = """Study the supplied public inputs interactively. Use file tools as needed,
 run and inspect at least one successful real-physics MuJoCo probe, then call submit_study with your
-grounded findings and implementation plan. Do not merely print or return a JSON answer."""
+grounded findings and implementation plan. Prefer a small number of decisive probes over exhaustive
+parameter sweeps. Do not merely print or return a JSON answer."""
 
 GENERATE_REACT_TASK = """Develop the complete executable driver from the interface-only revision
 0 stub. Read the stub, implement all control behavior, and use audit/import/probe/smoke feedback to
 revise it. Run smoke_driver successfully for every sealed capability on the current revision, then
-call submit_driver. Do not merely print or return source in a JSON answer."""
+call submit_driver. Write a viable complete implementation early: every write creates a new revision
+and invalidates all earlier capability smokes. The development session reserves enough remaining
+probe calls for one smoke of every still-missing capability. Do not merely print or return source in
+a JSON answer."""
 
 
 @dataclass(frozen=True)
@@ -591,6 +600,8 @@ def study(
                 system_prompt=STUDY_REACT_SYSTEM,
                 user_prompt=_react_user_prompt(STUDY_REACT_TASK, inputs),
                 tools=tools,
+                max_turns=STUDY_REACT_MAX_TURNS,
+                max_tool_calls=STUDY_REACT_MAX_TOOL_CALLS,
             )
         except ReactLoopError as exc:
             raise GenerationError(f"interactive STUDY did not submit: {exc}") from exc
@@ -700,8 +711,8 @@ def generate(
                 system_prompt=GENERATE_REACT_SYSTEM,
                 user_prompt=_react_user_prompt(GENERATE_REACT_TASK, inputs),
                 tools=session.driver_tools(),
-                max_turns=24,
-                max_tool_calls=72,
+                max_turns=DRIVER_REACT_MAX_TURNS,
+                max_tool_calls=DRIVER_REACT_MAX_TOOL_CALLS,
             )
         except ReactLoopError as exc:
             raise GenerationError(f"interactive GENERATE did not submit: {exc}") from exc

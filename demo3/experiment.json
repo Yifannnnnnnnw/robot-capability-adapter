@@ -10,7 +10,7 @@
   ],
   "max_driver_attempts_per_condition": 3,
   "development_probe": {
-    "max_requests_per_stage": 12,
+    "max_requests_per_stage": 32,
     "wall_timeout_s_per_request": 30,
     "max_output_chars_per_request": 12000
   },

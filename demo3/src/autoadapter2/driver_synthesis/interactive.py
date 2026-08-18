@@ -155,6 +155,29 @@ class PublicDevelopmentSession:
     def has_successful_physics_probe(self) -> bool:
         return any(_successful_probe(result, require_physics=True) for result in self.probe_results)
 
+    def _development_status(self) -> dict[str, Any]:
+        missing = [
+            method
+            for method in self.capability_methods
+            if self._smoked_revision.get(method) != self._revision
+        ]
+        return {
+            "revision": self._revision,
+            "probe_calls_used": self._probe_calls,
+            "probe_calls_remaining": max(0, self.budget.max_requests - self._probe_calls),
+            "missing_current_revision_smokes": missing,
+        }
+
+    def _reserve_required_smokes(self) -> None:
+        status = self._development_status()
+        missing = status["missing_current_revision_smokes"]
+        remaining = int(status["probe_calls_remaining"])
+        if missing and remaining <= len(missing):
+            raise ProbeError(
+                f"the remaining {remaining} development probe calls are reserved for "
+                f"one smoke_driver call per missing capability: {missing}"
+            )
+
     def _candidate_source(self) -> str:
         if not self.candidate_path.is_file():
             raise DevelopmentSessionError("driver.py has not been written")
@@ -218,6 +241,7 @@ class PublicDevelopmentSession:
         )[0]
         self.probe_requests.append(request)
         result = dict(result)
+        result["development_status"] = self._development_status()
         self.probe_results.append(result)
         return result
 
@@ -228,6 +252,7 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("probe_id must be a non-empty string")
         if not isinstance(script, str) or not script.strip():
             raise DevelopmentSessionError("script must be non-empty Python source")
+        self._reserve_required_smokes()
         source = self._candidate_source() if self.candidate_path.is_file() else None
         return self._run_probe(
             probe_id=probe_id.strip(),
@@ -241,6 +266,12 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("source must contain a complete driver.py")
         if len(source) > 200_000:
             raise DevelopmentSessionError("driver.py exceeds the 200000-character limit")
+        remaining = self.budget.max_requests - self._probe_calls
+        if self.capability_methods and remaining < len(self.capability_methods):
+            raise DevelopmentSessionError(
+                f"cannot create a new revision with {remaining} probe calls remaining; "
+                f"{len(self.capability_methods)} capability smokes would be required"
+            )
         self.candidate_path.write_text(source, encoding="utf-8")
         self._revision += 1
         self._audited_revision = None
@@ -249,6 +280,7 @@ class PublicDevelopmentSession:
             "path": "driver.py",
             "revision": self._revision,
             "characters": len(source),
+            "development_status": self._development_status(),
         }
 
     def read_driver(self, _arguments: Mapping[str, Any]) -> dict[str, Any]:
@@ -256,6 +288,7 @@ class PublicDevelopmentSession:
             "path": "driver.py",
             "revision": self._revision,
             "source": self._candidate_source(),
+            "development_status": self._development_status(),
         }
 
     def _audit_candidate(self) -> DriverSourceAudit:
@@ -271,10 +304,15 @@ class PublicDevelopmentSession:
         return audit
 
     def audit_driver(self, _arguments: Mapping[str, Any]) -> dict[str, Any]:
-        return {"revision": self._revision, "audit": asdict(self._audit_candidate())}
+        return {
+            "revision": self._revision,
+            "audit": asdict(self._audit_candidate()),
+            "development_status": self._development_status(),
+        }
 
     def import_driver(self, _arguments: Mapping[str, Any]) -> dict[str, Any]:
         self._audit_candidate()
+        self._reserve_required_smokes()
         script = (
             "import os\n"
             "import mujoco\n"
@@ -340,11 +378,13 @@ class PublicDevelopmentSession:
         successful = _successful_probe(result, require_physics=True)
         if successful:
             self._smoked_revision[method_name] = self._revision
+        result["development_status"] = self._development_status()
         return {
             "revision": self._revision,
             "method_name": method_name,
             "successful": successful,
             "result": result,
+            "development_status": self._development_status(),
         }
 
     def submit_driver(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
@@ -358,8 +398,10 @@ class PublicDevelopmentSession:
             if self._smoked_revision.get(method) != self._revision
         ]
         if missing:
+            status = self._development_status()
             raise DevelopmentSessionError(
-                f"current driver revision lacks successful public physics smoke for {missing}"
+                f"current driver revision lacks successful public physics smoke for {missing}; "
+                f"development status: {status}"
             )
         return {
             "driver_filename": "driver.py",
@@ -368,6 +410,7 @@ class PublicDevelopmentSession:
             "development_revision": self._revision,
             "source_audit": asdict(audit),
             "smoked_methods": list(self.capability_methods),
+            "development_status": self._development_status(),
         }
 
     def public_tools(self) -> tuple[ToolSpec, ...]:
@@ -413,7 +456,7 @@ class PublicDevelopmentSession:
             *self.public_tools(),
             ToolSpec(
                 "write_driver",
-                "Write or completely replace driver.py. The initial file is an interface-only stub with no control implementation.",
+                "Write or completely replace driver.py. The initial file is an interface-only stub with no control implementation. Every write creates a new revision and invalidates all prior capability smokes.",
                 _object_schema(
                     {"source": {"type": "string"}},
                     required=("source",),
@@ -440,7 +483,7 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "smoke_driver",
-                "Import, build, and invoke one exact sealed capability with a public request. Success requires actuator-driven real MuJoCo physics steps. Run this for every capability on the current revision.",
+                "Import, build, and invoke one exact sealed capability with a public request. Success requires actuator-driven real MuJoCo physics steps. Run this for every capability on the current revision; each result reports the remaining probe budget and missing smokes.",
                 _object_schema(
                     {
                         "method_name": {
