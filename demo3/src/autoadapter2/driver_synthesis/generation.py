@@ -294,14 +294,52 @@ def _skeleton_sources(package: RobotPackage) -> list[dict[str, str]]:
     if not package.skeleton_dir.is_dir():
         raise GenerationError("skeleton-assisted generation requires a skeleton directory")
     sources: list[dict[str, str]] = []
+    runtime_modules: set[str] = set()
     for path in sorted(package.skeleton_dir.rglob("*.py")):
         if path.is_file():
+            source = path.read_text(encoding="utf-8")
             sources.append(
                 {
                     "path": path.relative_to(package.skeleton_dir).as_posix(),
-                    "source": path.read_text(encoding="utf-8"),
+                    "source": source,
                 }
             )
+            try:
+                tree = ast.parse(source, filename=str(path))
+            except SyntaxError as exc:
+                raise GenerationError(
+                    f"trusted skeleton inventory is not valid Python: {path.name}"
+                ) from exc
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.level == 0
+                    and isinstance(node.module, str)
+                    and node.module.startswith("autoadapter2.trusted_skeletons.")
+                ):
+                    runtime_modules.add(node.module)
+
+    framework_source = _source_root(None)
+    trusted_root = (framework_source / "autoadapter2" / "trusted_skeletons").resolve()
+    for module in sorted(runtime_modules):
+        relative = Path(*module.split(".")).with_suffix(".py")
+        implementation = (framework_source / relative).resolve()
+        try:
+            implementation.relative_to(trusted_root)
+        except ValueError as exc:
+            raise GenerationError(
+                f"trusted skeleton import escapes its source root: {module}"
+            ) from exc
+        if not implementation.is_file():
+            raise GenerationError(
+                f"trusted skeleton implementation is unavailable: {module}"
+            )
+        sources.append(
+            {
+                "path": f"runtime/{relative.as_posix()}",
+                "source": implementation.read_text(encoding="utf-8"),
+            }
+        )
     if not sources:
         raise GenerationError("skeleton-assisted generation requires Python skeleton source")
     return sources

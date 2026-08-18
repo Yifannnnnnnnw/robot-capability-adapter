@@ -12,10 +12,15 @@ import mujoco
 import numpy as np
 
 from autoadapter2.driver_synthesis import audit_driver_source
+from autoadapter2.driver_synthesis.generation import build_public_generation_inputs
 from autoadapter2.harness.measurements import MeasurementError, compare, measure
 from autoadapter2.harness.session import TrackedMuJoCoSession, apply_framework_reset
 from autoadapter2.libraries import load_robot_package
 from autoadapter2.pipeline import render_reference_driver
+from autoadapter2.trusted_skeletons.quadruped_pd_gait import (
+    QuadrupedPDGaitSkeleton,
+    QuadrupedSpec,
+)
 from autoadapter2.validation_compiler import sample_private_suite, validate_private_suite
 
 
@@ -130,6 +135,37 @@ def _design_and_suite(package):
         "cases": cases,
     }
     return design, suite
+
+
+def test_go2_skeleton_inventory_resolves_to_the_visible_runtime_contract() -> None:
+    inventory_path = PACKAGE_ROOT / "skeleton" / "quadruped_pd_gait.py"
+    module_spec = importlib.util.spec_from_file_location(
+        "demo3_go2_skeleton_inventory", inventory_path
+    )
+    assert module_spec is not None and module_spec.loader is not None
+    inventory = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(inventory)
+
+    assert inventory.QuadrupedPDGaitSkeleton is QuadrupedPDGaitSkeleton
+    assert inventory.QuadrupedSpec is QuadrupedSpec
+
+    package = load_robot_package(PACKAGE_ROOT)
+    design, _suite = _design_and_suite(package)
+    inputs = build_public_generation_inputs(
+        package,
+        design,
+        condition="skeleton-assisted",
+    )
+    source_files = {
+        item["path"]: item["source"]
+        for item in inputs["condition_eligible_artifacts"]["source_files"]
+    }
+    runtime_path = "runtime/autoadapter2/trusted_skeletons/quadruped_pd_gait.py"
+    assert runtime_path in source_files
+    runtime_source = source_files[runtime_path]
+    assert "def command_planar_velocity(" in runtime_source
+    assert "duration: float = 1.0" in runtime_source
+    assert "del vy, yaw_rate" not in runtime_source
 
 
 def test_go2_package_snapshot_and_private_coverage() -> None:
