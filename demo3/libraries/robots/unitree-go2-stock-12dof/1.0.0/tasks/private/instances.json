@@ -34,8 +34,8 @@
       "max_steps": 800,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -68,8 +68,8 @@
       "max_steps": 800,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -116,8 +116,8 @@
       "max_steps": 1000,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -150,8 +150,8 @@
       "max_steps": 600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -184,8 +184,8 @@
       "max_steps": 800,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -218,8 +218,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -253,8 +253,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -288,8 +288,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -322,8 +322,8 @@
       "max_steps": 400,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -357,8 +357,8 @@
       "max_steps": 1000,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -396,8 +396,8 @@
       "max_steps": 1300,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -431,8 +431,8 @@
       "max_steps": 1400,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -465,8 +465,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -500,8 +500,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -535,8 +535,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -570,8 +570,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -605,8 +605,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -640,8 +640,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -675,8 +675,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -710,8 +710,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -745,8 +745,8 @@
       "max_steps": 1600,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     },
     {
@@ -781,8 +781,8 @@
       "max_steps": 1400,
       "sample_hz": 20,
       "video_fps": 20,
-      "video_width": 320,
-      "video_height": 240,
+      "video_width": 640,
+      "video_height": 480,
       "camera": -1
     }
   ]

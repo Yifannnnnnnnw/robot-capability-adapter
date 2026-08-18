@@ -186,8 +186,8 @@ def run_private_suite(
                 ),
                 "render": {
                     "enabled": record_video,
-                    "width": int(instance.get("video_width", 160)),
-                    "height": int(instance.get("video_height", 120)),
+                    "width": int(instance.get("video_width", 640)),
+                    "height": int(instance.get("video_height", 480)),
                     "fps": float(instance.get("video_fps", 10.0)),
                     "camera": instance.get("camera", -1),
                 },

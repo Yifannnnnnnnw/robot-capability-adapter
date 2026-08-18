@@ -135,13 +135,13 @@ def test_go2_package_snapshot_and_private_coverage() -> None:
             (package.private_dir / f"{name}.json").read_text(encoding="utf-8")
         )
         assert private["task_snapshot_id"] == package.snapshot_id
-    instance_tasks = {
-        item["task_id"]
-        for item in json.loads(
-            (package.private_dir / "instances.json").read_text(encoding="utf-8")
-        )["instances"]
-    }
+    instances = json.loads(
+        (package.private_dir / "instances.json").read_text(encoding="utf-8")
+    )["instances"]
+    instance_tasks = {item["task_id"] for item in instances}
     assert instance_tasks == {task["task_id"] for task in package.tasks}
+    assert all(item["video_width"] >= 640 for item in instances)
+    assert all(item["video_height"] >= 480 for item in instances)
     for source in package.sources:
         if "github.com" in source["locator"].lower():
             assert re.search(r"(?<![0-9a-f])[0-9a-f]{12,40}(?![0-9a-f])", source["locator"])
