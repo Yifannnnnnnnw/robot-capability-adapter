@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import re
@@ -11,7 +12,8 @@ import mujoco
 import numpy as np
 
 from autoadapter2.driver_synthesis import audit_driver_source
-from autoadapter2.harness.session import apply_framework_reset
+from autoadapter2.harness.measurements import MeasurementError, compare, measure
+from autoadapter2.harness.session import TrackedMuJoCoSession, apply_framework_reset
 from autoadapter2.libraries import load_robot_package
 from autoadapter2.pipeline import render_reference_driver
 from autoadapter2.validation_compiler import sample_private_suite, validate_private_suite
@@ -293,3 +295,127 @@ def test_go2_arbitrary_renderer_dispatches_by_task_id() -> None:
         assert "ReferenceGo2Driver.traverse_stairs(self, request)" in source
         rendered_section = source.split("class RenderedGo2Driver", 1)[1]
         assert "self._gait(_number(parameters, \"duration_s\", 1.0), mode=\"forward\")" not in rendered_section
+
+
+def test_go2_private_resets_do_not_pre_satisfy_a_task() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = json.loads(
+        (package.private_dir / "instances.json").read_text(encoding="utf-8")
+    )["instances"]
+    bindings = json.loads(
+        (package.private_dir / "bindings.json").read_text(encoding="utf-8")
+    )["bindings"]
+    binding_by_id = {binding["binding_id"]: binding for binding in bindings}
+    task_by_id = {task["task_id"]: task for task in package.tasks}
+
+    for instance in instances:
+        scene = package.root / instance["scene_entrypoint"]
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        data = mujoco.MjData(model)
+        variants = instance.get("repetition_variants") or [{}]
+        for variant_index, variant in enumerate(variants):
+            reset = variant.get("reset", instance["reset"])
+            public_arguments = variant.get(
+                "public_arguments", instance["public_arguments"]
+            )
+            apply_framework_reset(mujoco, model, data, reset)
+            tracker = TrackedMuJoCoSession(
+                mujoco=mujoco,
+                model=model,
+                data=data,
+                max_steps=1,
+                max_sim_time_s=1.0,
+                sample_hz=20.0,
+            )
+            evidence = {
+                "samples": [tracker.snapshot()],
+                "step_count": 0,
+                "contact_pair_step_counts": [],
+            }
+            clause_passes = []
+            for clause in task_by_id[instance["task_id"]]["scoring"]:
+                binding = binding_by_id[
+                    instance["clause_bindings"][clause["clause_id"]]
+                ]
+                try:
+                    value = measure(
+                        binding,
+                        evidence=evidence,
+                        public_arguments=public_arguments,
+                    )
+                    passed = compare(
+                        value,
+                        comparator=clause["comparator"],
+                        threshold=clause["threshold"],
+                    )
+                except MeasurementError:
+                    passed = False
+                clause_passes.append(passed)
+            assert not all(clause_passes), (
+                f"reset already satisfies {instance['task_id']} variant "
+                f"{variant_index}"
+            )
+
+
+def test_go2_forward_reference_exercises_ctrl_step_and_direction_measurement() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    spec = importlib.util.spec_from_file_location(
+        "go2_reference_focused", package.reference_driver
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    scene = package.root / "assets" / "lee_flat.xml"
+    model = mujoco.MjModel.from_xml_path(str(scene))
+    data = mujoco.MjData(model)
+    apply_framework_reset(
+        mujoco, model, data, {"kind": "keyframe", "name": "task_start"}
+    )
+    tracker = TrackedMuJoCoSession(
+        mujoco=mujoco,
+        model=model,
+        data=data,
+        max_steps=1500,
+        max_sim_time_s=4.0,
+        sample_hz=20.0,
+    )
+    request = {
+        "task_id": "GO2-T01",
+        "task_parameters": {
+            "duration_s": 2.0,
+            "target_speed_m_s": 0.4,
+            "direction_rad": 0.0,
+        },
+    }
+    with tracker:
+        module.build(model=model, data=data).walk_forward(request)
+        tracker.finish()
+    evidence = tracker.evidence()
+    speed = measure(
+        {
+            "kind": "mean_body_planar_speed",
+            "parameters": {"body_name": "base_link"},
+        },
+        evidence=evidence,
+        public_arguments={"request": request},
+    )
+    heading_error = measure(
+        {
+            "kind": "mean_body_heading_error_deg",
+            "parameters": {
+                "body_name": "base_link",
+                "direction_argument": "request.task_parameters.direction_rad",
+                "minimum_displacement": 0.1,
+            },
+        },
+        evidence=evidence,
+        public_arguments={"request": request},
+    )
+
+    assert speed >= 0.4
+    assert heading_error <= 10.0
+    assert evidence["step_count"] > 0
+    assert evidence["ctrl_observed_before_step"]
+    assert evidence["ctrl_changed_from_reset"]
+    assert not evidence["direct_state_write_detected"]
