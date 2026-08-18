@@ -43,7 +43,13 @@ def _task(index: int) -> dict:
                 "task_parameters": {
                     "type": "object",
                     "required": ["target"],
-                    "properties": {"target": {"type": "array"}},
+                    "properties": {
+                        "target": {
+                            "type": "array",
+                            "unit": "m",
+                            "frame": "world",
+                        }
+                    },
                 },
             },
         },
@@ -57,7 +63,13 @@ def _package(root: Path) -> RobotPackage:
         robot_configuration_id="example-arm",
         package_version="1.0.0",
         snapshot_id="snapshot-1",
-        morphology={"robot_configuration_id": "example-arm"},
+        morphology={
+            "robot_configuration_id": "example-arm",
+            "public_affordances": {
+                "actions": ["joint_position_control"],
+                "observations": ["joint_positions"],
+            },
+        },
         sources=({"source_id": "source-1"},),
         tasks=tasks,
         mjcf_path=root / "scene.xml",
@@ -98,15 +110,29 @@ def _design(package: RobotPackage) -> dict:
                 "covered_task_ids": [task["task_id"] for task in tasks],
                 "abstraction_rationale": "The tasks share the same robot motion.",
                 "interface": {
-                    "inputs": [{"name": "target", "type": "vector3", "unit": "m", "frame": "world"}],
+                    "inputs": [
+                        {
+                            "name": "request",
+                            "type": "object",
+                            "unit": "unitless",
+                            "frame": "none",
+                        },
+                        {
+                            "name": "request.task_parameters.target",
+                            "type": "array",
+                            "unit": "m",
+                            "frame": "world",
+                            "required_for_task_ids": [task["task_id"] for task in tasks],
+                        },
+                    ],
                     "outputs": [{"name": "completed", "type": "bool", "unit": "unitless", "frame": "none"}],
                 },
                 "preconditions": ["Canonical scene is active."],
                 "temporal_semantics": {"kind": "bounded"},
                 "invariants": ["Actuator-driven motion only."],
                 "required_affordances": {
-                    "actions": ["joint actuator control"],
-                    "observations": ["joint state"],
+                    "actions": ["joint_position_control"],
+                    "observations": ["joint_positions"],
                 },
                 "failure_behavior": "Raise a public runtime error.",
                 "validation_contract": contracts,
@@ -164,7 +190,13 @@ class TGCDTests(unittest.TestCase):
         design = _design(self.package)
         design["capabilities"][0]["interface"] = {
             "inputs": {
-                "request": {"type": "object", "unit": "unitless", "frame": "none"}
+                "request": {"type": "object", "unit": "unitless", "frame": "none"},
+                "request.task_parameters.target": {
+                    "type": "array",
+                    "unit": "m",
+                    "frame": "world",
+                    "required_for_task_ids": [f"task-{index:02d}" for index in range(4)],
+                },
             },
             "outputs": {
                 "completed": {"type": "bool", "unit": "unitless", "frame": "none"}
@@ -182,8 +214,8 @@ class TGCDTests(unittest.TestCase):
         capability["temporal_semantics"] = "Complete within the request duration."
         capability["invariants"] = "Actuator-driven motion only."
         capability["required_affordances"] = {
-            "actions": "joint actuator control",
-            "observations": "joint state",
+            "actions": "joint_position_control",
+            "observations": "joint_positions",
         }
 
         validated = validate_capability_design(design, self.package)
@@ -198,6 +230,7 @@ class TGCDTests(unittest.TestCase):
     def test_missing_task_is_rejected(self) -> None:
         design = _design(self.package)
         design["capabilities"][0]["covered_task_ids"].pop()
+        design["capabilities"][0]["interface"]["inputs"][1]["required_for_task_ids"].pop()
 
         with self.assertRaisesRegex(
             CapabilityDesignError,
@@ -217,6 +250,20 @@ class TGCDTests(unittest.TestCase):
         design["invocation_abi"]["method_call"] = "method(target=target)"
 
         with self.assertRaisesRegex(CapabilityDesignError, "fixed public request envelope"):
+            validate_capability_design(design, self.package)
+
+    def test_missing_required_task_parameter_input_is_rejected(self) -> None:
+        design = _design(self.package)
+        design["capabilities"][0]["interface"]["inputs"].pop()
+
+        with self.assertRaisesRegex(CapabilityDesignError, "required task parameters"):
+            validate_capability_design(design, self.package)
+
+    def test_unsupported_robot_affordance_is_rejected(self) -> None:
+        design = _design(self.package)
+        design["capabilities"][0]["required_affordances"]["actions"] = ["teleport"]
+
+        with self.assertRaisesRegex(CapabilityDesignError, "unsupported affordances"):
             validate_capability_design(design, self.package)
 
     def test_model_receives_no_private_package_data(self) -> None:

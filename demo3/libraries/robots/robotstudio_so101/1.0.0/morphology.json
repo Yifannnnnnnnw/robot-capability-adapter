@@ -43,6 +43,21 @@
     "object_bodies": [],
     "frames": ["world", "robot_base", "joint"]
   },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control",
+      "gripper_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "end_effector_pose",
+      "named_body_pose",
+      "named_site_pose",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
   "invocation_abi": {
     "envelope": "request",
     "method_call": "generated_method(request=request)",

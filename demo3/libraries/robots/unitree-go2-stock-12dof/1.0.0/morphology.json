@@ -61,6 +61,22 @@
     "foot_bodies": ["FL_foot", "FR_foot", "RL_foot", "RR_foot"],
     "frames": ["world", "body", "initial_body_yaw", "joint"]
   },
+  "public_affordances": {
+    "actions": [
+      "joint_torque_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "base_pose",
+      "base_velocity",
+      "body_height",
+      "named_body_pose",
+      "foot_contacts",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
   "invocation_abi": {
     "argument_name": "request",
     "envelope": "request",

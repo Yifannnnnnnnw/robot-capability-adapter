@@ -95,6 +95,26 @@ def _required_list(value: dict[str, Any], field: str, *, where: str) -> list[Any
     return item
 
 
+def _validate_public_affordances(morphology: dict[str, Any], *, where: str) -> None:
+    affordances = morphology.get("public_affordances")
+    if not isinstance(affordances, dict):
+        raise RobotPackageError(f"{where}.public_affordances must be an object")
+    for field in ("actions", "observations"):
+        values = _required_list(
+            affordances,
+            field,
+            where=f"{where}.public_affordances",
+        )
+        if any(not isinstance(value, str) or not value.strip() for value in values):
+            raise RobotPackageError(
+                f"{where}.public_affordances.{field} must contain non-empty strings"
+            )
+        if len(values) != len(set(values)):
+            raise RobotPackageError(
+                f"{where}.public_affordances.{field} must not contain duplicates"
+            )
+
+
 def _validate_identity(
     document: dict[str, Any],
     *,
@@ -704,6 +724,7 @@ def load_robot_package(root: str | Path) -> RobotPackage:
     )
     package_version = _required_text(morphology, "package_version", where=morphology_path.name)
     mjcf_relative = _required_text(morphology, "mjcf_entrypoint", where=morphology_path.name)
+    _validate_public_affordances(morphology, where=morphology_path.name)
 
     sources_document = _read_object(sources_path)
     catalog_document = _read_object(catalog_path)

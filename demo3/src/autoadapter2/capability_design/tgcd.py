@@ -31,20 +31,26 @@ abstraction_rationale, interface{inputs,outputs}, preconditions, temporal_semant
 required_affordances{actions,observations}, failure_behavior, and validation_contract[].
 method_name must be a valid public Python identifier authored by you.
 
-interface.inputs and interface.outputs MUST each be a JSON array, never a keyed object. Every item
-must have string name, type, unit, and frame fields. For example:
-"interface":{"inputs":[{"name":"request","type":"object","unit":"unitless",
-"frame":"none"}],"outputs":[{"name":"completed","type":"bool","unit":"unitless",
-"frame":"none"}]}.
+interface.inputs and interface.outputs MUST each be a non-empty JSON array, never a keyed object.
+Every item must have string name, type, unit, and frame fields. inputs must contain the fixed item
+{"name":"request","type":"object","unit":"unitless","frame":"none"} plus exactly one item for
+each distinct required task parameter of the covered tasks. A parameter input is a semantic path,
+not another Python argument, and has this exact form:
+{"name":"request.task_parameters.target_position","type":"array","unit":"m","frame":"world",
+"required_for_task_ids":["task-a","task-b"]}. Copy type, unit, and frame from the public task
+schema, and list exactly the covered tasks for which that parameter is required. outputs are
+model-authored and contain exactly name, type, unit, and frame; for example
+{"name":"completed","type":"bool","unit":"unitless","frame":"none"}.
 preconditions, invariants, required_affordances.actions, and required_affordances.observations MUST
 be JSON arrays. temporal_semantics MUST be a JSON object, for example
 {"kind":"bounded","description":"Complete within the request duration"}.
 
-The method name and semantic interface are model-authored, but the Python transport ABI is fixed:
+The method name and semantic grouping are model-authored, but the Python transport ABI is fixed:
 every generated public method receives one keyword argument named request. request.task_id selects
 the covered task and request.task_parameters follows that task's public invocation_schema. Describe
 only declared task-parameter fields in the capability interface; do not invent alternate Python
-argument names.
+argument names. required_affordances actions and observations must be selected only from the exact
+vocabularies in morphology.public_affordances.
 
 For every scoring clause of every covered task, validation_contract must contain exactly one item
 with source_task_id, source_clause_id, metric, unit, comparator, threshold, temporal, aggregation,
@@ -87,20 +93,133 @@ def _list(value: Mapping[str, Any], field: str, *, where: str) -> list[Any]:
     return item
 
 
-def _validate_interface(capability: Mapping[str, Any], *, where: str) -> None:
+def _typed_item(item: Mapping[str, Any], *, where: str) -> dict[str, str]:
+    return {field: _text(item, field, where=where) for field in ("name", "type", "unit", "frame")}
+
+
+def _required_parameter_inputs(
+    package: RobotPackage,
+    covered_task_ids: Sequence[str],
+    *,
+    where: str,
+) -> list[dict[str, Any]]:
+    covered = set(covered_task_ids)
+    inputs: dict[str, dict[str, Any]] = {}
+    for task in package.tasks:
+        task_id = str(task["task_id"])
+        if task_id not in covered:
+            continue
+        parameters = task["invocation_schema"]["request"]["task_parameters"]
+        properties = parameters["properties"]
+        for parameter_name in parameters["required"]:
+            schema = properties[parameter_name]
+            name = f"request.task_parameters.{parameter_name}"
+            typed = {
+                "name": name,
+                "type": str(schema["type"]),
+                "unit": str(schema["unit"]),
+                "frame": str(schema["frame"]),
+            }
+            existing = inputs.get(name)
+            if existing is None:
+                inputs[name] = {**typed, "required_for_task_ids": [task_id]}
+            elif any(existing[field] != typed[field] for field in ("type", "unit", "frame")):
+                raise CapabilityDesignError(
+                    f"{where} groups incompatible schemas for task parameter {parameter_name!r}"
+                )
+            else:
+                existing["required_for_task_ids"].append(task_id)
+    return list(inputs.values())
+
+
+def _validate_interface(
+    capability: Mapping[str, Any],
+    package: RobotPackage,
+    covered_task_ids: Sequence[str],
+    *,
+    where: str,
+) -> None:
     interface = capability.get("interface")
     if not isinstance(interface, Mapping):
         raise CapabilityDesignError(f"{where}.interface must be an object")
-    for direction in ("inputs", "outputs"):
-        values = interface.get(direction)
-        if not isinstance(values, list):
-            raise CapabilityDesignError(f"{where}.interface.{direction} must be a list")
-        for index, item in enumerate(values):
-            item_where = f"{where}.interface.{direction}[{index}]"
-            if not isinstance(item, Mapping):
-                raise CapabilityDesignError(f"{item_where} must be an object")
-            for field in ("name", "type", "unit", "frame"):
-                _text(item, field, where=item_where)
+    inputs = interface.get("inputs")
+    outputs = interface.get("outputs")
+    if not isinstance(inputs, list) or not inputs:
+        raise CapabilityDesignError(f"{where}.interface.inputs must be a non-empty list")
+    if not isinstance(outputs, list) or not outputs:
+        raise CapabilityDesignError(f"{where}.interface.outputs must be a non-empty list")
+
+    expected_inputs = {
+        "request": {
+            "name": "request",
+            "type": "object",
+            "unit": "unitless",
+            "frame": "none",
+        }
+    }
+    expected_inputs.update(
+        {
+            item["name"]: item
+            for item in _required_parameter_inputs(
+                package,
+                covered_task_ids,
+                where=f"{where}.interface.inputs",
+            )
+        }
+    )
+    actual_inputs: dict[str, Mapping[str, Any]] = {}
+    for index, item in enumerate(inputs):
+        item_where = f"{where}.interface.inputs[{index}]"
+        if not isinstance(item, Mapping):
+            raise CapabilityDesignError(f"{item_where} must be an object")
+        name = _typed_item(item, where=item_where)["name"]
+        if name in actual_inputs:
+            raise CapabilityDesignError(f"{where}.interface.inputs duplicates {name!r}")
+        actual_inputs[name] = item
+    if set(actual_inputs) != set(expected_inputs):
+        missing = sorted(set(expected_inputs) - set(actual_inputs))
+        unsupported = sorted(set(actual_inputs) - set(expected_inputs))
+        raise CapabilityDesignError(
+            f"{where}.interface.inputs must exactly expose required task parameters; "
+            f"missing={missing}, unsupported={unsupported}"
+        )
+    for name, expected in expected_inputs.items():
+        actual = actual_inputs[name]
+        expected_fields = set(expected)
+        if set(actual) != expected_fields or any(
+            actual.get(key) != value
+            for key, value in expected.items()
+            if key != "required_for_task_ids"
+        ):
+            raise CapabilityDesignError(
+                f"{where}.interface input {name!r} must copy its public task parameter contract"
+            )
+        if "required_for_task_ids" in expected:
+            required_for = actual.get("required_for_task_ids")
+            if (
+                not isinstance(required_for, list)
+                or any(not isinstance(task_id, str) for task_id in required_for)
+                or len(required_for) != len(set(required_for))
+                or set(required_for) != set(expected["required_for_task_ids"])
+            ):
+                raise CapabilityDesignError(
+                    f"{where}.interface input {name!r} must identify exactly the tasks "
+                    "that require it"
+                )
+
+    output_names: set[str] = set()
+    for index, item in enumerate(outputs):
+        item_where = f"{where}.interface.outputs[{index}]"
+        if not isinstance(item, Mapping):
+            raise CapabilityDesignError(f"{item_where} must be an object")
+        typed = _typed_item(item, where=item_where)
+        if set(item) != set(typed):
+            raise CapabilityDesignError(f"{item_where} may contain only name, type, unit, and frame")
+        if typed["name"] in output_names:
+            raise CapabilityDesignError(
+                f"{where}.interface.outputs duplicates {typed['name']!r}"
+            )
+        output_names.add(typed["name"])
 
 
 def _canonical_interface_items(value: Any) -> Any:
@@ -220,7 +339,12 @@ def validate_capability_design(
         method_names.append(method_name)
         for field in ("description", "abstraction_rationale", "failure_behavior"):
             _text(capability, field, where=where)
-        _validate_interface(capability, where=where)
+        covered = _list(capability, "covered_task_ids", where=where)
+        for task_id in covered:
+            if not isinstance(task_id, str) or task_id not in task_ids:
+                raise CapabilityDesignError(f"{where} covers unknown task {task_id!r}")
+            task_coverage[task_id] += 1
+        _validate_interface(capability, package, covered, where=where)
         _list(capability, "preconditions", where=where)
         if not isinstance(capability.get("temporal_semantics"), Mapping):
             raise CapabilityDesignError(f"{where}.temporal_semantics must be an object")
@@ -228,14 +352,31 @@ def validate_capability_design(
         affordances = capability.get("required_affordances")
         if not isinstance(affordances, Mapping):
             raise CapabilityDesignError(f"{where}.required_affordances must be an object")
-        _list(affordances, "actions", where=f"{where}.required_affordances")
-        _list(affordances, "observations", where=f"{where}.required_affordances")
-
-        covered = _list(capability, "covered_task_ids", where=where)
-        for task_id in covered:
-            if not isinstance(task_id, str) or task_id not in task_ids:
-                raise CapabilityDesignError(f"{where} covers unknown task {task_id!r}")
-            task_coverage[task_id] += 1
+        public_affordances = package.morphology.get("public_affordances")
+        if not isinstance(public_affordances, Mapping):
+            raise CapabilityDesignError("morphology.public_affordances must be an object")
+        for direction in ("actions", "observations"):
+            required = _list(
+                affordances,
+                direction,
+                where=f"{where}.required_affordances",
+            )
+            if any(not isinstance(item, str) or not item.strip() for item in required):
+                raise CapabilityDesignError(
+                    f"{where}.required_affordances.{direction} must contain non-empty strings"
+                )
+            if len(required) != len(set(required)):
+                raise CapabilityDesignError(
+                    f"{where}.required_affordances.{direction} must not contain duplicates"
+                )
+            declared = public_affordances.get(direction)
+            declared_set = set(declared) if isinstance(declared, list) else set()
+            if not set(required) <= declared_set:
+                unsupported = sorted(set(required) - declared_set)
+                raise CapabilityDesignError(
+                    f"{where}.required_affordances.{direction} contains unsupported "
+                    f"affordances: {unsupported}"
+                )
 
         contracts = _list(capability, "validation_contract", where=where)
         for clause_index, clause in enumerate(contracts):

@@ -103,7 +103,14 @@ class RobotPackageTests(unittest.TestCase):
         }
         _write_json(
             self.root / "morphology.json",
-            {**identity, "mjcf_entrypoint": "assets/scene.xml"},
+            {
+                **identity,
+                "mjcf_entrypoint": "assets/scene.xml",
+                "public_affordances": {
+                    "actions": ["joint_position_control"],
+                    "observations": ["joint_positions"],
+                },
+            },
         )
         _write_json(
             self.root / "tasks" / "sources.json",
