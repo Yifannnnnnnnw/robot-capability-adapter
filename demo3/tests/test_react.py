@@ -18,6 +18,7 @@ class ScriptedClient:
     def __init__(self, turns: Sequence[ToolTurn]) -> None:
         self.turns = list(turns)
         self.seen_messages: list[list[dict[str, Any]]] = []
+        self.seen_tools: list[list[dict[str, Any]]] = []
 
     def generate_tool_turn(
         self,
@@ -27,8 +28,9 @@ class ScriptedClient:
         messages: Sequence[Mapping[str, Any]],
         tools: Sequence[Mapping[str, Any]],
     ) -> ToolTurn:
-        del stage, system_prompt, tools
+        del stage, system_prompt
         self.seen_messages.append([dict(message) for message in messages])
+        self.seen_tools.append([dict(tool) for tool in tools])
         return self.turns.pop(0)
 
 
@@ -177,6 +179,68 @@ class ReactLoopTests(unittest.TestCase):
                 ),
                 max_turns=2,
             )
+
+    def test_last_turn_exposes_only_submission_tool(self) -> None:
+        client = ScriptedClient(
+            [
+                ToolTurn(content=None, tool_calls=(call("one", "inspect", {}),)),
+                ToolTurn(content=None, tool_calls=(call("two", "submit", {}),)),
+            ]
+        )
+
+        result = run_react(
+            client=client,
+            stage="GENERATE",
+            system_prompt="Use tools.",
+            user_prompt="Build.",
+            tools=(
+                ToolSpec("inspect", "Inspect.", {"type": "object"}, lambda _: {}),
+                ToolSpec(
+                    "submit",
+                    "Submit.",
+                    {"type": "object"},
+                    lambda arguments: dict(arguments),
+                    terminal=True,
+                ),
+            ),
+            max_turns=2,
+        )
+
+        self.assertEqual(result.submitted_with, "submit")
+        final_tool_names = [
+            tool["function"]["name"] for tool in client.seen_tools[-1]
+        ]
+        self.assertEqual(final_tool_names, ["submit"])
+        self.assertIn(
+            "reserved final submission turn",
+            str(client.seen_messages[-1][-1]["content"]),
+        )
+
+    def test_limit_error_retains_trace_and_budget_counts(self) -> None:
+        client = ScriptedClient([ToolTurn(content="draft"), ToolTurn(content="done")])
+
+        with self.assertRaises(ReactLoopError) as raised:
+            run_react(
+                client=client,
+                stage="STUDY",
+                system_prompt="Use tools.",
+                user_prompt="Study.",
+                tools=(
+                    ToolSpec(
+                        "submit",
+                        "Submit.",
+                        {"type": "object"},
+                        lambda arguments: dict(arguments),
+                        terminal=True,
+                    ),
+                ),
+                max_turns=2,
+            )
+
+        self.assertEqual(raised.exception.model_turns, 2)
+        self.assertEqual(raised.exception.tool_calls, 0)
+        self.assertTrue(raised.exception.trace)
+        self.assertEqual(raised.exception.trace[-2]["event"], "final_submission_turn")
 
 
 if __name__ == "__main__":

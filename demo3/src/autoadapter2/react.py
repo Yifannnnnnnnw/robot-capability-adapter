@@ -11,6 +11,19 @@ from typing import Any, Protocol
 class ReactLoopError(RuntimeError):
     """Raised when a bounded ReAct phase ends without a valid submission."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        trace: Sequence[Mapping[str, Any]] = (),
+        model_turns: int = 0,
+        tool_calls: int = 0,
+    ) -> None:
+        super().__init__(message)
+        self.trace = tuple(dict(item) for item in trace)
+        self.model_turns = int(model_turns)
+        self.tool_calls = int(tool_calls)
+
 
 @dataclass(frozen=True)
 class ToolCall:
@@ -101,6 +114,22 @@ def _assistant_message(turn: ToolTurn) -> dict[str, Any]:
     return message
 
 
+def _append_user_instruction(
+    messages: list[dict[str, Any]], instruction: str
+) -> None:
+    """Add a model-facing instruction without creating adjacent user turns."""
+
+    if messages and messages[-1].get("role") == "user" and isinstance(
+        messages[-1].get("content"), str
+    ):
+        messages[-1] = {
+            **messages[-1],
+            "content": f"{messages[-1]['content']}\n\n{instruction}",
+        }
+        return
+    messages.append({"role": "user", "content": instruction})
+
+
 def run_react(
     *,
     client: ToolModelClient,
@@ -126,16 +155,38 @@ def run_react(
     trace: list[dict[str, Any]] = []
     call_count = 0
     model_tools = [tool.model_definition() for tool in tools]
+    terminal_tools = [tool for tool in tools if tool.terminal]
+    terminal_model_tools = [tool.model_definition() for tool in terminal_tools]
+    terminal_names = [tool.name for tool in terminal_tools]
+    convergence_warned = False
 
     for turn_number in range(1, max_turns + 1):
+        final_turn = turn_number == max_turns
+        tools_for_turn = model_tools
+        if final_turn:
+            instruction = (
+                "This is the reserved final submission turn. Development tools are no "
+                f"longer available. Call {', '.join(terminal_names)} now with the current "
+                "artifact; if submission is rejected, this phase ends."
+            )
+            _append_user_instruction(messages, instruction)
+            trace.append(
+                {
+                    "turn": turn_number,
+                    "event": "final_submission_turn",
+                    "submission_tools": terminal_names,
+                }
+            )
+            tools_for_turn = terminal_model_tools
         turn = client.generate_tool_turn(
             stage=stage,
             system_prompt=system_prompt,
             messages=messages,
-            tools=model_tools,
+            tools=tools_for_turn,
         )
         messages.append(_assistant_message(turn))
         if not turn.tool_calls:
+            remaining_turns = max_turns - turn_number
             trace.append(
                 {
                     "turn": turn_number,
@@ -144,14 +195,11 @@ def run_react(
                     "event": "submission_required",
                 }
             )
-            messages.append(
-                {
-                    "role": "user",
-                    "content": (
-                        "No artifact was submitted. Continue working and finish by calling "
-                        "the phase submission tool."
-                    ),
-                }
+            _append_user_instruction(
+                messages,
+                f"No artifact was submitted. {remaining_turns} model turns remain. "
+                "Continue only the work required for acceptance and finish by calling "
+                f"{', '.join(terminal_names)}.",
             )
             continue
 
@@ -159,7 +207,10 @@ def run_react(
             call_count += 1
             if call_count > max_tool_calls:
                 raise ReactLoopError(
-                    f"{stage} exceeded its {max_tool_calls}-tool-call limit without submission"
+                    f"{stage} exceeded its {max_tool_calls}-tool-call limit without submission",
+                    trace=trace,
+                    model_turns=turn_number,
+                    tool_calls=call_count,
                 )
 
             tool = tool_map.get(call.name)
@@ -175,10 +226,16 @@ def run_react(
                 except Exception as exc:  # Tool failures are observations for the model.
                     error = f"{type(exc).__name__}: {exc}"
 
+            budget_status = {
+                "model_turn": turn_number,
+                "model_turns_remaining": max_turns - turn_number,
+                "tool_calls_used": call_count,
+                "tool_calls_remaining": max_tool_calls - call_count,
+            }
             envelope = (
-                {"ok": False, "error": error}
+                {"ok": False, "error": error, "budget": budget_status}
                 if error is not None
-                else {"ok": True, "result": result}
+                else {"ok": True, "result": result, "budget": budget_status}
             )
             observation = _bounded_text(envelope, tool_output_chars)
             messages.append(
@@ -207,4 +264,32 @@ def run_react(
                     submitted_with=tool.name,
                 )
 
-    raise ReactLoopError(f"{stage} reached {max_turns} model turns without submission")
+        remaining_turns = max_turns - turn_number
+        if (
+            not convergence_warned
+            and 0 < remaining_turns <= max(4, max_turns // 4)
+        ):
+            convergence_warned = True
+            reminder = {
+                "turn": turn_number,
+                "event": "convergence_required",
+                "model_turns_remaining": remaining_turns,
+                "tool_calls_remaining": max_tool_calls - call_count,
+                "submission_tools": terminal_names,
+            }
+            trace.append(reminder)
+            _append_user_instruction(
+                messages,
+                f"Budget warning: {remaining_turns} model turns and "
+                f"{max_tool_calls - call_count} tool calls remain. Stop optional "
+                "exploration. Preserve the current viable revision, complete only its "
+                "required checks, and call "
+                f"{', '.join(terminal_names)} as soon as its acceptance conditions hold.",
+            )
+
+    raise ReactLoopError(
+        f"{stage} reached {max_turns} model turns without submission",
+        trace=trace,
+        model_turns=max_turns,
+        tool_calls=call_count,
+    )
