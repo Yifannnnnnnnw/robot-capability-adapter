@@ -67,9 +67,9 @@
       "binding_id": "binding-mw_drawer_open",
       "metric": "drawer_handle_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_position_error",
       "parameters": {
-        "body_name": "handle",
+        "site_name": "drawer_handle_site",
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -77,9 +77,9 @@
       "binding_id": "binding-mw_drawer_close",
       "metric": "drawer_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_position_error",
       "parameters": {
-        "body_name": "handle",
+        "site_name": "drawer_handle_site",
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -87,9 +87,10 @@
       "binding_id": "binding-mw_button_press",
       "metric": "button_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_axis_error",
       "parameters": {
-        "body_name": "handle",
+        "site_name": "front_button_site",
+        "axis": 1,
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -97,9 +98,10 @@
       "binding_id": "binding-mw_button_press_topdown",
       "metric": "button_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_axis_error",
       "parameters": {
-        "body_name": "handle",
+        "site_name": "top_button_site",
+        "axis": 2,
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -107,9 +109,10 @@
       "binding_id": "binding-mw_handle_press",
       "metric": "handle_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_axis_error",
       "parameters": {
-        "body_name": "handle",
+        "site_name": "vertical_handle_site",
+        "axis": 2,
         "target_argument": "request.task_parameters.target_position"
       }
     },
@@ -117,9 +120,10 @@
       "binding_id": "binding-mw_handle_pull",
       "metric": "handle_target_distance",
       "unit": "m",
-      "kind": "final_body_position_error",
+      "kind": "final_site_axis_error",
       "parameters": {
-        "body_name": "handle",
+        "site_name": "vertical_handle_site",
+        "axis": 2,
         "target_argument": "request.task_parameters.target_position"
       }
     },

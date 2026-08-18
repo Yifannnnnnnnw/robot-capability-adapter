@@ -278,13 +278,59 @@ class ReferenceSO101Driver:
         self._idle(90)
 
     def fixture_task(self, *, request: Any) -> None:
-        _, parameters = _request(request)
-        self._set_gripper(GRIPPER_OPEN)
-        self._step_to(
-            _vector(parameters["contact_position"], name="contact_position"),
-            residual_tolerance=0.25,
+        task_id, parameters = _request(request)
+        if task_id in {"mw_drawer_open", "mw_drawer_close", "mw_handle_pull"}:
+            contact = _vector(parameters["contact_position"], name="contact_position")
+            approach = _vector(
+                parameters.get(
+                    "approach_position", contact + np.asarray((0.0, -0.07, 0.0))
+                ),
+                name="approach_position",
+            )
+            wrist_roll = math.pi / 2.0
+            self._set_gripper(0.5)
+            self._idle(30)
+            self._step_to(
+                approach, residual_tolerance=0.08, wrist_roll=wrist_roll
+            )
+            self._step_to(
+                contact, residual_tolerance=0.08, wrist_roll=wrist_roll
+            )
+            self._set_gripper(0.05)
+            self._idle(80)
+            self._step_to(
+                self._tool_target(parameters),
+                steps=1000,
+                residual_tolerance=0.10,
+                wrist_roll=wrist_roll,
+                gain=0.5,
+                max_joint_delta=0.025,
+            )
+            self._idle(40)
+            return
+        contact = _vector(parameters["contact_position"], name="contact_position")
+        if task_id == "mw_button_press":
+            approach_offset = np.asarray((0.0, -0.07, 0.0))
+        else:
+            approach_offset = np.asarray((0.0, 0.0, 0.07))
+        approach = _vector(
+            parameters.get("approach_position", contact + approach_offset),
+            name="approach_position",
         )
-        self._step_to(self._tool_target(parameters), steps=800, residual_tolerance=0.25)
+        self._set_gripper(GRIPPER_CLOSED)
+        self._idle(20)
+        self._step_to(approach, residual_tolerance=0.08)
+        self._step_to(
+            contact,
+            residual_tolerance=0.08,
+        )
+        self._step_to(
+            self._tool_target(parameters),
+            steps=1000,
+            residual_tolerance=0.10,
+            gain=0.3,
+            max_joint_delta=0.02,
+        )
         self._idle(60)
 
     def rotation_task(self, *, request: Any) -> None:

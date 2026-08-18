@@ -1,0 +1,25 @@
+<mujoco model="so101_vertical_handle">
+  <include file="so101.xml"/>
+  <visual>
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0"/>
+  </visual>
+  <worldbody>
+    <light pos="0.25 -0.2 1.2" dir="0.2 0.1 -1" directional="true"/>
+    <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1"/>
+    <geom name="work_surface" type="box" pos="0.38 0.08 0.08" size="0.20 0.17 0.08"
+          mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1"/>
+    <geom name="handle_housing" type="box" pos="0.38 0.13 0.19" size="0.075 0.045 0.025"
+          mass="0" contype="0" conaffinity="0" rgba="0.20 0.24 0.28 1"/>
+    <body name="vertical_handle" pos="0.38 0.10 0.23">
+      <joint name="vertical_handle_slide" type="slide" axis="0 0 1" range="-0.05 0"
+             damping="0.20" frictionloss="0.015"/>
+      <geom name="vertical_handle_geom" type="capsule" fromto="-0.045 0 0 0.045 0 0"
+            size="0.009" mass="0.02" conaffinity="2" friction="1.2 0.08 0.008"
+            rgba="0.92 0.70 0.16 1"/>
+      <site name="vertical_handle_site" size="0.004" rgba="1 1 1 0"/>
+    </body>
+    <body name="evidence_target" pos="0.38 0.10 0.21"/>
+    <camera name="evidence" mode="targetbody" target="evidence_target"
+            pos="0.74 -0.52 0.46" fovy="38"/>
+  </worldbody>
+</mujoco>

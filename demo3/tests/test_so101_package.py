@@ -328,6 +328,78 @@ def test_so101_reach_push_and_sweep_use_distinct_physical_scenes() -> None:
     assert all(trial["trial_passed"] for trial in report["trials"])
 
 
+def test_so101_drawer_button_and_handle_fixtures_match_source_axes() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    design = _design(package)
+    complete_suite = _suite(package, design)
+    task_ids = {
+        "mw_drawer_open",
+        "mw_drawer_close",
+        "mw_button_press",
+        "mw_button_press_topdown",
+        "mw_handle_press",
+        "mw_handle_pull",
+    }
+    suite = {
+        **complete_suite,
+        "cases": [
+            case for case in complete_suite["cases"] if case["task_id"] in task_ids
+        ],
+    }
+    instances = {
+        item["task_id"]: item
+        for item in json.loads(
+            (package.private_dir / "instances.json").read_text(encoding="utf-8")
+        )["instances"]
+        if item["task_id"] in task_ids
+    }
+    assert instances["mw_drawer_open"]["scene_entrypoint"] == instances[
+        "mw_drawer_close"
+    ]["scene_entrypoint"]
+    assert instances["mw_drawer_open"]["reset"] == {"kind": "default"}
+    assert instances["mw_drawer_close"]["reset"]["joint_positions"] == {
+        "drawer_slide": -0.08
+    }
+    assert instances["mw_handle_pull"]["reset"]["joint_positions"] == {
+        "vertical_handle_slide": -0.05
+    }
+
+    binding_by_id = {
+        item["binding_id"]: item
+        for item in json.loads(
+            (package.private_dir / "bindings.json").read_text(encoding="utf-8")
+        )["bindings"]
+    }
+    expected_axes = {
+        "binding-mw_button_press": 1,
+        "binding-mw_button_press_topdown": 2,
+        "binding-mw_handle_press": 2,
+        "binding-mw_handle_pull": 2,
+    }
+    for binding_id, axis in expected_axes.items():
+        binding = binding_by_id[binding_id]
+        assert binding["kind"] == "final_site_axis_error"
+        assert binding["parameters"]["axis"] == axis
+
+    with tempfile.TemporaryDirectory(prefix="so101-fixture-scenes-") as temporary:
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=package.reference_driver,
+            condition="from-scratch",
+            output_dir=temporary,
+            record_video=False,
+            wall_timeout_s=120.0,
+            run_id="so101-fixture-calibration",
+            attempt=0,
+        )
+
+    assert report["validation_passed"]
+    assert {trial["task_id"] for trial in report["trials"]} == task_ids
+    assert all(trial["trial_passed"] for trial in report["trials"])
+
+
 def test_so101_private_reset_fails_every_task_criterion() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     instances = json.loads(

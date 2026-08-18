@@ -786,7 +786,7 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_drawer_open_v3.py, evaluate_state, lines 669-693: success uses handle_error <= 0.03.",
+              "specific_reference": "metaworld/envs/sawyer_drawer_open_v3.py, evaluate_state, lines 67-87 at pinned commit: success is handle_error <= 0.03; compute_reward line 125 defines handle_error as Euclidean handle-to-target distance.",
               "support": "adapted",
               "adaptation": "Keep the 0.03 m handle-error requirement and measure the analogous SO-101 drawer handle against the private open target; the fixture and robot are substituted without changing the bound."
             }
@@ -911,13 +911,13 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_drawer_close_v3.py, evaluate_state, lines 744-768: success uses target_to_obj <= self.TARGET_RADIUS + 0.015.",
+              "specific_reference": "metaworld/envs/sawyer_drawer_close_v3.py, evaluate_state, lines 69-89 at pinned commit: success is target_to_obj <= self.TARGET_RADIUS + 0.015.",
               "support": "adapted",
               "adaptation": "Use the source close expression without altering its margin; the catalog records 0.065 m because the shared base sawyer_xyz_env.py defines TARGET_RADIUS = 0.05 m."
             },
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/sawyer_xyz_env.py, TARGET_RADIUS definition, lines 2147-2149: TARGET_RADIUS = 0.05 and is the upper bound used for task completion distance.",
+              "specific_reference": "metaworld/sawyer_xyz_env.py, class SawyerXYZEnv line 156 at pinned commit: TARGET_RADIUS = 0.05.",
               "support": "adapted",
               "adaptation": "Resolve the inherited source constant to 0.05 m before applying the drawer-close source margin of 0.015 m to the SO-101 private fixture."
             }
@@ -1017,7 +1017,7 @@
       "description": "Move the end effector to a button and press it until the button reaches the source target position.",
       "source_task_or_operation": "Meta-World sawyer_button_press_v3 button-press",
       "applicability": "The SO-101 can make a controlled contact with a tabletop button using its gripper-mounted end effector.",
-      "adaptation": "Use a private compliant or position-constrained button fixture. Preserve the source 0.02 m button-to-target criterion and map the source press target to the SO-101 scene body.",
+      "adaptation": "Use a private front-facing button constrained along the source press axis. Preserve the source absolute y-axis error and 0.02 m threshold; only robot and fixture dimensions change.",
       "scene_assumptions": [
         "A spring or position-constrained button is mounted on the tabletop within reach.",
         "The button can be actuated by end-effector contact without requiring force sensing."
@@ -1042,9 +1042,9 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_button_press_v3.py, evaluate_state, lines 673-698: success uses obj_to_target <= 0.02.",
+              "specific_reference": "metaworld/envs/sawyer_button_press_v3.py, evaluate_state lines 60-82 and compute_reward line 139 at pinned commit: success is obj_to_target <= 0.02 and obj_to_target is absolute y-axis error.",
               "support": "adapted",
-              "adaptation": "Retain the 0.02 m source contact target bound and evaluate the analogous SO-101 button fixture in the canonical MuJoCo frame; fixture mechanics are private but the public numeric obligation is unchanged."
+              "adaptation": "Retain the 0.02 m source y-axis bound and bind it to a physical y-slide button in the SO-101 scene; no Euclidean proxy or relaxed tolerance is used."
             }
           ]
         }
@@ -1142,7 +1142,7 @@
       "description": "Approach a tabletop button from above and press it to the target state.",
       "source_task_or_operation": "Meta-World sawyer_button_press_topdown_v3 button-press-topdown",
       "applicability": "The SO-101 can perform a vertical or near-vertical end-effector approach to a tabletop button within its workspace.",
-      "adaptation": "Use a private top-down button fixture and preserve the source 0.024 m target-distance criterion; the approach direction is retained as a scene and motion constraint rather than a new score.",
+      "adaptation": "Use a private top-down button constrained along z and preserve the source absolute z-axis error and 0.024 m threshold.",
       "scene_assumptions": [
         "A button with a clear overhead approach is mounted on a horizontal tabletop fixture.",
         "The fixture height and target are chosen so the 5-DoF SO-101 can reach from above."
@@ -1167,9 +1167,9 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_button_press_topdown_v3.py, evaluate_state, lines 667-692: success uses obj_to_target <= 0.024.",
+              "specific_reference": "metaworld/envs/sawyer_button_press_topdown_v3.py, evaluate_state lines 61-81 and compute_reward line 135 at pinned commit: success is obj_to_target <= 0.024 and obj_to_target is absolute z-axis error.",
               "support": "adapted",
-              "adaptation": "Keep the exact 0.024 m source distance bound and apply it to the SO-101 top-down button fixture; only the robot model and private fixture are changed."
+              "adaptation": "Keep the exact 0.024 m source z-axis bound and apply it to a physical z-slide button; only the robot model and fixture dimensions are changed."
             }
           ]
         }
@@ -1267,7 +1267,7 @@
       "description": "Press a hinged or spring-loaded handle until it reaches its target position.",
       "source_task_or_operation": "Meta-World sawyer_handle_press_v3 handle-press",
       "applicability": "The SO-101 can make a controlled planar contact with a handle fixture using its end effector.",
-      "adaptation": "Use a private handle fixture with a reachable pressing face. Preserve the source 0.02 m target radius and map the source handle target to a SO-101 MuJoCo body.",
+      "adaptation": "Use a private vertical sliding handle. Preserve the source absolute z-axis error and 0.02 m threshold and bind it to the handle site.",
       "scene_assumptions": [
         "A constrained handle is mounted on a tabletop fixture with a reachable pressing face.",
         "The handle travel is small enough for the SO-101 wrist and gripper geometry."
@@ -1292,9 +1292,9 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_handle_press_v3.py, TARGET_RADIUS at lines 598-600 and evaluate_state at lines 681-708: success uses the 0.02 target radius.",
+              "specific_reference": "metaworld/envs/sawyer_handle_press_v3.py, line 16, evaluate_state lines 64-86, and compute_reward lines 133-136 at pinned commit: TARGET_RADIUS is 0.02 and target_to_obj is absolute z-axis error.",
               "support": "adapted",
-              "adaptation": "Preserve the source 0.02 m handle-target bound and evaluate it on the private SO-101 handle fixture in metres; the contact geometry is substituted without weakening the source tolerance."
+              "adaptation": "Preserve the source 0.02 m z-axis handle-target bound on a physical vertical slide; contact geometry is substituted without changing the metric or tolerance."
             }
           ]
         }
@@ -1417,13 +1417,13 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_handle_pull_v3.py, evaluate_state, lines 687-715: success uses self.TARGET_RADIUS.",
+              "specific_reference": "metaworld/envs/sawyer_handle_pull_v3.py, evaluate_state lines 63-88 and compute_reward line 133 at pinned commit: success uses self.TARGET_RADIUS and target_to_obj is absolute z-axis error.",
               "support": "adapted",
               "adaptation": "Apply the source handle-pull terminal predicate to the SO-101 fixture while resolving its inherited radius from the shared base environment."
             },
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/sawyer_xyz_env.py, TARGET_RADIUS definition, lines 2147-2149: TARGET_RADIUS = 0.05.",
+              "specific_reference": "metaworld/sawyer_xyz_env.py, class SawyerXYZEnv line 156 at pinned commit: TARGET_RADIUS = 0.05.",
               "support": "adapted",
               "adaptation": "Use the inherited 0.05 m value exactly for the SO-101 private handle target; no robot-specific relaxation is introduced."
             }
