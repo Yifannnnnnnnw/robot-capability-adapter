@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
-  "task_snapshot_id": "robotstudio-so101-task-library-1.0.0",
+  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v2",
   "instances": [
     {
       "instance_id": "so101-mw_reach_target",
@@ -792,21 +792,21 @@
               0.30
             ],
             "route_position": [
-              0.377,
+              0.425,
               0.12,
-              0.298
+              0.255
             ],
             "target_position": [
-              0.424,
+              0.46,
               0.12,
-              0.256
+              0.18
             ],
             "tool_target_position": [
-              0.396,
+              0.475,
               0.12,
-              0.292
+              0.17
             ],
-            "target_angle": 0.7
+            "target_angle": 1.5707963267948966
           }
         }
       },

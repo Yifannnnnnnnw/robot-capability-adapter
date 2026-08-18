@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import math
 import tempfile
 from pathlib import Path
 
@@ -617,6 +618,8 @@ def test_so101_door_and_rotary_fixtures_match_source_formulas() -> None:
     lever = binding_by_id["binding-mw_lever_pull"]
     assert lever["kind"] == "final_joint_position_error"
     assert lever["parameters"]["joint_name"] == "lever_hinge"
+    lever_request = instances["mw_lever_pull"]["public_arguments"]["request"]
+    assert lever_request["task_parameters"]["target_angle"] == math.pi / 2.0
 
     expected_fixture_objects = {
         "mw_door_open": (mujoco.mjtObj.mjOBJ_SITE, "door_handle_site"),
@@ -629,6 +632,10 @@ def test_so101_door_and_rotary_fixtures_match_source_formulas() -> None:
             str((package.root / instances[task_id]["scene_entrypoint"]).resolve())
         )
         assert mujoco.mj_name2id(model, object_type, name) >= 0
+        if task_id == "mw_lever_pull":
+            joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+            assert model.jnt_range[joint_id, 0] == 0.0
+            assert model.jnt_range[joint_id, 1] >= math.pi / 2.0 - 0.001
 
     with tempfile.TemporaryDirectory(prefix="so101-rotary-scenes-") as temporary:
         report = run_private_suite(
