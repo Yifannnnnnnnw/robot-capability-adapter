@@ -36,15 +36,16 @@ pre-submission checks do not consume one of the three Harness attempts.
 
 ## Environment
 
-Demo3 pins Python 3.11, MuJoCo 3.9.0, NumPy 2.4.6, and pytest 9.1.1 in
-`pyproject.toml`. `ffmpeg` and `ffprobe` are the only system tools required for
-per-case video evidence.
+Demo3 pins Python 3.11.9 through `.python-version`, and MuJoCo 3.9.0, NumPy
+2.4.6, and pytest 9.1.1 in `pyproject.toml`. `pyenv`, `ffmpeg`, and `ffprobe`
+are the required system tools. Using `pyenv exec` makes the selected Python
+independent of shell shim initialization.
 
 ```bash
 cd demo3
-python -m pip install -e '.[test]'
-python -m autoadapter2 check-only
-python -m pytest -q
+pyenv exec python -m pip install -e '.[test]'
+pyenv exec python -m autoadapter2 check-only
+pyenv exec python -m pytest -q
 ```
 
 The real-model command reads credentials only from environment variables. From
@@ -58,7 +59,7 @@ set +a
 export AUTOADAPTER_MODEL_MAX_TOKENS=32768
 export PYTHONPATH=demo3/src
 export MUJOCO_GL=cgl
-python -m autoadapter2 full --run-id <run-id>
+pyenv exec python -m autoadapter2 full --run-id <run-id>
 ```
 
 ## Evidence
