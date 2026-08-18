@@ -313,7 +313,10 @@ def validate_capability_design(
         raise CapabilityDesignError("invocation_abi must use the fixed public request envelope")
     capabilities = design.get("capabilities")
     if not isinstance(capabilities, list) or not 5 <= len(capabilities) <= 10:
-        raise CapabilityDesignError("capabilities must contain between 5 and 10 items")
+        count = len(capabilities) if isinstance(capabilities, list) else None
+        raise CapabilityDesignError(
+            f"capabilities must contain between 5 and 10 items; received {count}"
+        )
 
     task_ids = {str(task["task_id"]) for task in package.tasks}
     source_clauses = _source_clauses(package.tasks)
@@ -445,15 +448,12 @@ def run_tgcd(
         except CapabilityDesignError as exc:
             if attempt + 1 >= max_model_attempts:
                 raise
-            inputs = {
-                **inputs,
-                "previous_invalid_design": design,
-                "deterministic_audit_error": str(exc),
-            }
+            inputs = {**inputs, "deterministic_audit_error": str(exc)}
             prompt = (
                 TGCD_SYSTEM_PROMPT
-                + "\nCorrect the previous JSON only enough to satisfy the deterministic audit. "
-                "Do not change or weaken any source standard."
+                + "\nRegenerate the complete JSON object from the supplied public inputs while "
+                "correcting this deterministic audit error. Do not change or weaken any source "
+                "standard."
             )
     raise AssertionError("unreachable")
 

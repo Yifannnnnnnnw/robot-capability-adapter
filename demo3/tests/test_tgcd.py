@@ -286,6 +286,8 @@ class TGCDTests(unittest.TestCase):
             "tgcd",
             "tgcd-structure-correction",
         ])
+        self.assertNotIn("previous_invalid_design", model.calls[1]["inputs"])
+        self.assertIn("deterministic_audit_error", model.calls[1]["inputs"])
         self.assertNotIn("private", repr(model.calls).lower())
 
 
