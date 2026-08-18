@@ -395,12 +395,66 @@ class InteractiveSessionTests(unittest.TestCase):
 
         self.assertEqual(study_result.probe_results[0]["physics_steps"], 1)
         self.assertGreater(len(study_result.call_evidence.react_trace), 1)
+        study_probe_observation = client.messages["study"][1][-1]["content"]
+        self.assertIn('"study_requirement_satisfied": true', study_probe_observation)
+        self.assertIn("Call submit_study now", study_probe_observation)
         self.assertEqual(generated.driver_source, DRIVER_SOURCE)
         self.assertEqual(generated.output["generation_note"], "ready")
         self.assertGreaterEqual(len(generated.probe_results), 2)
         stub_observation = client.messages["generate"][1][-1]["content"]
         self.assertIn("def drive(self, request):", stub_observation)
         self.assertIn("NotImplementedError", stub_observation)
+
+    def test_study_rejects_redundant_probe_after_physics_succeeds(self) -> None:
+        probe = (
+            "import os\nimport mujoco\n"
+            "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
+            "data = mujoco.MjData(model)\n"
+            "mujoco.mj_step(model, data)\n"
+        )
+        client = ScriptedToolClient(
+            {
+                "study": (
+                    ToolTurn(
+                        None,
+                        (_call("s1", "run_mujoco_probe", {"probe_id": "first", "script": probe}),),
+                    ),
+                    ToolTurn(
+                        None,
+                        (_call("s2", "run_mujoco_probe", {"probe_id": "redundant", "script": probe}),),
+                    ),
+                    ToolTurn(
+                        None,
+                        (
+                            _call(
+                                "s3",
+                                "submit_study",
+                                {
+                                    "findings": ["the canonical model advances"],
+                                    "implementation_plan": ["implement the sealed capability"],
+                                },
+                            ),
+                        ),
+                    ),
+                )
+            }
+        )
+
+        result = study(
+            client,  # type: ignore[arg-type]
+            self.package,
+            self.design,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "redundant-study-probe",
+            probe_budget=ProbeBudget(max_requests=4, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+        )
+
+        self.assertEqual(len(result.probe_results), 1)
+        self.assertEqual(result.probe_results[0]["probe_id"], "first")
+        redundant_observation = client.messages["study"][2][-1]["content"]
+        self.assertIn('"ok": false', redundant_observation)
+        self.assertIn("already satisfied", redundant_observation)
 
     def test_repair_keeps_report_and_driver_in_one_interactive_conversation(self) -> None:
         request = {"task_id": "task-1", "task_parameters": {"target": 0.2}}

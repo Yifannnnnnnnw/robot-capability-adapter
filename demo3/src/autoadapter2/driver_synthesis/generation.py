@@ -13,7 +13,7 @@ import copy
 import json
 import sys
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
@@ -33,8 +33,8 @@ from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_sou
 
 GenerationCondition = Literal["skeleton-assisted", "from-scratch"]
 
-STUDY_REACT_MAX_TURNS = 24
-STUDY_REACT_MAX_TOOL_CALLS = 72
+STUDY_REACT_MAX_TURNS = 12
+STUDY_REACT_MAX_TOOL_CALLS = 36
 DRIVER_REACT_MAX_TURNS = 40
 DRIVER_REACT_MAX_TOOL_CALLS = 120
 
@@ -135,8 +135,10 @@ STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage for 
 Direct-MuJoCo generation condition. Inspect the staged public robot package and sealed Capability
 Design with tools. Run at least one public-only MuJoCo probe that successfully advances physics.
 Use no private Harness, reference driver, repository path, network, or other condition artifact.
-Do not write the final driver in STUDY. Finish only with submit_study after incorporating the probe
-observations into concrete implementation findings and a capability-by-capability plan."""
+One successful physics probe is sufficient: after it succeeds, do not run another probe and call
+submit_study on the next turn. Do not write the final driver in STUDY. Finish only with submit_study
+after incorporating the probe observations into concrete implementation findings and a
+capability-by-capability plan."""
 
 
 GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
@@ -150,8 +152,9 @@ reference code, the other condition, or credentials, and never claim the final v
 
 STUDY_REACT_TASK = """Study the supplied public inputs interactively. Use file tools as needed,
 run and inspect at least one successful real-physics MuJoCo probe, then call submit_study with your
-grounded findings and implementation plan. Prefer a small number of decisive probes over exhaustive
-parameter sweeps. Do not merely print or return a JSON answer."""
+grounded findings and implementation plan. The first successful physics probe completes the probe
+requirement; immediately submit after observing it. Do not run optional follow-up probes or merely
+print or return a JSON answer."""
 
 GENERATE_REACT_TASK = """Develop the complete executable driver from the interface-only revision
 0 stub. Read the stub, implement all control behavior, and use audit/import/probe/smoke feedback to
@@ -562,6 +565,22 @@ def study(
             source_root=_source_root(source_root),
         )
 
+        def run_study_probe(arguments: Mapping[str, Any]) -> dict[str, Any]:
+            if session.has_successful_physics_probe():
+                raise GenerationError(
+                    "STUDY physics requirement is already satisfied; call submit_study now"
+                )
+            result = session.run_mujoco_probe(arguments)
+            if session.has_successful_physics_probe():
+                return {
+                    **result,
+                    "study_requirement_satisfied": True,
+                    "required_next_action": (
+                        "Call submit_study now; do not run another probe."
+                    ),
+                }
+            return result
+
         def submit_study(arguments: Mapping[str, Any]) -> dict[str, Any]:
             findings = arguments.get("findings")
             implementation_plan = arguments.get("implementation_plan")
@@ -600,8 +619,14 @@ def study(
             "required": ["findings", "implementation_plan"],
             "additionalProperties": False,
         }
+        study_public_tools = tuple(
+            replace(tool, handler=run_study_probe)
+            if tool.name == "run_mujoco_probe"
+            else tool
+            for tool in session.public_tools()
+        )
         tools = (
-            *session.public_tools(),
+            *study_public_tools,
             ToolSpec(
                 "submit_study",
                 "Submit the condition-specific findings after at least one successful real-physics public probe.",
