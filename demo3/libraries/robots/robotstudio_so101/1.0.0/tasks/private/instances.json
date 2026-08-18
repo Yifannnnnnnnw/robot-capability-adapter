@@ -1,0 +1,981 @@
+{
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "robotstudio-so101-task-library-1.0.0",
+  "instances": [
+    {
+      "instance_id": "so101-mw_reach_target",
+      "task_id": "mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_reach_target",
+          "task_parameters": {
+            "target_position": [
+              0.45,
+              0.1,
+              0.18
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "terminal_endpoint": "binding-mw_reach_target"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_push_to_goal",
+      "task_id": "mw_push_to_goal",
+      "scene_entrypoint": "assets/push_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_push_to_goal",
+          "task_parameters": {
+            "contact_position": [
+              0.46,
+              0.0,
+              0.225
+            ],
+            "target_position": [
+              0.515,
+              0.0,
+              0.185
+            ],
+            "tool_target_position": [
+              0.36,
+              0.0,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "object_goal_distance": "binding-mw_push_to_goal"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_pick_place",
+      "task_id": "mw_pick_place",
+      "scene_entrypoint": "assets/object_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_pick_place",
+          "task_parameters": {
+            "start_position": [
+              0.46,
+              0.08,
+              0.18
+            ],
+            "target_position": [
+              0.529,
+              0.033,
+              0.178
+            ],
+            "release_position": [
+              0.48,
+              0.08,
+              0.225
+            ],
+            "tool_target_position": [
+              0.48,
+              0.08,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "placed_object_distance": "binding-mw_pick_place"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_pick_place_wall",
+      "task_id": "mw_pick_place_wall",
+      "scene_entrypoint": "assets/wall_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_pick_place_wall",
+          "task_parameters": {
+            "start_position": [
+              0.46,
+              0.08,
+              0.18
+            ],
+            "target_position": [
+              0.529,
+              0.033,
+              0.178
+            ],
+            "release_position": [
+              0.48,
+              0.08,
+              0.225
+            ],
+            "tool_target_position": [
+              0.48,
+              0.08,
+              0.225
+            ],
+            "route_position": [
+              0.48,
+              0.02,
+              0.23
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "placed_object_distance": "binding-mw_pick_place_wall"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_push_wall",
+      "task_id": "mw_push_wall",
+      "scene_entrypoint": "assets/wall_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_push_wall",
+          "task_parameters": {
+            "contact_position": [
+              0.46,
+              0.08,
+              0.225
+            ],
+            "target_position": [
+              0.515,
+              0.033,
+              0.185
+            ],
+            "tool_target_position": [
+              0.36,
+              0.02,
+              0.225
+            ],
+            "route_position": [
+              0.46,
+              0.02,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "object_goal_distance": "binding-mw_push_wall"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_sweep_into_goal",
+      "task_id": "mw_sweep_into_goal",
+      "scene_entrypoint": "assets/push_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_sweep_into_goal",
+          "task_parameters": {
+            "contact_position": [
+              0.46,
+              0.0,
+              0.225
+            ],
+            "target_position": [
+              0.515,
+              0.0,
+              0.185
+            ],
+            "tool_target_position": [
+              0.36,
+              0.0,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "swept_object_distance": "binding-mw_sweep_into_goal"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_drawer_open",
+      "task_id": "mw_drawer_open",
+      "scene_entrypoint": "assets/slide_x_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_drawer_open",
+          "task_parameters": {
+            "contact_position": [
+              0.49,
+              -0.14,
+              0.225
+            ],
+            "target_position": [
+              0.517,
+              -0.14,
+              0.2
+            ],
+            "tool_target_position": [
+              0.36,
+              -0.14,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "open_handle_error": "binding-mw_drawer_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_drawer_close",
+      "task_id": "mw_drawer_close",
+      "scene_entrypoint": "assets/slide_x_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_drawer_close",
+          "task_parameters": {
+            "contact_position": [
+              0.49,
+              -0.14,
+              0.225
+            ],
+            "target_position": [
+              0.517,
+              -0.14,
+              0.2
+            ],
+            "tool_target_position": [
+              0.36,
+              -0.14,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "closed_drawer_distance": "binding-mw_drawer_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_button_press",
+      "task_id": "mw_button_press",
+      "scene_entrypoint": "assets/slide_z_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_button_press",
+          "task_parameters": {
+            "contact_position": [
+              0.42,
+              0.16,
+              0.25
+            ],
+            "target_position": [
+              0.42,
+              0.16,
+              0.169
+            ],
+            "tool_target_position": [
+              0.42,
+              0.16,
+              0.15
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "pressed_button_distance": "binding-mw_button_press"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_button_press_topdown",
+      "task_id": "mw_button_press_topdown",
+      "scene_entrypoint": "assets/slide_z_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_button_press_topdown",
+          "task_parameters": {
+            "contact_position": [
+              0.42,
+              0.16,
+              0.25
+            ],
+            "target_position": [
+              0.42,
+              0.16,
+              0.169
+            ],
+            "tool_target_position": [
+              0.42,
+              0.16,
+              0.15
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "topdown_button_distance": "binding-mw_button_press_topdown"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_handle_press",
+      "task_id": "mw_handle_press",
+      "scene_entrypoint": "assets/slide_z_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_handle_press",
+          "task_parameters": {
+            "contact_position": [
+              0.42,
+              0.16,
+              0.25
+            ],
+            "target_position": [
+              0.42,
+              0.16,
+              0.169
+            ],
+            "tool_target_position": [
+              0.42,
+              0.16,
+              0.15
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "handle_target_distance": "binding-mw_handle_press"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_handle_pull",
+      "task_id": "mw_handle_pull",
+      "scene_entrypoint": "assets/slide_x_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_handle_pull",
+          "task_parameters": {
+            "contact_position": [
+              0.49,
+              -0.14,
+              0.225
+            ],
+            "target_position": [
+              0.517,
+              -0.14,
+              0.2
+            ],
+            "tool_target_position": [
+              0.36,
+              -0.14,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "pulled_handle_distance": "binding-mw_handle_pull"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_door_open",
+      "task_id": "mw_door_open",
+      "scene_entrypoint": "assets/hinge_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_open",
+          "task_parameters": {
+            "contact_position": [
+              0.49,
+              -0.07,
+              0.2
+            ],
+            "target_position": [
+              0.419,
+              -0.145,
+              0.21
+            ],
+            "tool_target_position": [
+              0.43,
+              0.0,
+              0.21
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "door_open_axis_error": "binding-mw_door_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_door_close",
+      "task_id": "mw_door_close",
+      "scene_entrypoint": "assets/hinge_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_close",
+          "task_parameters": {
+            "contact_position": [
+              0.42,
+              -0.145,
+              0.2
+            ],
+            "target_position": [
+              0.48,
+              -0.07,
+              0.21
+            ],
+            "tool_target_position": [
+              0.47,
+              -0.07,
+              0.21
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "fixture_joint": -1.2
+        }
+      },
+      "clause_bindings": {
+        "closed_door_distance": "binding-mw_door_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_faucet_open",
+      "task_id": "mw_faucet_open",
+      "scene_entrypoint": "assets/rotate_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_faucet_open",
+          "task_parameters": {
+            "contact_position": [
+              0.49,
+              0.12,
+              0.2
+            ],
+            "target_position": [
+              0.45,
+              0.06,
+              0.2
+            ],
+            "tool_target_position": [
+              0.47,
+              0.16,
+              0.2
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "faucet_target_distance": "binding-mw_faucet_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_dial_turn",
+      "task_id": "mw_dial_turn",
+      "scene_entrypoint": "assets/rotate_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_dial_turn",
+          "task_parameters": {
+            "contact_position": [
+              0.49,
+              0.12,
+              0.2
+            ],
+            "target_position": [
+              0.45,
+              0.06,
+              0.2
+            ],
+            "tool_target_position": [
+              0.47,
+              0.16,
+              0.2
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "dial_target_distance": "binding-mw_dial_turn"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_lever_pull",
+      "task_id": "mw_lever_pull",
+      "scene_entrypoint": "assets/rotate_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_lever_pull",
+          "task_parameters": {
+            "contact_position": [
+              0.49,
+              0.12,
+              0.225
+            ],
+            "target_position": [
+              0.476,
+              0.159,
+              0.2
+            ],
+            "tool_target_position": [
+              0.47,
+              0.16,
+              0.225
+            ],
+            "target_angle": 0.703
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "lever_angle_error": "binding-mw_lever_pull"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_peg_insertion_side",
+      "task_id": "mw_peg_insertion_side",
+      "scene_entrypoint": "assets/insert_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_peg_insertion_side",
+          "task_parameters": {
+            "start_position": [
+              0.46,
+              0.08,
+              0.18
+            ],
+            "target_position": [
+              0.529,
+              0.033,
+              0.178
+            ],
+            "release_position": [
+              0.48,
+              0.08,
+              0.225
+            ],
+            "tool_target_position": [
+              0.48,
+              0.08,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "peg_target_distance": "binding-mw_peg_insertion_side"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_bin_picking",
+      "task_id": "mw_bin_picking",
+      "scene_entrypoint": "assets/object_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_bin_picking",
+          "task_parameters": {
+            "start_position": [
+              0.46,
+              0.08,
+              0.18
+            ],
+            "target_position": [
+              0.529,
+              0.033,
+              0.178
+            ],
+            "release_position": [
+              0.48,
+              0.08,
+              0.225
+            ],
+            "tool_target_position": [
+              0.48,
+              0.08,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default"
+      },
+      "clause_bindings": {
+        "binned_object_distance": "binding-mw_bin_picking"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-mw_pick_out_of_hole",
+      "task_id": "mw_pick_out_of_hole",
+      "scene_entrypoint": "assets/pickout_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_pick_out_of_hole",
+          "task_parameters": {
+            "start_position": [
+              0.46,
+              0.08,
+              0.178
+            ],
+            "grasp_position": [
+              0.5,
+              0.08,
+              0.195
+            ],
+            "route_position": [
+              0.54,
+              0.08,
+              0.225
+            ],
+            "target_position": [
+              0.54,
+              0.08,
+              0.18
+            ],
+            "release_position": [
+              0.54,
+              0.08,
+              0.225
+            ],
+            "tool_target_position": [
+              0.54,
+              0.08,
+              0.225
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "qpos": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.46,
+          0.08,
+          0.178,
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "clause_bindings": {
+        "extracted_object_distance": "binding-mw_pick_out_of_hole"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 160,
+      "video_height": 120,
+      "video_fps": 10.0,
+      "camera": -1
+    }
+  ]
+}

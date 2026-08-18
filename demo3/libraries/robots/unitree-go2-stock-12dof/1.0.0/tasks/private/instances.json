@@ -1,0 +1,789 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-go2-stock-12dof-task-library-1.0.0",
+  "instances": [
+    {
+      "instance_id": "go2-go2-t01",
+      "task_id": "GO2-T01",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T01",
+          "task_parameters": {
+            "duration_s": 0.8
+          }
+        }
+      },
+      "clause_bindings": {
+        "stand_height": "go2-binding-go2-t01-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.2,
+      "max_steps": 800,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t02",
+      "task_id": "GO2-T02",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T02",
+          "task_parameters": {
+            "duration_s": 0.8
+          }
+        }
+      },
+      "clause_bindings": {
+        "crouch_height": "go2-binding-go2-t02-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.2,
+      "max_steps": 800,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t03",
+      "task_id": "GO2-T03",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0,
+          "FL_thigh_joint": 1.35,
+          "FL_calf_joint": -2.15,
+          "FR_hip_joint": 0,
+          "FR_thigh_joint": 1.35,
+          "FR_calf_joint": -2.15,
+          "RL_hip_joint": 0,
+          "RL_thigh_joint": 1.35,
+          "RL_calf_joint": -2.15,
+          "RR_hip_joint": 0,
+          "RR_thigh_joint": 1.35,
+          "RR_calf_joint": -2.15
+        }
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T03",
+          "task_parameters": {
+            "duration_s": 1
+          }
+        }
+      },
+      "clause_bindings": {
+        "recovered_standing_height": "go2-binding-go2-t03-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.4,
+      "max_steps": 1000,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t04",
+      "task_id": "GO2-T04",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T04",
+          "task_parameters": {
+            "duration_s": 0.6
+          }
+        }
+      },
+      "clause_bindings": {
+        "minimum_upright_height": "go2-binding-go2-t04-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1,
+      "max_steps": 600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t05",
+      "task_id": "GO2-T05",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T05",
+          "task_parameters": {
+            "duration_s": 0.8
+          }
+        }
+      },
+      "clause_bindings": {
+        "trot_joint_activity": "go2-binding-go2-t05-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.2,
+      "max_steps": 800,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t06",
+      "task_id": "GO2-T06",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T06",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "forward_progress_speed": "go2-binding-go2-t06-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t07",
+      "task_id": "GO2-T07",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T07",
+          "task_parameters": {
+            "duration_s": 2,
+            "hip_bias": -0.2
+          }
+        }
+      },
+      "clause_bindings": {
+        "lateral_course_progress": "go2-binding-go2-t07-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t08",
+      "task_id": "GO2-T08",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T08",
+          "task_parameters": {
+            "duration_s": 2,
+            "hip_bias": 0.2
+          }
+        }
+      },
+      "clause_bindings": {
+        "diagonal_course_progress": "go2-binding-go2-t08-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t09",
+      "task_id": "GO2-T09",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T09",
+          "task_parameters": {
+            "duration_s": 0.4
+          }
+        }
+      },
+      "clause_bindings": {
+        "stop_displacement": "go2-binding-go2-t09-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 0.8,
+      "max_steps": 400,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t10",
+      "task_id": "GO2-T10",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T10",
+          "task_parameters": {
+            "duration_s": 1,
+            "direction": 1
+          }
+        }
+      },
+      "clause_bindings": {
+        "turn_yaw_event": "go2-binding-go2-t10-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 1.4,
+      "max_steps": 1000,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t11",
+      "task_id": "GO2-T11",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T11",
+          "task_parameters": {
+            "duration_s": 1.5,
+            "target_position": [
+              0.3,
+              0,
+              0.27
+            ]
+          }
+        }
+      },
+      "clause_bindings": {
+        "waypoint_progress": "go2-binding-go2-t11-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2,
+      "max_steps": 1300,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t12",
+      "task_id": "GO2-T12",
+      "scene_entrypoint": "assets/flat_long.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T12",
+          "task_parameters": {
+            "first_segment_s": 0.8,
+            "second_segment_s": 0.8
+          }
+        }
+      },
+      "clause_bindings": {
+        "path_progress": "go2-binding-go2-t12-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2,
+      "max_steps": 1400,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t13",
+      "task_id": "GO2-T13",
+      "scene_entrypoint": "assets/ramp.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T13",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "ramp_ascent_progress": "go2-binding-go2-t13-1"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t14",
+      "task_id": "GO2-T14",
+      "scene_entrypoint": "assets/step_down.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T14",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "descent_progress": "go2-binding-go2-t14-1",
+        "descent_height": "go2-binding-go2-t14-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t15",
+      "task_id": "GO2-T15",
+      "scene_entrypoint": "assets/step_up.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T15",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "step_ascent_progress": "go2-binding-go2-t15-1",
+        "step_ascent_height": "go2-binding-go2-t15-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t16",
+      "task_id": "GO2-T16",
+      "scene_entrypoint": "assets/step_down.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T16",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "step_descent_progress": "go2-binding-go2-t16-1",
+        "step_descent_height": "go2-binding-go2-t16-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t17",
+      "task_id": "GO2-T17",
+      "scene_entrypoint": "assets/stairs.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T17",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "stair_progress": "go2-binding-go2-t17-1",
+        "stair_height": "go2-binding-go2-t17-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t18",
+      "task_id": "GO2-T18",
+      "scene_entrypoint": "assets/blocks.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T18",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "block_progress": "go2-binding-go2-t18-1",
+        "block_height": "go2-binding-go2-t18-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t19",
+      "task_id": "GO2-T19",
+      "scene_entrypoint": "assets/stepping_stones.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T19",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "stone_progress": "go2-binding-go2-t19-1",
+        "stone_height": "go2-binding-go2-t19-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t20",
+      "task_id": "GO2-T20",
+      "scene_entrypoint": "assets/rigid_poles.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T20",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "pole_progress": "go2-binding-go2-t20-1",
+        "pole_height": "go2-binding-go2-t20-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t21",
+      "task_id": "GO2-T21",
+      "scene_entrypoint": "assets/rough_rigid.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T21",
+          "task_parameters": {
+            "duration_s": 2
+          }
+        }
+      },
+      "clause_bindings": {
+        "rough_progress": "go2-binding-go2-t21-1",
+        "rough_height": "go2-binding-go2-t21-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2.5,
+      "max_steps": 1600,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    },
+    {
+      "instance_id": "go2-go2-t22",
+      "task_id": "GO2-T22",
+      "scene_entrypoint": "assets/mixed_course.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home"
+      },
+      "public_arguments": {
+        "request": {
+          "task_id": "GO2-T22",
+          "task_parameters": {
+            "first_segment_s": 0.8,
+            "second_segment_s": 0.8
+          }
+        }
+      },
+      "clause_bindings": {
+        "mixed_progress": "go2-binding-go2-t22-1",
+        "mixed_height": "go2-binding-go2-t22-2"
+      },
+      "guard_ids": [
+        "go2_physics",
+        "go2_no_state_write",
+        "go2_canonical",
+        "go2_video"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 2,
+      "max_steps": 1400,
+      "sample_hz": 20,
+      "video_fps": 20,
+      "video_width": 320,
+      "video_height": 240,
+      "camera": -1
+    }
+  ]
+}

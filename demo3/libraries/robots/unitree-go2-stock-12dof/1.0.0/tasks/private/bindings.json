@@ -1,0 +1,293 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-go2-stock-12dof-task-library-1.0.0",
+  "bindings": [
+    {
+      "binding_id": "go2-binding-go2-t01-1",
+      "metric": "body_height",
+      "unit": "m",
+      "kind": "body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t02-1",
+      "metric": "body_height",
+      "unit": "m",
+      "kind": "body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t03-1",
+      "metric": "body_height",
+      "unit": "m",
+      "kind": "body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t04-1",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t05-1",
+      "metric": "joint_range",
+      "unit": "rad",
+      "kind": "joint_range",
+      "parameters": {
+        "joint_name": "FR_thigh_joint"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t06-1",
+      "metric": "mean_body_planar_speed",
+      "unit": "m/s",
+      "kind": "mean_body_planar_speed",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t07-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t08-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t09-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t10-1",
+      "metric": "body_yaw_change_deg",
+      "unit": "deg",
+      "kind": "body_yaw_change_deg",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t11-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t12-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t13-1",
+      "metric": "body_axis_displacement",
+      "unit": "m",
+      "kind": "body_axis_displacement",
+      "parameters": {
+        "body_name": "base_link",
+        "axis": 0
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t14-1",
+      "metric": "body_axis_displacement",
+      "unit": "m",
+      "kind": "body_axis_displacement",
+      "parameters": {
+        "body_name": "base_link",
+        "axis": 0
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t14-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t15-1",
+      "metric": "body_axis_displacement",
+      "unit": "m",
+      "kind": "body_axis_displacement",
+      "parameters": {
+        "body_name": "base_link",
+        "axis": 0
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t15-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t16-1",
+      "metric": "body_axis_displacement",
+      "unit": "m",
+      "kind": "body_axis_displacement",
+      "parameters": {
+        "body_name": "base_link",
+        "axis": 0
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t16-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t17-1",
+      "metric": "body_axis_displacement",
+      "unit": "m",
+      "kind": "body_axis_displacement",
+      "parameters": {
+        "body_name": "base_link",
+        "axis": 0
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t17-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t18-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t18-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t19-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t19-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t20-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t20-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t21-1",
+      "metric": "body_planar_displacement",
+      "unit": "m",
+      "kind": "body_planar_displacement",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t21-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t22-1",
+      "metric": "body_axis_displacement",
+      "unit": "m",
+      "kind": "body_axis_displacement",
+      "parameters": {
+        "body_name": "base_link",
+        "axis": 0
+      }
+    },
+    {
+      "binding_id": "go2-binding-go2-t22-2",
+      "metric": "minimum_body_height",
+      "unit": "m",
+      "kind": "minimum_body_height",
+      "parameters": {
+        "body_name": "base_link"
+      }
+    }
+  ]
+}

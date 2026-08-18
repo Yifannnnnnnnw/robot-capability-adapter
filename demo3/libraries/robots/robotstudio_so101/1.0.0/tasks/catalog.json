@@ -1,0 +1,2550 @@
+{
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.0",
+  "snapshot_id": "robotstudio-so101-task-library-1.0.0",
+  "tasks": [
+    {
+      "task_id": "mw_reach_target",
+      "name": "Reach a target pose",
+      "description": "Move the SO-101 end effector to a specified tabletop target position without manipulating an object.",
+      "source_task_or_operation": "Meta-World sawyer_reach_v3 reach",
+      "applicability": "The 5-DoF SO-101 has a serial arm with a gripper-mounted end effector and can perform point-to-point tabletop reaches within its workspace.",
+      "adaptation": "Replace the Sawyer body and benchmark scene with the canonical SO-101 Direct MuJoCo model and a private tabletop target. Preserve the source Euclidean position metric, metre unit, comparator, and 0.05 m threshold.",
+      "scene_assumptions": [
+        "A fixed target body is placed in the reachable tabletop workspace.",
+        "The private scene provides collision-free free space for the end effector to approach the target."
+      ],
+      "observation_assumptions": [
+        "The observation exposes end-effector position and target position in a common metre frame.",
+        "The private measurement binding can evaluate the terminal Euclidean position error."
+      ],
+      "scoring": [
+        {
+          "clause_id": "terminal_endpoint",
+          "metric": "end_effector_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_reach_v3.py, evaluate_state, lines 688-695: success uses reach_dist <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.05 m Euclidean endpoint obligation and apply it to the SO-101 end-effector and private target body in the canonical MuJoCo metre frame; only robot and scene identities change."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_reach_target",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_push_to_goal",
+      "name": "Push an object to a goal",
+      "description": "Use end-effector contact to push a tabletop object until its position is within the goal region.",
+      "source_task_or_operation": "Meta-World sawyer_push_v3 push",
+      "applicability": "The SO-101 gripper can make planar contact with a small rigid object and push it across a tabletop.",
+      "adaptation": "Use a private rigid object and goal fixture in the SO-101 scene. Preserve the benchmark object-to-goal position metric and 0.05 m success radius; no grasp is required.",
+      "scene_assumptions": [
+        "A small rigid object and a planar goal marker are placed on the tabletop within the arm workspace.",
+        "The object has enough clearance for a planar pushing motion and does not require lifting."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and goal positions in the same metre frame.",
+        "The private measurement binding can distinguish object motion caused by contact from the initial state."
+      ],
+      "scoring": [
+        {
+          "clause_id": "object_goal_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_push"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_push_v3.py, TARGET_RADIUS at line 722 and evaluate_state success at lines 837-840: target_to_obj <= TARGET_RADIUS with TARGET_RADIUS = 0.05.",
+              "support": "adapted",
+              "adaptation": "Keep the source 0.05 m object-to-goal obligation and measure it between SO-101 scene bodies after contact-driven pushing; replace only Sawyer geometry and private object placement."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_push_to_goal",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_pick_place",
+      "name": "Pick and place an object",
+      "description": "Grasp a tabletop object, transport it, and release it at a specified goal position.",
+      "source_task_or_operation": "Meta-World sawyer_pick_place_v3 pick-place",
+      "applicability": "The SO-101 has one physical gripper actuator and a serial arm suitable for grasping and transporting a small rigid tabletop object.",
+      "adaptation": "Use a private object, goal, and reset in the SO-101 Direct MuJoCo scene. Preserve the source object-to-goal terminal distance criterion of 0.07 m and require the object to be transported by the physical gripper before release.",
+      "scene_assumptions": [
+        "A graspable rigid object and a receiving goal region are placed within the reachable tabletop workspace.",
+        "The object dimensions and mass permit a stable grasp with the single gripper actuator."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and goal positions and a gripper state sufficient for private grasp measurement.",
+        "The private binding can determine whether the object left its initial support under gripper contact."
+      ],
+      "scoring": [
+        {
+          "clause_id": "placed_object_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_release"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_pick_place_v3.py, evaluate_state, line 1079: success uses obj_to_target <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Preserve the 0.07 m terminal object-to-goal requirement and apply it after an SO-101 gripper-mediated transport; the gripper and transport checks are physical applicability bindings, while the numeric pass criterion remains the source criterion."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_pick_place",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "start_position",
+              "target_position",
+              "release_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_pick_place_wall",
+      "name": "Pick and place around a wall",
+      "description": "Pick up an object, route it around a tabletop wall, and place it in the goal region.",
+      "source_task_or_operation": "Meta-World sawyer_pick_place_wall_v3 pick-place-wall",
+      "applicability": "The SO-101 can grasp a small object and use a collision-aware arm path around a fixed tabletop obstacle.",
+      "adaptation": "Add a private rigid wall fixture and object to the SO-101 scene, with the target on the opposite side of the wall. Preserve the source 0.07 m object-to-goal criterion and retain the wall as a physical route constraint.",
+      "scene_assumptions": [
+        "A low rigid wall separates the initial object region from the goal while leaving a reachable route around its end.",
+        "The wall, object, and goal are sized so the SO-101 gripper can pass around the wall without requiring a second arm."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and goal positions and the obstacle geometry or equivalent collision state.",
+        "The private binding can verify object transport and terminal object-to-goal distance."
+      ],
+      "scoring": [
+        {
+          "clause_id": "placed_object_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_route_and_release"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_pick_place_wall_v3.py, evaluate_state, lines 962-987: success uses obj_to_target <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.07 m source placement criterion and add the wall as a physical SO-101 scene constraint; obstacle routing changes the scene and motion feasibility, not the source terminal metric."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_pick_place_wall",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "start_position",
+              "target_position",
+              "release_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_push_wall",
+      "name": "Push an object around a wall",
+      "description": "Push an object around a tabletop wall until it reaches the goal region.",
+      "source_task_or_operation": "Meta-World sawyer_push_wall_v3 push-wall",
+      "applicability": "The SO-101 can make repeated planar contact and push a small rigid object along a route around a fixed obstacle.",
+      "adaptation": "Use the SO-101 model with a private wall, object, and goal. Preserve the source 0.07 m object-to-goal threshold and make the wall a physical obstacle rather than a symbolic penalty.",
+      "scene_assumptions": [
+        "A tabletop wall blocks a direct push but leaves a continuous route around one end.",
+        "The object remains stable on the tabletop during planar contact."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and goal positions in metres.",
+        "The private binding can evaluate the terminal object-to-goal error after contact-driven motion."
+      ],
+      "scoring": [
+        {
+          "clause_id": "object_goal_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_push_route"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_push_wall_v3.py, evaluate_state, lines 902-925: success uses obj_to_target <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Keep the 0.07 m object-to-goal criterion and instantiate the source wall-routing obligation with a rigid SO-101 tabletop obstacle; only morphology, scene geometry, and private reset are substituted."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_push_wall",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "route_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_sweep_into_goal",
+      "name": "Sweep an object into a goal",
+      "description": "Use a sweeping contact motion to move a tabletop object into a goal region.",
+      "source_task_or_operation": "Meta-World sawyer_sweep_into_goal_v3 sweep-into-goal",
+      "applicability": "The SO-101 end effector can make planar sweeping contact with a small object without requiring a precision grasp.",
+      "adaptation": "Use a private planar object and goal in the SO-101 scene. Preserve the source 0.05 m object-to-goal criterion and the contact-based sweep interpretation.",
+      "scene_assumptions": [
+        "A small movable object and goal region lie on a common tabletop plane.",
+        "The object is not constrained by a wall or container and can be moved by a lateral sweep."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the object and goal positions in the tabletop frame.",
+        "The private binding can measure the terminal object-to-goal distance."
+      ],
+      "scoring": [
+        {
+          "clause_id": "swept_object_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_sweep"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_sweep_into_goal_v3.py, evaluate_state, lines 894-922: success uses target_to_obj <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.05 m terminal object-to-goal requirement and apply the source sweep operation to an SO-101 end-effector contact on a private tabletop object."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_sweep_into_goal",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_drawer_open",
+      "name": "Open a drawer",
+      "description": "Pull a drawer handle until the drawer reaches the source open-state tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_drawer_open_v3 drawer-open",
+      "applicability": "The SO-101 gripper can contact or grasp a drawer handle and pull a constrained tabletop drawer.",
+      "adaptation": "Use a private sliding drawer fixture compatible with the SO-101 reach. Preserve the source 0.03 m handle error criterion and evaluate the handle against the private open target.",
+      "scene_assumptions": [
+        "A drawer with a rigid handle is mounted on the tabletop and moves along one constrained axis.",
+        "The handle is reachable by the SO-101 gripper without requiring an unsupported wrist orientation."
+      ],
+      "observation_assumptions": [
+        "The observation exposes handle position and the private open target position.",
+        "The private binding can measure handle error in metres along the drawer task frame."
+      ],
+      "scoring": [
+        {
+          "clause_id": "open_handle_error",
+          "metric": "drawer_handle_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.03,
+          "temporal": {
+            "kind": "terminal_state_after_pull"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_drawer_open_v3.py, evaluate_state, lines 669-693: success uses handle_error <= 0.03.",
+              "support": "adapted",
+              "adaptation": "Keep the 0.03 m handle-error requirement and measure the analogous SO-101 drawer handle against the private open target; the fixture and robot are substituted without changing the bound."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_drawer_open",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_drawer_close",
+      "name": "Close a drawer",
+      "description": "Push a drawer to its closed target position.",
+      "source_task_or_operation": "Meta-World sawyer_drawer_close_v3 drawer-close",
+      "applicability": "The SO-101 end effector can contact and push a constrained tabletop drawer along its closing axis.",
+      "adaptation": "Use a private drawer fixture and preserve the source expression TARGET_RADIUS + 0.015, where the inherited TARGET_RADIUS is 0.05 m; the stored numeric threshold 0.065 m is only this source expression evaluated, not a new tolerance.",
+      "scene_assumptions": [
+        "A drawer has a fixed closed stop and a reachable front surface or handle.",
+        "The drawer can be closed by a planar SO-101 push without requiring a grasp."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the drawer object position and the closed target position.",
+        "The private binding can measure the source object-to-target distance in metres."
+      ],
+      "scoring": [
+        {
+          "clause_id": "closed_drawer_distance",
+          "metric": "drawer_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.065,
+          "temporal": {
+            "kind": "terminal_state_after_close"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_drawer_close_v3.py, evaluate_state, lines 744-768: success uses target_to_obj <= self.TARGET_RADIUS + 0.015.",
+              "support": "adapted",
+              "adaptation": "Use the source close expression without altering its margin; the catalog records 0.065 m because the shared base sawyer_xyz_env.py defines TARGET_RADIUS = 0.05 m."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/sawyer_xyz_env.py, TARGET_RADIUS definition, lines 2147-2149: TARGET_RADIUS = 0.05 and is the upper bound used for task completion distance.",
+              "support": "adapted",
+              "adaptation": "Resolve the inherited source constant to 0.05 m before applying the drawer-close source margin of 0.015 m to the SO-101 private fixture."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_drawer_close",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_button_press",
+      "name": "Press a button",
+      "description": "Move the end effector to a button and press it until the button reaches the source target position.",
+      "source_task_or_operation": "Meta-World sawyer_button_press_v3 button-press",
+      "applicability": "The SO-101 can make a controlled contact with a tabletop button using its gripper-mounted end effector.",
+      "adaptation": "Use a private compliant or position-constrained button fixture. Preserve the source 0.02 m button-to-target criterion and map the source press target to the SO-101 scene body.",
+      "scene_assumptions": [
+        "A spring or position-constrained button is mounted on the tabletop within reach.",
+        "The button can be actuated by end-effector contact without requiring force sensing."
+      ],
+      "observation_assumptions": [
+        "The observation exposes button and target positions in the same metre frame.",
+        "The private binding can detect the terminal button state after contact."
+      ],
+      "scoring": [
+        {
+          "clause_id": "pressed_button_distance",
+          "metric": "button_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "terminal_state_after_contact"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_button_press_v3.py, evaluate_state, lines 673-698: success uses obj_to_target <= 0.02.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.02 m source contact target bound and evaluate the analogous SO-101 button fixture in the canonical MuJoCo frame; fixture mechanics are private but the public numeric obligation is unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_button_press",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_button_press_topdown",
+      "name": "Press a button from above",
+      "description": "Approach a tabletop button from above and press it to the target state.",
+      "source_task_or_operation": "Meta-World sawyer_button_press_topdown_v3 button-press-topdown",
+      "applicability": "The SO-101 can perform a vertical or near-vertical end-effector approach to a tabletop button within its workspace.",
+      "adaptation": "Use a private top-down button fixture and preserve the source 0.024 m target-distance criterion; the approach direction is retained as a scene and motion constraint rather than a new score.",
+      "scene_assumptions": [
+        "A button with a clear overhead approach is mounted on a horizontal tabletop fixture.",
+        "The fixture height and target are chosen so the 5-DoF SO-101 can reach from above."
+      ],
+      "observation_assumptions": [
+        "The observation exposes button and target positions in the tabletop frame.",
+        "The private binding can evaluate terminal button-to-target distance after the top-down contact."
+      ],
+      "scoring": [
+        {
+          "clause_id": "topdown_button_distance",
+          "metric": "button_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.024,
+          "temporal": {
+            "kind": "terminal_state_after_topdown_contact"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_button_press_topdown_v3.py, evaluate_state, lines 667-692: success uses obj_to_target <= 0.024.",
+              "support": "adapted",
+              "adaptation": "Keep the exact 0.024 m source distance bound and apply it to the SO-101 top-down button fixture; only the robot model and private fixture are changed."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_button_press_topdown",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_handle_press",
+      "name": "Press a handle",
+      "description": "Press a hinged or spring-loaded handle until it reaches its target position.",
+      "source_task_or_operation": "Meta-World sawyer_handle_press_v3 handle-press",
+      "applicability": "The SO-101 can make a controlled planar contact with a handle fixture using its end effector.",
+      "adaptation": "Use a private handle fixture with a reachable pressing face. Preserve the source 0.02 m target radius and map the source handle target to a SO-101 MuJoCo body.",
+      "scene_assumptions": [
+        "A constrained handle is mounted on a tabletop fixture with a reachable pressing face.",
+        "The handle travel is small enough for the SO-101 wrist and gripper geometry."
+      ],
+      "observation_assumptions": [
+        "The observation exposes handle and target positions in metres.",
+        "The private binding can evaluate handle target error after contact."
+      ],
+      "scoring": [
+        {
+          "clause_id": "handle_target_distance",
+          "metric": "handle_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.02,
+          "temporal": {
+            "kind": "terminal_state_after_press"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_handle_press_v3.py, TARGET_RADIUS at lines 598-600 and evaluate_state at lines 681-708: success uses the 0.02 target radius.",
+              "support": "adapted",
+              "adaptation": "Preserve the source 0.02 m handle-target bound and evaluate it on the private SO-101 handle fixture in metres; the contact geometry is substituted without weakening the source tolerance."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_handle_press",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_handle_pull",
+      "name": "Pull a handle",
+      "description": "Pull a constrained handle to its target position.",
+      "source_task_or_operation": "Meta-World sawyer_handle_pull_v3 handle-pull",
+      "applicability": "The SO-101 gripper can grasp or hook a reachable handle and pull it along a constrained tabletop fixture.",
+      "adaptation": "Use a private handle fixture and preserve the inherited Meta-World TARGET_RADIUS of 0.05 m used by the handle-pull evaluation; the fixture must provide a stable grasp path for the single gripper.",
+      "scene_assumptions": [
+        "A constrained pull handle is reachable and has a graspable or hookable geometry.",
+        "The handle travel is aligned with a tabletop fixture axis and does not require unsupported wrist orientation."
+      ],
+      "observation_assumptions": [
+        "The observation exposes handle and target positions in the common metre frame.",
+        "The private binding can evaluate terminal handle target error after the pull."
+      ],
+      "scoring": [
+        {
+          "clause_id": "pulled_handle_distance",
+          "metric": "handle_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_pull"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_handle_pull_v3.py, evaluate_state, lines 687-715: success uses self.TARGET_RADIUS.",
+              "support": "adapted",
+              "adaptation": "Apply the source handle-pull terminal predicate to the SO-101 fixture while resolving its inherited radius from the shared base environment."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/sawyer_xyz_env.py, TARGET_RADIUS definition, lines 2147-2149: TARGET_RADIUS = 0.05.",
+              "support": "adapted",
+              "adaptation": "Use the inherited 0.05 m value exactly for the SO-101 private handle target; no robot-specific relaxation is introduced."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_handle_pull",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_door_open",
+      "name": "Open a door",
+      "description": "Move a door handle or door mechanism to the source open target.",
+      "source_task_or_operation": "Meta-World sawyer_door_v3 door-open",
+      "applicability": "The SO-101 can pull a small hinged door or handle fixture when it is placed within the arm workspace.",
+      "adaptation": "Use a private hinged door fixture. The source success is an axis-specific x error; the runnable binding uses Euclidean door-body target distance with the same 0.08 m bound, which is stricter because it implies the source x-axis obligation.",
+      "scene_assumptions": [
+        "A small hinged door with a reachable handle is fixed to the tabletop.",
+        "The hinge axis and handle placement allow the 5-DoF SO-101 to open the door without self-collision."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the source door coordinate and its target coordinate.",
+        "The private binding preserves the source task axis and computes absolute coordinate error in metres."
+      ],
+      "scoring": [
+        {
+          "clause_id": "door_open_axis_error",
+          "metric": "door_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.08,
+          "temporal": {
+            "kind": "terminal_state_after_open"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_door_v3.py, evaluate_state, lines 772-794: success uses abs(obs[4] - target_pos[0]) <= 0.08.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.08 m source x-axis bound and use a Euclidean body-target distance with the same bound in the SO-101 fixture; Euclidean distance <= 0.08 implies absolute x error <= 0.08, so the adaptation cannot weaken the source obligation."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_door_open",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_door_close",
+      "name": "Close a door",
+      "description": "Move a hinged door to its closed target position.",
+      "source_task_or_operation": "Meta-World sawyer_door_close_v3 door-close",
+      "applicability": "The SO-101 can push or pull a small tabletop door to a closed stop.",
+      "adaptation": "Use a private hinged door fixture and preserve the source object-to-target distance criterion of 0.08 m; the private binding maps the door body and target to the SO-101 scene.",
+      "scene_assumptions": [
+        "A small hinged door has a reachable edge or handle and a defined closed target.",
+        "The fixture permits closing by one SO-101 end-effector contact sequence."
+      ],
+      "observation_assumptions": [
+        "The observation exposes door object and target positions in metres.",
+        "The private binding can measure terminal object-to-target distance."
+      ],
+      "scoring": [
+        {
+          "clause_id": "closed_door_distance",
+          "metric": "door_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.08,
+          "temporal": {
+            "kind": "terminal_state_after_close"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_door_close_v3.py, evaluate_state, lines 778-792: success uses obj_to_target <= 0.08.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.08 m terminal object-to-target obligation and apply it to the private SO-101 door fixture; the door mechanism and robot model are the only substitutions."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_door_close",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_faucet_open",
+      "name": "Open a faucet",
+      "description": "Turn a faucet handle to the source open target.",
+      "source_task_or_operation": "Meta-World sawyer_faucet_open_v3 faucet-open",
+      "applicability": "The SO-101 wrist and gripper can engage a small rotary handle when the faucet is mounted in a reachable tabletop fixture.",
+      "adaptation": "Use a private faucet handle with a reachable approach. Preserve the source 0.07 m target-distance criterion and use the same terminal target metric in the SO-101 MuJoCo frame.",
+      "scene_assumptions": [
+        "A rotary faucet handle is fixed to a tabletop fixture with sufficient clearance for the SO-101 gripper.",
+        "The handle torque and travel are within the single gripper and wrist actuator capability."
+      ],
+      "observation_assumptions": [
+        "The observation exposes faucet handle and target positions.",
+        "The private binding can evaluate the terminal handle-to-target distance after rotation."
+      ],
+      "scoring": [
+        {
+          "clause_id": "faucet_target_distance",
+          "metric": "faucet_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_rotation"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_faucet_open_v3.py, target radius at lines 692-695 and evaluate_state at lines 744-769: success uses target_to_obj <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Retain the source 0.07 m target bound and apply it to the private SO-101 faucet handle; fixture torque and placement are private applicability conditions, not changes to the scoring threshold."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_faucet_open",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_dial_turn",
+      "name": "Turn a dial",
+      "description": "Rotate a dial to its target position using the SO-101 gripper or end effector.",
+      "source_task_or_operation": "Meta-World sawyer_dial_turn_v3 dial-turn",
+      "applicability": "The SO-101 wrist roll and gripper can engage a small dial when the dial axis is arranged for a reachable tabletop interaction.",
+      "adaptation": "Use a private dial fixture and preserve the source 0.07 m target-radius criterion. The dial axis and handle geometry are selected for the SO-101 morphology without changing the public bound.",
+      "scene_assumptions": [
+        "A rotary dial with a graspable rim or tab is mounted in the reachable tabletop workspace.",
+        "The dial has low enough resistance for the SO-101 contact and wrist mechanism."
+      ],
+      "observation_assumptions": [
+        "The observation exposes dial object and target positions.",
+        "The private binding can measure terminal dial-to-target distance in metres."
+      ],
+      "scoring": [
+        {
+          "clause_id": "dial_target_distance",
+          "metric": "dial_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_turn"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_dial_turn_v3.py, TARGET_RADIUS at lines 618-620 and evaluate_state at lines 697-723: success uses target_to_obj <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Preserve the source 0.07 m target-radius criterion and bind it to the private SO-101 dial body; the fixture is adapted for the available wrist and gripper motion without relaxing the bound."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_dial_turn",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_lever_pull",
+      "name": "Pull a lever to the target angle",
+      "description": "Engage a lever and pull it until its angular error is within the benchmark target.",
+      "source_task_or_operation": "Meta-World sawyer_lever_pull_v3 lever-pull",
+      "applicability": "The SO-101 can engage a small hinged lever with its gripper or end effector when the fixture is placed in the tabletop workspace.",
+      "adaptation": "Use a private lever fixture and preserve the source angular success bound pi/24 radians. The catalog stores 0.1308996939 rad as the decimal representation of that source expression, not as a new tolerance.",
+      "scene_assumptions": [
+        "A hinged lever has a reachable grasp or contact feature and a defined target angle.",
+        "The lever resistance and travel are compatible with the SO-101 gripper and wrist motion."
+      ],
+      "observation_assumptions": [
+        "The observation exposes the lever angle and target angle in radians.",
+        "The private binding computes absolute angular error with the source task convention."
+      ],
+      "scoring": [
+        {
+          "clause_id": "lever_angle_error",
+          "metric": "lever_angle_error",
+          "unit": "rad",
+          "comparator": "<=",
+          "threshold": 0.1308996939,
+          "temporal": {
+            "kind": "terminal_state_after_pull"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_lever_pull_v3.py, evaluate_state, lines 821-843: success uses lever_error <= np.pi / 24.",
+              "support": "adapted",
+              "adaptation": "Preserve the exact source expression pi/24; encode its decimal value 0.1308996939 in the JSON numeric threshold and measure the analogous SO-101 lever joint in radians."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_lever_pull",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "contact_position",
+              "target_position",
+              "tool_target_position",
+              "target_angle"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_peg_insertion_side",
+      "name": "Insert a peg from the side",
+      "description": "Grasp a peg and align and insert it into a side-entry hole.",
+      "source_task_or_operation": "Meta-World sawyer_peg_insertion_side_v3 peg-insertion-side",
+      "applicability": "The SO-101 can grasp a small peg and perform a constrained alignment and insertion motion in a tabletop fixture.",
+      "adaptation": "Use a private peg and side-entry hole sized for the SO-101 gripper. Preserve the source 0.07 m peg-to-target terminal distance and make the insertion fixture physically reachable.",
+      "scene_assumptions": [
+        "A rigid peg and side-entry hole are mounted in a reachable tabletop fixture.",
+        "The peg diameter, clearance, and approach direction permit insertion with the SO-101's 5-DoF arm."
+      ],
+      "observation_assumptions": [
+        "The observation exposes peg and insertion target positions.",
+        "The private binding can evaluate the terminal peg-to-target distance and insertion state."
+      ],
+      "scoring": [
+        {
+          "clause_id": "peg_target_distance",
+          "metric": "peg_target_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_insertion"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_peg_insertion_side_v3.py, evaluate_state, lines 1039-1078: success uses obj_to_target <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Retain the 0.07 m source terminal alignment bound and apply it to the private SO-101 peg and side-entry fixture; fixture dimensions are adapted for morphology but the public distance obligation is unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_peg_insertion_side",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "start_position",
+              "target_position",
+              "release_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_bin_picking",
+      "name": "Pick an object from a bin",
+      "description": "Grasp an object in a bin and place it at the specified target location.",
+      "source_task_or_operation": "Meta-World sawyer_bin_picking_v3 bin-picking",
+      "applicability": "The SO-101 gripper can reach into a shallow tabletop bin, grasp a small object, and transport it to a nearby goal.",
+      "adaptation": "Use a private shallow bin, object, and goal. Preserve the source 0.05 m object-to-goal terminal criterion while choosing bin depth and object clearance that fit the SO-101 workspace.",
+      "scene_assumptions": [
+        "A shallow bin contains one graspable rigid object and is placed within the SO-101 reachable workspace.",
+        "The bin walls leave enough clearance for the gripper to enter, close, and withdraw the object."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and target positions and the gripper state.",
+        "The private binding can determine that the object was lifted or transported from the bin before scoring placement."
+      ],
+      "scoring": [
+        {
+          "clause_id": "binned_object_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "terminal_state_after_pick_and_place"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_bin_picking_v3.py, evaluate_state, lines 1010-1033: success uses obj_to_target <= 0.05.",
+              "support": "adapted",
+              "adaptation": "Preserve the 0.05 m source placement threshold and apply it after physical SO-101 removal from a shallow bin; bin depth and object geometry are selected for morphology without changing the bound."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_bin_picking",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "start_position",
+              "target_position",
+              "release_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "task_id": "mw_pick_out_of_hole",
+      "name": "Pick an object out of a hole",
+      "description": "Extract a graspable object from a hole and move it to its target position.",
+      "source_task_or_operation": "Meta-World sawyer_pick_out_of_hole_v3 pick-out-of-hole",
+      "applicability": "The SO-101 can align its gripper over a shallow hole, grasp a small object, and extract it vertically or along a reachable path.",
+      "adaptation": "Use a private shallow hole and object sized for the SO-101 gripper. Preserve the source 0.07 m object-to-target terminal criterion and require physical extraction before placement is evaluated.",
+      "scene_assumptions": [
+        "A shallow hole fixture contains one graspable rigid object and leaves a reachable clearance for the gripper.",
+        "The hole depth and object geometry permit extraction by the SO-101 without a second contact tool."
+      ],
+      "observation_assumptions": [
+        "The observation exposes object and goal positions plus gripper state.",
+        "The private binding can distinguish extraction from merely moving the gripper above the hole."
+      ],
+      "scoring": [
+        {
+          "clause_id": "extracted_object_distance",
+          "metric": "object_goal_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.07,
+          "temporal": {
+            "kind": "terminal_state_after_extraction_and_place"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "metaworld/envs/sawyer_pick_out_of_hole_v3.py, evaluate_state, lines 886-907: success uses obj_to_target <= 0.07.",
+              "support": "adapted",
+              "adaptation": "Keep the 0.07 m terminal object-to-goal obligation and add the physical SO-101 extraction applicability condition; the public numeric criterion remains the source criterion."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "mw_pick_out_of_hole",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "start_position",
+              "target_position",
+              "release_position",
+              "tool_target_position"
+            ],
+            "properties": {
+              "start_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "grasp_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private grasp point for extraction from the shallow hole"
+              },
+              "contact_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world"
+              },
+              "target_angle": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "task_fixture"
+              },
+              "tool_target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private fixture approach point for the physical controller"
+              },
+              "release_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private release point for grasp-and-place tasks"
+              },
+              "route_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "private collision-free route waypoint for obstacle tasks"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "request_envelope": {
+    "envelope": "request",
+    "required": [
+      "request"
+    ],
+    "request": {
+      "type": "object",
+      "required": [
+        "task_id",
+        "task_parameters"
+      ],
+      "task_id": "one of catalog.tasks[].task_id",
+      "task_parameters": "validated by the selected task invocation_schema.request.task_parameters"
+    }
+  }
+}

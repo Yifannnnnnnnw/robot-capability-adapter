@@ -1,0 +1,1781 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "snapshot_id": "unitree-go2-stock-12dof-task-library-1.0.0",
+  "record_role": "research_candidate_public_task_library",
+  "tasks": [
+    {
+      "task_id": "GO2-T01",
+      "name": "Flat-ground stand and hold",
+      "description": "Hold the nominal upright Go2 posture on a level rigid floor under a zero-motion request.",
+      "source_task_or_operation": "Zero planar-command stand-still condition in quadrupedal locomotion evaluation.",
+      "applicability": "The stock Go2 has four three-joint legs and a canonical home keyframe that expresses a supported standing posture.",
+      "adaptation": "The source defines the zero-command operation but not a MuJoCo base-height interval. The local clause measures the canonical Go2 base height with a conservative interval derived from the model home state; it is an executable adaptation, not a source success-rate claim.",
+      "scene_assumptions": [
+        "The private instance selects a package-local MJCF scene under assets/ and the Framework applies the hidden home-keyframe reset.",
+        "The scene is flat_long.xml with a rigid plane and no external force or moving fixture."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding evaluates terminal base_link height during a short dwell."
+      ],
+      "scoring": [
+        {
+          "clause_id": "stand_height",
+          "metric": "body_height",
+          "unit": "m",
+          "comparator": "between",
+          "threshold": [
+            0.24,
+            0.31
+          ],
+          "temporal": {
+            "kind": "dwell",
+            "duration_s": 0.8
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GO2-OFFICIAL",
+              "specific_reference": "Performance Parameters and Mechanical Specifications tables: standing dimensions and Go2 quadruped configuration.",
+              "support": "adapted",
+              "adaptation": "The public product dimensions are substituted by the base_link height in the exact local MJCF; the interval is a model-calibration bound."
+            },
+            {
+              "source_id": "SRC-HOELLER-2020",
+              "specific_reference": "Results: zero planar command is used to evaluate stand-still behavior.",
+              "support": "adapted",
+              "adaptation": "The zero-command operation is retained; the local body-height metric is the only supported trusted measurement."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T01",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive stand dwell"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T02",
+      "name": "Crouch posture",
+      "description": "Reach and hold the low crouched posture on a level rigid floor.",
+      "source_task_or_operation": "Crouching posture reported in the Go2 product specification.",
+      "applicability": "The free-base Go2 can fold its four leg chains while remaining supported by the rigid floor.",
+      "adaptation": "The official page reports a crouching overall dimension of about 20 cm, while the private binding measures base_link z. The local upper bound is therefore explicitly a morphology-to-MJCF adaptation.",
+      "scene_assumptions": [
+        "The private instance selects a package-local MJCF scene under assets/ and the Framework applies the hidden home-keyframe reset.",
+        "The scene is flat_long.xml and the robot starts from the hidden home keyframe."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures terminal base_link height after the crouch transition."
+      ],
+      "scoring": [
+        {
+          "clause_id": "crouch_height",
+          "metric": "body_height",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.23,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GO2-OFFICIAL",
+              "specific_reference": "Mechanical Specifications table: crouching dimensions list a height of about 20 cm.",
+              "support": "adapted",
+              "adaptation": "The product overall height is mapped to the exact model base_link z; the 0.23 m bound leaves room for the model body reference point and is an explicit adaptation."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T02",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive crouch transition and dwell"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T03",
+      "name": "Recovery to standing posture",
+      "description": "Recover from a hidden low posture reset and return to the nominal standing posture.",
+      "source_task_or_operation": "Recovery between crouched and standing postures in quadrupedal locomotion operation.",
+      "applicability": "All 12 Go2 actuators and the free base are available to express the transition without an arm or payload.",
+      "adaptation": "The source families establish standing, balance, and robust terrain operation but do not prescribe a standalone Go2 crouch-to-stand numeric pass line. The private reset is hidden and the measurable clause is an adapted terminal standing check.",
+      "scene_assumptions": [
+        "A private reset places all leg joints in a low crouched configuration before evidence begins.",
+        "The scene is flat_long.xml with no external disturbance."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding evaluates the terminal base_link height after recovery."
+      ],
+      "scoring": [
+        {
+          "clause_id": "recovered_standing_height",
+          "metric": "body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.24,
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GO2-OFFICIAL",
+              "specific_reference": "Mechanical Specifications table: standing and crouching dimensions for Go2.",
+              "support": "adapted",
+              "adaptation": "The source posture pair is preserved, while the exact recovery terminal criterion is bound to the local MJCF base_link height."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T03",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive recovery duration"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T04",
+      "name": "Upright balance hold",
+      "description": "Remain above a minimum supported body height during a short flat-ground balance hold.",
+      "source_task_or_operation": "Balance-preserving locomotion and no-failure operation in robust quadruped evaluation.",
+      "applicability": "The Go2 free base and foot contacts expose a physically meaningful upright-hold observation.",
+      "adaptation": "The papers report balance and failures rather than one universal body-height threshold. The local minimum-height clause is a conservative trusted proxy for a fall during a short flat dwell.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml with a rigid floor.",
+        "No candidate-controlled reset, force, friction change, or fixture change is allowed."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding evaluates the minimum sampled base_link z."
+      ],
+      "scoring": [
+        {
+          "clause_id": "minimum_upright_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.2,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results on robust perceptive locomotion: terrain traversal is evaluated by maintaining balance and avoiding failure.",
+              "support": "adapted",
+              "adaptation": "The no-failure balance obligation is measured with the existing trusted minimum_body_height kind; 0.20 m is a local Go2 fall-screen bound, not a quoted paper threshold."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T04",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive balance dwell"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T05",
+      "name": "Periodic trot gait",
+      "description": "Execute a bounded periodic gait with observable joint motion and physical stepping.",
+      "source_task_or_operation": "Periodic legged gait and foot-terrain interaction used in rigid terrain locomotion evaluation.",
+      "applicability": "The stock Go2 has four independently actuated three-joint legs and can express a periodic trot through torque commands.",
+      "adaptation": "The cited terrain protocol evaluates locomotion outcomes rather than a universal joint excursion. The local clause requires nonzero finite joint activity during a physical gait window and is explicitly a calibration criterion.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml.",
+        "The Framework starts from the hidden home keyframe."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures the range of the FR thigh joint over the complete sample sequence."
+      ],
+      "scoring": [
+        {
+          "clause_id": "trot_joint_activity",
+          "metric": "joint_range",
+          "unit": "rad",
+          "comparator": ">=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.5
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A: rigid terrain locomotion is evaluated with legged stepping and terrain interaction.",
+              "support": "adapted",
+              "adaptation": "The local binding exposes joint_range as the available physical proxy for a nonstationary gait; it does not claim a source joint-range threshold."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T05",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive gait duration"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T06",
+      "name": "Forward commanded locomotion",
+      "description": "Move through a level rigid course under a fixed forward walking request.",
+      "source_task_or_operation": "Fixed commanded forward velocity in quadrupedal locomotion tracking experiments.",
+      "applicability": "The Go2's free base has a forward axis and its 12 actuators can generate a commanded walking gait.",
+      "adaptation": "The source uses fixed target commands including 0.4 m/s, while the local Harness exposes trusted mean planar speed rather than a source-specific velocity-vector tracker. The 0.08 m/s lower bound is an explicitly adapted short-horizon physical-progress criterion and is not reported as the paper's pass standard.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml and is longer than the private travel window.",
+        "The initial body yaw defines the public forward frame."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures mean body_link planar speed over the physical samples."
+      ],
+      "scoring": [
+        {
+          "clause_id": "forward_progress_speed",
+          "metric": "mean_body_planar_speed",
+          "unit": "m/s",
+          "comparator": ">=",
+          "threshold": 0.08,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial_mean"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HOELLER-2020",
+              "specific_reference": "Results: fixed commanded velocities including the eight-direction 0.4 m/s tracking experiment.",
+              "support": "adapted",
+              "adaptation": "The forward command operation is retained, but the local trusted measurement and short-horizon lower bound are an explicit Go2 calibration adaptation rather than a claim of >=0.4 m/s source success."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T06",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive forward tracking window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T07",
+      "name": "Lateral commanded locomotion",
+      "description": "Traverse a level rigid course under a lateral locomotion request.",
+      "source_task_or_operation": "Fixed lateral velocity command in robust perceptive quadruped locomotion.",
+      "applicability": "A free-base quadruped with four independently actuated legs can express lateral body motion without a manipulator.",
+      "adaptation": "The source establishes lateral command operation. The local criterion uses trusted planar displacement and a bounded Go2 calibration window; it does not claim a universal lateral speed threshold from the paper.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml.",
+        "The private request supplies a signed lateral command parameter while the Framework keeps the initial body frame fixed."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures base_link planar displacement."
+      ],
+      "scoring": [
+        {
+          "clause_id": "lateral_course_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.25,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results and Fig. 4E: constant lateral commands are applied and velocity is recorded.",
+              "support": "adapted",
+              "adaptation": "The lateral operation is retained and the local body displacement is the trusted measurement available in this package; the threshold is a calibration criterion, not a source success rate."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T07",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s",
+              "hip_bias"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive lateral tracking window"
+              },
+              "hip_bias": {
+                "type": "number",
+                "unit": "rad",
+                "description": "bounded lateral gait bias"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T08",
+      "name": "Diagonal commanded locomotion",
+      "description": "Traverse a level rigid course under a diagonal planar locomotion request.",
+      "source_task_or_operation": "Diagonal directions in the eight-direction commanded locomotion experiment.",
+      "applicability": "The Go2 free base and four-leg support polygon make diagonal walking physically meaningful.",
+      "adaptation": "The source's eight-direction protocol includes diagonal commands. This local clause uses planar displacement as the available trusted aggregate over one diagonal request and does not transfer a speed pass line not published for Go2.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml.",
+        "The private instance selects one diagonal body-frame command and resets independently."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures base_link planar displacement."
+      ],
+      "scoring": [
+        {
+          "clause_id": "diagonal_course_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.25,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HOELLER-2020",
+              "specific_reference": "Results: eight directions are commanded at a fixed target speed in the planar tracking experiment.",
+              "support": "adapted",
+              "adaptation": "The diagonal member of the source direction set is retained; the local planar displacement threshold is an explicit executable proxy."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T08",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s",
+              "hip_bias"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive diagonal tracking window"
+              },
+              "hip_bias": {
+                "type": "number",
+                "unit": "rad",
+                "description": "bounded diagonal gait bias"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T09",
+      "name": "Commanded stop",
+      "description": "Set the planar command to zero and remain close to the reset position during the stop dwell.",
+      "source_task_or_operation": "Zero planar command and stand-still branch in legged locomotion evaluation.",
+      "applicability": "The Go2 can hold a supported posture under zero motion request on a rigid plane.",
+      "adaptation": "The source supplies the zero-command operation but no terminal displacement bound. The local 0.10 m bound is a short physical stop criterion using an existing trusted measurement and is marked as adapted.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml.",
+        "The hidden reset places the Go2 at the nominal home posture before the zero-command method runs."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures total planar displacement over the stop samples."
+      ],
+      "scoring": [
+        {
+          "clause_id": "stop_displacement",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 0.4
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HOELLER-2020",
+              "specific_reference": "Materials and Methods and Results: the zero planar command is used for stand-still behavior.",
+              "support": "adapted",
+              "adaptation": "The command semantics are retained; the displacement bound and dwell are an explicit trusted Harness adaptation."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T09",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive stop dwell"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T10",
+      "name": "Turning command",
+      "description": "Execute a nonzero yaw turn command while stepping on a level rigid floor.",
+      "source_task_or_operation": "Constant turning command in robust perceptive quadruped locomotion.",
+      "applicability": "The free-base Go2 exposes yaw and independent leg actuation needed for a turning operation.",
+      "adaptation": "The source reports turning commands and velocity traces but not one universal yaw-angle pass line. The local clause requires a measurable yaw event in the trusted body quaternion observation and is explicitly adapted.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml.",
+        "The private request supplies a signed turn direction."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures absolute base_link yaw change from first to final sample."
+      ],
+      "scoring": [
+        {
+          "clause_id": "turn_yaw_event",
+          "metric": "body_yaw_change_deg",
+          "unit": "deg",
+          "comparator": ">=",
+          "threshold": 10,
+          "temporal": {
+            "kind": "eventual",
+            "event": "turn_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results and Fig. 4E: constant turning commands are applied and body velocity is recorded.",
+              "support": "adapted",
+              "adaptation": "The turning operation is direct; the 10 degree event threshold is a local measurable calibration criterion because the cited experiment reports traces rather than a binary yaw threshold."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T10",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s",
+              "direction"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive turning window"
+              },
+              "direction": {
+                "type": "number",
+                "unit": "number",
+                "description": "signed yaw direction"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T11",
+      "name": "Waypoint approach",
+      "description": "Walk toward a public waypoint request on a level rigid course.",
+      "source_task_or_operation": "Pure-pursuit waypoint/path following in fixed quadruped obstacle-course evaluation.",
+      "applicability": "The Go2 has a free base and a body-frame travel axis, so a waypoint approach is physically meaningful without an arm.",
+      "adaptation": "The source uses a pure-pursuit path and reports course traversal. The local instance keeps the waypoint in the public request but binds the trusted criterion to measurable planar progress over the short calibration horizon.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml.",
+        "The public request contains a world-frame waypoint; the concrete private waypoint and reset remain Framework-owned."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures base_link planar displacement toward the local course."
+      ],
+      "scoring": [
+        {
+          "clause_id": "waypoint_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "eventual",
+            "event": "waypoint_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results and Fig. 4C-D: pure-pursuit path following is used through a fixed terrain course.",
+              "support": "adapted",
+              "adaptation": "The waypoint request and path-following operation are retained; the local body-progress criterion is an executable adaptation because the shared Harness has no path-progress measurement kind."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T11",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s",
+              "target_position"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive waypoint approach window"
+              },
+              "target_position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3,
+                "unit": "m",
+                "frame": "world",
+                "description": "requested waypoint position"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T12",
+      "name": "Fixed path following",
+      "description": "Follow two consecutive straight path segments on a level rigid course.",
+      "source_task_or_operation": "Fixed-path pure-pursuit locomotion through a known course.",
+      "applicability": "The Go2 free base can execute a sequence of planar gait segments without requiring a manipulator.",
+      "adaptation": "The source's fixed-path obligation is retained. The local two-segment request is public, while the private binding uses total planar displacement as the available trusted path proxy.",
+      "scene_assumptions": [
+        "The scene is flat_long.xml.",
+        "The two segment durations and hidden path geometry are private instance values."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures total base_link planar displacement after both segments."
+      ],
+      "scoring": [
+        {
+          "clause_id": "path_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.15,
+          "temporal": {
+            "kind": "eventual",
+            "event": "second_segment_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results and Fig. 4C-D: a fixed path is followed through a mixed obstacle course using pure pursuit.",
+              "support": "adapted",
+              "adaptation": "The local path remains a fixed two-segment request; total planar displacement is the existing trusted executable proxy for course progress."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T12",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "first_segment_s",
+              "second_segment_s"
+            ],
+            "properties": {
+              "first_segment_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive first segment duration"
+              },
+              "second_segment_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive second segment duration"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T13",
+      "name": "Rigid ramp ascent",
+      "description": "Walk up a shallow rigid inclined plane without losing measurable forward progress.",
+      "source_task_or_operation": "Inclined-platform traversal in robust perceptive quadruped locomotion.",
+      "applicability": "A rigid ramp can be represented exactly in MuJoCo and does not require an arm, soft terrain, or a hidden force.",
+      "adaptation": "The source establishes inclined-platform traversal but not one universal ramp angle pass line. The local scene uses a shallow rigid 5 degree ramp so the exact stock Go2 MJCF and calibration controller can be physically exercised; the progress threshold is adapted.",
+      "scene_assumptions": [
+        "The private scene is ramp.xml with a rigid 5 degree box ramp and a long floor.",
+        "The robot starts aligned with the ramp travel axis."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures signed base_link x displacement in the scene frame."
+      ],
+      "scoring": [
+        {
+          "clause_id": "ramp_ascent_progress",
+          "metric": "body_axis_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "eventual",
+            "event": "ramp_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results and Fig. 4C-D: traversal includes an inclined platform.",
+              "support": "adapted",
+              "adaptation": "The inclined-platform operation is direct; the package uses a shallow rigid MuJoCo ramp and a trusted x-progress criterion instead of claiming the source robot's full course result."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T13",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive ramp traversal duration"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T14",
+      "name": "Rigid level-transition descent",
+      "description": "Walk from a short raised rigid floor onto a lower rigid floor.",
+      "source_task_or_operation": "Downward platform/stair traversal in robust quadruped locomotion.",
+      "applicability": "The Go2's free base and four legs can physically traverse a fixed rigid height transition.",
+      "adaptation": "The source demonstrates downward terrain traversal but does not give a universal Go2 base displacement bound. The local step_down scene and x-progress threshold are explicit exact-MJCF adaptations.",
+      "scene_assumptions": [
+        "The private scene is step_down.xml with a raised rigid floor followed by a lower rigid floor.",
+        "The scene contains no deformation, transparency, friction change, or external force."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private binding measures signed base_link x displacement."
+      ],
+      "scoring": [
+        {
+          "clause_id": "descent_progress",
+          "metric": "body_axis_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "eventual",
+            "event": "lower_floor_reached"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results on walking up and down stairs while maintaining balance.",
+              "support": "adapted",
+              "adaptation": "The downward traversal operation is retained; a local rigid height transition and trusted x-progress metric replace the unavailable semantic course-end event."
+            }
+          ]
+        },
+        {
+          "clause_id": "descent_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GO2-OFFICIAL",
+              "specific_reference": "Performance Parameters table: Go2 maximum climb/drop height is about 16 cm for relevant variants.",
+              "support": "adapted",
+              "adaptation": "The scene transition is kept below the published scale and the minimum base height is a local fall-screen adaptation, not a new product claim."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T14",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive descent duration"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T15",
+      "name": "Rigid step ascent",
+      "description": "Traverse one low rigid raised step in the forward direction.",
+      "source_task_or_operation": "10 s step-up trial with front- and hind-leg traversal success.",
+      "applicability": "The stock Go2 is a four-legged body for which a rigid step is physically applicable and locally measurable.",
+      "adaptation": "The source requires traversal by front and hind legs within 10 s. The package retains a rigid step fixture and uses a trusted progress plus minimum-height proxy because the shared Harness does not expose per-foot step-clearance semantics; the exact source success definition is therefore not claimed.",
+      "scene_assumptions": [
+        "The private scene is step_up.xml with a 10 cm rigid step, below the official Go2 climb/drop scale.",
+        "The course has a long rigid floor before and after the step."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure x progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "step_ascent_progress",
+          "metric": "body_axis_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "within",
+            "duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HOELLER-2020",
+              "specific_reference": "Results: a 10 s trial succeeds when both front and hind legs traverse the step.",
+              "support": "adapted",
+              "adaptation": "The rigid step operation is retained, but x progress is an explicit local proxy for the source's per-leg traversal event because that event is not a supported shared measurement kind."
+            }
+          ]
+        },
+        {
+          "clause_id": "step_ascent_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GO2-OFFICIAL",
+              "specific_reference": "Performance Parameters table: maximum climb/drop height is about 16 cm.",
+              "support": "adapted",
+              "adaptation": "The local step is 10 cm and the minimum height criterion is an exact-MJCF fall screen; it does not claim a front/hind foot-clearance result."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T15",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive step traversal window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T16",
+      "name": "Rigid step descent",
+      "description": "Traverse one low rigid drop from a raised floor onto a lower floor.",
+      "source_task_or_operation": "10 s step-down trial in challenging-terrain quadruped evaluation.",
+      "applicability": "A stock Go2 quadruped can be tested on a fixed rigid downward transition without deformable or transparent fixtures.",
+      "adaptation": "The source step-down operation is retained. The local height is below the official Go2 climb/drop scale and the trusted criteria use progress and minimum body height rather than an unsupported per-foot event.",
+      "scene_assumptions": [
+        "The private scene is step_down.xml.",
+        "The lower floor is long enough for the robot to settle after the transition."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure x progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "step_descent_progress",
+          "metric": "body_axis_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "within",
+            "duration_s": 2
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-HOELLER-2020",
+              "specific_reference": "Results: step trials use a fixed time window and evaluate successful traversal of the step.",
+              "support": "adapted",
+              "adaptation": "The rigid step-down operation is retained; local x progress is the available trusted executable proxy for course traversal."
+            }
+          ]
+        },
+        {
+          "clause_id": "step_descent_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GO2-OFFICIAL",
+              "specific_reference": "Performance Parameters table: maximum climb/drop height is about 16 cm.",
+              "support": "adapted",
+              "adaptation": "The package uses a smaller exact rigid fixture and an adapted minimum-height fall screen."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T16",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive step-down traversal window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T17",
+      "name": "Rigid stair ascent",
+      "description": "Traverse a short sequence of low rigid stairs.",
+      "source_task_or_operation": "Stair traversal in mixed obstacle-course and terrain-aware quadruped evaluation.",
+      "applicability": "Four legs and a free base make low rigid stairs directly applicable to the stock Go2 MJCF.",
+      "adaptation": "The source evaluates stairs as a distinct terrain family. The local scene uses three rigid 3, 6, and 9 cm risers, within the scale of the Go2 model, and uses trusted progress and height proxies rather than an unsupported semantic stair-end detector.",
+      "scene_assumptions": [
+        "The private scene is stairs.xml with three rigid low risers and a long finishing floor.",
+        "All stairs are opaque, fixed, and rigid."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure x progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "stair_progress",
+          "metric": "body_axis_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.05,
+          "temporal": {
+            "kind": "eventual",
+            "event": "stair_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A and Table I: stair terrain is a separate rigid terrain evaluation family.",
+              "support": "adapted",
+              "adaptation": "The terrain family and distinct stair fixture are retained; local x progress is the available trusted completion proxy."
+            }
+          ]
+        },
+        {
+          "clause_id": "stair_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results: the obstacle course includes stairs and successful traversal while maintaining balance.",
+              "support": "adapted",
+              "adaptation": "The local low risers preserve rigid stair traversal while the minimum-height criterion is an exact-MJCF balance proxy."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T17",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive stair traversal window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T18",
+      "name": "Rigid block terrain traversal",
+      "description": "Traverse a bounded field of fixed low rigid blocks.",
+      "source_task_or_operation": "Block terrain traversal and maximum travel-distance evaluation.",
+      "applicability": "Fixed blocks exercise leg placement and body stability while remaining fully reproducible by the local MuJoCo model.",
+      "adaptation": "The source uses block terrain and bounded travel distance. The local scene uses four fixed low blocks and the trusted package metrics measure progress and minimum height; no moving debris or soft contact is implied.",
+      "scene_assumptions": [
+        "The private scene is blocks.xml with four fixed box blocks on a rigid floor.",
+        "The blocks are lower than the official Go2 climb/drop scale and are not payload or deformable fixtures."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure planar progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "block_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "eventual",
+            "event": "block_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A and Table I: block terrain is evaluated with bounded travel distance.",
+              "support": "adapted",
+              "adaptation": "The rigid block terrain family is direct; the local short-course displacement threshold is an executable calibration adaptation, not the source five-metre map score."
+            }
+          ]
+        },
+        {
+          "clause_id": "block_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A: terrain safety is evaluated during block terrain traversal.",
+              "support": "adapted",
+              "adaptation": "The local minimum base height is a trusted exact-MJCF fall screen for the source safety obligation."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T18",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive block-terrain window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T19",
+      "name": "Rigid stepping-stone traversal",
+      "description": "Cross a sequence of fixed rigid stepping stones with bounded gaps.",
+      "source_task_or_operation": "Stepping-stone terrain with measured inter-stone gaps.",
+      "applicability": "Discrete rigid footholds are physically applicable to the Go2 four-leg morphology and require no unsupported material model.",
+      "adaptation": "The source reports 8.5, 17, and 25.5 cm gap protocols. The local fixture uses a fixed 17 cm maximum gap and the trusted package measures progress and minimum height; no claim is made for the source's largest-gap result.",
+      "scene_assumptions": [
+        "The private scene is stepping_stones.xml with fixed opaque rigid stones and a bounded gap sequence.",
+        "The course contains no loose, transparent, deformable, or moving object."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure planar progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "stone_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "eventual",
+            "event": "stone_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Abstract and Section IV-A: stepping-stone terrain is evaluated with gaps including 17 cm.",
+              "support": "adapted",
+              "adaptation": "The rigid stepping-stone family and 17 cm gap are retained; the local displacement threshold is an executable short-course adaptation."
+            }
+          ]
+        },
+        {
+          "clause_id": "stone_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A and Table I: travel distance is used as a safety measure on stepping stones.",
+              "support": "adapted",
+              "adaptation": "The local minimum-height binding is the available trusted safety proxy and does not claim a source foot-contact success result."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T19",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive stepping-stone window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T20",
+      "name": "Rigid pole obstacle traversal",
+      "description": "Traverse a field of fixed opaque cylindrical pole obstacles.",
+      "source_task_or_operation": "Pole terrain traversal with 10-15 cm pole diameters.",
+      "applicability": "Fixed rigid poles exercise obstacle negotiation for a quadruped and are directly representable in MuJoCo.",
+      "adaptation": "The source uses pole terrain as a separate rigid challenge. The local scene uses three fixed 10 cm diameter poles, the lower end of the source range, and trusted progress and height proxies.",
+      "scene_assumptions": [
+        "The private scene is rigid_poles.xml with three fixed opaque cylinders.",
+        "The poles are rigidly attached to the world and do not inject force or move during the trial."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure planar progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "pole_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "eventual",
+            "event": "pole_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Abstract and Section IV-A: pole terrains use 10-15 cm pole diameters and travel distance as a safety measure.",
+              "support": "adapted",
+              "adaptation": "The local poles use the source lower diameter and the trusted planar displacement proxy for bounded course progress."
+            }
+          ]
+        },
+        {
+          "clause_id": "pole_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A: pole terrain is evaluated as a rigid terrain challenge.",
+              "support": "adapted",
+              "adaptation": "The minimum-height clause is an exact-MJCF fall screen for the source safety obligation."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T20",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive pole-course window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T21",
+      "name": "Rough rigid terrain traversal",
+      "description": "Traverse a bounded sequence of fixed rigid height variations.",
+      "source_task_or_operation": "Rigid uneven terrain traversal in terrain-aware quadrupedal locomotion.",
+      "applicability": "The Go2 free base can encounter low fixed height variations without requiring a soft or stochastic contact model.",
+      "adaptation": "The source terrain family is retained as rough rigid terrain. The local scene deliberately excludes mud, vegetation, loose debris, and deformable bodies; progress and minimum height are measured with existing trusted kinds.",
+      "scene_assumptions": [
+        "The private scene is rough_rigid.xml with four fixed low rigid boxes on a rigid floor.",
+        "All geometry is opaque, rigid, and static."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure planar progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "rough_progress",
+          "metric": "body_planar_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "eventual",
+            "event": "rough_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A: rigid terrain families are compared with travel-distance safety measurements.",
+              "support": "adapted",
+              "adaptation": "The local rough-rigid scene is a faithful rigid-material instantiation; the short-course displacement threshold is an explicit calibration adaptation."
+            }
+          ]
+        },
+        {
+          "clause_id": "rough_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-SHI-2023",
+              "specific_reference": "Section IV-A: terrain safety is evaluated during rigid terrain traversal.",
+              "support": "adapted",
+              "adaptation": "The minimum-height measurement is the available trusted exact-MJCF safety proxy."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T21",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive rough-terrain window"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "GO2-T22",
+      "name": "Mixed rigid obstacle-course traversal",
+      "description": "Traverse a fixed course combining a shallow ramp, low stairs, and fixed blocks.",
+      "source_task_or_operation": "Mixed obstacle-course path containing an inclined platform, stairs, and a block pile.",
+      "applicability": "The stock Go2 can be evaluated on a bounded sequence of rigid obstacles without a manipulator or unmodeled material.",
+      "adaptation": "The source course order is retained at a robot-applicable scale. The local mixed_course scene uses only rigid opaque fixtures and trusted progress/height proxies; it does not claim the source robot's original obstacle dimensions or full-course success rate.",
+      "scene_assumptions": [
+        "The private scene is mixed_course.xml with a shallow ramp, three low risers, and four fixed low blocks.",
+        "The course is static, opaque, and long enough for the private two-segment request."
+      ],
+      "observation_assumptions": [
+        "The Framework samples base_link body position and quaternion from the canonical MuJoCo data.",
+        "The candidate receives only its public request and canonical model/data observations.",
+        "The private bindings measure x progress and minimum base_link height."
+      ],
+      "scoring": [
+        {
+          "clause_id": "mixed_progress",
+          "metric": "body_axis_displacement",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "eventual",
+            "event": "mixed_course_window_complete"
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results and Fig. 4C-D: a fixed path traverses an inclined platform, raised platform, stairs, and a block pile.",
+              "support": "adapted",
+              "adaptation": "The mixed operation and obstacle ordering are retained with local rigid fixtures; x progress is the existing trusted course proxy."
+            }
+          ]
+        },
+        {
+          "clause_id": "mixed_height",
+          "metric": "minimum_body_height",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 0.18,
+          "temporal": {
+            "kind": "continuous",
+            "duration_s": 1
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MIKI-2022",
+              "specific_reference": "Results: the mixed obstacle course is traversed while maintaining balance.",
+              "support": "adapted",
+              "adaptation": "The local minimum-height criterion is an exact-MJCF balance proxy and does not claim the source course's semantic success detector."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "GO2-T22",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "first_segment_s",
+              "second_segment_s"
+            ],
+            "properties": {
+              "first_segment_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive first mixed-course segment"
+              },
+              "second_segment_s": {
+                "type": "number",
+                "unit": "s",
+                "description": "positive second mixed-course segment"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    }
+  ],
+  "request_envelope": {
+    "required": [
+      "task_id",
+      "task_parameters"
+    ],
+    "task_id": "one of catalog.tasks[].task_id",
+    "task_parameters": "validated by the selected task invocation_schema.task_parameters"
+  }
+}

@@ -1,0 +1,11 @@
+<mujoco model="go2_rough_rigid">
+  <include file="go2.xml"/>
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1" diffuse="1 1 1"/>
+    <geom name="floor" type="plane" size="12 12 0.05" friction="1 0.01 0.001"/>
+    <geom name="rough_1" type="box" pos="0.50 0.00 0.005" size="0.30 0.80 0.005" friction="1 0.01 0.001"/>
+    <geom name="rough_2" type="box" pos="1.15 0.12 0.01" size="0.22 0.60 0.01" friction="1 0.01 0.001"/>
+    <geom name="rough_3" type="box" pos="1.75 -0.10 0.0075" size="0.28 0.70 0.0075" friction="1 0.01 0.001"/>
+    <geom name="rough_4" type="box" pos="2.35 0.08 0.0125" size="0.24 0.55 0.0125" friction="1 0.01 0.001"/>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,6 @@
+{
+  "robots": {
+    "robotstudio_so101": "robotstudio_so101/1.0.0",
+    "unitree-go2-stock-12dof": "unitree-go2-stock-12dof/1.0.0"
+  }
+}
