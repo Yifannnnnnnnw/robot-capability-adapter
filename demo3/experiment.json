@@ -1,0 +1,21 @@
+{
+  "experiment_id": "demo3-direct-mujoco-two-by-two",
+  "robots": [
+    "robotstudio_so101",
+    "unitree-go2-stock-12dof"
+  ],
+  "generation_conditions": [
+    "skeleton-assisted",
+    "from-scratch"
+  ],
+  "max_driver_attempts_per_condition": 3,
+  "development_probe": {
+    "max_requests_per_stage": 12,
+    "wall_timeout_s_per_request": 30,
+    "max_output_chars_per_request": 12000
+  },
+  "validation": {
+    "record_video": true,
+    "worker_wall_timeout_s": 120
+  }
+}

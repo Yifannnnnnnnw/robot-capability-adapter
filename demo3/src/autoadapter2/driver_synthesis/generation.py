@@ -700,6 +700,8 @@ def generate(
                 system_prompt=GENERATE_REACT_SYSTEM,
                 user_prompt=_react_user_prompt(GENERATE_REACT_TASK, inputs),
                 tools=session.driver_tools(),
+                max_turns=24,
+                max_tool_calls=72,
             )
         except ReactLoopError as exc:
             raise GenerationError(f"interactive GENERATE did not submit: {exc}") from exc

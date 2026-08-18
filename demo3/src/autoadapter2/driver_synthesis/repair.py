@@ -504,6 +504,8 @@ def _interactive_repair(
             system_prompt=REPAIR_REACT_SYSTEM,
             user_prompt=_react_user_prompt(REPAIR_REACT_TASK, repair_inputs),
             tools=session.driver_tools(),
+            max_turns=24,
+            max_tool_calls=72,
         )
     except ReactLoopError as exc:
         raise RepairError(f"interactive Repair did not submit: {exc}") from exc
