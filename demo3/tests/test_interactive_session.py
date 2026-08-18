@@ -43,6 +43,34 @@ def build(model, data):
 """
 
 
+NESTED_DRIVER_SOURCE = """
+import mujoco
+
+
+class Controller:
+    def __init__(self, model, data):
+        self.model = model
+        self.data = data
+
+    def apply(self, target):
+        self.data.ctrl[0] = float(target)
+        mujoco.mj_step(self.model, self.data)
+
+
+class Driver:
+    def __init__(self, model, data):
+        self._controller = Controller(model, data)
+
+    def drive(self, request):
+        self._controller.apply(request["task_parameters"].get("target", 0.0))
+        return True
+
+
+def build(model, data):
+    return Driver(model, data)
+"""
+
+
 def _call(call_id: str, name: str, arguments: Mapping[str, Any]) -> ToolCall:
     raw = json.dumps(dict(arguments), sort_keys=True)
     return ToolCall(call_id, name, dict(arguments), raw)
@@ -260,6 +288,33 @@ class InteractiveSessionTests(unittest.TestCase):
         self.session.write_driver({"source": DRIVER_SOURCE + "\n# revision two\n"})
         with self.assertRaisesRegex(DevelopmentSessionError, "lacks successful"):
             self.session.submit_driver({"note": "stale smoke"})
+
+    def test_nested_controller_passes_import_and_canonical_physics_smoke(self) -> None:
+        session = PublicDevelopmentSession(
+            package=self.package,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "nested-controller-session",
+            budget=ProbeBudget(max_requests=2, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+            capability_methods=("drive",),
+            capability_task_ids={"drive": ("task-1",)},
+        )
+        session.write_driver({"source": NESTED_DRIVER_SOURCE})
+
+        imported = session.import_driver({})
+        smoke = session.smoke_driver(
+            {
+                "method_name": "drive",
+                "request": {
+                    "task_id": "task-1",
+                    "task_parameters": {"target": 0.1},
+                },
+            }
+        )
+
+        self.assertTrue(imported["successful"])
+        self.assertTrue(smoke["successful"])
+        self.assertEqual(session.submit_driver({})["smoked_methods"], ["drive"])
 
     def test_smoke_rejects_task_outside_capability_coverage(self) -> None:
         self.session.write_driver({"source": DRIVER_SOURCE})

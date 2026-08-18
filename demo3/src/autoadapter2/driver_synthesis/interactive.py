@@ -320,8 +320,6 @@ class PublicDevelopmentSession:
             "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
             "data = mujoco.MjData(model)\n"
             "candidate = driver.build(model=model, data=data)\n"
-            "if candidate.model is not model or candidate.data is not data:\n"
-            "    raise RuntimeError('driver did not retain canonical model/data')\n"
             "print('candidate_import_and_build_ok')\n"
         )
         result = self._run_probe(
@@ -363,8 +361,6 @@ class PublicDevelopmentSession:
             "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
             "data = mujoco.MjData(model)\n"
             "candidate = driver.build(model=model, data=data)\n"
-            "if candidate.model is not model or candidate.data is not data:\n"
-            "    raise RuntimeError('driver did not retain canonical model/data')\n"
             f"request = json.loads({request_json!r})\n"
             f"returned = candidate.{method_name}(request=request)\n"
             "print('candidate_return_type=' + type(returned).__name__)\n"

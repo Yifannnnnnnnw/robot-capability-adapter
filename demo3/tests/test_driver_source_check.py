@@ -66,6 +66,7 @@ class DriverSourceCheckTests(unittest.TestCase):
     def test_model_loading_and_reset_are_rejected(self) -> None:
         for forbidden in (
             "mujoco.MjModel.from_xml_path('easy.xml')",
+            "mujoco.MjModel.from_xml_string('<mujoco/>')",
             "mujoco.mj_resetData(self.model, self.data)",
         ):
             with self.subTest(forbidden=forbidden):

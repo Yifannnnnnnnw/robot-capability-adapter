@@ -43,6 +43,56 @@ def _source(*, teleport: bool = False) -> str:
     )
 
 
+def _nested_controller_source() -> str:
+    return textwrap.dedent(
+        """
+        import mujoco
+
+        class InnerController:
+            def __init__(self, model, data):
+                self.model = model
+                self.data = data
+
+            def command(self, target):
+                self.data.ctrl[0] = float(target)
+                mujoco.mj_step(self.model, self.data)
+
+        class Driver:
+            def __init__(self, model, data):
+                self._controller = InnerController(model, data)
+
+            def command_joint(self, request):
+                self._controller.command(request["task_parameters"]["target"])
+                return True
+
+        def build(*, model, data):
+            return Driver(model, data)
+        """
+    )
+
+
+def _noncanonical_source() -> str:
+    return textwrap.dedent(
+        """
+        import mujoco
+
+        class Driver:
+            def __init__(self):
+                self.model = mujoco.MjModel.from_xml_string("<mujoco/>")
+                self.data = mujoco.MjData(self.model)
+
+            def command_joint(self, request):
+                del request
+                mujoco.mj_step(self.model, self.data)
+                return True
+
+        def build(*, model, data):
+            del model, data
+            return Driver()
+        """
+    )
+
+
 class HarnessWorkerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
@@ -83,6 +133,25 @@ class HarnessWorkerTests(unittest.TestCase):
         self.assertEqual(result["physical_evidence"]["step_count"], 1)
         self.assertTrue(result["physical_evidence"]["ctrl_changed_from_reset"])
         self.assertFalse(result["physical_evidence"]["direct_state_write_detected"])
+
+    def test_nested_controller_can_retain_the_canonical_session(self) -> None:
+        self.driver_path.write_text(_nested_controller_source(), encoding="utf-8")
+
+        result = self._run()
+
+        self.assertIsNone(result["candidate_exception"])
+        self.assertTrue(result["canonical_model_data"])
+        self.assertEqual(result["physical_evidence"]["step_count"], 1)
+
+    def test_noncanonical_step_is_rejected_by_the_tracked_session(self) -> None:
+        self.driver_path.write_text(_noncanonical_source(), encoding="utf-8")
+
+        result = self._run()
+
+        self.assertFalse(result["canonical_model_data"])
+        self.assertEqual(result["physical_evidence"]["step_count"], 0)
+        self.assertIsNotNone(result["candidate_exception"])
+        self.assertIn("non-canonical", result["candidate_exception"]["message"])
 
     def test_runtime_tracker_detects_teleport_before_step(self) -> None:
         self.driver_path.write_text(_source(teleport=True), encoding="utf-8")

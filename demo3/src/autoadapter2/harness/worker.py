@@ -188,12 +188,6 @@ def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
                 if not callable(build):
                     raise RuntimeError("candidate driver.py does not expose build()")
                 driver = build(model=model, data=data)
-                canonical_objects = (
-                    getattr(driver, "model", None) is model
-                    and getattr(driver, "data", None) is data
-                )
-                if not canonical_objects:
-                    raise RuntimeError("candidate did not retain the canonical model/data objects")
                 capability_methods = tuple(payload["capability_methods"])
                 validate_explicit_capability_methods(driver.__class__, capability_methods)
 
@@ -208,6 +202,7 @@ def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
                 returned = method(**dict(arguments))
                 return_value_type = type(returned).__name__
                 tracker.finish()
+                canonical_objects = tracker.step_count > 0
     except Exception as exc:
         candidate_exception = {
             "type": type(exc).__name__,
@@ -218,6 +213,7 @@ def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
             tracker.finish()
         except Exception:
             pass
+        canonical_objects = tracker.step_count > 0
     finally:
         if renderer is not None:
             renderer.close()

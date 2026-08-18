@@ -246,7 +246,7 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
 
     def evidence(self) -> dict[str, Any]:
         return {
-            "canonical_model_data": True,
+            "canonical_model_data": self.step_count > 0,
             "step_count": self.step_count,
             "ctrl_observed_before_step": self.ctrl_observed,
             "ctrl_changed_from_reset": self.ctrl_changed,

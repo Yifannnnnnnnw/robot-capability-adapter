@@ -142,8 +142,8 @@ def _writes_model_state(target: ast.AST) -> bool:
         index = parts.index("model")
     except ValueError:
         return False
-    # ``self.model = model`` retains the Framework object and is required.  Any
-    # deeper target mutates Framework-owned model configuration or observations.
+    # ``self.model = model`` may retain the Framework object. Any deeper target
+    # mutates Framework-owned model configuration or observations.
     return index < len(parts) - 1
 
 
@@ -265,6 +265,10 @@ class _AuditVisitor(ast.NodeVisitor):
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         path = _attribute_path(node)
+        if node.attr in _FORBIDDEN_CONSTRUCTORS:
+            self.errors.append(
+                f"candidate-owned MuJoCo construction is forbidden: {path}"
+            )
         if "._functions." in f".{path}." or path.startswith("mujoco._functions"):
             self.errors.append("internal MuJoCo function access is forbidden")
         if node.attr == "ctrl":
