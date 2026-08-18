@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any, Mapping
 
 DEFAULT_RENDER = {
-    "width": 640,
-    "height": 480,
+    "width": 800,
+    "height": 600,
     "fps": 20.0,
     "camera": -1,
 }

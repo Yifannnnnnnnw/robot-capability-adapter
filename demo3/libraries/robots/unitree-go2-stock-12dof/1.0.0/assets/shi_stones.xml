@@ -26,8 +26,8 @@
     <geom name="map_limit" type="box" pos="5 0 0.002" size="0.02 0.65 0.002"
           contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
     </body>
-    <camera name="evidence" mode="trackcom" pos="0 -3.2 1.7"
-            zaxis="0 -0.923 0.385" fovy="47"/>
+    <camera name="evidence" mode="trackcom" pos="0 -1.9 1.1"
+            zaxis="0 -0.923 0.385" fovy="34"/>
   </worldbody>
   <keyframe>
     <key name="task_start"

@@ -4,6 +4,7 @@
   <compiler angle="radian" meshdir="assets" autolimits="true"/>
 
   <visual>
+    <global offwidth="800" offheight="600"/>
     <scale contactwidth="0.1" contactheight="0.05" forcewidth="0.02" framelength="0.75" framewidth="0.025"
       camera="0.2"/>
   </visual>

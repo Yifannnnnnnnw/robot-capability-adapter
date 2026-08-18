@@ -47,8 +47,8 @@
       "max_steps": 1500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -83,8 +83,8 @@
       "max_steps": 5500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -119,8 +119,8 @@
       "max_steps": 5500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -155,8 +155,8 @@
       "max_steps": 5500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -190,8 +190,8 @@
       "max_steps": 1000,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -246,8 +246,8 @@
       "max_steps": 10500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -281,8 +281,8 @@
       "max_steps": 9500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -316,8 +316,8 @@
       "max_steps": 9500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -351,8 +351,8 @@
       "max_steps": 9500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -386,8 +386,8 @@
       "max_steps": 9500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -421,8 +421,8 @@
       "max_steps": 9500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -477,8 +477,8 @@
       "max_steps": 6500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -533,8 +533,8 @@
       "max_steps": 6500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -589,8 +589,8 @@
       "max_steps": 6500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -645,8 +645,8 @@
       "max_steps": 6500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -685,8 +685,8 @@
       "max_steps": 5500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -746,8 +746,8 @@
       "max_steps": 6500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -781,8 +781,8 @@
       "max_steps": 6500,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -817,8 +817,8 @@
       "max_steps": 3000,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     },
     {
@@ -906,8 +906,8 @@
       "max_steps": 8320,
       "sample_hz": 20,
       "video_fps": 10,
-      "video_width": 640,
-      "video_height": 480,
+      "video_width": 800,
+      "video_height": 600,
       "camera": "evidence"
     }
   ]

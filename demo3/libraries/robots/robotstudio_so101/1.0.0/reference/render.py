@@ -8,8 +8,8 @@ def default_render_config() -> dict[str, object]:
 
     return {
         "enabled": True,
-        "width": 640,
-        "height": 480,
+        "width": 800,
+        "height": 600,
         "fps": 10.0,
         "camera": -1,
     }

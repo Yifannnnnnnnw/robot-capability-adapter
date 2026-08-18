@@ -184,8 +184,8 @@ def test_go2_package_snapshot_and_private_coverage() -> None:
     )["instances"]
     instance_tasks = {item["task_id"] for item in instances}
     assert instance_tasks == {task["task_id"] for task in package.tasks}
-    assert all(item["video_width"] >= 640 for item in instances)
-    assert all(item["video_height"] >= 480 for item in instances)
+    assert all(item["video_width"] >= 800 for item in instances)
+    assert all(item["video_height"] >= 600 for item in instances)
     for source in package.sources:
         if "github.com" in source["locator"].lower():
             assert re.search(r"(?<![0-9a-f])[0-9a-f]{12,40}(?![0-9a-f])", source["locator"])
@@ -269,6 +269,9 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
         assert key_id >= 0, scene.name
         assert camera_id >= 0, scene.name
         assert model.cam_mode[camera_id] == mujoco.mjtCamLight.mjCAMLIGHT_TRACKCOM, scene.name
+        assert float(model.cam_fovy[camera_id]) <= 38.0, scene.name
+        assert model.vis.global_.offwidth >= instance["video_width"], scene.name
+        assert model.vis.global_.offheight >= instance["video_height"], scene.name
         mujoco.mj_resetDataKeyframe(model, data, key_id)
         mujoco.mj_forward(model, data)
         assert np.all(np.isfinite(data.qpos)), scene.name

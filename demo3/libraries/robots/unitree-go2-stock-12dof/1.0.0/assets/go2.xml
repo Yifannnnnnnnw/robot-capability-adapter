@@ -3,6 +3,10 @@
 
   <option cone="elliptic" impratio="100" />
 
+  <visual>
+    <global offwidth="800" offheight="600"/>
+  </visual>
+
   <default>
     <default class="go2">
       <geom friction="0.4" margin="0.001" condim="1"/>
@@ -37,6 +41,8 @@
   </default>
 
   <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.48 0.56 0.66"
+      rgb2="0.12 0.14 0.18" width="512" height="3072" />
     <material name="metal" rgba=".9 .95 .95 1" />
     <material name="black" rgba="0 0 0 1" />
     <material name="white" rgba="1 1 1 1" />

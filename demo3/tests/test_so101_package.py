@@ -176,8 +176,13 @@ def test_so101_package_load_and_request_abi() -> None:
         assert set(arguments) == {"request"}
         assert arguments["request"]["task_id"] == instance["task_id"]
         assert set(arguments["request"]["task_parameters"]) >= {"target_position"}
-        assert instance["video_width"] >= 640
-        assert instance["video_height"] >= 480
+        assert instance["video_width"] >= 800
+        assert instance["video_height"] >= 600
+
+    for scene_relative in {item["scene_entrypoint"] for item in instances}:
+        model = mujoco.MjModel.from_xml_path(str(package.root / scene_relative))
+        assert model.vis.global_.offwidth >= 800
+        assert model.vis.global_.offheight >= 600
 
 
 def test_so101_reference_source_and_ivc_contract() -> None:
@@ -750,8 +755,8 @@ def test_so101_reference_private_suite_and_renderer() -> None:
     render_config = render_module.default_render_config()
     assert render_config == {
         "enabled": True,
-        "width": 640,
-        "height": 480,
+        "width": 800,
+        "height": 600,
         "fps": 10.0,
         "camera": -1,
     }

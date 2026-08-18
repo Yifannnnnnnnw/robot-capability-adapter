@@ -24,8 +24,8 @@
           contype="0" conaffinity="0" rgba="0.24 0.64 0.94 1"/>
     <geom name="finish_line" type="box" pos="3.6 0 0.152" size="0.02 0.74 0.002"
           contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
-    <camera name="evidence" mode="trackcom" pos="0 -3.2 1.7"
-            zaxis="0 -0.923 0.385" fovy="48"/>
+    <camera name="evidence" mode="trackcom" pos="0 -1.9 1.1"
+            zaxis="0 -0.923 0.385" fovy="34"/>
   </worldbody>
   <keyframe>
     <key name="task_start"
