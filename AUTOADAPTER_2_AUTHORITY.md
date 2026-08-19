@@ -933,6 +933,9 @@ TGCD may design names, abstractions, interfaces, and validation contracts, but i
 invent unsupported robot affordances, units, frames, source claims, or less demanding standards.
 The semantic interface is transported through the fixed `method(request=...)` ABI; TGCD does not
 rename that Python envelope and may use only task-parameter fields declared by the covered tasks.
+For an otherwise declared and type-correct task-parameter input, the Framework may mechanically
+canonicalize `required_for_task_ids` to the exact covered tasks whose public invocation schemas
+require that parameter; it may not add or remove an input or change its type, unit, or frame.
 It must not receive private instances, seeds, exact reset state, simulator symbols, measurement
 implementation, guards, executable cases, expected outcomes, validation reports, or candidate
 implementation information.
@@ -959,7 +962,9 @@ clause 必须来自另一项 task，并说明 primary 未覆盖的 scene、metri
 Demo 抽取；不得把它们未进入 capability suite 错报成相应 task 已通过。TGCD 可以设计名称、抽象、接口和
 validation contract，但不能发明无依据的机器人 affordance、unit、frame、来源声明或更宽松标准；
 语义 interface 通过固定的 `method(request=...)` ABI 传输，TGCD 不得改名该 Python 调用信封，且
-只能使用被覆盖任务公开声明的 task-parameter 字段；
+只能使用被覆盖任务公开声明的 task-parameter 字段。对于已声明且 type 正确的 task-parameter
+input，Framework 可以把 `required_for_task_ids` 机械规范化为公开 invocation schema 确实要求该
+参数的被覆盖 task；不得借此增加或删除 input，也不得改变 type、unit 或 frame；
 也不得接收私有实例、seed、精确 reset 状态、simulator symbol、measurement 实现、guard、可执行
 case、预期结果、validation report 或 candidate 实现信息。
 

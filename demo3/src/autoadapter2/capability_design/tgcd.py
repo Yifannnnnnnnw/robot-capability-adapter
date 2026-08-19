@@ -41,6 +41,8 @@ not another Python argument, and has this exact form:
 schema, and list exactly the covered tasks for which that parameter is required. outputs are
 model-authored and contain exactly name, type, unit, and frame; for example
 {"name":"completed","type":"bool","unit":"unitless","frame":"none"}.
+The Framework mechanically canonicalizes required_for_task_ids from the covered public task
+schemas; concentrate on selecting the correct capability grouping and semantic parameter paths.
 preconditions, invariants, required_affordances.actions, and required_affordances.observations MUST
 be JSON arrays. temporal_semantics MUST be a JSON object, for example
 {"kind":"bounded","description":"Complete within the request duration"}.
@@ -272,6 +274,41 @@ def _canonicalize_design(design: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _canonicalize_parameter_task_coverage(
+    design: dict[str, Any], package: RobotPackage
+) -> dict[str, Any]:
+    capabilities = design.get("capabilities")
+    if not isinstance(capabilities, list):
+        return design
+    for index, capability in enumerate(capabilities):
+        if not isinstance(capability, dict):
+            continue
+        covered = capability.get("covered_task_ids")
+        interface = capability.get("interface")
+        if not isinstance(covered, list) or not isinstance(interface, dict):
+            continue
+        inputs = interface.get("inputs")
+        if not isinstance(inputs, list):
+            continue
+        expected = {
+            item["name"]: item
+            for item in _required_parameter_inputs(
+                package,
+                [task_id for task_id in covered if isinstance(task_id, str)],
+                where=f"capabilities[{index}].interface.inputs",
+            )
+        }
+        for item in inputs:
+            if not isinstance(item, dict):
+                continue
+            expected_item = expected.get(item.get("name"))
+            if expected_item is not None:
+                item["required_for_task_ids"] = list(
+                    expected_item["required_for_task_ids"]
+                )
+    return design
+
+
 def _source_clauses(tasks: Sequence[Mapping[str, Any]]) -> dict[tuple[str, str], Mapping[str, Any]]:
     clauses: dict[tuple[str, str], Mapping[str, Any]] = {}
     for task in tasks:
@@ -332,7 +369,9 @@ def validate_capability_design(
 ) -> dict[str, Any]:
     """Reject missing coverage, invalid names, and weakened source standards."""
 
-    design = _canonicalize_design(design)
+    design = _canonicalize_parameter_task_coverage(
+        _canonicalize_design(design), package
+    )
     expected_root = {
         "artifact_type": "capability_design",
         "schema_version": "1.0",

@@ -312,6 +312,20 @@ class TGCDTests(unittest.TestCase):
         with self.assertRaisesRegex(CapabilityDesignError, "required task parameters"):
             validate_capability_design(design, self.package)
 
+    def test_required_parameter_task_ids_are_mechanically_canonicalized(self) -> None:
+        design = _design(self.package)
+        parameter = design["capabilities"][0]["interface"]["inputs"][1]
+        parameter["required_for_task_ids"] = ["task-00"]
+
+        validated = validate_capability_design(design, self.package)
+
+        self.assertEqual(
+            validated["capabilities"][0]["interface"]["inputs"][1][
+                "required_for_task_ids"
+            ],
+            ["task-00", "task-01", "task-02", "task-03"],
+        )
+
     def test_unsupported_robot_affordance_is_rejected(self) -> None:
         design = _design(self.package)
         design["capabilities"][0]["required_affordances"]["actions"] = ["teleport"]
