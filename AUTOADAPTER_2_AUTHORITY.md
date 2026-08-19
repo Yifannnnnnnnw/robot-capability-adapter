@@ -4,9 +4,24 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.15`<br>
+> **Document revision / 文档版本：** `0.19.16`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.16` designates `autoadapter/` as the sole canonical Direct-MuJoCo mainline path.
+The current `demo3/` tree is only the temporary migration source, while the SDK-grounded material
+in the former `general_demo/` belongs under `extensions/sdk/`. It also separates future robot
+research, runnable robot admission, and per-run selection into `research/robots/index.json`,
+`libraries/robots/index.json`, and `configs/experiments/*.json`, respectively. This is a repository
+and ownership clarification; it does not alter the research questions, experiment conditions,
+acceptance robots, validation contract, or any existing evidence classification.
+
+**中文辅助说明。** `0.19.16` 将 `autoadapter/` 指定为唯一 canonical Direct-MuJoCo 主线路径。
+当前 `demo3/` 仅是迁移前的临时源码目录，原 `general_demo/` 中基于 SDK 的材料归入
+`extensions/sdk/`。本修订还把未来机器人研究、可运行机器人准入和单次运行选择分别放在
+`research/robots/index.json`、`libraries/robots/index.json` 和 `configs/experiments/*.json`。
+这只是仓库路径与所有权澄清，不改变研究问题、实验条件、验收机器人、validation 合同或任何
+已有证据分类。
 
 Revision `0.19.15` aligns the STUDY submission schema with its condition-specific handler after a
 real skeleton-assisted run completed a successful recovery probe but omitted `skeleton_inspection`.
@@ -717,91 +732,106 @@ morphology 的因果效应。
 ### 2.1 Target repository layout / 目标仓库结构
 
 ```text
-demo3/                       # active Direct-MuJoCo implementation workspace / 活动实现 workspace
+autoadapter/                 # sole canonical Direct-MuJoCo mainline / 唯一 canonical 主线
   pyproject.toml             # complete declared third-party runtime dependencies / 完整声明依赖
-  libraries/
-    robots/                  # only complete admitted robot packages / 仅完整已准入机器人 package
-    experience/
-  capability_design/
-  validation_compiler/
-  driver_synthesis/
-  harness/
-  references/                # calibration-only studies and drivers / 仅供校准
-  tests/
-  runs/                      # ignored raw run evidence / 被忽略的原始运行证据
-  research_candidates/       # incomplete, non-runnable robot/task research / 不完整且不可运行
-
-demo2/                       # preserved policy-constrained historical baseline / 保留的旧基线
-
-general_demo/                # post-acceptance canonical Direct-MuJoCo mainline / 验收后 canonical 主线
+  .python-version
+  README.md
+  configs/
+    experiments/             # run selection and budgets only / 仅运行选择与预算
+      mainline.json
+      so101-canary.json
+      go2-canary.json
+  src/
+    autoadapter2/
+      capability_design/
+      validation_compiler/
+      driver_synthesis/
+      harness/
   libraries/
     robots/
+      index.json             # only complete runnable robot packages / 仅完整可运行 package
     experience/
-  references/
-  tests/
+  research/
+    robots/
+      index.json             # non-runtime future/build list / 非运行时未来建设列表
   evidence/                  # concise tracked run summaries / 精简的版本化运行摘要
+  tests/
+  runs/                      # ignored raw run evidence / 被忽略的原始运行证据
+
+demo2/                       # preserved policy-constrained historical baseline / 保留的旧基线
 
 extensions/
   sdk/                        # real-SDK + Translation experimental extension / 实验扩展线
 ```
 
-`demo3/` is the only active implementation workspace for this Authority. `demo2/` remains a
-preserved policy-constrained historical baseline and must not be incrementally transformed into
-the new design. The current SDK-grounded `general_demo/` is the implementation to be moved to
-`extensions/sdk/`. After the Demo3 acceptance gates pass, moving `demo3/` to the canonical
-`general_demo/` path is a mechanical migration rather than a redesign.
+`autoadapter/` is the sole canonical implementation root for this Authority. Until the mechanical
+migration commit, `demo3/` is the temporary source tree and may receive only the bounded behavioral
+or path-neutral fixes required to satisfy Section 6.1. It must not remain a second mainline after
+that migration. `demo2/` remains a preserved policy-constrained historical baseline and must not be
+incrementally transformed into the new design. The SDK-grounded material in `general_demo/` is an
+extraction source for `extensions/sdk/`, never a canonical mainline.
 
-**中文辅助说明。** `demo3/` 是本 Authority 唯一活动实现 workspace。`demo2/` 保留为受 policy
-约束的历史基线，不得通过持续改造变成新设计。当前基于 SDK 的 `general_demo/` 将迁移到
-`extensions/sdk/`。Demo3 通过验收门槛后，再把 `demo3/` 迁移到 canonical `general_demo/`
-路径；这应当是机械迁移而不是重新设计。
+`research/robots/index.json` is a non-runtime planning list and does not admit a robot. Only
+complete packages may appear in `libraries/robots/index.json`. Experiment configuration selects a
+subset of that runnable index and run budgets through `configs/experiments/*.json`; it does not
+contain robot implementation, private validation definitions, credentials, or SDK configuration.
+
+**中文辅助说明。** `autoadapter/` 是本 Authority 唯一 canonical 实现根目录。在机械迁移提交
+之前，`demo3/` 是临时源码树，只能接收满足第 6.1 节所需的有界行为修复或路径无关修复；迁移后
+不得作为第二条主线继续存在。`demo2/` 保留为受 policy 约束的历史基线，不得通过持续改造变成
+新设计。`general_demo/` 中基于 SDK 的材料只是 `extensions/sdk/` 的提取来源，绝不是 canonical
+主线。
+
+`research/robots/index.json` 是运行时不会读取的规划列表，不构成机器人准入。只有完整 package
+可以进入 `libraries/robots/index.json`。`configs/experiments/*.json` 只能从该可运行索引选择本次
+实验机器人并设置运行预算；其中不得放置机器人实现、私有 validation 定义、凭据或 SDK 配置。
 
 ### 2.2 Dependency direction / 依赖方向
 
-Demo3 must be installable, testable, and runnable without importing, reading, executing, or
-resolving files from `demo2/`, the current `general_demo/`, `extensions/`, `thesis/`, a temporary
+The canonical mainline must be installable, testable, and runnable without importing, reading,
+executing, or resolving files from `demo2/`, `demo3/`, `general_demo/`, `extensions/`, `thesis/`, a temporary
 audit checkout, a user home path, or any other repository-external or sibling source tree. It must
 not use an absolute developer-machine path, an escaping symlink, Git submodule content, or a
 runtime network download to obtain code, prompts, task data, standards-derived scoring records,
 MJCF, meshes, textures, skeletons, reference drivers, or AutoAdapter 1.0 orchestration.
 
-All project-authored imports and file resolutions must remain under `demo3/`. In particular,
-Demo3 must vendor the minimum required AutoAdapter 1.0 STUDY/GENERATE and from-scratch routes and
+All project-authored imports and file resolutions must remain under `autoadapter/`. In particular,
+the mainline must vendor the minimum required AutoAdapter 1.0 STUDY/GENERATE and from-scratch routes and
 the exact two acceptance-robot asset closures. Source URLs in `sources.json` are citations, not
 runtime dependencies; the structured task and scoring content required for a run is stored locally.
 
-Literal zero-dependency execution is not the project contract. Demo3 may depend only on the small
-third-party runtime set declared in `demo3/pyproject.toml`, including Python, MuJoCo, numerical and
+Literal zero-dependency execution is not the project contract. The mainline may depend only on the small
+third-party runtime set declared in `autoadapter/pyproject.toml`, including Python, MuJoCo, numerical and
 video support, plus the configured real-model provider/service needed for model-authored phases.
 The environment is installed before a formal run. During a formal run, network access is allowed
 only to the configured model service from the Framework model adapter; candidate execution,
 MuJoCo evaluation, IVC compilation, and Harness verdicting do not fetch remote content.
 
 The SDK extension may later consume a small, explicit canonical-mainline contract, but the
-dependency must never point back from Demo3 into the extension.
+dependency must never point back from the mainline into the extension.
 
 Default commands and default focused tests exercise only the mainline acceptance pair. Broader
 robot coverage and SDK tests use explicit commands. The two existing Tasks and Morphology Library
 families must not be merged by matching file paths: conflicting records remain in their owning
 mainline or extension namespace until a later evidence-backed deduplication is justified.
 
-**中文辅助说明。** Demo3 必须能够在不导入、读取、执行或解析 `demo2/`、当前
+**中文辅助说明。** canonical 主线必须能够在不导入、读取、执行或解析 `demo2/`、`demo3/`、
 `general_demo/`、`extensions/`、`thesis/`、临时 audit checkout、用户 home 路径或其他仓库外/
 同级源码树文件的情况下安装、测试和运行。不得通过开发者机器绝对路径、逃逸 symlink、Git
 submodule 或运行时网络下载获得代码、prompt、task 数据、来源标准评分记录、MJCF、mesh、texture、
 skeleton、reference driver 或 AutoAdapter 1.0 orchestration。
 
-全部项目自编 import 和文件解析都必须停留在 `demo3/` 下。Demo3 必须内置最小所需的 AutoAdapter
+全部项目自编 import 和文件解析都必须停留在 `autoadapter/` 下。主线必须内置最小所需的 AutoAdapter
 1.0 STUDY/GENERATE 与 from-scratch 路径，以及两个验收机器人的完整 asset closure。
 `sources.json` 中的 URL 只是 citation，不是运行依赖；运行所需的结构化任务和评分内容必须本地
 保存。
 
-项目不声称可以脱离所有第三方 runtime 执行。Demo3 只能依赖 `demo3/pyproject.toml` 明确声明的
+项目不声称可以脱离所有第三方 runtime 执行。主线只能依赖 `autoadapter/pyproject.toml` 明确声明的
 小型第三方运行集合，包括 Python、MuJoCo、数值和视频支持，以及模型创作阶段所需的已配置真实
 model provider/service。正式 run 前完成环境安装；正式 run 中只有 Framework model adapter 可以
 访问已配置模型服务，candidate 执行、MuJoCo evaluation、IVC compilation 和 Harness verdict
 不得下载远程内容。SDK 扩展以后可以消费一个小型 canonical-mainline contract，但依赖方向绝不
-能从 Demo3 指向扩展。
+能从主线指向扩展。
 
 默认命令和默认聚焦测试只运行主线验收机器人对；更广泛的机器人覆盖和 SDK 测试使用显式命令。
 现有两套 Tasks 与 Morphology Library 不能依据相同文件路径直接合并；存在冲突的记录继续保留在
@@ -839,7 +869,7 @@ primitives；可选且经过审阅的 Experience；以及仅用于校准的 refe
 
 ### 2.4 Source-backed Task Library / 有来源依据的任务库
 
-Every robot listed in Demo3's admitted or runnable robot index must have one complete frozen Task
+Every robot listed in the mainline runnable robot index must have one complete frozen Task
 Library snapshot containing at least twenty distinct tasks that are common and physically
 applicable to that exact robot configuration. This rule applies to the acceptance pair and every
 later robot without exception. A task is admitted only when a human reviewer confirms all of the
@@ -876,13 +906,13 @@ evaluation instances, scene perturbations, seeds, exact reset state, simulator s
 measurement implementation, anti-false-pass guards, and executable suite remain Framework-private.
 The formal dynamic path must not provide a pre-authored effect catalog, capability contract catalog,
 or task-to-effect allowlist to TGCD. A robot with fewer than twenty admitted tasks, an incomplete
-scoring clause, or unresolved source lineage belongs under a non-runnable `research_candidates/`
-area and must fail closed if selected for a formal run.
+scoring clause, or unresolved source lineage may be listed only in the non-runtime
+`research/robots/index.json` build list and must fail closed if selected for a formal run.
 
 The minimum admitted robot package layout is:
 
 ```text
-demo3/libraries/robots/<robot_configuration_id>/<package_version>/
+autoadapter/libraries/robots/<robot_configuration_id>/<package_version>/
   morphology.json
   tasks/
     sources.json             # exact benchmark and industrial-standard records
@@ -900,7 +930,7 @@ demo3/libraries/robots/<robot_configuration_id>/<package_version>/
 IVC/Harness-only. Directory presence alone does not admit a package; the loader must validate the
 complete source and scoring contract before adding it to the runnable index.
 
-**中文辅助说明。** Demo3 admitted 或 runnable robot index 中的每个机器人都必须具有一份完整、
+**中文辅助说明。** 主线 runnable robot index 中的每个机器人都必须具有一份完整、
 已封存的 Task Library 快照，至少包含二十项彼此不同、常见且在该精确机器人配置上物理适用的
 任务；该规则同样适用于首轮验收对及以后加入的每个机器人，没有例外。只有经过人工审查并确认
 以下内容，任务才能准入：具有可追溯的 primary benchmark 或工业生产标准来源，并记录精确标题、
@@ -923,8 +953,8 @@ TGCD 前固定，并在同一 robot/model replicate 的两种生成条件间保�
 reset 状态、simulator symbol binding、measurement 实现、anti-false-pass guard 和可执行 suite
 保持 Framework 私有。正式动态路径不得向 TGCD 提供预写 effect catalog、capability contract
 catalog 或 task→effect allowlist。少于二十项已准入任务、存在不完整评分 clause 或来源 lineage
-未解决的机器人，只能放在不可运行的 `research_candidates/` 区域；一旦被正式 run 选择，必须
-fail closed。
+未解决的机器人，只能列在运行时不会读取的 `research/robots/index.json` 建设列表中；一旦被正式
+run 选择，必须 fail closed。
 
 每个已准入机器人 package 至少按上述结构提供 `morphology.json`、`tasks/sources.json`、包含
 二十项以上任务且逐评分 clause 引用来源的 `tasks/catalog.json`、私有 instances/bindings/guards、
@@ -1326,7 +1356,7 @@ candidate 源码 import 限制与 probe 专用 utility 权限是两组不同的�
 scene。如果 OpenAI-compatible tool transport 将原本符合 schema 的嵌套数组或对象编码成文本，
 terminal tool 可以在常规类型与非空检查前解析该容器，但不得推断或补写缺失提交内容。
 
-STUDY 与 GENERATE/GEN_ALGO 必须通过 Demo3 自包含的 AutoAdapter 1.0 式 ReAct loop 执行，
+STUDY 与 GENERATE/GEN_ALGO 必须通过主线自包含的 AutoAdapter 1.0 式 ReAct loop 执行，
 不能退化为一次性代码生成响应。STUDY 在初始上下文直接取得本次运行相关的完整公开输入；正常路径
 只用一次公开 Python/MuJoCo probe 回合和随后的提交回合。仅当首次 probe 失败时允许一次纠正后的
 probe；第三个最终回合只用于提交或修正被拒提交，首次 probe 成功后禁止第二次 probe。
@@ -1741,10 +1771,10 @@ trace；当前五任务/effect-policy package 不满足 `0.18.3` 输入合同，
 
 ## 6. Mainline acceptance and migration gates / 主线验收与迁移门槛
 
-The following are construction obligations, not optional cleanup after Demo3 appears to run. Demo3
+The following are construction obligations, not optional cleanup after the mainline appears to run. Mainline
 implementation work must satisfy each obligation when the affected component or path is introduced:
 
-1. establish the self-contained `demo3/` project and declared reproducible environment before using
+1. establish the self-contained mainline project and declared reproducible environment before using
    a run as evidence;
 2. admit only robot packages with at least twenty applicable, source-backed tasks and complete
    scoring-clause lineage, keeping incomplete packages non-runnable;
@@ -1769,14 +1799,14 @@ implementation work must satisfy each obligation when the affected component or 
 10. keep Evolution terminal and non-blocking so that it cannot alter the current candidate, either suite,
     retry decision, verdict, or run inputs.
 
-These obligations govern new Demo3 code even when the corresponding Demo2 defect is retained as a
+These obligations govern all new mainline code even when the corresponding Demo2 defect is retained as a
 historical regression fixture. Passing a later acceptance gate does not excuse bypassing the
 construction boundary while implementing an earlier component.
 
-**中文辅助说明。** 以下内容是 Demo3 搭建义务，不是系统看似能运行之后才选择处理的清理项。
+**中文辅助说明。** 以下内容是主线搭建义务，不是系统看似能运行之后才选择处理的清理项。
 实现每个相关组件或路径时，必须同步满足对应要求：
 
-1. 在把任何 run 用作证据前，先建立自包含的 `demo3/` 项目和已声明、可复现的运行环境；
+1. 在把任何 run 用作证据前，先建立自包含的主线项目和已声明、可复现的运行环境；
 2. runnable index 只准入至少具有二十项适用、有来源任务且评分 clause lineage 完整的机器人
    package；不完整 package 保持不可运行；
 3. 实现真实模型 TGCD 和对实现不可见的 IVC，不得继承 Demo2 的固定五任务 projection、预写
@@ -1799,12 +1829,13 @@ construction boundary while implementing an earlier component.
 10. Evolution 必须位于 terminal verdict 之后且不阻塞主线，不能改变当前 candidate、任一 suite、retry
     决定、verdict 或 run input。
 
-即使对应 Demo2 缺陷被保留为历史 regression fixture，这些义务仍约束所有新 Demo3 代码。后续
+即使对应 Demo2 缺陷被保留为历史 regression fixture，这些义务仍约束所有新主线代码。后续
 验收门槛通过，不能成为搭建早期组件时绕开上述边界的理由。
 
 ### 6.1 Ready for mechanical directory migration / 可以进行机械目录迁移
 
-The implementation may move from `demo3/` to `general_demo/` after all of the following are true:
+The implementation may move from the temporary `demo3/` source tree to canonical `autoadapter/`
+after all of the following are true:
 
 1. Demo3's self-containment check proves that all project-authored imports and file resolutions stay
    under `demo3/`, with no sibling/external source-tree dependency, absolute machine path, escaping
@@ -1824,11 +1855,12 @@ The implementation may move from `demo3/` to `general_demo/` after all of the fo
 7. the dependency environment declared by `demo3/pyproject.toml` can install before the run, execute
    the focused checks, and run the canary without undeclared packages or files.
 
-Directory movement is mechanical and uses separate commits from behavioral repair. Moving the
-implementation to the canonical path does not itself prove paired two-condition driver-synthesis
-success.
+Directory movement is mechanical and uses separate commits from behavioral repair. The same focused
+checks must pass again from `autoadapter/` before `demo3/` is removed. Moving the implementation to
+the canonical path does not itself prove paired two-condition driver-synthesis success.
 
-**中文辅助说明。** 只有满足以下全部条件，实现才可以从 `demo3/` 迁移到 `general_demo/`：
+**中文辅助说明。** 只有满足以下全部条件，实现才可以从临时 `demo3/` 源码树迁移到 canonical
+`autoadapter/`：
 
 1. Demo3 self-containment 检查证明全部项目自编 import 和文件解析都位于 `demo3/` 下，不依赖
    同级/外部源码树、机器绝对路径、逃逸 symlink、submodule 或运行时资产下载；
@@ -1846,8 +1878,9 @@ success.
 7. `demo3/pyproject.toml` 声明的依赖环境可以在 run 前完成安装，并在没有未声明 package 或文件
    的情况下运行聚焦检查和 canary。
 
-目录移动必须是机械操作，并与行为修复分开提交。实现移动到 canonical path 本身，并不能证明
-双条件配对 driver synthesis 成功。
+目录移动必须是机械操作，并与行为修复分开提交。在删除 `demo3/` 前，必须从 `autoadapter/`
+再次通过相同聚焦检查。实现移动到 canonical path 本身，并不能证明双条件配对 driver synthesis
+成功。
 
 ### 6.2 Two-condition, two-robot mainline success / 双条件双机器人主线成功
 
@@ -1859,7 +1892,7 @@ The project may state that the new mainline has run successfully end to end only
    environment;
 2. each acceptance Task Library snapshot has at least twenty admitted tasks, every scoring clause
    has valid benchmark or industrial-standard lineage and a machine-expressible pass standard, and
-   no incomplete robot package is exposed as runnable by Demo3;
+   no incomplete robot package is exposed by the mainline runnable index;
 3. each robot/model replicate uses one real-model `capability_design.json` containing five to ten
    genuinely designed capabilities/effects/interfaces and source-traceable validation contracts, with no
    pre-authored effect catalog or task-to-effect allowlist;
@@ -1894,7 +1927,7 @@ correct claim is “reference calibration passed.”
    两种真实 dynamic run，在相同 Framework、model/provider 配置、已封存有来源 Task Library
    快照和环境下形成四个机器人×生成条件 cell；
 2. 每份验收 Task Library 快照至少具有二十项已准入任务，每条评分 clause 都有有效 benchmark
-   或工业标准 lineage 及机器可表达通过标准，且 Demo3 不把任何不完整机器人 package 暴露为
+   或工业标准 lineage 及机器可表达通过标准，且主线 runnable index 不把任何不完整机器人 package 暴露为
    runnable；
 3. 每个 robot/model replicate 使用一份真实模型设计的 `capability_design.json`，其中包含五至
    十项真正设计的 capability/effect/interface 及可追溯来源的 validation contract，不存在预写 effect
