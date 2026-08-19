@@ -4,9 +4,23 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.13`<br>
+> **Document revision / 文档版本：** `0.19.14`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.14` removes an observed STUDY interface contradiction. Candidate import restrictions
+and probe-only utility imports are now labelled separately; every model-authored probe receives the
+single canonical scene loader through `AUTOADAPTER_PROBE_SCENE`, with relative, searched, or
+synthetic fallback scenes forbidden. The `submit_study` boundary also parses a JSON-encoded array or
+object when the OpenAI-compatible transport stringifies an otherwise schema-valid nested container.
+It does not synthesize missing content or relax the successful real-physics probe requirement.
+
+**中文辅助说明。** `0.19.14` 消除了真实 STUDY 暴露的一处接口矛盾：candidate import 限制和
+probe 专用 utility import 现在分别标注；每个模型编写的 probe 都必须通过
+`AUTOADAPTER_PROBE_SCENE` 使用唯一 canonical scene，禁止相对路径、搜索路径或合成 fallback
+scene。当 OpenAI-compatible transport 把原本符合 schema 的嵌套数组或对象字符串化时，
+`submit_study` 边界会用 JSON parser 恢复其容器；它不会补写缺失内容，也不会放宽真实物理 probe
+成功这一要求。
 
 Revision `0.19.13` restores the AutoAdapter 1.0 runtime feedback-loop contract in GENERATE and
 Repair: every dynamic capability must make bounded state-dependent corrections from fresh canonical
@@ -1188,6 +1202,13 @@ their own workspace. The probe may load the canonical public scene, run model-au
 inspect simulator state, exercise candidate methods, and tune actuator-driven behavior; it may not
 invoke or inspect the private Harness suite.
 
+Candidate-source import restrictions and probe-only utility permissions are distinct public facts.
+A probe may use `os.environ` or `pathlib` only to access its staged public runtime and must load the
+canonical scene through `AUTOADAPTER_PROBE_SCENE`; it may not guess a relative path, search the host,
+or construct a substitute scene. If an OpenAI-compatible tool transport JSON-encodes an otherwise
+schema-valid nested array or object as text, the terminal tool may parse that container before its
+ordinary type and non-empty checks. It may not infer or synthesize missing submission content.
+
 STUDY and GENERATE/GEN_ALGO execute through the self-contained AutoAdapter 1.0-style ReAct loop,
 not as one-shot code-generation responses. STUDY receives the complete run-relevant public inputs
 inline. Its normal path uses one public Python/MuJoCo probe turn followed by submission. If the first
@@ -1281,6 +1302,12 @@ MJCF 完整闭包、STUDY 输出和同一份已封存 Capability Design。两者
 Python/MuJoCo 开发 probe，但该 probe 受明确的调用次数、模拟时间、control step、输出和 wall-time
 预算约束。probe 可以加载 canonical 公开 scene、运行模型编写的脚本、检查 simulator state、执行
 candidate 方法并调试 actuator-driven 行为，但不能调用或检查私有 Harness suite。
+
+candidate 源码 import 限制与 probe 专用 utility 权限是两组不同的公开事实。probe 只能通过
+`os.environ` 或 `pathlib` 访问 staged 公开运行环境，并且必须通过
+`AUTOADAPTER_PROBE_SCENE` 加载 canonical scene；不得猜测相对路径、搜索 host 或构造替代
+scene。如果 OpenAI-compatible tool transport 将原本符合 schema 的嵌套数组或对象编码成文本，
+terminal tool 可以在常规类型与非空检查前解析该容器，但不得推断或补写缺失提交内容。
 
 STUDY 与 GENERATE/GEN_ALGO 必须通过 Demo3 自包含的 AutoAdapter 1.0 式 ReAct loop 执行，
 不能退化为一次性代码生成响应。STUDY 在初始上下文直接取得本次运行相关的完整公开输入；正常路径

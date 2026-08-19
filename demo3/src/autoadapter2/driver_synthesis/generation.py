@@ -155,7 +155,11 @@ Direct-MuJoCo generation condition. The initial public input already contains th
 robot-package projection, selected MJCF closure, sealed Capability Design, and every condition-
 eligible skeleton source. Do not spend remote turns listing or rereading those inputs. Your first
 action must be one public-only MuJoCo probe intended to advance physics. Use no private Harness,
-reference driver, repository path, network, or other condition artifact. If that first probe fails,
+reference driver, repository path, network, or other condition artifact. In every probe, load the
+only canonical scene with ``import os, mujoco`` and
+``mujoco.MjModel.from_xml_path(os.environ["AUTOADAPTER_PROBE_SCENE"])``. Probe-only ``os.environ``
+access is allowed. Never guess a relative scene path, search with ``sys``/filesystem introspection,
+or construct a fallback scene. If that first probe fails,
 use exactly one recovery turn to correct and rerun it; otherwise do not probe again. As soon as a
 probe succeeds, call submit_study with non-empty findings and a non-empty capability-by-capability
 implementation_plan. The third turn is reserved only for submission or correction of a rejected
@@ -179,7 +183,8 @@ reference code, the other condition, or credentials, and never claim the final v
 )
 
 STUDY_REACT_TASK = """Use the complete supplied public inputs directly. First call
-run_mujoco_probe with a focused real-physics check. After a successful observation, call
+run_mujoco_probe with a focused real-physics check that loads only
+os.environ["AUTOADAPTER_PROBE_SCENE"]. After a successful observation, call
 submit_study on the next turn with non-empty grounded findings and a non-empty implementation plan.
 Only when the first probe fails may you use the next turn for one corrected probe before submitting
 on the reserved final turn. Do not list or reread staged files, write the driver, or merely print a
@@ -377,7 +382,7 @@ def _skeleton_sources(package: RobotPackage) -> list[dict[str, str]]:
 def _runtime_facts(runtime_contract: Mapping[str, Any] | None) -> dict[str, Any]:
     base: dict[str, Any] = {
         "python": f"{sys.version_info.major}.{sys.version_info.minor}",
-        "allowed_imports": [
+        "candidate_allowed_imports": [
             "mujoco",
             "numpy",
             "math",
@@ -386,7 +391,7 @@ def _runtime_facts(runtime_contract: Mapping[str, Any] | None) -> dict[str, Any]
             "typing",
             "collections",
         ],
-        "forbidden_imports": [
+        "candidate_forbidden_imports": [
             "os",
             "pathlib",
             "shutil",
@@ -410,6 +415,13 @@ def _runtime_facts(runtime_contract: Mapping[str, Any] | None) -> dict[str, Any]
         "probe_environment": {
             "scene_env": "AUTOADAPTER_PROBE_SCENE",
             "public_package_env": "AUTOADAPTER_PROBE_PUBLIC_PACKAGE",
+            "allowed_utility_imports": ["os", "pathlib"],
+            "forbidden_utility_imports": ["sys", "glob", "shutil", "inspect"],
+            "canonical_scene_loader": (
+                "import os, mujoco; model = mujoco.MjModel.from_xml_path("
+                "os.environ['AUTOADAPTER_PROBE_SCENE']); data = mujoco.MjData(model)"
+            ),
+            "relative_or_synthetic_scene_fallback_forbidden": True,
         },
         "public_invocation_abi": {
             "call_shape": "driver.<sealed_method_name>(request=request)",
@@ -656,9 +668,19 @@ def study(
                 ),
             }
 
+        def decoded_container(value: Any) -> Any:
+            if not isinstance(value, str):
+                return value
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError:
+                return value
+
         def submit_study(arguments: Mapping[str, Any]) -> dict[str, Any]:
-            findings = arguments.get("findings")
-            implementation_plan = arguments.get("implementation_plan")
+            findings = decoded_container(arguments.get("findings"))
+            implementation_plan = decoded_container(
+                arguments.get("implementation_plan")
+            )
             if not isinstance(findings, list) or not findings:
                 raise GenerationError("submit_study requires non-empty findings")
             if not isinstance(implementation_plan, list) or not implementation_plan:
@@ -673,7 +695,7 @@ def study(
                 "implementation_plan": _copy(implementation_plan),
                 "probe_requests": _copy(session.probe_requests),
             }
-            inspection = arguments.get("skeleton_inspection")
+            inspection = decoded_container(arguments.get("skeleton_inspection"))
             if selected_condition == "skeleton-assisted":
                 if not isinstance(inspection, Mapping) or not inspection:
                     raise GenerationError(

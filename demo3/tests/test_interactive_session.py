@@ -475,7 +475,9 @@ class InteractiveSessionTests(unittest.TestCase):
                                 "submit_study",
                                 {
                                     "findings": ["one actuator is available"],
-                                    "implementation_plan": ["map drive to motor control"],
+                                    "implementation_plan": json.dumps(
+                                        ["map drive to motor control"]
+                                    ),
                                 },
                             ),
                         ),
@@ -531,6 +533,15 @@ class InteractiveSessionTests(unittest.TestCase):
             tool["function"]["name"] for tool in client.tools["study"][0]
         }
         self.assertEqual(first_turn_tools, {"run_mujoco_probe", "submit_study"})
+        probe_definition = next(
+            tool
+            for tool in client.tools["study"][0]
+            if tool["function"]["name"] == "run_mujoco_probe"
+        )
+        self.assertIn(
+            "AUTOADAPTER_PROBE_SCENE",
+            probe_definition["function"]["description"],
+        )
         study_probe_observation = "\n".join(
             str(message.get("content", ""))
             for message in client.messages["study"][1]

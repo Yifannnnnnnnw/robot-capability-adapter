@@ -239,6 +239,15 @@ class DriverGenerationTests(unittest.TestCase):
                 self.assertEqual(abi["request_schema"]["task_id"], "string")
                 self.assertEqual(abi["request_schema"]["task_parameters"], "object")
                 self.assertFalse(abi["effect_catalog_or_task_effect_allowlist"])
+                runtime = client.inputs[0]["allowed_runtime_facts"]
+                self.assertIn("os", runtime["candidate_forbidden_imports"])
+                self.assertIn(
+                    "os", runtime["probe_environment"]["allowed_utility_imports"]
+                )
+                self.assertIn(
+                    "AUTOADAPTER_PROBE_SCENE",
+                    runtime["probe_environment"]["canonical_scene_loader"],
+                )
                 interface_stub = client.inputs[0]["driver_interface_stub"]
                 self.assertIn("def drive(self, request):", interface_stub)
                 self.assertIn("NotImplementedError", interface_stub)

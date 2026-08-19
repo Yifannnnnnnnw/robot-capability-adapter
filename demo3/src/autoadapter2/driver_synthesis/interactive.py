@@ -707,7 +707,12 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "run_mujoco_probe",
-                "Run one complete Python script against the staged canonical public MuJoCo scene. A current model-authored driver.py is importable as driver when present.",
+                "Run one complete Python script against the staged canonical public MuJoCo "
+                "scene. Load it only with import os, mujoco and "
+                "mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE']); "
+                "relative paths, sys/path searching, and synthetic fallback scenes are "
+                "forbidden. A current model-authored driver.py is importable as driver when "
+                "present.",
                 _object_schema(
                     {
                         "probe_id": {"type": "string"},
