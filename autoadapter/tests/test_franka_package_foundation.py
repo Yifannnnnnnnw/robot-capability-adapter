@@ -50,6 +50,89 @@ ARM_LIMITS = {
     "joint7": [-2.8973, 2.8973],
 }
 PUSHBENCH_OBJECT_BODIES = ["tee", "cube_red", "cube_green", "cube_blue", "obs"]
+FINGER_JOINT_RANGE_M = [0.0, 0.04]
+CORE_TOP_LEVEL_FILES = (
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+    "franka_cube_test_scene.xml",
+    "hand.xml",
+    "panda.png",
+    "panda.xml",
+    "panda_nohand.xml",
+    "pushbench.xml",
+    "scene.xml",
+    "scene_with_object.xml",
+)
+CORE_MESH_FILES = (
+    "assets/finger_0.obj",
+    "assets/finger_1.obj",
+    "assets/hand.stl",
+    "assets/hand_0.obj",
+    "assets/hand_1.obj",
+    "assets/hand_2.obj",
+    "assets/hand_3.obj",
+    "assets/hand_4.obj",
+    "assets/link0.stl",
+    "assets/link0_0.obj",
+    "assets/link0_1.obj",
+    "assets/link0_10.obj",
+    "assets/link0_11.obj",
+    "assets/link0_2.obj",
+    "assets/link0_3.obj",
+    "assets/link0_4.obj",
+    "assets/link0_5.obj",
+    "assets/link0_7.obj",
+    "assets/link0_8.obj",
+    "assets/link0_9.obj",
+    "assets/link1.obj",
+    "assets/link1.stl",
+    "assets/link2.obj",
+    "assets/link2.stl",
+    "assets/link3.stl",
+    "assets/link3_0.obj",
+    "assets/link3_1.obj",
+    "assets/link3_2.obj",
+    "assets/link3_3.obj",
+    "assets/link4.stl",
+    "assets/link4_0.obj",
+    "assets/link4_1.obj",
+    "assets/link4_2.obj",
+    "assets/link4_3.obj",
+    "assets/link5_0.obj",
+    "assets/link5_1.obj",
+    "assets/link5_2.obj",
+    "assets/link5_collision_0.obj",
+    "assets/link5_collision_1.obj",
+    "assets/link5_collision_2.obj",
+    "assets/link6.stl",
+    "assets/link6_0.obj",
+    "assets/link6_1.obj",
+    "assets/link6_10.obj",
+    "assets/link6_11.obj",
+    "assets/link6_12.obj",
+    "assets/link6_13.obj",
+    "assets/link6_14.obj",
+    "assets/link6_15.obj",
+    "assets/link6_16.obj",
+    "assets/link6_2.obj",
+    "assets/link6_3.obj",
+    "assets/link6_4.obj",
+    "assets/link6_5.obj",
+    "assets/link6_6.obj",
+    "assets/link6_7.obj",
+    "assets/link6_8.obj",
+    "assets/link6_9.obj",
+    "assets/link7.stl",
+    "assets/link7_0.obj",
+    "assets/link7_1.obj",
+    "assets/link7_2.obj",
+    "assets/link7_3.obj",
+    "assets/link7_4.obj",
+    "assets/link7_5.obj",
+    "assets/link7_6.obj",
+    "assets/link7_7.obj",
+)
 EXPECTED_DIMS = {
     "scene.xml": (9, 9, 8),
     "pushbench.xml": (37, 33, 8),
@@ -72,6 +155,14 @@ class FrankaPackageFoundationTests(unittest.TestCase):
                 mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name),
                 0,
             )
+        for joint_name in ("finger_joint1", "finger_joint2"):
+            joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
+            self.assertEqual(
+                int(model.jnt_type[joint_id]),
+                int(mujoco.mjtJoint.mjJNT_SLIDE),
+            )
+            for actual, expected in zip(model.jnt_range[joint_id], FINGER_JOINT_RANGE_M):
+                self.assertAlmostEqual(float(actual), expected)
         self.assertEqual(_names(model, mujoco.mjtObj.mjOBJ_ACTUATOR, model.nu), ACTUATORS)
         self.assertEqual(model.nu, 8)
         self.assertEqual(model.nsite, 0)
@@ -125,46 +216,9 @@ class FrankaPackageFoundationTests(unittest.TestCase):
         self.assertTrue(ASSETS_ROOT.is_dir())
         entries = list(ASSETS_ROOT.rglob("*"))
         self.assertFalse(any(entry.is_symlink() for entry in entries))
-        files = [entry for entry in entries if entry.is_file()]
-        self.assertEqual(len(files), 78)
-        self.assertEqual(
-            len([entry for entry in files if len(entry.relative_to(ASSETS_ROOT).parts) == 1]),
-            11,
-        )
-        self.assertEqual(
-            len(
-                [
-                    entry
-                    for entry in files
-                    if entry.relative_to(ASSETS_ROOT).parts[0] == "assets"
-                ]
-            ),
-            67,
-        )
-        self.assertEqual(
-            {
-                entry.relative_to(ASSETS_ROOT).as_posix()
-                for entry in entries
-                if entry.is_dir()
-            },
-            {"assets"},
-        )
-        for relative_path in (
-            "LICENSE",
-            "README.md",
-            "CHANGELOG.md",
-            "panda.xml",
-            "panda_nohand.xml",
-            "hand.xml",
-            "scene.xml",
-            "pushbench.xml",
-            "scene_with_object.xml",
-            "franka_cube_test_scene.xml",
-            "assets/hand.stl",
-            "assets/finger_0.obj",
-            "assets/link0.stl",
-            "assets/link5_collision_0.obj",
-        ):
+        self.assertEqual(len(CORE_TOP_LEVEL_FILES), 11)
+        self.assertEqual(len(CORE_MESH_FILES), 67)
+        for relative_path in CORE_TOP_LEVEL_FILES + CORE_MESH_FILES:
             self.assertTrue((ASSETS_ROOT / relative_path).is_file(), relative_path)
 
     def test_franka_is_absent_from_runnable_index(self) -> None:
@@ -221,6 +275,7 @@ class FrankaPackageFoundationTests(unittest.TestCase):
         self.assertEqual(control["actuator_names"], ACTUATORS)
         self.assertEqual(control["arm_joint_limits_rad"], ARM_LIMITS)
         self.assertEqual(control["gripper_ctrl_range_native"], [0.0, 255.0])
+        self.assertEqual(control["gripper_joint_range_m"], FINGER_JOINT_RANGE_M)
         self.assertEqual(control["passive_joint_names"], ["finger_joint2"])
         self.assertEqual(
             control["actuator_joint_map"]["actuator8"],
@@ -258,7 +313,11 @@ class FrankaPackageFoundationTests(unittest.TestCase):
         )
         self.assertEqual(
             morphology["reset_fact"],
-            {"owner": "framework", "default_keyframe": "home"},
+            {
+                "owner": "framework",
+                "default": "model_qpos0",
+                "available_keyframe": "home",
+            },
         )
 
     def test_research_index_keeps_franka_incomplete_and_non_runtime(self) -> None:
