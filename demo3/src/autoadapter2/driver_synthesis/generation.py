@@ -93,6 +93,19 @@ class DriverSourceAuditError(GenerationError):
         self.model_output = copy.deepcopy(dict(model_output))
 
 
+IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT = """
+RUNTIME FEEDBACK-LOOP CONTRACT (public and robot-agnostic):
+Every capability that produces a dynamic robot effect must execute a bounded, state-dependent
+control loop, either directly or through an allowed trusted-skeleton primitive. Each control cycle
+must read fresh canonical model/data state, compute the next actuator command from that newest state
+and the public request, write through data.ctrl, advance the same canonical MuJoCo session, then read
+fresh state and correct again. A fixed waypoint sequence may be supervisory, but every waypoint must
+be tracked from fresh observations; do not use one-read-many-write, sleep-only, pure polling, or
+self-reported completion. Stop only on observed public convergence or a bounded timeout. Do not infer
+hidden acceptance rules, private resets, expected trajectories, or privileged simulator state.
+""".strip()
+
+
 STUDY_PROMPT = """You are the AutoAdapter 1.0 STUDY stage for a Direct-MuJoCo driver.
 Study only the supplied public robot package, sealed public capability design, runtime contract,
 and eligible experience. Produce a concise JSON study record for this generation condition.
@@ -132,7 +145,9 @@ not import, copy, or call any skeleton and must implement actuator mapping, cont
 stepping with the supplied runtime primitives. The Framework owns the canonical model/data session;
 do not load a model, reset it, teleport state, or access private validation definitions. Do not return
 a verdict or a fixed/reference driver in place of model-authored source. Use direct, statically
-auditable attribute access; do not use getattr, setattr, eval, exec, or dynamic binding."""
+auditable attribute access; do not use getattr, setattr, eval, exec, or dynamic binding.""" + (
+    "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
+)
 
 
 STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage for one
@@ -159,7 +174,9 @@ development feedback only: a successful check proves ABI/import/physics liveness
 behavior or private validation. Never call it capability success. Revise the complete source when
 the observations expose a defect, then rerun check_driver. Finish only with submit_driver. Never
 access private Harness definitions,
-reference code, the other condition, or credentials, and never claim the final verdict."""
+reference code, the other condition, or credentials, and never claim the final verdict.""" + (
+    "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
+)
 
 STUDY_REACT_TASK = """Use the complete supplied public inputs directly. First call
 run_mujoco_probe with a focused real-physics check. After a successful observation, call

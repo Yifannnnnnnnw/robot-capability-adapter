@@ -13,6 +13,7 @@ from autoadapter2.react import ReactLoopError, run_react
 from .generation import (
     DRIVER_REACT_MAX_TOOL_CALLS,
     DRIVER_REACT_MAX_TURNS,
+    IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT,
     DriverSourceAuditError,
     GenerationCondition,
     GenerationError,
@@ -76,7 +77,9 @@ plain dict; use ``request["task_id"]`` and ``request["task_parameters"]``, not a
 Change only driver.py. Keep the requested generation condition boundary: skeleton-assisted may use
 the supplied trusted skeleton family; from-scratch must not import or call it. The Framework still
 owns canonical model/data and trial reset. Use direct, statically auditable attribute access; do not
-use getattr, setattr, eval, exec, or dynamic binding. Do not return a verdict."""
+use getattr, setattr, eval, exec, or dynamic binding. Do not return a verdict.""" + (
+    "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
+)
 
 REPAIR_PROBE_PROMPT = """You are the preparation half of the condition-local AutoAdapter 1.0 Repair
 stage. Read the previous driver and complete candidate-facing report/media supplied here. You may
@@ -103,9 +106,12 @@ them with the failed report before submission. Preserve the sealed method names 
 (self, request) ABI.
 Respect the original skeleton-assisted or from-scratch boundary. Finish only with submit_driver after
 the bundled check succeeds. Never access or infer
-private suite construction, reference code, the other condition, or a final Harness verdict."""
+private suite construction, reference code, the other condition, or a final Harness verdict.""" + (
+    "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
+)
 
-REPAIR_REACT_TASK = """Repair previous_driver_source from the complete supplied report. Do not call
+REPAIR_REACT_TASK = """Repair previous_driver_source from the complete supplied report. Start with
+repair_focus_summary, then consult candidate_report for the complete per-trial evidence. Do not call
 read_driver or write_driver. Call check_driver with one coherent complete revised source and exactly
 one covered public request for every sealed capability. React to its atomic write/audit/import/smoke
 diagnostics only when it fails; after it succeeds, call submit_driver on the next turn. Every changed
@@ -266,6 +272,168 @@ def _compact_candidate_report(value: Any) -> Any:
     return copy.deepcopy(value)
 
 
+_REPAIR_SUMMARY_TOP_KEYS = (
+    "validation_passed",
+    "physical_validation_executed",
+    "video_complete",
+    "private_case_count",
+    "passed_private_case_count",
+    "task_count",
+    "passed_task_count",
+    "source_clause_count",
+    "passed_source_clause_count",
+)
+
+_REPAIR_SUMMARY_TRIAL_KEYS = (
+    "case_id",
+    "capability_id",
+    "task_id",
+    "source_clause_id",
+    "trial_passed",
+    "criterion_passed",
+    "measurement_value",
+    "aggregation_value",
+    "aggregation_passed",
+    "temporal_passed",
+    "physical_execution_passed",
+    "worker_completed",
+    "candidate_exception",
+    "measurement_error",
+)
+
+_REPAIR_SUMMARY_PHYSICAL_KEYS = (
+    "step_count",
+    "canonical_model_data",
+    "ctrl_changed_from_reset",
+    "ctrl_observed_before_step",
+    "direct_state_write_detected",
+    "contact_pair_step_counts",
+)
+
+
+def _selected_fields(value: Mapping[str, Any], keys: Sequence[str]) -> dict[str, Any]:
+    return {
+        key: copy.deepcopy(value[key])
+        for key in keys
+        if key in value
+    }
+
+
+def _numeric_delta(initial: Any, final: Any) -> float | None:
+    if (
+        isinstance(initial, (int, float))
+        and not isinstance(initial, bool)
+        and isinstance(final, (int, float))
+        and not isinstance(final, bool)
+    ):
+        return abs(float(final) - float(initial))
+    if (
+        isinstance(initial, (list, tuple))
+        and isinstance(final, (list, tuple))
+        and len(initial) == len(final)
+        and all(
+            isinstance(value, (int, float)) and not isinstance(value, bool)
+            for value in (*initial, *final)
+        )
+    ):
+        return sum(
+            (float(after) - float(before)) ** 2
+            for before, after in zip(initial, final, strict=True)
+        ) ** 0.5
+    return None
+
+
+def _rounded_state_value(value: Any) -> Any:
+    if isinstance(value, float):
+        return round(value, 6)
+    if isinstance(value, (list, tuple)):
+        return [_rounded_state_value(item) for item in value]
+    return copy.deepcopy(value)
+
+
+def _named_state_changes(initial: Any, final: Any) -> dict[str, Any] | None:
+    if not isinstance(initial, Mapping) or not isinstance(final, Mapping):
+        return None
+    delta_norms: dict[str, Any] = {}
+    unchanged_names: list[str] = []
+    for name in sorted(set(initial) | set(final), key=str):
+        before = initial.get(name)
+        after = final.get(name)
+        delta = _numeric_delta(before, after)
+        if delta is not None and delta <= 1e-12:
+            unchanged_names.append(str(name))
+            continue
+        delta_norms[str(name)] = round(delta, 6) if delta is not None else None
+    return {"delta_norms": delta_norms, "unchanged_names": unchanged_names}
+
+
+def _endpoint_state_summary(physical: Mapping[str, Any]) -> dict[str, Any] | None:
+    initial = physical.get("initial_sample")
+    final = physical.get("final_sample")
+    if not isinstance(initial, Mapping) or not isinstance(final, Mapping):
+        return None
+    result: dict[str, Any] = {}
+    for key in ("time", "ctrl", "contact_count"):
+        if key in initial or key in final:
+            result[key] = {
+                "initial": _rounded_state_value(initial.get(key)),
+                "final": _rounded_state_value(final.get(key)),
+            }
+    if "joint_positions" in initial or "joint_positions" in final:
+        result["joint_positions"] = {
+            "initial": _rounded_state_value(initial.get("joint_positions")),
+            "final": _rounded_state_value(final.get("joint_positions")),
+        }
+    for key in ("body_positions", "site_positions"):
+        changes = _named_state_changes(initial.get(key), final.get(key))
+        if changes is not None:
+            result[key] = changes
+    return result
+
+
+def _repair_focus_summary(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Create a small deterministic index into the complete candidate report."""
+
+    summary = _selected_fields(report, _REPAIR_SUMMARY_TOP_KEYS)
+    passed_trials: list[dict[str, Any]] = []
+    failed_trials: list[dict[str, Any]] = []
+    unresolved_trials: list[dict[str, Any]] = []
+    trials = report.get("trials")
+    for value in trials if isinstance(trials, list) else ():
+        if not isinstance(value, Mapping):
+            continue
+        focus = _selected_fields(value, _REPAIR_SUMMARY_TRIAL_KEYS)
+        status = value.get("trial_passed")
+        if not isinstance(status, bool):
+            status = value.get("criterion_passed")
+        if status is False:
+            for key in ("public_arguments", "guard_outcomes"):
+                if key in value:
+                    focus[key] = copy.deepcopy(value[key])
+            physical = value.get("physical_evidence")
+            if isinstance(physical, Mapping):
+                focus["physical_evidence"] = _selected_fields(
+                    physical, _REPAIR_SUMMARY_PHYSICAL_KEYS
+                )
+                endpoint_state = _endpoint_state_summary(physical)
+                if endpoint_state is not None:
+                    focus["physical_evidence"]["endpoint_state"] = endpoint_state
+            failed_trials.append(focus)
+        elif status is True:
+            passed_trials.append(focus)
+        else:
+            unresolved_trials.append(focus)
+    summary["failed_trials"] = failed_trials
+    summary["passed_trials"] = passed_trials
+    if unresolved_trials:
+        summary["unresolved_trials"] = unresolved_trials
+    summary["usage"] = (
+        "Use this as an index; candidate_report remains the complete authoritative "
+        "candidate-facing report. Preserve behavior for passed trials."
+    )
+    return summary
+
+
 def _assert_public_context(value: Any, *, where: str = "public_context") -> None:
     if isinstance(value, Mapping):
         for key, child in value.items():
@@ -295,16 +463,20 @@ def build_repair_inputs(
     if not isinstance(previous_driver_source, str) or not previous_driver_source.strip():
         raise RepairError("previous_driver_source must be non-empty")
     _assert_public_context(public_inputs)
+    compact_report = _compact_candidate_report(
+        redact_candidate_report(candidate_report)
+    )
+    focus_summary = _repair_focus_summary(compact_report)
+    _assert_public_context(focus_summary, where="repair_focus_summary")
     return {
         "generation_condition": condition,
         "previous_attempt": previous_attempt,
         "max_total_attempts": max_total_attempts,
         "previous_driver_source": previous_driver_source,
-        "candidate_report": _compact_candidate_report(
-            redact_candidate_report(candidate_report)
-        ),
+        "candidate_report": compact_report,
         "media_manifest": _redact(media_manifest),
         "public_context": copy.deepcopy(dict(public_inputs)),
+        "repair_focus_summary": focus_summary,
     }
 
 

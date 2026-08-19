@@ -7,6 +7,9 @@ import unittest
 from pathlib import Path
 
 from autoadapter2.driver_synthesis.generation import (
+    GENERATE_PROMPT,
+    GENERATE_REACT_SYSTEM,
+    IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT,
     GenerationError,
     build_public_generation_inputs,
     generate,
@@ -21,6 +24,8 @@ from autoadapter2.driver_synthesis.probe import (
     run_probes,
 )
 from autoadapter2.driver_synthesis.repair import (
+    REPAIR_PROMPT,
+    REPAIR_REACT_SYSTEM,
     RepairLimitError,
     build_repair_inputs,
     redact_candidate_report,
@@ -174,6 +179,15 @@ class DriverGenerationTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
+
+    def test_generate_and_repair_prompts_restore_feedback_loop_contract(self) -> None:
+        for prompt in (
+            GENERATE_PROMPT,
+            GENERATE_REACT_SYSTEM,
+            REPAIR_PROMPT,
+            REPAIR_REACT_SYSTEM,
+        ):
+            self.assertIn(IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT, prompt)
 
     @staticmethod
     def _study(condition: str) -> dict:
@@ -617,6 +631,17 @@ print("probe-time=" + str(data.time))
         self.assertNotIn("body_quaternions", physical["initial_sample"])
         self.assertIn("samples", report["trials"][0]["physical_evidence"])
         self.assertLess(len(json.dumps(inputs)), 10_000)
+        focus = inputs["repair_focus_summary"]
+        self.assertEqual(focus["failed_trials"][0]["case_id"], "case-1")
+        self.assertEqual(focus["failed_trials"][0]["measurement_value"], 0.5)
+        self.assertEqual(
+            focus["failed_trials"][0]["physical_evidence"]["endpoint_state"][
+                "joint_positions"
+            ]["final"]["joint"],
+            19.0,
+        )
+        self.assertEqual(focus["passed_trials"], [])
+        self.assertIn("complete authoritative", focus["usage"])
 
 
 if __name__ == "__main__":

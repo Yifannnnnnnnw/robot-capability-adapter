@@ -4,9 +4,22 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.12`<br>
+> **Document revision / 文档版本：** `0.19.13`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.13` restores the AutoAdapter 1.0 runtime feedback-loop contract in GENERATE and
+Repair: every dynamic capability must make bounded state-dependent corrections from fresh canonical
+MuJoCo observations, directly or through an allowed trusted-skeleton primitive. Repair additionally
+receives a deterministic failure-focus index containing failed-trial requests, measurements, guards,
+contact summaries, and initial/final public state. This index does not replace, redact, or weaken the
+complete candidate-facing report, which remains available in the same Repair context.
+
+**中文辅助说明。** `0.19.13` 在 GENERATE 和 Repair 中恢复 AutoAdapter 1.0 运行时反馈闭环契约：
+每个动态 capability 必须直接或通过允许的可信 skeleton primitive，根据最新 canonical MuJoCo
+观测执行有界、依赖状态的修正。Repair 还会收到一份确定性的失败焦点索引，其中包含失败 trial 的
+实际请求、测量值、guard、接触摘要和公开初末状态。该索引不会替代、删减或弱化同一 Repair
+上下文中继续完整提供的 candidate-facing report。
 
 Revision `0.19.12` restores the AutoAdapter 1.0 Implementation Bundle rule that every runtime input
 has complete public semantics. A private instance may supply only task parameters declared required
@@ -1253,6 +1266,14 @@ controller may replace the model-authored candidate. Neither condition may subst
 scene, encode a private case, claim its own final verdict, or receive information from the other
 condition.
 
+Every capability that produces a dynamic robot effect must implement a bounded state-dependent
+feedback loop, directly or through an allowed trusted-skeleton primitive. It repeatedly reads fresh
+canonical model/data state, computes the next actuator command from that observation and the public
+request, writes through `data.ctrl`, advances the same canonical MuJoCo session, and corrects from
+fresh state until observed public convergence or a bounded timeout. A fixed waypoint sequence may
+provide supervisory targets, but one-read-many-write, pure polling, sleep-only behavior, fixed
+open-loop trajectories, and self-reported completion do not satisfy this runtime contract.
+
 **中文辅助说明。** 动态主线运行中，每个由模型创作的阶段都必须调用已配置的真实模型。两种
 保留的 AutoAdapter 1.0 生成条件都可以检查与本次 run 相关的全部公开输入，包括完整公开机器人
 package 中的 Morphology、Task Library catalog 与 source record、符合条件的 Experience、所选
@@ -1297,6 +1318,13 @@ candidate-facing 报告。每种条件各自只提交一个模型生成的 `driv
 额外保留原始 1.0 的 `driver_from_scratch.py` 文件名作为该条件的证据，但不得用固定或 Framework
 编写的 controller 替换模型 candidate。任一条件都不得替换 scene、编码私有 case、自行声明最终
 verdict，或接收另一生成条件的信息。
+
+每个产生动态机器人效果的 capability 都必须直接或通过允许的可信 skeleton primitive 实现有界、
+依赖状态的反馈闭环。它必须反复读取最新 canonical model/data 状态，根据该观测和公开 request
+计算下一 actuator command，通过 `data.ctrl` 写入，在同一 canonical MuJoCo session 中推进物理，
+再根据最新状态修正，直至观察到公开目标收敛或达到有界 timeout。固定 waypoint 序列可以作为上层
+目标，但一次读取后多次写入、纯 polling、仅 sleep、固定开环 trajectory 和自报完成均不满足该
+运行时契约。
 
 package 中的 reference driver 不是 Driver Synthesis 的公开输入。两种条件及其 STUDY、开发
 probe、GENERATE 和 Repair 均不得接收 reference 源码、由 reference 派生的 wrapper、reference
@@ -1352,6 +1380,12 @@ available state and trajectory diagnostics, exceptions, logs, guard outcomes, re
 and the complete per-capability, per-clause, and per-case result structure. Repair may use the same
 complete, budget-bounded local Python/MuJoCo development probe as initial generation.
 
+Alongside that complete report, the Framework provides one deterministic failure-focus index derived
+only from the same candidate-facing fields. It lists passed cases concisely and, for failed cases,
+surfaces the actual public request, measured value, exception/error, guard outcome, contact summary,
+and available initial/final public state. This is a navigation aid for the model, not a replacement
+report, new verdict, model-authored summary, or additional private disclosure.
+
 The report omits only the private validation definition and unrelated secrets: private suite files
 and source, unreleased case/reset/seed construction, private stricter thresholds or expected values,
 executable criterion expressions, measurement bindings, private guard definitions, hidden expected
@@ -1385,6 +1419,11 @@ trial 和 clause 的结果、不透明的 private-case 标识、实际提供给 
 实际测量值、可用 state/trajectory 诊断、exception、log、guard 结果、录像、视频，以及完整的逐
 capability、逐 clause 和逐 case 结果结构。Repair 可以使用与首次生成相同的完整但有预算上限的
 本地 Python/MuJoCo 开发 probe。
+
+除完整报告外，Framework 还会仅从同一批 candidate-facing 字段机械生成一份确定性的失败焦点
+索引。它简要列出通过 case，并针对失败 case 突出实际公开 request、测量值、exception/error、
+guard 结果、接触摘要及可用公开初末状态。该索引只用于帮助模型定位，不是替代报告、新 verdict、
+模型生成摘要或额外私有披露。
 
 报告只删除私有 validation 定义和无关 secret：私有 suite 文件及源码、未公开的 case/reset/seed
 构造、私有加严 threshold 或 expected value、可执行 criterion 表达式、measurement binding、私有
