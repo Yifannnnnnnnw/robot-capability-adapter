@@ -111,6 +111,7 @@ _FORBIDDEN_PATH_LITERALS = (
 )
 _RESOURCE_FILE_TAGS = frozenset({"mesh", "texture", "hfield", "skin", "model", "sdf"})
 _TEXT_SUFFIXES = frozenset({".xml", ".json", ".txt", ".md", ".py", ".yaml", ".yml"})
+_PUBLIC_OBSERVATION_PREFIX = "__AUTOADAPTER_PUBLIC_OBSERVATION__="
 
 
 def _module_path(node: ast.AST) -> str:
@@ -593,6 +594,7 @@ def _run_one(
     remaining = max(0, budget.max_output_chars - len(stdout))
     stderr, stderr_truncated, stderr_total = _bounded_text(stderr_bytes, remaining)
     physics_steps: int | None = None
+    public_observation: dict[str, Any] | None = None
     clean_stdout_lines: list[str] = []
     for line in stdout.splitlines():
         if line.startswith("__AUTOADAPTER_PROBE_FACTS__="):
@@ -600,6 +602,13 @@ def _run_one(
                 facts = json.loads(line.split("=", 1)[1])
                 if isinstance(facts, Mapping) and isinstance(facts.get("physics_steps"), int):
                     physics_steps = int(facts["physics_steps"])
+            except json.JSONDecodeError:
+                pass
+        elif line.startswith(_PUBLIC_OBSERVATION_PREFIX):
+            try:
+                observation = json.loads(line.split("=", 1)[1])
+                if isinstance(observation, dict):
+                    public_observation = observation
             except json.JSONDecodeError:
                 pass
         else:
@@ -619,6 +628,7 @@ def _run_one(
         "step_budget": budget.max_steps,
         "simulated_time_budget_s": budget.max_sim_time_s,
         "physics_steps": physics_steps,
+        "public_observation": public_observation,
     }
 
 

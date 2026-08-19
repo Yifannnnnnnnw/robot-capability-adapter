@@ -4,9 +4,20 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.6`<br>
+> **Document revision / 文档版本：** `0.19.7`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.7` restores the bounded public observation role of the AutoAdapter 1.0 development
+sandbox. Each `check_driver` capability smoke now returns terminal actuator controls, generalized
+state, and positions for names already declared in public Morphology. The result is explicitly
+source/import/physics-liveness feedback, not capability validation or a private Harness verdict.
+No private scene, reset, binding, criterion, threshold, guard, or expected trajectory is exposed.
+
+**中文辅助说明。** `0.19.7` 恢复 AutoAdapter 1.0 development sandbox 的有界公开观察作用。
+每项 `check_driver` capability smoke 返回终态 actuator control、通用状态及公开 Morphology 已声明
+名称的位置。结果只代表 source/import/physics liveness 开发反馈，不是 capability validation 或私有
+Harness verdict；不会暴露私有 scene、reset、binding、criterion、threshold、guard 或 expected trajectory。
 
 Revision `0.19.6` removes redundant STUDY file-discovery turns. The initial STUDY input already
 contains the complete public robot-package projection, selected MJCF closure, sealed Capability

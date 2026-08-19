@@ -32,6 +32,9 @@ not import or copy runtime code from Demo2 or `general_demo`.
   import/build, and one physics smoke per capability inside that tool execution
   before explicit submission. The normal Generate or Repair path is therefore
   two remote model turns: atomic check, then submit.
+- Each public smoke returns terminal controls, state, and positions for names
+  declared in public Morphology. It is explicitly liveness/development feedback,
+  not a capability pass or private Harness verdict.
 - The model receives the generated interface stub or previous Repair source in
   its initial context; separate `read_driver` and `write_driver` turns are not
   exposed. A driver stage has three discretionary development probes in addition

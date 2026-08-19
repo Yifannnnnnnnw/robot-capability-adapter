@@ -307,6 +307,11 @@ class InteractiveSessionTests(unittest.TestCase):
         )
 
         self.assertTrue(checked["successful"])
+        self.assertEqual(
+            checked["check_scope"], "public_source_import_and_physics_liveness"
+        )
+        self.assertFalse(checked["capability_behavior_validated"])
+        self.assertFalse(checked["private_harness_executed"])
         self.assertTrue(checked["write"]["source_changed"])
         self.assertEqual(checked["revision"], 1)
         self.assertTrue(checked["import"]["successful"])
@@ -314,6 +319,12 @@ class InteractiveSessionTests(unittest.TestCase):
             [(item["method_name"], item["successful"]) for item in checked["capability_checks"]],
             [("drive", True)],
         )
+        public_observation = checked["capability_checks"][0]["probe"][
+            "public_observation"
+        ]
+        self.assertGreater(public_observation["simulation_time_s"], 0.0)
+        self.assertEqual(len(public_observation["ctrl"]), 1)
+        self.assertEqual(len(public_observation["qpos"]), 1)
         self.assertEqual(checked["development_status"]["probe_calls_used"], 2)
         self.assertIn("submit_driver", checked["next_action"])
         self.assertEqual(self.session.submit_driver({})["smoked_methods"], ["drive"])

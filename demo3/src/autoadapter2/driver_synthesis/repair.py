@@ -97,7 +97,10 @@ at most three optional public-only Python/MuJoCo
 development probes when genuinely needed. Your normal first action is one check_driver call containing
 the complete revised source and exactly one covered public request per capability. The Framework
 writes the revision, performs source audit and canonical import/build, and runs all capability physics
-smokes inside that one tool execution. Preserve the sealed method names and exact (self, request) ABI.
+smokes inside that one tool execution. Its public controls, state, and named-position observations are
+development feedback only; liveness success is not capability success or a private verdict. Compare
+them with the failed report before submission. Preserve the sealed method names and exact
+(self, request) ABI.
 Respect the original skeleton-assisted or from-scratch boundary. Finish only with submit_driver after
 the bundled check succeeds. Never access or infer
 private suite construction, reference code, the other condition, or a final Harness verdict."""

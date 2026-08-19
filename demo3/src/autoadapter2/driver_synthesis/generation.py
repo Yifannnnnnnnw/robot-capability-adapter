@@ -152,8 +152,11 @@ or task dispatch. Implement the complete source yourself. Use public files and a
 MuJoCo development probes when genuinely needed. Your normal first action is one check_driver call
 containing the complete source and exactly one covered public request per sealed capability. The
 Framework writes the source, audits it, imports/builds it, and runs all capability physics smokes in
-that same tool execution. Tool failures are development observations, so revise the complete source
-and rerun check_driver. Finish only with submit_driver. Never access private Harness definitions,
+that same tool execution. The returned public controls, state, and named-position observations are
+development feedback only: a successful check proves ABI/import/physics liveness, not capability
+behavior or private validation. Never call it capability success. Revise the complete source when
+the observations expose a defect, then rerun check_driver. Finish only with submit_driver. Never
+access private Harness definitions,
 reference code, the other condition, or credentials, and never claim the final verdict."""
 
 STUDY_REACT_TASK = """Use the complete supplied public inputs directly. First call

@@ -29,6 +29,11 @@ class DevelopmentSessionError(RuntimeError):
 
 MAX_DISCRETIONARY_DRIVER_PROBES = 3
 MAX_STUDY_PROBES = 3
+PUBLIC_CHECK_SCOPE = {
+    "check_scope": "public_source_import_and_physics_liveness",
+    "capability_behavior_validated": False,
+    "private_harness_executed": False,
+}
 
 
 def _object_schema(
@@ -75,7 +80,27 @@ def _probe_summary(result: Mapping[str, Any]) -> dict[str, Any]:
         value = result.get(key)
         if isinstance(value, str):
             summary[key] = value[-800:]
+    observation = result.get("public_observation")
+    if isinstance(observation, Mapping):
+        summary["public_observation"] = dict(observation)
     return summary
+
+
+def _public_position_specs(morphology: Mapping[str, Any]) -> tuple[tuple[str, str], ...]:
+    observations = morphology.get("public_observations")
+    if not isinstance(observations, Mapping):
+        return ()
+    specs: list[tuple[str, str]] = []
+    for field, value in observations.items():
+        if field.endswith("_site") and isinstance(value, str) and value:
+            specs.append(("site", value))
+        elif field.endswith("_body") and isinstance(value, str) and value:
+            specs.append(("body", value))
+        elif field.endswith("_bodies") and isinstance(value, list):
+            specs.extend(
+                ("body", name) for name in value if isinstance(name, str) and name
+            )
+    return tuple(dict.fromkeys(specs))
 
 
 def render_interface_stub(capability_methods: Sequence[str]) -> str:
@@ -407,6 +432,10 @@ class PublicDevelopmentSession:
             )
         self._audit_candidate()
         request_json = json.dumps(dict(request), ensure_ascii=True, sort_keys=True)
+        position_specs_json = json.dumps(
+            _public_position_specs(self.package.morphology),
+            ensure_ascii=True,
+        )
         script = (
             "import json\n"
             "import os\n"
@@ -417,6 +446,25 @@ class PublicDevelopmentSession:
             "candidate = driver.build(model=model, data=data)\n"
             f"request = json.loads({request_json!r})\n"
             f"returned = candidate.{method_name}(request=request)\n"
+            f"position_specs = json.loads({position_specs_json!r})\n"
+            "named_positions = {}\n"
+            "for object_kind, object_name in position_specs:\n"
+            "    object_type = (mujoco.mjtObj.mjOBJ_SITE if object_kind == 'site' "
+            "else mujoco.mjtObj.mjOBJ_BODY)\n"
+            "    object_id = int(mujoco.mj_name2id(model, object_type, object_name))\n"
+            "    if object_id >= 0:\n"
+            "        position = (data.site_xpos[object_id] if object_kind == 'site' "
+            "else data.xpos[object_id])\n"
+            "        named_positions[object_kind + ':' + object_name] = "
+            "[float(value) for value in position]\n"
+            "public_observation = {\n"
+            "    'simulation_time_s': float(data.time),\n"
+            "    'ctrl': [float(value) for value in data.ctrl],\n"
+            "    'qpos': [float(value) for value in data.qpos],\n"
+            "    'named_positions': named_positions,\n"
+            "}\n"
+            "print('__AUTOADAPTER_PUBLIC_OBSERVATION__=' + "
+            "json.dumps(public_observation, sort_keys=True))\n"
             "print('candidate_return_type=' + type(returned).__name__)\n"
             "print('candidate_time_s=' + str(data.time))\n"
         )
@@ -488,6 +536,7 @@ class PublicDevelopmentSession:
         status = self._development_status()
         if not status["missing_current_revision_smokes"]:
             return {
+                **PUBLIC_CHECK_SCOPE,
                 "revision": self._revision,
                 "successful": True,
                 "write": {
@@ -503,6 +552,7 @@ class PublicDevelopmentSession:
             audit = {"successful": True, **asdict(self._audit_candidate())}
         except Exception as exc:
             return {
+                **PUBLIC_CHECK_SCOPE,
                 "revision": self._revision,
                 "successful": False,
                 "write": {
@@ -529,6 +579,7 @@ class PublicDevelopmentSession:
             imported = self.import_driver({})
         except Exception as exc:
             return {
+                **PUBLIC_CHECK_SCOPE,
                 "revision": self._revision,
                 "successful": False,
                 "write": {
@@ -580,6 +631,7 @@ class PublicDevelopmentSession:
             and not status["missing_current_revision_smokes"]
         )
         return {
+            **PUBLIC_CHECK_SCOPE,
             "revision": self._revision,
             "successful": successful,
             "write": {
