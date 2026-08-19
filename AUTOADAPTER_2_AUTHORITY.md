@@ -4,9 +4,34 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.2`<br>
+> **Document revision / 文档版本：** `0.19.3`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.3` makes capability admission proportional to the designed capability layer rather
+than to the size of the source Task Library. Each capability has exactly one source-backed primary
+validation contract and may have at most one source-backed robustness contract when a materially
+different scene, metric, or temporal obligation cannot be represented by the primary case. The IVC
+therefore compiles one primary private case and at most one justified robustness case per
+capability; it must not mechanically emit one capability case for every source task or scoring
+clause. The complete Task Library remains the grounding and abstraction input. Separately, Task
+Demo uniformly samples five original Task Library tasks and compiles all scoring clauses belonging
+to those selected tasks. This revision also applies the AutoAdapter 1.0 bounded-history principle
+to tool-using Driver Synthesis: the model-facing projection retains the initial public context, one
+current driver source, and the three most recent completed tool-interaction groups; superseded
+large tool payloads are represented by deterministic tool name, revision, character count, and
+result status metadata. Full traces remain on disk and no model-written summary is introduced.
+
+**中文辅助说明。** `0.19.3` 让 capability 准入规模与设计出的 capability layer 对齐，而不是
+随来源 Task Library 大小机械增长。每项 capability 恰好具有一个有来源的 primary validation
+contract；只有 primary case 无法表达确实不同的 scene、metric 或 temporal obligation 时，才可
+再有最多一个有来源的 robustness contract。IVC 因而为每项 capability 编译一个 primary 私有
+case，并在有明确理由时增加最多一个 robustness case；不得按每项来源 task 或 scoring clause
+机械生成 capability case。完整 Task Library 仍用于 grounding 和能力抽象。Task Demo 则另行
+均匀随机抽取五项原始 Task Library task，并编译这些被选 task 的全部 scoring clause。本修订还
+把 AutoAdapter 1.0 的有界历史原则用于带工具的 Driver Synthesis：发给模型的投影保留首次公开
+上下文、一份当前 driver 源码和最近三个已完成工具交互组；已被取代的大型工具 payload 只保留
+确定性的 tool 名称、revision、字符数和结果状态。完整 trace 仍保存在磁盘，且不引入模型摘要。
 
 Revision `0.19.2` restores the AutoAdapter 1.0 separation between capability validation and the
 later Demo phase. The complete implementation-blind IVC output is sealed as
@@ -282,7 +307,7 @@ The following terms are locked across this Authority, experiment reports, and th
 | **capability** | One implementation-independent contract for a callable robot operation exposed by the robot capability layer, defined by its semantics, inputs, outputs, preconditions, and measurable acceptance obligations. `Skill` is reserved for a task-level, temporally extended behaviour and is not a synonym for a capability. |
 | **robot-specific driver** | The primary executable, application-level robot-integration artefact initially produced by Driver Synthesis and, when required, revised by Repair for one declared robot configuration. It implements the robot capability layer; it is not an operating-system device driver. |
 | **capability-level pass criterion** | A measurable acceptance condition for one capability. It is derived from source-backed task pass standards and is independently audited, compiled, and evaluated outside the candidate driver. |
-| **Task Demo** | A post-admission demonstration that runs five recorded, randomly selected private task cases with the fixed capability-validated driver. It has a separate verdict, is not a driver-synthesis gate, and cannot trigger same-run Repair. |
+| **Task Demo** | A post-admission demonstration that runs five recorded, uniformly sampled original Task Library tasks, including all scoring clauses of each selected task, with the fixed capability-validated driver. It has a separate verdict, is not a driver-synthesis gate, and cannot trigger same-run Repair. |
 | **robot-software synthesis** | The experiment-level process of designing a robot capability layer and its capability-level pass criteria, synthesising a robot-specific driver that implements the layer, and independently validating that driver. The primary executable product is the robot-specific driver; TGCD still produces only a design contract, and `Driver Synthesis` remains the phase that produces executable code. |
 | **capability-layer use** | The use of a fixed robot capability layer, backed by the same fixed and validated robot-specific driver, by an otherwise matched high-level controller whose LLM backbone is the experimental variable. Use evidence is reported separately and does not establish driver synthesis. |
 | **low-level motion-control capability** | A capability whose implementation converts a requested robot operation into robot-specific actuation, kinematic or locomotion control, and physics stepping. It must not be called a low-level motion-control skill. |
@@ -309,8 +334,9 @@ layer 及实现它的同一套固定且已验证的 driver；其证据不能代�
 motion-control capability` 不得写作 low-level motion-control skill。`trusted skeleton` 是
 skeleton-assisted 条件中的机器人控制实现辅助，不是 high-level controller。`robot morphology`
 指物理形态和关节排列；`robot configuration` 指一次运行使用的准确模型、资产、actuator 和控制
-设置。`Task Demo` 是 driver 通过 capability validation 后，使用该固定 driver 运行五个随机私有
-task case 的演示阶段；它有独立 verdict，不是 driver-synthesis gate，也不能触发本轮 Repair。
+设置。`Task Demo` 是 driver 通过 capability validation 后，使用该固定 driver 运行五项均匀随机
+抽取的原始 Task Library task 及其全部 scoring clause 的演示阶段；它有独立 verdict，不是
+driver-synthesis gate，也不能触发本轮 Repair。
 `L0`、`L1` 不属于规范术语。
 
 ---
@@ -371,7 +397,7 @@ The project may claim only what the corresponding experiment evidence directly s
 
 The evidence does **not** establish real-SDK fidelity, hardware validity, sim-to-real transfer,
 visual perception, production reliability, universal model or robot superiority, Task Demo
-completion for tasks outside the five-case sample, or a causal morphology effect. A capability-level pass criterion
+completion for tasks outside the five-task sample, or a causal morphology effect. A capability-level pass criterion
 is not established as reliable merely because the model wrote it or the compiler accepted its
 syntax. A cross-morphology comparison is associational because morphology co-varies with actuation,
 dynamics, task applicability, and MuJoCo control structure.
@@ -387,7 +413,7 @@ capability-level pass criteria；只有在 Experience-enabled run 与匹配的 n
 比较时，才能报告与 reviewed Evolution Experience 相关的后续运行差异；独立 Direct-MuJoCo
 验证、首次与 Repair 后结果、失败模式和资源使用；以及固定实验控制下、针对已声明机器人 cohort
 的描述性 cross-morphology 差异。这些证据不证明真实 SDK 保真度、硬件有效性、sim-to-real
-迁移、视觉感知、生产可靠性、模型或机器人的普遍优越性、五-case 样本外任务的 Task Demo
+迁移、视觉感知、生产可靠性、模型或机器人的普遍优越性、五-task 样本外任务的 Task Demo
 完成结果或 morphology
 的因果效应。模型写出 criterion 或 compiler 接受其语法，本身都不足以证明 criterion 可靠。
 由于 morphology 与 actuation、dynamics、任务适用性和 MuJoCo 控制结构共同变化，
@@ -788,7 +814,7 @@ Morphology + >=20 sourced Tasks/pass standards + reviewed Experience
                        |
              pass only |
                        v
-       random five-case task_demo_suite.json
+       random five-task task_demo_suite.json
                        |
                        v
         separate Task Demo verdict + videos
@@ -803,7 +829,7 @@ must preserve the observable contract below rather than silently substitute a fi
 
 The two generation conditions are separate experimental cells. For one robot/model replicate they
 reuse the same sealed `capability_design.json`, the same complete
-`capability_validation_suite.json`, the same recorded five-case `task_demo_suite.json`, frozen Task
+`capability_validation_suite.json`, the same recorded five-task `task_demo_suite.json`, frozen Task
 Library snapshot, model identity, and environment.
 They run in isolated workspaces; neither condition may
 inspect or reuse the other condition's candidate, trace, validation result, Repair history, or
@@ -852,7 +878,7 @@ Morphology + >=20 项有来源 Tasks/通过标准 + 已审查 Experience
                        |
               仅通过时 |
                        v
-       随机五-case task_demo_suite.json
+       随机五-task task_demo_suite.json
                        |
                        v
           独立 Task Demo verdict + 视频
@@ -866,7 +892,7 @@ Morphology + >=20 项有来源 Tasks/通过标准 + 已审查 Experience
 可观察合同，不能悄悄改为输出固定 driver。
 
 两种生成条件是相互独立的实验 cell。对于同一个机器人/model replicate，它们复用同一份已封存
-`capability_design.json`、同一套完整 `capability_validation_suite.json`、同一套有记录的五-case
+`capability_design.json`、同一套完整 `capability_validation_suite.json`、同一套有记录的五-task
 `task_demo_suite.json`、已封存 Task Library 快照、模型身份和环境，
 并在隔离的 workspace 中运行；任一条件都不得检查或复用另一条件的 candidate、trace、验证结果、
 Repair 历史或生成的 driver。每种条件各自最多提交三个 driver attempt，并分别获得 Harness
@@ -889,15 +915,19 @@ The sealed `capability_design.json` must define for each designed capability:
   effect that justifies their abstraction;
 - typed inputs and outputs, units, frames, preconditions, temporal semantics, invariants, required
   public action and observation affordances, and public failure behavior; and
-- a public validation contract containing every measurable obligation needed to preserve the pass
-  standards of all covered tasks: metric semantics, unit, comparator, threshold or allowed range,
-  dwell or other temporal rule, aggregation, and source-task/standard lineage.
+- a public validation contract containing exactly one `primary` clause selected from the covered
+  tasks as the authoritative capability-level criterion and, only when materially different
+  validation semantics require it, at most one `robustness` clause. Each selected clause retains
+  its metric semantics, unit, comparator, threshold or allowed range, dwell or other temporal rule,
+  aggregation, and exact source-task/standard lineage.
 
 Every admitted task must be covered by exactly one designed capability for an accepted Design.
 The five-to-ten bound forces reuse across the at-least-twenty tasks; arbitrary merging without a
-common robot effect is invalid. A capability validation contract may contain multiple clauses and
-task-specific cases. It must never discard or weaken a covered task's source pass standard merely
-to create one common threshold.
+common robot effect is invalid. The primary criterion must be representative of that common effect
+and cannot be a weaker rewrite of its selected source clause. A robustness clause must identify a
+different source task and explain the scene, metric, or temporal obligation that the primary case
+does not exercise. Omitted source clauses remain in the sealed Task Library and remain eligible for
+Task Demo; their omission from capability admission must not be reported as if those tasks passed.
 
 TGCD may design names, abstractions, interfaces, and validation contracts, but it cannot
 invent unsupported robot affordances, units, frames, source claims, or less demanding standards.
@@ -916,13 +946,17 @@ implementation information.
 effect 名称及与实现无关的语义；所覆盖的精确 Task Library task ID，以及这些任务为何共享同一
 可复用机器人 effect 的简要理由；带类型的 inputs/outputs、unit、frame、precondition、时间语义、
 invariant、所需公开 action/observation affordance 和公开失败行为；以及公开 validation contract。
-该 validation contract 必须保留所有被覆盖任务的可测量义务，包括 metric 语义、unit、comparator、
-threshold/允许范围、dwell 或其他时间规则、aggregation 和来源 task/standard lineage。
+该 validation contract 必须恰好包含一个从被覆盖 task 中选择的 `primary` clause，作为权威的
+capability-level criterion；只有 validation 语义确实不同且 primary 无法表达时，才可再包含最多
+一个 `robustness` clause。每个被选 clause 必须保留其 metric 语义、unit、comparator、
+threshold/允许范围、dwell 或其他时间规则、aggregation 和精确来源 task/standard lineage。
 
 被接受的 Design 必须让每项已准入任务恰好由一个设计 capability 覆盖。至少二十项任务只能设计
 五至十项 capability，这一边界用于迫使模型形成复用抽象；没有共同机器人 effect 的任意合并无效。
-一个 capability 的 validation contract 可以包含多个 clause 和 task-specific case，绝不能为了
-得到一个共同 threshold 而删除或弱化某项来源通过标准。TGCD 可以设计名称、抽象、接口和
+Primary criterion 必须代表该共同 effect，且不得把其所选来源 clause 改写得更宽松。Robustness
+clause 必须来自另一项 task，并说明 primary 未覆盖的 scene、metric 或 temporal obligation。未被
+选为 capability admission criterion 的来源 clause 继续保存在封存 Task Library 中，并可被 Task
+Demo 抽取；不得把它们未进入 capability suite 错报成相应 task 已通过。TGCD 可以设计名称、抽象、接口和
 validation contract，但不能发明无依据的机器人 affordance、unit、frame、来源声明或更宽松标准；
 语义 interface 通过固定的 `method(request=...)` ABI 传输，TGCD 不得改名该 Python 调用信封，且
 只能使用被覆盖任务公开声明的 task-parameter 字段；
@@ -939,31 +973,33 @@ candidate traces, candidate output, Repair history, or validation results.
 
 For every designed capability, the IVC must:
 
-1. verify that every covered task and source pass-standard clause is represented;
+1. verify exactly one primary contract and at most one justified robustness contract, each copied
+   from a covered task's source pass-standard clause;
 2. reject an invented, missing, incomparable, or weaker metric, comparator, threshold, temporal
    rule, or aggregation;
 3. bind the public metric semantics to trusted MuJoCo observations and Framework-owned measurement
    code;
 4. select concrete private case inputs, scene/reset state, repetitions, termination, and
    anti-false-pass guards; and
-5. produce deterministic per-clause, per-task, per-capability, and whole-suite verdict rules.
+5. produce deterministic per-case, per-capability, and whole-suite verdict rules.
 
 The IVC may preserve a TGCD threshold or make a private case stricter when justified, but
-it cannot silently relax a source obligation. A structural/reference checker must confirm five to
-ten capabilities, complete task and source-standard coverage in the capability validation suite, valid simulator
-bindings, and no weaker-standard substitutions before Driver Synthesis receives the sealed
-Capability Design.
+it cannot silently relax a selected source obligation. A structural/reference checker must confirm
+five to ten capabilities, exactly one primary and at most one justified robustness case per
+capability, valid simulator bindings, and no weaker-standard substitutions before Driver Synthesis
+receives the sealed Capability Design.
 
 The complete capability validation suite is sealed before STUDY and must remain identical for the
 robot's reference calibration, both generation conditions, and every Repair attempt. Its
-whole-suite verdict requires every compiled case to pass, so every designed capability and every
-source-standard clause is exercised before the generated driver is admitted.
+whole-suite verdict requires every compiled case to pass, so every designed capability primary
+case and every selected robustness case is exercised before the generated driver is admitted.
 
-After the audit and before STUDY, the Framework also uniformly samples exactly five cases without
-replacement from that complete suite using a recorded run seed and seals them as
-`task_demo_suite.json`. A complete suite with fewer than five cases is invalid. The selected case
-IDs and seed remain Harness-private. This sample is not a reduced capability-validation suite: it
-is held for the post-admission Task Demo and is not executed during generation or Repair.
+After the audit and before STUDY, the Framework also uniformly samples exactly five original Task
+Library task IDs without replacement using a recorded run seed. It compiles every scoring clause
+of those five tasks through their existing private instances, bindings, and guards and seals the
+result as `task_demo_suite.json`. The selected task IDs and seed remain Harness-private. This
+artifact is not sampled from or treated as a reduced capability-validation suite: it is held for
+the post-admission Task Demo and is not executed during generation or Repair.
 
 The executable suite, concrete cases, bindings, and guards remain Harness-private. Driver Synthesis
 may see the public capability interfaces and validation-contract semantics from the sealed
@@ -977,23 +1013,25 @@ Synthesis 开始前，它审计并把 TGCD 设计的公开 validation contract �
 suite，即 `capability_validation_suite.json`。IVC 对实现不可见，不得检查 `driver.py`、
 candidate trace、candidate 输出、Repair 历史或验证结果。
 
-对每项设计 capability，IVC 必须：确认每项被覆盖任务和每条来源通过标准都得到保留；拒绝
+对每项设计 capability，IVC 必须：确认恰好一个 primary contract 和最多一个有明确理由的
+robustness contract，且各自精确复制某项被覆盖 task 的来源通过标准；拒绝
 虚构、缺失、不可比较或更宽松的 metric、comparator、threshold、时间规则或 aggregation；把公开
 metric 语义绑定到可信 MuJoCo observation 和 Framework measurement 代码；选择具体私有 case
-输入、scene/reset 状态、重复次数、终止条件和 anti-false-pass guard；并生成逐 clause、逐 task、
+输入、scene/reset 状态、重复次数、终止条件和 anti-false-pass guard；并生成逐 case、
 逐 capability 及整套 suite 的确定性 verdict 规则。
 
-有依据时 IVC 可以保留 TGCD threshold 或让私有 case 更严格，但不能悄悄放宽来源义务。
+有依据时 IVC 可以保留 TGCD threshold 或让私有 case 更严格，但不能悄悄放宽被选来源义务。
 Driver Synthesis 收到封存 Capability Design 前，结构/reference checker 必须确认 capability 数量
-为五至十、capability validation suite 中 task 与来源标准覆盖完整、simulator binding 有效且不
-存在弱化标准的替换。完整 capability validation suite 在 STUDY 前封存，并在该机器人 reference
+为五至十、每项 capability 恰好有一个 primary case 且最多有一个有明确理由的 robustness case、
+simulator binding 有效且不存在弱化标准的替换。完整 capability validation suite 在 STUDY 前封存，并在该机器人 reference
 校准、两种生成条件及全部 Repair attempt 间保持完全一致；整套 verdict 要求所有编译 case
-通过，因此 driver 准入前会执行每项设计 capability 和每条来源标准 clause。
+通过，因此 driver 准入前会执行每项 capability 的 primary case 及所有被选 robustness case。
 
-完成审计后且在 STUDY 前，Framework 还使用已记录的 run seed，从完整 suite 中无放回均匀随机
-抽取恰好五个 case，封存为 `task_demo_suite.json`；完整 suite 不足五个 case 时无效。被选 case
-ID 和 seed 仅对 Harness 可见。这份样本不是缩减版 capability validation suite，只供 driver 准入
-后的 Task Demo 使用，在生成和 Repair 阶段都不执行。可执行 suite、具体 case、binding 和 guard
+完成审计后且在 STUDY 前，Framework 还使用已记录的 run seed，从原始 Task Library 中无放回
+均匀随机抽取恰好五项 task，并通过现有私有 instance、binding 和 guard 编译这些 task 的全部
+scoring clause，封存为 `task_demo_suite.json`。被选 task ID 和 seed 仅对 Harness 可见。这份
+artifact 不是缩减版 capability validation suite，只供 driver 准入后的 Task Demo 使用，在生成和
+Repair 阶段都不执行。可执行 suite、具体 case、binding 和 guard
 始终属于 Harness 私有数据。Driver Synthesis 可以看到封存 Capability Design
 中公开的 capability 接口及 validation-contract 语义，但不能看到这些标准的私有实现。最终
 pass/fail verdict 只属于可信 Harness，不能来自 TGCD 或 IVC 模型自述。
@@ -1019,6 +1057,24 @@ diagnostics for its current `driver.py`. Tool errors are returned to the same mo
 it can revise the candidate before submission. The Framework counts a formal attempt only after the
 model explicitly submits `driver.py`; development rewrites and rejected pre-submission audits do not
 consume one of the three Harness attempts.
+
+The Framework applies one deterministic bounded projection when serializing this tool conversation
+for the next model turn. It retains the initial public task context, exactly one latest complete
+`driver.py` snapshot, and the three most recent completed tool-interaction groups. Superseded
+`read_driver` and `write_driver` source payloads are replaced by tool name, driver revision, source
+character count, and result status; similarly superseded development-probe scripts may be replaced
+by probe identity, script character count, and result status while their bounded diagnostics remain
+available. If a hard history-character budget still requires eviction, oldest completed groups are
+removed first and represented by the same deterministic metadata. This model-facing projection does
+not modify the complete on-disk trace, does not use another model to summarize history, and cannot
+introduce private Harness information.
+
+**上下文辅助说明。** Framework 在向下一模型回合序列化工具对话时应用一份确定性的有界投影：
+保留首次公开任务上下文、恰好一份最新完整 `driver.py`，以及最近三个已完成工具交互组。已被取代
+的 `read_driver`/`write_driver` 源码 payload 改为 tool 名称、driver revision、源码字符数和结果
+状态；已被取代的 development probe 脚本也可改为 probe 标识、脚本字符数和结果状态，同时保留
+有界诊断。若仍超过硬性历史字符预算，则优先移除最旧的已完成组并用同样的确定性元数据表示。
+该模型侧投影不修改磁盘中的完整 trace、不调用另一模型摘要历史，也不得引入私有 Harness 信息。
 
 The Framework mechanically generates the same interface-only starting stub for both conditions
 from the sealed Capability Design. It may contain only a generic candidate class,
@@ -1205,24 +1261,26 @@ Repair 后通过可以计入 `pass@k`，但不得包装成首次通过，也不�
 ### 3.6 Task Demo / 任务演示
 
 Task Demo begins only after a condition's final generated driver passes the complete capability
-validation suite. The Framework fixes that admitted driver, executes the sealed five-case
+validation suite. The Framework fixes that admitted driver, executes the sealed five-task
 `task_demo_suite.json` once through the same trusted Direct-MuJoCo Harness, and records a separate
 verdict and per-trial videos. Task Demo does not reopen generation, consume a driver attempt, or
 trigger same-run Repair. A failed or incomplete Task Demo must be reported truthfully but does not
 change the preceding driver-synthesis pass.
 
-The five cases are a bounded Demo sample, not evidence that every Task Library task was run. This
+The five selected tasks and all of their scoring clauses are a bounded Demo sample, not evidence
+that every Task Library task was run. This
 Demo alone also does not establish the RQ1 capability-layer-use result unless the declared fixed
 high-level-controller path was actually part of the run. Its terminal report may be included in the
 input projection for Evolution, which can influence only a later matched run.
 
 **中文辅助说明。** 只有某一条件的最终生成 driver 通过完整 capability validation suite 后，
 Task Demo 才开始。Framework 固定该已准入 driver，通过同一可信 Direct-MuJoCo Harness 运行一次
-已封存的五-case `task_demo_suite.json`，并单独记录 verdict 和逐 trial 视频。Task Demo 不会重开
+已封存的五-task `task_demo_suite.json`，并单独记录 verdict 和逐 trial 视频。Task Demo 不会重开
 生成、不消耗 driver attempt，也不触发本轮 Repair。Demo 失败或证据不完整必须如实报告，但不
 改变此前已经得到的 driver-synthesis pass。
 
-这五个 case 只是有界 Demo 样本，不能证明 Task Library 的全部任务均已运行。如果本次 run 没有
+这五项被选 task 及其全部 scoring clause 只是有界 Demo 样本，不能证明 Task Library 的全部任务
+均已运行。如果本次 run 没有
 实际包含已声明且固定的 high-level-controller 路径，仅有该 Demo 也不能建立 RQ1
 capability-layer-use 结果。其终态报告可以进入 Evolution 的输入投影，但只能影响后续匹配 run。
 
@@ -1390,7 +1448,7 @@ persistent state machine.
 | Reference calibration | Reviewed reference driver, real MuJoCo, complete `capability_validation_suite.json` Harness verdicts, and complete videos | The selected assets, controller baseline, complete capability-validation route, Harness, and recording path are feasible | Any model generated the driver or any Task Demo passed |
 | Dynamic generation-condition executed | Source-backed 20+ task snapshot, real-model TGCD design of 5–10 capability contracts without a pre-authored effect policy, complete IVC-audited `capability_validation_suite.json`, named skeleton-assisted or from-scratch condition, real model identities/calls, model-generated `driver.py`, condition-appropriate STUDY/GENERATE trace, and real MuJoCo capability validation reaching a terminal verdict | That capability-design and generation condition executed end to end | The capability requirements passed, Task Demo ran, or the other condition executed |
 | Single-robot condition success | Dynamic condition evidence plus every case in the complete capability validation suite passes within that condition's declared attempt budget | The generated robot-specific driver passed capability admission for that robot, condition, and run | Any Task Demo passed, or the paired condition, two-robot mainline, or SDK path succeeded |
-| Task Demo executed | A capability-validated fixed driver, sealed random five-case `task_demo_suite.json`, separate Harness verdict, and complete videos | The five selected task cases were demonstrated with that admitted driver | Every Task Library task passed, driver synthesis failed, or RQ1 capability-layer use succeeded without the declared high-level controller |
+| Task Demo executed | A capability-validated fixed driver, sealed random five-task `task_demo_suite.json`, separate Harness verdict, and complete videos | The five selected tasks and all of their scoring clauses were demonstrated with that admitted driver | Every Task Library task passed, driver synthesis failed, or RQ1 capability-layer use succeeded without the declared high-level controller |
 | Paired two-condition experiment completed | Both generation conditions reach capability-validation terminal verdicts for both fixed robots using the same sealed per-robot `capability_design.json`, `capability_validation_suite.json`, and declared experiment configuration | The four-cell Direct-MuJoCo comparison executed | Every cell passed or every Task Demo ran |
 | Two-condition, two-robot mainline success | All four robot-by-generation-condition cells independently satisfy single-robot condition success | The first paired Direct-MuJoCo mainline experiment succeeded | SDK fidelity, hardware validity, sim-to-real, or universal applicability |
 | SDK-grounded extension evidence | Real SDK application logic and robot-specific Translation execute bidirectionally with MuJoCo | The named SDK-extension route executed | Hardware equivalence or mainline replacement |
@@ -1402,7 +1460,7 @@ persistent state machine.
 | 参考校准 | 经审查的 reference driver、真实 MuJoCo、完整 `capability_validation_suite.json` 的 Harness verdict 和完整视频 | 所选资产、controller baseline、完整 capability-validation 路径、Harness 和录像路径可行 | driver 由任何模型生成，或任何 Task Demo 已通过 |
 | 动态生成条件已执行 | 有来源的 20+ task 快照、没有预写 effect policy 的真实模型 TGCD 五至十项 capability contract 设计、IVC 完整审计的 `capability_validation_suite.json`、明确的 skeleton-assisted 或 from-scratch 条件、真实模型身份和调用、模型生成的 `driver.py`、符合该条件的 STUDY/GENERATE trace，以及到达最终 verdict 的真实 MuJoCo capability validation | capability 设计及该生成条件已完成端到端执行 | capability 要求已通过、Task Demo 已运行，或另一条件已执行 |
 | 单机器人条件成功 | 具备动态条件证据，且完整 capability validation suite 中每个 case 均在该条件声明的 attempt 预算内通过 | 该机器人、该生成条件和该 run 生成的 robot-specific driver 通过 capability 准入 | 任何 Task Demo 已通过，或配对条件、双机器人主线或 SDK 路径成功 |
-| Task Demo 已执行 | 固定的 capability-validated driver、封存的随机五-case `task_demo_suite.json`、独立 Harness verdict 和完整视频 | 该已准入 driver 完成了所选五个 task case 的演示 | Task Library 全部任务通过、driver synthesis 失败，或在没有声明 high-level controller 时 RQ1 capability-layer use 成功 |
+| Task Demo 已执行 | 固定的 capability-validated driver、封存的随机五-task `task_demo_suite.json`、独立 Harness verdict 和完整视频 | 该已准入 driver 完成了所选五项 task 及其全部 scoring clause 的演示 | Task Library 全部任务通过、driver synthesis 失败，或在没有声明 high-level controller 时 RQ1 capability-layer use 成功 |
 | 双条件配对实验已完成 | 两种生成条件在两个固定机器人上均使用相同的每机器人封存 `capability_design.json`、`capability_validation_suite.json` 和声明的实验配置到达 capability-validation 最终 verdict | 四个 Direct-MuJoCo 实验 cell 已执行 | 每个 cell 均通过，或每个 Task Demo 均已运行 |
 | 双条件双机器人主线成功 | 四个机器人×生成条件 cell 均独立满足单机器人条件成功 | 首次配对 Direct-MuJoCo 主线实验成功 | SDK 保真度、硬件有效性、sim-to-real 或普遍适用性 |
 | 基于真实 SDK 的扩展证据 | 真实 SDK 应用逻辑和机器人专用 Translation 与 MuJoCo 双向执行 | 指定的 SDK 扩展路径已执行 | 与硬件等效，或可替代主线 |
@@ -1471,7 +1529,7 @@ implementation work must satisfy each obligation when the affected component or 
    five-task projection, pre-authored effect catalog, or task-to-effect allowlist;
 4. preserve and independently execute both AutoAdapter 1.0 Driver Synthesis conditions against the
    same sealed per-robot Capability Design and complete capability validation suite, then run the
-   same sealed random five-case Task Demo only for each capability-validated final driver;
+   same sealed random five-task Task Demo only for each capability-validated final driver;
 5. build private-suite isolation, candidate-process isolation, canonical-session enforcement,
    anti-teleport checks, and actuator-plus-physics-step evidence into the Harness path itself;
 6. expose to Repair the complete candidate-facing attempt report and media while redacting only the
@@ -1502,7 +1560,7 @@ construction boundary while implementing an earlier component.
    effect catalog 或 task→effect allowlist；
 4. 保留并独立执行 AutoAdapter 1.0 两种 Driver Synthesis 条件；同一机器人的两种条件使用相同
    封存 Capability Design 和同一套完整 capability validation suite；仅当最终 driver 通过准入后，
-   才使用同一套封存的随机五-case Task Demo；
+   才使用同一套封存的随机五-task Task Demo；
 5. 在 Harness 路径内直接实现私有 suite 隔离、candidate 进程隔离、canonical session、
    anti-teleport 检查以及 actuator 加 physics-step 证据；
 6. Repair 可以接收完整的 candidate-facing attempt 报告和媒体，只删除私有 validation 定义；
@@ -1533,7 +1591,8 @@ The implementation may move from `demo3/` to `general_demo/` after all of the fo
    admission; and each scoring clause has exact source lineage and a machine-expressible pass
    standard across at least twenty applicable tasks per robot;
 3. a real TGCD run designs five to ten capability contracts without a pre-authored effect catalog
-   or task-to-effect allowlist, and IVC confirms complete task/source-standard coverage;
+   or task-to-effect allowlist, and IVC confirms one source-backed primary plus at most one
+   justified robustness case per capability;
 4. anti-teleport, canonical-scene, and private-suite isolation checks pass;
 5. both reference drivers pass the resulting sealed complete capability validation suite under the same rules
    used for generated drivers, with complete per-trial videos;
@@ -1554,7 +1613,8 @@ success.
    references 中解析；runnable index 暴露的每个机器人均通过 Task Library 准入；每个机器人
    至少二十项适用任务中的每条评分 clause 都具有精确来源 lineage 和机器可表达通过标准；
 3. 一次真实 TGCD run 在没有预写 effect catalog 或 task→effect allowlist 的情况下设计五至
-   十项 capability contract，并由 IVC 确认 task/来源标准覆盖完整；
+   十项 capability contract，并由 IVC 确认每项 capability 一个有来源 primary case 及最多一个
+   有明确理由的 robustness case；
 4. anti-teleport、canonical-scene 和 private-suite isolation 检查通过；
 5. 两个 reference driver 均在与生成 driver 相同的规则下通过最终封存的完整 capability validation suite，并
    具有完整的逐 trial 视频；
@@ -1581,9 +1641,9 @@ The project may state that the new mainline has run successfully end to end only
    genuinely designed capabilities/effects/interfaces and source-traceable validation contracts, with no
    pre-authored effect catalog or task-to-effect allowlist;
 4. one real-model complete `capability_validation_suite.json` produced by IVC passes the
-   no-weaker-standard and complete-coverage audit and remains unchanged across reference
-   calibration, both generation conditions, and all Repair attempts; the Framework separately
-   seals one recorded random five-case `task_demo_suite.json`, while each condition runs its own
+   no-weaker-selected-standard and per-capability primary/robustness audit and remains unchanged
+   across reference calibration, both generation conditions, and all Repair attempts; the Framework
+   separately seals one recorded random five-task `task_demo_suite.json`, while each condition runs its own
    real STUDY and GENERATE or GEN_ALGO calls and retains their model/call records;
 5. the two conditions use isolated workspaces and do not exchange candidates, traces, validation
    results, Repair history, or generated code;
@@ -1591,7 +1651,7 @@ The project may state that the new mainline has run successfully end to end only
    reference driver or by the other condition's candidate;
 7. every case in the complete capability validation suite passes in each of the four cells within
    that condition's maximum three total generated-driver attempts; each admitted final driver then
-   executes the separately reported five-case Task Demo without that Demo changing the synthesis
+   executes the separately reported five-task Task Demo without that Demo changing the synthesis
    verdict or triggering Repair;
 8. condition-specific `pass@0` and post-Repair results are reported separately, alongside a paired
    comparison that never hides a failed cell in an aggregate;
@@ -1616,15 +1676,15 @@ correct claim is “reference calibration passed.”
 3. 每个 robot/model replicate 使用一份真实模型设计的 `capability_design.json`，其中包含五至
    十项真正设计的 capability/effect/interface 及可追溯来源的 validation contract，不存在预写 effect
    catalog 或 task→effect allowlist；
-4. 一套由 IVC 生成的完整 `capability_validation_suite.json` 通过“不弱化来源标准”和完整覆盖
-   审计，并在 reference 校准、两种生成条件和所有 Repair attempt 间保持不变；Framework 另行
-   封存一套有记录的随机五-case `task_demo_suite.json`；每种条件分别执行自己的真实 STUDY 与
+4. 一套由 IVC 生成的完整 `capability_validation_suite.json` 通过“不弱化所选来源标准”和逐
+   capability primary/robustness 审计，并在 reference 校准、两种生成条件和所有 Repair attempt
+   间保持不变；Framework 另行封存一套有记录的随机五-task `task_demo_suite.json`；每种条件分别执行自己的真实 STUDY 与
    GENERATE 或 GEN_ALGO 调用，并保留模型和调用记录；
 5. 两种条件使用隔离 workspace，不能交换 candidate、trace、验证结果、Repair 历史或生成代码；
 6. 每个提交的 `driver.py` 都在所声明的条件内生成，且未被 reference driver 或另一条件的
    candidate 替换；
 7. 四个 cell 的完整 capability validation suite 中每个 case 均在该条件最多三次生成 driver
-   attempt 内通过；随后每个已准入最终 driver 执行单独报告的五-case Task Demo，该 Demo 不改变
+   attempt 内通过；随后每个已准入最终 driver 执行单独报告的五-task Task Demo，该 Demo 不改变
    synthesis verdict，也不触发 Repair；
 8. 分条件报告 `pass@0` 和 Repair 后结果，并提供不得用 aggregate 隐藏失败 cell 的配对比较；
 9. actuator/physics-step、isolation、canonical-scene 和 from-scratch no-skeleton 检查通过；
