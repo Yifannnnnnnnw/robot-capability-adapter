@@ -342,12 +342,21 @@ class FrankaPackageFoundationTests(unittest.TestCase):
             "autoadapter/libraries/robots/franka_panda/1.0.0/morphology.json",
             observed_paths,
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/franka_panda/1.0.0/tasks/sources.json",
+            observed_paths,
+        )
+        self.assertIn(
+            "autoadapter/libraries/robots/franka_panda/1.0.0/tasks/catalog.json",
+            observed_paths,
+        )
         missing = candidate["missing_for_runnable_package"]
         self.assertFalse(any("local MuJoCo asset closure" in item for item in missing))
         self.assertFalse(any("current mainline morphology.json" in item for item in missing))
+        self.assertFalse(any("20 distinct applicable source-backed tasks" in item for item in missing))
+        self.assertFalse(any("tasks/sources.json" in item for item in missing))
         for phrase in (
-            "20 distinct applicable source-backed tasks",
-            "tasks/sources.json",
+            "task-specific MuJoCo scenes",
             "Framework-private tasks/private",
             "arm_serial_dls skeleton",
             "package check",

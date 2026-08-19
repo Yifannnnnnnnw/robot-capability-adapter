@@ -43,7 +43,17 @@
         {
           "path": "general_demo/libraries/tasks/franka_panda/1.0.0/catalog.json",
           "kind": "task_catalog",
-          "observation": "The local General Demo catalog contains five task records, below the required twenty distinct applicable source-backed tasks."
+          "observation": "The local General Demo catalog contains five legacy task records; the canonical Franka public snapshot is recorded separately below."
+        },
+        {
+          "path": "autoadapter/libraries/robots/franka_panda/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The canonical Franka public snapshot contains the pinned Meta-World source record used by all 20 task contracts."
+        },
+        {
+          "path": "autoadapter/libraries/robots/franka_panda/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The canonical Franka public snapshot contains 20 distinct Meta-World task records; observed_task_count remains 5 for the inspected legacy catalogs above."
         },
         {
           "path": "demo2/legacy_assets/franka_panda/panda.xml",
@@ -67,8 +77,7 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
+        "Create and verify complete local task-specific MuJoCo scenes for all 20 canonical public task contracts.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",

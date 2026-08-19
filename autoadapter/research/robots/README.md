@@ -15,10 +15,12 @@ The proposed order begins with fixed serial arms that may reuse the existing
 arm_serial_dls family. Hand, quadruped, humanoid, mobile-manipulator,
 bimanual, and legged-arm candidates follow in later waves.
 
-The inspected future-robot catalogs currently contain five task records per
-candidate, not the required twenty distinct applicable source-backed tasks.
-The Franka canonical asset and morphology foundation now exists, but Franka is
-still non-runtime until its remaining package and evidence work is complete.
+The inspected legacy future-robot catalogs contain five task records per
+candidate. The canonical Franka package now also has a public 20-task
+Meta-World snapshot; its index observed_task_count remains 5 because that field
+describes the inspected legacy catalogs. Franka is still non-runtime until its
+remaining task-specific MuJoCo scenes, private package, and evidence work are
+complete.
 The General Demo Franka, KUKA, Piper, and UR5e closure records explicitly mark
 UPSTREAM_CACHE_REQUIRED; their upstream mesh materialization is incomplete.
 Demo2 contributes additional legacy assets and historical strict summaries and
