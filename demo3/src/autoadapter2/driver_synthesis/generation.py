@@ -37,8 +37,8 @@ from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_sou
 
 GenerationCondition = Literal["skeleton-assisted", "from-scratch"]
 
-STUDY_REACT_MAX_TURNS = 2
-STUDY_REACT_MAX_TOOL_CALLS = 2
+STUDY_REACT_MAX_TURNS = 3
+STUDY_REACT_MAX_TOOL_CALLS = 3
 DRIVER_REACT_MAX_TURNS = 12
 DRIVER_REACT_MAX_TOOL_CALLS = 24
 
@@ -139,10 +139,12 @@ STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage for 
 Direct-MuJoCo generation condition. The initial public input already contains the complete public
 robot-package projection, selected MJCF closure, sealed Capability Design, and every condition-
 eligible skeleton source. Do not spend remote turns listing or rereading those inputs. Your first
-action must be one public-only MuJoCo probe that successfully advances physics. Use no private
-Harness, reference driver, repository path, network, or other condition artifact. On the next and
-final turn, call submit_study after incorporating that probe observation into concrete findings and
-a capability-by-capability implementation plan. Do not write the final driver in STUDY."""
+action must be one public-only MuJoCo probe intended to advance physics. Use no private Harness,
+reference driver, repository path, network, or other condition artifact. If that first probe fails,
+use exactly one recovery turn to correct and rerun it; otherwise do not probe again. As soon as a
+probe succeeds, call submit_study with non-empty findings and a non-empty capability-by-capability
+implementation_plan. The third turn is reserved only for submission or correction of a rejected
+submission. Do not write the final driver in STUDY."""
 
 
 GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
@@ -160,9 +162,11 @@ access private Harness definitions,
 reference code, the other condition, or credentials, and never claim the final verdict."""
 
 STUDY_REACT_TASK = """Use the complete supplied public inputs directly. First call
-run_mujoco_probe once with a focused real-physics check. After observing it, call submit_study on the
-next turn with grounded findings and an implementation plan. Do not list or reread staged files, run
-follow-up probes, write the driver, or merely print a JSON answer."""
+run_mujoco_probe with a focused real-physics check. After a successful observation, call
+submit_study on the next turn with non-empty grounded findings and a non-empty implementation plan.
+Only when the first probe fails may you use the next turn for one corrected probe before submitting
+on the reserved final turn. Do not list or reread staged files, write the driver, or merely print a
+JSON answer."""
 
 GENERATE_REACT_TASK = """Develop the complete executable driver from the supplied
 driver_interface_stub. Do not spend a turn reading or separately writing driver.py. Call check_driver
@@ -626,7 +630,14 @@ def study(
                         "Call submit_study now; do not run another probe."
                     ),
                 }
-            return result
+            return {
+                **result,
+                "study_requirement_satisfied": False,
+                "required_next_action": (
+                    "The probe failed. Use the single recovery probe now; do not "
+                    "submit until real MuJoCo physics advances successfully."
+                ),
+            }
 
         def submit_study(arguments: Mapping[str, Any]) -> dict[str, Any]:
             findings = arguments.get("findings")
@@ -659,8 +670,12 @@ def study(
         submit_schema = {
             "type": "object",
             "properties": {
-                "findings": {"type": "array", "items": {}},
-                "implementation_plan": {"type": "array", "items": {}},
+                "findings": {"type": "array", "items": {}, "minItems": 1},
+                "implementation_plan": {
+                    "type": "array",
+                    "items": {},
+                    "minItems": 1,
+                },
                 "skeleton_inspection": {"type": "object"},
             },
             "required": ["findings", "implementation_plan"],

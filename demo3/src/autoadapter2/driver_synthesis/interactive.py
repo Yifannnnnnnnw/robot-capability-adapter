@@ -28,7 +28,7 @@ class DevelopmentSessionError(RuntimeError):
 
 
 MAX_DISCRETIONARY_DRIVER_PROBES = 3
-MAX_STUDY_PROBES = 3
+MAX_STUDY_PROBES = 2
 PUBLIC_CHECK_SCOPE = {
     "check_scope": "public_source_import_and_physics_liveness",
     "capability_behavior_validated": False,

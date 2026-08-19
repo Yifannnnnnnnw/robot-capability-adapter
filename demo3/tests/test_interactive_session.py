@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from autoadapter2.driver_synthesis.generation import (
-    GenerationError,
     build_public_generation_inputs,
     generate,
     study,
@@ -546,8 +545,12 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertIn("def drive(self, request):", stub_observation)
         self.assertIn("NotImplementedError", stub_observation)
 
-    def test_study_reserves_second_turn_for_submission(self) -> None:
-        probe = (
+    def test_study_allows_one_failed_probe_recovery_before_submission(self) -> None:
+        failed_probe = (
+            "import mujoco\n"
+            "mujoco.MjModel.from_xml_path('missing-scene.xml')\n"
+        )
+        successful_probe = (
             "import os\nimport mujoco\n"
             "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
             "data = mujoco.MjData(model)\n"
@@ -558,31 +561,65 @@ class InteractiveSessionTests(unittest.TestCase):
                 "study": (
                     ToolTurn(
                         None,
-                        (_call("s1", "run_mujoco_probe", {"probe_id": "first", "script": probe}),),
+                        (
+                            _call(
+                                "s1",
+                                "run_mujoco_probe",
+                                {"probe_id": "failed", "script": failed_probe},
+                            ),
+                        ),
                     ),
                     ToolTurn(
                         None,
-                        (_call("s2", "run_mujoco_probe", {"probe_id": "redundant", "script": probe}),),
+                        (
+                            _call(
+                                "s2",
+                                "run_mujoco_probe",
+                                {"probe_id": "recovered", "script": successful_probe},
+                            ),
+                        ),
+                    ),
+                    ToolTurn(
+                        None,
+                        (
+                            _call(
+                                "s3",
+                                "submit_study",
+                                {
+                                    "findings": ["canonical scene advances"],
+                                    "implementation_plan": ["map drive to motor control"],
+                                },
+                            ),
+                        ),
                     ),
                 )
             }
         )
 
-        with self.assertRaisesRegex(GenerationError, "did not submit") as raised:
-            study(
-                client,  # type: ignore[arg-type]
-                self.package,
-                self.design,
-                condition="from-scratch",
-                workspace=Path(self.temporary.name) / "redundant-study-probe",
-                probe_budget=ProbeBudget(max_requests=4, timeout_s=10),
-                source_root=Path(__file__).resolve().parents[1] / "src",
-            )
+        result = study(
+            client,  # type: ignore[arg-type]
+            self.package,
+            self.design,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "recover-study-probe",
+            probe_budget=ProbeBudget(max_requests=4, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+        )
 
-        self.assertEqual(len(raised.exception.probe_results), 1)
-        self.assertEqual(raised.exception.probe_results[0]["probe_id"], "first")
+        self.assertEqual(
+            [item["probe_id"] for item in result.probe_results],
+            ["failed", "recovered"],
+        )
+        self.assertEqual(result.probe_results[0]["exit_code"], 1)
+        self.assertEqual(result.probe_results[1]["physics_steps"], 1)
+        failed_observation = "\n".join(
+            str(message.get("content", ""))
+            for message in client.messages["study"][1]
+        )
+        self.assertIn('"study_requirement_satisfied": false', failed_observation)
+        self.assertIn("single recovery probe", failed_observation)
         final_turn_tools = {
-            tool["function"]["name"] for tool in client.tools["study"][1]
+            tool["function"]["name"] for tool in client.tools["study"][2]
         }
         self.assertEqual(final_turn_tools, {"submit_study"})
 

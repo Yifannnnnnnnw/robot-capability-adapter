@@ -44,8 +44,10 @@ not import or copy runtime code from Demo2 or `general_demo`.
   to the mandatory import and one smoke per capability. With at most ten
   capabilities, the hard ceiling is fourteen local probe processes.
 - STUDY receives the complete public package projection, selected MJCF closure,
-  and eligible skeleton source in its initial context. Its normal and maximum
-  path is two model turns: one real MuJoCo probe, then explicit study submission.
+  and eligible skeleton source in its initial context. Its normal path is two
+  model turns: one real MuJoCo probe, then explicit study submission. If the
+  first probe fails or that submission is rejected, one bounded recovery turn
+  is available; the hard maximum is three turns and two probes.
 - Before each tool-model request, the deterministic Agent Context Manager keeps
   the initial public task, one current complete driver snapshot, and at most
   three recent interaction groups. Superseded driver source and probe scripts

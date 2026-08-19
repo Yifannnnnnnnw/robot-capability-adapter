@@ -4,9 +4,23 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.8`<br>
+> **Document revision / 文档版本：** `0.19.9`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.9` restores one bounded AutoAdapter 1.0-style STUDY recovery opportunity after the
+dynamic run showed that a hard two-turn limit converts an ordinary failed probe or rejected submit
+payload into a terminal cell failure. The normal path remains one public physics probe followed by
+submission in two model turns. STUDY may use at most three turns and three tool calls: at most two
+public probes, where the second is permitted only after the first fails, followed by a reserved
+submission turn. A successful first probe still forbids another probe. No public input or private
+boundary changes.
+
+**中文辅助说明。** `0.19.9` 恢复一次有界的 AutoAdapter 1.0 式 STUDY 纠错机会。真实动态运行
+证明，硬性两回合会把普通 probe 失败或提交参数被拒直接变成整个 cell 的终止失败。正常路径仍是
+一次公开物理 probe 后提交，共两个模型回合；STUDY 最多三个回合、三个工具调用，最多两个公开
+probe，且只有首次失败时才允许第二次，随后保留最终提交回合。首次 probe 成功后仍禁止重复 probe；
+公开输入和私有边界均不改变。
 
 Revision `0.19.8` strengthens only the capability-neutral serial-arm skeleton primitive surface
 observed to be missing in the dynamic run. It provides actuator-only closed-loop Cartesian DLS with
@@ -1125,7 +1139,9 @@ invoke or inspect the private Harness suite.
 
 STUDY and GENERATE/GEN_ALGO execute through the self-contained AutoAdapter 1.0-style ReAct loop,
 not as one-shot code-generation responses. STUDY receives the complete run-relevant public inputs
-inline and uses exactly one public Python/MuJoCo probe turn followed by its reserved submission turn.
+inline. Its normal path uses one public Python/MuJoCo probe turn followed by submission. If the first
+probe fails, it may run exactly one corrected probe; a third and final turn is reserved for
+submission or correction of a rejected submission. A successful first probe forbids a second probe.
 GENERATE/GEN_ALGO may still list and read staged public files when needed, inspect the trusted
 skeleton only in the skeleton-assisted condition, and run bounded public Python/MuJoCo probes. Each
 candidate revision is one AutoAdapter 1.0-style implementation action:
@@ -1208,8 +1224,10 @@ Python/MuJoCo 开发 probe，但该 probe 受明确的调用次数、模拟时�
 candidate 方法并调试 actuator-driven 行为，但不能调用或检查私有 Harness suite。
 
 STUDY 与 GENERATE/GEN_ALGO 必须通过 Demo3 自包含的 AutoAdapter 1.0 式 ReAct loop 执行，
-不能退化为一次性代码生成响应。STUDY 在初始上下文直接取得本次运行相关的完整公开输入，只用一次
-公开 Python/MuJoCo probe 回合和随后保留的提交回合。GENERATE/GEN_ALGO 仍可在需要时列出并读取
+不能退化为一次性代码生成响应。STUDY 在初始上下文直接取得本次运行相关的完整公开输入；正常路径
+只用一次公开 Python/MuJoCo probe 回合和随后的提交回合。仅当首次 probe 失败时允许一次纠正后的
+probe；第三个最终回合只用于提交或修正被拒提交，首次 probe 成功后禁止第二次 probe。
+GENERATE/GEN_ALGO 仍可在需要时列出并读取
 staged 公开文件；仅在 skeleton-assisted 条件查看可信 skeleton；运行有预算的公开 Python/MuJoCo
 probe；并通过原子 `check_driver(source, checks)` 获得源码审计、import 及全部公开方法 smoke
 诊断。工具错误返回同一个模型 conversation，使模型可以在提交前自行修订。
