@@ -61,6 +61,20 @@ class ModelApiTests(unittest.TestCase):
             with self.assertRaises(ModelInvocationError):
                 ModelConfig.from_env()
 
+    def test_invalid_tool_history_mode_is_rejected(self) -> None:
+        environment = {
+            "AUTOADAPTER_MODEL_PROVIDER": "openai-compatible",
+            "AUTOADAPTER_MODEL_ID": "model",
+            "AUTOADAPTER_MODEL_API_BASE_URL": "https://model.example/v1",
+            "AUTOADAPTER_MODEL_API_KEY": "secret-value",
+            "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE": "unknown",
+        }
+        with mock.patch.dict(os.environ, environment, clear=True):
+            with self.assertRaisesRegex(
+                ModelInvocationError, "TOOL_HISTORY_MODE"
+            ):
+                ModelConfig.from_env()
+
     def test_tool_turn_preserves_calls_and_reasoning_for_the_next_turn(self) -> None:
         config = ModelConfig(
             provider="deepseek",
@@ -120,6 +134,67 @@ class ModelApiTests(unittest.TestCase):
         self.assertNotIn("response_format", request_body)
         self.assertEqual(client.calls[0]["mode"], "react")
         self.assertEqual(client.calls[0]["tool_names"], ["read_public_file"])
+
+    def test_text_observation_mode_avoids_native_tool_history(self) -> None:
+        config = ModelConfig(
+            provider="company",
+            model="deepseek.v3.2",
+            base_url="https://model.example/v1",
+            api_key="secret-value",
+            tool_history_mode="text-observation",
+        )
+        client = JsonModelClient(config)
+        payload = {
+            "model": "deepseek.v3.2",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": "Done."},
+                }
+            ],
+            "usage": {},
+        }
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+        messages = [
+            {"role": "user", "content": "Inspect."},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call-1",
+                        "type": "function",
+                        "function": {
+                            "name": "read_public_file",
+                            "arguments": '{"path":"robot.json"}',
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "call-1",
+                "content": '{"ok":true}',
+            },
+        ]
+        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+            client.generate_tool_turn(
+                stage="STUDY",
+                system_prompt="Use public tools.",
+                messages=messages,
+                tools=[],
+            )
+
+        request = urlopen.call_args.args[0]
+        request_messages = json.loads(request.data)["messages"]
+        self.assertNotIn("tool", [message["role"] for message in request_messages])
+        self.assertFalse(
+            any("tool_calls" in message for message in request_messages)
+        )
+        self.assertIn("TOOL_REQUESTS_JSON", request_messages[2]["content"])
+        self.assertIn("TOOL_OBSERVATION_JSON", request_messages[3]["content"])
+        self.assertEqual(client.calls[0]["tool_history_mode"], "text-observation")
 
 if __name__ == "__main__":
     unittest.main()

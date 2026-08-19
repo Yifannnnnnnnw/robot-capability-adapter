@@ -59,6 +59,7 @@ class ModelConfig:
     thinking: str | None = None
     timeout_s: float = 300.0
     max_tokens: int = 16000
+    tool_history_mode: str = "native"
 
     @classmethod
     def from_env(cls) -> ModelConfig:
@@ -89,6 +90,14 @@ class ModelConfig:
             raise ModelInvocationError(
                 "AUTOADAPTER_MODEL_MAX_TOKENS must be between 1024 and 65536"
             )
+        tool_history_mode = environment.get(
+            "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE", "native"
+        ).strip() or "native"
+        if tool_history_mode not in {"native", "text-observation"}:
+            raise ModelInvocationError(
+                "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE must be native or "
+                "text-observation"
+            )
         hostname = (urllib.parse.urlparse(required["base_url"]).hostname or "").lower()
         provider = environment.get("AUTOADAPTER_MODEL_VENDOR", "").strip()
         if not provider:
@@ -108,6 +117,7 @@ class ModelConfig:
             ),
             thinking=thinking,
             max_tokens=max_tokens,
+            tool_history_mode=tool_history_mode,
         )
 
     @property
@@ -124,6 +134,74 @@ class JsonModelClient:
     def __init__(self, config: ModelConfig) -> None:
         self.config = config
         self.calls: list[dict[str, Any]] = []
+
+    def _tool_history_messages(
+        self, messages: Sequence[Mapping[str, Any]]
+    ) -> list[dict[str, Any]]:
+        if self.config.tool_history_mode == "native":
+            return [dict(message) for message in messages]
+
+        translated: list[dict[str, Any]] = []
+        for message in messages:
+            role = message.get("role")
+            raw_content = message.get("content")
+            content = raw_content if isinstance(raw_content, str) else ""
+            raw_calls = message.get("tool_calls")
+            if role == "assistant" and isinstance(raw_calls, list) and raw_calls:
+                requests = []
+                for raw_call in raw_calls:
+                    if not isinstance(raw_call, Mapping):
+                        continue
+                    function = raw_call.get("function")
+                    requests.append(
+                        {
+                            "tool_call_id": raw_call.get("id"),
+                            "tool": (
+                                function.get("name")
+                                if isinstance(function, Mapping)
+                                else None
+                            ),
+                            "arguments": (
+                                function.get("arguments")
+                                if isinstance(function, Mapping)
+                                else None
+                            ),
+                        }
+                    )
+                parts = [content] if content.strip() else []
+                parts.append(
+                    "TOOL_REQUESTS_JSON:\n"
+                    + json.dumps(requests, ensure_ascii=True, sort_keys=True)
+                )
+                translated.append(
+                    {"role": "assistant", "content": "\n\n".join(parts)}
+                )
+                continue
+            if role == "tool":
+                observation = "TOOL_OBSERVATION_JSON:\n" + json.dumps(
+                    {
+                        "tool_call_id": message.get("tool_call_id"),
+                        "content": content,
+                    },
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+                if translated and translated[-1].get("role") == "user":
+                    translated[-1]["content"] += "\n\n" + observation
+                else:
+                    translated.append({"role": "user", "content": observation})
+                continue
+
+            if role not in {"assistant", "user"}:
+                translated.append(dict(message))
+                continue
+            if role == "assistant" and not content.strip():
+                content = "No tool call or terminal submission was produced."
+            if role == "user" and translated and translated[-1].get("role") == "user":
+                translated[-1]["content"] += "\n\n" + content
+            else:
+                translated.append({"role": role, "content": content})
+        return translated
 
     def _post(self, *, stage: str, body: Mapping[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(
@@ -180,6 +258,7 @@ class JsonModelClient:
                 "returned_model": payload.get("model"),
                 "finish_reason": finish_reason,
                 "tool_names": list(tool_names),
+                "tool_history_mode": self.config.tool_history_mode,
                 "usage": payload.get("usage", {}),
             }
         )
@@ -246,7 +325,7 @@ class JsonModelClient:
             "model": self.config.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                *[dict(message) for message in messages],
+                *self._tool_history_messages(messages),
             ],
             "max_tokens": self.config.max_tokens,
             "temperature": 0.0,
