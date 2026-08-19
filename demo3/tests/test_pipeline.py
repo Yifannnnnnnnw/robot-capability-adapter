@@ -57,6 +57,62 @@ def _package(root: Path, robot: str) -> Any:
     skeleton = package_root / "skeleton"
     skeleton.mkdir(parents=True, exist_ok=True)
     (skeleton / "fixture.py").write_text("class FixtureSkeleton: pass\n", encoding="utf-8")
+    tasks = tuple(
+        {
+            "task_id": f"task-{index}",
+            "scoring": [
+                {
+                    "clause_id": "terminal",
+                    "metric": "terminal_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.1,
+                    "temporal": {"kind": "terminal"},
+                    "aggregation": {"kind": "single_trial"},
+                    "source_refs": [{"source_id": "source"}],
+                }
+            ],
+        }
+        for index in range(20)
+    )
+    private = package_root / "tasks" / "private"
+    private.mkdir(parents=True, exist_ok=True)
+    (private / "instances.json").write_text(
+        json.dumps(
+            {
+                "instances": [
+                    {
+                        "instance_id": f"instance-{index}",
+                        "task_id": f"task-{index}",
+                        "clause_bindings": {"terminal": "binding"},
+                        "guard_ids": ["guard"],
+                        "repetitions": 1,
+                        "timeout_sim_s": 1.0,
+                    }
+                    for index in range(20)
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    (private / "bindings.json").write_text(
+        json.dumps(
+            {
+                "bindings": [
+                    {
+                        "binding_id": "binding",
+                        "metric": "terminal_error",
+                        "unit": "m",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    (private / "guards.json").write_text(
+        json.dumps({"guards": [{"guard_id": "guard"}]}),
+        encoding="utf-8",
+    )
     return SimpleNamespace(
         root=package_root,
         robot_configuration_id=robot,
@@ -64,7 +120,7 @@ def _package(root: Path, robot: str) -> Any:
         snapshot_id=f"{robot}-tasks",
         morphology={"robot_configuration_id": robot},
         sources=({"source_id": "source"},),
-        tasks=tuple({"task_id": f"task-{index}"} for index in range(20)),
+        tasks=tasks,
         skeleton_dir=package_root / "skeleton",
         reference_driver=package_root / "reference" / "driver.py",
         private_dir=package_root / "tasks" / "private",
@@ -77,7 +133,11 @@ def _design(robot: str) -> dict[str, Any]:
         "artifact_type": "capability_design",
         "robot_configuration_id": robot,
         "capabilities": [
-            {"capability_id": "cap-0", "method_name": "move_effect"}
+            {
+                "capability_id": "cap-0",
+                "method_name": "move_effect",
+                "covered_task_ids": [f"task-{index}" for index in range(20)],
+            }
         ],
     }
 

@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import copy
+import random
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from autoadapter2.libraries import RobotPackage
@@ -59,10 +62,12 @@ def _design(package: RobotPackage) -> dict:
                 "covered_task_ids": [task["task_id"] for task in selected],
                 "validation_contract": [
                     {
-                        "source_task_id": task["task_id"],
-                        "source_clause_id": task["scoring"][0]["clause_id"],
+                        "case_role": "primary",
+                        "selection_rationale": "Representative capability-level criterion.",
+                        "source_task_id": selected[0]["task_id"],
+                        "source_clause_id": selected[0]["scoring"][0]["clause_id"],
                         **{
-                            key: task["scoring"][0][key]
+                            key: selected[0]["scoring"][0][key]
                             for key in (
                                 "metric",
                                 "unit",
@@ -74,7 +79,6 @@ def _design(package: RobotPackage) -> dict:
                             )
                         },
                     }
-                    for task in selected
                 ],
             }
         )
@@ -119,22 +123,22 @@ def _private(package: RobotPackage) -> dict:
 
 
 def _suite(package: RobotPackage, design: dict, private: dict) -> dict:
-    task_capability = {
-        task_id: capability
-        for capability in design["capabilities"]
-        for task_id in capability["covered_task_ids"]
-    }
     cases = []
-    for index, task in enumerate(package.tasks):
-        capability = task_capability[task["task_id"]]
-        source = capability["validation_contract"][index % 4]
-        instance = private["instances"]["instances"][index]
+    instances_by_task = {
+        instance["task_id"]: instance
+        for instance in private["instances"]["instances"]
+    }
+    for index, capability in enumerate(design["capabilities"]):
+        source = capability["validation_contract"][0]
+        task_id = source["source_task_id"]
+        instance = instances_by_task[task_id]
         cases.append(
             {
                 "case_id": f"case-{index:02d}",
+                "case_role": source["case_role"],
                 "capability_id": capability["capability_id"],
                 "method_name": capability["method_name"],
-                "task_id": task["task_id"],
+                "task_id": task_id,
                 "source_clause_id": source["source_clause_id"],
                 "instance_id": instance["instance_id"],
                 "binding_id": instance["clause_bindings"]["terminal-error"],
@@ -205,32 +209,81 @@ class IVCTests(unittest.TestCase):
             private_inputs=self.private,
         )
 
-        self.assertEqual(len(result["cases"]), 20)
+        self.assertEqual(len(result["cases"]), 5)
 
-    def test_task_demo_samples_exactly_five_cases_from_capability_suite(self) -> None:
-        first = sample_task_demo_suite(self.suite, seed="run-1:example-arm")
-        repeated = sample_task_demo_suite(self.suite, seed="run-1:example-arm")
+    def test_task_demo_samples_five_tasks_independently_from_capability_suite(self) -> None:
+        first = sample_task_demo_suite(
+            package=self.package,
+            design=self.design,
+            seed="run-1:example-arm",
+            private_inputs=self.private,
+        )
+        repeated = sample_task_demo_suite(
+            package=self.package,
+            design=self.design,
+            seed="run-1:example-arm",
+            private_inputs=self.private,
+        )
 
-        self.assertEqual(len(self.suite["cases"]), 20)
+        self.assertEqual(len(self.suite["cases"]), 5)
         self.assertEqual(len(first["cases"]), 5)
         self.assertEqual(first["artifact_type"], "task_demo_suite")
         self.assertEqual(first, repeated)
-        self.assertEqual(
-            first["selection"],
+        self.assertEqual(first["selection"]["kind"], "uniform_task_without_replacement")
+        self.assertEqual(first["selection"]["source_task_count"], 20)
+        self.assertEqual(first["selection"]["selected_task_count"], 5)
+        self.assertEqual(len(first["selection"]["selected_task_ids"]), 5)
+        self.assertEqual(first["selection"]["selected_case_count"], 5)
+
+    def test_task_demo_rejects_a_task_library_smaller_than_five(self) -> None:
+        too_small = replace(self.package, tasks=self.package.tasks[:4])
+
+        with self.assertRaisesRegex(IVCError, "at least 5 Task Library tasks"):
+            sample_task_demo_suite(
+                package=too_small,
+                design=self.design,
+                seed="run-1:example-arm",
+                private_inputs=self.private,
+            )
+
+    def test_task_demo_compiles_every_clause_of_each_selected_task(self) -> None:
+        seed = "multi-clause-demo"
+        selected_index = random.Random(seed).sample(range(20), 5)[0]
+        tasks = list(copy.deepcopy(self.package.tasks))
+        second_clause = {
+            **tasks[selected_index]["scoring"][0],
+            "clause_id": "settled-error",
+            "temporal": {"kind": "dwell", "seconds": 0.5},
+        }
+        tasks[selected_index]["scoring"].append(second_clause)
+        package = replace(self.package, tasks=tuple(tasks))
+        private = copy.deepcopy(self.private)
+        instance = private["instances"]["instances"][selected_index]
+        instance["clause_bindings"]["settled-error"] = "settled-binding"
+        private["bindings"]["bindings"].append(
             {
-                "kind": "uniform_without_replacement",
-                "seed": "run-1:example-arm",
-                "source_case_count": 20,
-                "selected_case_count": 5,
-                "selected_case_ids": [case["case_id"] for case in first["cases"]],
-            },
+                "binding_id": "settled-binding",
+                "metric": "terminal_error",
+                "unit": "m",
+            }
         )
 
-    def test_task_demo_rejects_a_capability_suite_smaller_than_five(self) -> None:
-        too_small = {**self.suite, "cases": self.suite["cases"][:4]}
+        suite = sample_task_demo_suite(
+            package=package,
+            design=self.design,
+            seed=seed,
+            private_inputs=private,
+        )
 
-        with self.assertRaisesRegex(IVCError, "at least 5 cases"):
-            sample_task_demo_suite(too_small, seed="run-1:example-arm")
+        selected_task_id = tasks[selected_index]["task_id"]
+        selected_clauses = {
+            case["source_clause_id"]
+            for case in suite["cases"]
+            if case["task_id"] == selected_task_id
+        }
+        self.assertEqual(selected_clauses, {"terminal-error", "settled-error"})
+        self.assertEqual(suite["selection"]["selected_task_count"], 5)
+        self.assertEqual(suite["selection"]["selected_case_count"], 6)
 
     def test_weaker_private_criterion_is_rejected(self) -> None:
         self.suite["cases"][0]["criterion"]["threshold"] = 0.2
@@ -243,12 +296,12 @@ class IVCTests(unittest.TestCase):
                 private_inputs=self.private,
             )
 
-    def test_duplicate_source_clause_case_is_rejected(self) -> None:
+    def test_duplicate_selected_contract_case_is_rejected(self) -> None:
         duplicate = dict(self.suite["cases"][0])
         duplicate["case_id"] = "duplicate-case"
         self.suite["cases"].append(duplicate)
 
-        with self.assertRaisesRegex(IVCError, "exactly once"):
+        with self.assertRaisesRegex(IVCError, "selected contract exactly once"):
             validate_capability_validation_suite(
                 self.suite,
                 package=self.package,
@@ -286,7 +339,7 @@ class IVCTests(unittest.TestCase):
 
         result = run_ivc(model, package=self.package, design=self.design)
 
-        self.assertEqual(len(result["cases"]), 20)
+        self.assertEqual(len(result["cases"]), 5)
         self.assertEqual([call["stage"] for call in model.calls], [
             "ivc",
             "ivc-structure-correction",

@@ -8,14 +8,14 @@ not import or copy runtime code from Demo2 or `general_demo`.
 - `robotstudio_so101`: 20 sourced manipulation tasks.
 - `unitree-go2-stock-12dof`: 20 sourced locomotion tasks.
 - Real-model TGCD reads each public Task Library and authors 5-10 capability
-  groupings, effects, methods, and typed interfaces. Every task scoring clause
-  is copied into the capability validation contract without changing its
-  source-backed metric, threshold, temporal rule, or aggregation.
+  groupings, effects, methods, and typed interfaces. Each capability selects
+  one source-backed primary validation contract and may add one materially
+  distinct robustness contract; selected standards cannot be weakened.
 - Trusted IVC receives the same task and source records, then compiles exactly
-  one private case per designed source clause as the complete
-  `capability_validation_suite.json`. The Framework also samples five cases
-  without replacement into a separate `task_demo_suite.json`; generation
-  cannot read either suite.
+  one primary and at most one robustness case per capability as the complete
+  `capability_validation_suite.json`. Independently, the Framework samples
+  five original Task Library tasks and compiles all of their scoring clauses
+  into `task_demo_suite.json`; generation cannot read either suite.
 - Both package-local references must pass the complete capability validation
   suites before dynamic
   Driver Synthesis starts.
@@ -23,7 +23,7 @@ not import or copy runtime code from Demo2 or `general_demo`.
   `skeleton-assisted` and `from-scratch` conditions.
 - Each cell runs interactive AutoAdapter 1.0-style STUDY and GENERATE/GEN_ALGO,
   complete canonical capability validation, up to two report-driven Repair
-  attempts, a five-case Task Demo only after admission, and Evolution. Task Demo
+  attempts, a five-task Task Demo only after admission, and Evolution. Task Demo
   has a separate verdict and never triggers same-run Repair.
 - STUDY, generation, and Repair use bounded multi-turn tool conversations. The
   model can inspect staged public files, run public-only MuJoCo probes, revise
@@ -76,7 +76,7 @@ the report records the skip and can never claim formal mainline success.
 
 After an API interruption, `--reuse-sealed-inputs-from runs/<prior-run>` reuses
 that run's audited capability designs, complete capability validation suites,
-and exact sealed five-case Task Demo suites. The new report records the source run and still keeps all
+and exact sealed five-task Task Demo suites. The new report records the source run and still keeps all
 private suite files outside candidate workspaces.
 
 ## Evidence

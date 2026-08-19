@@ -63,27 +63,28 @@ def _design(package):
     by_id = {task["task_id"]: task for task in package.tasks}
     capabilities = []
     for capability_id, method_name, task_ids in groups:
-        clauses = []
-        for task_id in task_ids:
-            clause = by_id[task_id]["scoring"][0]
-            clauses.append(
-                {
-                    "source_task_id": task_id,
-                    "source_clause_id": clause["clause_id"],
-                    **{
-                        key: clause[key]
-                        for key in (
-                            "metric",
-                            "unit",
-                            "comparator",
-                            "threshold",
-                            "temporal",
-                            "aggregation",
-                            "source_refs",
-                        )
-                    },
-                }
-            )
+        task_id = task_ids[0]
+        clause = by_id[task_id]["scoring"][0]
+        clauses = [
+            {
+                "case_role": "primary",
+                "selection_rationale": "Representative capability-level source criterion.",
+                "source_task_id": task_id,
+                "source_clause_id": clause["clause_id"],
+                **{
+                    key: clause[key]
+                    for key in (
+                        "metric",
+                        "unit",
+                        "comparator",
+                        "threshold",
+                        "temporal",
+                        "aggregation",
+                        "source_refs",
+                    )
+                },
+            }
+        ]
         capabilities.append(
             {
                 "capability_id": capability_id,
@@ -108,17 +109,14 @@ def _suite(package, design):
     cases = []
     for task in package.tasks:
         capability = task_to_capability[task["task_id"]]
-        source = next(
-            clause
-            for clause in capability["validation_contract"]
-            if clause["source_task_id"] == task["task_id"]
-        )
+        source = task["scoring"][0]
         instance = instance_by_task[task["task_id"]]
-        clause_id = source["source_clause_id"]
+        clause_id = source["clause_id"]
         binding_id = instance["clause_bindings"][clause_id]
         cases.append(
             {
                 "case_id": f"case-{task['task_id']}",
+                "case_role": "task_demo",
                 "capability_id": capability["capability_id"],
                 "method_name": capability["method_name"],
                 "task_id": task["task_id"],
@@ -143,12 +141,43 @@ def _suite(package, design):
             }
         )
     return {
-        "artifact_type": "capability_validation_suite",
+        "artifact_type": "task_demo_suite",
         "schema_version": "1.0",
         "robot_configuration_id": package.robot_configuration_id,
         "package_version": package.package_version,
         "task_snapshot_id": package.snapshot_id,
         "whole_suite_aggregation": {"kind": "all_cases"},
+        "cases": cases,
+    }
+
+
+def _capability_suite(package, design):
+    task_suite = _suite(package, design)
+    contracts = {
+        (contract["source_task_id"], contract["source_clause_id"]): (
+            capability,
+            contract,
+        )
+        for capability in design["capabilities"]
+        for contract in capability["validation_contract"]
+    }
+    cases = []
+    for case in task_suite["cases"]:
+        selected = contracts.get((case["task_id"], case["source_clause_id"]))
+        if selected is None:
+            continue
+        capability, contract = selected
+        cases.append(
+            {
+                **case,
+                "case_role": contract["case_role"],
+                "capability_id": capability["capability_id"],
+                "method_name": capability["method_name"],
+            }
+        )
+    return {
+        **task_suite,
+        "artifact_type": "capability_validation_suite",
         "cases": cases,
     }
 
@@ -200,11 +229,11 @@ def test_so101_reference_source_and_ivc_contract() -> None:
     assert audit.physics_step_references > 0
     assert not audit.imports_trusted_skeleton
 
-    suite = _suite(package, design)
+    suite = _capability_suite(package, design)
     checked = validate_capability_validation_suite(
         suite, package=package, design=design
     )
-    assert len(checked["cases"]) == len(package.tasks)
+    assert len(checked["cases"]) == len(design["capabilities"])
 
 
 def test_so101_reference_idle_holds_the_last_actuator_target() -> None:

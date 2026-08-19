@@ -60,7 +60,7 @@ from autoadapter2.reporting import (
 )
 from autoadapter2.self_containment import check_self_contained
 from autoadapter2.validation_compiler import (
-    TASK_DEMO_CASE_COUNT,
+    TASK_DEMO_TASK_COUNT,
     run_ivc,
     sample_task_demo_suite,
     validate_capability_validation_suite,
@@ -358,9 +358,13 @@ def _reuse_sealed_inputs(
         seed = selection.get("seed") if isinstance(selection, Mapping) else None
         if not isinstance(seed, str) or not seed:
             raise PipelineError(f"{robot} Task Demo suite lacks its selection seed")
-        if sample_task_demo_suite(capability_suite, seed=seed) != task_demo_suite:
+        if sample_task_demo_suite(
+            package=package,
+            design=design,
+            seed=seed,
+        ) != task_demo_suite:
             raise PipelineError(
-                f"{robot} Task Demo suite differs from its capability validation suite"
+                f"{robot} Task Demo suite differs from its Task Library selection"
             )
 
         write_capability_design(
@@ -1602,13 +1606,18 @@ def run_experiment(
             capability_suite = _copy(dict(capability_suite))
             selection_seed = f"{selected_run_id}:{robot}"
             task_demo_suite = sample_task_demo_suite(
-                capability_suite, seed=selection_seed
+                package=package,
+                design=design,
+                seed=selection_seed,
             )
             evidence = _stage_evidence(client, stage="ivc", before=before, completed=True)
             evidence["compiled_capability_validation_case_count"] = len(
                 capability_suite.get("cases", [])
             )
-            evidence["selected_task_demo_case_count"] = TASK_DEMO_CASE_COUNT
+            evidence["selected_task_demo_task_count"] = TASK_DEMO_TASK_COUNT
+            evidence["compiled_task_demo_case_count"] = len(
+                task_demo_suite.get("cases", [])
+            )
             stage_log.append({"robot": robot, **evidence})
             write_private_suite(
                 robot_private_dir / "capability_validation_suite.json",

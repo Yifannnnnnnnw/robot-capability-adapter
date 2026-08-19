@@ -134,6 +134,23 @@ def _designed_task_clauses(design: Mapping[str, Any]) -> dict[str, set[str]]:
     return result
 
 
+def _task_library_clauses(package: RobotPackage) -> dict[str, set[str]]:
+    result: dict[str, set[str]] = {}
+    for task in package.tasks:
+        task_id = str(task["task_id"])
+        scoring = task.get("scoring")
+        if not isinstance(scoring, list) or not scoring:
+            raise HarnessError(f"Task Library task {task_id!r} has no scoring clauses")
+        result[task_id] = {
+            str(clause["clause_id"])
+            for clause in scoring
+            if isinstance(clause, Mapping) and isinstance(clause.get("clause_id"), str)
+        }
+        if len(result[task_id]) != len(scoring):
+            raise HarnessError(f"Task Library task {task_id!r} has invalid scoring clauses")
+    return result
+
+
 def run_private_suite(
     *,
     package: RobotPackage,
@@ -403,7 +420,11 @@ def run_private_suite(
     passed_clauses = sum(
         1 for values in clause_trials.values() if all(value["trial_passed"] for value in values)
     )
-    designed_task_clauses = _designed_task_clauses(design)
+    designed_task_clauses = (
+        _task_library_clauses(package)
+        if suite.get("artifact_type") == "task_demo_suite"
+        else _designed_task_clauses(design)
+    )
     selected_task_clauses: dict[str, set[str]] = {}
     for task_id, clause_id in clause_trials:
         selected_task_clauses.setdefault(task_id, set()).add(clause_id)

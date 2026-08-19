@@ -32,6 +32,7 @@ def _task(index: int) -> dict:
     task_id = f"task-{index:02d}"
     return {
         "task_id": task_id,
+        "scene_assumptions": [f"scene-{index:02d}"],
         "scoring": [clause],
         "invocation_schema": {
             "envelope": "request",
@@ -83,24 +84,25 @@ def _design(package: RobotPackage) -> dict:
     capabilities = []
     for group in range(5):
         tasks = package.tasks[group * 4 : group * 4 + 4]
-        contracts = []
-        for task in tasks:
-            clause = task["scoring"][0]
-            contracts.append(
-                {
-                    "source_task_id": task["task_id"],
-                    "source_clause_id": clause["clause_id"],
-                    **{key: clause[key] for key in (
-                        "metric",
-                        "unit",
-                        "comparator",
-                        "threshold",
-                        "temporal",
-                        "aggregation",
-                        "source_refs",
-                    )},
-                }
-            )
+        task = tasks[0]
+        clause = task["scoring"][0]
+        contracts = [
+            {
+                "case_role": "primary",
+                "selection_rationale": "Representative source-backed endpoint criterion.",
+                "source_task_id": task["task_id"],
+                "source_clause_id": clause["clause_id"],
+                **{key: clause[key] for key in (
+                    "metric",
+                    "unit",
+                    "comparator",
+                    "threshold",
+                    "temporal",
+                    "aggregation",
+                    "source_refs",
+                )},
+            }
+        ]
         capabilities.append(
             {
                 "capability_id": f"capability-{group}",
@@ -181,10 +183,61 @@ class TGCDTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def test_valid_design_preserves_all_tasks_and_clauses(self) -> None:
+    def test_valid_design_covers_all_tasks_with_one_primary_per_capability(self) -> None:
         design = validate_capability_design(_design(self.package), self.package)
 
         self.assertEqual(len(design["capabilities"]), 5)
+        self.assertTrue(
+            all(
+                len(capability["validation_contract"]) == 1
+                for capability in design["capabilities"]
+            )
+        )
+
+    def test_one_materially_distinct_robustness_contract_is_allowed(self) -> None:
+        design = _design(self.package)
+        source_task = self.package.tasks[1]
+        source_clause = source_task["scoring"][0]
+        design["capabilities"][0]["validation_contract"].append(
+            {
+                "case_role": "robustness",
+                "selection_rationale": "A different scene exercises the same endpoint effect.",
+                "source_task_id": source_task["task_id"],
+                "source_clause_id": source_clause["clause_id"],
+                **{
+                    key: source_clause[key]
+                    for key in (
+                        "metric",
+                        "unit",
+                        "comparator",
+                        "threshold",
+                        "temporal",
+                        "aggregation",
+                        "source_refs",
+                    )
+                },
+            }
+        )
+
+        validated = validate_capability_design(design, self.package)
+
+        self.assertEqual(len(validated["capabilities"][0]["validation_contract"]), 2)
+
+    def test_more_than_one_robustness_contract_is_rejected(self) -> None:
+        design = _design(self.package)
+        primary = design["capabilities"][0]["validation_contract"][0]
+        for task in self.package.tasks[1:3]:
+            design["capabilities"][0]["validation_contract"].append(
+                {
+                    **primary,
+                    "case_role": "robustness",
+                    "selection_rationale": "Different private task scene.",
+                    "source_task_id": task["task_id"],
+                }
+            )
+
+        with self.assertRaisesRegex(CapabilityDesignError, "at most one robustness"):
+            validate_capability_design(design, self.package)
 
     def test_keyed_interface_objects_are_canonicalized_to_typed_lists(self) -> None:
         design = _design(self.package)

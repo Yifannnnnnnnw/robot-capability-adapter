@@ -59,27 +59,28 @@ def _design_and_suite(package):
     task_by_id = {task["task_id"]: task for task in package.tasks}
     capabilities = []
     for capability_id, method_name, task_ids in groups:
-        contract = []
-        for task_id in task_ids:
-            for clause in task_by_id[task_id]["scoring"]:
-                contract.append(
-                    {
-                        "source_task_id": task_id,
-                        "source_clause_id": clause["clause_id"],
-                        **{
-                            key: clause[key]
-                            for key in (
-                                "metric",
-                                "unit",
-                                "comparator",
-                                "threshold",
-                                "temporal",
-                                "aggregation",
-                                "source_refs",
-                            )
-                        },
-                    }
-                )
+        task_id = task_ids[0]
+        clause = task_by_id[task_id]["scoring"][0]
+        contract = [
+            {
+                "case_role": "primary",
+                "selection_rationale": "Representative capability-level source criterion.",
+                "source_task_id": task_id,
+                "source_clause_id": clause["clause_id"],
+                **{
+                    key: clause[key]
+                    for key in (
+                        "metric",
+                        "unit",
+                        "comparator",
+                        "threshold",
+                        "temporal",
+                        "aggregation",
+                        "source_refs",
+                    )
+                },
+            }
+        ]
         capabilities.append(
             {
                 "capability_id": capability_id,
@@ -95,38 +96,37 @@ def _design_and_suite(package):
     instance_by_task = {instance["task_id"]: instance for instance in instances}
     cases = []
     for capability in capabilities:
-        for task_id in capability["covered_task_ids"]:
-            instance = instance_by_task[task_id]
-            for clause in capability["validation_contract"]:
-                if clause["source_task_id"] != task_id:
-                    continue
-                source_clause_id = clause["source_clause_id"]
-                cases.append(
-                    {
-                        "case_id": f"case-{task_id}-{source_clause_id}",
-                        "capability_id": capability["capability_id"],
-                        "method_name": capability["method_name"],
-                        "task_id": task_id,
-                        "source_clause_id": source_clause_id,
-                        "instance_id": instance["instance_id"],
-                        "binding_id": instance["clause_bindings"][source_clause_id],
-                        "guard_ids": instance["guard_ids"],
-                        "repetitions": instance["repetitions"],
-                        "timeout_sim_s": instance["timeout_sim_s"],
-                        "criterion": {
-                            key: clause[key]
-                            for key in (
-                                "metric",
-                                "unit",
-                                "comparator",
-                                "threshold",
-                                "temporal",
-                                "aggregation",
-                                "source_refs",
-                            )
-                        },
-                    }
-                )
+        clause = capability["validation_contract"][0]
+        task_id = clause["source_task_id"]
+        instance = instance_by_task[task_id]
+        source_clause_id = clause["source_clause_id"]
+        cases.append(
+            {
+                "case_id": f"case-{task_id}-{source_clause_id}",
+                "case_role": clause["case_role"],
+                "capability_id": capability["capability_id"],
+                "method_name": capability["method_name"],
+                "task_id": task_id,
+                "source_clause_id": source_clause_id,
+                "instance_id": instance["instance_id"],
+                "binding_id": instance["clause_bindings"][source_clause_id],
+                "guard_ids": instance["guard_ids"],
+                "repetitions": instance["repetitions"],
+                "timeout_sim_s": instance["timeout_sim_s"],
+                "criterion": {
+                    key: clause[key]
+                    for key in (
+                        "metric",
+                        "unit",
+                        "comparator",
+                        "threshold",
+                        "temporal",
+                        "aggregation",
+                        "source_refs",
+                    )
+                },
+            }
+        )
     design = {"capabilities": capabilities}
     suite = {
         "artifact_type": "capability_validation_suite",
@@ -316,10 +316,19 @@ def test_go2_arbitrary_renderer_dispatches_by_task_id() -> None:
     checked = validate_capability_validation_suite(
         suite, package=package, design=design
     )
-    assert len(checked["cases"]) == 27
-    sampled = sample_task_demo_suite(checked, seed="go2-source-protocol-check")
-    repeated = sample_task_demo_suite(checked, seed="go2-source-protocol-check")
-    assert len(sampled["cases"]) == 5
+    assert len(checked["cases"]) == len(design["capabilities"])
+    sampled = sample_task_demo_suite(
+        package=package,
+        design=design,
+        seed="go2-source-protocol-check",
+    )
+    repeated = sample_task_demo_suite(
+        package=package,
+        design=design,
+        seed="go2-source-protocol-check",
+    )
+    assert sampled["selection"]["selected_task_count"] == 5
+    assert len(sampled["cases"]) >= 5
     assert [case["case_id"] for case in sampled["cases"]] == [
         case["case_id"] for case in repeated["cases"]
     ]

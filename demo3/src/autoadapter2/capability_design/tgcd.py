@@ -52,10 +52,16 @@ only declared task-parameter fields in the capability interface; do not invent a
 argument names. required_affordances actions and observations must be selected only from the exact
 vocabularies in morphology.public_affordances.
 
-For every scoring clause of every covered task, validation_contract must contain exactly one item
-with source_task_id, source_clause_id, metric, unit, comparator, threshold, temporal, aggregation,
-and source_refs copied without weakening or omission. Do not return implementation code, simulator
-bindings, private cases, reset values, guards, expected trajectories, or a success verdict."""
+validation_contract must contain exactly one primary item and may contain at most one robustness
+item. Each item contains case_role ('primary' or 'robustness'), selection_rationale,
+source_task_id, source_clause_id, metric, unit, comparator, threshold, temporal, aggregation, and
+source_refs. Copy the selected source clause without weakening it. The primary item must represent
+the capability's shared physical effect. Add a robustness item only when a different covered task
+has a materially different scene, metric, or temporal obligation that the primary item cannot
+exercise; explain that difference in selection_rationale. Do not mechanically copy every task or
+scoring clause into validation_contract. Unselected task clauses remain in the Task Library for
+the separate Task Demo. Do not return implementation code, simulator bindings, private cases,
+reset values, guards, expected trajectories, or a success verdict."""
 
 
 class CapabilityDesignError(ValueError):
@@ -292,6 +298,34 @@ def _same_public_standard(
     return all(designed.get(field) == source.get(field) for field in fields)
 
 
+def _materially_distinct_contract(
+    primary: Mapping[str, Any],
+    robustness: Mapping[str, Any],
+    tasks_by_id: Mapping[str, Mapping[str, Any]],
+) -> bool:
+    if primary.get("source_task_id") == robustness.get("source_task_id"):
+        return False
+    standard_fields = (
+        "metric",
+        "unit",
+        "comparator",
+        "threshold",
+        "temporal",
+        "aggregation",
+    )
+    if any(primary.get(field) != robustness.get(field) for field in standard_fields):
+        return True
+    primary_task = tasks_by_id.get(str(primary.get("source_task_id")), {})
+    robustness_task = tasks_by_id.get(str(robustness.get("source_task_id")), {})
+    primary_scene = primary_task.get("scene_assumptions")
+    robustness_scene = robustness_task.get("scene_assumptions")
+    return (
+        isinstance(primary_scene, list)
+        and isinstance(robustness_scene, list)
+        and primary_scene != robustness_scene
+    )
+
+
 def validate_capability_design(
     design: Mapping[str, Any],
     package: RobotPackage,
@@ -320,8 +354,8 @@ def validate_capability_design(
 
     task_ids = {str(task["task_id"]) for task in package.tasks}
     source_clauses = _source_clauses(package.tasks)
+    tasks_by_id = {str(task["task_id"]): task for task in package.tasks}
     task_coverage: Counter[str] = Counter()
-    clause_coverage: Counter[tuple[str, str]] = Counter()
     capability_ids: set[str] = set()
     effects: set[str] = set()
     method_names: list[str] = []
@@ -382,13 +416,31 @@ def validate_capability_design(
                 )
 
         contracts = _list(capability, "validation_contract", where=where)
+        if len(contracts) > 2:
+            raise CapabilityDesignError(
+                f"{where}.validation_contract must contain one primary and at most one robustness item"
+            )
+        roles: Counter[str] = Counter()
+        selected_keys: set[tuple[str, str]] = set()
+        contracts_by_role: dict[str, Mapping[str, Any]] = {}
         for clause_index, clause in enumerate(contracts):
             clause_where = f"{where}.validation_contract[{clause_index}]"
             if not isinstance(clause, Mapping):
                 raise CapabilityDesignError(f"{clause_where} must be an object")
+            role = _text(clause, "case_role", where=clause_where)
+            if role not in {"primary", "robustness"}:
+                raise CapabilityDesignError(
+                    f"{clause_where}.case_role must be 'primary' or 'robustness'"
+                )
+            _text(clause, "selection_rationale", where=clause_where)
             task_id = _text(clause, "source_task_id", where=clause_where)
             clause_id = _text(clause, "source_clause_id", where=clause_where)
             key = (task_id, clause_id)
+            if key in selected_keys:
+                raise CapabilityDesignError(
+                    f"{where}.validation_contract duplicates source clause {key}"
+                )
+            selected_keys.add(key)
             source = source_clauses.get(key)
             if source is None:
                 raise CapabilityDesignError(f"{clause_where} references unknown source clause {key}")
@@ -398,7 +450,19 @@ def validate_capability_design(
                 )
             if not _same_public_standard(clause, source):
                 raise CapabilityDesignError(f"{clause_where} changes a source pass standard")
-            clause_coverage[key] += 1
+            roles[role] += 1
+            contracts_by_role[role] = clause
+        if roles["primary"] != 1 or roles["robustness"] > 1:
+            raise CapabilityDesignError(
+                f"{where}.validation_contract must contain exactly one primary and at most one robustness item"
+            )
+        robustness = contracts_by_role.get("robustness")
+        if robustness is not None and not _materially_distinct_contract(
+            contracts_by_role["primary"], robustness, tasks_by_id
+        ):
+            raise CapabilityDesignError(
+                f"{where}.validation_contract robustness item is not materially distinct"
+            )
 
     try:
         validate_capability_names(method_names)
@@ -406,10 +470,6 @@ def validate_capability_design(
         raise CapabilityDesignError(str(exc)) from exc
     if set(task_coverage) != task_ids or any(count != 1 for count in task_coverage.values()):
         raise CapabilityDesignError("every Task Library task must be covered exactly once")
-    if set(clause_coverage) != set(source_clauses) or any(
-        count != 1 for count in clause_coverage.values()
-    ):
-        raise CapabilityDesignError("every source scoring clause must be preserved exactly once")
     return dict(design)
 
 

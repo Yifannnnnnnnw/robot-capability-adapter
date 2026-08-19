@@ -20,7 +20,7 @@ The implementation includes:
 - Framework-owned canonical MuJoCo sessions, actuator/physics-step guards, and
   direct-state-write rejection; and
 - complete IVC-authored Capability Validation followed, only after admission,
-  by a separately reported random five-case Task Demo; and
+  by a separately reported random five-task Task Demo; and
 - independent per-case video and separate pipeline, Capability Validation,
   Task Demo, and video verdicts.
 

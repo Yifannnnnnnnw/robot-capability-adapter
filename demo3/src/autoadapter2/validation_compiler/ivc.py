@@ -12,9 +12,10 @@ from typing import Any, Protocol
 from autoadapter2.libraries import RobotPackage
 
 
-TASK_DEMO_CASE_COUNT = 5
-# Compatibility for callers that imported the old Demo3 constant.
-PRIVATE_CASE_SAMPLE_SIZE = TASK_DEMO_CASE_COUNT
+TASK_DEMO_TASK_COUNT = 5
+# Compatibility for historical callers. New code samples tasks, not capability cases.
+TASK_DEMO_CASE_COUNT = TASK_DEMO_TASK_COUNT
+PRIVATE_CASE_SAMPLE_SIZE = TASK_DEMO_TASK_COUNT
 
 
 IVC_SYSTEM_PROMPT = """You are the implementation-blind Independent Validation Compiler.
@@ -25,14 +26,15 @@ or verdict.
 
 Return one JSON object with artifact_type='capability_validation_suite', schema_version='1.0', the
 supplied robot_configuration_id, package_version, task_snapshot_id, and cases[]. Each case must
-select an existing private instance and one source validation clause and contain: case_id,
-capability_id, method_name, task_id, source_clause_id, instance_id, binding_id, guard_ids,
+select an existing private instance and one selected capability validation contract and contain:
+case_id, case_role, capability_id, method_name, task_id, source_clause_id, instance_id, binding_id, guard_ids,
 repetitions, timeout_sim_s, and criterion. criterion must copy metric, unit, comparator, threshold,
 temporal, aggregation, and source_refs exactly from the sealed public clause. Use only supplied IDs.
-Produce exactly one case for every designed source clause: do not omit or duplicate a clause. Set
-whole_suite_aggregation to {'kind':'all_cases'}. Do not sample the pool; the Framework performs the
-later private five-case Task Demo selection. Do not return driver code, implementation advice, or a
-self-reported verdict."""
+Produce exactly one private case for every selected validation_contract item: one primary case per
+capability and, only where present in the design, one robustness case. case_role must copy the
+contract's case_role. Do not expand the suite with unselected Task Library clauses. Set
+whole_suite_aggregation to {'kind':'all_cases'}. Do not sample Task Demo tasks; the Framework does
+that separately. Do not return driver code, implementation advice, or a self-reported verdict."""
 
 
 class IVCError(ValueError):
@@ -189,6 +191,7 @@ def validate_capability_validation_suite(
         raise IVCError("cases must be a non-empty list")
     case_ids: set[str] = set()
     coverage: Counter[tuple[str, str]] = Counter()
+    role_coverage: Counter[tuple[str, str]] = Counter()
     for index, case in enumerate(cases):
         where = f"cases[{index}]"
         if not isinstance(case, Mapping):
@@ -200,6 +203,7 @@ def validate_capability_validation_suite(
         capability_id = _text(case, "capability_id", where=where)
         task_id = _text(case, "task_id", where=where)
         clause_id = _text(case, "source_clause_id", where=where)
+        case_role = _text(case, "case_role", where=where)
         if capability_id not in capabilities:
             raise IVCError(f"{where} references unknown capability")
         if task_to_capability.get(task_id) != capability_id:
@@ -210,6 +214,8 @@ def validate_capability_validation_suite(
         source = source_clauses.get((task_id, clause_id))
         if source is None:
             raise IVCError(f"{where} references unknown source clause")
+        if case_role != source.get("case_role"):
+            raise IVCError(f"{where}.case_role differs from sealed design")
         if not _same_criterion(case, source):
             raise IVCError(f"{where}.criterion changes a source pass standard")
 
@@ -239,11 +245,21 @@ def validate_capability_validation_suite(
         if case.get("timeout_sim_s") != instance.get("timeout_sim_s"):
             raise IVCError(f"{where} changes private timeout")
         coverage[(task_id, clause_id)] += 1
+        role_coverage[(capability_id, case_role)] += 1
 
     if set(coverage) != set(source_clauses) or any(count != 1 for count in coverage.values()):
         raise IVCError(
-            "capability validation suite must cover every designed source clause exactly once"
+            "capability validation suite must compile every selected contract exactly once"
         )
+    for capability_id in capabilities:
+        if role_coverage[(capability_id, "primary")] != 1:
+            raise IVCError(
+                "capability validation suite must contain exactly one primary case per capability"
+            )
+        if role_coverage[(capability_id, "robustness")] > 1:
+            raise IVCError(
+                "capability validation suite may contain at most one robustness case per capability"
+            )
     return dict(suite)
 
 
@@ -298,50 +314,139 @@ def run_ivc(
             prompt = (
                 IVC_SYSTEM_PROMPT
                 + "\nCorrect the previous JSON only enough to satisfy the deterministic audit. "
-                "Do not change, omit, or weaken any source clause or private binding selection."
+                "Do not change, omit, or weaken any selected contract or private binding selection."
             )
     raise AssertionError("unreachable")
 
 
 def sample_task_demo_suite(
-    capability_suite: Mapping[str, Any],
     *,
+    package: RobotPackage,
+    design: Mapping[str, Any],
     seed: str,
+    private_inputs: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Select the sealed five-case Task Demo from an audited capability suite."""
+    """Compile all clauses for five uniformly sampled original Task Library tasks."""
 
-    if capability_suite.get("artifact_type") != "capability_validation_suite":
-        raise IVCError("Task Demo sampling requires a capability validation suite")
-    cases = capability_suite.get("cases")
-    if not isinstance(cases, list) or len(cases) < TASK_DEMO_CASE_COUNT:
+    if len(package.tasks) < TASK_DEMO_TASK_COUNT:
         raise IVCError(
-            f"capability validation suite must contain at least {TASK_DEMO_CASE_COUNT} cases"
+            f"Task Demo requires at least {TASK_DEMO_TASK_COUNT} Task Library tasks"
         )
     if not isinstance(seed, str) or not seed:
         raise IVCError("private case selection seed must be non-empty text")
 
     selected_indexes = random.Random(seed).sample(
-        range(len(cases)), TASK_DEMO_CASE_COUNT
+        range(len(package.tasks)), TASK_DEMO_TASK_COUNT
     )
-    selected_cases = [dict(cases[index]) for index in selected_indexes]
-    selected_ids = [
-        _text(case, "case_id", where=f"selected_cases[{index}]")
-        for index, case in enumerate(selected_cases)
-    ]
-    if len(set(selected_ids)) != TASK_DEMO_CASE_COUNT:
-        raise IVCError("selected Task Demo case IDs must be unique")
+    selected_tasks = [package.tasks[index] for index in selected_indexes]
+    selected_task_ids = [str(task["task_id"]) for task in selected_tasks]
+    if len(set(selected_task_ids)) != TASK_DEMO_TASK_COUNT:
+        raise IVCError("selected Task Demo task IDs must be unique")
 
-    suite = dict(capability_suite)
-    suite["artifact_type"] = "task_demo_suite"
-    suite["cases"] = selected_cases
-    suite["selection"] = {
-        "kind": "uniform_without_replacement",
-        "seed": seed,
-        "source_case_count": len(cases),
-        "selected_case_count": TASK_DEMO_CASE_COUNT,
-        "selected_case_ids": selected_ids,
+    private = dict(private_inputs or _private_inputs(package))
+    instance_values = _items(
+        private["instances"], "instances", where="instances.json"
+    )
+    instances_by_task: dict[str, list[Mapping[str, Any]]] = {}
+    for instance in instance_values:
+        task_id = _text(instance, "task_id", where="private instance")
+        instances_by_task.setdefault(task_id, []).append(instance)
+    bindings = _by_id(
+        _items(private["bindings"], "bindings", where="bindings.json"),
+        "binding_id",
+        where="bindings",
+    )
+    guards = _by_id(
+        _items(private["guards"], "guards", where="guards.json"),
+        "guard_id",
+        where="guards",
+    )
+    capabilities, task_to_capability, _selected_contracts = _design_maps(design)
+    cases: list[dict[str, Any]] = []
+    criterion_fields = (
+        "metric",
+        "unit",
+        "comparator",
+        "threshold",
+        "temporal",
+        "aggregation",
+        "source_refs",
+    )
+    for task in selected_tasks:
+        task_id = str(task["task_id"])
+        capability_id = task_to_capability.get(task_id)
+        capability = capabilities.get(str(capability_id))
+        if capability is None:
+            raise IVCError(f"selected Task Demo task {task_id!r} has no capability")
+        task_instances = sorted(
+            instances_by_task.get(task_id, []),
+            key=lambda value: str(value.get("instance_id", "")),
+        )
+        if not task_instances:
+            raise IVCError(f"selected Task Demo task {task_id!r} has no private instance")
+        instance = task_instances[0]
+        instance_id = _text(instance, "instance_id", where="private instance")
+        clause_bindings = instance.get("clause_bindings")
+        if not isinstance(clause_bindings, Mapping):
+            raise IVCError(f"private instance {instance_id!r} lacks clause_bindings")
+        guard_ids = instance.get("guard_ids")
+        if not isinstance(guard_ids, list) or any(
+            not isinstance(guard_id, str) or guard_id not in guards
+            for guard_id in guard_ids
+        ):
+            raise IVCError(f"private instance {instance_id!r} has invalid guards")
+        scoring = task.get("scoring")
+        if not isinstance(scoring, list) or not scoring:
+            raise IVCError(f"selected Task Demo task {task_id!r} has no scoring clauses")
+        for clause in scoring:
+            if not isinstance(clause, Mapping):
+                raise IVCError(f"selected Task Demo task {task_id!r} has an invalid clause")
+            clause_id = _text(clause, "clause_id", where=f"task {task_id}")
+            binding_id = clause_bindings.get(clause_id)
+            binding = bindings.get(str(binding_id))
+            if binding is None:
+                raise IVCError(
+                    f"selected Task Demo task {task_id!r} lacks binding for {clause_id!r}"
+                )
+            if binding.get("metric") != clause.get("metric") or binding.get("unit") != clause.get("unit"):
+                raise IVCError(
+                    f"selected Task Demo task {task_id!r} has an incompatible binding"
+                )
+            cases.append(
+                {
+                    "case_id": f"task-demo-{task_id}-{clause_id}",
+                    "case_role": "task_demo",
+                    "capability_id": str(capability_id),
+                    "method_name": capability.get("method_name"),
+                    "task_id": task_id,
+                    "source_clause_id": clause_id,
+                    "instance_id": instance_id,
+                    "binding_id": str(binding_id),
+                    "guard_ids": list(guard_ids),
+                    "repetitions": instance.get("repetitions"),
+                    "timeout_sim_s": instance.get("timeout_sim_s"),
+                    "criterion": {field: clause.get(field) for field in criterion_fields},
+                }
+            )
+    selected_case_ids = [case["case_id"] for case in cases]
+    return {
+        "artifact_type": "task_demo_suite",
+        "schema_version": "1.0",
+        "robot_configuration_id": package.robot_configuration_id,
+        "package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+        "whole_suite_aggregation": {"kind": "all_cases"},
+        "cases": cases,
+        "selection": {
+            "kind": "uniform_task_without_replacement",
+            "seed": seed,
+            "source_task_count": len(package.tasks),
+            "selected_task_count": TASK_DEMO_TASK_COUNT,
+            "selected_task_ids": selected_task_ids,
+            "selected_case_count": len(cases),
+            "selected_case_ids": selected_case_ids,
+        },
     }
-    return suite
 
 
 # Old names remain import-compatible for historical fixtures and utilities. New mainline code uses
