@@ -21,6 +21,16 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/franka_panda/1.0.0/assets/pushbench.xml",
+          "kind": "canonical_mujoco_asset_entrypoint",
+          "observation": "The canonical package now contains the local Franka MJCF closure and uses pushbench.xml as its recorded experimental entrypoint."
+        },
+        {
+          "path": "autoadapter/libraries/robots/franka_panda/1.0.0/morphology.json",
+          "kind": "canonical_morphology",
+          "observation": "The canonical package now contains current public Franka morphology, control, observation, affordance, and reset facts."
+        },
+        {
           "path": "general_demo/libraries/assets/franka_panda/1.0.0/asset_closure.json",
           "kind": "asset_closure_record",
           "observation": "The recorded closure marks UPSTREAM_CACHE_REQUIRED; its 69 entries include 67 mesh entries without a local vendored path."
@@ -57,8 +67,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under the canonical package; the observed General Demo closure explicitly leaves mesh materialization dependent on an upstream cache.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
         "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",

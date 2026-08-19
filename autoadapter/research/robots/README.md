@@ -17,6 +17,8 @@ bimanual, and legged-arm candidates follow in later waves.
 
 The inspected future-robot catalogs currently contain five task records per
 candidate, not the required twenty distinct applicable source-backed tasks.
+The Franka canonical asset and morphology foundation now exists, but Franka is
+still non-runtime until its remaining package and evidence work is complete.
 The General Demo Franka, KUKA, Piper, and UR5e closure records explicitly mark
 UPSTREAM_CACHE_REQUIRED; their upstream mesh materialization is incomplete.
 Demo2 contributes additional legacy assets and historical strict summaries and
