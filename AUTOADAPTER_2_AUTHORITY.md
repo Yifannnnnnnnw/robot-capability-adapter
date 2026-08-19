@@ -4,9 +4,22 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.11`<br>
+> **Document revision / 文档版本：** `0.19.12`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.12` restores the AutoAdapter 1.0 Implementation Bundle rule that every runtime input
+has complete public semantics. A private instance may supply only task parameters declared required
+by its public invocation schema. TGCD mechanically carries each source-schema parameter description
+into the Capability Design interface, so entity targets, end-effector waypoints, routes, grasp
+controls, and release points cannot collapse into type-only vectors. This exposes no private value,
+scene, criterion, binding, guard, trajectory, or reference implementation.
+
+**中文辅助说明。** `0.19.12` 恢复 AutoAdapter 1.0 Implementation Bundle 的规则：每个运行时
+输入都必须具有完整公开语义。私有 instance 只能提供公开 invocation schema 中声明为 required 的
+task parameter；TGCD 将来源 schema 的参数描述机械带入 Capability Design interface，使 entity
+target、末端 waypoint、route、grasp control 与 release point 不再退化为只有类型的向量。该改动
+不会暴露任何私有值、scene、criterion、binding、guard、trajectory 或 reference 实现。
 
 Revision `0.19.11` makes Driver Synthesis tools state-aware after the bundled public check. Once the
 current revision passes source audit, import, and every capability physics smoke, the next model

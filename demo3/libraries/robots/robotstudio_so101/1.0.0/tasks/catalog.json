@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
-  "snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v4",
+  "snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
   "tasks": [
     {
       "task_id": "mw_reach_target",
@@ -66,7 +66,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -75,7 +76,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -84,12 +86,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -99,7 +103,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -109,7 +113,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -119,7 +123,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -192,7 +196,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -201,7 +206,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -210,12 +216,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -225,7 +233,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -235,7 +243,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -245,7 +253,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -322,7 +330,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -331,7 +340,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -340,12 +350,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -355,7 +367,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -365,7 +377,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -375,7 +387,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               },
               "grasp_position": {
                 "type": "array",
@@ -385,19 +397,19 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "public grasp point for prehensile manipulation"
+                "description": "World-frame end-effector grasp waypoint. Align and close the gripper at this position before lifting."
               },
               "grasp_wrist_roll": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public wrist-roll target for grasp alignment"
+                "description": "Robot wrist-roll actuator target used while approaching, grasping, and carrying the object."
               },
               "grasp_gripper": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public gripper target used to acquire the object"
+                "description": "Robot gripper actuator target used to acquire and retain the object until release."
               }
             },
             "additional_properties": false
@@ -475,7 +487,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -484,7 +497,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -493,12 +507,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -508,7 +524,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -518,7 +534,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -528,7 +544,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               },
               "grasp_position": {
                 "type": "array",
@@ -538,19 +554,19 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "public grasp point for prehensile manipulation"
+                "description": "World-frame end-effector grasp waypoint. Align and close the gripper at this position before lifting."
               },
               "grasp_wrist_roll": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public wrist-roll target for grasp alignment"
+                "description": "Robot wrist-roll actuator target used while approaching, grasping, and carrying the object."
               },
               "grasp_gripper": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public gripper target used to acquire the object"
+                "description": "Robot gripper actuator target used to acquire and retain the object until release."
               }
             },
             "additional_properties": false
@@ -624,7 +640,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -633,7 +650,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -642,12 +660,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -657,7 +677,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -667,7 +687,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -677,7 +697,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -750,7 +770,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -759,7 +780,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -768,12 +790,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -783,7 +807,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -793,7 +817,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -803,7 +827,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -876,7 +900,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -885,7 +910,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -894,12 +920,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -909,7 +937,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -919,7 +947,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -929,7 +957,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1008,7 +1036,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1017,7 +1046,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1026,12 +1056,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1041,7 +1073,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1051,7 +1083,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1061,7 +1093,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1134,7 +1166,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1143,7 +1176,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1152,12 +1186,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1167,7 +1203,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1177,7 +1213,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1187,7 +1223,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1260,7 +1296,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1269,7 +1306,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1278,12 +1316,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1293,7 +1333,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1303,7 +1343,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1313,7 +1353,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1386,7 +1426,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1395,7 +1436,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1404,12 +1446,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1419,7 +1463,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1429,7 +1473,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1439,7 +1483,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1518,7 +1562,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1527,7 +1572,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1536,12 +1582,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1551,7 +1599,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1561,7 +1609,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1571,7 +1619,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1634,7 +1682,8 @@
             "required": [
               "contact_position",
               "target_position",
-              "tool_target_position"
+              "tool_target_position",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -1644,7 +1693,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1653,7 +1703,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1662,12 +1713,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1677,7 +1730,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1687,7 +1740,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1697,7 +1750,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1760,7 +1813,8 @@
             "required": [
               "contact_position",
               "target_position",
-              "tool_target_position"
+              "tool_target_position",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -1770,7 +1824,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1779,7 +1834,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1788,12 +1844,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1803,7 +1861,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1813,7 +1871,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1823,7 +1881,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -1886,7 +1944,8 @@
             "required": [
               "contact_position",
               "target_position",
-              "tool_target_position"
+              "tool_target_position",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -1896,7 +1955,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -1905,7 +1965,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -1914,12 +1975,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -1929,7 +1992,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -1939,7 +2002,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -1949,7 +2012,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -2012,7 +2075,8 @@
             "required": [
               "contact_position",
               "target_position",
-              "tool_target_position"
+              "tool_target_position",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -2022,7 +2086,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -2031,7 +2096,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -2040,12 +2106,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2055,7 +2123,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -2065,7 +2133,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -2075,7 +2143,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -2139,7 +2207,8 @@
               "contact_position",
               "target_position",
               "tool_target_position",
-              "target_angle"
+              "target_angle",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -2149,7 +2218,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -2158,7 +2228,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -2167,12 +2238,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2182,7 +2255,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -2192,7 +2265,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -2202,7 +2275,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -2266,7 +2339,8 @@
               "start_position",
               "target_position",
               "release_position",
-              "tool_target_position"
+              "tool_target_position",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -2276,7 +2350,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -2285,7 +2360,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -2294,12 +2370,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2309,7 +2387,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -2319,7 +2397,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -2329,7 +2407,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               }
             },
             "additional_properties": false
@@ -2396,7 +2474,8 @@
               "tool_target_position",
               "grasp_position",
               "grasp_wrist_roll",
-              "grasp_gripper"
+              "grasp_gripper",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -2406,7 +2485,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "contact_position": {
                 "type": "array",
@@ -2415,7 +2495,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -2424,12 +2505,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2439,7 +2522,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -2449,7 +2532,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -2459,7 +2542,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               },
               "grasp_position": {
                 "type": "array",
@@ -2469,19 +2552,19 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "public grasp point for prehensile manipulation"
+                "description": "World-frame end-effector grasp waypoint. Align and close the gripper at this position before lifting."
               },
               "grasp_wrist_roll": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public wrist-roll target for grasp alignment"
+                "description": "Robot wrist-roll actuator target used while approaching, grasping, and carrying the object."
               },
               "grasp_gripper": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public gripper target used to acquire the object"
+                "description": "Robot gripper actuator target used to acquire and retain the object until release."
               }
             },
             "additional_properties": false
@@ -2548,7 +2631,8 @@
               "tool_target_position",
               "grasp_position",
               "grasp_wrist_roll",
-              "grasp_gripper"
+              "grasp_gripper",
+              "route_position"
             ],
             "properties": {
               "start_position": {
@@ -2558,7 +2642,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Initial position of the manipulated task entity. It is not an end-effector waypoint; use grasp_position when supplied or derive a task-appropriate grasp waypoint."
               },
               "grasp_position": {
                 "type": "array",
@@ -2568,7 +2653,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "public grasp point for prehensile manipulation"
+                "description": "World-frame end-effector grasp waypoint. Align and close the gripper at this position before lifting."
               },
               "contact_position": {
                 "type": "array",
@@ -2577,7 +2662,8 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "World-frame end-effector contact waypoint. Establish contact here before any route_position or tool_target_position."
               },
               "target_position": {
                 "type": "array",
@@ -2586,12 +2672,14 @@
                 },
                 "length": 3,
                 "unit": "m",
-                "frame": "world"
+                "frame": "world",
+                "description": "Desired terminal position of the affected task entity or fixture. It is an end-effector waypoint only for a direct reach task."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
-                "frame": "task_fixture"
+                "frame": "task_fixture",
+                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2601,7 +2689,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private fixture approach point for the physical controller"
+                "description": "Final world-frame end-effector waypoint that drives the contacted or grasped task entity toward target_position. Visit it after contact or grasp and any route_position."
               },
               "release_position": {
                 "type": "array",
@@ -2611,7 +2699,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private release point for grasp-and-place tasks"
+                "description": "World-frame end-effector carrying waypoint at the placement region. Maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
               },
               "route_position": {
                 "type": "array",
@@ -2621,19 +2709,19 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "private collision-free route waypoint for obstacle tasks"
+                "description": "Intermediate world-frame end-effector waypoint between contact or grasp and tool_target_position. Visit it before tool_target_position."
               },
               "grasp_wrist_roll": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public wrist-roll target for grasp alignment"
+                "description": "Robot wrist-roll actuator target used while approaching, grasping, and carrying the object."
               },
               "grasp_gripper": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "joint",
-                "description": "public gripper target used to acquire the object"
+                "description": "Robot gripper actuator target used to acquire and retain the object until release."
               }
             },
             "additional_properties": false

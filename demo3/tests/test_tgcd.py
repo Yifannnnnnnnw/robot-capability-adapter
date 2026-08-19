@@ -49,6 +49,7 @@ def _task(index: int) -> dict:
                             "type": "array",
                             "unit": "m",
                             "frame": "world",
+                            "description": "Terminal task-entity target.",
                         }
                     },
                 },
@@ -324,6 +325,10 @@ class TGCDTests(unittest.TestCase):
                 "required_for_task_ids"
             ],
             ["task-00", "task-01", "task-02", "task-03"],
+        )
+        self.assertEqual(
+            validated["capabilities"][0]["interface"]["inputs"][1]["description"],
+            "Terminal task-entity target.",
         )
 
     def test_unsupported_robot_affordance_is_rejected(self) -> None:

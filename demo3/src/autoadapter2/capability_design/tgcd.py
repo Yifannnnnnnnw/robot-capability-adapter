@@ -32,13 +32,15 @@ required_affordances{actions,observations}, failure_behavior, and validation_con
 method_name must be a valid public Python identifier authored by you.
 
 interface.inputs and interface.outputs MUST each be a non-empty JSON array, never a keyed object.
-Every item must have string name, type, unit, and frame fields. inputs must contain the fixed item
+Every item must have string name, type, unit, and frame fields. Parameter inputs must also copy the
+public task-schema description whenever one is declared. inputs must contain the fixed item
 {"name":"request","type":"object","unit":"unitless","frame":"none"} plus exactly one item for
 each distinct required task parameter of the covered tasks. A parameter input is a semantic path,
 not another Python argument, and has this exact form:
 {"name":"request.task_parameters.target_position","type":"array","unit":"m","frame":"world",
-"required_for_task_ids":["task-a","task-b"]}. Copy type, unit, and frame from the public task
-schema, and list exactly the covered tasks for which that parameter is required. outputs are
+"description":"Desired terminal state of the task entity, not generally an end-effector waypoint",
+"required_for_task_ids":["task-a","task-b"]}. Copy type, unit, frame, and description from the
+public task schema, and list exactly the covered tasks for which that parameter is required. outputs are
 model-authored and contain exactly name, type, unit, and frame; for example
 {"name":"completed","type":"bool","unit":"unitless","frame":"none"}.
 The Framework mechanically canonicalizes required_for_task_ids from the covered public task
@@ -128,10 +130,16 @@ def _required_parameter_inputs(
                 "unit": str(schema["unit"]),
                 "frame": str(schema["frame"]),
             }
+            description = schema.get("description")
+            if isinstance(description, str) and description.strip():
+                typed["description"] = description.strip()
             existing = inputs.get(name)
             if existing is None:
                 inputs[name] = {**typed, "required_for_task_ids": [task_id]}
-            elif any(existing[field] != typed[field] for field in ("type", "unit", "frame")):
+            elif any(
+                existing.get(field) != typed.get(field)
+                for field in ("type", "unit", "frame", "description")
+            ):
                 raise CapabilityDesignError(
                     f"{where} groups incompatible schemas for task parameter {parameter_name!r}"
                 )
@@ -303,9 +311,8 @@ def _canonicalize_parameter_task_coverage(
                 continue
             expected_item = expected.get(item.get("name"))
             if expected_item is not None:
-                item["required_for_task_ids"] = list(
-                    expected_item["required_for_task_ids"]
-                )
+                for field, value in expected_item.items():
+                    item[field] = copy.deepcopy(value)
     return design
 
 

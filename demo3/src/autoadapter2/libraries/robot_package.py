@@ -570,6 +570,12 @@ def _validate_private_inputs(
                 f"{where}.request.task_parameters contains undeclared fields "
                 f"{sorted(unexpected_parameters)}"
             )
+        non_contract_parameters = set(parameters) - set(schema_parameters["required"])
+        if non_contract_parameters:
+            raise RobotPackageError(
+                f"{where}.request.task_parameters supplies fields outside the required "
+                f"capability interface {sorted(non_contract_parameters)}"
+            )
         for name, value in parameters.items():
             _validate_parameter_value(
                 value,

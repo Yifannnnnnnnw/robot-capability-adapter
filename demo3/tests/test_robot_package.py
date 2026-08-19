@@ -238,6 +238,28 @@ class RobotPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(RobotPackageError, "undeclared fields"):
             load_robot_package(self.root)
 
+    def test_private_instance_cannot_supply_an_optional_interface_parameter(self) -> None:
+        catalog_path = self.root / "tasks" / "catalog.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        parameters = catalog["tasks"][0]["invocation_schema"]["request"][
+            "task_parameters"
+        ]
+        parameters["properties"]["route"] = {
+            "type": "number",
+            "unit": "m",
+            "frame": "world",
+        }
+        _write_json(catalog_path, catalog)
+        instances_path = self.root / "tasks" / "private" / "instances.json"
+        document = json.loads(instances_path.read_text(encoding="utf-8"))
+        document["instances"][0]["public_arguments"]["request"]["task_parameters"][
+            "route"
+        ] = 0.5
+        _write_json(instances_path, document)
+
+        with self.assertRaisesRegex(RobotPackageError, "required capability interface"):
+            load_robot_package(self.root)
+
     def test_mjcf_include_cannot_escape_assets(self) -> None:
         (self.root / "outside.xml").write_text(
             '<mujoco model="outside"/>', encoding="utf-8"
