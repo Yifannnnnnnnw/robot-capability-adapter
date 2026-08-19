@@ -1,4 +1,4 @@
-"""Small, bounded ReAct loop used by Demo3 model-authored stages."""
+"""Small, bounded ReAct loop used by mainline model-authored stages."""
 
 from __future__ import annotations
 

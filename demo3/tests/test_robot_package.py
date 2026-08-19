@@ -325,19 +325,19 @@ class RobotPackageTests(unittest.TestCase):
             load_robot_package(self.root)
 
     def test_only_explicit_index_entry_is_runnable(self) -> None:
-        demo_root = Path(self.temporary.name) / "demo3"
-        indexed = demo_root / "libraries" / "robots" / "example" / "1.0.0"
+        mainline_root = Path(self.temporary.name) / "autoadapter"
+        indexed = mainline_root / "libraries" / "robots" / "example" / "1.0.0"
         indexed.parent.mkdir(parents=True)
         self.root.rename(indexed)
         _write_json(
-            demo_root / "libraries" / "robots" / "index.json",
+            mainline_root / "libraries" / "robots" / "index.json",
             {"robots": {"example-arm": "example/1.0.0"}},
         )
 
-        package = load_indexed_robot_package(demo_root, "example-arm")
+        package = load_indexed_robot_package(mainline_root, "example-arm")
         self.assertEqual(package.robot_configuration_id, "example-arm")
         with self.assertRaisesRegex(RobotPackageError, "not runnable"):
-            load_indexed_robot_package(demo_root, "research-only")
+            load_indexed_robot_package(mainline_root, "research-only")
 
 
 if __name__ == "__main__":

@@ -19,7 +19,12 @@ from autoadapter2.libraries import RobotPackage
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSET_ROOT = (
-    ROOT / "research_candidates" / "robotstudio_so101" / "1.0.0" / "assets"
+    ROOT
+    / "libraries"
+    / "robots"
+    / "robotstudio_so101"
+    / "1.0.0"
+    / "assets"
 )
 PACKAGE_ROOT = ASSET_ROOT.parent
 

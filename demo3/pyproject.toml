@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "autoadapter2-demo3"
+name = "autoadapter2"
 version = "0.1.0"
 description = "Self-contained AutoAdapter 2.0 Direct-MuJoCo experiment workspace"
 requires-python = ">=3.11,<3.12"

@@ -1,4 +1,4 @@
-"""Direct dict/JSON reporting for Demo3 cells and paired comparisons.
+"""Direct dict/JSON reporting for mainline cells and configured comparisons.
 
 The report keeps Capability Validation and the later Task Demo as separate outcomes. A paired
 report retains every cell in full; its summary is only a view over those cells and is never a
@@ -19,11 +19,6 @@ class ReportingError(ValueError):
     """Raised when a report cannot preserve the required experiment identity."""
 
 
-DEFAULT_ROBOTS = (
-    "robotstudio_so101",
-    "unitree-go2-stock-12dof",
-)
-DEFAULT_CONDITIONS = ("skeleton-assisted", "from-scratch")
 _MISSING = object()
 _OUTCOME_FIELDS = (
     ("TGCD", "tgcd"),
@@ -420,11 +415,11 @@ def build_cell_report(
 def build_paired_report(
     cell_reports: Sequence[Mapping[str, Any]] | Mapping[str, Mapping[str, Any]],
     *,
-    expected_robots: Sequence[str] = DEFAULT_ROBOTS,
-    expected_conditions: Sequence[str] = DEFAULT_CONDITIONS,
+    expected_robots: Sequence[str],
+    expected_conditions: Sequence[str],
     run_id: str | None = None,
 ) -> dict[str, Any]:
-    """Build a four-cell report that keeps every cell and makes missing/failing cells visible."""
+    """Build a configured matrix report that keeps missing and failing cells visible."""
 
     if isinstance(cell_reports, Mapping):
         values = list(cell_reports.values())
@@ -522,7 +517,7 @@ def build_paired_report(
         else False,
     }
     result: dict[str, Any] = {
-        "report_type": "paired_two_condition_experiment",
+        "report_type": "configured_generation_experiment",
         "cells": ordered_cells,
         "paired_comparisons": comparisons,
         "summary": summary,
@@ -565,8 +560,6 @@ build_experiment_report = build_paired_report
 
 
 __all__ = [
-    "DEFAULT_CONDITIONS",
-    "DEFAULT_ROBOTS",
     "ReportingError",
     "build_cell_report",
     "build_experiment_report",

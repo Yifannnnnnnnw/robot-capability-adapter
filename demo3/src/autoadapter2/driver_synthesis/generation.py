@@ -1,4 +1,4 @@
-"""Model-authored STUDY and driver generation for Demo3.
+"""Model-authored STUDY and driver generation for the mainline.
 
 This module owns the public information boundary for the two preserved AutoAdapter
 1.0 generation conditions. It deliberately does not know the private validation

@@ -1,5 +1,5 @@
 {
-  "experiment_id": "demo3-direct-mujoco-two-by-two",
+  "experiment_id": "autoadapter2-direct-mujoco-mainline",
   "robots": [
     "robotstudio_so101",
     "unitree-go2-stock-12dof"

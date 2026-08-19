@@ -1,4 +1,4 @@
-"""Small terminal Evolution sidecar for the Demo3 experiment.
+"""Small terminal Evolution sidecar for the mainline experiment.
 
 Evolution is deliberately kept outside the validation path.  It consumes one
 already terminal, candidate-facing report and can return at most one proposal
@@ -136,7 +136,7 @@ def _validate_candidate_facing_report(report: Mapping[str, Any]) -> dict[str, An
         raise EvolutionError("terminal report must be an object")
 
     # The terminal report must expose the two independent execution facts and a verdict.  The
-    # older Harness name is accepted so the sidecar can consume the current Demo3 report while
+    # The older Harness name remains accepted for historical report compatibility while
     # the integrated pipeline adds the explicit final_validation_passed alias.
     if not isinstance(report.get("pipeline_completed"), bool):
         raise EvolutionError("terminal report.pipeline_completed must be boolean")

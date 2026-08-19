@@ -1,4 +1,4 @@
-"""Capability-neutral serial-arm primitives for the Demo3 mainline.
+"""Capability-neutral serial-arm primitives for the Direct-MuJoCo mainline.
 
 The Framework supplies the canonical MuJoCo ``model`` and ``data`` objects.
 This module contains reusable kinematics and actuator control only.  It does

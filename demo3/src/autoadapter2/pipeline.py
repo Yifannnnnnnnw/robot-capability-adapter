@@ -1,4 +1,4 @@
-"""Top-level Demo3 Direct-MuJoCo experiment orchestration.
+"""Top-level AutoAdapter 2.0 Direct-MuJoCo experiment orchestration.
 
 This module is intentionally a small composition layer.  Stage modules own their
 contracts; the pipeline only orders them, gives each condition its own workspace,
@@ -68,11 +68,11 @@ from autoadapter2.validation_compiler import (
 )
 
 
-DEFAULT_ROBOTS = ("robotstudio_so101", "unitree-go2-stock-12dof")
 DEFAULT_CONDITIONS: tuple[GenerationCondition, ...] = (
     "skeleton-assisted",
     "from-scratch",
 )
+DEFAULT_CONFIG_PATH = Path("configs/experiments/mainline.json")
 
 
 class PipelineError(RuntimeError):
@@ -81,11 +81,11 @@ class PipelineError(RuntimeError):
 
 @dataclass(frozen=True)
 class ExperimentConfig:
-    """The small run configuration read from ``demo3/experiment.json``."""
+    """The small run configuration selected from ``configs/experiments``."""
 
     experiment_id: str
-    robots: tuple[str, ...] = DEFAULT_ROBOTS
-    generation_conditions: tuple[GenerationCondition, ...] = DEFAULT_CONDITIONS
+    robots: tuple[str, ...]
+    generation_conditions: tuple[GenerationCondition, ...]
     max_driver_attempts_per_condition: int = MAX_TOTAL_ATTEMPTS
     probe_budget: ProbeBudget = ProbeBudget()
     record_video: bool = True
@@ -100,26 +100,29 @@ class ExperimentConfig:
         if not isinstance(experiment_id, str) or not experiment_id.strip():
             raise PipelineError("experiment_id must be a non-empty string")
 
-        robots_value = value.get("robots", list(DEFAULT_ROBOTS))
-        conditions_value = value.get(
-            "generation_conditions", list(DEFAULT_CONDITIONS)
-        )
-        if not isinstance(robots_value, list) or len(robots_value) != 2:
-            raise PipelineError("the mainline configuration must name exactly two robots")
+        robots_value = value.get("robots")
+        conditions_value = value.get("generation_conditions")
+        if not isinstance(robots_value, list) or not robots_value:
+            raise PipelineError("robots must be a non-empty list")
         if not all(isinstance(item, str) and item.strip() for item in robots_value):
             raise PipelineError("robots must contain non-empty strings")
         robots = tuple(str(item).strip() for item in robots_value)
         if len(set(robots)) != len(robots):
             raise PipelineError("robots must be distinct")
 
-        if not isinstance(conditions_value, list) or len(conditions_value) != 2:
-            raise PipelineError(
-                "the mainline configuration must contain skeleton-assisted and from-scratch"
-            )
+        if not isinstance(conditions_value, list) or not conditions_value:
+            raise PipelineError("generation_conditions must be a non-empty list")
+        if not all(
+            isinstance(item, str) and item.strip() for item in conditions_value
+        ):
+            raise PipelineError("generation_conditions must contain non-empty strings")
         conditions = tuple(str(item).strip() for item in conditions_value)
-        if set(conditions) != set(DEFAULT_CONDITIONS):
+        if len(set(conditions)) != len(conditions):
+            raise PipelineError("generation_conditions must be distinct")
+        unsupported = sorted(set(conditions) - set(DEFAULT_CONDITIONS))
+        if unsupported:
             raise PipelineError(
-                "generation_conditions must be exactly skeleton-assisted and from-scratch"
+                "unsupported generation_conditions: " + ", ".join(unsupported)
             )
 
         max_attempts = value.get(
@@ -203,7 +206,7 @@ class ExperimentConfig:
 class PipelineHooks:
     """Optional seams used by focused tests and small local experiments.
 
-    The default hooks are the real Demo3 implementations.  Test-only callers may
+    The default hooks are the real mainline implementations. Test-only callers may
     replace them with explicit fake package/model/Harness functions without changing
     the dynamic production path.
     """
@@ -262,7 +265,7 @@ def _read_object(path: Path, *, label: str) -> dict[str, Any]:
 def _reuse_sealed_inputs(
     *,
     source_dir: str | Path,
-    demo_root: Path,
+    mainline_root: Path,
     destination: Path,
     config: ExperimentConfig,
     packages: Mapping[str, RobotPackage],
@@ -275,11 +278,13 @@ def _reuse_sealed_inputs(
     dict[str, Any],
 ]:
     source = Path(source_dir).resolve()
-    runs_root = (demo_root / "runs").resolve()
+    runs_root = (mainline_root / "runs").resolve()
     try:
         source.relative_to(runs_root)
     except ValueError as exc:
-        raise PipelineError("reused sealed inputs must come from demo3/runs") from exc
+        raise PipelineError(
+            "reused sealed inputs must come from the mainline runs directory"
+        ) from exc
     if source == destination.resolve():
         raise PipelineError("sealed-input source and destination run must differ")
 
@@ -1398,7 +1403,7 @@ def _run_cell(
 
 
 def load_experiment_packages(
-    demo_root: str | Path,
+    mainline_root: str | Path,
     config: ExperimentConfig,
     *,
     package_loader: Callable[..., RobotPackage] = load_indexed_robot_package,
@@ -1406,13 +1411,13 @@ def load_experiment_packages(
 ) -> tuple[dict[str, RobotPackage], dict[str, Any]]:
     """Load every indexed package before any model-authored call."""
 
-    root = Path(demo_root).resolve()
+    root = Path(mainline_root).resolve()
     self_containment: dict[str, Any] = {}
     if check_self_containment:
         try:
             self_containment = check_self_contained(root)
         except Exception as exc:
-            raise PipelineError(f"Demo3 self-containment check failed: {exc}") from exc
+            raise PipelineError(f"mainline self-containment check failed: {exc}") from exc
     packages: dict[str, RobotPackage] = {}
     for robot in config.robots:
         try:
@@ -1426,7 +1431,7 @@ def load_experiment_packages(
 
 
 def check_packages(
-    demo_root: str | Path,
+    mainline_root: str | Path,
     *,
     config: ExperimentConfig | Mapping[str, Any] | None = None,
     config_path: str | Path | None = None,
@@ -1435,9 +1440,9 @@ def check_packages(
 ) -> dict[str, Any]:
     """Package/check-only entry point; it never constructs a model client."""
 
-    root = Path(demo_root).resolve()
+    root = Path(mainline_root).resolve()
     if config is None:
-        config = ExperimentConfig.from_path(config_path or root / "experiment.json")
+        config = ExperimentConfig.from_path(config_path or root / DEFAULT_CONFIG_PATH)
     elif not isinstance(config, ExperimentConfig):
         config = ExperimentConfig.from_mapping(config)
     packages, self_containment = load_experiment_packages(
@@ -1450,7 +1455,7 @@ def check_packages(
     return {
         "experiment_id": config.experiment_id,
         "code_version": __version__,
-        "demo_root": str(root),
+        "mainline_root": str(root),
         "robots": {
             robot: {
                 "robot_configuration_id": package.robot_configuration_id,
@@ -1474,7 +1479,7 @@ def _new_run_id(experiment_id: str) -> str:
 
 
 def run_experiment(
-    demo_root: str | Path,
+    mainline_root: str | Path,
     *,
     config: ExperimentConfig | Mapping[str, Any] | None = None,
     config_path: str | Path | None = None,
@@ -1488,11 +1493,11 @@ def run_experiment(
     skip_reference_calibration: bool = False,
     sealed_inputs_from: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run TGCD/IVC and four cells, with the formal reference gate by default."""
+    """Run TGCD/IVC and the configured cells, with the reference gate by default."""
 
-    root = Path(demo_root).resolve()
+    root = Path(mainline_root).resolve()
     if config is None:
-        config = ExperimentConfig.from_path(config_path or root / "experiment.json")
+        config = ExperimentConfig.from_path(config_path or root / DEFAULT_CONFIG_PATH)
     elif not isinstance(config, ExperimentConfig):
         config = ExperimentConfig.from_mapping(config)
     selected_hooks = hooks or PipelineHooks()
@@ -1510,7 +1515,7 @@ def run_experiment(
     )
     package_check = {
         "experiment_id": config.experiment_id,
-        "demo_root": str(root),
+        "mainline_root": str(root),
         "robots": list(config.robots),
         "self_containment": self_containment,
         "environment": environment,
@@ -1540,14 +1545,14 @@ def run_experiment(
             sealed_input_provenance,
         ) = _reuse_sealed_inputs(
             source_dir=sealed_inputs_from,
-            demo_root=root,
+            mainline_root=root,
             destination=destination,
             config=config,
             packages=packages,
             hooks=selected_hooks,
         )
         stage_log.extend(reused_evidence)
-    # Both robots complete TGCD and IVC before either condition receives a driver workspace.
+    # Every robot completes TGCD and IVC before any condition receives a driver workspace.
     for robot in (() if sealed_inputs_from is not None else config.robots):
         package = packages[robot]
         robot_design_dir = destination / "designs" / robot
@@ -1675,7 +1680,7 @@ def run_experiment(
             references[robot] = reference
             _write(destination / "references" / robot / "reference_report.json", reference)
     else:
-        # The formal reference gate completes for both robots before any STUDY call.
+        # The reference gate completes for every configured robot before any STUDY call.
         for robot in config.robots:
             package = packages[robot]
             reference_dir = destination / "references" / robot
@@ -1858,7 +1863,7 @@ def run_experiment(
                 else (
                     "driver synthesis passed; one or more Task Demo pipelines were incomplete"
                     if references_passed and all_cells_passed
-                    else "paired two-condition experiment completed; named cell synthesis failures remain"
+                    else "configured experiment completed; named cell synthesis failures remain"
                 )
             )
         ),
@@ -1880,8 +1885,8 @@ def success_claim(result: Mapping[str, Any]) -> bool:
 
 
 __all__ = [
+    "DEFAULT_CONFIG_PATH",
     "DEFAULT_CONDITIONS",
-    "DEFAULT_ROBOTS",
     "ExperimentConfig",
     "PipelineError",
     "PipelineHooks",

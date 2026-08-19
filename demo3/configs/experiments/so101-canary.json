@@ -1,0 +1,19 @@
+{
+  "experiment_id": "autoadapter2-so101-skeleton-canary",
+  "robots": [
+    "robotstudio_so101"
+  ],
+  "generation_conditions": [
+    "skeleton-assisted"
+  ],
+  "max_driver_attempts_per_condition": 3,
+  "development_probe": {
+    "max_requests_per_stage": 14,
+    "wall_timeout_s_per_request": 30,
+    "max_output_chars_per_request": 12000
+  },
+  "validation": {
+    "record_video": true,
+    "worker_wall_timeout_s": 120
+  }
+}

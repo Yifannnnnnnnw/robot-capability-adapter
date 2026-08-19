@@ -11,7 +11,8 @@ from autoadapter2.harness.worker import execute_case
 ROOT = Path(__file__).resolve().parents[1]
 SCENE = (
     ROOT
-    / "research_candidates"
+    / "libraries"
+    / "robots"
     / "robotstudio_so101"
     / "1.0.0"
     / "assets"

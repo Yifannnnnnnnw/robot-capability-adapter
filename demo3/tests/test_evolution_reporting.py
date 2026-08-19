@@ -238,7 +238,12 @@ class ReportingTests(unittest.TestCase):
             _terminal_report("unitree-go2-stock-12dof", "from-scratch", True),
         ]
 
-        paired = build_paired_report(cells, run_id="paired-1")
+        paired = build_paired_report(
+            cells,
+            expected_robots=("robotstudio_so101", "unitree-go2-stock-12dof"),
+            expected_conditions=("skeleton-assisted", "from-scratch"),
+            run_id="paired-1",
+        )
 
         self.assertEqual(len(paired["cells"]), 4)
         failed = [cell for cell in paired["cells"] if not cell["final_validation_passed"]]
@@ -259,7 +264,11 @@ class ReportingTests(unittest.TestCase):
         cells = [
             _terminal_report("robotstudio_so101", "skeleton-assisted", True),
         ]
-        paired = build_paired_report(cells)
+        paired = build_paired_report(
+            cells,
+            expected_robots=("robotstudio_so101", "unitree-go2-stock-12dof"),
+            expected_conditions=("skeleton-assisted", "from-scratch"),
+        )
 
         self.assertFalse(paired["summary"]["all_expected_cells_reported"])
         self.assertIn(

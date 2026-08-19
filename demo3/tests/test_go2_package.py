@@ -143,7 +143,7 @@ def _design_and_suite(package):
 def test_go2_skeleton_inventory_resolves_to_the_visible_runtime_contract() -> None:
     inventory_path = PACKAGE_ROOT / "skeleton" / "quadruped_pd_gait.py"
     module_spec = importlib.util.spec_from_file_location(
-        "demo3_go2_skeleton_inventory", inventory_path
+        "mainline_go2_skeleton_inventory", inventory_path
     )
     assert module_spec is not None and module_spec.loader is not None
     inventory = importlib.util.module_from_spec(module_spec)

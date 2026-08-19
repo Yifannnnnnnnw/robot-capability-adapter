@@ -45,6 +45,49 @@ def _config() -> ExperimentConfig:
     )
 
 
+def test_config_accepts_a_single_robot_single_condition_canary() -> None:
+    config = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "single-cell-canary",
+            "robots": ["r-arm"],
+            "generation_conditions": ["skeleton-assisted"],
+        }
+    )
+
+    assert config.robots == ("r-arm",)
+    assert config.generation_conditions == ("skeleton-assisted",)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    (
+        ("robots", [], "robots must be a non-empty list"),
+        (
+            "generation_conditions",
+            [],
+            "generation_conditions must be a non-empty list",
+        ),
+        (
+            "generation_conditions",
+            ["skeleton-assisted", "unknown"],
+            "unsupported generation_conditions",
+        ),
+    ),
+)
+def test_config_rejects_empty_or_unsupported_matrix_values(
+    field: str, value: list[str], message: str
+) -> None:
+    raw = {
+        "experiment_id": "invalid-config",
+        "robots": ["r-arm"],
+        "generation_conditions": ["skeleton-assisted"],
+    }
+    raw[field] = value
+
+    with pytest.raises(PipelineError, match=message):
+        ExperimentConfig.from_mapping(raw)
+
+
 def _package(root: Path, robot: str) -> Any:
     package_root = root / robot
     package_root.mkdir(parents=True, exist_ok=True)
@@ -417,6 +460,35 @@ def test_pipeline_orders_ivc_and_reference_gate_before_dynamic_cells(tmp_path: P
     assert last_reference < first_study
     for robot in ("r-arm", "r-quad"):
         assert events.index(("ivc", robot)) < first_study
+
+
+def test_pipeline_runs_a_single_robot_single_condition_canary(tmp_path: Path) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
+    config = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "single-cell-canary",
+            "robots": ["r-arm"],
+            "generation_conditions": ["skeleton-assisted"],
+        }
+    )
+
+    result = run_experiment(
+        tmp_path,
+        config=config,
+        output_dir=tmp_path / "run",
+        run_id="single-cell",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+    )
+
+    assert success_claim(result)
+    assert [cell["cell_id"] for cell in result["cells"]] == [
+        "r-arm::skeleton-assisted"
+    ]
+    assert result["paired_report"]["summary"]["expected_cell_count"] == 1
+    assert result["paired_report"]["summary"]["all_expected_cells_reported"]
 
 
 def test_conditions_share_sealed_capability_and_task_demo_suites(tmp_path: Path) -> None:
@@ -896,9 +968,9 @@ def test_full_cli_returns_nonzero_for_completed_failed_result(
         "robots": ["r-arm", "r-quad"],
         "generation_conditions": ["skeleton-assisted", "from-scratch"],
     }
-    (tmp_path / "experiment.json").write_text(
-        json.dumps(config), encoding="utf-8"
-    )
+    config_path = tmp_path / "configs" / "experiments" / "mainline.json"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(json.dumps(config), encoding="utf-8")
     monkeypatch.setattr(
         cli,
         "run_experiment",

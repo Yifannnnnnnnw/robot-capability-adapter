@@ -12,7 +12,8 @@ from autoadapter2.trusted_skeletons import ArmSerialDLSSkeleton, ArmSpec
 ROOT = Path(__file__).resolve().parents[1]
 SCENE = (
     ROOT
-    / "research_candidates"
+    / "libraries"
+    / "robots"
     / "robotstudio_so101"
     / "1.0.0"
     / "assets"

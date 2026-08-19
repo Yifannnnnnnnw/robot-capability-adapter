@@ -791,7 +791,7 @@ def test_so101_reference_private_suite_and_renderer() -> None:
         "fps": 10.0,
         "camera": -1,
     }
-    with tempfile.TemporaryDirectory(prefix="so101-demo3-evidence-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="so101-mainline-evidence-") as temporary:
         report = run_private_suite(
             package=package,
             design=design,

@@ -1,4 +1,4 @@
-"""Trusted, capability-neutral skeletons owned by the Demo3 Framework."""
+"""Trusted, capability-neutral skeletons owned by the mainline Framework."""
 
 from .arm_serial_dls import ArmSerialDLSSkeleton, ArmSpec, IKUnreachableError
 from .quadruped_pd_gait import QuadrupedPDGaitSkeleton, QuadrupedSpec

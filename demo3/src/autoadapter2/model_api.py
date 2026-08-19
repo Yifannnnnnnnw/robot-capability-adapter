@@ -1,4 +1,4 @@
-"""Minimal real-model JSON boundary for Demo3 model-authored stages."""
+"""Minimal real-model JSON boundary for mainline model-authored stages."""
 
 from __future__ import annotations
 

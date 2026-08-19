@@ -1,4 +1,4 @@
-"""Load complete, self-contained Demo3 robot packages."""
+"""Load complete, self-contained mainline robot packages."""
 
 from .robot_package import (
     RobotPackage,

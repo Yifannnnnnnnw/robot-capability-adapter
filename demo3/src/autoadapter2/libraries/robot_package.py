@@ -54,7 +54,7 @@ _SUPPORTED_GUARD_KINDS = _REQUIRED_GUARD_KINDS | {
 
 @dataclass(frozen=True)
 class RobotPackage:
-    """A package that passed the minimum Demo3 runnable-input checks."""
+    """A package that passed the minimum mainline runnable-input checks."""
 
     root: Path
     robot_configuration_id: str
@@ -628,7 +628,9 @@ def _validate_private_inputs(
         if task_id not in tasks_by_id:
             raise RobotPackageError(f"{where} references unknown task {task_id!r}")
         if task_id in covered_tasks:
-            raise RobotPackageError(f"Demo3 expects one private instance for task {task_id!r}")
+            raise RobotPackageError(
+                f"the mainline expects one private instance for task {task_id!r}"
+            )
         instance_ids.add(instance_id)
         covered_tasks.add(task_id)
 
@@ -790,12 +792,12 @@ def load_robot_package(root: str | Path) -> RobotPackage:
 
 
 def load_indexed_robot_package(
-    demo_root: str | Path,
+    mainline_root: str | Path,
     robot_configuration_id: str,
 ) -> RobotPackage:
-    """Resolve only an explicitly indexed runnable package under Demo3."""
+    """Resolve only an explicitly indexed runnable package under the mainline."""
 
-    root = Path(demo_root).resolve()
+    root = Path(mainline_root).resolve()
     index_path = root / "libraries" / "robots" / "index.json"
     index = _read_object(index_path)
     robots = index.get("robots")

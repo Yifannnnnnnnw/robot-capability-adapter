@@ -1,4 +1,4 @@
-"""Command-line entry point for the Demo3 experiment."""
+"""Command-line entry point for the AutoAdapter 2.0 mainline."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .pipeline import (
+    DEFAULT_CONFIG_PATH,
     ExperimentConfig,
     PipelineError,
     check_packages,
@@ -26,7 +27,7 @@ def _parser() -> argparse.ArgumentParser:
     for name, help_text in (
         ("package", "validate the indexed robot packages"),
         ("check-only", "validate self-containment and indexed packages"),
-        ("full", "run reference calibration and the four dynamic cells"),
+        ("full", "run reference calibration and the configured dynamic cells"),
     ):
         command = subparsers.add_parser(name, help=help_text)
         command.add_argument("--root", type=Path, default=None)
@@ -43,7 +44,7 @@ def _parser() -> argparse.ArgumentParser:
                 "--reuse-sealed-inputs-from",
                 type=Path,
                 default=None,
-                help="reuse audited TGCD/IVC artifacts from a prior demo3 run",
+                help="reuse audited TGCD/IVC artifacts from a prior mainline run",
             )
     return parser
 
@@ -68,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     root = _root(args.root)
     try:
-        config = ExperimentConfig.from_path(args.config or root / "experiment.json")
+        config = ExperimentConfig.from_path(args.config or root / DEFAULT_CONFIG_PATH)
         if args.command in {"package", "check-only"}:
             result = check_packages(root, config=config)
             _print(result)

@@ -1,4 +1,4 @@
-"""Direct runtime checks for the one declared Demo3 environment."""
+"""Direct runtime checks for the declared mainline environment."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def check_environment() -> dict[str, Any]:
 
     if sys.version_info[:2] != (3, 11):
         raise EnvironmentError(
-            f"Demo3 requires Python 3.11; found {sys.version_info.major}.{sys.version_info.minor}"
+            f"the mainline requires Python 3.11; found {sys.version_info.major}.{sys.version_info.minor}"
         )
     try:
         import mujoco
@@ -28,7 +28,7 @@ def check_environment() -> dict[str, Any]:
     for name, version in expected.items():
         if actual[name] != version:
             raise EnvironmentError(
-                f"Demo3 requires {name}=={version}; found {actual[name]}"
+                f"the mainline requires {name}=={version}; found {actual[name]}"
             )
     tools = {name: shutil.which(name) for name in ("ffmpeg", "ffprobe")}
     missing = [name for name, path in tools.items() if path is None]

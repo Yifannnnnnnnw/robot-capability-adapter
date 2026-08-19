@@ -8,7 +8,7 @@ from autoadapter2.self_containment import SelfContainmentError, check_self_conta
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_demo3_is_self_contained() -> None:
+def test_mainline_is_self_contained() -> None:
     result = check_self_contained(ROOT)
 
     assert result["python_files_checked"] >= 1

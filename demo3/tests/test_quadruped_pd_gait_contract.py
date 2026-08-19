@@ -18,7 +18,8 @@ from autoadapter2.trusted_skeletons.quadruped_pd_gait import (
 ROOT = Path(__file__).resolve().parents[1]
 SCENE = (
     ROOT
-    / "research_candidates"
+    / "libraries"
+    / "robots"
     / "unitree-go2-stock-12dof"
     / "1.0.0"
     / "assets"
