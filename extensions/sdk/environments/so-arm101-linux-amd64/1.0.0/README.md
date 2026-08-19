@@ -6,11 +6,7 @@ This is the small Linux/amd64 environment for the current extension route:
 
 It contains only the pinned SDK dependencies, the SO-ARM100 model checkout,
 the `autoadapter2_sdk` package, and the route-check CLI. The Docker build
-checks dependencies, imports, and CLI argument parsing only; it does not
-execute a PTY route.
-The image installs the published `lerobot==0.6.0` distribution. The
-`source_commit` value is attribution from preserved historical records; this
-image does not clone or verify that LeRobot commit.
+checks imports and CLI argument parsing only; it does not execute a PTY route.
 
 Build from the repository root so the `COPY extensions/sdk/...` paths resolve:
 

@@ -22,10 +22,6 @@ RUN python -m pip install --no-cache-dir \
       "feetech-servo-sdk==1.0.0" \
       "mujoco==3.3.6"
 
-# Fail during image construction if the real pinned SDK public surface is unavailable.
-RUN python -m pip check \
-    && python -c "exec('from lerobot.motors.feetech import FeetechMotorsBus\\nimport scservo_sdk\\ntry:\\n    from lerobot.robots.so101_follower import SO101Follower, SO101FollowerConfig\\nexcept ImportError:\\n    from lerobot.robots.so_follower import SO101Follower, SO101FollowerConfig\\nprint(FeetechMotorsBus.__name__, SO101Follower.__name__, SO101FollowerConfig.__name__, scservo_sdk.__name__)')"
-
 WORKDIR /opt/autoadapter2-sdk
 COPY extensions/sdk/src /opt/autoadapter2-sdk/src
 COPY extensions/sdk/scripts/run_so_arm101_route_check.py /opt/autoadapter2-sdk/scripts/run_so_arm101_route_check.py

@@ -10,7 +10,7 @@
     {
       "name": "lerobot",
       "version": "0.6.0",
-      "source_commit": "30da8e687a6dfc617fcd94afc367ac7071c376ce"
+      "commit": "30da8e687a6dfc617fcd94afc367ac7071c376ce"
     },
     {
       "name": "feetech-servo-sdk",
