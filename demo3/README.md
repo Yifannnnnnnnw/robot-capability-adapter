@@ -28,6 +28,11 @@ not import or copy runtime code from Demo2 or `general_demo`.
 - STUDY, generation, and Repair use bounded multi-turn tool conversations. The
   model can inspect staged public files, run public-only MuJoCo probes, revise
   its driver, and react to audit/import/smoke diagnostics before submission.
+- Before each tool-model request, the deterministic Agent Context Manager keeps
+  the initial public task, one current complete driver snapshot, and at most
+  three recent interaction groups. Superseded driver source and probe scripts
+  become tool/revision/character-count/status metadata; full canonical history
+  is not rewritten by a summarization model.
 - Generation starts from an interface-only stub mechanically derived from the
   sealed capability design. It contains exact `(self, request)` signatures and
   `NotImplementedError` placeholders, but no controller or task dispatch.
@@ -65,6 +70,7 @@ set -a
 source .env
 set +a
 export AUTOADAPTER_MODEL_MAX_TOKENS=32768
+export AUTOADAPTER_MODEL_HISTORY_CHARS=80000
 export PYTHONPATH=demo3/src
 export MUJOCO_GL=cgl
 pyenv exec python -m autoadapter2 full --run-id <run-id>

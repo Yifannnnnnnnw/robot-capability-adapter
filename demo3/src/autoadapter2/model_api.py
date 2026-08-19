@@ -12,6 +12,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from .agent_context import AgentContextManager
 from .react import ToolCall, ToolTurn
 
 
@@ -60,6 +61,7 @@ class ModelConfig:
     timeout_s: float = 300.0
     max_tokens: int = 16000
     tool_history_mode: str = "native"
+    history_char_budget: int = 80000
 
     @classmethod
     def from_env(cls) -> ModelConfig:
@@ -98,6 +100,18 @@ class ModelConfig:
                 "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE must be native or "
                 "text-observation"
             )
+        try:
+            history_char_budget = int(
+                environment.get("AUTOADAPTER_MODEL_HISTORY_CHARS", "80000")
+            )
+        except ValueError as exc:
+            raise ModelInvocationError(
+                "AUTOADAPTER_MODEL_HISTORY_CHARS must be an integer"
+            ) from exc
+        if not 8192 <= history_char_budget <= 500000:
+            raise ModelInvocationError(
+                "AUTOADAPTER_MODEL_HISTORY_CHARS must be between 8192 and 500000"
+            )
         hostname = (urllib.parse.urlparse(required["base_url"]).hostname or "").lower()
         provider = environment.get("AUTOADAPTER_MODEL_VENDOR", "").strip()
         if not provider:
@@ -118,6 +132,7 @@ class ModelConfig:
             thinking=thinking,
             max_tokens=max_tokens,
             tool_history_mode=tool_history_mode,
+            history_char_budget=history_char_budget,
         )
 
     @property
@@ -134,98 +149,19 @@ class JsonModelClient:
     def __init__(self, config: ModelConfig) -> None:
         self.config = config
         self.calls: list[dict[str, Any]] = []
+        self._context_manager = AgentContextManager(
+            history_char_budget=config.history_char_budget,
+            recent_groups=3,
+        )
 
-    @staticmethod
-    def _text_history_arguments(tool: Any, arguments: Any) -> Any:
-        if tool != "write_driver" or not isinstance(arguments, str):
-            return arguments
-        try:
-            decoded = json.loads(arguments)
-        except json.JSONDecodeError:
-            return arguments
-        if not isinstance(decoded, Mapping):
-            return arguments
-        source = decoded.get("source")
-        if not isinstance(source, str):
-            return arguments
-        return {
-            "source_chars": len(source),
-            "source_history": (
-                "omitted after tool execution; call read_driver for current source"
-            ),
-        }
-
-    def _tool_history_messages(
+    def _project_tool_history(
         self, messages: Sequence[Mapping[str, Any]]
-    ) -> list[dict[str, Any]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         if self.config.tool_history_mode == "native":
-            return [dict(message) for message in messages]
-
-        translated: list[dict[str, Any]] = []
-        for message in messages:
-            role = message.get("role")
-            raw_content = message.get("content")
-            content = raw_content if isinstance(raw_content, str) else ""
-            raw_calls = message.get("tool_calls")
-            if role == "assistant" and isinstance(raw_calls, list) and raw_calls:
-                requests = []
-                for raw_call in raw_calls:
-                    if not isinstance(raw_call, Mapping):
-                        continue
-                    function = raw_call.get("function")
-                    tool = (
-                        function.get("name")
-                        if isinstance(function, Mapping)
-                        else None
-                    )
-                    arguments = (
-                        function.get("arguments")
-                        if isinstance(function, Mapping)
-                        else None
-                    )
-                    requests.append(
-                        {
-                            "tool_call_id": raw_call.get("id"),
-                            "tool": tool,
-                            "arguments": self._text_history_arguments(
-                                tool, arguments
-                            ),
-                        }
-                    )
-                parts = [content] if content.strip() else []
-                parts.append(
-                    "TOOL_REQUESTS_JSON:\n"
-                    + json.dumps(requests, ensure_ascii=True, sort_keys=True)
-                )
-                translated.append(
-                    {"role": "assistant", "content": "\n\n".join(parts)}
-                )
-                continue
-            if role == "tool":
-                observation = "TOOL_OBSERVATION_JSON:\n" + json.dumps(
-                    {
-                        "tool_call_id": message.get("tool_call_id"),
-                        "content": content,
-                    },
-                    ensure_ascii=True,
-                    sort_keys=True,
-                )
-                if translated and translated[-1].get("role") == "user":
-                    translated[-1]["content"] += "\n\n" + observation
-                else:
-                    translated.append({"role": "user", "content": observation})
-                continue
-
-            if role not in {"assistant", "user"}:
-                translated.append(dict(message))
-                continue
-            if role == "assistant" and not content.strip():
-                content = "No tool call or terminal submission was produced."
-            if role == "user" and translated and translated[-1].get("role") == "user":
-                translated[-1]["content"] += "\n\n" + content
-            else:
-                translated.append({"role": role, "content": content})
-        return translated
+            projection = self._context_manager.project_native(messages)
+        else:
+            projection = self._context_manager.project_text_observation(messages)
+        return [dict(message) for message in projection.messages], dict(projection.stats)
 
     def _post(self, *, stage: str, body: Mapping[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(
@@ -271,6 +207,7 @@ class JsonModelClient:
         mode: str,
         finish_reason: Any = None,
         tool_names: Sequence[str] = (),
+        context_projection: Mapping[str, Any] | None = None,
     ) -> None:
         self.calls.append(
             {
@@ -283,6 +220,7 @@ class JsonModelClient:
                 "finish_reason": finish_reason,
                 "tool_names": list(tool_names),
                 "tool_history_mode": self.config.tool_history_mode,
+                "context_projection": dict(context_projection or {}),
                 "usage": payload.get("usage", {}),
             }
         )
@@ -345,11 +283,12 @@ class JsonModelClient:
     ) -> ToolTurn:
         """Return one assistant turn while preserving tool-call conversation state."""
 
+        history_messages, context_projection = self._project_tool_history(messages)
         body: dict[str, Any] = {
             "model": self.config.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                *self._tool_history_messages(messages),
+                *history_messages,
             ],
             "max_tokens": self.config.max_tokens,
             "temperature": 0.0,
@@ -420,6 +359,7 @@ class JsonModelClient:
             mode="react",
             finish_reason=finish_reason,
             tool_names=[call.name for call in parsed_calls],
+            context_projection=context_projection,
         )
         return ToolTurn(
             content=content,

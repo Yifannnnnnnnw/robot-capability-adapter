@@ -11,6 +11,8 @@ The implementation includes:
 
 - real-model TGCD over the complete public Task Library;
 - AutoAdapter 1.0-style multi-turn STUDY, GENERATE/GEN_ALGO, and Repair;
+- deterministic tool-event context projection retaining the initial task, one
+  current driver snapshot, and at most three recent interaction groups;
 - interface-only stubs generated from sealed capability names and exact
   `(self, request)` signatures;
 - bounded public Python/MuJoCo development probes;

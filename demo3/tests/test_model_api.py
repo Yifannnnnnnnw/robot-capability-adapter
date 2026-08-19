@@ -5,6 +5,7 @@ import os
 import unittest
 from unittest import mock
 
+from autoadapter2.agent_context import AgentContextManager
 from autoadapter2.model_api import (
     JsonModelClient,
     ModelConfig,
@@ -73,6 +74,21 @@ class ModelApiTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 ModelInvocationError, "TOOL_HISTORY_MODE"
             ):
+                ModelConfig.from_env()
+
+    def test_history_character_budget_is_configurable_and_bounded(self) -> None:
+        environment = {
+            "AUTOADAPTER_MODEL_PROVIDER": "openai-compatible",
+            "AUTOADAPTER_MODEL_ID": "model",
+            "AUTOADAPTER_MODEL_API_BASE_URL": "https://model.example/v1",
+            "AUTOADAPTER_MODEL_API_KEY": "secret-value",
+            "AUTOADAPTER_MODEL_HISTORY_CHARS": "64000",
+        }
+        with mock.patch.dict(os.environ, environment, clear=True):
+            self.assertEqual(ModelConfig.from_env().history_char_budget, 64000)
+        environment["AUTOADAPTER_MODEL_HISTORY_CHARS"] = "4096"
+        with mock.patch.dict(os.environ, environment, clear=True):
+            with self.assertRaisesRegex(ModelInvocationError, "HISTORY_CHARS"):
                 ModelConfig.from_env()
 
     def test_tool_turn_preserves_calls_and_reasoning_for_the_next_turn(self) -> None:
@@ -195,8 +211,11 @@ class ModelApiTests(unittest.TestCase):
         self.assertIn("TOOL_REQUESTS_JSON", request_messages[2]["content"])
         self.assertIn("TOOL_OBSERVATION_JSON", request_messages[3]["content"])
         self.assertEqual(client.calls[0]["tool_history_mode"], "text-observation")
+        self.assertEqual(
+            client.calls[0]["context_projection"]["mode"], "text-observation"
+        )
 
-    def test_text_observation_mode_does_not_repeat_written_driver_source(self) -> None:
+    def test_text_observation_mode_retains_current_driver_source_exactly_once(self) -> None:
         config = ModelConfig(
             provider="company",
             model="deepseek.v3.2",
@@ -248,10 +267,282 @@ class ModelApiTests(unittest.TestCase):
                 tools=[],
             )
 
-        request_text = urlopen.call_args.args[0].data.decode()
-        self.assertNotIn(source, request_text)
-        self.assertIn(f'\\"source_chars\\": {len(source)}', request_text)
-        self.assertIn("call read_driver for current source", request_text)
+        request_body = json.loads(urlopen.call_args.args[0].data)
+        history_text = "\n".join(
+            str(message.get("content", "")) for message in request_body["messages"]
+        )
+        self.assertEqual(history_text.count(source), 1)
+        self.assertIn("CURRENT_DRIVER_SNAPSHOT_JSON", history_text)
+        self.assertIn(f'"source_chars": {len(source)}', history_text)
+        self.assertIn("current source is retained separately", history_text)
+        context = client.calls[0]["context_projection"]
+        self.assertEqual(context["current_driver_revision"], 1)
+        self.assertEqual(context["current_driver_source_chars"], len(source))
+
+    def test_context_manager_summarizes_old_tool_groups_and_keeps_latest_driver(self) -> None:
+        messages: list[dict[str, object]] = [
+            {"role": "user", "content": "INITIAL_PUBLIC_TASK"}
+        ]
+        sources = []
+        for revision in range(1, 6):
+            source = f"DRIVER_REVISION_{revision}_" * 200
+            sources.append(source)
+            call_id = f"write-{revision}"
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": call_id,
+                                "type": "function",
+                                "function": {
+                                    "name": "write_driver",
+                                    "arguments": json.dumps({"source": source}),
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": call_id,
+                        "content": json.dumps(
+                            {"ok": True, "result": {"revision": revision}}
+                        ),
+                    },
+                ]
+            )
+
+        projection = AgentContextManager().project_text_observation(messages)
+        projected_text = "\n".join(
+            str(message.get("content", "")) for message in projection.messages
+        )
+
+        self.assertTrue(projected_text.startswith("INITIAL_PUBLIC_TASK"))
+        self.assertIn("AGENT_CONTEXT_SUMMARY_JSON", projected_text)
+        self.assertIn('"tool": "write_driver"', projected_text)
+        self.assertIn('"result_status": "ok"', projected_text)
+        self.assertNotIn(sources[0], projected_text)
+        self.assertNotIn(sources[3], projected_text)
+        self.assertEqual(projected_text.count(sources[-1]), 1)
+        self.assertEqual(projection.stats["summarized_group_count"], 2)
+        self.assertEqual(projection.stats["retained_group_count"], 3)
+        self.assertEqual(projection.stats["current_driver_revision"], 5)
+
+    def test_context_manager_removes_superseded_read_and_write_source_payloads(self) -> None:
+        old_source = "OLD_DRIVER_SOURCE" * 500
+        current_source = "CURRENT_DRIVER_SOURCE" * 500
+        messages = [{"role": "user", "content": "INITIAL_PUBLIC_TASK"}]
+        for revision, source in ((1, old_source), (2, current_source)):
+            write_id = f"write-{revision}"
+            read_id = f"read-{revision}"
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": write_id,
+                                "type": "function",
+                                "function": {
+                                    "name": "write_driver",
+                                    "arguments": json.dumps({"source": source}),
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": write_id,
+                        "content": json.dumps(
+                            {"ok": True, "result": {"revision": revision}}
+                        ),
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": read_id,
+                                "type": "function",
+                                "function": {
+                                    "name": "read_driver",
+                                    "arguments": "{}",
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": read_id,
+                        "content": json.dumps(
+                            {
+                                "ok": True,
+                                "result": {
+                                    "revision": revision,
+                                    "source": source,
+                                },
+                            }
+                        ),
+                    },
+                ]
+            )
+
+        projection = AgentContextManager().project_text_observation(messages)
+        projected_text = "\n".join(
+            str(message.get("content", "")) for message in projection.messages
+        )
+
+        self.assertNotIn(old_source, projected_text)
+        self.assertEqual(projected_text.count(current_source), 1)
+        self.assertIn('"tool": "read_driver"', projected_text)
+        self.assertEqual(projection.stats["current_driver_revision"], 2)
+
+    def test_native_context_projection_preserves_tool_protocol_with_one_snapshot(self) -> None:
+        source = "NATIVE_CURRENT_DRIVER" * 400
+        messages = [
+            {"role": "user", "content": "INITIAL_PUBLIC_TASK"},
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "native-write",
+                        "type": "function",
+                        "function": {
+                            "name": "write_driver",
+                            "arguments": json.dumps({"source": source}),
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "native-write",
+                "content": json.dumps(
+                    {"ok": True, "result": {"revision": 1}}
+                ),
+            },
+        ]
+
+        projection = AgentContextManager().project_native(messages)
+        projected_text = json.dumps(projection.messages, ensure_ascii=True)
+
+        self.assertEqual(
+            [message["role"] for message in projection.messages],
+            ["user", "assistant", "tool"],
+        )
+        self.assertEqual(projected_text.count(source), 1)
+        projected_arguments = json.loads(
+            projection.messages[1]["tool_calls"][0]["function"]["arguments"]
+        )
+        self.assertNotIn("source", projected_arguments)
+        self.assertEqual(projected_arguments["source_chars"], len(source))
+        self.assertEqual(projection.stats["mode"], "native")
+
+    def test_failed_write_does_not_replace_last_successful_driver_snapshot(self) -> None:
+        accepted_source = "ACCEPTED_DRIVER_SOURCE" * 200
+        rejected_source = "REJECTED_DRIVER_SOURCE" * 200
+        messages = [{"role": "user", "content": "INITIAL_PUBLIC_TASK"}]
+        for call_id, source, ok, result in (
+            ("accepted", accepted_source, True, {"revision": 1}),
+            ("rejected", rejected_source, False, None),
+        ):
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": call_id,
+                                "type": "function",
+                                "function": {
+                                    "name": "write_driver",
+                                    "arguments": json.dumps({"source": source}),
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": call_id,
+                        "content": json.dumps(
+                            {
+                                "ok": ok,
+                                "result": result,
+                                "error": None if ok else "write rejected",
+                            }
+                        ),
+                    },
+                ]
+            )
+
+        projection = AgentContextManager().project_text_observation(messages)
+        projected_text = json.dumps(projection.messages, ensure_ascii=True)
+
+        self.assertEqual(projected_text.count(accepted_source), 1)
+        self.assertNotIn(rejected_source, projected_text)
+        self.assertEqual(projection.stats["current_driver_revision"], 1)
+        self.assertIn("write rejected", projected_text)
+
+    def test_context_budget_evicts_old_completed_groups_before_latest_group(self) -> None:
+        messages: list[dict[str, object]] = [
+            {"role": "user", "content": "INITIAL_PUBLIC_TASK"}
+        ]
+        for index in range(5):
+            call_id = f"probe-{index}"
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": call_id,
+                                "type": "function",
+                                "function": {
+                                    "name": "run_mujoco_probe",
+                                    "arguments": json.dumps(
+                                        {
+                                            "probe_id": call_id,
+                                            "script": "SCRIPT_BODY" * 1000,
+                                        }
+                                    ),
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": call_id,
+                        "content": json.dumps(
+                            {
+                                "ok": True,
+                                "result": {
+                                    "exit_code": 0,
+                                    "stdout": "x" * 5000,
+                                },
+                            }
+                        ),
+                    },
+                ]
+            )
+
+        projection = AgentContextManager(
+            history_char_budget=12000
+        ).project_text_observation(messages)
+        projected_text = "\n".join(
+            str(message.get("content", "")) for message in projection.messages
+        )
+
+        self.assertNotIn("SCRIPT_BODY" * 1000, projected_text)
+        self.assertIn('"script_chars": 11000', projected_text)
+        self.assertGreaterEqual(projection.stats["summarized_group_count"], 3)
+        self.assertLessEqual(projection.stats["projected_history_chars"], 12000)
+        self.assertFalse(projection.stats["budget_exceeded"])
 
 if __name__ == "__main__":
     unittest.main()
