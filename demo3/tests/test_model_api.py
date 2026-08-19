@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import signal
+import time
 import unittest
 from unittest import mock
 
@@ -61,6 +63,40 @@ class ModelApiTests(unittest.TestCase):
         with mock.patch.dict(os.environ, environment, clear=True):
             with self.assertRaises(ModelInvocationError):
                 ModelConfig.from_env()
+
+    def test_model_wall_deadline_is_configurable_and_bounded(self) -> None:
+        environment = {
+            "AUTOADAPTER_MODEL_PROVIDER": "openai-compatible",
+            "AUTOADAPTER_MODEL_ID": "model",
+            "AUTOADAPTER_MODEL_API_BASE_URL": "https://model.example/v1",
+            "AUTOADAPTER_MODEL_API_KEY": "secret-value",
+            "AUTOADAPTER_MODEL_TIMEOUT_S": "150",
+        }
+        with mock.patch.dict(os.environ, environment, clear=True):
+            self.assertEqual(ModelConfig.from_env().timeout_s, 150.0)
+        environment["AUTOADAPTER_MODEL_TIMEOUT_S"] = "10"
+        with mock.patch.dict(os.environ, environment, clear=True):
+            with self.assertRaisesRegex(ModelInvocationError, "TIMEOUT_S"):
+                ModelConfig.from_env()
+
+    @unittest.skipUnless(hasattr(signal, "setitimer"), "requires POSIX wall timer")
+    def test_post_enforces_total_wall_deadline(self) -> None:
+        client = JsonModelClient(
+            ModelConfig(
+                provider="company",
+                model="deepseek.v3.2",
+                base_url="https://model.example/v1",
+                api_key="secret-value",
+                timeout_s=0.05,
+            )
+        )
+
+        def stalled_response(*_args: object, **_kwargs: object) -> None:
+            time.sleep(1.0)
+
+        with mock.patch("urllib.request.urlopen", side_effect=stalled_response):
+            with self.assertRaisesRegex(ModelInvocationError, "total wall deadline"):
+                client._post(stage="repair", body={})
 
     def test_invalid_tool_history_mode_is_rejected(self) -> None:
         environment = {

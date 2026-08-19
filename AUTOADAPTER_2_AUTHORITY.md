@@ -4,9 +4,21 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.9`<br>
+> **Document revision / 文档版本：** `0.19.10`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.10` gives each remote model request a strict total wall-clock deadline rather than
+relying only on a socket-inactivity timeout. The default is 180 seconds, with an explicit bounded
+environment override from 30 through 600 seconds. Expiry fails that model-authored stage without an
+automatic retry. This restores the bounded-call intent of AutoAdapter 1.0 while allowing for
+Demo3's larger public context and driver output; it does not convert transport failure into a
+candidate or Harness verdict.
+
+**中文辅助说明。** `0.19.10` 为每个远程模型请求增加严格的整次 wall-clock deadline，而不是
+只依赖 socket inactivity timeout。默认 180 秒，可通过环境变量在 30 至 600 秒内显式调整；到期后
+该模型创作阶段失败且不自动重试。它恢复 AutoAdapter 1.0 的有界调用意图，同时为 Demo3 更大的公开
+上下文与 driver 输出留出时间；transport failure 不会被转换成 candidate 或 Harness verdict。
 
 Revision `0.19.9` restores one bounded AutoAdapter 1.0-style STUDY recovery opportunity after the
 dynamic run showed that a hard two-turn limit converts an ordinary failed probe or rejected submit

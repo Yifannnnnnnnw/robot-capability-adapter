@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import signal
 import ssl
+import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -18,6 +22,42 @@ from .react import ToolCall, ToolTurn
 
 class ModelInvocationError(RuntimeError):
     """Raised when the configured model service cannot return one JSON object."""
+
+
+class _ModelCallDeadline(TimeoutError):
+    pass
+
+
+@contextlib.contextmanager
+def _model_call_deadline(seconds: float):
+    """Enforce total request wall time, not only per-socket inactivity."""
+
+    if (
+        seconds <= 0
+        or not hasattr(signal, "setitimer")
+        or threading.current_thread() is not threading.main_thread()
+    ):
+        yield
+        return
+    previous_handler = signal.getsignal(signal.SIGALRM)
+
+    def handle_timeout(_signum: int, _frame: object) -> None:
+        raise _ModelCallDeadline(f"model call exceeded {seconds:g} wall seconds")
+
+    signal.signal(signal.SIGALRM, handle_timeout)
+    previous_timer = signal.setitimer(signal.ITIMER_REAL, seconds)
+    started = time.monotonic()
+    try:
+        yield
+    finally:
+        elapsed = time.monotonic() - started
+        restored_delay = (
+            max(1e-9, previous_timer[0] - elapsed)
+            if previous_timer[0] > 0
+            else 0.0
+        )
+        signal.setitimer(signal.ITIMER_REAL, restored_delay, previous_timer[1])
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 def parse_json_object(text: str) -> dict[str, Any]:
@@ -58,7 +98,7 @@ class ModelConfig:
     auth_header: str = "Authorization"
     auth_prefix: str = "Bearer "
     thinking: str | None = None
-    timeout_s: float = 300.0
+    timeout_s: float = 180.0
     max_tokens: int = 16000
     tool_history_mode: str = "native"
     history_char_budget: int = 80000
@@ -91,6 +131,18 @@ class ModelConfig:
         if not 1024 <= max_tokens <= 65536:
             raise ModelInvocationError(
                 "AUTOADAPTER_MODEL_MAX_TOKENS must be between 1024 and 65536"
+            )
+        try:
+            timeout_s = float(
+                environment.get("AUTOADAPTER_MODEL_TIMEOUT_S", "180")
+            )
+        except ValueError as exc:
+            raise ModelInvocationError(
+                "AUTOADAPTER_MODEL_TIMEOUT_S must be numeric"
+            ) from exc
+        if not 30 <= timeout_s <= 600:
+            raise ModelInvocationError(
+                "AUTOADAPTER_MODEL_TIMEOUT_S must be between 30 and 600"
             )
         tool_history_mode = environment.get(
             "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE", "native"
@@ -130,6 +182,7 @@ class ModelConfig:
                 "AUTOADAPTER_MODEL_API_AUTH_PREFIX", "Bearer "
             ),
             thinking=thinking,
+            timeout_s=timeout_s,
             max_tokens=max_tokens,
             tool_history_mode=tool_history_mode,
             history_char_budget=history_char_budget,
@@ -174,12 +227,18 @@ class JsonModelClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(
-                request,
-                timeout=self.config.timeout_s,
-                context=ssl.create_default_context(),
-            ) as response:
-                payload = json.loads(response.read().decode("utf-8"))
+            with _model_call_deadline(self.config.timeout_s):
+                with urllib.request.urlopen(
+                    request,
+                    timeout=self.config.timeout_s,
+                    context=ssl.create_default_context(),
+                ) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+        except _ModelCallDeadline as exc:
+            raise ModelInvocationError(
+                f"{stage} model call exceeded {self.config.timeout_s:g}s total wall "
+                f"deadline for {self.config.model}"
+            ) from exc
         except urllib.error.HTTPError as exc:
             raise ModelInvocationError(
                 f"{stage} model call returned HTTP {exc.code} for {self.config.model}"
