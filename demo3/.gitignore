@@ -1,6 +1,0 @@
-__pycache__/
-*.py[cod]
-.pytest_cache/
-runs/
-# Local pre-admission package drafts; runnable packages live under libraries/robots/.
-research_candidates/

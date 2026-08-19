@@ -1,7 +1,8 @@
-# AutoAdapter 2.0 Demo3
+# AutoAdapter 2.0
 
-Demo3 is the self-contained, experiment-grade Direct-MuJoCo mainline. It does
-not import or copy runtime code from Demo2 or `general_demo`.
+`autoadapter/` is the self-contained, experiment-grade Direct-MuJoCo mainline.
+It does not import or copy runtime code from `demo2/`, `demo3/`,
+`general_demo/`, or `extensions/`.
 
 ## Experiment
 
@@ -19,8 +20,8 @@ not import or copy runtime code from Demo2 or `general_demo`.
 - Both package-local references must pass the complete capability validation
   suites before dynamic
   Driver Synthesis starts.
-- The four dynamic cells are the two robots crossed with the preserved
-  `skeleton-assisted` and `from-scratch` conditions.
+- The default mainline's four dynamic cells are the two robots crossed with
+  the preserved `skeleton-assisted` and `from-scratch` conditions.
 - Each cell runs interactive AutoAdapter 1.0-style STUDY and GENERATE/GEN_ALGO,
   complete canonical capability validation, up to two report-driven Repair
   attempts, a five-task Task Demo only after admission, and Evolution. Task Demo
@@ -72,21 +73,25 @@ the three Harness attempts.
 
 ## Environment
 
-Demo3 pins Python 3.11.9 through `.python-version`, and MuJoCo 3.3.6, NumPy
+The mainline pins Python 3.11.9 through `.python-version`, and MuJoCo 3.3.6, NumPy
 2.4.6, and pytest 9.1.1 in `pyproject.toml`. `pyenv`, `ffmpeg`, and `ffprobe`
 are the required system tools. Using `pyenv exec` makes the selected Python
 independent of shell shim initialization.
 
 ```bash
-cd demo3
+cd autoadapter
 pyenv exec python -m pip install -e '.[test]'
 pyenv exec python -m autoadapter2 check-only
 pyenv exec python -m pytest -q
 ```
 
+The default command reads `configs/experiments/mainline.json`. The focused
+single-cell package checks use `so101-canary.json` or `go2-canary.json` through
+`--config configs/experiments/<name>.json`.
+
 The real-model command reads credentials only from environment variables. From
 the repository root, the current DeepSeek configuration can be loaded without
-putting a secret inside Demo3:
+putting a secret inside the mainline:
 
 ```bash
 set -a
@@ -95,7 +100,7 @@ set +a
 export AUTOADAPTER_MODEL_MAX_TOKENS=16384
 export AUTOADAPTER_MODEL_TIMEOUT_S=180
 export AUTOADAPTER_MODEL_HISTORY_CHARS=80000
-export PYTHONPATH=demo3/src
+export PYTHONPATH=autoadapter/src
 export MUJOCO_GL=cgl
 pyenv exec python -m autoadapter2 full --run-id <run-id>
 ```
@@ -104,10 +109,11 @@ To exercise only the newly generated four-cell path without rerunning reference
 calibration, add `--skip-reference-calibration`. This is explicitly diagnostic:
 the report records the skip and can never claim formal mainline success.
 
-After an API interruption, `--reuse-sealed-inputs-from runs/<prior-run>` reuses
-that run's audited capability designs, complete capability validation suites,
-and exact sealed five-task Task Demo suites. The new report records the source run and still keeps all
-private suite files outside candidate workspaces.
+After an API interruption,
+`--reuse-sealed-inputs-from autoadapter/runs/<prior-run>` reuses that run's
+audited capability designs, complete capability validation suites, and exact
+sealed five-task Task Demo suites. The new report records the source run and
+still keeps all private suite files outside candidate workspaces.
 
 ## Evidence
 
@@ -124,5 +130,5 @@ Demo reports, per-case videos, cell reports, and the final paired
 `experiment_report.json`. These fields keep pipeline completion, capability
 admission, Task Demo, physical execution, and both video outcomes separate.
 
-See `EVIDENCE.md` for the historical complete run, current local verification,
-and the latest real-model launch result.
+See `evidence/README.md` for the historical complete run, current local
+verification, and the latest real-model launch result.

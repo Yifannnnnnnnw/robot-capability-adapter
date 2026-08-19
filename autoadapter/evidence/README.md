@@ -1,11 +1,11 @@
-# Demo3 Evidence Status
+# AutoAdapter 2.0 Mainline Evidence Status
 
 ## Current Qualification
 
-Demo3's real-model, Direct-MuJoCo orchestration is operational, but the current
-robot Task Libraries and private scenes have not passed the Authority's required
-human source-and-applicability review. The latest run is therefore retained as a
-diagnostic engineering baseline, not as formal benchmark evidence.
+The real-model, Direct-MuJoCo mainline orchestration is operational, but the
+current robot Task Libraries and private scenes have not passed the Authority's
+required human source-and-applicability review. The latest run is therefore
+retained as a diagnostic engineering baseline, not as formal benchmark evidence.
 
 The implementation includes:
 
@@ -44,8 +44,8 @@ Capability Validation -> Task Demo flow has executed.
 - Pipeline completed: yes
 - Overall strict verdict: fail, because one of four cells did not pass its final
   five-case suite
-- Primary report:
-  [experiment_report.json](runs/deepseek-full-convergence-20260818T144502Z/experiment_report.json)
+- Primary report retained locally at
+  `demo3/runs/deepseek-full-convergence-20260818T144502Z/experiment_report.json`
 
 | Cell | Attempt trajectory | Final physical verdict |
 |---|---|---|
@@ -68,7 +68,7 @@ regression checks. A trusted replay of the frozen SO-101 skeleton final driver
 produced five complete `640x480` videos without changing its `3/5` physical
 result:
 
-`runs/deepseek-full-convergence-20260818T144502Z/cells/robotstudio_so101/skeleton-assisted/high-resolution-replay/`
+`demo3/runs/deepseek-full-convergence-20260818T144502Z/cells/robotstudio_so101/skeleton-assisted/high-resolution-replay/`
 
 SO-101 from-scratch attempt 2 and both later Go2 cells were recorded directly at
 `640x480`. Visual inspection also found that the SO-101 default camera is too
@@ -123,10 +123,10 @@ AutoAdapter 2.0 benchmark success.
 
 ## Local Verification
 
-- Full suite after the orchestration fixes: `129 passed, 32 subtests passed`.
+- Full suite after canonical migration: `198 passed, 32 subtests passed`.
 - Video-resolution focused checks: `3 passed`.
 - Current video-resolution commit: `880faac`.
-- The unrelated dirty Demo2 worktree was not staged or modified by these Demo3
+- The unrelated dirty Demo2 worktree was not staged or modified by these mainline
   changes.
 
 ## Historical Runs

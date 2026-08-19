@@ -43,6 +43,8 @@ dist/
 # content hashes; large traces/videos and private run snapshots are not Git data.
 **/runs/*
 !**/runs/.gitkeep
+# Preserve local pre-migration drafts while the tracked mainline moves out of demo3/.
+demo3/research_candidates/
 general_demo/run_artifacts/
 *.mp4
 *.mov
