@@ -17,10 +17,10 @@ bimanual, and legged-arm candidates follow in later waves.
 
 The inspected legacy future-robot catalogs contain five task records per
 candidate. The canonical Franka package now also has a public 20-task
-Meta-World snapshot; its index observed_task_count remains 5 because that field
-describes the inspected legacy catalogs. Franka is still non-runtime until its
-remaining task-specific MuJoCo scenes, private package, and evidence work are
-complete.
+Meta-World snapshot and all 17 local task-specific MuJoCo scenes are tested for
+closure, loading, and physics liveness; its index observed_task_count remains 5
+because that field describes the inspected legacy catalogs. Franka is still
+non-runtime until its private package and evidence work are complete.
 The General Demo Franka, KUKA, Piper, and UR5e closure records explicitly mark
 UPSTREAM_CACHE_REQUIRED; their upstream mesh materialization is incomplete.
 Demo2 contributes additional legacy assets and historical strict summaries and

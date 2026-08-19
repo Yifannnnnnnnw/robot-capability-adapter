@@ -56,6 +56,11 @@
           "observation": "The canonical Franka public snapshot contains 20 distinct Meta-World task records; observed_task_count remains 5 for the inspected legacy catalogs above."
         },
         {
+          "path": "autoadapter/libraries/robots/franka_panda/1.0.0/assets/reach_scene.xml",
+          "kind": "canonical_task_scene_set",
+          "observation": "All 17 canonical task scenes are local under the Franka package and are tested for MJCF closure, MuJoCo loading, and physics liveness."
+        },
+        {
           "path": "demo2/legacy_assets/franka_panda/panda.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "Demo2 contains additional historical Panda XML and mesh material for migration inspection only."
@@ -77,7 +82,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create and verify complete local task-specific MuJoCo scenes for all 20 canonical public task contracts.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",

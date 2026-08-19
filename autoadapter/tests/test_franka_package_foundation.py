@@ -350,13 +350,24 @@ class FrankaPackageFoundationTests(unittest.TestCase):
             "autoadapter/libraries/robots/franka_panda/1.0.0/tasks/catalog.json",
             observed_paths,
         )
+        scene_observation = next(
+            item
+            for item in candidate["locally_observed_source_material"]
+            if item["kind"] == "canonical_task_scene_set"
+        )
+        self.assertEqual(
+            scene_observation["path"],
+            "autoadapter/libraries/robots/franka_panda/1.0.0/assets/reach_scene.xml",
+        )
+        self.assertIn("17", scene_observation["observation"])
+        self.assertIn("local", scene_observation["observation"].lower())
+        self.assertIn("tested", scene_observation["observation"].lower())
         missing = candidate["missing_for_runnable_package"]
         self.assertFalse(any("local MuJoCo asset closure" in item for item in missing))
         self.assertFalse(any("current mainline morphology.json" in item for item in missing))
         self.assertFalse(any("20 distinct applicable source-backed tasks" in item for item in missing))
         self.assertFalse(any("tasks/sources.json" in item for item in missing))
         for phrase in (
-            "task-specific MuJoCo scenes",
             "Framework-private tasks/private",
             "arm_serial_dls skeleton",
             "package check",
