@@ -159,11 +159,14 @@ reference driver, repository path, network, or other condition artifact. In ever
 only canonical scene with ``import os, mujoco`` and
 ``mujoco.MjModel.from_xml_path(os.environ["AUTOADAPTER_PROBE_SCENE"])``. Probe-only ``os.environ``
 access is allowed. Never guess a relative scene path, search with ``sys``/filesystem introspection,
-or construct a fallback scene. If that first probe fails,
+construct a fallback scene, or import the trusted skeleton inside this liveness probe; its source is
+already inline for STUDY. Keep the probe to canonical load, ``MjData``, public-name inspection when
+useful, and one or more ``mujoco.mj_step`` calls. If that first probe fails,
 use exactly one recovery turn to correct and rerun it; otherwise do not probe again. As soon as a
 probe succeeds, call submit_study with non-empty findings and a non-empty capability-by-capability
 implementation_plan. The third turn is reserved only for submission or correction of a rejected
-submission. Do not write the final driver in STUDY."""
+submission. In skeleton-assisted mode, submit a non-empty ``skeleton_inspection`` object as well.
+Do not write the final driver in STUDY."""
 
 
 GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
@@ -717,14 +720,31 @@ def study(
                 },
                 "skeleton_inspection": {"type": "object"},
             },
-            "required": ["findings", "implementation_plan"],
+            "required": [
+                "findings",
+                "implementation_plan",
+                *(
+                    ["skeleton_inspection"]
+                    if selected_condition == "skeleton-assisted"
+                    else []
+                ),
+            ],
             "additionalProperties": False,
         }
         probe_tool = next(
             tool for tool in session.public_tools() if tool.name == "run_mujoco_probe"
         )
         tools = (
-            replace(probe_tool, handler=run_study_probe),
+            replace(
+                probe_tool,
+                description=(
+                    "Run a minimal STUDY liveness probe. Use only import os, mujoco; load "
+                    "os.environ['AUTOADAPTER_PROBE_SCENE']; construct MjData; call "
+                    "mujoco.mj_step at least once. Do not import the skeleton, sys, "
+                    "importlib, or construct/search for another scene."
+                ),
+                handler=run_study_probe,
+            ),
             ToolSpec(
                 "submit_study",
                 "Submit the condition-specific findings after at least one successful real-physics public probe.",

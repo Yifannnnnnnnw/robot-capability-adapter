@@ -4,9 +4,22 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.14`<br>
+> **Document revision / 文档版本：** `0.19.15`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.15` aligns the STUDY submission schema with its condition-specific handler after a
+real skeleton-assisted run completed a successful recovery probe but omitted `skeleton_inspection`.
+That field is now schema-required only for skeleton-assisted STUDY. The STUDY probe contract is also
+limited to canonical scene loading, public-name inspection, and real `mj_step` liveness; skeleton
+imports and host-search utilities are unnecessary in this probe because skeleton source is already
+present in the inline public context.
+
+**中文辅助说明。** `0.19.15` 根据一次真实 skeleton-assisted run 修正 STUDY submission schema
+与条件化 handler 的错位：该 run 已完成成功的恢复 probe，但遗漏了 `skeleton_inspection`。现在该
+字段仅在 skeleton-assisted STUDY 中由 schema 明确设为必需。STUDY probe 也收紧为 canonical
+scene 加载、公开名称检查和真实 `mj_step` liveness；skeleton 源码已在内联公开上下文中，因此该
+probe 不需要导入 skeleton 或使用 host 搜索工具。
 
 Revision `0.19.14` removes an observed STUDY interface contradiction. Candidate import restrictions
 and probe-only utility imports are now labelled separately; every model-authored probe receives the
@@ -1214,6 +1227,10 @@ not as one-shot code-generation responses. STUDY receives the complete run-relev
 inline. Its normal path uses one public Python/MuJoCo probe turn followed by submission. If the first
 probe fails, it may run exactly one corrected probe; a third and final turn is reserved for
 submission or correction of a rejected submission. A successful first probe forbids a second probe.
+The STUDY probe is a minimal canonical-scene liveness action and does not re-import the already
+inline skeleton source. The terminal schema requires `skeleton_inspection` exactly in the
+skeleton-assisted condition and omits that requirement in the from-scratch condition; terminal
+handler requirements must not be stricter than the schema shown to the model.
 GENERATE/GEN_ALGO may still list and read staged public files when needed, inspect the trusted
 skeleton only in the skeleton-assisted condition, and run bounded public Python/MuJoCo probes. Each
 candidate revision is one AutoAdapter 1.0-style implementation action:
@@ -1313,6 +1330,9 @@ STUDY 与 GENERATE/GEN_ALGO 必须通过 Demo3 自包含的 AutoAdapter 1.0 式 
 不能退化为一次性代码生成响应。STUDY 在初始上下文直接取得本次运行相关的完整公开输入；正常路径
 只用一次公开 Python/MuJoCo probe 回合和随后的提交回合。仅当首次 probe 失败时允许一次纠正后的
 probe；第三个最终回合只用于提交或修正被拒提交，首次 probe 成功后禁止第二次 probe。
+STUDY probe 是最小 canonical-scene liveness 动作，不会再次导入已经内联提供的 skeleton 源码。
+terminal schema 只在 skeleton-assisted 条件要求 `skeleton_inspection`，在 from-scratch 条件不
+要求；terminal handler 的要求不得比展示给模型的 schema 更严格。
 GENERATE/GEN_ALGO 仍可在需要时列出并读取
 staged 公开文件；仅在 skeleton-assisted 条件查看可信 skeleton；运行有预算的公开 Python/MuJoCo
 probe；并通过原子 `check_driver(source, checks)` 获得源码审计、import 及全部公开方法 smoke

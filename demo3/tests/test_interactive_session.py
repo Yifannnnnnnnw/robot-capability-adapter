@@ -542,6 +542,16 @@ class InteractiveSessionTests(unittest.TestCase):
             "AUTOADAPTER_PROBE_SCENE",
             probe_definition["function"]["description"],
         )
+        self.assertIn("Do not import the skeleton", probe_definition["function"]["description"])
+        submit_definition = next(
+            tool
+            for tool in client.tools["study"][0]
+            if tool["function"]["name"] == "submit_study"
+        )
+        self.assertNotIn(
+            "skeleton_inspection",
+            submit_definition["function"]["parameters"]["required"],
+        )
         study_probe_observation = "\n".join(
             str(message.get("content", ""))
             for message in client.messages["study"][1]
@@ -562,6 +572,68 @@ class InteractiveSessionTests(unittest.TestCase):
         stub_observation = client.messages["generate"][0][0]["content"]
         self.assertIn("def drive(self, request):", stub_observation)
         self.assertIn("NotImplementedError", stub_observation)
+
+    def test_skeleton_study_schema_requires_skeleton_inspection(self) -> None:
+        (self.package.skeleton_dir / "family.py").write_text(
+            "# public trusted skeleton family\n", encoding="utf-8"
+        )
+        probe = (
+            "import os\nimport mujoco\n"
+            "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
+            "data = mujoco.MjData(model)\n"
+            "mujoco.mj_step(model, data)\n"
+        )
+        client = ScriptedToolClient(
+            {
+                "study": (
+                    ToolTurn(
+                        None,
+                        (
+                            _call(
+                                "s1",
+                                "run_mujoco_probe",
+                                {"probe_id": "step", "script": probe},
+                            ),
+                        ),
+                    ),
+                    ToolTurn(
+                        None,
+                        (
+                            _call(
+                                "s2",
+                                "submit_study",
+                                {
+                                    "findings": ["canonical physics advances"],
+                                    "implementation_plan": ["use trusted skeleton"],
+                                    "skeleton_inspection": {"files": ["family.py"]},
+                                },
+                            ),
+                        ),
+                    ),
+                )
+            }
+        )
+
+        result = study(
+            client,  # type: ignore[arg-type]
+            self.package,
+            self.design,
+            condition="skeleton-assisted",
+            workspace=Path(self.temporary.name) / "skeleton-study-schema",
+            probe_budget=ProbeBudget(max_requests=2, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+        )
+
+        submit_definition = next(
+            tool
+            for tool in client.tools["study"][0]
+            if tool["function"]["name"] == "submit_study"
+        )
+        self.assertIn(
+            "skeleton_inspection",
+            submit_definition["function"]["parameters"]["required"],
+        )
+        self.assertEqual(result.output["skeleton_inspection"]["files"], ["family.py"])
 
     def test_study_allows_one_failed_probe_recovery_before_submission(self) -> None:
         failed_probe = (
