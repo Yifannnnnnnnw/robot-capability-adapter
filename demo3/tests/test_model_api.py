@@ -196,5 +196,62 @@ class ModelApiTests(unittest.TestCase):
         self.assertIn("TOOL_OBSERVATION_JSON", request_messages[3]["content"])
         self.assertEqual(client.calls[0]["tool_history_mode"], "text-observation")
 
+    def test_text_observation_mode_does_not_repeat_written_driver_source(self) -> None:
+        config = ModelConfig(
+            provider="company",
+            model="deepseek.v3.2",
+            base_url="https://model.example/v1",
+            api_key="secret-value",
+            tool_history_mode="text-observation",
+        )
+        client = JsonModelClient(config)
+        payload = {
+            "model": "deepseek.v3.2",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": "Continue."},
+                }
+            ],
+            "usage": {},
+        }
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+        source = "UNIQUE_DRIVER_SOURCE" * 1000
+        messages = [
+            {"role": "user", "content": "Repair."},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call-write",
+                        "type": "function",
+                        "function": {
+                            "name": "write_driver",
+                            "arguments": json.dumps({"source": source}),
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "call-write",
+                "content": '{"ok":true,"result":{"revision":1}}',
+            },
+        ]
+        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+            client.generate_tool_turn(
+                stage="repair",
+                system_prompt="Repair with tools.",
+                messages=messages,
+                tools=[],
+            )
+
+        request_text = urlopen.call_args.args[0].data.decode()
+        self.assertNotIn(source, request_text)
+        self.assertIn(f'\\"source_chars\\": {len(source)}', request_text)
+        self.assertIn("call read_driver for current source", request_text)
+
 if __name__ == "__main__":
     unittest.main()

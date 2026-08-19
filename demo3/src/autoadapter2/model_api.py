@@ -135,6 +135,26 @@ class JsonModelClient:
         self.config = config
         self.calls: list[dict[str, Any]] = []
 
+    @staticmethod
+    def _text_history_arguments(tool: Any, arguments: Any) -> Any:
+        if tool != "write_driver" or not isinstance(arguments, str):
+            return arguments
+        try:
+            decoded = json.loads(arguments)
+        except json.JSONDecodeError:
+            return arguments
+        if not isinstance(decoded, Mapping):
+            return arguments
+        source = decoded.get("source")
+        if not isinstance(source, str):
+            return arguments
+        return {
+            "source_chars": len(source),
+            "source_history": (
+                "omitted after tool execution; call read_driver for current source"
+            ),
+        }
+
     def _tool_history_messages(
         self, messages: Sequence[Mapping[str, Any]]
     ) -> list[dict[str, Any]]:
@@ -153,18 +173,22 @@ class JsonModelClient:
                     if not isinstance(raw_call, Mapping):
                         continue
                     function = raw_call.get("function")
+                    tool = (
+                        function.get("name")
+                        if isinstance(function, Mapping)
+                        else None
+                    )
+                    arguments = (
+                        function.get("arguments")
+                        if isinstance(function, Mapping)
+                        else None
+                    )
                     requests.append(
                         {
                             "tool_call_id": raw_call.get("id"),
-                            "tool": (
-                                function.get("name")
-                                if isinstance(function, Mapping)
-                                else None
-                            ),
-                            "arguments": (
-                                function.get("arguments")
-                                if isinstance(function, Mapping)
-                                else None
+                            "tool": tool,
+                            "arguments": self._text_history_arguments(
+                                tool, arguments
                             ),
                         }
                     )
