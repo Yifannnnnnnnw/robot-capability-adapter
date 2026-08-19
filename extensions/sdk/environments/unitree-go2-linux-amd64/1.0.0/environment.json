@@ -1,0 +1,52 @@
+{
+  "id": "unitree-go2-linux-amd64",
+  "version": "1.0.0",
+  "platform": {
+    "os": "Ubuntu 22.04",
+    "architecture": "amd64",
+    "python": "3.10"
+  },
+  "packages": [
+    {
+      "name": "unitree_sdk2py",
+      "version": "1.0.1",
+      "commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5"
+    },
+    {
+      "name": "cyclonedds",
+      "version": "0.10.2"
+    },
+    {
+      "name": "mujoco",
+      "version": "3.3.6"
+    }
+  ],
+  "source_checkouts": [
+    {
+      "repository": "https://github.com/unitreerobotics/unitree_sdk2_python",
+      "commit": "65691c8a8bc53b98d3976dba4dbf9d5d20b2e7f5"
+    },
+    {
+      "repository": "https://github.com/unitreerobotics/unitree_mujoco",
+      "commit": "ae6a8403e272733e9996ef59990880330496177f"
+    }
+  ],
+  "model": {
+    "repository": "https://github.com/unitreerobotics/unitree_mujoco",
+    "commit": "ae6a8403e272733e9996ef59990880330496177f",
+    "path": "/opt/unitree_mujoco/unitree_robots/go2/scene.xml",
+    "robot_model_path": "unitree_robots/go2/go2.xml"
+  },
+  "route": {
+    "robot_configuration": "unitree-go2-stock-12dof",
+    "translation": "autoadapter2_sdk.unitree_go2.bridge.Go2DDSMuJoCoBridge",
+    "transport": "autoadapter2_sdk.unitree_go2.bridge.UnitreeSDK2Transport",
+    "cli": "extensions/sdk/scripts/run_unitree_go2_route_check.py",
+    "module": "autoadapter2_sdk.unitree_go2.route_check:run_route_check"
+  },
+  "docker": {
+    "platform": "linux/amd64",
+    "context": ".",
+    "file": "extensions/sdk/environments/unitree-go2-linux-amd64/1.0.0/Dockerfile"
+  }
+}

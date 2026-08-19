@@ -1,0 +1,1 @@
+{"check_id":"hook_install","detail":{"reset":{"command_health":"RESET","simulation_time":0.0},"route":"CycloneDDS domain 1 loopback -> MuJoCo"},"duration_s":0.836473,"model_sha256":"6c1fda780e7883665d1c84113b9275b6d448f586a8b1c110e438a37417cbccd0","schema_version":"1.0.0"}

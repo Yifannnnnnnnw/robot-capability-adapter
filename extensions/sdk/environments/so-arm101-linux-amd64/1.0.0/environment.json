@@ -1,0 +1,41 @@
+{
+  "id": "so-arm101-linux-amd64",
+  "version": "1.0.0",
+  "platform": {
+    "os": "Ubuntu 24.04",
+    "architecture": "amd64",
+    "python": "3.12"
+  },
+  "packages": [
+    {
+      "name": "lerobot",
+      "version": "0.6.0",
+      "commit": "30da8e687a6dfc617fcd94afc367ac7071c376ce"
+    },
+    {
+      "name": "feetech-servo-sdk",
+      "version": "1.0.0"
+    },
+    {
+      "name": "mujoco",
+      "version": "3.3.6"
+    }
+  ],
+  "model": {
+    "repository": "https://github.com/TheRobotStudio/SO-ARM100.git",
+    "commit": "7629d2ad9853d10fb903093a33ef6114099d97e5",
+    "path": "/opt/SO-ARM100/Simulation/SO101/so101_new_calib.xml"
+  },
+  "route": {
+    "robot_configuration": "so-arm101-follower-stock-gripper",
+    "translation": "autoadapter2_sdk.so_arm101.translation.FeetechPTYTranslation",
+    "cli": "extensions/sdk/scripts/run_so_arm101_route_check.py",
+    "module": "autoadapter2_sdk.so_arm101.route_check:run_route_check",
+    "gripper_direction": "tick-increases-qpos"
+  },
+  "docker": {
+    "platform": "linux/amd64",
+    "context": ".",
+    "file": "extensions/sdk/environments/so-arm101-linux-amd64/1.0.0/Dockerfile"
+  }
+}
