@@ -60,6 +60,10 @@ class ToolSpec:
     input_schema: Mapping[str, Any]
     handler: Callable[[Mapping[str, Any]], Any]
     terminal: bool = False
+    available: Callable[[], bool] | None = None
+
+    def is_available(self) -> bool:
+        return self.available is None or bool(self.available())
 
     def model_definition(self) -> dict[str, Any]:
         return {
@@ -139,11 +143,17 @@ def run_react(
     tools: Sequence[ToolSpec],
     max_turns: int = 16,
     max_tool_calls: int = 48,
+    max_submission_turns: int = 2,
     tool_output_chars: int = 24000,
 ) -> ReactResult:
     """Run one model conversation until a terminal tool accepts an artifact."""
 
-    if max_turns < 1 or max_tool_calls < 1 or tool_output_chars < 256:
+    if (
+        max_turns < 1
+        or max_tool_calls < 1
+        or max_submission_turns < 1
+        or tool_output_chars < 256
+    ):
         raise ValueError("ReAct limits must be positive and tool output at least 256 chars")
     tool_map = {tool.name: tool for tool in tools}
     if len(tool_map) != len(tools):
@@ -154,15 +164,14 @@ def run_react(
     messages: list[dict[str, Any]] = [{"role": "user", "content": user_prompt}]
     trace: list[dict[str, Any]] = []
     call_count = 0
-    model_tools = [tool.model_definition() for tool in tools]
     terminal_tools = [tool for tool in tools if tool.terminal]
-    terminal_model_tools = [tool.model_definition() for tool in terminal_tools]
     terminal_names = [tool.name for tool in terminal_tools]
     convergence_warned = False
+    submission_turns = 0
 
     for turn_number in range(1, max_turns + 1):
         final_turn = turn_number == max_turns
-        tools_for_turn = model_tools
+        active_tools = [tool for tool in tools if tool.is_available()]
         if final_turn:
             instruction = (
                 "This is the reserved final submission turn. Development tools are no "
@@ -177,7 +186,12 @@ def run_react(
                     "submission_tools": terminal_names,
                 }
             )
-            tools_for_turn = terminal_model_tools
+            active_tools = [tool for tool in terminal_tools if tool.is_available()]
+        submission_only = bool(active_tools) and all(
+            tool.terminal for tool in active_tools
+        )
+        submission_turns = submission_turns + 1 if submission_only else 0
+        tools_for_turn = [tool.model_definition() for tool in active_tools]
         turn = client.generate_tool_turn(
             stage=stage,
             system_prompt=system_prompt,
@@ -201,6 +215,14 @@ def run_react(
                 "Continue only the work required for acceptance and finish by calling "
                 f"{', '.join(terminal_names)}.",
             )
+            if submission_only and submission_turns >= max_submission_turns:
+                raise ReactLoopError(
+                    f"{stage} reached its {max_submission_turns}-submission-turn "
+                    "limit without submission",
+                    trace=trace,
+                    model_turns=turn_number,
+                    tool_calls=call_count,
+                )
             continue
 
         for call in turn.tool_calls:
@@ -218,6 +240,11 @@ def run_react(
             error: str | None = call.argument_error
             if tool is None:
                 error = f"unknown tool: {call.name}"
+            elif not tool.is_available():
+                error = (
+                    f"tool unavailable in the current state: {call.name}; "
+                    f"call {', '.join(terminal_names)}"
+                )
             elif call.arguments is None and error is None:
                 error = "tool arguments must be one JSON object"
             if error is None and tool is not None and call.arguments is not None:
@@ -263,6 +290,15 @@ def run_react(
                     tool_calls=call_count,
                     submitted_with=tool.name,
                 )
+
+        if submission_only and submission_turns >= max_submission_turns:
+            raise ReactLoopError(
+                f"{stage} reached its {max_submission_turns}-submission-turn limit "
+                "without submission",
+                trace=trace,
+                model_turns=turn_number,
+                tool_calls=call_count,
+            )
 
         remaining_turns = max_turns - turn_number
         if (

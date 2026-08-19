@@ -31,7 +31,9 @@ not import or copy runtime code from Demo2 or `general_demo`.
   Framework writes that complete revision, performs source audit, canonical
   import/build, and one physics smoke per capability inside that tool execution
   before explicit submission. The normal Generate or Repair path is therefore
-  two remote model turns: atomic check, then submit.
+  two remote model turns: atomic check, then submit. Once the current revision
+  passes that check, the next request exposes only `submit_driver`; at most one
+  rejected-submit correction is allowed.
 - Each public smoke returns terminal controls, state, and positions for names
   declared in public Morphology. It is explicitly liveness/development feedback,
   not a capability pass or private Harness verdict.

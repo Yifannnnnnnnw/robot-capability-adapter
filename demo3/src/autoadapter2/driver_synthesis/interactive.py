@@ -212,6 +212,16 @@ class PublicDevelopmentSession:
     def has_successful_physics_probe(self) -> bool:
         return any(_successful_probe(result, require_physics=True) for result in self.probe_results)
 
+    def current_revision_ready_for_submission(self) -> bool:
+        return (
+            self.candidate_path.is_file()
+            and self._audited_revision == self._revision
+            and all(
+                self._smoked_revision.get(method) == self._revision
+                for method in self.capability_methods
+            )
+        )
+
     def _development_status(self) -> dict[str, Any]:
         missing = [
             method
@@ -710,6 +720,9 @@ class PublicDevelopmentSession:
         )
 
     def driver_tools(self) -> tuple[ToolSpec, ...]:
+        def development_available() -> bool:
+            return not self.current_revision_ready_for_submission()
+
         request_schema = _object_schema(
             {
                 "task_id": {"type": "string"},
@@ -718,7 +731,10 @@ class PublicDevelopmentSession:
             required=("task_id", "task_parameters"),
         )
         return (
-            *self.public_tools(),
+            *(
+                replace(tool, available=development_available)
+                for tool in self.public_tools()
+            ),
             ToolSpec(
                 "check_driver",
                 "Submit one complete driver.py revision and exactly one covered public request per sealed capability. In the same Framework execution, the source is written, audited, imported/built, and every capability is invoked through actuator-driven MuJoCo physics. Revise from returned public diagnostics when needed; on success call submit_driver next.",
@@ -744,6 +760,7 @@ class PublicDevelopmentSession:
                     required=("source", "checks"),
                 ),
                 self.check_driver,
+                available=development_available,
             ),
             ToolSpec(
                 "submit_driver",

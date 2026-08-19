@@ -45,6 +45,72 @@ def call(call_id: str, name: str, arguments: Mapping[str, Any]) -> ToolCall:
 
 
 class ReactLoopTests(unittest.TestCase):
+    def test_available_tools_collapse_to_submission_after_check(self) -> None:
+        ready = False
+
+        def check(_arguments: Mapping[str, Any]) -> dict[str, bool]:
+            nonlocal ready
+            ready = True
+            return {"successful": True}
+
+        client = ScriptedClient(
+            [
+                ToolTurn(content=None, tool_calls=(call("one", "check", {}),)),
+                ToolTurn(content=None, tool_calls=(call("two", "submit", {}),)),
+            ]
+        )
+        result = run_react(
+            client=client,
+            stage="GENERATE",
+            system_prompt="Check then submit.",
+            user_prompt="Build.",
+            tools=(
+                ToolSpec(
+                    "check",
+                    "Check.",
+                    {"type": "object"},
+                    check,
+                    available=lambda: not ready,
+                ),
+                ToolSpec(
+                    "submit",
+                    "Submit.",
+                    {"type": "object"},
+                    lambda arguments: dict(arguments),
+                    terminal=True,
+                ),
+            ),
+        )
+
+        self.assertEqual(result.model_turns, 2)
+        self.assertEqual(
+            [tool["function"]["name"] for tool in client.seen_tools[1]],
+            ["submit"],
+        )
+
+    def test_submission_only_state_allows_one_correction_turn(self) -> None:
+        client = ScriptedClient([ToolTurn(content="draft"), ToolTurn(content="draft")])
+
+        with self.assertRaisesRegex(ReactLoopError, "2-submission-turn limit"):
+            run_react(
+                client=client,
+                stage="GENERATE",
+                system_prompt="Submit.",
+                user_prompt="Build.",
+                tools=(
+                    ToolSpec(
+                        "submit",
+                        "Submit.",
+                        {"type": "object"},
+                        lambda arguments: dict(arguments),
+                        terminal=True,
+                    ),
+                ),
+                max_turns=12,
+            )
+
+        self.assertEqual(len(client.seen_messages), 2)
+
     def test_tool_observation_is_returned_before_explicit_submission(self) -> None:
         client = ScriptedClient(
             [

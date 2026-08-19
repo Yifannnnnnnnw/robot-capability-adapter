@@ -541,6 +541,13 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertEqual(generated.output["generation_note"], "ready")
         self.assertGreaterEqual(len(generated.probe_results), 2)
         self.assertEqual(len(client.messages["generate"]), 2)
+        self.assertEqual(
+            {
+                tool["function"]["name"]
+                for tool in client.tools["generate"][1]
+            },
+            {"submit_driver"},
+        )
         stub_observation = client.messages["generate"][0][0]["content"]
         self.assertIn("def drive(self, request):", stub_observation)
         self.assertIn("NotImplementedError", stub_observation)
@@ -687,6 +694,13 @@ class InteractiveSessionTests(unittest.TestCase):
         )
 
         self.assertEqual(repaired.driver_source, DRIVER_SOURCE)
+        self.assertEqual(
+            {
+                tool["function"]["name"]
+                for tool in client.tools["repair"][1]
+            },
+            {"submit_driver"},
+        )
         self.assertEqual(repaired.output["repair_note"], "fixed request mapping")
         self.assertEqual(len(client.messages["repair"]), 2)
         self.assertTrue(

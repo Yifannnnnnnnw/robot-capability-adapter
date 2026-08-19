@@ -4,9 +4,22 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.10`<br>
+> **Document revision / 文档版本：** `0.19.11`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.11` makes Driver Synthesis tools state-aware after the bundled public check. Once the
+current revision passes source audit, import, and every capability physics smoke, the next model
+request exposes only `submit_driver`; public browsing, probes, and `check_driver` are unavailable
+until a changed revision is actually needed. The submit-only state permits at most two model turns,
+providing one correction for a rejected submission payload while preventing the twelve-turn driver
+budget from becoming repeated full-source generation. Explicit model submission remains mandatory.
+
+**中文辅助说明。** `0.19.11` 让 Driver Synthesis 在 bundled public check 后按状态收敛工具面。
+当前 revision 通过 source audit、import 和全部 capability physics smoke 后，下一模型请求只暴露
+`submit_driver`；公开浏览、probe 和 `check_driver` 不再可用。submit-only 状态最多两个模型回合，
+允许一次被拒提交参数的纠正，但不会让十二回合 driver 预算退化为重复生成完整源码；模型显式提交
+仍然是强制要求。
 
 Revision `0.19.10` gives each remote model request a strict total wall-clock deadline rather than
 relying only on a socket-inactivity timeout. The default is 180 seconds, with an explicit bounded
