@@ -74,6 +74,35 @@ class SO101SkeletonSmokeTests(unittest.TestCase):
         self.assertAlmostEqual(float(self.data.ctrl[shoulder_actuator]), float(target[0]))
         self.assertFalse(np.array_equal(self.data.qpos, initial_qpos))
 
+    def test_closed_loop_cartesian_and_public_gripper_targets_step_physics(self) -> None:
+        start_position, _ = self.skeleton.get_ee_pose()
+        target = start_position + np.asarray((-0.025, 0.02, -0.015))
+        initial_error = float(np.linalg.norm(target - start_position))
+
+        self.skeleton.move_cartesian(
+            target,
+            duration=1.0,
+            wrist_roll=0.2,
+            residual_tolerance=0.08,
+        )
+
+        final_position, _ = self.skeleton.get_ee_pose()
+        final_error = float(np.linalg.norm(target - final_position))
+        wrist_actuator = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, "wrist_roll"
+        )
+        self.assertLess(final_error, initial_error)
+        self.assertAlmostEqual(float(self.data.ctrl[wrist_actuator]), 0.2)
+
+        gripper_actuator = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, "gripper"
+        )
+        before_hold = float(self.data.time)
+        self.skeleton.set_gripper(0.35, settle_steps=2)
+        self.skeleton.hold(steps=2)
+        self.assertAlmostEqual(float(self.data.ctrl[gripper_actuator]), 0.35)
+        self.assertGreater(float(self.data.time), before_hold)
+
 
 if __name__ == "__main__":
     unittest.main()

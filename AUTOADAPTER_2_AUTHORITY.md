@@ -4,9 +4,20 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.7`<br>
+> **Document revision / 文档版本：** `0.19.8`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.8` strengthens only the capability-neutral serial-arm skeleton primitive surface
+observed to be missing in the dynamic run. It provides actuator-only closed-loop Cartesian DLS with
+optional wrist-roll pinning, arbitrary finite gripper targets, and a physics hold operation. It
+contains no task identifier, dispatch, trajectory, target, scene construction, reset, criterion, or
+reference-driver logic; the model remains the sole author of capability composition and policy.
+
+**中文辅助说明。** `0.19.8` 仅补齐真实动态运行中确认缺失的 capability-neutral 串联机械臂
+skeleton primitive：actuator-only 闭环 Cartesian DLS、可选 wrist-roll 固定、任意有限夹爪目标和
+physics hold。它不包含 task id、dispatch、trajectory、target、scene/reset、criterion 或 reference
+driver 逻辑；capability 组合与策略仍完全由模型创作。
 
 Revision `0.19.7` restores the bounded public observation role of the AutoAdapter 1.0 development
 sandbox. Each `check_driver` capability smoke now returns terminal actuator controls, generalized

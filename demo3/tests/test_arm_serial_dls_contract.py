@@ -78,6 +78,8 @@ class ArmSerialDLSContractTests(unittest.TestCase):
                 "set_arm_actuators",
                 "move_joints",
                 "move_cartesian",
+                "hold",
+                "set_gripper",
                 "home",
                 "gripper_open",
                 "gripper_close",
@@ -107,10 +109,11 @@ class ArmSerialDLSContractTests(unittest.TestCase):
             "set_arm_actuators",
             "move_joints",
             "move_cartesian",
+            "hold",
+            "set_gripper",
             "home",
             "gripper_open",
             "gripper_close",
-            "_set_gripper",
         }
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in execution_names:

@@ -35,6 +35,9 @@ not import or copy runtime code from Demo2 or `general_demo`.
 - Each public smoke returns terminal controls, state, and positions for names
   declared in public Morphology. It is explicitly liveness/development feedback,
   not a capability pass or private Harness verdict.
+- The serial-arm skeleton exposes capability-neutral closed-loop Cartesian DLS,
+  optional wrist-roll pinning, arbitrary gripper targets, and physics hold. Task
+  dispatch and manipulation policy remain entirely model-authored.
 - The model receives the generated interface stub or previous Repair source in
   its initial context; separate `read_driver` and `write_driver` turns are not
   exposed. A driver stage has three discretionary development probes in addition

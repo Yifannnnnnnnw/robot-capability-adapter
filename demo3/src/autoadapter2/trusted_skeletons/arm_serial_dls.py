@@ -411,10 +411,86 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             self._physics_step(1)
         return True
 
-    def move_cartesian(self, target_xyz: Sequence[float], duration: float = 2.0) -> bool:
-        """Solve position IK and execute the result through actuators."""
+    def move_cartesian(
+        self,
+        target_xyz: Sequence[float],
+        duration: float = 2.0,
+        *,
+        wrist_roll: float | None = None,
+        gain: float = 1.8,
+        max_joint_delta: float = 0.12,
+        residual_tolerance: float = 0.12,
+    ) -> bool:
+        """Track a Cartesian target with actuator-only closed-loop DLS control."""
 
-        return self.move_joints(self.ik(target_xyz), duration=duration)
+        self._resolve_indices()
+        np = self._load_numpy()
+        target = self._xyz(target_xyz)
+        duration_value = _finite(duration, "duration")
+        gain_value = _finite(gain, "gain")
+        delta_limit = _finite(max_joint_delta, "max_joint_delta")
+        residual_limit = _finite(residual_tolerance, "residual_tolerance")
+        if duration_value < 0.0:
+            raise ValueError("duration must be non-negative")
+        if gain_value <= 0.0 or delta_limit <= 0.0 or residual_limit <= 0.0:
+            raise ValueError(
+                "gain, max_joint_delta, and residual_tolerance must be positive"
+            )
+
+        pinned_roll: float | None = None
+        controlled_count = self._dof
+        if wrist_roll is not None:
+            pinned_roll = float(
+                np.clip(_finite(wrist_roll, "wrist_roll"), self._q_lo[-1], self._q_hi[-1])
+            )
+            controlled_count -= 1
+            if controlled_count < 1:
+                raise ValueError("wrist_roll pinning requires at least two arm joints")
+
+        steps = max(1, int(math.ceil(duration_value / self._timestep)))
+        last_residual = math.inf
+        for _ in range(steps):
+            self._mj.mj_forward(self.model, self.data)
+            error = target - self._ee_position()
+            last_residual = float(np.linalg.norm(error))
+            current = self.get_joint_positions()
+            roll_reached = pinned_roll is None or abs(float(current[-1]) - pinned_roll) <= 0.01
+            if last_residual <= self.spec.ik_tolerance and roll_reached:
+                hold_target = current.copy()
+                if pinned_roll is not None:
+                    hold_target[-1] = pinned_roll
+                self.set_arm_actuators(hold_target)
+                self._physics_step(1)
+                return True
+
+            jacobian = np.zeros((3, int(self.model.nv)), dtype=float)
+            self._ee_position_jacobian(jacobian)
+            controlled_addresses = self._arm_qvel_adr[:controlled_count]
+            arm_jacobian = jacobian[:, controlled_addresses]
+            damping = self.spec.ik_damping * max(
+                1.0, 0.05 / max(last_residual, 1e-6)
+            )
+            system = arm_jacobian @ arm_jacobian.T + (damping**2) * np.eye(3)
+            delta = arm_jacobian.T @ np.linalg.solve(system, error)
+            delta_norm = float(np.linalg.norm(delta))
+            if delta_norm > delta_limit:
+                delta *= delta_limit / delta_norm
+            desired = current.copy()
+            desired[:controlled_count] += gain_value * delta
+            if pinned_roll is not None:
+                desired[-1] = pinned_roll
+            self.set_arm_actuators(np.clip(desired, self._q_lo, self._q_hi))
+            self._physics_step(1)
+
+        self._mj.mj_forward(self.model, self.data)
+        last_residual = float(np.linalg.norm(target - self._ee_position()))
+        if last_residual > residual_limit:
+            raise IKUnreachableError(
+                last_residual,
+                residual_limit,
+                self.get_joint_positions().copy(),
+            )
+        return True
 
     def home(self, duration: float = 2.0) -> bool:
         """Drive the arm to the configured home pose through actuators."""
@@ -422,12 +498,24 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
         self._resolve_indices()
         return self.move_joints(self._home_q, duration=duration)
 
-    def _set_gripper(self, control: float, settle_steps: int | None) -> bool:
+    def hold(self, steps: int = 30) -> bool:
+        """Hold the current actuator targets while advancing real physics."""
+
+        self._resolve_indices()
+        if isinstance(steps, bool) or int(steps) < 0:
+            raise ValueError("steps must be a non-negative integer")
+        self._physics_step(max(1, int(steps)))
+        return True
+
+    def set_gripper(self, control: float, settle_steps: int | None = None) -> bool:
+        """Command a finite public gripper target and advance real physics."""
+
         self._resolve_indices()
         if not self._gripper_actuator_ids:
             return False
+        control_value = _finite(control, "control")
         for actuator_id in self._gripper_actuator_ids:
-            self.data.ctrl[actuator_id] = float(control)
+            self.data.ctrl[actuator_id] = control_value
         steps = self.spec.gripper_settle_steps if settle_steps is None else int(settle_steps)
         if steps < 0:
             raise ValueError("settle_steps must be non-negative")
@@ -437,9 +525,9 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
     def gripper_open(self, settle_steps: int | None = None) -> bool:
         """Command the configured physical gripper actuators open."""
 
-        return self._set_gripper(self.spec.gripper_open_ctrl, settle_steps)
+        return self.set_gripper(self.spec.gripper_open_ctrl, settle_steps)
 
     def gripper_close(self, settle_steps: int | None = None) -> bool:
         """Command the configured physical gripper actuators closed."""
 
-        return self._set_gripper(self.spec.gripper_close_ctrl, settle_steps)
+        return self.set_gripper(self.spec.gripper_close_ctrl, settle_steps)
