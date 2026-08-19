@@ -4,9 +4,24 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.3`<br>
+> **Document revision / 文档版本：** `0.19.4`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.4` keeps interactive Driver Synthesis while removing one model round trip per
+public check. For each current driver revision, GENERATE/GEN_ALGO and Repair provide one bundled
+`check_driver` request containing exactly one covered public invocation per sealed capability. The
+Framework performs source audit, canonical import/build, and every capability physics smoke inside
+that single tool execution and returns per-capability public diagnostics. The model may revise and
+rerun the bundled check, and must still explicitly submit the checked current revision before any
+private Harness execution. Individual audit, import, and per-capability smoke calls are not separate
+model turns on the mainline.
+
+**中文辅助说明。** `0.19.4` 保留交互式 Driver Synthesis，但不再让每项公开检查各占一次模型
+往返。GENERATE/GEN_ALGO 和 Repair 针对当前 driver revision 一次提交 `check_driver`，其中每项
+sealed capability 恰好提供一个覆盖范围内的公开调用。Framework 在这一次工具执行内完成源码
+审计、canonical import/build 及全部 capability physics smoke，并一次返回逐项公开诊断。模型仍可
+修改后重新检查，且私有 Harness 前仍必须显式提交已检查的当前 revision。
 
 Revision `0.19.3` makes capability admission proportional to the designed capability layer rather
 than to the size of the source Task Library. Each capability has exactly one source-backed primary

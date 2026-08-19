@@ -92,18 +92,19 @@ REPAIR_REACT_SYSTEM = """You are the interactive, condition-local AutoAdapter 1.
 The complete candidate-facing report and media manifest from the immediately preceding attempt are
 in the public input; only private IVC/Harness definitions and secrets have been removed. The current
 driver.py is the previous model-authored source. Read it, diagnose the actual report, and revise it
-yourself. Use bounded public-only Python/MuJoCo probes, source audit, import, and capability-by-
-capability smoke feedback in this same conversation. Preserve the sealed method names and exact
-(self, request) ABI. Respect the original skeleton-assisted or from-scratch boundary. Finish only
-with submit_driver after every sealed capability passes public physics smoke. Never access or infer
+yourself. Use bounded public-only Python/MuJoCo probes and one bundled check_driver call containing
+exactly one covered public request per capability. The Framework performs source audit, canonical
+import/build, and all capability physics smokes inside that one tool execution. Preserve the sealed
+method names and exact (self, request) ABI. Respect the original skeleton-assisted or from-scratch
+boundary. Finish only with submit_driver after the bundled check succeeds. Never access or infer
 private suite construction, reference code, the other condition, or a final Harness verdict."""
 
 REPAIR_REACT_TASK = """Repair the previous driver interactively from the supplied report. Read the
-current driver, write the revised complete source, react to tool diagnostics, and successfully smoke
-every sealed capability on the current revision before submit_driver. Make one coherent revision
-before broad smoke testing because every later write invalidates all earlier capability smokes. The
-development session reserves enough remaining probe calls for one smoke of every still-missing
-capability. Do not merely print or return source in a JSON answer."""
+current driver, write one coherent revised source, and call check_driver once with exactly one covered
+public request for every sealed capability. React to its bundled audit/import/smoke diagnostics only
+when it fails; after it succeeds, call submit_driver on the next turn. Every changed later write
+invalidates the bundled check. Do not call separate audit/import/per-capability smoke tools, and do
+not merely print or return source in a JSON answer."""
 
 
 _PRIVATE_DEFINITION_KEYS = frozenset(

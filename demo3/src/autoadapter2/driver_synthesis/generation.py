@@ -145,9 +145,10 @@ GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_
 The Framework has created an interface-only driver.py stub from the sealed Capability Design. It
 contains exact method names and (self, request) placeholders but no controller or task dispatch.
 Inspect it, then write or replace the complete implementation yourself. Use public files and bounded
-MuJoCo probes to develop it. Audit and smoke the current revision; smoke every sealed capability
-with a covered public task and a concrete request. Tool failures are development observations, so
-revise and retry. Finish only with submit_driver. Never access private Harness definitions,
+MuJoCo probes to develop it. Call check_driver once with exactly one covered public request for every
+sealed capability; the Framework bundles source audit, canonical import/build, and all physics
+smokes in that tool execution. Tool failures are development observations, so revise and rerun the
+bundled check. Finish only with submit_driver. Never access private Harness definitions,
 reference code, the other condition, or credentials, and never claim the final verdict."""
 
 STUDY_REACT_TASK = """Study the supplied public inputs interactively. Use file tools as needed,
@@ -157,12 +158,12 @@ requirement; immediately submit after observing it. Do not run optional follow-u
 print or return a JSON answer."""
 
 GENERATE_REACT_TASK = """Develop the complete executable driver from the interface-only revision
-0 stub. Read the stub, implement all control behavior, and use audit/import/probe/smoke feedback to
-revise it. Run smoke_driver successfully for every sealed capability on the current revision, then
-call submit_driver. Write a viable complete implementation early: every write creates a new revision
-and invalidates all earlier capability smokes. The development session reserves enough remaining
-probe calls for one smoke of every still-missing capability. Do not merely print or return source in
-a JSON answer."""
+0 stub. Read the stub, implement all control behavior, and use public probe or bundled check feedback
+to revise it. Call check_driver with exactly one covered public request for every sealed capability;
+after that single bundled check succeeds, call submit_driver on the next turn. Write a viable complete
+implementation early: every changed write creates a new revision and invalidates the earlier bundled
+check. Do not call separate audit/import/per-capability smoke tools, and do not merely print or return
+source in a JSON answer."""
 
 
 @dataclass(frozen=True)

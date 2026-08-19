@@ -27,7 +27,9 @@ not import or copy runtime code from Demo2 or `general_demo`.
   has a separate verdict and never triggers same-run Repair.
 - STUDY, generation, and Repair use bounded multi-turn tool conversations. The
   model can inspect staged public files, run public-only MuJoCo probes, revise
-  its driver, and react to audit/import/smoke diagnostics before submission.
+  its driver, and call one bundled `check_driver` operation. The Framework then
+  performs source audit, canonical import/build, and one physics smoke per
+  capability inside that tool execution before explicit submission.
 - Before each tool-model request, the deterministic Agent Context Manager keeps
   the initial public task, one current complete driver snapshot, and at most
   three recent interaction groups. Superseded driver source and probe scripts
@@ -44,8 +46,9 @@ Framework-owned MuJoCo session outside the Harness.
 
 A driver becomes a formal attempt only after the model explicitly submits the
 current revision. Submission requires source audit and a successful public
-physics smoke for every sealed capability; development rewrites and rejected
-pre-submission checks do not consume one of the three Harness attempts.
+physics smoke for every sealed capability through the bundled public check;
+development rewrites and rejected pre-submission checks do not consume one of
+the three Harness attempts.
 
 ## Environment
 

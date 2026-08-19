@@ -55,6 +55,25 @@ def _successful_probe(result: Mapping[str, Any], *, require_physics: bool) -> bo
     )
 
 
+def _probe_summary(result: Mapping[str, Any]) -> dict[str, Any]:
+    summary = {
+        key: result.get(key)
+        for key in (
+            "probe_id",
+            "exit_code",
+            "physics_steps",
+            "timed_out",
+            "spawn_error",
+            "elapsed_wall_s",
+        )
+    }
+    for key in ("stdout", "stderr"):
+        value = result.get(key)
+        if isinstance(value, str):
+            summary[key] = value[-800:]
+    return summary
+
+
 def render_interface_stub(capability_methods: Sequence[str]) -> str:
     """Render only the sealed callable surface, with no control implementation."""
 
@@ -168,14 +187,16 @@ class PublicDevelopmentSession:
             "missing_current_revision_smokes": missing,
         }
 
-    def _reserve_required_smokes(self) -> None:
+    def _reserve_required_check(self, *, consuming_import: bool = False) -> None:
         status = self._development_status()
         missing = status["missing_current_revision_smokes"]
         remaining = int(status["probe_calls_remaining"])
-        if missing and remaining <= len(missing):
+        required = len(missing) + 1
+        blocked = remaining < required if consuming_import else remaining <= required
+        if missing and blocked:
             raise ProbeError(
                 f"the remaining {remaining} development probe calls are reserved for "
-                f"one smoke_driver call per missing capability: {missing}"
+                f"one bundled check_driver import plus one smoke per missing capability: {missing}"
             )
 
     def _candidate_source(self) -> str:
@@ -252,7 +273,7 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("probe_id must be a non-empty string")
         if not isinstance(script, str) or not script.strip():
             raise DevelopmentSessionError("script must be non-empty Python source")
-        self._reserve_required_smokes()
+        self._reserve_required_check()
         source = self._candidate_source() if self.candidate_path.is_file() else None
         return self._run_probe(
             probe_id=probe_id.strip(),
@@ -277,16 +298,17 @@ class PublicDevelopmentSession:
                 "source_changed": False,
                 "next_action": (
                     "The submitted source is unchanged. Do not write it again; "
-                    "continue with audit_driver, import_driver, smoke_driver, or "
-                    "submit_driver as indicated by development_status."
+                    "continue with check_driver or submit_driver as indicated by "
+                    "development_status."
                 ),
                 "development_status": self._development_status(),
             }
         remaining = self.budget.max_requests - self._probe_calls
-        if self.capability_methods and remaining < len(self.capability_methods):
+        required = len(self.capability_methods) + 1
+        if self.capability_methods and remaining < required:
             raise DevelopmentSessionError(
                 f"cannot create a new revision with {remaining} probe calls remaining; "
-                f"{len(self.capability_methods)} capability smokes would be required"
+                f"the bundled check requires {required} import-and-smoke probes"
             )
         self.candidate_path.write_text(source, encoding="utf-8")
         self._revision += 1
@@ -329,7 +351,7 @@ class PublicDevelopmentSession:
 
     def import_driver(self, _arguments: Mapping[str, Any]) -> dict[str, Any]:
         self._audit_candidate()
-        self._reserve_required_smokes()
+        self._reserve_required_check(consuming_import=True)
         script = (
             "import os\n"
             "import mujoco\n"
@@ -398,6 +420,88 @@ class PublicDevelopmentSession:
             "successful": successful,
             "result": result,
             "development_status": self._development_status(),
+        }
+
+    def check_driver(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        checks = arguments.get("checks")
+        if not isinstance(checks, list):
+            raise DevelopmentSessionError("checks must be a list")
+        by_method: dict[str, dict[str, Any]] = {}
+        for index, check in enumerate(checks):
+            if not isinstance(check, Mapping):
+                raise DevelopmentSessionError(f"checks[{index}] must be an object")
+            method_name = check.get("method_name")
+            request = check.get("request")
+            if not isinstance(method_name, str) or method_name not in self.capability_methods:
+                raise DevelopmentSessionError(
+                    f"checks[{index}].method_name must be one sealed capability method"
+                )
+            if method_name in by_method:
+                raise DevelopmentSessionError(
+                    f"checks contains duplicate capability method {method_name!r}"
+                )
+            if not isinstance(request, Mapping):
+                raise DevelopmentSessionError(f"checks[{index}].request must be an object")
+            task_id = request.get("task_id")
+            task_parameters = request.get("task_parameters")
+            if not isinstance(task_id, str) or not isinstance(task_parameters, Mapping):
+                raise DevelopmentSessionError(
+                    f"checks[{index}].request requires string task_id and object task_parameters"
+                )
+            allowed_tasks = self.capability_task_ids.get(method_name, frozenset())
+            if allowed_tasks and task_id not in allowed_tasks:
+                raise DevelopmentSessionError(
+                    f"task_id {task_id!r} is not covered by capability {method_name!r}"
+                )
+            by_method[method_name] = {
+                "method_name": method_name,
+                "request": {
+                    "task_id": task_id,
+                    "task_parameters": dict(task_parameters),
+                },
+            }
+        missing = [method for method in self.capability_methods if method not in by_method]
+        if missing:
+            raise DevelopmentSessionError(
+                f"checks must contain exactly one request for every sealed capability; missing {missing}"
+            )
+
+        audit = asdict(self._audit_candidate())
+        imported = self.import_driver({})
+        results: list[dict[str, Any]] = []
+        if imported["successful"]:
+            for method_name in self.capability_methods:
+                smoke = self.smoke_driver(by_method[method_name])
+                results.append(
+                    {
+                        "method_name": method_name,
+                        "task_id": by_method[method_name]["request"]["task_id"],
+                        "successful": smoke["successful"],
+                        "probe": _probe_summary(smoke["result"]),
+                    }
+                )
+        status = self._development_status()
+        successful = (
+            bool(imported["successful"])
+            and len(results) == len(self.capability_methods)
+            and all(bool(result["successful"]) for result in results)
+            and not status["missing_current_revision_smokes"]
+        )
+        return {
+            "revision": self._revision,
+            "successful": successful,
+            "audit": audit,
+            "import": {
+                "successful": imported["successful"],
+                "probe": _probe_summary(imported["result"]),
+            },
+            "capability_checks": results,
+            "development_status": status,
+            "next_action": (
+                "Call submit_driver now for this unchanged revision."
+                if successful
+                else "Revise driver.py from these diagnostics, then call check_driver once again."
+            ),
         }
 
     def submit_driver(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
@@ -469,7 +573,7 @@ class PublicDevelopmentSession:
             *self.public_tools(),
             ToolSpec(
                 "write_driver",
-                "Write or completely replace driver.py. The initial file is an interface-only stub with no control implementation. Every write creates a new revision and invalidates all prior capability smokes.",
+                "Write or completely replace driver.py. The initial file is an interface-only stub with no control implementation. A changed source creates a new revision and invalidates prior checks; an identical source preserves the current revision and check progress.",
                 _object_schema(
                     {"source": {"type": "string"}},
                     required=("source",),
@@ -483,31 +587,29 @@ class PublicDevelopmentSession:
                 self.read_driver,
             ),
             ToolSpec(
-                "audit_driver",
-                "Compile and source-audit the current driver, including all exact sealed capability names and the (self, request) ABI.",
-                _object_schema(),
-                self.audit_driver,
-            ),
-            ToolSpec(
-                "import_driver",
-                "Import and build the current driver against a fresh canonical public MuJoCo model/data session.",
-                _object_schema(),
-                self.import_driver,
-            ),
-            ToolSpec(
-                "smoke_driver",
-                "Import, build, and invoke one exact sealed capability with a public request. Success requires actuator-driven real MuJoCo physics steps. Run this for every capability on the current revision; each result reports the remaining probe budget and missing smokes.",
+                "check_driver",
+                "In one Framework execution, source-audit and import/build the current revision, then invoke every sealed capability once with the supplied covered public requests. Each invocation must advance actuator-driven MuJoCo physics. Supply exactly one check per capability; on success call submit_driver next.",
                 _object_schema(
                     {
-                        "method_name": {
-                            "type": "string",
-                            "enum": list(self.capability_methods),
+                        "checks": {
+                            "type": "array",
+                            "minItems": len(self.capability_methods),
+                            "maxItems": len(self.capability_methods),
+                            "items": _object_schema(
+                                {
+                                    "method_name": {
+                                        "type": "string",
+                                        "enum": list(self.capability_methods),
+                                    },
+                                    "request": request_schema,
+                                },
+                                required=("method_name", "request"),
+                            ),
                         },
-                        "request": request_schema,
                     },
-                    required=("method_name", "request"),
+                    required=("checks",),
                 ),
-                self.smoke_driver,
+                self.check_driver,
             ),
             ToolSpec(
                 "submit_driver",
