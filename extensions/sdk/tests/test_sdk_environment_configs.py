@@ -29,7 +29,8 @@ def test_so_arm101_environment_is_pinned_to_current_route() -> None:
         ("feetech-servo-sdk", "1.0.0"),
         ("mujoco", "3.3.6"),
     ]
-    assert definition["packages"][0]["commit"] == "30da8e687a6dfc617fcd94afc367ac7071c376ce"
+    assert definition["packages"][0]["source_commit"] == "30da8e687a6dfc617fcd94afc367ac7071c376ce"
+    assert "commit" not in definition["packages"][0]
     assert definition["model"] == {
         "repository": "https://github.com/TheRobotStudio/SO-ARM100.git",
         "commit": "7629d2ad9853d10fb903093a33ef6114099d97e5",
@@ -41,6 +42,13 @@ def test_so_arm101_environment_is_pinned_to_current_route() -> None:
     assert "autoadapter2.integrations" not in text
     assert "autoadapter2_sdk" in text
     assert "run_so_arm101_route_check.py" in text
+    assert "python -m pip check" in text
+    assert "from lerobot.motors.feetech import FeetechMotorsBus" in text
+    assert "import scservo_sdk" in text
+    assert "from lerobot.robots.so101_follower import SO101Follower, SO101FollowerConfig" in text
+    assert "from lerobot.robots.so_follower import SO101Follower, SO101FollowerConfig" in text
+    assert "does not clone or verify that LeRobot commit" in text
+    assert "run_route_check(" not in text
 
 
 def test_go2_environment_is_pinned_to_current_route() -> None:
