@@ -28,6 +28,13 @@ python scripts/run_so_arm101_route_check.py \
   --gripper-direction tick-increases-qpos
 ```
 
+Run the pinned real Unitree Go2 route with:
+
+```bash
+python scripts/run_unitree_go2_route_check.py \
+  --model /opt/unitree_mujoco/unitree_robots/go2/scene.xml
+```
+
 A successful real result shows only that this named SDK/Translation/MuJoCo
 route executed. It does not establish hardware equivalence or sim-to-real.
 
