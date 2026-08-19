@@ -19,10 +19,16 @@ The implementation includes:
 - explicit submission before a candidate consumes a Harness attempt;
 - Framework-owned canonical MuJoCo sessions, actuator/physics-step guards, and
   direct-state-write rejection; and
-- independent per-case video and separate pipeline, physical, validation, and
-  video verdicts.
+- complete IVC-authored Capability Validation followed, only after admission,
+  by a separately reported random five-case Task Demo; and
+- independent per-case video and separate pipeline, Capability Validation,
+  Task Demo, and video verdicts.
 
-## Latest Diagnostic Run
+## Latest Historical Diagnostic Run
+
+This run predates Authority `0.19.2`: its five sampled cases were used directly
+for driver validation, so it is not evidence that the restored
+Capability Validation -> Task Demo flow has executed.
 
 - Run: `deepseek-full-convergence-20260818T144502Z`
 - Model/provider: `deepseek-v4-pro` through the configured DeepSeek API

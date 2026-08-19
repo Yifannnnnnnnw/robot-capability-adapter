@@ -44,6 +44,12 @@ def _terminal_report(
         "pipeline_completed": True,
         "dynamic_model_called": True,
         "driver_generated_in_run": True,
+        "capability_validation_executed": True,
+        "initial_capability_validation_passed": passed,
+        "final_capability_validation_passed": passed,
+        "task_demo_executed": passed,
+        "task_demo_passed": passed,
+        "task_demo_pipeline_completed": passed,
         "physical_validation_executed": True,
         "initial_validation_passed": passed,
         "final_validation_passed": passed,
@@ -65,6 +71,25 @@ def _terminal_report(
                 "video": {"complete": True},
             }
         ],
+        "task_demo": {
+            "pipeline_completed": passed,
+            "physical_validation_executed": passed,
+            "validation_passed": passed,
+            "video_complete": passed,
+            "trials": (
+                [
+                    {
+                        "case_id": "demo-case-1",
+                        "task_id": "demo-task-1",
+                        "source_clause_id": "demo-clause-1",
+                        "trial_passed": passed,
+                        "video": {"complete": passed},
+                    }
+                ]
+                if passed
+                else []
+            ),
+        },
         "tgcd": {"completed": True},
         "ivc": {"completed": True},
         "study": {"completed": True},
@@ -134,7 +159,7 @@ class EvolutionTests(unittest.TestCase):
         self.assertNotIn('"samples"', packed)
         self.assertIn("request is a dict", packed)
         self.assertEqual(
-            model_report["terminal_validation"]["failed_trials"][0]
+            model_report["terminal_capability_validation"]["failed_trials"][0]
             ["physical_evidence"]["sample_count"],
             20,
         )
@@ -143,6 +168,7 @@ class EvolutionTests(unittest.TestCase):
 
     def test_evolution_does_not_run_before_a_terminal_verdict(self) -> None:
         report = _terminal_report()
+        report.pop("final_capability_validation_passed", None)
         report.pop("final_validation_passed", None)
         report.pop("validation_passed", None)
         client = FakeGenerator({"proposal": None})
@@ -179,8 +205,11 @@ class ReportingTests(unittest.TestCase):
         self.assertTrue(cell["dynamic_model_called"])
         self.assertTrue(cell["driver_generated_in_run"])
         self.assertTrue(cell["physical_validation_executed"])
+        self.assertTrue(cell["capability_validation_executed"])
         self.assertFalse(cell["initial_validation_passed"])
         self.assertFalse(cell["final_validation_passed"])
+        self.assertFalse(cell["final_capability_validation_passed"])
+        self.assertFalse(cell["task_demo_executed"])
         self.assertEqual(cell["task_counts"], {"passed": 0, "total": 1})
         self.assertEqual(cell["clause_counts"], {"passed": 0, "total": 1})
         self.assertEqual(cell["case_counts"], {"passed": 0, "total": 1})
@@ -216,8 +245,14 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual([cell["cell_id"] for cell in failed], ["robotstudio_so101::from-scratch"])
         self.assertTrue(paired["summary"]["all_expected_cells_reported"])
         self.assertFalse(paired["summary"]["all_cells_final_validation_passed"])
+        self.assertFalse(
+            paired["summary"]["all_cells_final_capability_validation_passed"]
+        )
         comparison = paired["paired_comparisons"][0]
         self.assertFalse(comparison["both_cells_final_validation_passed"])
+        self.assertFalse(
+            comparison["both_cells_final_capability_validation_passed"]
+        )
         self.assertFalse(comparison["conditions"]["from-scratch"]["final_validation_passed"])
 
     def test_missing_cell_is_explicit_and_json_round_trips(self) -> None:

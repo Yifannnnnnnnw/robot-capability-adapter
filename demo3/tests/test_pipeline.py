@@ -94,12 +94,14 @@ def _fake_hooks(
     study_raises: bool = False,
     generation_raises: bool = False,
     in_conversation_study_probe: bool = False,
+    task_demo_pass: bool = True,
 ) -> tuple[PipelineHooks, dict[str, Any]]:
     packages = {robot: _package(tmp_path, robot) for robot in ("r-arm", "r-quad")}
     suites: dict[str, dict[str, Any]] = {}
     harness_inputs: list[dict[str, Any]] = []
     reference_inputs: list[dict[str, Any]] = []
     repair_calls: list[tuple[str, int]] = []
+    repair_reports: list[dict[str, Any]] = []
     client = SimpleNamespace(calls=[])
 
     def load(root: Path, robot: str) -> Any:
@@ -113,7 +115,7 @@ def _fake_hooks(
     def ivc(model: Any, *, package: Any, design: Any) -> dict[str, Any]:
         events.append(("ivc", package.robot_configuration_id))
         suite = {
-            "artifact_type": "private_validation_suite",
+            "artifact_type": "capability_validation_suite",
             "robot_configuration_id": package.robot_configuration_id,
             "whole_suite_aggregation": {"kind": "all_cases"},
             "cases": [
@@ -248,6 +250,7 @@ def _fake_hooks(
         previous_attempt = int(kwargs["previous_attempt"])
         condition = kwargs["condition"]
         repair_calls.append((condition, previous_attempt))
+        repair_reports.append(dict(kwargs["candidate_report"]))
         events.append(("repair", condition, previous_attempt))
         return _generated_driver(Path(kwargs["workspace"]), previous_attempt + 1)
 
@@ -255,18 +258,39 @@ def _fake_hooks(
         package = kwargs["package"]
         condition = kwargs["condition"]
         attempt = int(kwargs["attempt"])
-        events.append(("harness", package.robot_configuration_id, condition, attempt))
+        output_dir = Path(kwargs["output_dir"])
+        role = (
+            "task_demo" if output_dir.name == "task-demo" else "capability_validation"
+        )
+        events.append(
+            ("harness", package.robot_configuration_id, condition, attempt, role)
+        )
         harness_inputs.append(
             {
                 "robot": package.robot_configuration_id,
                 "condition": condition,
                 "attempt": attempt,
                 "workspace": str(kwargs["driver_path"].parent),
+                "output_dir": str(output_dir),
+                "role": role,
                 "suite": kwargs["suite"],
             }
         )
-        passed = validation_pass_at is not None and attempt >= validation_pass_at - 1
+        passed = (
+            task_demo_pass
+            if role == "task_demo"
+            else validation_pass_at is not None and attempt >= validation_pass_at - 1
+        )
         case_count = len(kwargs["suite"]["cases"])
+        trials = [
+            {
+                "case_id": case["case_id"],
+                "task_id": f"task-{index}",
+                "source_clause_id": f"clause-{index}",
+                "trial_passed": passed,
+            }
+            for index, case in enumerate(kwargs["suite"]["cases"])
+        ]
         return {
             "pipeline_completed": True,
             "physical_validation_executed": True,
@@ -278,7 +302,7 @@ def _fake_hooks(
             "source_clause_count": case_count,
             "passed_private_case_count": case_count if passed else 0,
             "private_case_count": case_count,
-            "trials": [],
+            "trials": trials,
             "video_manifest": [],
         }
 
@@ -291,7 +315,7 @@ def _fake_hooks(
     hooks = PipelineHooks(
         package_loader=load,
         capability_design_validator=lambda design, package: dict(design),
-        private_suite_validator=lambda suite, **kwargs: dict(suite),
+        capability_suite_validator=lambda suite, **kwargs: dict(suite),
         tgcd_runner=tgcd,
         ivc_runner=ivc,
         study_runner=study_runner,
@@ -309,6 +333,7 @@ def _fake_hooks(
         "harness_inputs": harness_inputs,
         "reference_inputs": reference_inputs,
         "repair_calls": repair_calls,
+        "repair_reports": repair_reports,
     }
 
 
@@ -334,7 +359,7 @@ def test_pipeline_orders_ivc_and_reference_gate_before_dynamic_cells(tmp_path: P
         assert events.index(("ivc", robot)) < first_study
 
 
-def test_conditions_are_isolated_and_share_only_the_sealed_suite(tmp_path: Path) -> None:
+def test_conditions_share_sealed_capability_and_task_demo_suites(tmp_path: Path) -> None:
     events: list[tuple[Any, ...]] = []
     hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
     result = run_experiment(
@@ -350,34 +375,91 @@ def test_conditions_are_isolated_and_share_only_the_sealed_suite(tmp_path: Path)
     assert result["paired_report"]["summary"]["reported_cell_count"] == 4
     for robot in ("r-arm", "r-quad"):
         inputs = [item for item in state["harness_inputs"] if item["robot"] == robot]
+        capability_inputs = [
+            item for item in inputs if item["role"] == "capability_validation"
+        ]
+        task_demo_inputs = [item for item in inputs if item["role"] == "task_demo"]
         assert {item["condition"] for item in inputs} == {
             "skeleton-assisted",
             "from-scratch",
         }
+        assert len(capability_inputs) == 2
+        assert len(task_demo_inputs) == 2
         assert len({item["workspace"] for item in inputs}) == 2
-        assert inputs[0]["suite"] == inputs[1]["suite"]
-        assert len(inputs[0]["suite"]["cases"]) == 5
+        assert capability_inputs[0]["suite"] == capability_inputs[1]["suite"]
+        assert len(capability_inputs[0]["suite"]["cases"]) == 8
+        assert task_demo_inputs[0]["suite"] == task_demo_inputs[1]["suite"]
+        assert len(task_demo_inputs[0]["suite"]["cases"]) == 5
         reference = next(
             item for item in state["reference_inputs"] if item["robot"] == robot
         )
-        assert reference["suite"] == inputs[0]["suite"]
+        assert reference["suite"] == capability_inputs[0]["suite"]
         assert len(state["suites"][robot]["cases"]) == 8
         private_dir = tmp_path / "run" / "private" / robot
-        pool = json.loads(
-            (private_dir / "private_case_pool.json").read_text(encoding="utf-8")
+        capability = json.loads(
+            (private_dir / "capability_validation_suite.json").read_text(
+                encoding="utf-8"
+            )
         )
-        assert len(pool["cases"]) == 8
-        selected = json.loads(
-            (private_dir / "private_validation_suite.json").read_text(encoding="utf-8")
+        assert len(capability["cases"]) == 8
+        task_demo = json.loads(
+            (private_dir / "task_demo_suite.json").read_text(encoding="utf-8")
         )
-        assert len(selected["cases"]) == 5
-        assert selected["selection"]["selected_case_count"] == 5
+        assert len(task_demo["cases"]) == 5
+        assert task_demo["selection"]["selected_case_count"] == 5
     private_root = (tmp_path / "run" / "private").resolve()
     for item in state["harness_inputs"]:
         workspace = Path(item["workspace"]).resolve()
         assert private_root not in workspace.parents
-        assert not (workspace / "private_validation_suite.json").exists()
-        assert not any(workspace.rglob("private_validation_suite.json"))
+        assert not (workspace / "capability_validation_suite.json").exists()
+        assert not (workspace / "task_demo_suite.json").exists()
+        assert not any(workspace.rglob("capability_validation_suite.json"))
+        assert not any(workspace.rglob("task_demo_suite.json"))
+
+
+def test_task_demo_runs_only_after_admission_and_never_drives_repair(
+    tmp_path: Path,
+) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(
+        tmp_path,
+        events,
+        validation_pass_at=2,
+        task_demo_pass=False,
+    )
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=tmp_path / "run",
+        run_id="validation-then-demo",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+    )
+
+    assert success_claim(result)
+    assert result["final_capability_validation_passed"] is True
+    assert result["task_demo_executed"] is True
+    assert result["task_demo_passed"] is False
+    assert len(state["repair_calls"]) == 4
+    assert all(
+        report["evaluation_role"] == "capability_validation"
+        for report in state["repair_reports"]
+    )
+    for robot in ("r-arm", "r-quad"):
+        for condition in ("skeleton-assisted", "from-scratch"):
+            roles = [
+                event[4]
+                for event in events
+                if event[0] == "harness"
+                and event[1] == robot
+                and event[2] == condition
+            ]
+            assert roles == [
+                "capability_validation",
+                "capability_validation",
+                "task_demo",
+            ]
 
 
 def test_driver_attempts_are_capped_at_three_and_evolution_is_nonblocking(
@@ -404,6 +486,9 @@ def test_driver_attempts_are_capped_at_three_and_evolution_is_nonblocking(
     assert result["success"] is False
     assert all(cell["attempt_count"] == 3 for cell in result["cells"])
     assert len([item for item in events if item[0] == "harness"]) == 12
+    assert not any(
+        item[4] == "task_demo" for item in events if item[0] == "harness"
+    )
     assert len(state["repair_calls"]) == 8
     assert all(
         cell["outcomes"]["Evolution"] is None
@@ -438,8 +523,9 @@ def test_source_audit_rejection_does_not_consume_a_formal_attempt(tmp_path: Path
         rejected = cell["development_rejections"][0]
         assert rejected["formal_attempt_submitted"] is False
         assert rejected["source_audit_passed"] is False
-        assert cell["physical_validation_executed"] is False
-        assert cell["final_validation_passed"] is False
+        assert cell["capability_validation_executed"] is False
+        assert cell["final_capability_validation_passed"] is False
+        assert cell["task_demo_executed"] is False
 
 
 def test_pipeline_does_not_rerun_an_in_conversation_study_probe(tmp_path: Path) -> None:
@@ -612,7 +698,8 @@ def test_explicit_reference_skip_runs_dynamic_cells_but_never_claims_success(
     assert result["pipeline_completed"] is True
     assert result["reference_calibration_skipped"] is True
     assert result["reference_calibration_passed"] is False
-    assert result["final_validation_passed"] is True
+    assert result["final_capability_validation_passed"] is True
+    assert result["task_demo_executed"] is True
     assert result["success"] is False
     assert success_claim(result) is False
     assert result["claim"] == (
@@ -645,7 +732,7 @@ def test_reference_skip_does_not_call_incomplete_cells_completed(
     )
 
 
-def test_reuse_sealed_inputs_skips_tgcd_ivc_and_preserves_five_case_suite(
+def test_reuse_sealed_inputs_preserves_both_private_suites(
     tmp_path: Path,
 ) -> None:
     source_events: list[tuple[Any, ...]] = []
@@ -684,14 +771,18 @@ def test_reuse_sealed_inputs_skips_tgcd_ivc_and_preserves_five_case_suite(
     assert len([item for item in resumed_events if item[0] == "study"]) == 4
     assert result["sealed_input_provenance"]["source_run_id"] == "sealed-source"
     for robot in ("r-arm", "r-quad"):
-        original = json.loads(
-            (source / "private" / robot / "private_validation_suite.json").read_text()
-        )
-        reused = json.loads(
-            (destination / "private" / robot / "private_validation_suite.json").read_text()
-        )
-        assert reused == original
-        assert len(reused["cases"]) == 5
+        for filename, case_count in (
+            ("capability_validation_suite.json", 8),
+            ("task_demo_suite.json", 5),
+        ):
+            original = json.loads(
+                (source / "private" / robot / filename).read_text()
+            )
+            reused = json.loads(
+                (destination / "private" / robot / filename).read_text()
+            )
+            assert reused == original
+            assert len(reused["cases"]) == case_count
 
 
 def test_package_failure_happens_before_model_calls(tmp_path: Path) -> None:

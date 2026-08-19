@@ -31,7 +31,7 @@ class JsonGenerator(Protocol):
 
 
 EVOLUTION_SYSTEM_PROMPT = """You are the terminal Evolution sidecar for an experiment.
-Read the supplied terminal candidate-facing validation report and, if useful, propose one
+Read the supplied terminal candidate-facing Capability Validation and Task Demo report and, if useful, propose one
 small Experience record for a future run.  You are not allowed to repair or judge the current
 run.  Do not change its candidate, private suite, criterion, verdict, retry decision, or run
 inputs.  Do not invent private validation definitions or secrets.  A proposal is optional.
@@ -50,6 +50,8 @@ instruction to mutate the current run.  Keep evidence tied to facts present in t
 _PRIVATE_FIELDS = {
     "private_suite",
     "private_validation_suite",
+    "capability_validation_suite",
+    "task_demo_suite",
     "private_instances",
     "private_bindings",
     "private_guards",
@@ -80,6 +82,8 @@ _CURRENT_RUN_MUTATION_FIELDS = {
     "current_run",
     "validation_passed",
     "final_validation_passed",
+    "final_capability_validation_passed",
+    "task_demo_passed",
 }
 
 
@@ -134,12 +138,26 @@ def _validate_candidate_facing_report(report: Mapping[str, Any]) -> dict[str, An
     # The terminal report must expose the two independent execution facts and a verdict.  The
     # older Harness name is accepted so the sidecar can consume the current Demo3 report while
     # the integrated pipeline adds the explicit final_validation_passed alias.
-    for field in ("pipeline_completed", "physical_validation_executed"):
-        if not isinstance(report.get(field), bool):
-            raise EvolutionError(f"terminal report.{field} must be boolean")
+    if not isinstance(report.get("pipeline_completed"), bool):
+        raise EvolutionError("terminal report.pipeline_completed must be boolean")
     if not any(
         isinstance(report.get(field), bool)
-        for field in ("final_validation_passed", "validation_passed", "terminal_validation_passed")
+        for field in (
+            "capability_validation_executed",
+            "physical_validation_executed",
+        )
+    ):
+        raise EvolutionError(
+            "terminal report has no capability-validation execution fact"
+        )
+    if not any(
+        isinstance(report.get(field), bool)
+        for field in (
+            "final_capability_validation_passed",
+            "final_validation_passed",
+            "validation_passed",
+            "terminal_validation_passed",
+        )
     ):
         raise EvolutionError("terminal report has no terminal validation verdict")
 
@@ -189,7 +207,18 @@ def _compact_validation(validation: Mapping[str, Any]) -> dict[str, Any]:
     result = {
         str(key): copy.deepcopy(value)
         for key, value in validation.items()
-        if key not in {"attempts", "trials", "video_manifest", "outcomes", "evolution"}
+        if key
+        not in {
+            "attempts",
+            "trials",
+            "video_manifest",
+            "outcomes",
+            "evolution",
+            "capability_validation",
+            "task_demo",
+            "task_demo_trials",
+            "task_demo_video_manifest",
+        }
     }
     result["trial_count"] = len(trial_items)
     result["passed_trial_count"] = sum(
@@ -230,20 +259,28 @@ def _compact_terminal_report(report: Mapping[str, Any]) -> dict[str, Any]:
             compact = {
                 str(key): copy.deepcopy(value)
                 for key, value in attempt.items()
-                if key != "validation"
+                if key not in {"validation", "capability_validation"}
             }
-            validation = attempt.get("validation")
+            validation = attempt.get("capability_validation", attempt.get("validation"))
             if isinstance(validation, Mapping):
-                compact["validation"] = _compact_validation(validation)
+                compact["capability_validation"] = _compact_validation(validation)
             compact_attempts.append(compact)
     result["attempts"] = compact_attempts
-    result["terminal_validation"] = _compact_validation(report)
+    terminal_capability = report.get("capability_validation")
+    if not isinstance(terminal_capability, Mapping):
+        terminal_capability = report
+    result["terminal_capability_validation"] = _compact_validation(
+        terminal_capability
+    )
+    task_demo = report.get("task_demo")
+    if isinstance(task_demo, Mapping):
+        result["task_demo"] = _compact_validation(task_demo)
     outcomes = report.get("outcomes")
     if isinstance(outcomes, Mapping):
         result["stage_outcomes"] = {
             str(key): copy.deepcopy(value)
             for key, value in outcomes.items()
-            if key != "Validation"
+            if key not in {"Validation", "CapabilityValidation", "TaskDemo"}
         }
     return result
 

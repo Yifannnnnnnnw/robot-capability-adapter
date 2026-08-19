@@ -14,7 +14,7 @@ from autoadapter2.harness import run_private_suite
 from autoadapter2.harness.measurements import compare, measure
 from autoadapter2.harness.session import TrackedMuJoCoSession, apply_framework_reset
 from autoadapter2.libraries import load_robot_package
-from autoadapter2.validation_compiler import validate_private_suite
+from autoadapter2.validation_compiler import validate_capability_validation_suite
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -143,7 +143,7 @@ def _suite(package, design):
             }
         )
     return {
-        "artifact_type": "private_validation_suite",
+        "artifact_type": "capability_validation_suite",
         "schema_version": "1.0",
         "robot_configuration_id": package.robot_configuration_id,
         "package_version": package.package_version,
@@ -201,7 +201,9 @@ def test_so101_reference_source_and_ivc_contract() -> None:
     assert not audit.imports_trusted_skeleton
 
     suite = _suite(package, design)
-    checked = validate_private_suite(suite, package=package, design=design)
+    checked = validate_capability_validation_suite(
+        suite, package=package, design=design
+    )
     assert len(checked["cases"]) == len(package.tasks)
 
 

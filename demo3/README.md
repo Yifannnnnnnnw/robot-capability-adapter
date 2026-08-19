@@ -12,16 +12,19 @@ not import or copy runtime code from Demo2 or `general_demo`.
   is copied into the capability validation contract without changing its
   source-backed metric, threshold, temporal rule, or aggregation.
 - Trusted IVC receives the same task and source records, then compiles exactly
-  one private case per designed source clause. The Framework uniformly samples
-  five cases without replacement from that complete pool; generation cannot
-  read the pool or the sample.
-- Both package-local references must pass the generated suites before dynamic
+  one private case per designed source clause as the complete
+  `capability_validation_suite.json`. The Framework also samples five cases
+  without replacement into a separate `task_demo_suite.json`; generation
+  cannot read either suite.
+- Both package-local references must pass the complete capability validation
+  suites before dynamic
   Driver Synthesis starts.
 - The four dynamic cells are the two robots crossed with the preserved
   `skeleton-assisted` and `from-scratch` conditions.
 - Each cell runs interactive AutoAdapter 1.0-style STUDY and GENERATE/GEN_ALGO,
-  canonical isolated validation, up to two interactive Repair attempts, and
-  Evolution.
+  complete canonical capability validation, up to two report-driven Repair
+  attempts, a five-case Task Demo only after admission, and Evolution. Task Demo
+  has a separate verdict and never triggers same-run Repair.
 - STUDY, generation, and Repair use bounded multi-turn tool conversations. The
   model can inspect staged public files, run public-only MuJoCo probes, revise
   its driver, and react to audit/import/smoke diagnostics before submission.
@@ -72,8 +75,8 @@ calibration, add `--skip-reference-calibration`. This is explicitly diagnostic:
 the report records the skip and can never claim formal mainline success.
 
 After an API interruption, `--reuse-sealed-inputs-from runs/<prior-run>` reuses
-that run's audited capability designs, complete case pools, and exact sealed
-five-case samples. The new report records the source run and still keeps all
+that run's audited capability designs, complete capability validation suites,
+and exact sealed five-case Task Demo suites. The new report records the source run and still keeps all
 private suite files outside candidate workspaces.
 
 ## Evidence
@@ -86,11 +89,10 @@ MetaWorld, locomotion-paper, or industrial benchmark results.
 
 Each retained `runs/<run-id>/` package contains public capability designs,
 Harness-private suites, reference calibration reports, condition-local model
-and probe evidence, candidate attempts, validation reports, per-case videos,
-cell reports, and the final paired `experiment_report.json`. These fields keep
-pipeline completion, physical execution, validation verdicts, and video
-completeness separate. Task counts distinguish tasks touched by the selected
-cases from tasks whose complete set of scoring clauses was physically evaluated.
+and probe evidence, candidate attempts, capability-validation reports, Task
+Demo reports, per-case videos, cell reports, and the final paired
+`experiment_report.json`. These fields keep pipeline completion, capability
+admission, Task Demo, physical execution, and both video outcomes separate.
 
 See `EVIDENCE.md` for the historical complete run, current local verification,
 and the latest real-model launch result.

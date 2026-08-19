@@ -60,10 +60,10 @@ from autoadapter2.reporting import (
 )
 from autoadapter2.self_containment import check_self_contained
 from autoadapter2.validation_compiler import (
-    PRIVATE_CASE_SAMPLE_SIZE,
+    TASK_DEMO_CASE_COUNT,
     run_ivc,
-    sample_private_suite,
-    validate_private_suite,
+    sample_task_demo_suite,
+    validate_capability_validation_suite,
     write_private_suite,
 )
 
@@ -212,7 +212,9 @@ class PipelineHooks:
     capability_design_validator: Callable[..., Mapping[str, Any]] = (
         validate_capability_design
     )
-    private_suite_validator: Callable[..., Mapping[str, Any]] = validate_private_suite
+    capability_suite_validator: Callable[..., Mapping[str, Any]] = (
+        validate_capability_validation_suite
+    )
     tgcd_runner: Callable[..., Mapping[str, Any]] = run_tgcd
     ivc_runner: Callable[..., Mapping[str, Any]] = run_ivc
     study_runner: Callable[..., StudyResult] = study
@@ -268,6 +270,7 @@ def _reuse_sealed_inputs(
 ) -> tuple[
     dict[str, Mapping[str, Any]],
     dict[str, Mapping[str, Any]],
+    dict[str, Mapping[str, Any]],
     list[dict[str, Any]],
     dict[str, Any],
 ]:
@@ -289,7 +292,8 @@ def _reuse_sealed_inputs(
         raise PipelineError("source run report lacks stage_evidence")
 
     designs: dict[str, Mapping[str, Any]] = {}
-    suites: dict[str, Mapping[str, Any]] = {}
+    capability_suites: dict[str, Mapping[str, Any]] = {}
+    task_demo_suites: dict[str, Mapping[str, Any]] = {}
     reused_evidence: list[dict[str, Any]] = []
     for robot in config.robots:
         for stage in ("tgcd", "ivc"):
@@ -318,40 +322,61 @@ def _reuse_sealed_inputs(
 
         package = packages[robot]
         design_path = source / "designs" / robot / "capability_design.json"
-        pool_path = source / "private" / robot / "private_case_pool.json"
-        suite_path = source / "private" / robot / "private_validation_suite.json"
+        private_dir = source / "private" / robot
+        capability_path = private_dir / "capability_validation_suite.json"
+        task_demo_path = private_dir / "task_demo_suite.json"
+        legacy_capability_path = private_dir / "private_case_pool.json"
+        legacy_demo_path = private_dir / "private_validation_suite.json"
         design = dict(
             hooks.capability_design_validator(
                 _read_object(design_path, label=f"{robot} capability design"),
                 package,
             )
         )
-        pool = dict(
-            hooks.private_suite_validator(
-                _read_object(pool_path, label=f"{robot} private case pool"),
+        capability_source = (
+            capability_path if capability_path.is_file() else legacy_capability_path
+        )
+        capability_raw = _read_object(
+            capability_source, label=f"{robot} capability validation suite"
+        )
+        if capability_raw.get("artifact_type") == "private_validation_suite":
+            capability_raw["artifact_type"] = "capability_validation_suite"
+        capability_suite = dict(
+            hooks.capability_suite_validator(
+                capability_raw,
                 package=package,
                 design=design,
             )
         )
-        suite = _read_object(suite_path, label=f"{robot} sampled private suite")
-        selection = suite.get("selection")
+        task_demo_source = task_demo_path if task_demo_path.is_file() else legacy_demo_path
+        task_demo_suite = _read_object(
+            task_demo_source, label=f"{robot} Task Demo suite"
+        )
+        if task_demo_suite.get("artifact_type") == "private_validation_suite":
+            task_demo_suite["artifact_type"] = "task_demo_suite"
+        selection = task_demo_suite.get("selection")
         seed = selection.get("seed") if isinstance(selection, Mapping) else None
         if not isinstance(seed, str) or not seed:
-            raise PipelineError(f"{robot} sampled private suite lacks its selection seed")
-        if sample_private_suite(pool, seed=seed) != suite:
-            raise PipelineError(f"{robot} sampled private suite differs from its sealed pool")
+            raise PipelineError(f"{robot} Task Demo suite lacks its selection seed")
+        if sample_task_demo_suite(capability_suite, seed=seed) != task_demo_suite:
+            raise PipelineError(
+                f"{robot} Task Demo suite differs from its capability validation suite"
+            )
 
         write_capability_design(
             destination / "designs" / robot / "capability_design.json", design
         )
         write_private_suite(
-            destination / "private" / robot / "private_case_pool.json", pool
+            destination / "private" / robot / "capability_validation_suite.json",
+            capability_suite,
         )
         write_private_suite(
-            destination / "private" / robot / "private_validation_suite.json", suite
+            destination / "private" / robot / "task_demo_suite.json",
+            task_demo_suite,
         )
         designs[robot] = design
-        suites[robot] = suite
+        capability_suites[robot] = capability_suite
+        task_demo_suites[robot] = task_demo_suite
 
     provenance = {
         "reused": True,
@@ -360,7 +385,7 @@ def _reuse_sealed_inputs(
         "robots": list(config.robots),
     }
     _write(destination / "sealed_input_reuse.json", provenance)
-    return designs, suites, reused_evidence, provenance
+    return designs, capability_suites, task_demo_suites, reused_evidence, provenance
 
 
 def _default_root() -> Path:
@@ -665,7 +690,7 @@ def _default_reference_run(
     *,
     package: RobotPackage,
     design: Mapping[str, Any],
-    suite: Mapping[str, Any],
+    capability_suite: Mapping[str, Any],
     driver_path: Path,
     output_dir: Path,
     config: ExperimentConfig,
@@ -680,7 +705,7 @@ def _default_reference_run(
     return run_private_suite(
         package=package,
         design=_copy(dict(design)),
-        suite=_copy(dict(suite)),
+        suite=_copy(dict(capability_suite)),
         driver_path=driver_path,
         condition=condition,
         output_dir=output_dir,
@@ -708,11 +733,13 @@ def _normalise_validation_report(
     condition: str,
     attempt: int,
     record_video: bool,
+    evaluation_role: str,
 ) -> dict[str, Any]:
     result = _copy(dict(report))
     result.setdefault("robot_configuration_id", robot)
     result.setdefault("condition", condition)
     result.setdefault("attempt", attempt)
+    result["evaluation_role"] = evaluation_role
     result.setdefault("pipeline_completed", False)
     result.setdefault("physical_validation_executed", False)
     result.setdefault("validation_passed", False)
@@ -766,7 +793,8 @@ def _run_cell(
     *,
     package: RobotPackage,
     design: Mapping[str, Any],
-    suite: Mapping[str, Any],
+    capability_suite: Mapping[str, Any],
+    task_demo_suite: Mapping[str, Any],
     robot: str,
     condition: GenerationCondition,
     config: ExperimentConfig,
@@ -781,7 +809,8 @@ def _run_cell(
     workspace.mkdir(parents=True, exist_ok=True)
     runtime_contract = _runtime_contract(package)
     public_design = _copy(dict(design))
-    public_suite = _copy(dict(suite))
+    sealed_capability_suite = _copy(dict(capability_suite))
+    sealed_task_demo_suite = _copy(dict(task_demo_suite))
     attempts: list[dict[str, Any]] = []
     development_rejections: list[dict[str, Any]] = []
     driver_generated = False
@@ -939,8 +968,8 @@ def _run_cell(
                     before = _call_count(client)
                     repair_kwargs: dict[str, Any] = {
                         "previous_driver_source": current_source,
-                        "candidate_report": attempts[-1]["validation"],
-                        "media_manifest": attempts[-1]["validation"].get(
+                        "candidate_report": attempts[-1]["capability_validation"],
+                        "media_manifest": attempts[-1]["capability_validation"].get(
                             "video_manifest", []
                         ),
                         "public_inputs": public_inputs,
@@ -1041,6 +1070,7 @@ def _run_cell(
                     condition=condition,
                     attempt=attempt,
                     record_video=config.record_video,
+                    evaluation_role="capability_validation",
                 )
                 _write(
                     attempt_dir / "generation_evidence.json",
@@ -1122,10 +1152,10 @@ def _run_cell(
                 validation_raw = hooks.harness_runner(
                     package=package,
                     design=_copy(public_design),
-                    suite=_copy(public_suite),
+                    suite=_copy(sealed_capability_suite),
                     driver_path=current_driver,
                     condition=condition,
-                    output_dir=attempt_dir / "validation",
+                    output_dir=attempt_dir / "capability-validation",
                     record_video=config.record_video,
                     wall_timeout_s=config.worker_wall_timeout_s,
                     run_id=run_id,
@@ -1137,6 +1167,7 @@ def _run_cell(
                     condition=condition,
                     attempt=attempt,
                     record_video=config.record_video,
+                    evaluation_role="capability_validation",
                 )
             except Exception as exc:
                 validation = _normalise_validation_report(
@@ -1151,6 +1182,7 @@ def _run_cell(
                     condition=condition,
                     attempt=attempt,
                     record_video=config.record_video,
+                    evaluation_role="capability_validation",
                 )
             terminal_validation = validation
             if initial_pass is None:
@@ -1158,27 +1190,97 @@ def _run_cell(
             attempt_record: dict[str, Any] = {
                 "attempt": attempt,
                 "driver_generated": True,
-                "validation": validation,
+                "capability_validation": validation,
             }
             if generation_evidence is not None:
                 attempt_record["generate"] = generation_evidence
             if repair_evidence is not None:
                 attempt_record["repair"] = repair_evidence
             attempts.append(attempt_record)
-            _write(attempt_dir / "candidate_report.json", validation)
+            _write(attempt_dir / "capability_validation_report.json", validation)
             if bool(validation.get("validation_passed")):
                 break
 
     if terminal_validation is None:
-        terminal_validation = {
+        terminal_validation = _normalise_validation_report(
+            {
+                "pipeline_completed": False,
+                "physical_validation_executed": False,
+                "validation_passed": False,
+                "video_complete": not config.record_video,
+                "trials": [],
+                "video_manifest": [],
+            },
+            robot=robot,
+            condition=condition,
+            attempt=max(0, len(attempts) - 1),
+            record_video=config.record_video,
+            evaluation_role="capability_validation",
+        )
+
+    final_pass = bool(terminal_validation.get("validation_passed"))
+    task_demo = _normalise_validation_report(
+        {
             "pipeline_completed": False,
             "physical_validation_executed": False,
             "validation_passed": False,
             "video_complete": not config.record_video,
+            "skipped": True,
+            "skip_reason": "capability validation did not pass",
             "trials": [],
-        }
+            "video_manifest": [],
+        },
+        robot=robot,
+        condition=condition,
+        attempt=max(0, len(attempts) - 1),
+        record_video=config.record_video,
+        evaluation_role="task_demo",
+    )
+    if final_pass and current_driver is not None:
+        task_demo_attempt = int(terminal_validation.get("attempt", 0))
+        try:
+            task_demo_raw = hooks.harness_runner(
+                package=package,
+                design=_copy(public_design),
+                suite=_copy(sealed_task_demo_suite),
+                driver_path=current_driver,
+                condition=condition,
+                output_dir=workspace / "task-demo",
+                record_video=config.record_video,
+                wall_timeout_s=config.worker_wall_timeout_s,
+                run_id=run_id,
+                attempt=task_demo_attempt,
+            )
+            task_demo = _normalise_validation_report(
+                task_demo_raw,
+                robot=robot,
+                condition=condition,
+                attempt=task_demo_attempt,
+                record_video=config.record_video,
+                evaluation_role="task_demo",
+            )
+        except Exception as exc:
+            task_demo = _normalise_validation_report(
+                {
+                    "pipeline_completed": False,
+                    "physical_validation_executed": False,
+                    "validation_passed": False,
+                    "video_complete": not config.record_video,
+                    "failure": _failure_record(exc),
+                    "trials": [],
+                    "video_manifest": [],
+                },
+                robot=robot,
+                condition=condition,
+                attempt=task_demo_attempt,
+                record_video=config.record_video,
+                evaluation_role="task_demo",
+            )
+        _write(workspace / "task-demo" / "task_demo_report.json", task_demo)
 
-    final_pass = bool(terminal_validation.get("validation_passed"))
+    cell_pipeline_completed = bool(terminal_validation.get("pipeline_completed")) and (
+        not final_pass or bool(task_demo.get("pipeline_completed"))
+    )
     capabilities = [
         capability
         for capability in public_design.get("capabilities", [])
@@ -1202,9 +1304,19 @@ def _run_cell(
         "condition": condition,
         "provider": identity["provider"],
         "model": identity["model"],
-        "pipeline_completed": bool(terminal_validation.get("pipeline_completed")),
+        "pipeline_completed": cell_pipeline_completed,
         "dynamic_model_called": dynamic_model_called,
         "driver_generated_in_run": driver_generated,
+        "capability_validation_executed": bool(
+            terminal_validation.get("physical_validation_executed")
+        ),
+        "initial_capability_validation_passed": bool(initial_pass),
+        "final_capability_validation_passed": final_pass,
+        "task_demo_executed": bool(task_demo.get("physical_validation_executed")),
+        "task_demo_passed": bool(task_demo.get("validation_passed")),
+        "task_demo_pipeline_completed": bool(task_demo.get("pipeline_completed")),
+        "task_demo_video_complete": bool(task_demo.get("video_complete")),
+        # Compatibility aliases map only to Capability Validation.
         "physical_validation_executed": bool(
             terminal_validation.get("physical_validation_executed")
         ),
@@ -1221,6 +1333,10 @@ def _run_cell(
         },
         "trials": terminal_validation.get("trials", []),
         "video_manifest": terminal_validation.get("video_manifest", []),
+        "capability_validation": _copy(terminal_validation),
+        "task_demo": _copy(task_demo),
+        "task_demo_trials": task_demo.get("trials", []),
+        "task_demo_video_manifest": task_demo.get("video_manifest", []),
         "failure": failure,
         "outcomes": {
             "TGCD": next(
@@ -1247,7 +1363,8 @@ def _run_cell(
                 (item for item in reversed(model_stage_log) if item.get("stage") == "generate" and item.get("robot") == robot and item.get("condition") == condition),
                 None,
             ),
-            "Validation": _copy(terminal_validation),
+            "CapabilityValidation": _copy(terminal_validation),
+            "TaskDemo": _copy(task_demo),
             "Repair": [
                 item
                 for item in model_stage_log
@@ -1407,12 +1524,14 @@ def run_experiment(
     identity = _client_identity(client, model_identity)
     stage_log: list[dict[str, Any]] = []
     designs: dict[str, Mapping[str, Any]] = {}
-    suites: dict[str, Mapping[str, Any]] = {}
+    capability_suites: dict[str, Mapping[str, Any]] = {}
+    task_demo_suites: dict[str, Mapping[str, Any]] = {}
     sealed_input_provenance: dict[str, Any] | None = None
     if sealed_inputs_from is not None:
         (
             designs,
-            suites,
+            capability_suites,
+            task_demo_suites,
             reused_evidence,
             sealed_input_provenance,
         ) = _reuse_sealed_inputs(
@@ -1457,6 +1576,11 @@ def run_experiment(
                 "pipeline_completed": False,
                 "dynamic_model_called": bool(stage_log),
                 "driver_generated_in_run": False,
+                "capability_validation_executed": False,
+                "initial_capability_validation_passed": False,
+                "final_capability_validation_passed": False,
+                "task_demo_executed": False,
+                "task_demo_passed": False,
                 "physical_validation_executed": False,
                 "initial_validation_passed": False,
                 "final_validation_passed": False,
@@ -1470,21 +1594,31 @@ def run_experiment(
 
         try:
             before = _call_count(client)
-            case_pool = selected_hooks.ivc_runner(
+            capability_suite = selected_hooks.ivc_runner(
                 client,
                 package=package,
                 design=_copy(dict(design)),
             )
-            case_pool = _copy(dict(case_pool))
+            capability_suite = _copy(dict(capability_suite))
             selection_seed = f"{selected_run_id}:{robot}"
-            suite = sample_private_suite(case_pool, seed=selection_seed)
+            task_demo_suite = sample_task_demo_suite(
+                capability_suite, seed=selection_seed
+            )
             evidence = _stage_evidence(client, stage="ivc", before=before, completed=True)
-            evidence["compiled_private_case_count"] = len(case_pool.get("cases", []))
-            evidence["selected_private_case_count"] = PRIVATE_CASE_SAMPLE_SIZE
+            evidence["compiled_capability_validation_case_count"] = len(
+                capability_suite.get("cases", [])
+            )
+            evidence["selected_task_demo_case_count"] = TASK_DEMO_CASE_COUNT
             stage_log.append({"robot": robot, **evidence})
-            write_private_suite(robot_private_dir / "private_case_pool.json", case_pool)
-            write_private_suite(robot_private_dir / "private_validation_suite.json", suite)
-            suites[robot] = suite
+            write_private_suite(
+                robot_private_dir / "capability_validation_suite.json",
+                capability_suite,
+            )
+            write_private_suite(
+                robot_private_dir / "task_demo_suite.json", task_demo_suite
+            )
+            capability_suites[robot] = capability_suite
+            task_demo_suites[robot] = task_demo_suite
         except Exception as exc:
             evidence = _stage_evidence(
                 client,
@@ -1498,6 +1632,11 @@ def run_experiment(
                 "pipeline_completed": False,
                 "dynamic_model_called": True,
                 "driver_generated_in_run": False,
+                "capability_validation_executed": False,
+                "initial_capability_validation_passed": False,
+                "final_capability_validation_passed": False,
+                "task_demo_executed": False,
+                "task_demo_passed": False,
                 "physical_validation_executed": False,
                 "initial_validation_passed": False,
                 "final_validation_passed": False,
@@ -1517,6 +1656,7 @@ def run_experiment(
                 "reference_driver": None,
                 "skipped": True,
                 "skip_reason": "explicit diagnostic dynamic-only run",
+                "evaluation_role": "capability_validation",
                 "pipeline_completed": False,
                 "physical_validation_executed": False,
                 "validation_passed": False,
@@ -1541,7 +1681,7 @@ def run_experiment(
                     reference = _default_reference_run(
                         package=package,
                         design=designs[robot],
-                        suite=suites[robot],
+                        capability_suite=capability_suites[robot],
                         driver_path=driver_path,
                         output_dir=reference_dir / "validation",
                         config=config,
@@ -1551,7 +1691,7 @@ def run_experiment(
                     reference = selected_hooks.reference_runner(
                         package=package,
                         design=_copy(dict(designs[robot])),
-                        suite=_copy(dict(suites[robot])),
+                        suite=_copy(dict(capability_suites[robot])),
                         driver_path=driver_path,
                         output_dir=reference_dir / "validation",
                         record_video=config.record_video,
@@ -1560,6 +1700,7 @@ def run_experiment(
                         attempt=0,
                     )
                 reference = _copy(dict(reference))
+                reference["evaluation_role"] = "capability_validation"
                 reference["robot_configuration_id"] = robot
                 reference["reference_driver"] = str(driver_path)
                 reference["passed"] = _reference_passed(
@@ -1570,6 +1711,7 @@ def run_experiment(
                 reference = {
                     "robot_configuration_id": robot,
                     "reference_driver": None,
+                    "evaluation_role": "capability_validation",
                     "pipeline_completed": False,
                     "physical_validation_executed": False,
                     "validation_passed": False,
@@ -1601,6 +1743,11 @@ def run_experiment(
             "pipeline_completed": False,
             "dynamic_model_called": True,
             "driver_generated_in_run": False,
+            "capability_validation_executed": False,
+            "initial_capability_validation_passed": False,
+            "final_capability_validation_passed": False,
+            "task_demo_executed": False,
+            "task_demo_passed": False,
             "physical_validation_executed": False,
             "initial_validation_passed": False,
             "final_validation_passed": False,
@@ -1618,7 +1765,8 @@ def run_experiment(
             raw_cell = _run_cell(
                 package=packages[robot],
                 design=designs[robot],
-                suite=suites[robot],
+                capability_suite=capability_suites[robot],
+                task_demo_suite=task_demo_suites[robot],
                 robot=robot,
                 condition=condition,
                 config=config,
@@ -1639,8 +1787,14 @@ def run_experiment(
         expected_conditions=config.generation_conditions,
         run_id=selected_run_id,
     )
-    all_cells_passed = bool(paired["summary"]["all_cells_final_validation_passed"])
+    all_cells_passed = bool(
+        paired["summary"]["all_cells_final_capability_validation_passed"]
+    )
     all_cells_completed = bool(paired["summary"]["all_cells_pipeline_completed"])
+    all_task_demos_executed = bool(
+        paired["summary"]["all_cells_task_demo_executed"]
+    )
+    all_task_demos_passed = bool(paired["summary"]["all_cells_task_demo_passed"])
     result = {
         "experiment_id": config.experiment_id,
         "code_version": __version__,
@@ -1658,14 +1812,26 @@ def run_experiment(
         "driver_generated_in_run": all(
             bool(cell["driver_generated_in_run"]) for cell in cell_reports
         ),
+        "capability_validation_executed": all(
+            bool(cell["capability_validation_executed"]) for cell in cell_reports
+        ),
+        "initial_capability_validation_passed": all(
+            bool(cell["initial_capability_validation_passed"])
+            for cell in cell_reports
+        ),
+        "final_capability_validation_passed": all_cells_passed,
+        "task_demo_executed": all_task_demos_executed,
+        "task_demo_passed": all_task_demos_passed,
+        # Compatibility aliases describe Capability Validation only.
         "physical_validation_executed": all(
-            bool(cell["physical_validation_executed"]) for cell in cell_reports
+            bool(cell["capability_validation_executed"]) for cell in cell_reports
         ),
         "initial_validation_passed": all(
-            bool(cell["initial_validation_passed"]) for cell in cell_reports
+            bool(cell["initial_capability_validation_passed"])
+            for cell in cell_reports
         ),
         "final_validation_passed": all_cells_passed,
-        "success": references_passed and all_cells_passed,
+        "success": references_passed and all_cells_passed and all_cells_completed,
         "claim": (
             (
                 "dynamic cells completed without reference calibration; "
@@ -1678,9 +1844,13 @@ def run_experiment(
             )
             if skip_reference_calibration
             else (
-                "two-condition, two-robot mainline succeeded"
-                if references_passed and all_cells_passed
-                else "paired two-condition experiment completed; named cell synthesis failures remain"
+                "driver-synthesis mainline succeeded; Task Demo results reported separately"
+                if references_passed and all_cells_passed and all_cells_completed
+                else (
+                    "driver synthesis passed; one or more Task Demo pipelines were incomplete"
+                    if references_passed and all_cells_passed
+                    else "paired two-condition experiment completed; named cell synthesis failures remain"
+                )
             )
         ),
         "stage_evidence": stage_log,
@@ -1692,8 +1862,11 @@ def run_experiment(
 def success_claim(result: Mapping[str, Any]) -> bool:
     """Return the strict success claim used by the full CLI."""
 
-    return bool(result.get("success")) and bool(result.get("reference_calibration_passed")) and bool(
-        result.get("final_validation_passed")
+    return (
+        bool(result.get("success"))
+        and bool(result.get("reference_calibration_passed"))
+        and bool(result.get("final_capability_validation_passed"))
+        and bool(result.get("pipeline_completed"))
     )
 
 

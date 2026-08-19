@@ -21,7 +21,10 @@ from autoadapter2.trusted_skeletons.quadruped_pd_gait import (
     QuadrupedPDGaitSkeleton,
     QuadrupedSpec,
 )
-from autoadapter2.validation_compiler import sample_private_suite, validate_private_suite
+from autoadapter2.validation_compiler import (
+    sample_task_demo_suite,
+    validate_capability_validation_suite,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,7 +129,7 @@ def _design_and_suite(package):
                 )
     design = {"capabilities": capabilities}
     suite = {
-        "artifact_type": "private_validation_suite",
+        "artifact_type": "capability_validation_suite",
         "schema_version": "1.0",
         "robot_configuration_id": package.robot_configuration_id,
         "package_version": package.package_version,
@@ -310,10 +313,12 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
 def test_go2_arbitrary_renderer_dispatches_by_task_id() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design, suite = _design_and_suite(package)
-    checked = validate_private_suite(suite, package=package, design=design)
+    checked = validate_capability_validation_suite(
+        suite, package=package, design=design
+    )
     assert len(checked["cases"]) == 27
-    sampled = sample_private_suite(checked, seed="go2-source-protocol-check")
-    repeated = sample_private_suite(checked, seed="go2-source-protocol-check")
+    sampled = sample_task_demo_suite(checked, seed="go2-source-protocol-check")
+    repeated = sample_task_demo_suite(checked, seed="go2-source-protocol-check")
     assert len(sampled["cases"]) == 5
     assert [case["case_id"] for case in sampled["cases"]] == [
         case["case_id"] for case in repeated["cases"]

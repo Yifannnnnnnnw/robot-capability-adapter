@@ -1,8 +1,8 @@
 """Direct dict/JSON reporting for Demo3 cells and paired comparisons.
 
-The report keeps execution, physical validation, first-pass, final-pass, media, and phase
-outcomes as separate fields.  A paired report retains every cell in full; its summary is only a
-view over those cells and is never a replacement for them.
+The report keeps Capability Validation and the later Task Demo as separate outcomes. A paired
+report retains every cell in full; its summary is only a view over those cells and is never a
+replacement for them.
 """
 
 from __future__ import annotations
@@ -30,8 +30,9 @@ _OUTCOME_FIELDS = (
     ("IVC", "ivc"),
     ("STUDY", "study"),
     ("GENERATE", "generate"),
-    ("Validation", "validation"),
+    ("CapabilityValidation", "capability_validation"),
     ("Repair", "repair"),
+    ("TaskDemo", "task_demo"),
     ("Evolution", "evolution"),
 )
 
@@ -264,12 +265,13 @@ def build_cell_report(
 
     initial_passed = _bool(
         run_report,
-        ("initial_validation_passed", "pass@0"),
+        ("initial_capability_validation_passed", "initial_validation_passed", "pass@0"),
         default=False,
     )
     final_passed = _bool(
         run_report,
         (
+            "final_capability_validation_passed",
             "final_validation_passed",
             "pass@k",
             "terminal_validation_passed",
@@ -279,7 +281,39 @@ def build_cell_report(
     )
     pipeline_completed = _bool(run_report, ("pipeline_completed",), default=False)
     physical_executed = _bool(
-        run_report, ("physical_validation_executed",), default=False
+        run_report,
+        ("capability_validation_executed", "physical_validation_executed"),
+        default=False,
+    )
+
+    task_demo_value = run_report.get("task_demo")
+    task_demo = task_demo_value if isinstance(task_demo_value, Mapping) else {}
+    task_demo_trials_value = _first_value(
+        run_report, ("task_demo_trials",), task_demo.get("trials", [])
+    )
+    task_demo_trials = (
+        list(task_demo_trials_value) if isinstance(task_demo_trials_value, list) else []
+    )
+    task_demo_counts = _trial_counts(task_demo_trials)
+    (
+        task_demo_video_complete,
+        task_demo_video_complete_count,
+        task_demo_video_total_count,
+    ) = _video_counts(task_demo, task_demo_trials)
+    task_demo_executed = _bool(
+        run_report,
+        ("task_demo_executed",),
+        default=_bool(task_demo, ("physical_validation_executed",), default=False),
+    )
+    task_demo_passed = _bool(
+        run_report,
+        ("task_demo_passed",),
+        default=_bool(task_demo, ("validation_passed",), default=False),
+    )
+    task_demo_pipeline_completed = _bool(
+        run_report,
+        ("task_demo_pipeline_completed",),
+        default=_bool(task_demo, ("pipeline_completed",), default=False),
     )
 
     cell_id = _first_value(run_report, ("cell_id",), f"{robot}::{condition_value}")
@@ -299,6 +333,28 @@ def build_cell_report(
         "driver_generated_in_run": _bool(
             run_report, ("driver_generated_in_run",), default=False
         ),
+        "capability_validation_executed": physical_executed,
+        "initial_capability_validation_passed": initial_passed,
+        "final_capability_validation_passed": final_passed,
+        "task_demo_executed": task_demo_executed,
+        "task_demo_passed": task_demo_passed,
+        "task_demo_pipeline_completed": task_demo_pipeline_completed,
+        "task_demo_case_counts": {
+            "passed": task_demo_counts["case"][0],
+            "total": task_demo_counts["case"][1],
+        },
+        "task_demo_task_counts": {
+            "passed": task_demo_counts["task"][0],
+            "total": task_demo_counts["task"][1],
+        },
+        "task_demo_clause_counts": {
+            "passed": task_demo_counts["clause"][0],
+            "total": task_demo_counts["clause"][1],
+        },
+        "task_demo_video_complete": task_demo_video_complete,
+        "task_demo_video_complete_count": task_demo_video_complete_count,
+        "task_demo_video_total_count": task_demo_video_total_count,
+        # Compatibility aliases describe Capability Validation only.
         "physical_validation_executed": physical_executed,
         "initial_validation_passed": initial_passed,
         "pass@0": initial_passed,
@@ -348,6 +404,10 @@ def build_cell_report(
         "clause_results",
         "case_results",
         "video_manifest",
+        "capability_validation",
+        "task_demo",
+        "task_demo_trials",
+        "task_demo_video_manifest",
         "failure",
         "failure_reason",
         "infrastructure_failure",
@@ -401,7 +461,7 @@ def build_paired_report(
         both_passed: bool | None = None
         if present:
             both_passed = all(
-                bool(cell["final_validation_passed"])
+                bool(cell["final_capability_validation_passed"])
                 for cell in condition_cells.values()
                 if cell is not None
             )
@@ -410,6 +470,7 @@ def build_paired_report(
                 "robot_configuration_id": robot,
                 "conditions": condition_cells,
                 "both_cells_reported": present,
+                "both_cells_final_capability_validation_passed": both_passed,
                 "both_cells_final_validation_passed": both_passed,
             }
         )
@@ -427,12 +488,35 @@ def build_paired_report(
         if all_reported
         else False,
         "all_cells_physical_validation_executed": all(
-            bool(cell["physical_validation_executed"]) for cell in by_id.values()
+            bool(cell["capability_validation_executed"]) for cell in by_id.values()
+        )
+        if all_reported
+        else False,
+        "all_cells_capability_validation_executed": all(
+            bool(cell["capability_validation_executed"])
+            for cell in by_id.values()
+        )
+        if all_reported
+        else False,
+        "all_cells_final_capability_validation_passed": all(
+            bool(cell["final_capability_validation_passed"])
+            for cell in by_id.values()
         )
         if all_reported
         else False,
         "all_cells_final_validation_passed": all(
-            bool(cell["final_validation_passed"]) for cell in by_id.values()
+            bool(cell["final_capability_validation_passed"])
+            for cell in by_id.values()
+        )
+        if all_reported
+        else False,
+        "all_cells_task_demo_executed": all(
+            bool(cell["task_demo_executed"]) for cell in by_id.values()
+        )
+        if all_reported
+        else False,
+        "all_cells_task_demo_passed": all(
+            bool(cell["task_demo_passed"]) for cell in by_id.values()
         )
         if all_reported
         else False,

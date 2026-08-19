@@ -12,16 +12,18 @@ from typing import Any, Protocol
 from autoadapter2.libraries import RobotPackage
 
 
-PRIVATE_CASE_SAMPLE_SIZE = 5
+TASK_DEMO_CASE_COUNT = 5
+# Compatibility for callers that imported the old Demo3 constant.
+PRIVATE_CASE_SAMPLE_SIZE = TASK_DEMO_CASE_COUNT
 
 
 IVC_SYSTEM_PROMPT = """You are the implementation-blind Independent Validation Compiler.
 Compile the sealed public Capability Design and the supplied Framework-private instances,
-measurement bindings, and guards into one complete private physical validation case pool. You
+measurement bindings, and guards into one complete private capability validation suite. You
 cannot see and must not infer any candidate driver implementation, trace, report, Repair history,
 or verdict.
 
-Return one JSON object with artifact_type='private_validation_suite', schema_version='1.0', the
+Return one JSON object with artifact_type='capability_validation_suite', schema_version='1.0', the
 supplied robot_configuration_id, package_version, task_snapshot_id, and cases[]. Each case must
 select an existing private instance and one source validation clause and contain: case_id,
 capability_id, method_name, task_id, source_clause_id, instance_id, binding_id, guard_ids,
@@ -29,7 +31,7 @@ repetitions, timeout_sim_s, and criterion. criterion must copy metric, unit, com
 temporal, aggregation, and source_refs exactly from the sealed public clause. Use only supplied IDs.
 Produce exactly one case for every designed source clause: do not omit or duplicate a clause. Set
 whole_suite_aggregation to {'kind':'all_cases'}. Do not sample the pool; the Framework performs the
-later private five-case selection. Do not return driver code, implementation advice, or a
+later private five-case Task Demo selection. Do not return driver code, implementation advice, or a
 self-reported verdict."""
 
 
@@ -142,7 +144,7 @@ def _same_criterion(case: Mapping[str, Any], source: Mapping[str, Any]) -> bool:
     return all(criterion.get(field) == source.get(field) for field in fields)
 
 
-def validate_private_suite(
+def validate_capability_validation_suite(
     suite: Mapping[str, Any],
     *,
     package: RobotPackage,
@@ -152,7 +154,7 @@ def validate_private_suite(
     """Audit model output without reading any candidate implementation."""
 
     expected_root = {
-        "artifact_type": "private_validation_suite",
+        "artifact_type": "capability_validation_suite",
         "schema_version": "1.0",
         "robot_configuration_id": package.robot_configuration_id,
         "package_version": package.package_version,
@@ -239,7 +241,9 @@ def validate_private_suite(
         coverage[(task_id, clause_id)] += 1
 
     if set(coverage) != set(source_clauses) or any(count != 1 for count in coverage.values()):
-        raise IVCError("private suite must cover every designed source clause exactly once")
+        raise IVCError(
+            "capability validation suite must cover every designed source clause exactly once"
+        )
     return dict(suite)
 
 
@@ -277,7 +281,7 @@ def run_ivc(
             inputs=inputs,
         )
         try:
-            return validate_private_suite(
+            return validate_capability_validation_suite(
                 suite,
                 package=package,
                 design=design,
@@ -299,42 +303,51 @@ def run_ivc(
     raise AssertionError("unreachable")
 
 
-def sample_private_suite(
-    case_pool: Mapping[str, Any],
+def sample_task_demo_suite(
+    capability_suite: Mapping[str, Any],
     *,
     seed: str,
 ) -> dict[str, Any]:
-    """Select the sealed executable cases from an already audited complete pool."""
+    """Select the sealed five-case Task Demo from an audited capability suite."""
 
-    cases = case_pool.get("cases")
-    if not isinstance(cases, list) or len(cases) < PRIVATE_CASE_SAMPLE_SIZE:
+    if capability_suite.get("artifact_type") != "capability_validation_suite":
+        raise IVCError("Task Demo sampling requires a capability validation suite")
+    cases = capability_suite.get("cases")
+    if not isinstance(cases, list) or len(cases) < TASK_DEMO_CASE_COUNT:
         raise IVCError(
-            f"private case pool must contain at least {PRIVATE_CASE_SAMPLE_SIZE} cases"
+            f"capability validation suite must contain at least {TASK_DEMO_CASE_COUNT} cases"
         )
     if not isinstance(seed, str) or not seed:
         raise IVCError("private case selection seed must be non-empty text")
 
     selected_indexes = random.Random(seed).sample(
-        range(len(cases)), PRIVATE_CASE_SAMPLE_SIZE
+        range(len(cases)), TASK_DEMO_CASE_COUNT
     )
     selected_cases = [dict(cases[index]) for index in selected_indexes]
     selected_ids = [
         _text(case, "case_id", where=f"selected_cases[{index}]")
         for index, case in enumerate(selected_cases)
     ]
-    if len(set(selected_ids)) != PRIVATE_CASE_SAMPLE_SIZE:
-        raise IVCError("selected private case IDs must be unique")
+    if len(set(selected_ids)) != TASK_DEMO_CASE_COUNT:
+        raise IVCError("selected Task Demo case IDs must be unique")
 
-    suite = dict(case_pool)
+    suite = dict(capability_suite)
+    suite["artifact_type"] = "task_demo_suite"
     suite["cases"] = selected_cases
     suite["selection"] = {
         "kind": "uniform_without_replacement",
         "seed": seed,
         "source_case_count": len(cases),
-        "selected_case_count": PRIVATE_CASE_SAMPLE_SIZE,
+        "selected_case_count": TASK_DEMO_CASE_COUNT,
         "selected_case_ids": selected_ids,
     }
     return suite
+
+
+# Old names remain import-compatible for historical fixtures and utilities. New mainline code uses
+# the phase-specific names above.
+validate_private_suite = validate_capability_validation_suite
+sample_private_suite = sample_task_demo_suite
 
 
 def write_private_suite(path: str | Path, suite: Mapping[str, Any]) -> None:

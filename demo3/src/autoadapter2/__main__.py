@@ -92,23 +92,31 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 "dynamic_model_called": result.get("dynamic_model_called"),
                 "driver_generated_in_run": result.get("driver_generated_in_run"),
-                "physical_validation_executed": result.get(
-                    "physical_validation_executed"
+                "capability_validation_executed": result.get(
+                    "capability_validation_executed"
                 ),
-                "initial_validation_passed": result.get("initial_validation_passed"),
-                "final_validation_passed": result.get("final_validation_passed"),
+                "initial_capability_validation_passed": result.get(
+                    "initial_capability_validation_passed"
+                ),
+                "final_capability_validation_passed": result.get(
+                    "final_capability_validation_passed"
+                ),
+                "task_demo_executed": result.get("task_demo_executed"),
+                "task_demo_passed": result.get("task_demo_passed"),
                 "success": success_claim(result),
                 "claim": result.get("claim"),
                 "cell_results": [
                     {
                         "cell_id": cell.get("cell_id"),
                         "pipeline_completed": cell.get("pipeline_completed"),
-                        "initial_validation_passed": cell.get(
-                            "initial_validation_passed"
+                        "initial_capability_validation_passed": cell.get(
+                            "initial_capability_validation_passed"
                         ),
-                        "final_validation_passed": cell.get(
-                            "final_validation_passed"
+                        "final_capability_validation_passed": cell.get(
+                            "final_capability_validation_passed"
                         ),
+                        "task_demo_executed": cell.get("task_demo_executed"),
+                        "task_demo_passed": cell.get("task_demo_passed"),
                         "attempt_count": cell.get("attempt_count"),
                     }
                     for cell in result.get("cells", [])

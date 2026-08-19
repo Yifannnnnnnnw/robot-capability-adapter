@@ -8,8 +8,8 @@ from autoadapter2.libraries import RobotPackage
 from autoadapter2.validation_compiler import (
     IVCError,
     run_ivc,
-    sample_private_suite,
-    validate_private_suite,
+    sample_task_demo_suite,
+    validate_capability_validation_suite,
 )
 
 
@@ -156,7 +156,7 @@ def _suite(package: RobotPackage, design: dict, private: dict) -> dict:
             }
         )
     return {
-        "artifact_type": "private_validation_suite",
+        "artifact_type": "capability_validation_suite",
         "schema_version": "1.0",
         "robot_configuration_id": package.robot_configuration_id,
         "package_version": package.package_version,
@@ -197,8 +197,8 @@ class IVCTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def test_complete_private_suite_passes_audit(self) -> None:
-        result = validate_private_suite(
+    def test_complete_capability_suite_passes_audit(self) -> None:
+        result = validate_capability_validation_suite(
             self.suite,
             package=self.package,
             design=self.design,
@@ -207,12 +207,13 @@ class IVCTests(unittest.TestCase):
 
         self.assertEqual(len(result["cases"]), 20)
 
-    def test_formal_suite_samples_exactly_five_cases_from_complete_pool(self) -> None:
-        first = sample_private_suite(self.suite, seed="run-1:example-arm")
-        repeated = sample_private_suite(self.suite, seed="run-1:example-arm")
+    def test_task_demo_samples_exactly_five_cases_from_capability_suite(self) -> None:
+        first = sample_task_demo_suite(self.suite, seed="run-1:example-arm")
+        repeated = sample_task_demo_suite(self.suite, seed="run-1:example-arm")
 
         self.assertEqual(len(self.suite["cases"]), 20)
         self.assertEqual(len(first["cases"]), 5)
+        self.assertEqual(first["artifact_type"], "task_demo_suite")
         self.assertEqual(first, repeated)
         self.assertEqual(
             first["selection"],
@@ -225,17 +226,17 @@ class IVCTests(unittest.TestCase):
             },
         )
 
-    def test_formal_suite_rejects_a_pool_smaller_than_five(self) -> None:
+    def test_task_demo_rejects_a_capability_suite_smaller_than_five(self) -> None:
         too_small = {**self.suite, "cases": self.suite["cases"][:4]}
 
         with self.assertRaisesRegex(IVCError, "at least 5 cases"):
-            sample_private_suite(too_small, seed="run-1:example-arm")
+            sample_task_demo_suite(too_small, seed="run-1:example-arm")
 
     def test_weaker_private_criterion_is_rejected(self) -> None:
         self.suite["cases"][0]["criterion"]["threshold"] = 0.2
 
         with self.assertRaisesRegex(IVCError, "changes a source pass standard"):
-            validate_private_suite(
+            validate_capability_validation_suite(
                 self.suite,
                 package=self.package,
                 design=self.design,
@@ -248,7 +249,7 @@ class IVCTests(unittest.TestCase):
         self.suite["cases"].append(duplicate)
 
         with self.assertRaisesRegex(IVCError, "exactly once"):
-            validate_private_suite(
+            validate_capability_validation_suite(
                 self.suite,
                 package=self.package,
                 design=self.design,
