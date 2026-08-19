@@ -22,6 +22,7 @@ from autoadapter2.driver_synthesis.probe import (
 )
 from autoadapter2.driver_synthesis.repair import (
     RepairLimitError,
+    build_repair_inputs,
     redact_candidate_report,
     repair_with_probes,
 )
@@ -556,6 +557,62 @@ print("probe-time=" + str(data.time))
         self.assertEqual(redacted["passed_private_case_count"], 1)
         self.assertNotIn("private_guard", redacted)
         self.assertEqual(redacted["measurement_value"], 0.7)
+
+    def test_repair_compacts_dense_samples_but_keeps_complete_trial_results(self) -> None:
+        samples = [
+            {
+                "time": float(index),
+                "qpos": [index, index + 1],
+                "qvel": [0.1, 0.2],
+                "ctrl": [0.3, 0.4],
+                "joint_positions": {"joint": float(index)},
+                "body_positions": {"target": [float(index), 0.0, 0.2]},
+                "site_positions": {"tip": [0.1, 0.2, 0.3]},
+                "body_quaternions": {"noise": list(range(1000))},
+                "contacts": [{"geom1": "finger", "geom2": "object"}],
+            }
+            for index in range(20)
+        ]
+        report = {
+            "validation_passed": False,
+            "trials": [
+                {
+                    "case_id": "case-1",
+                    "measurement_value": 0.5,
+                    "criterion_passed": False,
+                    "guard_outcomes": {"guard_actuator_and_physics_step": True},
+                    "physical_evidence": {
+                        "step_count": 400,
+                        "samples": samples,
+                    },
+                }
+            ],
+        }
+
+        inputs = build_repair_inputs(
+            previous_driver_source=FROM_SCRATCH_DRIVER,
+            candidate_report=report,
+            media_manifest=[],
+            public_inputs={},
+            condition="from-scratch",
+            previous_attempt=0,
+        )
+
+        compact_report = inputs["candidate_report"]
+        trial = compact_report["trials"][0]
+        physical = trial["physical_evidence"]
+        self.assertEqual(trial["measurement_value"], 0.5)
+        self.assertFalse(trial["criterion_passed"])
+        self.assertEqual(physical["step_count"], 400)
+        self.assertEqual(physical["sample_count"], 20)
+        self.assertTrue(physical["dense_samples_compacted"])
+        self.assertEqual(physical["initial_sample"]["qpos"], [0, 1])
+        self.assertEqual(physical["final_sample"]["qpos"], [19, 20])
+        self.assertEqual(physical["initial_sample"]["contact_count"], 1)
+        self.assertNotIn("samples", physical)
+        self.assertNotIn("body_quaternions", physical["initial_sample"])
+        self.assertIn("samples", report["trials"][0]["physical_evidence"])
+        self.assertLess(len(json.dumps(inputs)), 10_000)
 
 
 if __name__ == "__main__":

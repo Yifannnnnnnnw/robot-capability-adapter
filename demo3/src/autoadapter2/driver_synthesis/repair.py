@@ -200,6 +200,65 @@ def redact_candidate_report(report: Mapping[str, Any]) -> dict[str, Any]:
     return redacted
 
 
+_TRAJECTORY_ENDPOINT_KEYS = frozenset(
+    {
+        "time",
+        "qpos",
+        "qvel",
+        "ctrl",
+        "joint_positions",
+        "body_positions",
+        "site_positions",
+    }
+)
+
+
+def _compact_trajectory_sample(sample: Mapping[str, Any]) -> dict[str, Any]:
+    result = {
+        str(key): copy.deepcopy(value)
+        for key, value in sample.items()
+        if str(key) in _TRAJECTORY_ENDPOINT_KEYS
+    }
+    contacts = sample.get("contacts")
+    if isinstance(contacts, list):
+        result["contact_count"] = len(contacts)
+    return result
+
+
+def _compact_physical_evidence(evidence: Mapping[str, Any]) -> dict[str, Any]:
+    result = {
+        str(key): copy.deepcopy(value)
+        for key, value in evidence.items()
+        if key != "samples"
+    }
+    samples = evidence.get("samples")
+    if not isinstance(samples, list):
+        return result
+    sample_items = [item for item in samples if isinstance(item, Mapping)]
+    result["dense_samples_compacted"] = True
+    result["sample_count"] = len(samples)
+    if sample_items:
+        result["initial_sample"] = _compact_trajectory_sample(sample_items[0])
+        result["final_sample"] = _compact_trajectory_sample(sample_items[-1])
+    return result
+
+
+def _compact_candidate_report(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, child in value.items():
+            if key == "physical_evidence" and isinstance(child, Mapping):
+                result[str(key)] = _compact_physical_evidence(child)
+            else:
+                result[str(key)] = _compact_candidate_report(child)
+        return result
+    if isinstance(value, list):
+        return [_compact_candidate_report(item) for item in value]
+    if isinstance(value, tuple):
+        return [_compact_candidate_report(item) for item in value]
+    return copy.deepcopy(value)
+
+
 def _assert_public_context(value: Any, *, where: str = "public_context") -> None:
     if isinstance(value, Mapping):
         for key, child in value.items():
@@ -234,7 +293,9 @@ def build_repair_inputs(
         "previous_attempt": previous_attempt,
         "max_total_attempts": max_total_attempts,
         "previous_driver_source": previous_driver_source,
-        "candidate_report": redact_candidate_report(candidate_report),
+        "candidate_report": _compact_candidate_report(
+            redact_candidate_report(candidate_report)
+        ),
         "media_manifest": _redact(media_manifest),
         "public_context": copy.deepcopy(dict(public_inputs)),
     }
