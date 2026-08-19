@@ -289,6 +289,31 @@ class InteractiveSessionTests(unittest.TestCase):
         with self.assertRaisesRegex(DevelopmentSessionError, "lacks successful"):
             self.session.submit_driver({"note": "stale smoke"})
 
+    def test_identical_write_preserves_revision_audit_and_smoke_progress(self) -> None:
+        first = self.session.write_driver({"source": DRIVER_SOURCE})
+        self.assertTrue(first["source_changed"])
+        self.session.audit_driver({})
+        self.session.smoke_driver(
+            {
+                "method_name": "drive",
+                "request": {
+                    "task_id": "task-1",
+                    "task_parameters": {"target": 0.1},
+                },
+            }
+        )
+
+        duplicate = self.session.write_driver({"source": DRIVER_SOURCE})
+
+        self.assertFalse(duplicate["source_changed"])
+        self.assertEqual(duplicate["revision"], first["revision"])
+        self.assertEqual(
+            duplicate["development_status"]["missing_current_revision_smokes"], []
+        )
+        self.assertIn("Do not write it again", duplicate["next_action"])
+        submitted = self.session.submit_driver({"note": "unchanged and ready"})
+        self.assertEqual(submitted["smoked_methods"], ["drive"])
+
     def test_nested_controller_passes_import_and_canonical_physics_smoke(self) -> None:
         session = PublicDevelopmentSession(
             package=self.package,

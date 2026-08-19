@@ -266,6 +266,22 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("source must contain a complete driver.py")
         if len(source) > 200_000:
             raise DevelopmentSessionError("driver.py exceeds the 200000-character limit")
+        if (
+            self.candidate_path.is_file()
+            and self.candidate_path.read_text(encoding="utf-8") == source
+        ):
+            return {
+                "path": "driver.py",
+                "revision": self._revision,
+                "characters": len(source),
+                "source_changed": False,
+                "next_action": (
+                    "The submitted source is unchanged. Do not write it again; "
+                    "continue with audit_driver, import_driver, smoke_driver, or "
+                    "submit_driver as indicated by development_status."
+                ),
+                "development_status": self._development_status(),
+            }
         remaining = self.budget.max_requests - self._probe_calls
         if self.capability_methods and remaining < len(self.capability_methods):
             raise DevelopmentSessionError(
@@ -280,6 +296,7 @@ class PublicDevelopmentSession:
             "path": "driver.py",
             "revision": self._revision,
             "characters": len(source),
+            "source_changed": True,
             "development_status": self._development_status(),
         }
 
