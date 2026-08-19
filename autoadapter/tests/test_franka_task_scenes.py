@@ -254,11 +254,10 @@ class FrankaTaskSceneTests(unittest.TestCase):
         missing = candidate["missing_for_runnable_package"]
         self.assertFalse(any("task-specific MuJoCo scenes" in item for item in missing))
         for phrase in (
-            "Framework-private tasks/private",
-            "arm_serial_dls skeleton",
-            "package check",
+            "full 20-task Direct-MuJoCo positive control",
             "positive control",
             "dynamic canary",
+            "runnable index",
         ):
             self.assertTrue(any(phrase in item for item in missing), phrase)
 

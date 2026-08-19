@@ -82,11 +82,9 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
-        "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
+        "Complete the full 20-task Direct-MuJoCo positive control against the canonical package.",
+        "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
+        "Admit Franka Panda to the runnable index only after the complete package, positive control, and dynamic canary requirements are met."
       ]
     },
     {
