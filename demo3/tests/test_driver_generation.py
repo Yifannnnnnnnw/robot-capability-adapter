@@ -225,6 +225,10 @@ class DriverGenerationTests(unittest.TestCase):
                 self.assertEqual(abi["request_schema"]["task_id"], "string")
                 self.assertEqual(abi["request_schema"]["task_parameters"], "object")
                 self.assertFalse(abi["effect_catalog_or_task_effect_allowlist"])
+                interface_stub = client.inputs[0]["driver_interface_stub"]
+                self.assertIn("def drive(self, request):", interface_stub)
+                self.assertIn("NotImplementedError", interface_stub)
+                self.assertNotIn("mujoco", interface_stub)
                 for inputs in client.inputs:
                     packed = repr(inputs)
                     self.assertNotIn("REFERENCE_DRIVER_SENTINEL", packed)

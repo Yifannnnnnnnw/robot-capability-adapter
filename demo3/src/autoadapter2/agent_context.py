@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from typing import Any
 
 
+_DRIVER_SOURCE_TOOLS = frozenset({"write_driver", "check_driver"})
+
+
 @dataclass(frozen=True)
 class ContextProjection:
     messages: tuple[dict[str, Any], ...]
@@ -114,7 +117,7 @@ class AgentContextManager:
                 continue
             result = payload.get("result")
             revision = result.get("revision") if isinstance(result, Mapping) else None
-            if name == "write_driver" and payload.get("ok") is True:
+            if name in _DRIVER_SOURCE_TOOLS and payload.get("ok") is True:
                 arguments = _decode_object(calls.get(call_id, (None, None))[1])
                 source = arguments.get("source") if arguments is not None else None
                 if isinstance(source, str):
@@ -122,7 +125,7 @@ class AgentContextManager:
                         "source": source,
                         "source_chars": len(source),
                         "revision": revision if isinstance(revision, int) else None,
-                        "observed_via": "write_driver",
+                        "observed_via": name,
                         "tool_call_id": call_id,
                     }
             source = result.get("source") if isinstance(result, Mapping) else None
@@ -152,7 +155,7 @@ class AgentContextManager:
         arguments = _decode_object(raw_arguments)
         if arguments is None:
             return raw_arguments, metadata
-        if name == "write_driver" and isinstance(arguments.get("source"), str):
+        if name in _DRIVER_SOURCE_TOOLS and isinstance(arguments.get("source"), str):
             source = arguments.pop("source")
             metadata["source_chars"] = len(source)
             arguments.update(

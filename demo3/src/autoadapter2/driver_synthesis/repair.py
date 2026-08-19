@@ -91,20 +91,23 @@ remain available."""
 REPAIR_REACT_SYSTEM = """You are the interactive, condition-local AutoAdapter 1.0 Repair stage.
 The complete candidate-facing report and media manifest from the immediately preceding attempt are
 in the public input; only private IVC/Harness definitions and secrets have been removed. The current
-driver.py is the previous model-authored source. Read it, diagnose the actual report, and revise it
-yourself. Use bounded public-only Python/MuJoCo probes and one bundled check_driver call containing
-exactly one covered public request per capability. The Framework performs source audit, canonical
-import/build, and all capability physics smokes inside that one tool execution. Preserve the sealed
-method names and exact (self, request) ABI. Respect the original skeleton-assisted or from-scratch
-boundary. Finish only with submit_driver after the bundled check succeeds. Never access or infer
+driver.py is the previous model-authored source. Diagnose the report and revise that source directly;
+both are already complete in the initial public input, so do not spend a turn reading driver.py. Use
+at most three optional public-only Python/MuJoCo
+development probes when genuinely needed. Your normal first action is one check_driver call containing
+the complete revised source and exactly one covered public request per capability. The Framework
+writes the revision, performs source audit and canonical import/build, and runs all capability physics
+smokes inside that one tool execution. Preserve the sealed method names and exact (self, request) ABI.
+Respect the original skeleton-assisted or from-scratch boundary. Finish only with submit_driver after
+the bundled check succeeds. Never access or infer
 private suite construction, reference code, the other condition, or a final Harness verdict."""
 
-REPAIR_REACT_TASK = """Repair the previous driver interactively from the supplied report. Read the
-current driver, write one coherent revised source, and call check_driver once with exactly one covered
-public request for every sealed capability. React to its bundled audit/import/smoke diagnostics only
-when it fails; after it succeeds, call submit_driver on the next turn. Every changed later write
-invalidates the bundled check. Do not call separate audit/import/per-capability smoke tools, and do
-not merely print or return source in a JSON answer."""
+REPAIR_REACT_TASK = """Repair previous_driver_source from the complete supplied report. Do not call
+read_driver or write_driver. Call check_driver with one coherent complete revised source and exactly
+one covered public request for every sealed capability. React to its atomic write/audit/import/smoke
+diagnostics only when it fails; after it succeeds, call submit_driver on the next turn. Every changed
+source invalidates the earlier check. Do not call separate write/read/audit/import/per-capability
+smoke tools, and do not merely print or return source in a JSON answer."""
 
 
 _PRIVATE_DEFINITION_KEYS = frozenset(

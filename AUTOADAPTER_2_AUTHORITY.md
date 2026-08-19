@@ -4,9 +4,31 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.4`<br>
+> **Document revision / 文档版本：** `0.19.5`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.5` restores the AutoAdapter 1.0 implementation-action granularity. The initial
+GENERATE/GEN_ALGO context contains the mechanically generated interface-only driver stub, and the
+initial Repair context contains the complete previous driver and candidate-facing report. Neither
+stage spends remote model turns reading or separately writing that source. One
+`check_driver(source, checks)` action supplies the complete candidate revision plus exactly one
+covered public request per sealed capability; the Framework atomically writes it and performs the
+Revision `0.19.4` audit/import/all-capability physics check. A successful normal path then uses one
+separate explicit `submit_driver` turn. Each driver stage permits at most three discretionary public
+development probes in addition to one mandatory import and one smoke per capability, is bounded to
+twelve model turns, and uses a 16,384-token model-output ceiling. STUDY is bounded to six model turns.
+These are execution limits, not private validation information, and private Harness execution still
+starts only after explicit submission.
+
+**中文辅助说明。** `0.19.5` 恢复 AutoAdapter 1.0 的实现动作粒度。GENERATE/GEN_ALGO 首次上下文
+直接含机械生成的纯接口 driver stub；Repair 首次上下文直接含完整旧 driver 和候选可见报告，
+两者都不再为读取或单独写入源码消耗远程模型回合。一次 `check_driver(source, checks)` 同时提交
+完整候选 revision 和每项 sealed capability 恰好一个覆盖范围内的公开请求；Framework 原子地
+写入并执行 `0.19.4` 的审计、导入及全部 capability 物理检查。正常成功路径随后仅再用一个显式
+`submit_driver` 回合。每个 driver 阶段除 mandatory import 和逐 capability smoke 外，最多有三个
+自由公开 development probe，最多十二个模型回合，模型输出上限为 16,384 token；STUDY 最多
+六个模型回合。这些仅是执行预算，不是私有验证信息；显式提交前仍不会进入私有 Harness。
 
 Revision `0.19.4` keeps interactive Driver Synthesis while removing one model round trip per
 public check. For each current driver revision, GENERATE/GEN_ALGO and Repair provide one bundled
@@ -1071,18 +1093,21 @@ invoke or inspect the private Harness suite.
 STUDY and GENERATE/GEN_ALGO execute through the self-contained AutoAdapter 1.0-style ReAct loop,
 not as one-shot code-generation responses. Within explicit model-turn and tool budgets, the model
 may repeatedly list and read staged public files, inspect the trusted skeleton only in the
-skeleton-assisted condition, write or replace its own condition-local development files, run
-bounded public Python/MuJoCo probes, and request source-audit, import, and public-method smoke
-diagnostics for its current `driver.py`. Tool errors are returned to the same model conversation so
-it can revise the candidate before submission. The Framework counts a formal attempt only after the
-model explicitly submits `driver.py`; development rewrites and rejected pre-submission audits do not
-consume one of the three Harness attempts.
+skeleton-assisted condition, and run bounded public Python/MuJoCo probes. Each candidate revision is
+one AutoAdapter 1.0-style implementation action: `check_driver(source, checks)` carries the complete
+source and one covered public invocation per capability. The Framework writes that source and
+returns its bundled source-audit, import, and public-method physics-smoke diagnostics in the same
+tool result. Separate model-visible `read_driver`, `write_driver`, audit, import, and per-method
+smoke actions are not part of the mainline. Tool errors are returned to the same conversation so the
+model can revise the candidate before submission. The Framework counts a formal attempt only after
+the model explicitly submits `driver.py`; development revisions and rejected pre-submission checks
+do not consume one of the three Harness attempts.
 
 The Framework applies one deterministic bounded projection when serializing this tool conversation
 for the next model turn. It retains the initial public task context, exactly one latest complete
 `driver.py` snapshot, and the three most recent completed tool-interaction groups. Superseded
-`read_driver` and `write_driver` source payloads are replaced by tool name, driver revision, source
-character count, and result status; similarly superseded development-probe scripts may be replaced
+`check_driver` source payloads are replaced by tool name, driver revision, source character count,
+and result status; similarly superseded development-probe scripts may be replaced
 by probe identity, script character count, and result status while their bounded diagnostics remain
 available. If a hard history-character budget still requires eviction, oldest completed groups are
 removed first and represented by the same deterministic metadata. This model-facing projection does
@@ -1091,7 +1116,7 @@ introduce private Harness information.
 
 **上下文辅助说明。** Framework 在向下一模型回合序列化工具对话时应用一份确定性的有界投影：
 保留首次公开任务上下文、恰好一份最新完整 `driver.py`，以及最近三个已完成工具交互组。已被取代
-的 `read_driver`/`write_driver` 源码 payload 改为 tool 名称、driver revision、源码字符数和结果
+的 `check_driver` 源码 payload 改为 tool 名称、driver revision、源码字符数和结果
 状态；已被取代的 development probe 脚本也可改为 probe 标识、脚本字符数和结果状态，同时保留
 有界诊断。若仍超过硬性历史字符预算，则优先移除最旧的已完成组并用同样的确定性元数据表示。
 该模型侧投影不修改磁盘中的完整 trace、不调用另一模型摘要历史，也不得引入私有 Harness 信息。

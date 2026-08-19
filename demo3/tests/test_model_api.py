@@ -45,7 +45,7 @@ class ModelApiTests(unittest.TestCase):
 
         self.assertEqual(config.provider, "deepseek")
         self.assertEqual(config.api_protocol, "openai")
-        self.assertEqual(config.max_tokens, 32768)
+        self.assertEqual(config.max_tokens, 16384)
 
     def test_model_output_budget_is_configurable_and_bounded(self) -> None:
         environment = {
@@ -400,8 +400,14 @@ class ModelApiTests(unittest.TestCase):
         self.assertIn('"tool": "read_driver"', projected_text)
         self.assertEqual(projection.stats["current_driver_revision"], 2)
 
-    def test_native_context_projection_preserves_tool_protocol_with_one_snapshot(self) -> None:
+    def test_native_context_projection_compacts_atomic_check_with_one_snapshot(self) -> None:
         source = "NATIVE_CURRENT_DRIVER" * 400
+        checks = [
+            {
+                "method_name": "drive",
+                "request": {"task_id": "task-1", "task_parameters": {}},
+            }
+        ]
         messages = [
             {"role": "user", "content": "INITIAL_PUBLIC_TASK"},
             {
@@ -409,20 +415,25 @@ class ModelApiTests(unittest.TestCase):
                 "content": None,
                 "tool_calls": [
                     {
-                        "id": "native-write",
+                        "id": "native-check",
                         "type": "function",
                         "function": {
-                            "name": "write_driver",
-                            "arguments": json.dumps({"source": source}),
+                            "name": "check_driver",
+                            "arguments": json.dumps(
+                                {"source": source, "checks": checks}
+                            ),
                         },
                     }
                 ],
             },
             {
                 "role": "tool",
-                "tool_call_id": "native-write",
+                "tool_call_id": "native-check",
                 "content": json.dumps(
-                    {"ok": True, "result": {"revision": 1}}
+                    {
+                        "ok": True,
+                        "result": {"revision": 1, "successful": False},
+                    }
                 ),
             },
         ]
@@ -440,6 +451,7 @@ class ModelApiTests(unittest.TestCase):
         )
         self.assertNotIn("source", projected_arguments)
         self.assertEqual(projected_arguments["source_chars"], len(source))
+        self.assertEqual(projected_arguments["checks"], checks)
         self.assertEqual(projection.stats["mode"], "native")
 
     def test_failed_write_does_not_replace_last_successful_driver_snapshot(self) -> None:

@@ -249,9 +249,9 @@ class InteractiveSessionTests(unittest.TestCase):
         with self.assertRaisesRegex(ProbeError, "reserved"):
             session.run_mujoco_probe({**probe, "probe_id": "blocked-extra-step"})
 
-        session.write_driver({"source": DRIVER_SOURCE})
         checked = session.check_driver(
             {
+                "source": DRIVER_SOURCE,
                 "checks": [
                     {
                         "method_name": "drive",
@@ -294,14 +294,18 @@ class InteractiveSessionTests(unittest.TestCase):
             self.session.submit_driver({"note": "stale smoke"})
 
     def test_check_driver_batches_import_and_every_capability_smoke(self) -> None:
-        self.session.write_driver({"source": DRIVER_SOURCE})
         request = {"task_id": "task-1", "task_parameters": {"target": 0.1}}
 
         checked = self.session.check_driver(
-            {"checks": [{"method_name": "drive", "request": request}]}
+            {
+                "source": DRIVER_SOURCE,
+                "checks": [{"method_name": "drive", "request": request}],
+            }
         )
 
         self.assertTrue(checked["successful"])
+        self.assertTrue(checked["write"]["source_changed"])
+        self.assertEqual(checked["revision"], 1)
         self.assertTrue(checked["import"]["successful"])
         self.assertEqual(
             [(item["method_name"], item["successful"]) for item in checked["capability_checks"]],
@@ -312,25 +316,63 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertEqual(self.session.submit_driver({})["smoked_methods"], ["drive"])
         visible_tools = {tool.name for tool in self.session.driver_tools()}
         self.assertIn("check_driver", visible_tools)
+        self.assertNotIn("write_driver", visible_tools)
+        self.assertNotIn("read_driver", visible_tools)
         self.assertNotIn("audit_driver", visible_tools)
         self.assertNotIn("import_driver", visible_tools)
         self.assertNotIn("smoke_driver", visible_tools)
 
     def test_check_driver_requires_exactly_one_request_per_capability(self) -> None:
-        self.session.write_driver({"source": DRIVER_SOURCE})
         request = {"task_id": "task-1", "task_parameters": {"target": 0.1}}
 
         with self.assertRaisesRegex(DevelopmentSessionError, "duplicate"):
             self.session.check_driver(
                 {
+                    "source": DRIVER_SOURCE,
                     "checks": [
                         {"method_name": "drive", "request": request},
                         {"method_name": "drive", "request": request},
                     ]
                 }
             )
-        self.assertEqual(self.session.read_driver({})["revision"], 1)
+        self.assertEqual(self.session.revision, 0)
+        self.assertFalse(self.session.candidate_path.exists())
         self.assertEqual(self.session._development_status()["probe_calls_used"], 0)
+
+    def test_check_driver_retains_audit_failure_as_current_revision_diagnostic(self) -> None:
+        request = {"task_id": "task-1", "task_parameters": {"target": 0.1}}
+        invalid_source = "def build(model, data):\n    this is not valid Python\n"
+
+        checked = self.session.check_driver(
+            {
+                "source": invalid_source,
+                "checks": [{"method_name": "drive", "request": request}],
+            }
+        )
+
+        self.assertFalse(checked["successful"])
+        self.assertFalse(checked["audit"]["successful"])
+        self.assertEqual(checked["audit"]["error"]["type"], "DriverSourceError")
+        self.assertEqual(self.session.revision, 1)
+        self.assertEqual(self.session.read_driver({})["source"], invalid_source)
+        self.assertEqual(checked["development_status"]["probe_calls_used"], 0)
+
+    def test_driver_probe_limit_is_capability_count_plus_three_optional_probes(self) -> None:
+        session = PublicDevelopmentSession(
+            package=self.package,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "derived-probe-limit-session",
+            budget=ProbeBudget(max_requests=32, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+            capability_methods=("drive",),
+            capability_task_ids={"drive": ("task-1",)},
+        )
+
+        status = session._development_status()
+
+        self.assertEqual(status["configured_probe_calls_limit"], 32)
+        self.assertEqual(status["probe_calls_limit"], 5)
+        self.assertEqual(status["probe_calls_remaining"], 5)
 
     def test_identical_write_preserves_revision_audit_and_smoke_progress(self) -> None:
         first = self.session.write_driver({"source": DRIVER_SOURCE})
@@ -427,19 +469,22 @@ class InteractiveSessionTests(unittest.TestCase):
                     ),
                 ),
                 "generate": (
-                    ToolTurn(None, (_call("g1", "read_driver", {}),)),
-                    ToolTurn(None, (_call("g2", "write_driver", {"source": DRIVER_SOURCE}),)),
                     ToolTurn(
                         None,
                         (
                             _call(
-                                "g3",
+                                "g1",
                                 "check_driver",
-                                {"checks": [{"method_name": "drive", "request": request}]},
+                                {
+                                    "source": DRIVER_SOURCE,
+                                    "checks": [
+                                        {"method_name": "drive", "request": request}
+                                    ],
+                                },
                             ),
                         ),
                     ),
-                    ToolTurn(None, (_call("g4", "submit_driver", {"note": "ready"}),)),
+                    ToolTurn(None, (_call("g2", "submit_driver", {"note": "ready"}),)),
                 ),
             }
         )
@@ -474,8 +519,8 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertEqual(generated.driver_source, DRIVER_SOURCE)
         self.assertEqual(generated.output["generation_note"], "ready")
         self.assertGreaterEqual(len(generated.probe_results), 2)
-        self.assertEqual(len(client.messages["generate"]), 4)
-        stub_observation = client.messages["generate"][1][-1]["content"]
+        self.assertEqual(len(client.messages["generate"]), 2)
+        stub_observation = client.messages["generate"][0][0]["content"]
         self.assertIn("def drive(self, request):", stub_observation)
         self.assertIn("NotImplementedError", stub_observation)
 
@@ -526,7 +571,10 @@ class InteractiveSessionTests(unittest.TestCase):
 
         self.assertEqual(len(result.probe_results), 1)
         self.assertEqual(result.probe_results[0]["probe_id"], "first")
-        redundant_observation = client.messages["study"][2][-1]["content"]
+        redundant_observation = "\n".join(
+            str(message.get("content", ""))
+            for message in client.messages["study"][2]
+        )
         self.assertIn('"ok": false', redundant_observation)
         self.assertIn("already satisfied", redundant_observation)
 
@@ -535,19 +583,22 @@ class InteractiveSessionTests(unittest.TestCase):
         client = ScriptedToolClient(
             {
                 "repair": (
-                    ToolTurn(None, (_call("r1", "read_driver", {}),)),
-                    ToolTurn(None, (_call("r2", "write_driver", {"source": DRIVER_SOURCE}),)),
                     ToolTurn(
                         None,
                         (
                             _call(
-                                "r3",
+                                "r1",
                                 "check_driver",
-                                {"checks": [{"method_name": "drive", "request": request}]},
+                                {
+                                    "source": DRIVER_SOURCE,
+                                    "checks": [
+                                        {"method_name": "drive", "request": request}
+                                    ],
+                                },
                             ),
                         ),
                     ),
-                    ToolTurn(None, (_call("r4", "submit_driver", {"note": "fixed request mapping"}),)),
+                    ToolTurn(None, (_call("r2", "submit_driver", {"note": "fixed request mapping"}),)),
                 )
             }
         )
@@ -592,14 +643,14 @@ class InteractiveSessionTests(unittest.TestCase):
 
         self.assertEqual(repaired.driver_source, DRIVER_SOURCE)
         self.assertEqual(repaired.output["repair_note"], "fixed request mapping")
-        self.assertEqual(len(client.messages["repair"]), 4)
+        self.assertEqual(len(client.messages["repair"]), 2)
         self.assertTrue(
             any(result["physics_steps"] > 0 for result in repaired.probe_results)
         )
         self.assertGreater(len(repaired.call_evidence.react_trace), 1)
         self.assertIn("AttributeError", repr(repaired.repair_inputs))
         self.assertNotIn("criterion_definition", repr(repaired.repair_inputs))
-        previous_observation = client.messages["repair"][1][-1]["content"]
+        previous_observation = client.messages["repair"][0][0]["content"]
         self.assertIn("request.task_parameters.target", previous_observation)
 
 

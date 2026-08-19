@@ -82,7 +82,7 @@ class ModelConfig:
         thinking = environment.get("AUTOADAPTER_MODEL_THINKING", "").strip() or None
         try:
             max_tokens = int(
-                environment.get("AUTOADAPTER_MODEL_MAX_TOKENS", "32768")
+                environment.get("AUTOADAPTER_MODEL_MAX_TOKENS", "16384")
             )
         except ValueError as exc:
             raise ModelInvocationError(

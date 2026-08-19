@@ -27,9 +27,16 @@ not import or copy runtime code from Demo2 or `general_demo`.
   has a separate verdict and never triggers same-run Repair.
 - STUDY, generation, and Repair use bounded multi-turn tool conversations. The
   model can inspect staged public files, run public-only MuJoCo probes, revise
-  its driver, and call one bundled `check_driver` operation. The Framework then
-  performs source audit, canonical import/build, and one physics smoke per
-  capability inside that tool execution before explicit submission.
+  its driver, and call one atomic `check_driver(source, checks)` operation. The
+  Framework writes that complete revision, performs source audit, canonical
+  import/build, and one physics smoke per capability inside that tool execution
+  before explicit submission. The normal Generate or Repair path is therefore
+  two remote model turns: atomic check, then submit.
+- The model receives the generated interface stub or previous Repair source in
+  its initial context; separate `read_driver` and `write_driver` turns are not
+  exposed. A driver stage has three discretionary development probes in addition
+  to the mandatory import and one smoke per capability. With at most ten
+  capabilities, the hard ceiling is fourteen local probe processes.
 - Before each tool-model request, the deterministic Agent Context Manager keeps
   the initial public task, one current complete driver snapshot, and at most
   three recent interaction groups. Superseded driver source and probe scripts
@@ -72,7 +79,7 @@ putting a secret inside Demo3:
 set -a
 source .env
 set +a
-export AUTOADAPTER_MODEL_MAX_TOKENS=32768
+export AUTOADAPTER_MODEL_MAX_TOKENS=16384
 export AUTOADAPTER_MODEL_HISTORY_CHARS=80000
 export PYTHONPATH=demo3/src
 export MUJOCO_GL=cgl

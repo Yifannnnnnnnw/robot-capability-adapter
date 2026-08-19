@@ -27,6 +27,10 @@ class DevelopmentSessionError(RuntimeError):
     """Raised when a model tool request is outside its public development session."""
 
 
+MAX_DISCRETIONARY_DRIVER_PROBES = 3
+MAX_STUDY_PROBES = 3
+
+
 def _object_schema(
     properties: Mapping[str, Any] | None = None,
     *,
@@ -125,7 +129,7 @@ class PublicDevelopmentSession:
         self.condition = condition
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
-        self.budget = budget
+        self.configured_budget = budget
         self.source_root = Path(source_root).resolve()
         self.public_workspace: PublicProbeWorkspace = prepare_public_probe_workspace(
             package,
@@ -139,6 +143,15 @@ class PublicDevelopmentSession:
             if capability_methods
             else ()
         )
+        effective_requests = min(
+            budget.max_requests,
+            (
+                len(self.capability_methods) + 1 + MAX_DISCRETIONARY_DRIVER_PROBES
+                if self.capability_methods
+                else MAX_STUDY_PROBES
+            ),
+        )
+        self.budget = replace(budget, max_requests=effective_requests)
         self.capability_task_ids = {
             str(name): frozenset(str(task_id) for task_id in task_ids)
             for name, task_ids in (capability_task_ids or {}).items()
@@ -183,6 +196,8 @@ class PublicDevelopmentSession:
         return {
             "revision": self._revision,
             "probe_calls_used": self._probe_calls,
+            "probe_calls_limit": self.budget.max_requests,
+            "configured_probe_calls_limit": self.configured_budget.max_requests,
             "probe_calls_remaining": max(0, self.budget.max_requests - self._probe_calls),
             "missing_current_revision_smokes": missing,
         }
@@ -423,6 +438,9 @@ class PublicDevelopmentSession:
         }
 
     def check_driver(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        source = arguments.get("source")
+        if not isinstance(source, str) or not source.strip():
+            raise DevelopmentSessionError("source must contain a complete driver.py")
         checks = arguments.get("checks")
         if not isinstance(checks, list):
             raise DevelopmentSessionError("checks must be a list")
@@ -466,20 +484,94 @@ class PublicDevelopmentSession:
                 f"checks must contain exactly one request for every sealed capability; missing {missing}"
             )
 
-        audit = asdict(self._audit_candidate())
-        imported = self.import_driver({})
+        written = self.write_driver({"source": source})
+        status = self._development_status()
+        if not status["missing_current_revision_smokes"]:
+            return {
+                "revision": self._revision,
+                "successful": True,
+                "write": {
+                    "source_changed": written["source_changed"],
+                    "characters": written["characters"],
+                },
+                "already_checked": True,
+                "development_status": status,
+                "next_action": "Call submit_driver now for this unchanged revision.",
+            }
+
+        try:
+            audit = {"successful": True, **asdict(self._audit_candidate())}
+        except Exception as exc:
+            return {
+                "revision": self._revision,
+                "successful": False,
+                "write": {
+                    "source_changed": written["source_changed"],
+                    "characters": written["characters"],
+                },
+                "audit": {
+                    "successful": False,
+                    "error": {
+                        "type": type(exc).__name__,
+                        "message": str(exc)[:2000],
+                    },
+                },
+                "import": None,
+                "capability_checks": [],
+                "development_status": self._development_status(),
+                "next_action": (
+                    "Revise the complete driver.py from this source-audit diagnostic, "
+                    "then call check_driver once with the revised source."
+                ),
+            }
+
+        try:
+            imported = self.import_driver({})
+        except Exception as exc:
+            return {
+                "revision": self._revision,
+                "successful": False,
+                "write": {
+                    "source_changed": written["source_changed"],
+                    "characters": written["characters"],
+                },
+                "audit": audit,
+                "import": {
+                    "successful": False,
+                    "error": {
+                        "type": type(exc).__name__,
+                        "message": str(exc)[:2000],
+                    },
+                },
+                "capability_checks": [],
+                "development_status": self._development_status(),
+                "next_action": (
+                    "Revise the complete driver.py from this import diagnostic, then "
+                    "call check_driver once with the revised source."
+                ),
+            }
         results: list[dict[str, Any]] = []
         if imported["successful"]:
             for method_name in self.capability_methods:
-                smoke = self.smoke_driver(by_method[method_name])
-                results.append(
-                    {
+                try:
+                    smoke = self.smoke_driver(by_method[method_name])
+                    result = {
                         "method_name": method_name,
                         "task_id": by_method[method_name]["request"]["task_id"],
                         "successful": smoke["successful"],
                         "probe": _probe_summary(smoke["result"]),
                     }
-                )
+                except Exception as exc:
+                    result = {
+                        "method_name": method_name,
+                        "task_id": by_method[method_name]["request"]["task_id"],
+                        "successful": False,
+                        "error": {
+                            "type": type(exc).__name__,
+                            "message": str(exc)[:2000],
+                        },
+                    }
+                results.append(result)
         status = self._development_status()
         successful = (
             bool(imported["successful"])
@@ -490,6 +582,10 @@ class PublicDevelopmentSession:
         return {
             "revision": self._revision,
             "successful": successful,
+            "write": {
+                "source_changed": written["source_changed"],
+                "characters": written["characters"],
+            },
             "audit": audit,
             "import": {
                 "successful": imported["successful"],
@@ -572,25 +668,11 @@ class PublicDevelopmentSession:
         return (
             *self.public_tools(),
             ToolSpec(
-                "write_driver",
-                "Write or completely replace driver.py. The initial file is an interface-only stub with no control implementation. A changed source creates a new revision and invalidates prior checks; an identical source preserves the current revision and check progress.",
-                _object_schema(
-                    {"source": {"type": "string"}},
-                    required=("source",),
-                ),
-                self.write_driver,
-            ),
-            ToolSpec(
-                "read_driver",
-                "Read the current model-authored driver.py and its revision.",
-                _object_schema(),
-                self.read_driver,
-            ),
-            ToolSpec(
                 "check_driver",
-                "In one Framework execution, source-audit and import/build the current revision, then invoke every sealed capability once with the supplied covered public requests. Each invocation must advance actuator-driven MuJoCo physics. Supply exactly one check per capability; on success call submit_driver next.",
+                "Submit one complete driver.py revision and exactly one covered public request per sealed capability. In the same Framework execution, the source is written, audited, imported/built, and every capability is invoked through actuator-driven MuJoCo physics. Revise from returned public diagnostics when needed; on success call submit_driver next.",
                 _object_schema(
                     {
+                        "source": {"type": "string"},
                         "checks": {
                             "type": "array",
                             "minItems": len(self.capability_methods),
@@ -607,7 +689,7 @@ class PublicDevelopmentSession:
                             ),
                         },
                     },
-                    required=("checks",),
+                    required=("source", "checks"),
                 ),
                 self.check_driver,
             ),

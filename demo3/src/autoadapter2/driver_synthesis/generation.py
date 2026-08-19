@@ -20,7 +20,11 @@ from typing import Any, Literal, Protocol
 from autoadapter2.libraries import RobotPackage
 from autoadapter2.react import ReactLoopError, ToolSpec, run_react
 
-from .interactive import PublicDevelopmentSession, capability_task_ids
+from .interactive import (
+    PublicDevelopmentSession,
+    capability_task_ids,
+    render_interface_stub,
+)
 from .probe import (
     ProbeBudget,
     ProbeError,
@@ -33,10 +37,10 @@ from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_sou
 
 GenerationCondition = Literal["skeleton-assisted", "from-scratch"]
 
-STUDY_REACT_MAX_TURNS = 12
-STUDY_REACT_MAX_TOOL_CALLS = 36
-DRIVER_REACT_MAX_TURNS = 40
-DRIVER_REACT_MAX_TOOL_CALLS = 120
+STUDY_REACT_MAX_TURNS = 6
+STUDY_REACT_MAX_TOOL_CALLS = 12
+DRIVER_REACT_MAX_TURNS = 12
+DRIVER_REACT_MAX_TOOL_CALLS = 24
 
 
 class JsonGenerator(Protocol):
@@ -142,13 +146,14 @@ capability-by-capability plan."""
 
 
 GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
-The Framework has created an interface-only driver.py stub from the sealed Capability Design. It
-contains exact method names and (self, request) placeholders but no controller or task dispatch.
-Inspect it, then write or replace the complete implementation yourself. Use public files and bounded
-MuJoCo probes to develop it. Call check_driver once with exactly one covered public request for every
-sealed capability; the Framework bundles source audit, canonical import/build, and all physics
-smokes in that tool execution. Tool failures are development observations, so revise and rerun the
-bundled check. Finish only with submit_driver. Never access private Harness definitions,
+The public input contains the complete interface-only driver.py stub derived from the sealed
+Capability Design. It contains exact method names and (self, request) placeholders but no controller
+or task dispatch. Implement the complete source yourself. Use public files and at most three optional
+MuJoCo development probes when genuinely needed. Your normal first action is one check_driver call
+containing the complete source and exactly one covered public request per sealed capability. The
+Framework writes the source, audits it, imports/builds it, and runs all capability physics smokes in
+that same tool execution. Tool failures are development observations, so revise the complete source
+and rerun check_driver. Finish only with submit_driver. Never access private Harness definitions,
 reference code, the other condition, or credentials, and never claim the final verdict."""
 
 STUDY_REACT_TASK = """Study the supplied public inputs interactively. Use file tools as needed,
@@ -157,13 +162,13 @@ grounded findings and implementation plan. The first successful physics probe co
 requirement; immediately submit after observing it. Do not run optional follow-up probes or merely
 print or return a JSON answer."""
 
-GENERATE_REACT_TASK = """Develop the complete executable driver from the interface-only revision
-0 stub. Read the stub, implement all control behavior, and use public probe or bundled check feedback
-to revise it. Call check_driver with exactly one covered public request for every sealed capability;
-after that single bundled check succeeds, call submit_driver on the next turn. Write a viable complete
-implementation early: every changed write creates a new revision and invalidates the earlier bundled
-check. Do not call separate audit/import/per-capability smoke tools, and do not merely print or return
-source in a JSON answer."""
+GENERATE_REACT_TASK = """Develop the complete executable driver from the supplied
+driver_interface_stub. Do not spend a turn reading or separately writing driver.py. Call check_driver
+with the complete implementation source and exactly one covered public request for every sealed
+capability. If that atomic write-and-check succeeds, call submit_driver on the next turn. If it fails,
+revise the complete source from the returned public diagnostics and call check_driver again. A changed
+source creates a new revision and invalidates the earlier check. Do not call separate
+write/read/audit/import/per-capability smoke tools, and do not merely print source in a JSON answer."""
 
 
 @dataclass(frozen=True)
@@ -478,6 +483,7 @@ def build_public_generation_inputs(
         "generation_condition": selected_condition,
         "public_robot_package": public_package,
         "sealed_capability_design": _copy(dict(design)),
+        "driver_interface_stub": render_interface_stub(_capability_methods(design)),
         "eligible_experience": _copy(list(experience)),
         "allowed_runtime_facts": _runtime_facts(runtime_contract),
         "condition_eligible_artifacts": artifacts,
