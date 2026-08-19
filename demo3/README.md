@@ -37,6 +37,9 @@ not import or copy runtime code from Demo2 or `general_demo`.
   exposed. A driver stage has three discretionary development probes in addition
   to the mandatory import and one smoke per capability. With at most ten
   capabilities, the hard ceiling is fourteen local probe processes.
+- STUDY receives the complete public package projection, selected MJCF closure,
+  and eligible skeleton source in its initial context. Its normal and maximum
+  path is two model turns: one real MuJoCo probe, then explicit study submission.
 - Before each tool-model request, the deterministic Agent Context Manager keeps
   the initial public task, one current complete driver snapshot, and at most
   three recent interaction groups. Superseded driver source and probe scripts

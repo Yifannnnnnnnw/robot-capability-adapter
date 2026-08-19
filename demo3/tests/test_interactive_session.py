@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from autoadapter2.driver_synthesis.generation import (
+    GenerationError,
     build_public_generation_inputs,
     generate,
     study,
@@ -81,6 +82,7 @@ class ScriptedToolClient:
         self.turns = {stage: list(values) for stage, values in turns.items()}
         self.calls: list[dict[str, Any]] = []
         self.messages: dict[str, list[list[dict[str, Any]]]] = {}
+        self.tools: dict[str, list[list[dict[str, Any]]]] = {}
 
     def generate_tool_turn(
         self,
@@ -90,11 +92,12 @@ class ScriptedToolClient:
         messages: Sequence[Mapping[str, Any]],
         tools: Sequence[Mapping[str, Any]],
     ) -> ToolTurn:
-        del system_prompt, tools
+        del system_prompt
         self.calls.append({"stage": stage, "mode": "react"})
         self.messages.setdefault(stage, []).append(
             [dict(message) for message in messages]
         )
+        self.tools.setdefault(stage, []).append([dict(tool) for tool in tools])
         return self.turns[stage].pop(0)
 
 
@@ -513,7 +516,15 @@ class InteractiveSessionTests(unittest.TestCase):
 
         self.assertEqual(study_result.probe_results[0]["physics_steps"], 1)
         self.assertGreater(len(study_result.call_evidence.react_trace), 1)
-        study_probe_observation = client.messages["study"][1][-1]["content"]
+        self.assertEqual(len(client.messages["study"]), 2)
+        first_turn_tools = {
+            tool["function"]["name"] for tool in client.tools["study"][0]
+        }
+        self.assertEqual(first_turn_tools, {"run_mujoco_probe", "submit_study"})
+        study_probe_observation = "\n".join(
+            str(message.get("content", ""))
+            for message in client.messages["study"][1]
+        )
         self.assertIn('"study_requirement_satisfied": true', study_probe_observation)
         self.assertIn("Call submit_study now", study_probe_observation)
         self.assertEqual(generated.driver_source, DRIVER_SOURCE)
@@ -524,7 +535,7 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertIn("def drive(self, request):", stub_observation)
         self.assertIn("NotImplementedError", stub_observation)
 
-    def test_study_rejects_redundant_probe_after_physics_succeeds(self) -> None:
+    def test_study_reserves_second_turn_for_submission(self) -> None:
         probe = (
             "import os\nimport mujoco\n"
             "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
@@ -542,41 +553,27 @@ class InteractiveSessionTests(unittest.TestCase):
                         None,
                         (_call("s2", "run_mujoco_probe", {"probe_id": "redundant", "script": probe}),),
                     ),
-                    ToolTurn(
-                        None,
-                        (
-                            _call(
-                                "s3",
-                                "submit_study",
-                                {
-                                    "findings": ["the canonical model advances"],
-                                    "implementation_plan": ["implement the sealed capability"],
-                                },
-                            ),
-                        ),
-                    ),
                 )
             }
         )
 
-        result = study(
-            client,  # type: ignore[arg-type]
-            self.package,
-            self.design,
-            condition="from-scratch",
-            workspace=Path(self.temporary.name) / "redundant-study-probe",
-            probe_budget=ProbeBudget(max_requests=4, timeout_s=10),
-            source_root=Path(__file__).resolve().parents[1] / "src",
-        )
+        with self.assertRaisesRegex(GenerationError, "did not submit") as raised:
+            study(
+                client,  # type: ignore[arg-type]
+                self.package,
+                self.design,
+                condition="from-scratch",
+                workspace=Path(self.temporary.name) / "redundant-study-probe",
+                probe_budget=ProbeBudget(max_requests=4, timeout_s=10),
+                source_root=Path(__file__).resolve().parents[1] / "src",
+            )
 
-        self.assertEqual(len(result.probe_results), 1)
-        self.assertEqual(result.probe_results[0]["probe_id"], "first")
-        redundant_observation = "\n".join(
-            str(message.get("content", ""))
-            for message in client.messages["study"][2]
-        )
-        self.assertIn('"ok": false', redundant_observation)
-        self.assertIn("already satisfied", redundant_observation)
+        self.assertEqual(len(raised.exception.probe_results), 1)
+        self.assertEqual(raised.exception.probe_results[0]["probe_id"], "first")
+        final_turn_tools = {
+            tool["function"]["name"] for tool in client.tools["study"][1]
+        }
+        self.assertEqual(final_turn_tools, {"submit_study"})
 
     def test_repair_keeps_report_and_driver_in_one_interactive_conversation(self) -> None:
         request = {"task_id": "task-1", "task_parameters": {"target": 0.2}}

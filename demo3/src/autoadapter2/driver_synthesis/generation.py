@@ -37,8 +37,8 @@ from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_sou
 
 GenerationCondition = Literal["skeleton-assisted", "from-scratch"]
 
-STUDY_REACT_MAX_TURNS = 6
-STUDY_REACT_MAX_TOOL_CALLS = 12
+STUDY_REACT_MAX_TURNS = 2
+STUDY_REACT_MAX_TOOL_CALLS = 2
 DRIVER_REACT_MAX_TURNS = 12
 DRIVER_REACT_MAX_TOOL_CALLS = 24
 
@@ -136,13 +136,13 @@ auditable attribute access; do not use getattr, setattr, eval, exec, or dynamic 
 
 
 STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage for one
-Direct-MuJoCo generation condition. Inspect the staged public robot package and sealed Capability
-Design with tools. Run at least one public-only MuJoCo probe that successfully advances physics.
-Use no private Harness, reference driver, repository path, network, or other condition artifact.
-One successful physics probe is sufficient: after it succeeds, do not run another probe and call
-submit_study on the next turn. Do not write the final driver in STUDY. Finish only with submit_study
-after incorporating the probe observations into concrete implementation findings and a
-capability-by-capability plan."""
+Direct-MuJoCo generation condition. The initial public input already contains the complete public
+robot-package projection, selected MJCF closure, sealed Capability Design, and every condition-
+eligible skeleton source. Do not spend remote turns listing or rereading those inputs. Your first
+action must be one public-only MuJoCo probe that successfully advances physics. Use no private
+Harness, reference driver, repository path, network, or other condition artifact. On the next and
+final turn, call submit_study after incorporating that probe observation into concrete findings and
+a capability-by-capability implementation plan. Do not write the final driver in STUDY."""
 
 
 GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
@@ -156,11 +156,10 @@ that same tool execution. Tool failures are development observations, so revise 
 and rerun check_driver. Finish only with submit_driver. Never access private Harness definitions,
 reference code, the other condition, or credentials, and never claim the final verdict."""
 
-STUDY_REACT_TASK = """Study the supplied public inputs interactively. Use file tools as needed,
-run and inspect at least one successful real-physics MuJoCo probe, then call submit_study with your
-grounded findings and implementation plan. The first successful physics probe completes the probe
-requirement; immediately submit after observing it. Do not run optional follow-up probes or merely
-print or return a JSON answer."""
+STUDY_REACT_TASK = """Use the complete supplied public inputs directly. First call
+run_mujoco_probe once with a focused real-physics check. After observing it, call submit_study on the
+next turn with grounded findings and an implementation plan. Do not list or reread staged files, run
+follow-up probes, write the driver, or merely print a JSON answer."""
 
 GENERATE_REACT_TASK = """Develop the complete executable driver from the supplied
 driver_interface_stub. Do not spend a turn reading or separately writing driver.py. Call check_driver
@@ -664,14 +663,11 @@ def study(
             "required": ["findings", "implementation_plan"],
             "additionalProperties": False,
         }
-        study_public_tools = tuple(
-            replace(tool, handler=run_study_probe)
-            if tool.name == "run_mujoco_probe"
-            else tool
-            for tool in session.public_tools()
+        probe_tool = next(
+            tool for tool in session.public_tools() if tool.name == "run_mujoco_probe"
         )
         tools = (
-            *study_public_tools,
+            replace(probe_tool, handler=run_study_probe),
             ToolSpec(
                 "submit_study",
                 "Submit the condition-specific findings after at least one successful real-physics public probe.",

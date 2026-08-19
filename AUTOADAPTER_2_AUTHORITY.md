@@ -4,9 +4,20 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.5`<br>
+> **Document revision / 文档版本：** `0.19.6`<br>
 > **Effective date / 生效日期：** 2026-08-19<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.6` removes redundant STUDY file-discovery turns. The initial STUDY input already
+contains the complete public robot-package projection, selected MJCF closure, sealed Capability
+Design, and every condition-eligible skeleton source. STUDY therefore exposes one bounded
+`run_mujoco_probe` action followed by one reserved `submit_study` action, for a hard maximum of two
+model turns. This changes no public information, private boundary, or physical-probe requirement.
+
+**中文辅助说明。** `0.19.6` 删除 STUDY 中重复的文件发现回合。STUDY 初始输入已包含完整公开
+robot-package projection、selected MJCF closure、封存 Capability Design 以及该条件允许的全部
+skeleton 源码，因此只暴露一次有界 `run_mujoco_probe`，下一回合固定为 `submit_study`，硬上限
+为两个模型回合。公开信息、私有边界及真实物理 probe 要求均不改变。
 
 Revision `0.19.5` restores the AutoAdapter 1.0 implementation-action granularity. The initial
 GENERATE/GEN_ALGO context contains the mechanically generated interface-only driver stub, and the
@@ -1091,10 +1102,12 @@ inspect simulator state, exercise candidate methods, and tune actuator-driven be
 invoke or inspect the private Harness suite.
 
 STUDY and GENERATE/GEN_ALGO execute through the self-contained AutoAdapter 1.0-style ReAct loop,
-not as one-shot code-generation responses. Within explicit model-turn and tool budgets, the model
-may repeatedly list and read staged public files, inspect the trusted skeleton only in the
-skeleton-assisted condition, and run bounded public Python/MuJoCo probes. Each candidate revision is
-one AutoAdapter 1.0-style implementation action: `check_driver(source, checks)` carries the complete
+not as one-shot code-generation responses. STUDY receives the complete run-relevant public inputs
+inline and uses exactly one public Python/MuJoCo probe turn followed by its reserved submission turn.
+GENERATE/GEN_ALGO may still list and read staged public files when needed, inspect the trusted
+skeleton only in the skeleton-assisted condition, and run bounded public Python/MuJoCo probes. Each
+candidate revision is one AutoAdapter 1.0-style implementation action:
+`check_driver(source, checks)` carries the complete
 source and one covered public invocation per capability. The Framework writes that source and
 returns its bundled source-audit, import, and public-method physics-smoke diagnostics in the same
 tool result. Separate model-visible `read_driver`, `write_driver`, audit, import, and per-method
@@ -1173,10 +1186,11 @@ Python/MuJoCo 开发 probe，但该 probe 受明确的调用次数、模拟时�
 candidate 方法并调试 actuator-driven 行为，但不能调用或检查私有 Harness suite。
 
 STUDY 与 GENERATE/GEN_ALGO 必须通过 Demo3 自包含的 AutoAdapter 1.0 式 ReAct loop 执行，
-不能退化为一次性代码生成响应。在明确的模型 turn 和工具预算内，模型可以反复列出并读取 staged
-公开文件；仅在 skeleton-assisted 条件查看可信 skeleton；编写或替换自己在本条件 workspace 中的
-开发文件；运行有预算的公开 Python/MuJoCo probe；并对当前 `driver.py` 请求 source audit、import
-及公开方法 smoke 诊断。工具错误返回同一个模型 conversation，使模型可以在提交前自行修订。
+不能退化为一次性代码生成响应。STUDY 在初始上下文直接取得本次运行相关的完整公开输入，只用一次
+公开 Python/MuJoCo probe 回合和随后保留的提交回合。GENERATE/GEN_ALGO 仍可在需要时列出并读取
+staged 公开文件；仅在 skeleton-assisted 条件查看可信 skeleton；运行有预算的公开 Python/MuJoCo
+probe；并通过原子 `check_driver(source, checks)` 获得源码审计、import 及全部公开方法 smoke
+诊断。工具错误返回同一个模型 conversation，使模型可以在提交前自行修订。
 只有模型明确提交 `driver.py` 后，Framework 才计入一次正式 attempt；开发过程中的改写和未通过的
 提交前 audit 不消耗最多三次 Harness attempt。
 
