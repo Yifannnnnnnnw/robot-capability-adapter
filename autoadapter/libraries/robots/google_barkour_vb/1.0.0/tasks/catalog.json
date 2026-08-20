@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "robot_configuration_id": "google_barkour_vb",
   "package_version": "1.0.0",
-  "snapshot_id": "google-barkour-vb-source-protocols-2026-08-20-v1",
+  "snapshot_id": "google-barkour-vb-source-protocols-2026-08-20-v2",
   "tasks": [
     {
       "task_id": "lee_eight_direction_velocity_tracking",
@@ -44,7 +44,7 @@
           "metric": "mean_body_heading_error",
           "unit": "deg",
           "comparator": "<=",
-          "threshold": 10.0,
+          "threshold": 10,
           "temporal": {
             "kind": "terminal_state"
           },
@@ -124,10 +124,10 @@
           "metric": "all_feet_step_completion",
           "unit": "binary",
           "comparator": "==",
-          "threshold": 1.0,
+          "threshold": 1,
           "temporal": {
             "kind": "within",
-            "duration_s": 10.0
+            "duration_s": 10
           },
           "aggregation": {
             "kind": "per_trial"
@@ -206,10 +206,10 @@
           "metric": "all_feet_step_completion",
           "unit": "binary",
           "comparator": "==",
-          "threshold": 1.0,
+          "threshold": 1,
           "temporal": {
             "kind": "within",
-            "duration_s": 10.0
+            "duration_s": 10
           },
           "aggregation": {
             "kind": "per_trial"
@@ -269,14 +269,14 @@
       }
     },
     {
-      "task_id": "lee_payload_step_ascent",
-      "name": "Payload step ascent",
-      "description": "Traverse a positive step with a rigidly attached payload equal to 22.7 percent of nominal robot mass, using the source ten-trial protocol.",
-      "source_task_or_operation": "Lee et al. Fig. 3D-E payload model-mismatch step experiment.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Lee operation fixes a centered torso payload and otherwise requires the same quadruped step traversal; it adds no actuator or manipulator. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The payload ratio remains exactly 22.7%; the 13.4 cm source step is morphology-scaled by 0.56 and the ten 10 s trials are retained.",
+      "task_id": "robel_dkitty_stand_fixed",
+      "name": "D'Kitty fixed-pose stand",
+      "description": "Recover from the source fixed crouched pose to a requested standing joint target while remaining upright.",
+      "source_task_or_operation": "ROBEL D'Kitty stand task.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The ROBEL stand operation is a quadruped fixed-pose recovery task, so it matches the local four-leg joint configuration. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source fixed-pose operation is instantiated with the Barkour named joint order and local joint limits; the 8 s horizon and terminal thresholds are retained.",
       "scene_assumptions": [
-        "The canonical payload model adds 22.7% of nominal mass at the trunk and provides one confined rigid step."
+        "A level rigid floor provides the source fixed crouched reset and enough clearance for the target standing pose."
       ],
       "observation_assumptions": [
         "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
@@ -284,24 +284,44 @@
       ],
       "scoring": [
         {
-          "clause_id": "payload_step_completion",
-          "metric": "all_feet_step_completion",
-          "unit": "binary",
-          "comparator": "==",
-          "threshold": 1.0,
+          "clause_id": "joint_pose_error",
+          "metric": "mean_absolute_joint_position_error",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.2617993877991494,
+          "threshold_provenance": "source_direct; terminal sampling is a stricter interpretation",
           "temporal": {
-            "kind": "within",
-            "duration_s": 10.0
+            "kind": "terminal_state"
           },
           "aggregation": {
-            "kind": "per_trial"
+            "kind": "single_trial"
           },
           "source_refs": [
             {
-              "source_id": "SRC-LEE-2020",
-              "specific_reference": "Results pp. 4-5: the 10 kg payload is 22.7% of total mass and the controller traverses a 13.4 cm step; step success and ten-trial aggregation follow Fig. 3D-E.",
-              "support": "adapted",
-              "adaptation": "Payload mass is 22.7% of the exact local MJCF mass; step height uses the recorded 0.56 morphology scale. No success or repetition requirement is weakened."
+              "source_id": "SRC-ROBEL-DKITTY",
+              "specific_reference": "robel/dkitty/stand.py: fixed-pose stand target and mean joint-error success threshold.",
+              "support": "direct"
+            }
+          ]
+        },
+        {
+          "clause_id": "upright",
+          "metric": "base_world_z_upright_dot",
+          "unit": "ratio",
+          "comparator": ">",
+          "threshold": 0.9,
+          "threshold_provenance": "source_direct; terminal sampling is a stricter interpretation",
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBEL-DKITTY",
+              "specific_reference": "robel/dkitty/stand.py: upright terminal condition for the stand task.",
+              "support": "direct"
             }
           ]
         }
@@ -317,32 +337,29 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "lee_payload_step_ascent",
+          "task_id": "robel_dkitty_stand_fixed",
           "task_parameters": {
             "type": "object",
             "required": [
               "duration_s",
-              "payload_mass_ratio",
-              "step_height_m"
+              "target_joint_positions_rad"
             ],
             "properties": {
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "source 10 second trial window",
-                "frame": "none"
+                "frame": "none",
+                "description": "fixed source horizon; allowed range [8, 8] s"
               },
-              "payload_mass_ratio": {
-                "type": "number",
-                "unit": "ratio",
-                "description": "payload divided by nominal MJCF robot mass",
-                "frame": "none"
-              },
-              "step_height_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "morphology-scaled 13.4 cm source step",
-                "frame": "task_fixture"
+              "target_joint_positions_rad": {
+                "type": "array",
+                "unit": "rad",
+                "frame": "barkour_named_joint_order",
+                "description": "12 target joint positions; each value must remain within its local joint limits",
+                "items": {
+                  "type": "number"
+                },
+                "length": 12
               }
             },
             "additional_properties": false
@@ -370,10 +387,10 @@
           "metric": "mean_body_yaw_rate",
           "unit": "rad/s",
           "comparator": ">=",
-          "threshold": 3.0,
+          "threshold": 3,
           "temporal": {
             "kind": "continuous",
-            "duration_s": 1.0
+            "duration_s": 1
           },
           "aggregation": {
             "kind": "single_trial"
@@ -444,7 +461,7 @@
           "metric": "ordered_obstacle_completion",
           "unit": "ratio",
           "comparator": "==",
-          "threshold": 1.0,
+          "threshold": 1,
           "temporal": {
             "kind": "eventual"
           },
@@ -506,14 +523,14 @@
       }
     },
     {
-      "task_id": "qrc_crossing_ramps",
-      "name": "QRC crossing-ramp lane",
-      "description": "Traverse the 7.2 m small-quadruped lane containing 15 degree crossing ramps from start to end without intervention.",
-      "source_task_or_operation": "QRC 2023 small-quadruped 15 degree crossing pitch/roll ramps section.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The QRC source lane is explicitly defined for small quadrupeds, so its crossing-ramp operation matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The 7.2 m lane and all source-reported dimensions are retained. MuJoCo contact compliance implements the soft-floor material where needed.",
+      "task_id": "robel_dkitty_orient_fixed",
+      "name": "D'Kitty fixed-heading orientation",
+      "description": "Turn from the initial pose to a requested body heading while remaining upright.",
+      "source_task_or_operation": "ROBEL D'Kitty orient task.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The ROBEL orient operation is a quadruped fixed-heading recovery task with a body-yaw target. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source heading operation is instantiated in the local initial-body-yaw frame; the 8 s horizon and source terminal thresholds are retained.",
       "scene_assumptions": [
-        "A confined 7.2 m start-to-end lane preserves the source 15 degree crossing pitch/roll ramps."
+        "A level rigid floor provides a fixed initial pose and a target heading around the world vertical axis."
       ],
       "observation_assumptions": [
         "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
@@ -521,386 +538,43 @@
       ],
       "scoring": [
         {
-          "clause_id": "lane_completion",
-          "metric": "ordered_lane_completion",
-          "unit": "ratio",
-          "comparator": "==",
-          "threshold": 1.0,
-          "temporal": {
-            "kind": "eventual"
-          },
-          "aggregation": {
-            "kind": "single_trial"
-          },
-          "source_refs": [
-            {
-              "source_id": "SRC-QRC-2023",
-              "specific_reference": "Fig. 2-3 and pp. 155-157: 15 degree crossing pitch/roll ramps; one point is awarded for a successful start-to-end run without intervention.",
-              "support": "direct"
-            }
-          ]
-        }
-      ],
-      "invocation_schema": {
-        "envelope": "request",
-        "required": [
-          "request"
-        ],
-        "request": {
-          "type": "object",
-          "required": [
-            "task_id",
-            "task_parameters"
-          ],
-          "task_id": "qrc_crossing_ramps",
-          "task_parameters": {
-            "type": "object",
-            "required": [
-              "duration_s",
-              "lane_length_m"
-            ],
-            "properties": {
-              "duration_s": {
-                "type": "number",
-                "unit": "s",
-                "description": "positive lane execution budget",
-                "frame": "none"
-              },
-              "lane_length_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "source small-quadruped lane length",
-                "frame": "world-x"
-              }
-            },
-            "additional_properties": false
-          }
-        }
-      }
-    },
-    {
-      "task_id": "qrc_compliant_floor_stepovers",
-      "name": "QRC compliant-floor step-over lane",
-      "description": "Traverse the 7.2 m lane containing a compliant 10 cm floor layer and 5 x 10 cm step-overs without intervention.",
-      "source_task_or_operation": "QRC 2023 small-quadruped 10 cm soft floor with 5 x 10 cm step-overs section.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The QRC source lane is explicitly defined for small quadrupeds, so its compliant-floor step-over operation matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The 7.2 m lane and all source-reported dimensions are retained. MuJoCo contact compliance implements the soft-floor material where needed.",
-      "scene_assumptions": [
-        "A confined 7.2 m start-to-end lane preserves the source 10 cm compliant floor and 5 x 10 cm step-overs."
-      ],
-      "observation_assumptions": [
-        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
-        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
-      ],
-      "scoring": [
-        {
-          "clause_id": "lane_completion",
-          "metric": "ordered_lane_completion",
-          "unit": "ratio",
-          "comparator": "==",
-          "threshold": 1.0,
-          "temporal": {
-            "kind": "eventual"
-          },
-          "aggregation": {
-            "kind": "single_trial"
-          },
-          "source_refs": [
-            {
-              "source_id": "SRC-QRC-2023",
-              "specific_reference": "Fig. 2-3 and pp. 155-157: 10 cm soft floor with 5 x 10 cm step-overs; one point is awarded for a successful start-to-end run without intervention.",
-              "support": "direct"
-            }
-          ]
-        }
-      ],
-      "invocation_schema": {
-        "envelope": "request",
-        "required": [
-          "request"
-        ],
-        "request": {
-          "type": "object",
-          "required": [
-            "task_id",
-            "task_parameters"
-          ],
-          "task_id": "qrc_compliant_floor_stepovers",
-          "task_parameters": {
-            "type": "object",
-            "required": [
-              "duration_s",
-              "lane_length_m"
-            ],
-            "properties": {
-              "duration_s": {
-                "type": "number",
-                "unit": "s",
-                "description": "positive lane execution budget",
-                "frame": "none"
-              },
-              "lane_length_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "source small-quadruped lane length",
-                "frame": "world-x"
-              }
-            },
-            "additional_properties": false
-          }
-        }
-      }
-    },
-    {
-      "task_id": "qrc_pallet_pipes",
-      "name": "QRC pallet-and-pipe lane",
-      "description": "Traverse the 7.2 m lane containing 15 cm pallet transitions and rolling pipe edges without intervention.",
-      "source_task_or_operation": "QRC 2023 small-quadruped 15 cm pallet elevation changes with rolling pipe edges section.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The QRC source lane is explicitly defined for small quadrupeds, so its pallet-and-pipe operation matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The 7.2 m lane and all source-reported dimensions are retained. MuJoCo contact compliance implements the soft-floor material where needed.",
-      "scene_assumptions": [
-        "A confined 7.2 m start-to-end lane preserves the source 15 cm pallet elevation changes and rolling pipe edges."
-      ],
-      "observation_assumptions": [
-        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
-        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
-      ],
-      "scoring": [
-        {
-          "clause_id": "lane_completion",
-          "metric": "ordered_lane_completion",
-          "unit": "ratio",
-          "comparator": "==",
-          "threshold": 1.0,
-          "temporal": {
-            "kind": "eventual"
-          },
-          "aggregation": {
-            "kind": "single_trial"
-          },
-          "source_refs": [
-            {
-              "source_id": "SRC-QRC-2023",
-              "specific_reference": "Fig. 2-3 and pp. 155-157: 15 cm pallet elevation changes with rolling pipe edges; one point is awarded for a successful start-to-end run without intervention.",
-              "support": "direct"
-            }
-          ]
-        }
-      ],
-      "invocation_schema": {
-        "envelope": "request",
-        "required": [
-          "request"
-        ],
-        "request": {
-          "type": "object",
-          "required": [
-            "task_id",
-            "task_parameters"
-          ],
-          "task_id": "qrc_pallet_pipes",
-          "task_parameters": {
-            "type": "object",
-            "required": [
-              "duration_s",
-              "lane_length_m"
-            ],
-            "properties": {
-              "duration_s": {
-                "type": "number",
-                "unit": "s",
-                "description": "positive lane execution budget",
-                "frame": "none"
-              },
-              "lane_length_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "source small-quadruped lane length",
-                "frame": "world-x"
-              }
-            },
-            "additional_properties": false
-          }
-        }
-      }
-    },
-    {
-      "task_id": "qrc_diagonal_krails",
-      "name": "QRC diagonal K-rail lane",
-      "description": "Traverse the 7.2 m slippery lane containing 10 x 10 cm K-rails at 45 degrees without intervention.",
-      "source_task_or_operation": "QRC 2023 small-quadruped slippery floor with 10 x 10 cm rails at 45 degrees section.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The QRC source lane is explicitly defined for small quadrupeds, so its diagonal K-rail operation matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The 7.2 m lane and all source-reported dimensions are retained. MuJoCo contact compliance implements the soft-floor material where needed.",
-      "scene_assumptions": [
-        "A confined 7.2 m start-to-end lane preserves the source slippery floor and 10 x 10 cm rails at 45 degrees."
-      ],
-      "observation_assumptions": [
-        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
-        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
-      ],
-      "scoring": [
-        {
-          "clause_id": "lane_completion",
-          "metric": "ordered_lane_completion",
-          "unit": "ratio",
-          "comparator": "==",
-          "threshold": 1.0,
-          "temporal": {
-            "kind": "eventual"
-          },
-          "aggregation": {
-            "kind": "single_trial"
-          },
-          "source_refs": [
-            {
-              "source_id": "SRC-QRC-2023",
-              "specific_reference": "Fig. 2-3 and pp. 155-157: slippery floor with 10 x 10 cm rails at 45 degrees; one point is awarded for a successful start-to-end run without intervention.",
-              "support": "direct"
-            }
-          ]
-        }
-      ],
-      "invocation_schema": {
-        "envelope": "request",
-        "required": [
-          "request"
-        ],
-        "request": {
-          "type": "object",
-          "required": [
-            "task_id",
-            "task_parameters"
-          ],
-          "task_id": "qrc_diagonal_krails",
-          "task_parameters": {
-            "type": "object",
-            "required": [
-              "duration_s",
-              "lane_length_m"
-            ],
-            "properties": {
-              "duration_s": {
-                "type": "number",
-                "unit": "s",
-                "description": "positive lane execution budget",
-                "frame": "none"
-              },
-              "lane_length_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "source small-quadruped lane length",
-                "frame": "world-x"
-              }
-            },
-            "additional_properties": false
-          }
-        }
-      }
-    },
-    {
-      "task_id": "qrc_diagonal_crate_gap",
-      "name": "QRC diagonal negative-obstacle lane",
-      "description": "Traverse the 7.2 m crate-terrain lane containing a diagonal negative obstacle from start to end without intervention.",
-      "source_task_or_operation": "QRC 2023 small-quadruped crate terrain with a diagonal negative obstacle section.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The QRC source lane is explicitly defined for small quadrupeds, so its diagonal negative-obstacle operation matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The 7.2 m lane and all source-reported dimensions are retained. MuJoCo contact compliance implements the soft-floor material where needed.",
-      "scene_assumptions": [
-        "A confined 7.2 m start-to-end lane preserves the source crate terrain and diagonal negative obstacle."
-      ],
-      "observation_assumptions": [
-        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
-        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
-      ],
-      "scoring": [
-        {
-          "clause_id": "lane_completion",
-          "metric": "ordered_lane_completion",
-          "unit": "ratio",
-          "comparator": "==",
-          "threshold": 1.0,
-          "temporal": {
-            "kind": "eventual"
-          },
-          "aggregation": {
-            "kind": "single_trial"
-          },
-          "source_refs": [
-            {
-              "source_id": "SRC-QRC-2023",
-              "specific_reference": "Fig. 2-3 and pp. 155-157: crate terrain with a diagonal negative obstacle; one point is awarded for a successful start-to-end run without intervention.",
-              "support": "direct"
-            }
-          ]
-        }
-      ],
-      "invocation_schema": {
-        "envelope": "request",
-        "required": [
-          "request"
-        ],
-        "request": {
-          "type": "object",
-          "required": [
-            "task_id",
-            "task_parameters"
-          ],
-          "task_id": "qrc_diagonal_crate_gap",
-          "task_parameters": {
-            "type": "object",
-            "required": [
-              "duration_s",
-              "lane_length_m"
-            ],
-            "properties": {
-              "duration_s": {
-                "type": "number",
-                "unit": "s",
-                "description": "positive lane execution budget",
-                "frame": "none"
-              },
-              "lane_length_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "source small-quadruped lane length",
-                "frame": "world-x"
-              }
-            },
-            "additional_properties": false
-          }
-        }
-      }
-    },
-    {
-      "task_id": "shi_blocks_six_direction",
-      "name": "Six-direction block-terrain travel",
-      "description": "Travel through the source block terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
-      "source_task_or_operation": "Shi et al. Section IV-A block terrain maximum-travel-distance experiment.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Shi source robot and the local Barkour vB home configuration both place the base approximately 0.28 m above the feet or floor and use twelve actuated leg joints, so block-terrain travel matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
-      "scene_assumptions": [
-        "A 5 m source-family block-terrain lane provides direction-aligned resets and a finish line at the map limit."
-      ],
-      "observation_assumptions": [
-        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
-        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
-      ],
-      "scoring": [
-        {
-          "clause_id": "travel_distance",
-          "metric": "maximum_travel_distance",
-          "unit": "m",
-          "comparator": ">=",
-          "threshold": 4.983,
+          "clause_id": "heading_error",
+          "metric": "target_direction_error",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.087,
+          "threshold_provenance": "source_direct",
           "temporal": {
             "kind": "terminal_state"
           },
           "aggregation": {
-            "kind": "per_trial_mean"
+            "kind": "single_trial"
           },
           "source_refs": [
             {
-              "source_id": "SRC-SHI-2023",
-              "specific_reference": "Section IV-A and Table I: block terrain is run three times in each of six directions with distance capped at 5 m; reported proposed-policy mean is 4.983 m.",
+              "source_id": "SRC-ROBEL-DKITTY",
+              "specific_reference": "robel/dkitty/orient.py: target heading terminal error threshold.",
+              "support": "direct"
+            }
+          ]
+        },
+        {
+          "clause_id": "upright",
+          "metric": "base_world_z_upright_dot",
+          "unit": "ratio",
+          "comparator": ">",
+          "threshold": 0.96,
+          "threshold_provenance": "source_direct",
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBEL-DKITTY",
+              "specific_reference": "robel/dkitty/orient.py: upright terminal condition for orientation.",
               "support": "direct"
             }
           ]
@@ -917,32 +591,25 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "shi_blocks_six_direction",
+          "task_id": "robel_dkitty_orient_fixed",
           "task_parameters": {
             "type": "object",
             "required": [
               "duration_s",
-              "direction_rad",
-              "map_limit_m"
+              "target_heading_rad"
             ],
             "properties": {
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive travel window",
-                "frame": "none"
+                "frame": "none",
+                "description": "fixed source horizon; allowed range [8, 8] s"
               },
-              "direction_rad": {
+              "target_heading_rad": {
                 "type": "number",
                 "unit": "rad",
-                "description": "one of the six source commands",
-                "frame": "world"
-              },
-              "map_limit_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "source maximum travel distance",
-                "frame": "terrain"
+                "frame": "initial_body_yaw",
+                "description": "requested heading; allowed range [-pi, pi] rad"
               }
             },
             "additional_properties": false
@@ -951,14 +618,14 @@
       }
     },
     {
-      "task_id": "shi_stairs_six_direction",
-      "name": "Six-direction stair-terrain travel",
-      "description": "Travel through the source stair terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
-      "source_task_or_operation": "Shi et al. Section IV-A stair terrain maximum-travel-distance experiment.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Shi source robot and the local Barkour vB home configuration both place the base approximately 0.28 m above the feet or floor and use twelve actuated leg joints, so stair-terrain travel matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
+      "task_id": "robel_dkitty_walk_fixed",
+      "name": "D'Kitty fixed-goal walk",
+      "description": "Walk from the initial pose to the requested horizontal goal while preserving the source heading alignment.",
+      "source_task_or_operation": "ROBEL D'Kitty walk task.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The ROBEL walk operation is a quadruped fixed-goal planar navigation task with a target in the initial body-horizontal frame. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source walk target is instantiated as a fixed 2 m forward displacement in the local initial-body-horizontal frame; the 16 s horizon and terminal thresholds are retained.",
       "scene_assumptions": [
-        "A 5 m source-family stair-terrain lane provides direction-aligned resets and a finish line at the map limit."
+        "A level rigid floor provides an unobstructed 2 m forward path and a target site in the initial body-horizontal frame."
       ],
       "observation_assumptions": [
         "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
@@ -966,21 +633,43 @@
       ],
       "scoring": [
         {
-          "clause_id": "travel_distance",
-          "metric": "maximum_travel_distance",
+          "clause_id": "goal_distance",
+          "metric": "target_planar_distance",
           "unit": "m",
-          "comparator": ">=",
-          "threshold": 4.951,
+          "comparator": "<",
+          "threshold": 0.5,
+          "threshold_provenance": "source_direct",
           "temporal": {
             "kind": "terminal_state"
           },
           "aggregation": {
-            "kind": "per_trial_mean"
+            "kind": "single_trial"
           },
           "source_refs": [
             {
-              "source_id": "SRC-SHI-2023",
-              "specific_reference": "Section IV-A and Table I: stair terrain is run three times in each of six directions with distance capped at 5 m; reported proposed-policy mean is 4.951 m.",
+              "source_id": "SRC-ROBEL-DKITTY",
+              "specific_reference": "robel/dkitty/walk.py: target planar distance terminal threshold.",
+              "support": "direct"
+            }
+          ]
+        },
+        {
+          "clause_id": "heading_alignment",
+          "metric": "target_heading_cosine",
+          "unit": "ratio",
+          "comparator": ">",
+          "threshold": 0.9,
+          "threshold_provenance": "source_direct",
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBEL-DKITTY",
+              "specific_reference": "robel/dkitty/walk.py: terminal heading cosine condition.",
               "support": "direct"
             }
           ]
@@ -997,32 +686,29 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "shi_stairs_six_direction",
+          "task_id": "robel_dkitty_walk_fixed",
           "task_parameters": {
             "type": "object",
             "required": [
               "duration_s",
-              "direction_rad",
-              "map_limit_m"
+              "target_xy_m"
             ],
             "properties": {
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive travel window",
-                "frame": "none"
+                "frame": "none",
+                "description": "fixed source horizon; allowed range [16, 16] s"
               },
-              "direction_rad": {
-                "type": "number",
-                "unit": "rad",
-                "description": "one of the six source commands",
-                "frame": "world"
-              },
-              "map_limit_m": {
-                "type": "number",
+              "target_xy_m": {
+                "type": "array",
                 "unit": "m",
-                "description": "source maximum travel distance",
-                "frame": "terrain"
+                "frame": "initial_body_horizontal",
+                "description": "constant target [2, 0] m in the initial body-horizontal frame",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
               }
             },
             "additional_properties": false
@@ -1031,14 +717,14 @@
       }
     },
     {
-      "task_id": "shi_stepping_stones_six_direction",
-      "name": "Six-direction stepping-stone travel",
-      "description": "Travel through the source stepping-stone terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
-      "source_task_or_operation": "Shi et al. Section IV-A stepping-stone terrain maximum-travel-distance experiment.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Shi source robot and the local Barkour vB home configuration both place the base approximately 0.28 m above the feet or floor and use twelve actuated leg joints, so stepping-stone travel matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
+      "task_id": "safety_gym_doggo_button0",
+      "name": "Safety Gym Doggo Button0",
+      "description": "Reach the selected fixed button and make robot-button contact within the source control budget.",
+      "source_task_or_operation": "Safety Gym Doggo Button0.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. Safety Gym Button0 is a quadruped-compatible fixed-button contact operation with no manipulator requirement. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source Button0 contact predicate and four-button arrangement are retained in a Barkour-sized local flat scene.",
       "scene_assumptions": [
-        "A 5 m source-family stepping-stone lane provides direction-aligned resets and a finish line at the map limit."
+        "A flat [-1, 1]^2 world contains four immovable spheres of radius 0.1 m; each button has a 0.2 m keepout."
       ],
       "observation_assumptions": [
         "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
@@ -1046,21 +732,23 @@
       ],
       "scoring": [
         {
-          "clause_id": "travel_distance",
-          "metric": "maximum_travel_distance",
-          "unit": "m",
-          "comparator": ">=",
-          "threshold": 4.954,
+          "clause_id": "button_contact",
+          "metric": "target_button_robot_contact",
+          "unit": "binary",
+          "comparator": "==",
+          "threshold": 1,
+          "threshold_provenance": "source_direct; first-event temporal interpretation adapted",
           "temporal": {
-            "kind": "terminal_state"
+            "kind": "within",
+            "max_control_steps": 1000
           },
           "aggregation": {
-            "kind": "per_trial_mean"
+            "kind": "single_trial"
           },
           "source_refs": [
             {
-              "source_id": "SRC-SHI-2023",
-              "specific_reference": "Section IV-A and Table I: stepping-stone terrain is run three times in each of six directions with distance capped at 5 m; reported proposed-policy mean is 4.954 m.",
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "safety_gym/envs/engine.py: goal_met returns the button contact event; suite.py registers Button0.",
               "support": "direct"
             }
           ]
@@ -1077,32 +765,25 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "shi_stepping_stones_six_direction",
+          "task_id": "safety_gym_doggo_button0",
           "task_parameters": {
             "type": "object",
             "required": [
-              "duration_s",
-              "direction_rad",
-              "map_limit_m"
+              "max_control_steps",
+              "goal_button_index"
             ],
             "properties": {
-              "duration_s": {
-                "type": "number",
-                "unit": "s",
-                "description": "positive travel window",
-                "frame": "none"
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "env_step",
+                "frame": "none",
+                "description": "fixed source control budget; allowed range [1000, 1000] steps"
               },
-              "direction_rad": {
-                "type": "number",
-                "unit": "rad",
-                "description": "one of the six source commands",
-                "frame": "world"
-              },
-              "map_limit_m": {
-                "type": "number",
-                "unit": "m",
-                "description": "source maximum travel distance",
-                "frame": "terrain"
+              "goal_button_index": {
+                "type": "integer",
+                "unit": "index",
+                "frame": "button_set",
+                "description": "selected button index; allowed range [0, 3]"
               }
             },
             "additional_properties": false
@@ -1111,14 +792,14 @@
       }
     },
     {
-      "task_id": "shi_poles_six_direction",
-      "name": "Six-direction pole-terrain travel",
-      "description": "Travel through the source pole terrain in all six benchmark directions, with three independently reset runs per direction and the source mean-distance rule.",
-      "source_task_or_operation": "Shi et al. Section IV-A pole terrain maximum-travel-distance experiment.",
-      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Shi source robot and the local Barkour vB home configuration both place the base approximately 0.28 m above the feet or floor and use twelve actuated leg joints, so pole-terrain travel matches this body plan. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
-      "adaptation": "The Framework rotates the same source-family terrain lane into each of the six published world directions and executes three fresh resets per direction. Terrain dimensions, 18-run aggregation, 5 m cap, and the published mean-distance value are unchanged.",
+      "task_id": "safety_gym_doggo_push0",
+      "name": "Safety Gym Doggo Push0",
+      "description": "Push the external block into the selected planar goal region within the source control budget.",
+      "source_task_or_operation": "Safety Gym Doggo Push0.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. Safety Gym Push0 is a quadruped-compatible external-block push operation with a planar goal region. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source Push0 block and goal dimensions are retained in a local flat world.",
       "scene_assumptions": [
-        "A 5 m source-family pole-terrain lane provides direction-aligned resets and a finish line at the map limit."
+        "A flat [-1, 1]^2 world contains a dynamic box with half-size 0.2 m and a goal region of radius 0.3 m."
       ],
       "observation_assumptions": [
         "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
@@ -1126,21 +807,23 @@
       ],
       "scoring": [
         {
-          "clause_id": "travel_distance",
-          "metric": "maximum_travel_distance",
+          "clause_id": "block_goal_distance",
+          "metric": "block_goal_planar_distance",
           "unit": "m",
-          "comparator": ">=",
-          "threshold": 4.93,
+          "comparator": "<=",
+          "threshold": 0.3,
+          "threshold_provenance": "source_direct",
           "temporal": {
-            "kind": "terminal_state"
+            "kind": "within",
+            "max_control_steps": 1000
           },
           "aggregation": {
-            "kind": "per_trial_mean"
+            "kind": "single_trial"
           },
           "source_refs": [
             {
-              "source_id": "SRC-SHI-2023",
-              "specific_reference": "Section IV-A and Table I: pole terrain is run three times in each of six directions with distance capped at 5 m; reported proposed-policy mean is 4.930 m.",
+              "source_id": "SRC-SAFETY-GYM",
+              "specific_reference": "safety_gym/envs/engine.py: Push0 goal_met uses block-to-goal planar distance; suite.py registers Push0.",
               "support": "direct"
             }
           ]
@@ -1157,32 +840,501 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "shi_poles_six_direction",
+          "task_id": "safety_gym_doggo_push0",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "max_control_steps",
+              "goal_center_xy_m"
+            ],
+            "properties": {
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "env_step",
+                "frame": "none",
+                "description": "fixed source control budget; allowed range [1000, 1000] steps"
+              },
+              "goal_center_xy_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "task_world",
+                "description": "planar goal center; each coordinate is in [-1, 1] m",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "gymnasium_antmaze_umaze_sparse",
+      "name": "Gymnasium-Robotics U-MAZE sparse navigation",
+      "description": "Navigate the torso through the source U-MAZE to the selected goal cell within 700 control steps.",
+      "source_task_or_operation": "Gymnasium-Robotics AntMaze U_MAZE sparse task.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The U_MAZE operation is a planar quadruped navigation task with a body position and a discrete non-wall goal cell. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source U_MAZE map, 0.45 m implementation threshold, and 700-step registration are retained; the existing Barkour body is used in place of the source Ant.",
+      "scene_assumptions": [
+        "The scene uses the source 5 x 5 U_MAZE map, 4 m cells, and 2 m walls; the goal is any non-wall cell."
+      ],
+      "observation_assumptions": [
+        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
+        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
+      ],
+      "scoring": [
+        {
+          "clause_id": "maze_goal_distance",
+          "metric": "torso_goal_planar_distance",
+          "unit": "m",
+          "comparator": "<=",
+          "threshold": 0.45,
+          "threshold_provenance": "source_direct",
+          "temporal": {
+            "kind": "within",
+            "max_control_steps": 700
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GYMNASIUM-ROBOTICS",
+              "specific_reference": "maze/maze_v4.py: implementation success distance is 0.45 m; ant_maze_v5.py and package __init__.py provide sparse goal evaluation and the 700-step registration.",
+              "support": "direct"
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "gymnasium_antmaze_umaze_sparse",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "max_control_steps",
+              "goal_cell_row_col"
+            ],
+            "properties": {
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "env_step",
+                "frame": "none",
+                "description": "fixed source control budget; allowed range [700, 700] steps"
+              },
+              "goal_cell_row_col": {
+                "type": "array",
+                "unit": "cell",
+                "frame": "U_MAZE",
+                "description": "goal cell row and column; any non-wall cell in the source U_MAZE map",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "rrw_tiny_trap_bar",
+      "name": "Robust Robot Walker Tiny Trap bars",
+      "description": "Cross the 30 source Tiny Trap bars, reach the goal within 0.2 m, and avoid early failure during the 300 s trial.",
+      "source_task_or_operation": "Robust Robot Walker Tiny Trap bar track.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Tiny Trap bar track is a quadruped obstacle-recovery operation with a fixed runway and repeated transverse bars. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source bar generator and 300 s evaluation protocol are retained exactly in a local runway fixture.",
+      "scene_assumptions": [
+        "The runway has size [5, 60] m. For k=0..29, bar width is w_k=0.01+0.04k/29, height is z_k=0.05+0.15k/29, longitudinal position is y_k=(k+2)60/32, and each bar box size is [5, w_k, w_k]."
+      ],
+      "observation_assumptions": [
+        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
+        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
+      ],
+      "scoring": [
+        {
+          "clause_id": "bar_track_completion",
+          "metric": "goal_distance_with_survival",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.2,
+          "threshold_provenance": "source_direct",
+          "temporal": {
+            "kind": "within",
+            "duration_s": 300
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RRW-PAPER",
+              "specific_reference": "Section IV-B, PDF p.4: Tiny Trap bar track uses a 300 s trial and requires reaching the goal without early failure.",
+              "support": "direct"
+            },
+            {
+              "source_id": "SRC-RRW-CODE",
+              "specific_reference": "Section IV-B fixes the Bar benchmark at triple the 10-bar Mix count; a1_bar_track_config.py and stumble_bar_track.py provide the count-parameterized fixture generator, and track.py provides the per-trial evaluation.",
+              "support": "direct"
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "rrw_tiny_trap_bar",
           "task_parameters": {
             "type": "object",
             "required": [
               "duration_s",
-              "direction_rad",
-              "map_limit_m"
+              "runway_size_m",
+              "bar_count"
             ],
             "properties": {
               "duration_s": {
                 "type": "number",
                 "unit": "s",
-                "description": "positive travel window",
-                "frame": "none"
+                "frame": "none",
+                "description": "fixed source trial horizon; allowed range [300, 300] s"
               },
-              "direction_rad": {
+              "runway_size_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "runway",
+                "description": "constant runway size [5, 60] m",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
+              },
+              "bar_count": {
+                "type": "integer",
+                "unit": "count",
+                "frame": "fixture",
+                "description": "fixed fixture count; allowed range [30, 30] bars"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "rrw_tiny_trap_pit",
+      "name": "Robust Robot Walker Tiny Trap pits",
+      "description": "Cross the 30 source Tiny Trap pits, reach the goal within 0.2 m, and avoid early failure during the 300 s trial.",
+      "source_task_or_operation": "Robust Robot Walker Tiny Trap pit track.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Tiny Trap pit track is a quadruped obstacle-recovery operation with repeated narrow pits across a fixed runway. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source pit width quantization and 300 s evaluation protocol are retained exactly in a local runway fixture.",
+      "scene_assumptions": [
+        "The runway has size [5, 60] m and 30 pits. Pit widths use the source [.05, .2] m range quantized on a 0.025 m grid, pit depth is 1 m, and longitudinal position is y_k=(k+2)60/33."
+      ],
+      "observation_assumptions": [
+        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
+        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
+      ],
+      "scoring": [
+        {
+          "clause_id": "pit_track_completion",
+          "metric": "goal_distance_with_survival",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.2,
+          "threshold_provenance": "source_direct",
+          "temporal": {
+            "kind": "within",
+            "duration_s": 300
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RRW-PAPER",
+              "specific_reference": "Section IV-B, PDF p.4: Tiny Trap pit track uses a 300 s trial and requires reaching the goal without early failure.",
+              "support": "direct"
+            },
+            {
+              "source_id": "SRC-RRW-CODE",
+              "specific_reference": "stumble_bar_track.py and track.py: pit-width quantization, pit fixture generation, and per-trial evaluation.",
+              "support": "direct"
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "rrw_tiny_trap_pit",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s",
+              "runway_size_m",
+              "pit_count",
+              "pit_width_range_m",
+              "pit_depth_m"
+            ],
+            "properties": {
+              "duration_s": {
                 "type": "number",
-                "unit": "rad",
-                "description": "one of the six source commands",
-                "frame": "world"
+                "unit": "s",
+                "frame": "none",
+                "description": "fixed source trial horizon; allowed range [300, 300] s"
               },
-              "map_limit_m": {
+              "runway_size_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "runway",
+                "description": "constant runway size [5, 60] m",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
+              },
+              "pit_count": {
+                "type": "integer",
+                "unit": "count",
+                "frame": "fixture",
+                "description": "fixed fixture count; allowed range [30, 30] pits"
+              },
+              "pit_width_range_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "runway",
+                "description": "source width range [.05, .2] m, quantized on a 0.025 m grid",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
+              },
+              "pit_depth_m": {
                 "type": "number",
                 "unit": "m",
-                "description": "source maximum travel distance",
-                "frame": "terrain"
+                "frame": "fixture",
+                "description": "fixed source pit depth; allowed range [1, 1] m"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "rrw_tiny_trap_pole",
+      "name": "Robust Robot Walker Tiny Trap poles",
+      "description": "Cross the 150 source Tiny Trap poles, reach the goal within 0.2 m, and avoid early failure during the 300 s trial.",
+      "source_task_or_operation": "Robust Robot Walker Tiny Trap pole track.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The Tiny Trap pole track is a quadruped obstacle-recovery operation with a dense randomized pole field. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source pole ranges, grid quantization, 300 s evaluation protocol, and survival requirement are retained exactly in a local runway fixture.",
+      "scene_assumptions": [
+        "The runway has size [5, 60] m and 150 poles. Pole side lengths are in [.05, .1] m, heights in [.5, 1.0] m, and longitudinal placement is in [12, 60] m; source dimensions use 0.025 m and 0.005 m grid quantization."
+      ],
+      "observation_assumptions": [
+        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
+        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
+      ],
+      "scoring": [
+        {
+          "clause_id": "pole_track_completion",
+          "metric": "goal_distance_with_survival",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.2,
+          "threshold_provenance": "source_direct",
+          "temporal": {
+            "kind": "within",
+            "duration_s": 300
+          },
+          "aggregation": {
+            "kind": "per_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-RRW-PAPER",
+              "specific_reference": "Section IV-B, PDF p.4: Tiny Trap pole track uses a 300 s trial and requires reaching the goal without early failure.",
+              "support": "direct"
+            },
+            {
+              "source_id": "SRC-RRW-CODE",
+              "specific_reference": "a1_bar_track_config.py, stumble_bar_track.py, and track.py: pole ranges, grid quantization, fixture generation, and per-trial evaluation.",
+              "support": "direct"
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "rrw_tiny_trap_pole",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s",
+              "runway_size_m",
+              "pole_count"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "frame": "none",
+                "description": "fixed source trial horizon; allowed range [300, 300] s"
+              },
+              "runway_size_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "runway",
+                "description": "constant runway size [5, 60] m",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
+              },
+              "pole_count": {
+                "type": "integer",
+                "unit": "count",
+                "frame": "fixture",
+                "description": "fixed fixture count; allowed range [150, 150] poles"
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "dm_control_quadruped_escape",
+      "name": "dm_control quadruped Escape",
+      "description": "Escape the source bowl-shaped height field to the outer radius while remaining upright.",
+      "source_task_or_operation": "dm_control suite.quadruped Escape task.",
+      "applicability": "The local Barkour vB is a free-base quadruped with four three-joint legs, twelve directly mapped joint-position servo actuators, base pose and velocity observations, and named foot sites. The dm_control Escape operation is a quadruped locomotion task with an outer-radius goal and an uprightness requirement. These source and morphology facts establish physical task-family applicability only; they do not establish a locomotion controller, gait, dynamic performance, or task success.",
+      "adaptation": "The source 201 x 201 height field, 30 m half-size, 5 m elevation scale, and reward-derived terminal conditions are retained; the terminal conjunction is recorded as a stricter task interpretation.",
+      "scene_assumptions": [
+        "The scene uses the source 201 x 201 hfield with 30 m half-size and 5 m elevation scale; the escape boundary is the 30 m world radius."
+      ],
+      "observation_assumptions": [
+        "The Framework samples canonical MuJoCo body poses, contacts, and time; the candidate does not receive private bindings or verdicts.",
+        "All success values are recomputed by the trusted Harness from actuator-driven physics steps."
+      ],
+      "scoring": [
+        {
+          "clause_id": "escape_radius",
+          "metric": "workspace_radius",
+          "unit": "m",
+          "comparator": ">=",
+          "threshold": 30,
+          "threshold_provenance": "source_formula_derived; terminal conjunction is a stricter interpretation",
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DM-CONTROL",
+              "specific_reference": "suite/quadruped.py and suite/quadruped.xml: Escape reward reaches the outer 30 m radius on the 201 x 201, 30 m half-size hfield.",
+              "support": "direct"
+            }
+          ]
+        },
+        {
+          "clause_id": "escape_upright",
+          "metric": "base_upright_cosine",
+          "unit": "ratio",
+          "comparator": ">=",
+          "threshold": 0.9396926208,
+          "threshold_provenance": "source_formula_derived; terminal conjunction is a stricter interpretation",
+          "temporal": {
+            "kind": "terminal_state"
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-DM-CONTROL",
+              "specific_reference": "suite/quadruped.py and utils/rewards.py: upright tolerance at max tilt 20 degrees gives cos(20 degrees)=0.9396926208.",
+              "support": "direct"
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "dm_control_quadruped_escape",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "duration_s",
+              "escape_radius_m",
+              "max_tilt_deg"
+            ],
+            "properties": {
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "frame": "none",
+                "description": "fixed source trial horizon; allowed range [20, 20] s"
+              },
+              "escape_radius_m": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "description": "fixed escape radius; allowed range [30, 30] m"
+              },
+              "max_tilt_deg": {
+                "type": "number",
+                "unit": "deg",
+                "frame": "world",
+                "description": "fixed maximum tilt; allowed range [20, 20] degrees"
               }
             },
             "additional_properties": false
@@ -1233,7 +1385,7 @@
           "threshold": 0.4,
           "temporal": {
             "kind": "dwell",
-            "duration_s": 5.0
+            "duration_s": 5
           },
           "aggregation": {
             "kind": "single_trial"
@@ -1308,7 +1460,7 @@
           "metric": "ordered_waypoint_completion",
           "unit": "ratio",
           "comparator": "==",
-          "threshold": 1.0,
+          "threshold": 1,
           "temporal": {
             "kind": "eventual"
           },
@@ -1408,7 +1560,7 @@
           "metric": "ordered_a_frame_line_completion",
           "unit": "ratio",
           "comparator": "==",
-          "threshold": 1.0,
+          "threshold": 1,
           "temporal": {
             "kind": "eventual"
           },
@@ -1481,7 +1633,7 @@
           "metric": "all_feet_jump_completion",
           "unit": "binary",
           "comparator": "==",
-          "threshold": 1.0,
+          "threshold": 1,
           "temporal": {
             "kind": "eventual"
           },
@@ -1501,7 +1653,7 @@
           "metric": "jump_board_contact_steps",
           "unit": "physics_steps",
           "comparator": "==",
-          "threshold": 0.0,
+          "threshold": 0,
           "temporal": {
             "kind": "terminal_state"
           },
@@ -1574,7 +1726,7 @@
           "metric": "ordered_course_completion",
           "unit": "ratio",
           "comparator": "==",
-          "threshold": 1.0,
+          "threshold": 1,
           "temporal": {
             "kind": "eventual"
           },
@@ -1614,7 +1766,7 @@
           "metric": "jump_board_contact_steps",
           "unit": "physics_steps",
           "comparator": "==",
-          "threshold": 0.0,
+          "threshold": 0,
           "temporal": {
             "kind": "terminal_state"
           },
@@ -1637,7 +1789,7 @@
           "threshold": 0.4,
           "temporal": {
             "kind": "dwell",
-            "duration_s": 5.0
+            "duration_s": 5
           },
           "aggregation": {
             "kind": "single_trial"

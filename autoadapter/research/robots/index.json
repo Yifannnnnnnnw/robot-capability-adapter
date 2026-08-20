@@ -535,12 +535,12 @@
         {
           "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/sources.json",
           "kind": "canonical_task_sources",
-          "observation": "The provisional Barkour public snapshot contains seven pinned source records for the 20-record catalog, with 10 task directions currently source-closed. The Lee payload, QRC, and Shi directions still require primary-source replacement or protocol/threshold closure. This is source-contract research evidence only, not scene, controller, gait, task-success, or runnable evidence."
+          "observation": "The Barkour public snapshot v2 contains 11 pinned source records; its 20-task public source contract is closed, with 31 source-backed scoring clauses. This is source-contract research evidence only, not scene, controller, gait, task-success, or runnable evidence."
         },
         {
           "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/catalog.json",
           "kind": "canonical_task_catalog",
-          "observation": "The provisional Barkour public snapshot still contains 20 catalog records; Sol review currently confirms 10 source-closed task directions. The Lee payload, QRC, and Shi directions remain provisional because their protocol or threshold closure is incomplete. This is catalog research state only, not task-success or runnable evidence; observed_task_count remains 5 for the inspected legacy catalog below."
+          "observation": "The Barkour public snapshot v2 contains 31 source-backed scoring clauses; its 20-task public source contract is closed. This is catalog research state only, not task-success or runnable evidence; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
           "path": "demo2/legacy_assets/menagerie/google_barkour_vb/barkour_vb.xml",
@@ -569,7 +569,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Close or replace the remaining 10 task directions with clause-by-clause primary-source anchors; do not treat reported outcomes as pass thresholds.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable quadruped_pd_gait skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
