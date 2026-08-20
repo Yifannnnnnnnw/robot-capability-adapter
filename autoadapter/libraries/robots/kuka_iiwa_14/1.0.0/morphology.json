@@ -4,6 +4,7 @@
   "robot_configuration_id": "kuka_iiwa_14",
   "package_version": "1.0.0",
   "morphology_kind": "fixed_base_serial_manipulator",
+  "base_type": "fixed",
   "degrees_of_freedom": {
     "arm": 7
   },

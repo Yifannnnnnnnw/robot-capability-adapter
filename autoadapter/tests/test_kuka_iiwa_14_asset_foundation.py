@@ -6,6 +6,7 @@ from pathlib import Path
 
 import mujoco
 import numpy as np
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -78,6 +79,7 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     assert morphology["robot_configuration_id"] == "kuka_iiwa_14"
     assert morphology["package_version"] == "1.0.0"
     assert morphology["morphology_kind"] == "fixed_base_serial_manipulator"
+    assert morphology["base_type"] == "fixed"
     assert morphology["degrees_of_freedom"] == {"arm": 7}
     assert morphology["mjcf_entrypoint"] == "assets/scene.xml"
 
@@ -160,6 +162,8 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
         _assert_local_file(model_xml, str(Path(compiler.attrib["meshdir"]) / mesh.attrib["file"]))
 
     assert mujoco.__version__ == "3.3.6"
+    standalone_model = mujoco.MjModel.from_xml_path(str(model_xml))
+    assert (standalone_model.nq, standalone_model.nv, standalone_model.nu) == (7, 7, 7)
     model = mujoco.MjModel.from_xml_path(str(SCENE_PATH))
     assert (model.nq, model.nv, model.nu, model.njnt, model.nsite, model.ntendon, model.nsensor, model.neq, model.nkey) == (
         7,
@@ -229,7 +233,10 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     qpos_before = data.qpos.copy()
     for _ in range(250):
         mujoco.mj_step(model, data)
-    assert abs(float(data.qpos[0] - qpos_before[0])) > 1e-8
+    assert data.time == pytest.approx(250 * model.opt.timestep)
+    assert data.ctrl[0] == 0.1
+    assert float(data.qpos[0]) == pytest.approx(0.09969997, abs=1e-7)
+    assert abs(float(data.qpos[0] - qpos_before[0])) > 0.09
     assert np.isfinite(data.qpos).all()
     assert np.isfinite(data.qvel).all()
     assert np.isfinite(data.qacc).all()
