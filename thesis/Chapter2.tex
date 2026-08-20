@@ -333,6 +333,30 @@ thus define the generation procedure; the next subsection defines its output.
 \subsection{Tool and Driver Synthesis}
 \label{sec:tool-driver-synthesis}
 
+This subsection reviews how LLMs synthesise tools for their own use and how
+tool synthesis has been applied to robot software. In Auto-Adapter, the
+resulting tool takes the form of a robot driver. Language to Rewards translates
+instructions into reward functions. Eureka improves reward code through
+simulation feedback. Reinforcement learning then uses the reward to obtain a
+control policy \citep{yu2023language2reward,ma2024eureka}. LLMCap2Skill moves
+closer to software implementation. It retrieves relevant ROS~2 interfaces from
+a capability description and generates an executable skill
+\citep{vieira2025cap2skill}. Its more complex cases still require manual
+correction. Code generation therefore does not remove integration risk.
+
+Research outside robotics places greater emphasis on tool reuse. LATM separates
+tool creation from tool use. It also stores generated Python functions for later
+tasks \citep{cai2023latm}. CREATOR first produces a tool description and
+implementation, then applies the tool to a target problem
+\citep{qian2023creator}. Voyager revises programs after execution failures and
+retains successful code in a reusable skill library \citep{wang2023voyager}.
+
+These studies suggest three principles for Auto-Adapter. Generated drivers
+should be reusable. Synthesis should be separated from later invocation.
+Execution feedback should guide revision. However, these systems produce
+different artefacts and use different evaluation procedures. Their reported
+success rates are therefore not directly comparable.
+
 \subsection{Oracles and Validation}
 \label{sec:oracles-validation}
 
