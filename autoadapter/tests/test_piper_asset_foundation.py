@@ -378,10 +378,13 @@ def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> Non
     }
     assert "autoadapter/libraries/robots/piper/1.0.0/assets/piper.xml" in observed_paths
     assert "autoadapter/libraries/robots/piper/1.0.0/morphology.json" in observed_paths
+    assert "autoadapter/libraries/robots/piper/1.0.0/tasks/sources.json" in observed_paths
+    assert "autoadapter/libraries/robots/piper/1.0.0/tasks/catalog.json" in observed_paths
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
-    assert "at least 20 distinct applicable source-backed tasks" in missing
+    assert "at least 20 distinct applicable source-backed tasks" not in missing
+    assert "Create tasks/sources.json" not in missing
     assert "tasks/private/instances.json" in missing
     assert "positive control" in missing
     assert "dynamic canary" in missing

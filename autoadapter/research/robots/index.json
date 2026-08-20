@@ -297,6 +297,16 @@
           "observation": "The canonical morphology records six arm joints, the slide gripper and passive mirrored finger, the ee_site frame, contact-body facts, home reset, and pinned direct source revision without claiming task support or runnable status."
         },
         {
+          "path": "autoadapter/libraries/robots/piper/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The canonical Piper public snapshot contains the pinned Meta-World source record used by every scoring clause in the 20-task catalog."
+        },
+        {
+          "path": "autoadapter/libraries/robots/piper/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The canonical Piper public snapshot contains 20 reviewed task contracts with unchanged source scoring obligations and Piper-specific morphology and invocation facts. This is public catalog evidence, not scene, contact, task-success, or runnable evidence; observed_task_count remains 5 for the inspected legacy catalog below."
+        },
+        {
           "path": "general_demo/libraries/assets/piper/1.0.0/asset_closure.json",
           "kind": "asset_closure_record",
           "observation": "The recorded closure marks UPSTREAM_CACHE_REQUIRED; its 86 entries include 82 mesh entries without a local vendored path."
@@ -333,8 +343,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
