@@ -351,5 +351,8 @@ def test_leap_hand_asset_foundation_is_local_and_live() -> None:
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "Materialize and verify a complete local MuJoCo asset closure" not in missing
     assert "Create the current mainline morphology.json" not in missing
-    assert "20 distinct applicable source-backed tasks" in missing
+    assert "20 distinct applicable source-backed tasks" not in missing
+    assert "tasks/private/instances.json" in missing
+    assert "hand-control skeleton" in missing
+    assert "positive control" in missing
     assert "dynamic canary" in missing
