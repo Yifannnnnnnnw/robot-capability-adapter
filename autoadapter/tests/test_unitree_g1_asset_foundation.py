@@ -97,6 +97,8 @@ EXPECTED_CLOSURE_FILES = [
     "LICENSE",
     "SOURCE.md",
     "g1.xml",
+    "g1_mjlab.xml",
+    "g1_mjlab_policy_scene.xml",
     "scene.xml",
     *(f"assets/{filename}" for filename in MESH_FILES),
 ]
@@ -483,7 +485,7 @@ def test_unitree_g1_asset_foundation_is_local_and_live() -> None:
         if path.is_file()
     )
     assert canonical_files == sorted(EXPECTED_CLOSURE_FILES)
-    assert len(canonical_files) == 39
+    assert len(canonical_files) == 41
     assert not any(path.is_symlink() for path in ASSETS_ROOT.rglob("*"))
     for relative_path in EXPECTED_CLOSURE_FILES:
         assert (ASSETS_ROOT / relative_path).is_file(), relative_path
