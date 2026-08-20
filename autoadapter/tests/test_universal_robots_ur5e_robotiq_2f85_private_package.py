@@ -239,14 +239,22 @@ def test_task_scenes_are_local_canonical_and_reset_finite() -> None:
             (float(data.contact[index].dist) for index in range(data.ncon)),
             default=float("inf"),
         )
-        assert minimum_distance >= -0.005, (
-            f"{instance['task_id']}: minimum reset contact distance "
-            f"{minimum_distance}"
-        )
         assert model.vis.global_.offwidth >= instance["video_width"]
         assert model.vis.global_.offheight >= instance["video_height"]
 
-        mujoco.mj_step(model, data)
+        reset_controls = np.asarray(data.ctrl).copy()
+        for _ in range(100):
+            mujoco.mj_step(model, data)
+            step_minimum = min(
+                (float(data.contact[index].dist) for index in range(data.ncon)),
+                default=float("inf"),
+            )
+            minimum_distance = min(minimum_distance, step_minimum)
+        np.testing.assert_array_equal(data.ctrl, reset_controls)
+        assert minimum_distance >= -0.005, (
+            f"{instance['task_id']}: minimum reset/settling contact distance "
+            f"{minimum_distance}"
+        )
         assert np.isfinite(data.qpos).all()
         assert np.isfinite(data.qvel).all()
 

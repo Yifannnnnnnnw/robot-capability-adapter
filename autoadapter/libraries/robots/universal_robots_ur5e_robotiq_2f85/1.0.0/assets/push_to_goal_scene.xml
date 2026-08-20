@@ -10,7 +10,7 @@
     <geom name="work_surface" type="box" pos="-0.11 0.58 0.20" size="0.24 0.14 0.08" mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1"/>
     <body name="workpiece" pos="-0.13 0.60 0.286">
       <freejoint/>
-      <geom name="workpiece_geom" type="cylinder" size="0.032 0.006" mass="0.025" conaffinity="2" friction="0.8 0.08 0.008" condim="4" rgba="0.10 0.55 0.92 1"/>
+      <geom name="workpiece_geom" type="cylinder" size="0.032 0.006" mass="0.025" conaffinity="2" friction="0.8 0.08 0.008" condim="4" solref="0.004 1" rgba="0.10 0.55 0.92 1"/>
     </body>
     <body name="push_goal" pos="-0.13 0.68 0.282">
       <geom name="push_goal_marker" type="cylinder" size="0.04 0.002" contype="0" conaffinity="0" rgba="0.12 0.72 0.38 0.55"/>
