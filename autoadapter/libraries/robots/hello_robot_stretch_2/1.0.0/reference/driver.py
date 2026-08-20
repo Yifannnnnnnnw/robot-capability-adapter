@@ -432,6 +432,59 @@ class ReferenceStretch2Driver:
         if error > threshold:
             raise RuntimeError(f"Stretch handle did not converge; residual={error:.5f}")
 
+    def _door(self, task_id: str, parameters: Mapping[str, Any]) -> None:
+        site_name = "door_handle_site"
+        target = _vector(parameters["target_position"], name="target_position")
+
+        def error() -> float:
+            site = self._site_position(site_name)
+            if task_id == "mw_door_open":
+                return abs(float(site[0] - target[0]))
+            return float(np.linalg.norm(site - target))
+
+        self._control.set_wrist_yaw(0.0)
+        self._control.set_gripper(-0.005)
+        contact = _vector(
+            parameters["contact_position"], name="contact_position"
+        )
+        contact[2] = float(self._site_position(site_name)[2]) + 0.024
+        self._move_contact(
+            contact,
+            selector="midpoint",
+            accepted_error_m=0.10,
+            attempts=5,
+        )
+
+        current = contact
+        for key in ("route_position", "tool_target_position"):
+            destination = _vector(parameters[key], name=key)
+            destination[2] = contact[2]
+            waypoint_count = max(
+                2,
+                int(np.ceil(float(np.linalg.norm(destination - current)) / 0.01)),
+            )
+            for waypoint in np.linspace(
+                current, destination, waypoint_count + 1
+            )[1:]:
+                self._move_contact(
+                    waypoint,
+                    selector="midpoint",
+                    accepted_error_m=0.10,
+                    attempts=3,
+                )
+                if error() <= 0.04:
+                    self._idle(200)
+                    if error() <= 0.08:
+                        return
+            current = destination
+
+        self._idle(300)
+        residual = error()
+        if residual > 0.08:
+            raise RuntimeError(
+                f"Stretch door did not converge; residual={residual:.5f}"
+            )
+
     def fixture_task(self, request: Any) -> None:
         task_id, parameters = _request(request)
         if task_id in {"mw_drawer_open", "mw_drawer_close"}:
@@ -445,6 +498,9 @@ class ReferenceStretch2Driver:
             return
         if task_id in {"mw_handle_press", "mw_handle_pull"}:
             self._move_vertical_handle(task_id, parameters)
+            return
+        if task_id in {"mw_door_open", "mw_door_close"}:
+            self._door(task_id, parameters)
             return
         raise ValueError(f"unsupported Stretch fixture calibration task {task_id!r}")
 

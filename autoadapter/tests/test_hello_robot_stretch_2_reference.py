@@ -28,6 +28,8 @@ SUPPORTED_TASK_IDS = (
     "mw_button_press_topdown",
     "mw_handle_press",
     "mw_handle_pull",
+    "mw_door_open",
+    "mw_door_close",
 )
 CAPABILITY_GROUPS = (
     ("reach", "reach_task", ("mw_reach_target",)),
