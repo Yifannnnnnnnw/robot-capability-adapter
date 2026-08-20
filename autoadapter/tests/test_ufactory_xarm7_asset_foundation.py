@@ -347,7 +347,9 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert "at least 20 distinct applicable source-backed tasks" in missing
     assert "dynamic canary" in missing
 
-    assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == ["assets", "morphology.json"]
-    assert not (PACKAGE_ROOT / "tasks").exists()
+    assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == ["assets", "morphology.json", "tasks"]
+    tasks_root = PACKAGE_ROOT / "tasks"
+    assert sorted(path.name for path in tasks_root.iterdir()) == ["catalog.json", "sources.json"]
+    assert not (tasks_root / "private").exists()
     assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()
