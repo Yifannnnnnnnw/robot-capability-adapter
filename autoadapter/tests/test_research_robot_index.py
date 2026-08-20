@@ -70,6 +70,16 @@ class ResearchRobotIndexTests(unittest.TestCase):
         self.assertFalse(
             any("tasks/sources.json" in item for item in ur5e["missing_for_runnable_package"])
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/skeleton/arm_serial_dls.py",
+            ur5e_paths,
+        )
+        self.assertFalse(
+            any(
+                "arm_serial_dls skeleton" in item
+                for item in ur5e["missing_for_runnable_package"]
+            )
+        )
 
         leap = candidates_by_id["leap_hand"]
         leap_paths = {
@@ -117,6 +127,11 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/runs/barkour-flat-bridge-20260820T125848Z/summary.json",
             barkour_paths,
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/google_barkour_vb/1.0.0/reference/flat_joystick.py",
+            barkour_paths,
+        )
+        self.assertEqual(barkour["morphology_family"], "quadruped_position_policy")
         self.assertFalse(
             any(
                 "Train and retain" in item

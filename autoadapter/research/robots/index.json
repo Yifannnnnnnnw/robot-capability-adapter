@@ -293,6 +293,11 @@
           "observation": "The exact composite public snapshot contains 20 distinct reviewed task contracts with unchanged source metrics, formulas, thresholds, units, temporal semantics, aggregations, and support classifications, plus UR5e and Robotiq-specific applicability and invocation facts. This is public contract evidence only, not scene, task-success, or runnable evidence."
         },
         {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/skeleton/arm_serial_dls.py",
+          "kind": "canonical_trusted_skeleton_inventory",
+          "observation": "The exact composite package now exposes the existing capability-neutral ArmSerialDLSSkeleton family. A focused canonical-session check resolves the six reviewed arm joints and actuators, pinch site, and native 0-open/255-closed tendon actuator, then advances real MuJoCo through bounded arm and gripper controls. This is skeleton availability and control-liveness evidence only, not task or runnable evidence."
+        },
+        {
           "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
           "kind": "canonical_arm_component_foundation",
           "observation": "The separately retained bare-arm package contains the complete 27-file local UR5e closure, including all 20 meshes. It loads in MuJoCo 3.3.6 as a fixed six-joint position-controlled arm ending at attachment_site, but it has no gripper and is component material rather than the contact-capable configuration indexed here."
@@ -340,7 +345,7 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for the exact composite configuration.",
+        "Provide a calibration-only reference driver for the exact composite configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
@@ -597,7 +602,7 @@
     },
     {
       "robot_configuration_id": "google_barkour_vb",
-      "morphology_family": "quadruped_pd_gait",
+      "morphology_family": "quadruped_position_policy",
       "morphology_category": "quadruped",
       "proposed_sequence": 8,
       "proposed_wave": 2,
@@ -634,6 +639,11 @@
           "observation": "A locally trained 100,270,080-step BarkourJoystick actor, including its observation normalizer, matched exported NumPy inference within 3.10e-06 and completed the unmodified canonical CPU bridge using only data.ctrl and 20 one-millisecond MuJoCo steps per action. The five-second stand and all eight 0.4 m/s direction checks completed without falls; all nine videos decode and representative cases were visually checked. This closes only the flat-controller calibration gate, not private cases, trusted Harness verdicts, obstacle coverage, a package-wide positive control, or runnable status."
         },
         {
+          "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/reference/flat_joystick.py",
+          "kind": "package_local_flat_calibration_helper",
+          "observation": "The retained actor, observation normalizer, pinned source/runtime/training metadata, and NumPy inference plus exact 20-by-1-ms canonical CPU bridge are now self-contained under the robot package. Focused tests reproduce a five-second upright stand and all eight flat 0.4 m/s directions without falls. The helper has no task dispatch, private definitions, scene loading, simulator reset, verdict logic, or reference/driver.py entrypoint; specialist policies and a complete calibration driver remain missing."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/google_barkour_vb/barkour_vb.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Google Barkour vB model, URDF, and meshes are available for migration inspection."
@@ -661,7 +671,7 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide a capability-neutral quadruped_pd_gait skeleton and a calibration-only reference driver; obstacle and full-course cases also require reviewed specialist policies and a reference-only planner.",
+        "Provide a capability-neutral quadruped_position_policy skeleton and a complete calibration-only reference driver; obstacle and full-course cases also require reviewed specialist policies and a reference-only planner.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
