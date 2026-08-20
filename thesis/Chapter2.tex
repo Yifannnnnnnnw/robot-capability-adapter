@@ -256,6 +256,46 @@ requirements.
 \subsection{LLM Robot Programming}
 \label{sec:llm-robot-programming}
 
+LLM robot programming refers here to using an LLM to generate a program that
+organises robot behaviour. A separate system executes the program, which
+distinguishes this approach from policies that predict continuous actions
+directly from observations. Early methods primarily used program structure to
+constrain task planning. SayCan selects among pre-trained skills, whereas
+ProgPrompt completes Python-like task functions using supplied actions and
+assertions \citep{ahn2022saycan,singh2023progprompt}. These methods move LLM
+output towards executable programs, but the robot operations themselves remain
+pre-implemented.
+
+Code as Policies extends code generation from task sequencing to policy logic.
+Its generated Python can contain branches, loops, and helper functions. The
+program can also process perceptual outputs and parameterise supplied control
+APIs. VoxPoser similarly generates code that constructs three-dimensional
+value maps, which a motion planner uses to synthesise trajectories
+\citep{liang2023codeaspolicies,huang2023voxposer}. Together, these studies show
+that code can connect language instructions to robot execution. However, both
+approaches still rely on system-provided perception and motion mechanisms.
+
+RoboCodeX broadens this approach through a tree-structured multimodal
+code-generation framework. It decomposes high-level instructions into
+object-centred manipulation units that include affordances and safety
+constraints. Its evaluation includes simulated and physical robot tasks
+\citep{mu2024robocodex}. Nevertheless, the evaluated output concerns behaviour
+for a requested task. This evidence does not by itself establish that an LLM
+can implement a fixed, reusable capability interface for a new robot. The
+distinction concerns the generated artefact, rather than a shortcoming of the
+method.
+
+This distinction defines the object studied in this thesis. Calling an
+existing \texttt{move\_to()} method is capability-interface use, whereas
+writing its implementation for a particular robot is driver synthesis.
+Combining several capabilities to complete a task is task programming. Prior
+work therefore supports executable code as a representation of robot
+behaviour, but it commonly begins from available operations. Robot-specific
+driver synthesis must additionally understand the surrounding software and
+implement the required interface. It must also correct failures found during
+execution. The next subsection examines coding agents as a method for
+performing this wider software task.
+
 \subsection{Coding Agents}
 \label{sec:coding-agents}
 
