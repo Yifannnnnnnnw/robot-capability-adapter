@@ -505,8 +505,77 @@ class ReferenceStretch2Driver:
         raise ValueError(f"unsupported Stretch fixture calibration task {task_id!r}")
 
     def rotation_task(self, request: Any) -> None:
-        task_id, _ = _request(request)
-        raise ValueError(f"unsupported Stretch rotation calibration task {task_id!r}")
+        task_id, parameters = _request(request)
+        thresholds = {
+            "mw_faucet_open": 0.07,
+            "mw_dial_turn": 0.07,
+            "mw_lever_pull": 0.1308996939,
+        }
+        threshold = thresholds.get(task_id)
+        if threshold is None:
+            raise ValueError(
+                f"unsupported Stretch rotation calibration task {task_id!r}"
+            )
+
+        if task_id == "mw_lever_pull":
+            joint_id = self._id(mujoco.mjtObj.mjOBJ_JOINT, "lever_hinge")
+            joint_address = int(self.model.jnt_qposadr[joint_id])
+            target_angle = float(parameters["target_angle"])
+
+            def error() -> float:
+                return abs(float(self.data.qpos[joint_address]) - target_angle)
+
+        else:
+            site_name = (
+                "faucet_tip_site"
+                if task_id == "mw_faucet_open"
+                else "dial_tip_site"
+            )
+
+            def error() -> float:
+                return self._fixture_error(site_name, parameters)
+
+        self._control.set_wrist_yaw(0.0)
+        self._control.set_gripper(-0.005)
+        current = _vector(
+            parameters["contact_position"], name="contact_position"
+        )
+        current[2] -= 0.076
+        self._move_contact(
+            current,
+            selector="midpoint",
+            accepted_error_m=0.10,
+            attempts=5,
+        )
+
+        for key in ("route_position", "tool_target_position"):
+            destination = _vector(parameters[key], name=key)
+            destination[2] -= 0.076
+            waypoint_count = max(
+                2,
+                int(np.ceil(float(np.linalg.norm(destination - current)) / 0.01)),
+            )
+            for waypoint in np.linspace(
+                current, destination, waypoint_count + 1
+            )[1:]:
+                self._move_contact(
+                    waypoint,
+                    selector="midpoint",
+                    accepted_error_m=0.10,
+                    attempts=3,
+                )
+                if error() <= 0.5 * threshold:
+                    self._idle(200)
+                    if error() <= threshold:
+                        return
+            current = destination
+
+        self._idle(300)
+        residual = error()
+        if residual > threshold:
+            raise RuntimeError(
+                f"Stretch rotation did not converge; residual={residual:.5f}"
+            )
 
 
 def build(*, model: Any, data: Any) -> ReferenceStretch2Driver:
