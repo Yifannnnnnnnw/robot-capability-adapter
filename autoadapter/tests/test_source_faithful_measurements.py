@@ -156,7 +156,7 @@ def test_directional_progress_rejects_corridor_and_lower_floor_bypasses() -> Non
             "direction_argument": "request.task_parameters.direction_rad",
             "limit_argument": "request.task_parameters.map_limit_m",
             "maximum_cross_track_m": 0.55,
-            "minimum_height_m": 0.2,
+            "minimum_height_m": 0.18,
         },
     }
     arguments = {
@@ -176,7 +176,7 @@ def test_directional_progress_rejects_corridor_and_lower_floor_bypasses() -> Non
         "samples": [
             _body_sample(0.0, [0.0, 0.0, 0.3]),
             _body_sample(1.0, [1.0, 0.0, 0.3]),
-            _body_sample(2.0, [2.0, 0.0, 0.19]),
+            _body_sample(2.0, [2.0, 0.0, 0.17]),
             _body_sample(3.0, [6.0, 0.0, 0.3]),
         ]
     }

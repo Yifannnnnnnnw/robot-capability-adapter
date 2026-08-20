@@ -262,7 +262,7 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
             "direction_argument": "request.task_parameters.direction_rad",
             "limit_argument": "request.task_parameters.map_limit_m",
             "maximum_cross_track_m": 0.55,
-            "minimum_height_m": 0.2,
+            "minimum_height_m": 0.18,
         }
         assert instance["repetitions"] == 18
         directions = [
