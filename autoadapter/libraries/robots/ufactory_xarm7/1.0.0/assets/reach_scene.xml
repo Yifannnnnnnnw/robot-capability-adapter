@@ -1,0 +1,16 @@
+<mujoco model="xarm7_reach">
+  <include file="xarm7.xml" />
+  <visual>
+    <global offwidth="800" offheight="600" />
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0" />
+  </visual>
+  <worldbody>
+    <light pos="0.35 -0.2 1.45" dir="0.2 0.1 -1" directional="true" />
+    <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
+    <body name="reach_goal" pos="0.55 0.10 0.43">
+      <site name="reach_goal_site" size="0.018" rgba="0.12 0.85 0.38 0.75" />
+    </body>
+    <body name="evidence_target" pos="0.48 0.04 0.45" />
+    <camera name="evidence" mode="targetbody" target="evidence_target" pos="0.82 -0.55 0.73" fovy="38" />
+  </worldbody>
+</mujoco>

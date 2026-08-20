@@ -98,6 +98,25 @@ EXPECTED_CLOSURE_FILES = (
     "assets/right_inner_knuckle.stl",
     "assets/right_outer_knuckle.stl",
 )
+TASK_SCENE_FILES = (
+    "bin_picking_scene.xml",
+    "button_front_scene.xml",
+    "button_topdown_scene.xml",
+    "dial_scene.xml",
+    "door_scene.xml",
+    "drawer_scene.xml",
+    "faucet_scene.xml",
+    "handle_vertical_scene.xml",
+    "lever_scene.xml",
+    "peg_insertion_side_scene.xml",
+    "pick_out_of_hole_scene.xml",
+    "pick_place_scene.xml",
+    "pick_place_wall_scene.xml",
+    "push_to_goal_scene.xml",
+    "reach_scene.xml",
+    "sweep_into_goal_scene.xml",
+    "wall_scene.xml",
+)
 HOME_QPOS = [0.0, -0.247, 0.0, 0.909, 0.0, 1.15644, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 HOME_CTRL = [0.0, -0.247, 0.0, 0.909, 0.0, 1.15644, 0.0, 0.0]
 
@@ -188,7 +207,7 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
         path.relative_to(ASSETS_ROOT).as_posix()
         for path in ASSETS_ROOT.rglob("*")
         if path.is_file()
-    ) == sorted(EXPECTED_CLOSURE_FILES)
+    ) == sorted((*EXPECTED_CLOSURE_FILES, *TASK_SCENE_FILES))
     assert not any(path.is_symlink() for path in ASSETS_ROOT.rglob("*"))
     source = (ASSETS_ROOT / "SOURCE.md").read_text(encoding="utf-8")
     assert "da76818e269b82289eba39808e2fb91d679d6994" in source
