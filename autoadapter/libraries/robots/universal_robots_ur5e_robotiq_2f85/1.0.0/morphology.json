@@ -1,0 +1,305 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "universal_robots_ur5e_robotiq_2f85",
+  "robot_configuration_id": "universal_robots_ur5e_robotiq_2f85",
+  "package_version": "1.0.0",
+  "morphology_kind": "fixed_base_serial_manipulator_with_tendon_gripper",
+  "base_type": "fixed",
+  "degrees_of_freedom": {
+    "arm": 6,
+    "gripper": 1
+  },
+  "joint_coordinate_counts": {
+    "arm": 6,
+    "gripper": 8,
+    "total": 14
+  },
+  "model_dimensions": {
+    "nq": 14,
+    "nv": 14,
+    "nu": 7
+  },
+  "model_counts": {
+    "nq": 14,
+    "nv": 14,
+    "njnt": 14,
+    "nu": 7,
+    "ngeom": 58,
+    "nsite": 3,
+    "ntendon": 1,
+    "neq": 3,
+    "nkey": 1
+  },
+  "mjcf_entrypoint": "assets/scene.xml",
+  "attachment": {
+    "parent_body": "wrist_3_link",
+    "attachment_site": "attachment_site",
+    "mount_body": "robotiq_mount",
+    "mount_pos": [0.0, 0.1, 0.0],
+    "mount_quat": [-1.0, 1.0, 0.0, 0.0],
+    "native_mount_body": "base_mount",
+    "native_mount_pos": [0.0, 0.0, 0.007],
+    "native_base_body": "robotiq_base",
+    "native_base_pos": [0.0, 0.0, 0.0038],
+    "native_base_quat": [1.0, 0.0, 0.0, -1.0]
+  },
+  "public_control": {
+    "actuation": "joint_position",
+    "transmission": "direct_joint_and_tendon",
+    "joint_type": "hinge",
+    "arm_joint_names": [
+      "shoulder_pan_joint",
+      "shoulder_lift_joint",
+      "elbow_joint",
+      "wrist_1_joint",
+      "wrist_2_joint",
+      "wrist_3_joint"
+    ],
+    "gripper_joint_names": [
+      "right_driver_joint",
+      "right_coupler_joint",
+      "right_spring_link_joint",
+      "right_follower_joint",
+      "left_driver_joint",
+      "left_coupler_joint",
+      "left_spring_link_joint",
+      "left_follower_joint"
+    ],
+    "joint_names": [
+      "shoulder_pan_joint",
+      "shoulder_lift_joint",
+      "elbow_joint",
+      "wrist_1_joint",
+      "wrist_2_joint",
+      "wrist_3_joint",
+      "right_driver_joint",
+      "right_coupler_joint",
+      "right_spring_link_joint",
+      "right_follower_joint",
+      "left_driver_joint",
+      "left_coupler_joint",
+      "left_spring_link_joint",
+      "left_follower_joint"
+    ],
+    "controlled_joint_names": [
+      "shoulder_pan_joint",
+      "shoulder_lift_joint",
+      "elbow_joint",
+      "wrist_1_joint",
+      "wrist_2_joint",
+      "wrist_3_joint",
+      "right_driver_joint",
+      "left_driver_joint"
+    ],
+    "arm_actuator_names": [
+      "shoulder_pan",
+      "shoulder_lift",
+      "elbow",
+      "wrist_1",
+      "wrist_2",
+      "wrist_3"
+    ],
+    "actuator_names": [
+      "shoulder_pan",
+      "shoulder_lift",
+      "elbow",
+      "wrist_1",
+      "wrist_2",
+      "wrist_3",
+      "fingers_actuator"
+    ],
+    "actuator_joint_map": {
+      "shoulder_pan": "shoulder_pan_joint",
+      "shoulder_lift": "shoulder_lift_joint",
+      "elbow": "elbow_joint",
+      "wrist_1": "wrist_1_joint",
+      "wrist_2": "wrist_2_joint",
+      "wrist_3": "wrist_3_joint",
+      "fingers_actuator": "tendon:split"
+    },
+    "arm_joint_limits_rad": {
+      "shoulder_pan_joint": [-6.28319, 6.28319],
+      "shoulder_lift_joint": [-6.28319, 6.28319],
+      "elbow_joint": [-3.1415, 3.1415],
+      "wrist_1_joint": [-6.28319, 6.28319],
+      "wrist_2_joint": [-6.28319, 6.28319],
+      "wrist_3_joint": [-6.28319, 6.28319]
+    },
+    "actuator_ctrlrange_rad": {
+      "shoulder_pan": [-6.2831, 6.2831],
+      "shoulder_lift": [-6.2831, 6.2831],
+      "elbow": [-3.1415, 3.1415],
+      "wrist_1": [-6.2831, 6.2831],
+      "wrist_2": [-6.2831, 6.2831],
+      "wrist_3": [-6.2831, 6.2831]
+    },
+    "position_actuator_defaults": {
+      "large_actuator": {
+        "actuator_names": ["shoulder_pan", "shoulder_lift", "elbow"],
+        "kp": 2000.0,
+        "kv": 400.0,
+        "forcerange": [-150.0, 150.0]
+      },
+      "small_actuator": {
+        "actuator_names": ["wrist_1", "wrist_2", "wrist_3"],
+        "kp": 500.0,
+        "kv": 100.0,
+        "forcerange": [-28.0, 28.0]
+      }
+    },
+    "gripper_ctrl_range_native": [0.0, 255.0],
+    "gripper_forcerange": [-5.0, 5.0],
+    "gripper_joint_range_rad": [0.0, 0.8],
+    "gripper_joint_ranges_rad": {
+      "right_driver_joint": [0.0, 0.8],
+      "right_coupler_joint": [-1.57, 0.0],
+      "right_spring_link_joint": [-0.29670597283, 0.8],
+      "right_follower_joint": [-0.872664, 0.872664],
+      "left_driver_joint": [0.0, 0.8],
+      "left_coupler_joint": [-1.57, 0.0],
+      "left_spring_link_joint": [-0.29670597283, 0.8],
+      "left_follower_joint": [-0.872664, 0.872664]
+    },
+    "gripper_actuated_joint_names": [
+      "right_driver_joint",
+      "left_driver_joint"
+    ],
+    "passive_joint_names": [
+      "right_coupler_joint",
+      "right_spring_link_joint",
+      "right_follower_joint",
+      "left_coupler_joint",
+      "left_spring_link_joint",
+      "left_follower_joint"
+    ],
+    "gripper_tendon": {
+      "actuator_name": "fingers_actuator",
+      "tendon_name": "split",
+      "controlled_joints": [
+        "right_driver_joint",
+        "left_driver_joint"
+      ],
+      "joint_coefficients": {
+        "right_driver_joint": 0.5,
+        "left_driver_joint": 0.5
+      },
+      "passive_coupling": "equality"
+    },
+    "gripper_direction": {
+      "closed": 255.0,
+      "open": 0.0,
+      "unit": "native_control",
+      "basis": "smaller left/right pad separation after actuator-driven settling"
+    }
+  },
+  "public_observations": {
+    "end_effector_site": "pinch_site",
+    "native_pinch_site": "pinch",
+    "end_effector_body": "robotiq_base",
+    "arm_attachment_site": "attachment_site",
+    "arm_attachment_body": "wrist_3_link",
+    "gripper_mount_body": "robotiq_mount",
+    "gripper_contact_geoms": [
+      "left_pad1",
+      "left_pad2",
+      "right_pad1",
+      "right_pad2"
+    ],
+    "sensor_names": []
+  },
+  "contact_observations": {
+    "pad_geoms": [
+      "left_pad1",
+      "left_pad2",
+      "right_pad1",
+      "right_pad2"
+    ],
+    "pad_geom_type": "box",
+    "pad_geom_contype": 1,
+    "pad_geom_conaffinity": 1,
+    "pinch_site": "pinch_site",
+    "native_pinch_site": "pinch"
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control",
+      "gripper_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "end_effector_pose",
+      "named_body_pose",
+      "named_site_pose",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default": "home",
+    "available_keyframe": "home",
+    "home_qpos": [
+      -1.5708,
+      -1.5708,
+      1.5708,
+      -1.5708,
+      -1.5708,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "home_ctrl": [
+      -1.5708,
+      -1.5708,
+      1.5708,
+      -1.5708,
+      -1.5708,
+      0.0,
+      0.0
+    ],
+    "gripper_home_control": "open",
+    "home_contact_check": {
+      "robot_floor_contacts": 0,
+      "arm_gripper_contacts": 0,
+      "all_state_finite": true
+    }
+  },
+  "asset_provenance": {
+    "composition": "Canonical Universal Robots UR5e six-joint arm with the official Robotiq 2F-85 gripper",
+    "sources": [
+      {
+        "component": "universal_robots_ur5e",
+        "model_title": "Universal Robots UR5e Description (MJCF)",
+        "upstream": "https://github.com/981526092/auto-adapter",
+        "derived_revision": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+        "source_path": "assets/mjcf/universal_robots_ur5e/",
+        "license": "BSD-3-Clause",
+        "license_file": "assets/LICENSE",
+        "source_file": "assets/SOURCE.md"
+      },
+      {
+        "component": "robotiq_2f85",
+        "model_title": "Robotiq 2F-85 Description (MJCF)",
+        "upstream": "https://github.com/google-deepmind/mujoco_menagerie/tree/da76818e269b82289eba39808e2fb91d679d6994/robotiq_2f85",
+        "derived_revision": "da76818e269b82289eba39808e2fb91d679d6994",
+        "source_path": "assets/robotiq_2f85/",
+        "license": "BSD-2-Clause",
+        "license_file": "assets/robotiq_2f85/LICENSE",
+        "source_file": "assets/robotiq_2f85/README.md"
+      }
+    ],
+    "runtime_dependency": "local package assets only"
+  },
+  "research_scope": {
+    "asset_control_liveness_only": true,
+    "task_success_claim": false,
+    "runnable_admission": false
+  }
+}
