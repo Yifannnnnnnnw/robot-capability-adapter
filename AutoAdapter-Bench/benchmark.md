@@ -121,11 +121,11 @@ The Authority-declared planned B1 set has `M = 7` Producer model families:
 | Producer ID | Model family | Vendor | Formal protocol status |
 |---|---|---|---|
 | M1 | Sonnet 4.6 | Anthropic | Exact provider identifier and endpoint pending manifest freeze |
-| M2 | Opus 4.8 | Anthropic | Exact provider identifier and endpoint pending manifest freeze |
+| M2 | Opus 5 | Anthropic | Exact provider identifier and endpoint pending manifest freeze |
 | M3 | Haiku 4.5 | Anthropic | Exact provider identifier and endpoint pending manifest freeze |
 | M4 | Nova Pro | Amazon | Exact provider identifier and endpoint pending manifest freeze |
-| M5 | DeepSeek V3.2 | DeepSeek | Exact provider identifier and endpoint pending manifest freeze |
-| M6 | Ministral 8B | Mistral | Exact provider identifier and endpoint pending manifest freeze |
+| M5 | DeepSeek V4 Pro | DeepSeek | Exact provider identifier and endpoint pending manifest freeze |
+| M6 | Ministral 3 8B | Mistral | Exact provider identifier and endpoint pending manifest freeze |
 | M7 | Qwen3 32B | Alibaba | Exact provider identifier and endpoint pending manifest freeze |
 
 The table fixes the planned model-family scope, not a movable label for whichever endpoint is

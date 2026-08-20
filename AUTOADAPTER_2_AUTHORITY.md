@@ -4,9 +4,20 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.19`<br>
+> **Document revision / 文档版本：** `0.19.20`<br>
 > **Effective date / 生效日期：** 2026-08-20<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.20` updates three planned RQ1 Producer model families to their current declared
+versions: Opus 4.8 becomes Opus 5, DeepSeek V3.2 becomes DeepSeek V4 Pro, and Ministral 8B becomes
+Ministral 3 8B. The seven-family scope and all experimental factors remain unchanged; exact
+provider identifiers and inference settings are still frozen only by the versioned experiment
+manifest.
+
+**中文辅助说明。** `0.19.20` 将三个规划中的 RQ1 Producer model family 更新为当前声明版本：
+Opus 4.8 更新为 Opus 5，DeepSeek V3.2 更新为 DeepSeek V4 Pro，Ministral 8B 更新为
+Ministral 3 8B。七模型范围和全部实验因素保持不变；准确 provider identifier 与 inference
+setting 仍仅由版本化 experiment manifest 固定。
 
 Revision `0.19.19` restores the seven-family planned RQ1 Producer-backbone coverage that was
 declared before the Direct-MuJoCo Authority rewrite, while leaving exact provider identifiers,
@@ -684,11 +695,11 @@ The planned B1 Producer-backbone set contains seven model families (`M = 7`):
 | Model family | Vendor | Protocol status |
 |---|---|---|
 | Sonnet 4.6 | Anthropic | Exact identifier pending |
-| Opus 4.8 | Anthropic | Exact identifier pending |
+| Opus 5 | Anthropic | Exact identifier pending |
 | Haiku 4.5 | Anthropic | Exact identifier pending |
 | Nova Pro | Amazon | Exact identifier pending |
-| DeepSeek V3.2 | DeepSeek | Exact identifier pending |
-| Ministral 8B | Mistral | Exact identifier pending |
+| DeepSeek V4 Pro | DeepSeek | Exact identifier pending |
+| Ministral 3 8B | Mistral | Exact identifier pending |
 | Qwen3 32B | Alibaba | Exact identifier pending |
 
 Inclusion defines planned RQ1 scope; it does not claim that exact provider identifiers, revisions,
