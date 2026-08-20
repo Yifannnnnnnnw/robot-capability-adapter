@@ -446,4 +446,7 @@ def test_leap_hand_public_task_library_snapshot() -> None:
     assert task_entries == ["catalog.json", "sources.json"]
     assert not (PACKAGE_ROOT / "tasks" / "private").exists()
     assert (PACKAGE_ROOT / "skeleton" / "hand_joint_position.py").is_file()
-    assert not (PACKAGE_ROOT / "reference").exists()
+    assert (
+        PACKAGE_ROOT / "reference" / "leap_cube_reorientation_policy.json"
+    ).is_file()
+    assert not (PACKAGE_ROOT / "reference" / "driver.py").exists()

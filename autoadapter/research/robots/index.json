@@ -553,12 +553,12 @@
       "morphology_category": "hand",
       "proposed_sequence": 7,
       "proposed_wave": 2,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/leap_hand/1.0.0/assets/scene_right.xml",
           "kind": "canonical_mujoco_asset_foundation",
-          "observation": "The canonical package contains the complete 23-file local MuJoCo Menagerie LEAP Hand closure. The right-hand scene loads in MuJoCo 3.3.6 with sixteen live joint-position actuators and four contact-enabled fingertip geoms. This is asset/control evidence only, not dexterous task success, policy, or runnable evidence."
+          "observation": "The canonical package contains a complete 41-file local asset closure: the MuJoCo Menagerie LEAP Hand plus the pinned MuJoCo Playground cube-reorientation deployment scene. The canonical right-hand scene loads in MuJoCo 3.3.6 with sixteen live joint-position actuators and four contact-enabled fingertip geoms. This is asset/control evidence only, not package-wide dexterous task success or runnable evidence."
         },
         {
           "path": "autoadapter/libraries/robots/leap_hand/1.0.0/morphology.json",
@@ -579,6 +579,21 @@
           "path": "autoadapter/libraries/robots/leap_hand/1.0.0/skeleton/hand_joint_position.py",
           "kind": "canonical_trusted_skeleton",
           "observation": "The canonical package re-exports a capability-neutral trusted hand skeleton with public joint and fingertip observations plus bounded actuator-only joint-position feedback. It contains no task dispatch, reset, target trajectory, scoring, or calibration-reference logic."
+        },
+        {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/assets/leap_cube_policy_scene.xml",
+          "kind": "trusted_cube_policy_scene",
+          "observation": "The pinned MuJoCo Playground deployment scene is self-contained in the package at the official 2 ms simulation timestep. It uses the official LEAP collision model, cube object, sensors, home keyframe, and local assets. This supports only the retained cube-orientation policy family and does not replace private task scenes."
+        },
+        {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/reference/leap_cube_reorientation_policy.json",
+          "kind": "trusted_cube_reorientation_policy",
+          "observation": "The official MuJoCo Playground ONNX actor was retained as a pure NumPy 57-to-16 controller with conversion parity within 6.34e-06. A focused Direct-MuJoCo positive control reaches a 90-degree cube orientation target below 0.1 rad without state teleportation. This is a low-level foundation for one task family, not a complete 20-task reference driver."
+        },
+        {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/skeleton/leap_cube_reorientation.py",
+          "kind": "trusted_cube_policy_skeleton_inventory",
+          "observation": "The public package exposes the retained low-level policy through a session-bound actuator-only skeleton. The skeleton reads the Framework-owned goal sensor and fresh MuJoCo state, writes hand controls, and steps physics; it does not load scenes, own resets, dispatch tasks, or decide Harness success."
         },
         {
           "path": "demo2/legacy_assets/menagerie/leap_hand/left_hand.xml",
@@ -608,9 +623,9 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide a calibration-only reference driver for this configuration.",
+        "Provide a complete calibration-only reference driver; the retained policy covers bounded single-cube orientation only, not the remaining pinch, translation, fixture, DClaw, or Baoding task families.",
         "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
+        "Complete a video-backed package-wide positive control across all 20 private cases; the focused cube-orientation controller check is not package-wide evidence.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
       ]
     },
