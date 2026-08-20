@@ -51,8 +51,9 @@ The ignored raw run is retained locally at
 `autoadapter/runs/franka-reference-positive-control-20260820T034710Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
 
-The earlier runs ending `013634Z` and `013256Z` are retained as diagnostics,
-not current positive-control evidence. The former predates commit `0d047c7`:
+The earlier runs ending `013634Z` and `013256Z` were diagnostics and have been
+removed from local raw evidence; neither is current positive-control evidence.
+The former predates commit `0d047c7`:
 its handle-pull reset already satisfied the public `<=0.05 m` criterion, so its
 reported 20/20 is superseded even though the driver also moved the handle. The
 latter additionally failed video completeness because the requested `800x600`
@@ -86,10 +87,11 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 The ignored raw run is retained locally at
 `autoadapter/runs/xarm7-reference-positive-control-20260820T034432Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
-The earlier run ending `031649Z` is retained as a pre-fix diagnostic: its
-handle-pull reset already satisfied the public criterion, so its reported 20/20
-is superseded. The sandboxed run ending `031554Z` also predates the fix and
-failed requested video creation because macOS CoreGraphics was unavailable.
+The earlier runs ending `031649Z` and `031554Z` were diagnostics and have been
+removed from local raw evidence. The `031649Z` run's handle-pull reset already
+satisfied the public criterion, so its reported 20/20 is superseded. The
+sandboxed `031554Z` run also predates the fix and failed requested video
+creation because macOS CoreGraphics was unavailable.
 
 This result establishes package-wide reference feasibility for the canonical
 xArm7 assets, controller baseline, trusted measurements, Harness, and video
@@ -121,9 +123,9 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 The ignored raw run is retained locally at
 `autoadapter/runs/piper-reference-positive-control-20260820T044929Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
-The sandboxed run ending `044817Z` is retained as a diagnostic only: all 20
-physical criteria passed, but macOS CoreGraphics was unavailable and every
-requested video had zero frames.
+The sandboxed run ending `044817Z` was a diagnostic and has been removed from
+local raw evidence. All 20 physical criteria passed, but macOS CoreGraphics was
+unavailable and every requested video had zero frames.
 
 This result establishes package-wide reference feasibility for the canonical
 Piper assets, controller baseline, trusted measurements, Harness, and video
@@ -153,9 +155,10 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 The ignored raw run is retained locally at
 `autoadapter/runs/kuka-reference-positive-control-20260820T070515Z/`.
 Its `reference_report.json`, complete 20-case suite, and per-case videos remain
-together. The sandboxed run ending `070441Z` is diagnostic only: all metrics,
-physical execution, and guards passed, but macOS CoreGraphics was unavailable
-and every requested video had zero frames.
+together. The sandboxed run ending `070441Z` was a diagnostic and has been
+removed from local raw evidence. All metrics, physical execution, and guards
+passed, but macOS CoreGraphics was unavailable and every requested video had
+zero frames.
 
 This result establishes package-wide reference feasibility for the canonical
 KUKA assets, compact actuator trajectory baseline, trusted measurements,
