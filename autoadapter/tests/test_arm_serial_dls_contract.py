@@ -162,6 +162,80 @@ class ArmSerialDLSContractTests(unittest.TestCase):
         np.testing.assert_allclose(solved, (0.1,), atol=1e-6)
         np.testing.assert_allclose(skeleton.fk(solved)["pos"], target, atol=1e-6)
 
+    def test_pose_ik_recovers_a_reachable_six_dof_pose(self) -> None:
+        model = mujoco.MjModel.from_xml_string(
+            """
+            <mujoco>
+              <compiler autolimits="true"/>
+              <worldbody>
+                <body>
+                  <joint name="slide_x" type="slide" axis="1 0 0" range="-1 1"/>
+                  <joint name="slide_y" type="slide" axis="0 1 0" range="-1 1"/>
+                  <joint name="slide_z" type="slide" axis="0 0 1" range="-1 1"/>
+                  <joint name="roll" type="hinge" axis="1 0 0" range="-1 1"/>
+                  <joint name="pitch" type="hinge" axis="0 1 0" range="-1 1"/>
+                  <joint name="yaw" type="hinge" axis="0 0 1" range="-1 1"/>
+                  <geom type="sphere" size="0.01"/>
+                  <site name="tool_site" pos="0 0 0.1"/>
+                </body>
+              </worldbody>
+              <actuator>
+                <position name="slide_x_act" joint="slide_x"/>
+                <position name="slide_y_act" joint="slide_y"/>
+                <position name="slide_z_act" joint="slide_z"/>
+                <position name="roll_act" joint="roll"/>
+                <position name="pitch_act" joint="pitch"/>
+                <position name="yaw_act" joint="yaw"/>
+              </actuator>
+            </mujoco>
+            """
+        )
+        data = mujoco.MjData(model)
+        skeleton = ArmSerialDLSSkeleton.from_session(
+            model=model,
+            data=data,
+            spec=ArmSpec(
+                ee_site_name="tool_site",
+                arm_joint_names=(
+                    "slide_x",
+                    "slide_y",
+                    "slide_z",
+                    "roll",
+                    "pitch",
+                    "yaw",
+                ),
+                arm_actuator_names=(
+                    "slide_x_act",
+                    "slide_y_act",
+                    "slide_z_act",
+                    "roll_act",
+                    "pitch_act",
+                    "yaw_act",
+                ),
+                joint_limits={
+                    "slide_x": (-1.0, 1.0),
+                    "slide_y": (-1.0, 1.0),
+                    "slide_z": (-1.0, 1.0),
+                    "roll": (-1.0, 1.0),
+                    "pitch": (-1.0, 1.0),
+                    "yaw": (-1.0, 1.0),
+                },
+                ik_max_iter=300,
+                ik_tolerance=1e-5,
+                ik_step_clamp=0.1,
+            ),
+        )
+        reachable_q = np.asarray((0.1, -0.05, 0.2, 0.15, -0.2, 0.3))
+        target = skeleton.fk(reachable_q)
+
+        solved = skeleton.ik_pose(
+            target["pos"], target["R"], q_init=np.zeros(6)
+        )
+        solved_pose = skeleton.fk(solved)
+
+        np.testing.assert_allclose(solved_pose["pos"], target["pos"], atol=1e-5)
+        np.testing.assert_allclose(solved_pose["R"], target["R"], atol=1e-5)
+
     def test_skeleton_uses_the_canonical_session_objects(self) -> None:
         model = object()
         data = object()
@@ -183,6 +257,7 @@ class ArmSerialDLSContractTests(unittest.TestCase):
                 "get_ee_pose",
                 "fk",
                 "ik",
+                "ik_pose",
                 "set_arm_actuators",
                 "move_joints",
                 "move_cartesian",

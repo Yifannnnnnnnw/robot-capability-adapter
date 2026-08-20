@@ -324,6 +324,19 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             raise ValueError("target_xyz must contain finite values")
         return result
 
+    def _rotation_matrix(self, value: Any) -> Any:
+        np = self._load_numpy()
+        result = np.asarray(value, dtype=float)
+        if result.shape != (3, 3):
+            raise ValueError("target_rotation must have shape (3, 3)")
+        if not np.all(np.isfinite(result)):
+            raise ValueError("target_rotation must contain finite values")
+        if not np.allclose(result.T @ result, np.eye(3), atol=1e-5):
+            raise ValueError("target_rotation must be orthonormal")
+        if not np.isclose(np.linalg.det(result), 1.0, atol=1e-5):
+            raise ValueError("target_rotation must be a proper rotation")
+        return result
+
     def _nearest_continuous_equivalent(self, q: Any, reference: Any) -> Any:
         """Choose the nearest 2-pi-equivalent target for continuous hinges."""
 
@@ -357,6 +370,20 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             self._mj.mj_jacGeom(self.model, self.data, jacobian, None, self._ee_geom_id)
         else:
             self._mj.mj_jacBody(self.model, self.data, jacobian, None, self._ee_body_id)
+
+    def _ee_pose_jacobian(self, position: Any, rotation: Any) -> None:
+        if self._ee_use_site:
+            self._mj.mj_jacSite(
+                self.model, self.data, position, rotation, self._ee_site_id
+            )
+        elif self._ee_use_geom:
+            self._mj.mj_jacGeom(
+                self.model, self.data, position, rotation, self._ee_geom_id
+            )
+        else:
+            self._mj.mj_jacBody(
+                self.model, self.data, position, rotation, self._ee_body_id
+            )
 
     @contextmanager
     def _temporary_joint_positions(self, q: Any) -> Iterator[None]:
@@ -446,6 +473,63 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
         if last_residual > self.spec.ik_tolerance:
             raise IKUnreachableError(last_residual, self.spec.ik_tolerance, q.copy())
         return q.copy()
+
+    def ik_pose(
+        self,
+        target_xyz: Sequence[float],
+        target_rotation: Any,
+        q_init: Sequence[float] | None = None,
+        *,
+        orientation_weight: float = 0.7,
+    ) -> Any:
+        """Solve position-and-orientation DLS IK without executing it."""
+
+        self._resolve_indices()
+        np = self._load_numpy()
+        target = self._xyz(target_xyz)
+        rotation = self._rotation_matrix(target_rotation)
+        weight = _finite(orientation_weight, "orientation_weight")
+        if weight <= 0.0:
+            raise ValueError("orientation_weight must be positive")
+        q = self.get_joint_positions() if q_init is None else self._vector(q_init, "q_init")
+        last_residual = math.inf
+
+        for _ in range(self.spec.ik_max_iter):
+            with self._temporary_joint_positions(q):
+                position_error = target - self._ee_position()
+                current_rotation = self._ee_rotation()
+                rotation_error = 0.5 * sum(
+                    np.cross(current_rotation[:, axis], rotation[:, axis])
+                    for axis in range(3)
+                )
+                position_residual = float(np.linalg.norm(position_error))
+                rotation_residual = float(np.linalg.norm(rotation_error))
+                last_residual = max(position_residual, rotation_residual)
+                if last_residual <= self.spec.ik_tolerance:
+                    return q.copy()
+
+                position_jacobian = np.zeros((3, int(self.model.nv)), dtype=float)
+                rotation_jacobian = np.zeros((3, int(self.model.nv)), dtype=float)
+                self._ee_pose_jacobian(position_jacobian, rotation_jacobian)
+                arm_jacobian = np.vstack(
+                    (
+                        position_jacobian[:, self._arm_qvel_adr],
+                        weight * rotation_jacobian[:, self._arm_qvel_adr],
+                    )
+                )
+
+            error = np.concatenate((position_error, weight * rotation_error))
+            damping = self.spec.ik_damping * max(
+                1.0, 0.05 / max(last_residual, 1e-6)
+            )
+            system = arm_jacobian @ arm_jacobian.T + (damping**2) * np.eye(6)
+            delta = arm_jacobian.T @ np.linalg.solve(system, error)
+            delta_norm = float(np.linalg.norm(delta))
+            if delta_norm > self.spec.ik_step_clamp:
+                delta *= self.spec.ik_step_clamp / delta_norm
+            q = np.clip(q + delta, self._q_lo, self._q_hi)
+
+        raise IKUnreachableError(last_residual, self.spec.ik_tolerance, q.copy())
 
     def set_arm_actuators(self, q: Sequence[float]) -> None:
         """Write arm actuator targets to the canonical data.ctrl array."""
