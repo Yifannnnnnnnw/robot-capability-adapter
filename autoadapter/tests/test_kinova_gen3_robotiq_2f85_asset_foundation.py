@@ -14,6 +14,7 @@ ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
+RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 ARM_JOINT_NAMES = [
     "joint_1",
@@ -364,3 +365,30 @@ def test_kinova_gen3_robotiq_2f85_asset_foundation_is_local_exact_and_actuator_l
 
     runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
     assert "kinova_gen3_robotiq_2f85" not in runnable_index["robots"]
+
+    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
+    candidate_ids = {
+        candidate["robot_configuration_id"] for candidate in research_index["candidates"]
+    }
+    assert "kinova_gen3" not in candidate_ids
+    candidate = next(
+        candidate
+        for candidate in research_index["candidates"]
+        if candidate["robot_configuration_id"] == "kinova_gen3_robotiq_2f85"
+    )
+    observed_paths = {
+        item["path"] for item in candidate["locally_observed_source_material"]
+    }
+    assert {
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/assets/scene.xml",
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/morphology.json",
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/sources.json",
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/catalog.json",
+    }.issubset(observed_paths)
+    missing = " ".join(candidate["missing_for_runnable_package"])
+    assert "contact-capable end-effector configuration" not in missing
+    assert "20 distinct applicable source-backed tasks" not in missing
+    assert "Create tasks/sources.json" not in missing
+    assert "tasks/private/instances.json" in missing
+    assert "arm_serial_dls skeleton" in missing
+    assert "dynamic canary" in missing

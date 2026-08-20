@@ -92,7 +92,7 @@
       ]
     },
     {
-      "robot_configuration_id": "kinova_gen3",
+      "robot_configuration_id": "kinova_gen3_robotiq_2f85",
       "morphology_family": "arm_serial_dls",
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 2,
@@ -100,14 +100,34 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
-          "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/assets/scene.xml",
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/assets/scene.xml",
           "kind": "canonical_mujoco_asset_foundation",
-          "observation": "The canonical package now contains the complete local Menagerie Gen3 closure and loads as a seven-actuator arm-only MuJoCo model. It has no contact-capable gripper."
+          "observation": "The exact canonical configuration composes the local Menagerie Kinova Gen3 arm and official Robotiq 2F-85 closure. It loads in MuJoCo with seven arm actuators, the native tendon-actuated gripper, equality-coupled fingers, four contact pads, and pinch_site; this is asset and actuator liveness evidence, not task success."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The exact configuration morphology records the seven position-controlled arm joints, Robotiq native 0-open/255-closed control, tendon and passive coupling, contact observations, keyframes, and pinned source lineage without claiming runnable status."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The canonical public snapshot contains the pinned Meta-World source record used by every scoring clause in the 20-task catalog."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The canonical public snapshot contains 20 distinct reviewed task contracts with unchanged source scoring obligations and exact Kinova Gen3 plus Robotiq 2F-85 applicability and invocation facts; observed_task_count remains 5 for the inspected legacy catalog below."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/assets/scene.xml",
+          "kind": "canonical_arm_component_foundation",
+          "observation": "The separately retained arm-only Kinova Gen3 package is useful component and provenance material, but it is not the contact-capable robot configuration indexed here."
         },
         {
           "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/morphology.json",
-          "kind": "canonical_morphology_foundation",
-          "observation": "The canonical morphology records the seven position-controlled arm joints, pinch site, keyframes, and source lineage without claiming manipulation affordances or runnable status."
+          "kind": "canonical_arm_component_morphology",
+          "observation": "The separately retained arm-only morphology records the unlimited Gen3 joints and actuator defaults. Its robot_configuration_id remains kinova_gen3 and must not be conflated with this composite candidate."
         },
         {
           "path": "demo2/legacy_assets/menagerie/kinova_gen3/gen3.xml",
@@ -136,14 +156,13 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Select and materialize an exact contact-capable end-effector configuration under a distinct robot_configuration_id; the current arm-only kinova_gen3 asset can support reach but cannot execute the 19 contact or grasp tasks needed by the proposed Meta-World snapshot.",
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards for that exact contact-capable configuration.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
+        "Materialize the canonical task scenes and verify local asset closure, required symbols, reset liveness, and applicable contact geometry for the exact composite configuration.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
+        "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
+        "Perform final human package and admission review, then add this exact configuration to the runnable index only if the dynamic canary passes."
       ]
     },
     {

@@ -12,7 +12,7 @@ SOURCE_ROOT = ROOT / "src"
 
 REQUIRED_CANDIDATE_IDS = {
     "franka_panda",
-    "kinova_gen3",
+    "kinova_gen3_robotiq_2f85",
     "ufactory_xarm7",
     "universal_robots_ur5e",
     "piper",
