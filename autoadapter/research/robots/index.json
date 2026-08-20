@@ -165,6 +165,16 @@
           "observation": "The canonical morphology records seven position-controlled arm joints, the gripper tendon actuator and passive coupling, contact observations, reset facts, and pinned source lineage without claiming runnable status."
         },
         {
+          "path": "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The canonical xArm7 public snapshot contains the pinned Meta-World source record used by every scoring clause in the 20-task catalog."
+        },
+        {
+          "path": "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The canonical xArm7 public snapshot contains 20 reviewed task contracts with unchanged source scoring obligations and xArm7-specific applicability and invocation facts; observed_task_count remains 5 for the inspected legacy catalog below."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/ufactory_xarm7/xarm7.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical xArm7 Menagerie model and meshes are available for migration inspection."
@@ -191,9 +201,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
+        "Create local task scenes and verify that all 20 public task contracts remain physically applicable to the exact xArm7 configuration without weakening their source obligations.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
