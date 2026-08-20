@@ -15,6 +15,7 @@ ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MIGRATION_ROOT = ROOT.parent / "demo2" / "legacy_assets" / "kuka_iiwa_14"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
+RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 JOINT_NAMES = [f"joint{index}" for index in range(1, 8)]
 ACTUATOR_NAMES = [f"actuator{index}" for index in range(1, 8)]
@@ -244,6 +245,22 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
 
     runnable_index = json.loads((ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8"))
     assert "kuka_iiwa_14" not in runnable_index["robots"]
+    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
+    candidate = next(
+        item
+        for item in research_index["candidates"]
+        if item["robot_configuration_id"] == "kuka_iiwa_14"
+    )
+    observed_paths = {
+        item["path"] for item in candidate["locally_observed_source_material"]
+    }
+    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/assets/scene.xml" in observed_paths
+    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/morphology.json" in observed_paths
+    missing = " ".join(candidate["missing_for_runnable_package"])
+    assert "complete local MuJoCo asset closure" not in missing
+    assert "current mainline morphology.json" not in missing
+    assert "20 distinct applicable source-backed tasks" in missing
+    assert "tasks/sources.json" in missing
     assert not (PACKAGE_ROOT / "tasks").exists()
     assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()
