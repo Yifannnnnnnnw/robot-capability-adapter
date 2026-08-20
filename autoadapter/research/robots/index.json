@@ -511,6 +511,16 @@
           "observation": "The canonical morphology records the floating-base four-leg, twelve-joint position-servo facts, direct mappings, named foot and IMU/sensor observations, home reset, and pinned source/license lineage without claiming tasks, manipulation, locomotion, gait performance, terrain success, controller availability, or runnable status."
         },
         {
+          "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The provisional Barkour public snapshot contains seven pinned source records supporting all 27 scoring clauses in the 20-task catalog, including the exact Barkour vB Menagerie revision. This is source-contract evidence only, not scene, controller, gait, task-success, or runnable evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The provisional Barkour public snapshot contains 20 reviewed quadruped task contracts and 27 unchanged source standards with explicit Barkour morphology adaptations and position-servo nonclaims. No scene, private package, controller, gait, dynamic result, or admission is implied; observed_task_count remains 5 for the inspected legacy catalog below."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/google_barkour_vb/barkour_vb.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Google Barkour vB model, URDF, and meshes are available for migration inspection."
@@ -537,8 +547,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable quadruped_pd_gait skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",

@@ -385,11 +385,17 @@ def test_google_barkour_vb_asset_foundation_is_local_and_live() -> None:
     observed_paths = {item["path"] for item in candidate["locally_observed_source_material"]}
     assert "autoadapter/libraries/robots/google_barkour_vb/1.0.0/assets/scene.xml" in observed_paths
     assert "autoadapter/libraries/robots/google_barkour_vb/1.0.0/morphology.json" in observed_paths
+    assert "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/sources.json" in observed_paths
+    assert "autoadapter/libraries/robots/google_barkour_vb/1.0.0/tasks/catalog.json" in observed_paths
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
-    assert "20 distinct applicable source-backed tasks" in missing
-    assert "tasks/sources.json" in missing
-    assert not (PACKAGE_ROOT / "tasks").exists()
+    assert "20 distinct applicable source-backed tasks" not in missing
+    assert "tasks/sources.json" not in missing
+    assert sorted(path.name for path in (PACKAGE_ROOT / "tasks").iterdir()) == [
+        "catalog.json",
+        "sources.json",
+    ]
+    assert not (PACKAGE_ROOT / "tasks" / "private").exists()
     assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()
