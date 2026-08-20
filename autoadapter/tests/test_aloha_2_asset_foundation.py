@@ -60,6 +60,7 @@ EXPECTED_INVENTORY = (
     "mjx_aloha.patch",
     "mjx_filtered_cartesian_actuators.patch",
     "mjx_scene.patch",
+    "reach_scene.xml",
     "scene.xml",
 )
 
@@ -393,7 +394,7 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         if path.is_file()
     )
     assert canonical_inventory == list(EXPECTED_INVENTORY)
-    assert len(canonical_inventory) == 44
+    assert len(canonical_inventory) == 45
     assert not any(path.is_symlink() for path in ASSETS_ROOT.rglob("*"))
 
     for xml_path in sorted(ASSETS_ROOT.glob("*.xml")):
