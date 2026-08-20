@@ -1,0 +1,124 @@
+<mujoco model="stretch scene">
+  <include file="stretch.xml"/>
+
+  <statistic meansize="0.05" extent="1.2"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="-120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <material name="floor" rgba=".1 .1 .1 1" reflectance="0.1"/>
+    <texture type="2d" name="wood" file="wood.png"/>
+    <material name="wood" texture="wood"/>
+    <material name="object" rgba=".2 .2 .2 1"/>
+    <material name="fixture" rgba="0.65 0.28 0.08 1"/>
+    <material name="goal" rgba="0.08 0.45 0.28 0.65"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="floor"/>
+    <camera name="evidence" pos="1.8 -2.3 1.65" xyaxes="0.79 0.61 0 0.18 -0.23 0.96"/>
+    <body name="table" pos="0 -0.9 .24">
+      <geom type="box" size=".6 .5 .24" mass="1" material="wood"/>
+    </body>
+    <body name="object" pos="-.02 -0.45 .6">
+      <freejoint/>
+      <geom type="box" size=".02 .04 .04" mass=".5" material="object"/>
+    </body>
+
+    <!-- Local task fixtures are deliberately simple, named, and independent of driver policy. -->
+    <body name="reach_goal" pos="-.02 -.05 .6">
+      <geom name="reach_goal_geom" type="sphere" size=".025" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="push_goal" pos="-.02 -.12 .6">
+      <geom name="push_goal_geom" type="cylinder" size=".06 .002" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="pick_place_goal" pos="-.02 -.08 .66">
+      <geom name="pick_place_goal_geom" type="box" size=".06 .06 .005" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="wall_pick_goal" pos=".18 -.25 .66">
+      <geom name="wall_pick_goal_geom" type="box" size=".06 .06 .005" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="push_wall_goal" pos=".18 -.12 .6">
+      <geom name="push_wall_goal_geom" type="cylinder" size=".06 .002" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="sweep_goal" pos=".18 -.08 .6">
+      <geom name="sweep_goal_geom" type="cylinder" size=".06 .002" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="bin_goal" pos=".18 .02 .6">
+      <geom name="bin_goal_geom" type="box" size=".08 .08 .005" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="extraction_goal" pos=".18 .1 .66">
+      <geom name="extraction_goal_geom" type="box" size=".06 .06 .005" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="peg_goal" pos="-.22 -.08 .6">
+      <geom name="peg_goal_geom" type="cylinder" size=".035 .01" material="goal" contype="0" conaffinity="0"/>
+    </body>
+    <body name="peg_head" pos="-.02 -.38 .6">
+      <geom name="peg_head_geom" type="cylinder" size=".018 .04" material="fixture"/>
+      <site name="peg_head_site" pos="0 0 0" size=".008"/>
+    </body>
+
+    <body name="drawer_fixture" pos="-.22 -.36 .6">
+      <joint name="drawer_slide" type="slide" axis="0 1 0" range="-.16 .04" damping="2"/>
+      <geom name="drawer_body_geom" type="box" size=".16 .08 .05" material="fixture"/>
+      <body name="drawer_handle" pos="0 .1 0">
+        <geom name="drawer_handle_geom" type="box" size=".025 .02 .025" material="fixture"/>
+      </body>
+    </body>
+    <body name="front_button" pos="-.18 -.26 .68">
+      <joint name="front_button_slide" type="slide" axis="0 0 1" range="-.12 .02" damping="2"/>
+      <geom name="front_button_geom" type="cylinder" size=".035 .015" material="fixture"/>
+      <site name="front_button_site" pos="0 0 -.02" size=".008"/>
+    </body>
+    <body name="top_button" pos="-.04 -.26 .72">
+      <joint name="top_button_slide" type="slide" axis="0 0 1" range="-.16 .02" damping="2"/>
+      <geom name="top_button_geom" type="cylinder" size=".035 .015" material="fixture"/>
+      <site name="top_button_site" pos="0 0 -.02" size=".008"/>
+    </body>
+    <body name="handle_fixture" pos=".12 -.36 .6">
+      <geom name="handle_fixture_geom" type="box" size=".06 .04 .08" material="fixture"/>
+      <body name="vertical_handle" pos="0 .06 0">
+        <joint name="vertical_handle_slide" type="slide" axis="0 0 1" range="-.15 .02" damping="2"/>
+        <geom name="vertical_handle_geom" type="box" size=".018 .018 .05" material="fixture"/>
+        <site name="vertical_handle_site" pos="0 0 -.03" size=".008"/>
+      </body>
+    </body>
+    <body name="door_fixture" pos=".22 -.36 .6">
+      <joint name="door_hinge" type="hinge" axis="0 0 1" range="-1.57 1.57" damping="2"/>
+      <geom name="door_panel_geom" type="box" size=".03 .18 .18" material="fixture"/>
+      <body name="door_handle" pos="0 .16 0">
+        <geom name="door_handle_geom" type="box" size=".025 .02 .025" material="fixture"/>
+        <site name="door_handle_site" pos="0 0 0" size=".008"/>
+      </body>
+    </body>
+    <body name="faucet_fixture" pos="-.22 -.12 .62">
+      <joint name="faucet_hinge" type="hinge" axis="0 0 1" range="-1.57 1.57" damping="2"/>
+      <geom name="faucet_base_geom" type="cylinder" size=".035 .08" material="fixture"/>
+      <body name="faucet_tip" pos="0 .1 0">
+        <geom name="faucet_tip_geom" type="sphere" size=".025" material="fixture"/>
+        <site name="faucet_tip_site" pos="0 0 0" size=".008"/>
+      </body>
+    </body>
+    <body name="dial_fixture" pos="-.08 -.12 .68">
+      <joint name="dial_hinge" type="hinge" axis="0 0 1" range="-3.14 3.14" damping="2"/>
+      <geom name="dial_face_geom" type="cylinder" size=".06 .015" material="fixture"/>
+      <body name="dial_tip" pos="0 .06 .02">
+        <geom name="dial_tip_geom" type="box" size=".012 .04 .012" material="fixture"/>
+        <site name="dial_tip_site" pos="0 .04 0" size=".008"/>
+      </body>
+    </body>
+    <body name="lever_fixture" pos=".08 -.12 .62">
+      <joint name="lever_hinge" type="hinge" axis="0 1 0" range="-1.57 1.57" damping="2"/>
+      <geom name="lever_arm_geom" type="box" size=".018 .018 .1" material="fixture"/>
+      <body name="lever_tip" pos="0 0 .12">
+        <geom name="lever_tip_geom" type="sphere" size=".025" material="fixture"/>
+        <site name="lever_tip_site" pos="0 0 0" size=".008"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>
