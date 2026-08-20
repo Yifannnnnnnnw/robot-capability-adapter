@@ -3,6 +3,10 @@
 
   <option integrator="implicitfast"/>
 
+  <visual>
+    <global offwidth="800" offheight="600"/>
+  </visual>
+
   <default>
     <default class="panda">
       <material specular="0.5" shininess="0.25"/>

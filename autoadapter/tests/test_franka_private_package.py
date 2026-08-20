@@ -321,6 +321,17 @@ def test_franka_private_resets_preserve_panda_home_and_scene_qpos0() -> None:
             )
 
 
+def test_franka_scenes_support_private_video_dimensions() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = _read(package.private_dir / "instances.json")["instances"]
+
+    for instance in instances:
+        scene = (package.root / instance["scene_entrypoint"]).resolve()
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        assert model.vis.global_.offwidth >= instance["video_width"]
+        assert model.vis.global_.offheight >= instance["video_height"]
+
+
 def test_franka_driver_source_and_skeleton_contract() -> None:
     driver_path = PACKAGE_ROOT / "reference/driver.py"
     source = driver_path.read_text(encoding="utf-8")
