@@ -46,7 +46,7 @@ from autoadapter2.driver_synthesis.source_check import (
     audit_driver_source,
 )
 from autoadapter2.environment import check_environment
-from autoadapter2.evolution import run_evolution
+from autoadapter2.evolution import build_experience_review_queue, run_evolution
 from autoadapter2.harness.runner import run_private_suite
 from autoadapter2.libraries import (
     RobotPackage,
@@ -1781,6 +1781,14 @@ def run_experiment(
 
     references_passed = all(bool(references[robot].get("passed")) for robot in config.robots)
     if not references_passed and not skip_reference_calibration:
+        review_queue = build_experience_review_queue(
+            run_id=selected_run_id,
+            experiment_id=config.experiment_id,
+            expected_robots=config.robots,
+            expected_conditions=config.generation_conditions,
+            cells=(),
+        )
+        _write(destination / "experience_review_queue.json", review_queue)
         result = {
             "experiment_id": config.experiment_id,
             "code_version": __version__,
@@ -1798,6 +1806,18 @@ def run_experiment(
                 run_id=selected_run_id,
             ),
             "pipeline_completed": False,
+            "cell_pipeline_completed": review_queue["cell_pipeline_completed"],
+            "expected_evolution_outcome_count": review_queue[
+                "expected_evolution_outcome_count"
+            ],
+            "retained_evolution_outcome_count": review_queue[
+                "retained_evolution_outcome_count"
+            ],
+            "all_evolution_outcomes_retained": review_queue[
+                "all_evolution_outcomes_retained"
+            ],
+            "reviewed_disposition_count": review_queue["reviewed_disposition_count"],
+            "dispositions_complete": review_queue["dispositions_complete"],
             "dynamic_model_called": True,
             "driver_generated_in_run": False,
             "capability_validation_executed": False,
@@ -1844,6 +1864,14 @@ def run_experiment(
         expected_conditions=config.generation_conditions,
         run_id=selected_run_id,
     )
+    review_queue = build_experience_review_queue(
+        run_id=selected_run_id,
+        experiment_id=config.experiment_id,
+        expected_robots=config.robots,
+        expected_conditions=config.generation_conditions,
+        cells=cell_reports,
+    )
+    _write(destination / "experience_review_queue.json", review_queue)
     all_cells_passed = bool(
         paired["summary"]["all_cells_final_capability_validation_passed"]
     )
@@ -1865,6 +1893,18 @@ def run_experiment(
         "cells": cell_reports,
         "paired_report": paired,
         "pipeline_completed": all_cells_completed,
+        "cell_pipeline_completed": review_queue["cell_pipeline_completed"],
+        "expected_evolution_outcome_count": review_queue[
+            "expected_evolution_outcome_count"
+        ],
+        "retained_evolution_outcome_count": review_queue[
+            "retained_evolution_outcome_count"
+        ],
+        "all_evolution_outcomes_retained": review_queue[
+            "all_evolution_outcomes_retained"
+        ],
+        "reviewed_disposition_count": review_queue["reviewed_disposition_count"],
+        "dispositions_complete": review_queue["dispositions_complete"],
         "dynamic_model_called": any(bool(cell["dynamic_model_called"]) for cell in cell_reports),
         "driver_generated_in_run": all(
             bool(cell["driver_generated_in_run"]) for cell in cell_reports

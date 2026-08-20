@@ -643,6 +643,88 @@ def test_driver_attempts_are_capped_at_three_and_evolution_is_nonblocking(
     )
 
 
+def test_run_writes_deterministic_review_queue_without_changing_driver_success(
+    tmp_path: Path,
+) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
+    output_dir = tmp_path / "run"
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=output_dir,
+        run_id="queue-success",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+    )
+
+    queue = json.loads(
+        (output_dir / "experience_review_queue.json").read_text(encoding="utf-8")
+    )
+    assert success_claim(result)
+    assert result["success"] is True
+    assert result["cell_pipeline_completed"] is True
+    assert result["expected_evolution_outcome_count"] == 4
+    assert result["retained_evolution_outcome_count"] == 4
+    assert result["all_evolution_outcomes_retained"] is True
+    assert result["reviewed_disposition_count"] == 0
+    assert result["dispositions_complete"] is False
+    assert queue["run_id"] == "queue-success"
+    assert queue["cell_pipeline_completed"] is True
+    assert [record["cell_id"] for record in queue["records"]] == [
+        "r-arm::skeleton-assisted",
+        "r-arm::from-scratch",
+        "r-quad::skeleton-assisted",
+        "r-quad::from-scratch",
+    ]
+    assert queue["expected_evolution_outcome_count"] == 4
+    assert queue["retained_evolution_outcome_count"] == 4
+    assert queue["all_evolution_outcomes_retained"] is True
+    assert queue["reviewed_disposition_count"] == 0
+    assert queue["dispositions_complete"] is False
+    assert all(
+        record["disposition"] is None and record["reason"] is None
+        for record in queue["records"]
+    )
+
+
+def test_evolution_failure_is_retained_without_changing_driver_success(
+    tmp_path: Path,
+) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(
+        tmp_path,
+        events,
+        validation_pass_at=1,
+        evolution_raises=True,
+    )
+    output_dir = tmp_path / "run"
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=output_dir,
+        run_id="queue-evolution-failure",
+        client=state["client"],
+        hooks=hooks,
+        check_self_containment=False,
+    )
+
+    queue = json.loads(
+        (output_dir / "experience_review_queue.json").read_text(encoding="utf-8")
+    )
+    assert success_claim(result)
+    assert result["success"] is True
+    assert queue["retained_evolution_outcome_count"] == 4
+    assert queue["all_evolution_outcomes_retained"] is True
+    assert all(
+        record["evolution"]["evolution_completed"] is False
+        and record["evolution"]["failure"]["type"] == "RuntimeError"
+        for record in queue["records"]
+    )
+    assert queue["dispositions_complete"] is False
+
+
 def test_source_audit_rejection_does_not_consume_a_formal_attempt(tmp_path: Path) -> None:
     events: list[tuple[Any, ...]] = []
     hooks, state = _fake_hooks(
