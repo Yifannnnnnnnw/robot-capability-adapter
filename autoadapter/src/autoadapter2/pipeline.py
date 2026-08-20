@@ -1247,6 +1247,7 @@ def _run_cell(
     )
     if final_pass and current_driver is not None:
         task_demo_attempt = int(terminal_validation.get("attempt", 0))
+        controller_before = _call_count(client)
         try:
             task_demo_raw = hooks.harness_runner(
                 package=package,
@@ -1259,6 +1260,25 @@ def _run_cell(
                 wall_timeout_s=config.worker_wall_timeout_s,
                 run_id=run_id,
                 attempt=task_demo_attempt,
+                controller_client=client,
+            )
+            controller_summary = task_demo_raw.get("high_level_controller")
+            controller_stage_completed = (
+                bool(controller_summary.get("completed"))
+                if isinstance(controller_summary, Mapping)
+                else True
+            )
+            model_stage_log.append(
+                {
+                    "robot": robot,
+                    "condition": condition,
+                    **_stage_evidence(
+                        client,
+                        stage="task_demo_controller",
+                        before=controller_before,
+                        completed=controller_stage_completed,
+                    ),
+                }
             )
             task_demo = _normalise_validation_report(
                 task_demo_raw,
@@ -1269,6 +1289,19 @@ def _run_cell(
                 evaluation_role="task_demo",
             )
         except Exception as exc:
+            model_stage_log.append(
+                {
+                    "robot": robot,
+                    "condition": condition,
+                    **_stage_evidence(
+                        client,
+                        stage="task_demo_controller",
+                        before=controller_before,
+                        completed=False,
+                        error=exc,
+                    ),
+                }
+            )
             task_demo = _normalise_validation_report(
                 {
                     "pipeline_completed": False,
@@ -1373,6 +1406,16 @@ def _run_cell(
                 None,
             ),
             "CapabilityValidation": _copy(terminal_validation),
+            "TaskDemoController": next(
+                (
+                    item
+                    for item in reversed(model_stage_log)
+                    if item.get("stage") == "task_demo_controller"
+                    and item.get("robot") == robot
+                    and item.get("condition") == condition
+                ),
+                None,
+            ),
             "TaskDemo": _copy(task_demo),
             "Repair": [
                 item

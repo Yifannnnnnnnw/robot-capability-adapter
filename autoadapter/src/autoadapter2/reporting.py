@@ -27,6 +27,7 @@ _OUTCOME_FIELDS = (
     ("GENERATE", "generate"),
     ("CapabilityValidation", "capability_validation"),
     ("Repair", "repair"),
+    ("TaskDemoController", "task_demo_controller"),
     ("TaskDemo", "task_demo"),
     ("Evolution", "evolution"),
 )

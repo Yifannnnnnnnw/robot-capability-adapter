@@ -4,9 +4,19 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.17`<br>
+> **Document revision / 文档版本：** `0.19.18`<br>
 > **Effective date / 生效日期：** 2026-08-20<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.18` declares the fixed bounded ReAct high-level-controller path for post-admission
+Task Demo capability-interface use. Model calls remain in the Framework parent while capability
+invocations execute in one persistent credential-free candidate worker and canonical MuJoCo
+session per trial. Controller completion remains separate from the trusted Harness verdict.
+
+**中文辅助说明。** `0.19.18` 明确将固定、有界的 ReAct high-level controller 用于准入后的
+Task Demo capability-interface use。模型调用保留在 Framework 父进程；每个 trial 的 capability
+调用则在同一个无 credential 的持久 candidate worker 和 canonical MuJoCo session 中执行。
+Controller 完成状态仍与可信 Harness verdict 严格分离。
 
 Revision `0.19.17` replaces **robot capability layer** with **robot capability interface** and
 **capability-layer use** with **capability-interface use** across the normative research
@@ -1540,6 +1550,16 @@ Demo alone also does not establish the RQ1 capability-interface-use result unles
 high-level-controller path was actually part of the run. Its terminal report may be included in the
 input projection for Evolution, which can influence only a later matched run.
 
+The declared Direct-MuJoCo mainline high-level controller is one fixed, bounded ReAct loop. The
+Framework parent process gives it only the current public task description and invocation request
+plus tool schemas mechanically derived from the sealed public capability interface. Capability
+calls execute against the admitted driver in one persistent credential-free candidate worker and
+one canonical MuJoCo session for that trial; only a bounded public operation observation returns to
+the controller. The controller architecture, system prompt, tool derivation, and turn/call budgets
+remain fixed across matched LLM backbones. A controller finish action or self-report is never a
+Harness verdict, and private criteria, bindings, guards, reference inputs, and model credentials are
+never sent to the candidate worker.
+
 **中文辅助说明。** 只有某一条件的最终生成 driver 通过完整 capability validation suite 后，
 Task Demo 才开始。Framework 固定该已准入 driver，通过同一可信 Direct-MuJoCo Harness 运行一次
 已封存的五-task `task_demo_suite.json`，并单独记录 verdict 和逐 trial 视频。Task Demo 不会重开
@@ -1550,6 +1570,14 @@ Task Demo 才开始。Framework 固定该已准入 driver，通过同一可信 D
 均已运行。如果本次 run 没有
 实际包含已声明且固定的 high-level-controller 路径，仅有该 Demo 也不能建立 RQ1
 capability-interface-use 结果。其终态报告可以进入 Evolution 的输入投影，但只能影响后续匹配 run。
+
+Direct-MuJoCo 主线声明的 high-level controller 是一套固定且有界的 ReAct loop。Framework
+父进程只向它提供当前公开 task 描述与调用 request，以及从封存公开 capability interface 机械生成的
+tool schema。Capability 调用在单个 trial 内通过同一个无 credential 的持久 candidate worker，作用于
+同一份已准入 driver 和 canonical MuJoCo session；controller 只能收到有界的公开操作反馈。匹配的
+LLM backbone 比较中，controller 架构、system prompt、tool 派生规则和 turn/call budget 均保持不变。
+Controller 的 finish action 或自述绝不构成 Harness verdict；私有 criterion、binding、guard、reference
+输入和模型 credential 也绝不发送给 candidate worker。
 
 ### 3.7 Evolution / 经验演化
 

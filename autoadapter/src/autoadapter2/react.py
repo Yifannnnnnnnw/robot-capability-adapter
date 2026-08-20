@@ -25,6 +25,10 @@ class ReactLoopError(RuntimeError):
         self.tool_calls = int(tool_calls)
 
 
+class ReactToolAbort(RuntimeError):
+    """Abort a ReAct phase when its live tool transport can no longer continue."""
+
+
 @dataclass(frozen=True)
 class ToolCall:
     id: str
@@ -250,6 +254,8 @@ def run_react(
             if error is None and tool is not None and call.arguments is not None:
                 try:
                     result = tool.handler(call.arguments)
+                except ReactToolAbort:
+                    raise
                 except Exception as exc:  # Tool failures are observations for the model.
                     error = f"{type(exc).__name__}: {exc}"
 

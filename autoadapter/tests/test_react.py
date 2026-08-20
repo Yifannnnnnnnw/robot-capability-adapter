@@ -7,6 +7,7 @@ from typing import Any
 
 from autoadapter2.react import (
     ReactLoopError,
+    ReactToolAbort,
     ToolCall,
     ToolSpec,
     ToolTurn,
@@ -45,6 +46,34 @@ def call(call_id: str, name: str, arguments: Mapping[str, Any]) -> ToolCall:
 
 
 class ReactLoopTests(unittest.TestCase):
+    def test_fatal_live_tool_transport_aborts_without_another_model_turn(self) -> None:
+        def abort(_arguments: Mapping[str, Any]) -> None:
+            raise ReactToolAbort("worker transport failed")
+
+        client = ScriptedClient(
+            [ToolTurn(content=None, tool_calls=(call("one", "invoke", {}),))]
+        )
+
+        with self.assertRaisesRegex(ReactToolAbort, "worker transport failed"):
+            run_react(
+                client=client,
+                stage="TaskDemo",
+                system_prompt="Use the live worker.",
+                user_prompt="Run.",
+                tools=(
+                    ToolSpec("invoke", "Invoke.", {"type": "object"}, abort),
+                    ToolSpec(
+                        "finish",
+                        "Finish.",
+                        {"type": "object"},
+                        lambda arguments: dict(arguments),
+                        terminal=True,
+                    ),
+                ),
+            )
+
+        self.assertEqual(len(client.seen_messages), 1)
+
     def test_available_tools_collapse_to_submission_after_check(self) -> None:
         ready = False
 

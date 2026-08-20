@@ -25,7 +25,10 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
 - Each cell runs interactive AutoAdapter 1.0-style STUDY and GENERATE/GEN_ALGO,
   complete canonical capability validation, up to two report-driven Repair
   attempts, a five-task Task Demo only after admission, and Evolution. Task Demo
-  has a separate verdict and never triggers same-run Repair.
+  uses one fixed bounded ReAct high-level controller, has a separate verdict,
+  and never triggers same-run Repair. ReAct model calls stay in the Framework
+  parent while capability calls use the admitted driver in one persistent,
+  credential-free MuJoCo worker per trial.
 - STUDY, generation, and Repair use bounded multi-turn tool conversations. The
   model can inspect staged public files, run public-only MuJoCo probes, revise
   its driver, and call one atomic `check_driver(source, checks)` operation. The

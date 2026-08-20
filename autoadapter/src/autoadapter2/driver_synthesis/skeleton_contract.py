@@ -14,6 +14,7 @@ INFRASTRUCTURE_NAMES = frozenset(
         "close",
         "data",
         "describe",
+        "finish_task_demo",
         "from_session",
         "model",
         "render",

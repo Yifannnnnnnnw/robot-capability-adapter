@@ -5,7 +5,9 @@ import math
 import tempfile
 import textwrap
 import unittest
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 import mujoco
@@ -15,6 +17,7 @@ from autoadapter2.harness import runner as harness_runner
 from autoadapter2.harness.measurements import evaluate_guards
 from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.libraries import RobotPackage
+from autoadapter2.react import ToolCall, ToolTurn
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +35,30 @@ PACKAGE_ROOT = ASSET_ROOT.parent
 def _write(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value), encoding="utf-8")
+
+
+class _ScriptedControllerClient:
+    def __init__(self, turns: Sequence[ToolTurn]) -> None:
+        self.turns = list(turns)
+        self.calls: list[dict[str, Any]] = []
+
+    def generate_tool_turn(
+        self,
+        *,
+        stage: str,
+        system_prompt: str,
+        messages: Sequence[Mapping[str, Any]],
+        tools: Sequence[Mapping[str, Any]],
+    ) -> ToolTurn:
+        self.calls.append(
+            {
+                "stage": stage,
+                "system_prompt": system_prompt,
+                "messages": [dict(item) for item in messages],
+                "tools": [dict(item) for item in tools],
+            }
+        )
+        return self.turns.pop(0)
 
 
 class HarnessRunnerTests(unittest.TestCase):
@@ -120,7 +147,35 @@ class HarnessRunnerTests(unittest.TestCase):
             snapshot_id="snapshot",
             morphology={"mjcf_entrypoint": "assets/scene.xml"},
             sources=(),
-            tasks=({"task_id": "task-1"},),
+            tasks=(
+                {
+                    "task_id": "task-1",
+                    "name": "Command one joint",
+                    "description": "Move the public shoulder joint to the supplied target.",
+                    "scoring": [
+                        {
+                            "clause_id": "joint-error",
+                            "metric": "joint_error",
+                            "unit": "rad",
+                        }
+                    ],
+                    "invocation_schema": {
+                        "request": {
+                            "task_parameters": {
+                                "required": ["target"],
+                                "properties": {
+                                    "target": {
+                                        "type": "number",
+                                        "unit": "rad",
+                                        "frame": "shoulder_pan_joint",
+                                        "description": "Public joint target.",
+                                    }
+                                },
+                            }
+                        }
+                    },
+                },
+            ),
             mjcf_path=ASSET_ROOT / "scene.xml",
             skeleton_dir=root,
             reference_driver=root,
@@ -131,6 +186,7 @@ class HarnessRunnerTests(unittest.TestCase):
                 {
                     "capability_id": "capability-1",
                     "method_name": "command_joint",
+                    "description": "Command a public joint target through its actuator.",
                     "covered_task_ids": ["task-1"],
                     "validation_contract": [
                         {
@@ -208,6 +264,112 @@ class HarnessRunnerTests(unittest.TestCase):
                 output_dir=Path(self.temporary.name) / "evidence-focused",
                 record_video=False,
             )
+
+    def test_task_demo_react_invokes_the_admitted_driver_in_one_live_worker(self) -> None:
+        public_arguments = {
+            "request": {
+                "task_id": "task-1",
+                "task_parameters": {"target": 0.2},
+            }
+        }
+        controller = _ScriptedControllerClient(
+            (
+                ToolTurn(
+                    None,
+                    (
+                        ToolCall(
+                            "invoke-1",
+                            "command_joint",
+                            public_arguments,
+                            json.dumps(public_arguments),
+                        ),
+                    ),
+                    "tool_calls",
+                ),
+                ToolTurn(
+                    None,
+                    (ToolCall("finish-1", "finish_task_demo", {}, "{}"),),
+                    "tool_calls",
+                ),
+            )
+        )
+        suite = json.loads(json.dumps(self.suite))
+        suite["artifact_type"] = "task_demo_suite"
+
+        report = run_private_suite(
+            package=self.package,
+            design=self.design,
+            suite=suite,
+            driver_path=self.candidate,
+            condition="from-scratch",
+            output_dir=Path(self.temporary.name) / "react-task-demo",
+            record_video=False,
+            wall_timeout_s=10.0,
+            controller_client=controller,
+        )
+
+        self.assertTrue(report["pipeline_completed"])
+        self.assertTrue(report["physical_validation_executed"])
+        self.assertTrue(report["validation_passed"])
+        self.assertEqual(report["high_level_controller"]["kind"], "fixed_react")
+        self.assertTrue(report["high_level_controller"]["completed"])
+        self.assertEqual(report["high_level_controller"]["model_turn_count"], 2)
+        self.assertEqual(report["high_level_controller"]["capability_call_count"], 1)
+        trial = report["trials"][0]
+        self.assertTrue(trial["controller_completed"])
+        self.assertTrue(trial["method_invoked"])
+        self.assertGreater(trial["physical_evidence"]["step_count"], 0)
+        self.assertTrue(trial["trial_passed"])
+        self.assertEqual(
+            [call["stage"] for call in controller.calls],
+            ["task_demo_controller", "task_demo_controller"],
+        )
+
+    def test_task_demo_cannot_pass_when_react_never_finishes(self) -> None:
+        public_arguments = {
+            "request": {
+                "task_id": "task-1",
+                "task_parameters": {"target": 0.2},
+            }
+        }
+        turns = [
+            ToolTurn(
+                None,
+                (
+                    ToolCall(
+                        "invoke-1",
+                        "command_joint",
+                        public_arguments,
+                        json.dumps(public_arguments),
+                    ),
+                ),
+                "tool_calls",
+            )
+        ]
+        turns.extend(ToolTurn("done", (), "stop") for _ in range(7))
+        controller = _ScriptedControllerClient(tuple(turns))
+        suite = json.loads(json.dumps(self.suite))
+        suite["artifact_type"] = "task_demo_suite"
+
+        report = run_private_suite(
+            package=self.package,
+            design=self.design,
+            suite=suite,
+            driver_path=self.candidate,
+            condition="from-scratch",
+            output_dir=Path(self.temporary.name) / "unfinished-react-task-demo",
+            record_video=False,
+            wall_timeout_s=10.0,
+            controller_client=controller,
+        )
+
+        trial = report["trials"][0]
+        self.assertTrue(report["physical_validation_executed"])
+        self.assertTrue(trial["temporal_passed"])
+        self.assertFalse(trial["controller_completed"])
+        self.assertFalse(trial["trial_passed"])
+        self.assertFalse(report["validation_passed"])
+        self.assertFalse(report["high_level_controller"]["completed"])
 
     def test_dwell_rejects_short_valid_state_duration(self) -> None:
         worker = self._worker_result(

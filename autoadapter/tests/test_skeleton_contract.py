@@ -96,7 +96,7 @@ class SkeletonContractTests(unittest.TestCase):
             )
 
     def test_reserved_and_invalid_names_fail_before_generation(self) -> None:
-        for name in ("step", "build", "not-a-method"):
+        for name in ("step", "build", "finish_task_demo", "not-a-method"):
             with self.subTest(name=name):
                 with self.assertRaises(SkeletonContractError):
                     validate_capability_names((name,))

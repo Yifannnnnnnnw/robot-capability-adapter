@@ -377,6 +377,7 @@ def _fake_hooks(
                 "output_dir": str(output_dir),
                 "role": role,
                 "suite": kwargs["suite"],
+                "controller_client": kwargs.get("controller_client"),
             }
         )
         passed = (
@@ -522,6 +523,14 @@ def test_conditions_share_sealed_capability_and_task_demo_suites(tmp_path: Path)
         assert len(capability_inputs[0]["suite"]["cases"]) == 8
         assert task_demo_inputs[0]["suite"] == task_demo_inputs[1]["suite"]
         assert len(task_demo_inputs[0]["suite"]["cases"]) == 5
+        assert all(
+            item["controller_client"] is state["client"]
+            for item in task_demo_inputs
+        )
+        assert all(
+            item["controller_client"] is None
+            for item in capability_inputs
+        )
         reference = next(
             item for item in state["reference_inputs"] if item["robot"] == robot
         )
@@ -573,6 +582,11 @@ def test_task_demo_runs_only_after_admission_and_never_drives_repair(
     assert result["final_capability_validation_passed"] is True
     assert result["task_demo_executed"] is True
     assert result["task_demo_passed"] is False
+    assert all(
+        cell["outcomes"]["TaskDemoController"]["stage"]
+        == "task_demo_controller"
+        for cell in result["cells"]
+    )
     assert len(state["repair_calls"]) == 4
     assert all(
         report["evaluation_role"] == "capability_validation"

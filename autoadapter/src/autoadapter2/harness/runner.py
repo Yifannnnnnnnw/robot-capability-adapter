@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+import select
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from collections import Counter
 from collections.abc import Mapping
 from pathlib import Path
@@ -15,6 +17,8 @@ from typing import Any
 
 from autoadapter2.driver_synthesis import audit_driver_source
 from autoadapter2.libraries import RobotPackage
+from autoadapter2.react import ToolModelClient
+from autoadapter2.task_demo import run_task_demo_react
 
 from .measurements import (
     aggregate_criterion,
@@ -96,6 +100,233 @@ def _run_worker(
     return result
 
 
+def _write_protocol(process: subprocess.Popen[str], value: Mapping[str, Any]) -> None:
+    if process.stdin is None:
+        raise HarnessError("ReAct candidate worker has no command stream")
+    try:
+        process.stdin.write(json.dumps(dict(value), ensure_ascii=True) + "\n")
+        process.stdin.flush()
+    except (BrokenPipeError, OSError) as exc:
+        raise HarnessError("ReAct candidate worker command stream closed") from exc
+
+
+def _read_protocol(
+    process: subprocess.Popen[str], *, wall_timeout_s: float
+) -> dict[str, Any]:
+    if process.stdout is None:
+        raise HarnessError("ReAct candidate worker has no protocol stream")
+    readable, _, _ = select.select([process.stdout], [], [], wall_timeout_s)
+    if not readable:
+        raise HarnessError(
+            f"ReAct candidate worker did not respond within {wall_timeout_s} seconds"
+        )
+    line = process.stdout.readline()
+    if not line:
+        raise HarnessError("ReAct candidate worker protocol ended unexpectedly")
+    try:
+        value = json.loads(line)
+    except json.JSONDecodeError as exc:
+        raise HarnessError("ReAct candidate worker returned invalid JSON") from exc
+    if not isinstance(value, dict):
+        raise HarnessError("ReAct candidate worker response must be an object")
+    return value
+
+
+def _controller_failure(error: BaseException) -> dict[str, Any]:
+    trace = getattr(error, "trace", ())
+    public_trace = [
+        dict(item)
+        for item in trace
+        if isinstance(item, Mapping)
+    ]
+    return {
+        "kind": "fixed_react",
+        "status": "ERROR",
+        "completed": False,
+        "model_turns": int(getattr(error, "model_turns", 0)),
+        "tool_calls": int(getattr(error, "tool_calls", 0)),
+        "capability_calls": sum(
+            1
+            for item in public_trace
+            if item.get("tool") not in {None, "finish_task_demo"}
+        ),
+        "trace": public_trace,
+        "error": {
+            "type": type(error).__name__,
+            "message": str(error)[:1000],
+        },
+    }
+
+
+def _run_react_worker(
+    payload: Mapping[str, Any],
+    *,
+    candidate: Path,
+    source_root: Path,
+    wall_timeout_s: float,
+    controller_client: ToolModelClient,
+    package: RobotPackage,
+    design: Mapping[str, Any],
+    task_id: str,
+    public_arguments: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Run parent-side ReAct against one credential-free persistent worker."""
+
+    with tempfile.TemporaryDirectory(prefix="autoadapter2-react-eval-") as temporary:
+        evaluation_workspace = Path(temporary)
+        staged_driver = evaluation_workspace / "driver.py"
+        shutil.copyfile(candidate, staged_driver)
+        worker_payload = dict(payload)
+        worker_payload["driver_path"] = str(staged_driver)
+        process = subprocess.Popen(
+            [sys.executable, "-m", "autoadapter2.harness.react_worker"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            cwd=evaluation_workspace,
+            env=_worker_environment(source_root),
+        )
+        worker_result: dict[str, Any] | None = None
+        controller_report: dict[str, Any]
+        remaining_worker_s = float(wall_timeout_s)
+
+        def read_worker_response() -> dict[str, Any]:
+            nonlocal remaining_worker_s
+            if remaining_worker_s <= 0.0:
+                raise HarnessError("ReAct candidate worker exhausted its wall-time budget")
+            started = time.monotonic()
+            try:
+                return _read_protocol(
+                    process, wall_timeout_s=remaining_worker_s
+                )
+            finally:
+                remaining_worker_s -= time.monotonic() - started
+
+        try:
+            _write_protocol(process, worker_payload)
+            first = read_worker_response()
+            if first.get("type") == "final":
+                raw_result = first.get("result")
+                if not isinstance(raw_result, Mapping):
+                    raise HarnessError("ReAct candidate worker final result is invalid")
+                worker_result = dict(raw_result)
+                controller_report = {
+                    "kind": "fixed_react",
+                    "status": "NOT_STARTED",
+                    "completed": False,
+                    "model_turns": 0,
+                    "tool_calls": 0,
+                    "capability_calls": 0,
+                    "trace": [],
+                }
+            elif first.get("type") != "ready":
+                raise HarnessError("ReAct candidate worker did not become ready")
+            else:
+                early_final: dict[str, Any] | None = None
+                worker_aborted = False
+
+                def invoke(
+                    method_name: str, arguments: Mapping[str, Any]
+                ) -> Mapping[str, Any]:
+                    nonlocal early_final, worker_aborted
+                    if early_final is not None:
+                        return {"status": "ERROR", "error": "worker already stopped"}
+                    if worker_aborted:
+                        return {"status": "ABORT"}
+                    try:
+                        _write_protocol(
+                            process,
+                            {
+                                "type": "invoke",
+                                "method_name": method_name,
+                                "arguments": dict(arguments),
+                            },
+                        )
+                        response = read_worker_response()
+                    except HarnessError:
+                        worker_aborted = True
+                        if process.poll() is None:
+                            process.kill()
+                        return {"status": "ABORT"}
+                    if response.get("type") == "final":
+                        raw_final = response.get("result")
+                        if isinstance(raw_final, Mapping):
+                            early_final = dict(raw_final)
+                        return {"status": "ERROR", "error": "worker stopped"}
+                    if response.get("type") != "observation":
+                        return {"status": "ERROR", "error": "invalid worker response"}
+                    if response.get("ok") is not True:
+                        return {
+                            "status": "ERROR",
+                            "error": dict(response.get("error", {}))
+                            if isinstance(response.get("error"), Mapping)
+                            else {"code": "CAPABILITY_EXCEPTION"},
+                        }
+                    return {
+                        "status": "OK",
+                        "sim_step_count": response.get("sim_step_count"),
+                        "steps_added": response.get("steps_added"),
+                    }
+
+                try:
+                    controller = run_task_demo_react(
+                        client=controller_client,
+                        robot_configuration_id=package.robot_configuration_id,
+                        tasks=package.tasks,
+                        design=design,
+                        task_id=task_id,
+                        public_arguments=public_arguments,
+                        invoke=invoke,
+                    )
+                except Exception as exc:
+                    controller_report = _controller_failure(exc)
+                else:
+                    controller_report = {
+                        "kind": "fixed_react",
+                        "status": controller.status,
+                        "completed": True,
+                        "model_turns": controller.model_turns,
+                        "tool_calls": controller.tool_calls,
+                        "capability_calls": controller.capability_calls,
+                        "trace": [dict(item) for item in controller.trace],
+                    }
+
+                if worker_aborted:
+                    raise HarnessError("ReAct candidate worker transport failed")
+                if early_final is not None:
+                    worker_result = early_final
+                else:
+                    _write_protocol(process, {"type": "finish"})
+                    final = read_worker_response()
+                    raw_result = final.get("result")
+                    if final.get("type") != "final" or not isinstance(
+                        raw_result, Mapping
+                    ):
+                        raise HarnessError("ReAct candidate worker final result is invalid")
+                    worker_result = dict(raw_result)
+        finally:
+            if worker_result is None and process.poll() is None:
+                process.kill()
+            if process.stdin is not None:
+                try:
+                    process.stdin.close()
+                except OSError:
+                    pass
+            try:
+                process.wait(timeout=wall_timeout_s)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+
+        if worker_result is None:
+            stderr = process.stderr.read()[-1000:] if process.stderr is not None else ""
+            raise HarnessError(f"ReAct candidate worker produced no result; stderr={stderr}")
+        worker_result["controller"] = controller_report
+        return worker_result
+
+
 def _physical_execution_completed(worker: Mapping[str, Any]) -> bool:
     evidence = worker.get("physical_evidence")
     if not isinstance(evidence, Mapping):
@@ -163,6 +394,7 @@ def run_private_suite(
     wall_timeout_s: float = 120.0,
     run_id: str = "unassigned",
     attempt: int = 0,
+    controller_client: ToolModelClient | None = None,
 ) -> dict[str, Any]:
     """Run every repetition independently and issue the authoritative verdict."""
 
@@ -192,6 +424,10 @@ def run_private_suite(
     source_root = Path(__file__).resolve().parents[2]
     trials: list[dict[str, Any]] = []
     pipeline_completed = True
+    use_task_demo_controller = (
+        suite.get("artifact_type") == "task_demo_suite"
+        and controller_client is not None
+    )
 
     for case in cases:
         if not isinstance(case, Mapping):
@@ -252,12 +488,28 @@ def run_private_suite(
                 "video_path": str(video_path),
             }
             try:
-                worker = _run_worker(
-                    payload,
-                    candidate=candidate,
-                    source_root=source_root,
-                    wall_timeout_s=wall_timeout_s,
-                )
+                if use_task_demo_controller:
+                    if not isinstance(public_arguments, Mapping):
+                        raise HarnessError("Task Demo public_arguments must be an object")
+                    assert controller_client is not None
+                    worker = _run_react_worker(
+                        payload,
+                        candidate=candidate,
+                        source_root=source_root,
+                        wall_timeout_s=wall_timeout_s,
+                        controller_client=controller_client,
+                        package=package,
+                        design=design,
+                        task_id=str(case["task_id"]),
+                        public_arguments=public_arguments,
+                    )
+                else:
+                    worker = _run_worker(
+                        payload,
+                        candidate=candidate,
+                        source_root=source_root,
+                        wall_timeout_s=wall_timeout_s,
+                    )
             except (subprocess.TimeoutExpired, HarnessError) as exc:
                 pipeline_completed = False
                 worker = {
@@ -302,11 +554,17 @@ def run_private_suite(
             video_evidence_passed = (not record_video) or bool(
                 video_manifest.get("complete")
             )
+            controller_value = worker.get("controller")
+            controller_completed = (not use_task_demo_controller) or (
+                isinstance(controller_value, Mapping)
+                and bool(controller_value.get("completed"))
+            )
             base_passed = (
                 physical_execution_passed
                 and bool(guard_outcomes)
                 and all(guard_outcomes.values())
                 and video_evidence_passed
+                and controller_completed
             )
             physical_evidence = worker.get("physical_evidence")
             samples = (
@@ -347,7 +605,13 @@ def run_private_suite(
                     "guard_outcomes": guard_outcomes,
                     "video": video_manifest,
                     "candidate_exception": worker.get("candidate_exception"),
+                    "controller": (
+                        dict(worker["controller"])
+                        if isinstance(worker.get("controller"), Mapping)
+                        else None
+                    ),
                     "candidate_log": worker.get("candidate_log", ""),
+                    "controller_completed": controller_completed,
                     "physical_evidence": worker.get("physical_evidence", {}),
                     "physical_execution_passed": physical_execution_passed,
                     "trial_passed": False,
@@ -445,6 +709,27 @@ def run_private_suite(
     video_complete = bool(trials) and all(
         (not record_video) or bool(trial["video"].get("complete")) for trial in trials
     )
+    controller_trials = [
+        trial["controller"]
+        for trial in trials
+        if isinstance(trial.get("controller"), Mapping)
+    ]
+    high_level_controller = {
+        "kind": "fixed_react" if use_task_demo_controller else None,
+        "path_enabled": use_task_demo_controller,
+        "completed": bool(trials)
+        and len(controller_trials) == len(trials)
+        and all(bool(item.get("completed")) for item in controller_trials),
+        "model_turn_count": sum(
+            int(item.get("model_turns", 0)) for item in controller_trials
+        ),
+        "tool_call_count": sum(
+            int(item.get("tool_calls", 0)) for item in controller_trials
+        ),
+        "capability_call_count": sum(
+            int(item.get("capability_calls", 0)) for item in controller_trials
+        ),
+    }
     return {
         "pipeline_completed": pipeline_completed,
         "physical_validation_executed": physical_executed,
@@ -464,6 +749,7 @@ def run_private_suite(
         "run_id": run_id,
         "attempt": attempt,
         "condition": condition,
+        "high_level_controller": high_level_controller,
         "source_audit": {
             "capability_methods": list(source_audit.capability_methods),
             "imports_trusted_skeleton": source_audit.imports_trusted_skeleton,
