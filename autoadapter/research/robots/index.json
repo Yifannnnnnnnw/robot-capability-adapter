@@ -698,6 +698,16 @@
           "observation": "The provisional ALOHA 2 public snapshot v2 contains 20 distinct selected-arm task contracts with unchanged source scoring obligations; v2 substitutes mw_soccer, mw_window_open, and mw_window_close for the three deferred grasp-heavy public tasks to keep this research-only catalog within selected-arm applicability. task_arm selects left or right while the other arm remains neutral; this is catalog evidence only and makes no implementation, task-passing, admission, or runnable claim, and observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/assets/reach_scene.xml",
+          "kind": "canonical_task_scene_set",
+          "observation": "All 16 canonical selected-arm task scenes are local and tested for MuJoCo 3.3.6 loading, neutral reset, task-symbol identity, physics liveness, and 800x600 evidence dimensions. The sweep scene additionally preserves its physical opening and catch dynamics despite the canonical ALOHA table. This is scene evidence, not contact, task-success, positive-control, or runnable evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/skeleton/arm_serial_dls.py",
+          "kind": "canonical_skeleton_inventory",
+          "observation": "The capability-neutral arm_serial_dls inventory binds either selected ALOHA arm and its gripper to the canonical MuJoCo session using public names, limits, neutral pose, and gripper controls. Focused left/right checks execute actuator-only Cartesian motion and gripper control while the nonselected arm remains within per-joint neutral tolerances. This is capability-neutral motion evidence only; task validation, calibration-driver evidence, admission, and runnable status remain outstanding."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/aloha/aloha.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical ALOHA model, actuator fragments, and meshes are available for migration inspection."
@@ -725,7 +735,7 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable selected-arm ALOHA skeleton and a calibration-only reference driver for this configuration.",
+        "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."

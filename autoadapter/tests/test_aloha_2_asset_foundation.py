@@ -588,10 +588,11 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "skeleton",
         "tasks",
     ]
-    for forbidden in ("skeleton", "reference"):
-        assert not (PACKAGE_ROOT / forbidden).exists()
+    assert (PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
+    assert not (PACKAGE_ROOT / "reference").exists()
     assert not (PACKAGE_ROOT / "tasks" / "private").exists()
 
     research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
@@ -611,6 +612,8 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         "canonical_morphology_foundation",
         "canonical_task_sources",
         "canonical_task_catalog",
+        "canonical_task_scene_set",
+        "canonical_skeleton_inventory",
     }
     assert {
         item["path"] for item in canonical_observations
@@ -619,6 +622,8 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         "autoadapter/libraries/robots/aloha_2/1.0.0/morphology.json",
         "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/sources.json",
         "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/catalog.json",
+        "autoadapter/libraries/robots/aloha_2/1.0.0/assets/reach_scene.xml",
+        "autoadapter/libraries/robots/aloha_2/1.0.0/skeleton/arm_serial_dls.py",
     }
     assert all(
         phrase not in item["observation"].lower()
@@ -627,7 +632,7 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
     )
     assert candidate["missing_for_runnable_package"] == [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable selected-arm ALOHA skeleton and a calibration-only reference driver for this configuration.",
+        "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
