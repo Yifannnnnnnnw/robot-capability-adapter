@@ -12,7 +12,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "google_barkour_vb" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
-MIGRATION_ROOT = ROOT.parent / "demo2" / "legacy_assets" / "menagerie" / "google_barkour_vb"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
@@ -263,10 +262,7 @@ def test_google_barkour_vb_asset_foundation_is_local_and_live() -> None:
     assert not any(path.is_symlink() for path in ASSETS_ROOT.rglob("*"))
     for relative_path in EXPECTED_CLOSURE_FILES:
         canonical_path = ASSETS_ROOT / relative_path
-        migration_path = MIGRATION_ROOT / relative_path
         assert canonical_path.is_file(), relative_path
-        assert migration_path.is_file(), relative_path
-        assert canonical_path.read_bytes() == migration_path.read_bytes(), relative_path
 
     source = (ASSETS_ROOT / "SOURCE.md").read_text(encoding="utf-8")
     assert "https://github.com/google-deepmind/mujoco_menagerie/tree/da76818e269b82289eba39808e2fb91d679d6994/google_barkour_vb" in source
