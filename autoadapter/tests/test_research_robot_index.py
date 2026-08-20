@@ -205,12 +205,12 @@ class ResearchRobotIndexTests(unittest.TestCase):
             for material in stretch["locally_observed_source_material"]
             if material["kind"] == "partial_reference_calibration"
         )
-        self.assertIn("11/20", reference_observation)
+        self.assertIn("17/20", reference_observation)
         missing = " ".join(stretch["missing_for_runnable_package"])
         self.assertNotIn("research candidate only", missing)
         self.assertNotIn("Create Framework-private", missing)
         self.assertNotIn("Add the package check", missing)
-        self.assertIn("remaining nine-task", missing)
+        self.assertIn("remaining three", missing)
         self.assertTrue(
             all(
                 task_id in missing

@@ -843,7 +843,7 @@
         {
           "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/reference/driver.py",
           "kind": "partial_reference_calibration",
-          "observation": "The actuator-only reference driver passes the real private Harness for 11/20 tasks: reach, three contact pushes, pick-place, drawer open/close, front/top button press, and vertical handle press/pull. All selected trials pass source clauses, private cases, core guards, control-change evidence, and direct-state-write rejection. This focused run records no videos and is not a package-wide positive control."
+          "observation": "The actuator-only reference driver passes the real private Harness for 17/20 tasks: reach, three contact pushes, pick-place, side peg insertion, drawer and door open/close, front/top button press, vertical handle press/pull, faucet open, dial turn, and lever pull. All selected trials pass source clauses, private cases, core guards, control-change evidence, and direct-state-write rejection. This focused run records no videos and is not a package-wide positive control."
         },
         {
           "path": "demo2/legacy_assets/menagerie/hello_robot_stretch/stretch.xml",
@@ -872,9 +872,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Complete or revise the remaining nine-task reference snapshot. The user explicitly deferred mw_pick_place_wall, mw_bin_picking, and mw_pick_out_of_hole; they must be replaced or formally resolved before 20/20 rather than silently counted.",
-        "Calibrate the remaining side insertion, door, and rotation routes plus any approved replacements using actuator-driven MuJoCo physics.",
-        "Complete a video-backed package-wide positive control across all 20 private cases; the current focused reference evidence covers 11 tasks without videos.",
+        "Resolve the remaining three user-deferred object-transport tasks: mw_pick_place_wall, mw_bin_picking, and mw_pick_out_of_hole. They must be replaced or formally resolved before 20/20 rather than silently counted.",
+        "Complete a video-backed package-wide positive control across all 20 private cases; the current focused reference evidence covers 17 tasks without videos.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
         "Perform final human package and admission review, then add Stretch 2 to the runnable index only if the dynamic canary passes."
       ]
