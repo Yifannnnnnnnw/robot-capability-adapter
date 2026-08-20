@@ -5,13 +5,16 @@ import json
 from pathlib import Path
 
 import mujoco
+import numpy as np
 
-from autoadapter2.harness.session import apply_framework_reset
+from autoadapter2.harness.measurements import compare, measure
+from autoadapter2.harness.session import TrackedMuJoCoSession, apply_framework_reset
 from autoadapter2.libraries.robot_package import (
     _validate_private_inputs,
     _validate_sources,
     _validate_tasks,
 )
+from autoadapter2.trusted_skeletons import ArmSerialDLSSkeleton, ArmSpec
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +85,15 @@ PIPER_ACTUATOR_CONTROLS = {
     "joint5": 0.0,
     "joint6": 0.0,
     "gripper": 0.035,
+}
+ARM_JOINTS = tuple(f"joint{index}" for index in range(1, 7))
+HOME_ARM = (0.0, 1.57, -1.3485, 0.0, 0.0, 0.0)
+EE_WAYPOINT_KEYS = {
+    "contact_position",
+    "grasp_position",
+    "release_position",
+    "route_position",
+    "tool_target_position",
 }
 
 
@@ -219,6 +231,111 @@ def test_piper_private_video_and_camera_settings_remain_canonical() -> None:
         assert instance["video_height"] == 600
         assert instance["video_fps"] == 10.0
         assert instance["camera"] == "evidence"
+
+
+def test_piper_private_reset_fails_every_task_criterion() -> None:
+    instances = _read(PIPER_PRIVATE_ROOT / "instances.json")["instances"]
+    bindings = _read(PIPER_PRIVATE_ROOT / "bindings.json")["bindings"]
+    tasks = _read(PIPER_TASKS_ROOT / "catalog.json")["tasks"]
+    binding_by_id = {item["binding_id"]: item for item in bindings}
+    task_by_id = {item["task_id"]: item for item in tasks}
+
+    checked = 0
+    for instance in instances:
+        model = mujoco.MjModel.from_xml_path(
+            str(PIPER_PACKAGE_ROOT / instance["scene_entrypoint"])
+        )
+        data = mujoco.MjData(model)
+        apply_framework_reset(mujoco, model, data, instance["reset"])
+        tracker = TrackedMuJoCoSession(
+            mujoco=mujoco,
+            model=model,
+            data=data,
+            max_steps=1,
+            max_sim_time_s=1.0,
+            sample_hz=20.0,
+        )
+        task = task_by_id[instance["task_id"]]
+        for clause_id, binding_id in instance["clause_bindings"].items():
+            criterion = next(
+                clause for clause in task["scoring"] if clause["clause_id"] == clause_id
+            )
+            value = measure(
+                binding_by_id[binding_id],
+                evidence={"samples": [tracker.snapshot()], "step_count": 0},
+                public_arguments=instance["public_arguments"],
+            )
+            assert not compare(
+                value,
+                comparator=criterion["comparator"],
+                threshold=criterion["threshold"],
+            ), f"reset already passes {instance['task_id']}: value={value}"
+            checked += 1
+
+    assert checked == 20
+
+
+def test_piper_public_ee_waypoints_and_grasp_rolls_are_reachable() -> None:
+    model = mujoco.MjModel.from_xml_path(str(PIPER_ASSETS_ROOT / "scene.xml"))
+    data = mujoco.MjData(model)
+    home_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_KEY, "home")
+    morphology = _read(PIPER_PACKAGE_ROOT / "morphology.json")
+    skeleton = ArmSerialDLSSkeleton(
+        model=model,
+        data=data,
+        spec=ArmSpec(
+            ee_site_name="ee_site",
+            arm_joint_names=ARM_JOINTS,
+            arm_actuator_names=ARM_JOINTS,
+            joint_limits=morphology["public_control"]["arm_joint_limits_rad"],
+            home_qpos=HOME_ARM,
+            ik_max_iter=500,
+            ik_tolerance=0.003,
+            ik_step_clamp=0.15,
+            gripper_actuator_names=("gripper",),
+            gripper_close_ctrl=0.0,
+            gripper_open_ctrl=0.035,
+        ),
+    )
+
+    instances = _read(PIPER_PRIVATE_ROOT / "instances.json")["instances"]
+    checked = 0
+    for instance in instances:
+        parameters = instance["public_arguments"]["request"]["task_parameters"]
+        keys = set(EE_WAYPOINT_KEYS)
+        if instance["task_id"] == "mw_reach_target":
+            keys.add("target_position")
+        for key in sorted(keys & parameters.keys()):
+            target = np.asarray(parameters[key], dtype=float)
+            q = skeleton.ik(target, q_init=HOME_ARM)
+            residual = float(np.linalg.norm(skeleton.fk(q)["pos"] - target))
+            assert residual <= 0.003, f"{instance['task_id']}:{key}"
+            checked += 1
+    assert checked == 53
+
+    grasp_instances = [
+        item
+        for item in instances
+        if "grasp_wrist_roll"
+        in item["public_arguments"]["request"]["task_parameters"]
+    ]
+    assert len(grasp_instances) == 4
+    for instance in grasp_instances:
+        parameters = instance["public_arguments"]["request"]["task_parameters"]
+        target = np.asarray(parameters["grasp_position"], dtype=float)
+        wrist_roll = float(parameters["grasp_wrist_roll"])
+        mujoco.mj_resetDataKeyframe(model, data, home_id)
+        mujoco.mj_forward(model, data)
+        skeleton.move_cartesian(
+            target,
+            duration=3.0,
+            wrist_roll=wrist_roll,
+            max_joint_delta=0.08,
+            residual_tolerance=0.05,
+        )
+        position, _ = skeleton.get_ee_pose()
+        assert np.linalg.norm(position - target) <= 0.003
+        assert abs(float(skeleton.get_joint_positions()[-1]) - wrist_roll) <= 0.011
 
 
 def test_piper_private_package_remains_non_runtime_without_skeleton_or_reference() -> None:
