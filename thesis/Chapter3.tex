@@ -1,9 +1,75 @@
-\chapter[AutoAdapter-Bench]{AutoAdapter-Bench: Comparing LLM Backbones in Driver Synthesis and Capability-Interface Use}
+\chapter[AutoAdapter-Bench]{AutoAdapter-Bench: LLMs for Robot Drivers}
 \label{chapter:autoadapter-bench}
+
+\begin{quote}\itshape
+This chapter presents AutoAdapter-Bench, a benchmark for comparing how
+different LLM backbones perform in robot-driver tasks. The benchmark separates
+two abilities that are often conflated: synthesising robot-specific drivers and
+using robot capability interfaces to complete tasks.
+\end{quote}
 
 \section[Introduction]{Introduction}
 
+This chapter develops AutoAdapter-Bench to examine how LLM backbone choice
+affects two roles in robot-driver systems: synthesising robot-specific drivers
+and supporting high-level control through robot capability interfaces. In both
+tracks, the surrounding architecture provides a common experimental setting,
+while the LLM backbone remains the object of comparison. The chapter therefore
+does not investigate how specific design choices in Auto-Adapter or other
+driver-synthesis frameworks affect synthesis performance, nor does it compare
+alternative high-level-control architectures.
+
+The first track compares seven LLM backbones within the same Auto-Adapter
+generation framework across 14 robot configurations. Generated drivers are
+assessed against common executable validation criteria. The comparison considers
+the proportion of drivers that pass validation, the cost of generation, and the
+repair effort required to produce a valid submission. Together, these measures
+show whether backbone choice changes the reliability and efficiency of driver
+synthesis under a shared generation design.
+
+The second track compares the same seven backbones within a Code-BT high-level
+controller. For each robot, the driver, capability interface, controller
+structure, and task conditions remain common across backbones. Performance is
+measured primarily by complete-task success, while capability-selection and
+execution failures help explain differences between models. This track therefore
+evaluates how effectively each backbone operates through an existing robot
+interface within the same control architecture.
+
+Because the two tracks examine different model roles, their outcomes are
+analysed separately rather than combined into a single backbone ranking. The
+remainder of the chapter defines the benchmark and research questions, describes
+the experimental setup, presents the results from both tracks, and discusses
+their implications for LLM backbone selection.
+
 \section[Background and Research Questions]{Background and Research Questions}
+
+Code-generation benchmarks commonly evaluate whether model-produced programs
+pass executable tests, whereas many LLM-based robot controllers assume that
+actions or tools are already available and assess planning or task completion
+\citep{chen2021codex,jimenez2024swebench,ahn2022saycan,
+singh2023progprompt}. Neither setting alone reveals how the same LLM performs
+when constructing a robot-specific driver and when operating through an existing
+capability interface.
+
+AutoAdapter-Bench therefore defines backbone capability as observed performance
+under shared system conditions, rather than as an intrinsic property of a model.
+B1 compares backbones within Auto-Adapter, while B2 compares them within Code-BT.
+The chapter addresses two corresponding questions:
+
+\paragraph{\textit{RQ1a---Driver synthesis.}}
+Under a common Auto-Adapter generation framework and executable validation
+standard, to what extent do LLM backbones differ in synthesising robot-specific
+drivers that pass validation under the skeleton-assisted condition and the
+prespecified from-scratch ablation?
+
+\paragraph{\textit{RQ1b---Capability-interface use.}}
+Under a common Code-BT architecture, with the validated driver, capability
+interface, and matched tasks held constant, to what extent do LLM backbones
+differ in complete-task success?
+
+The findings are conditional on these benchmark settings. They do not compare
+alternative synthesis frameworks or controller architectures, and do not
+estimate morphology effects.
 
 \section[Benchmark and Experimental Setup]{Benchmark and Experimental Setup}
 
