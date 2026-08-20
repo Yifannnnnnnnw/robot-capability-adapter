@@ -265,7 +265,7 @@
       ]
     },
     {
-      "robot_configuration_id": "universal_robots_ur5e",
+      "robot_configuration_id": "universal_robots_ur5e_robotiq_2f85",
       "morphology_family": "arm_serial_dls",
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 4,
@@ -273,14 +273,24 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
-          "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/assets/scene.xml",
           "kind": "canonical_mujoco_asset_foundation",
-          "observation": "The canonical package contains the complete 27-file local UR5e closure, including all 20 meshes. It loads in MuJoCo 3.3.6 as a fixed six-joint position-controlled arm ending at attachment_site, and real actuator stepping is live. This bare-arm foundation has no gripper and is asset/control evidence only, not task-success or runnable evidence."
+          "observation": "The exact canonical configuration composes the local UR5e arm closure with the official Menagerie Robotiq 2F-85 gripper. It loads in MuJoCo 3.3.6 with six arm position actuators, the native tendon-actuated gripper, equality-coupled fingers, four contact pads, and pinch_site; focused actuator stepping confirms arm and gripper liveness without claiming task success."
+        },
+        {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The exact configuration morphology records the six-joint arm, native 0-open/255-closed Robotiq control, tendon and passive coupling, contact observations, home reset, and pinned component lineage without claiming runnable status."
+        },
+        {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
+          "kind": "canonical_arm_component_foundation",
+          "observation": "The separately retained bare-arm package contains the complete 27-file local UR5e closure, including all 20 meshes. It loads in MuJoCo 3.3.6 as a fixed six-joint position-controlled arm ending at attachment_site, but it has no gripper and is component material rather than the contact-capable configuration indexed here."
         },
         {
           "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/morphology.json",
-          "kind": "canonical_morphology_foundation",
-          "observation": "The canonical morphology records the exact six hinge joints, affine position servos, limits, home keyframe, attachment site, public observations, and pinned BSD-3-Clause source lineage without claiming grasp capability, task success, or runnable status."
+          "kind": "canonical_arm_component_morphology",
+          "observation": "The separately retained bare-arm morphology records the exact six hinge joints, affine position servos, limits, home keyframe, attachment site, and pinned BSD-3-Clause lineage. Its robot_configuration_id remains universal_robots_ur5e and must not be conflated with the composite candidate."
         },
         {
           "path": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/asset_closure.json",
@@ -319,10 +329,10 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
+        "Expand the five legacy UR5e task records to at least 20 distinct source-backed tasks applicable to the exact UR5e plus Robotiq 2F-85 configuration, with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
+        "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for the exact composite configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
@@ -534,6 +544,16 @@
           "observation": "The canonical right-hand morphology records sixteen named hinge joints and position actuators, exact limits and mappings, four fingertip contact geoms, joint-position sensors, reset ownership, and pinned MIT source lineage without claiming object manipulation or runnable status."
         },
         {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The canonical public snapshot contains four pinned source families covering the Elliott-Connolly in-hand benchmark, Gymnasium-Robotics hand tasks, ROBEL D'Claw, and MyoSuite. Every public scoring clause resolves to one of these exact source records."
+        },
+        {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The canonical right-hand snapshot contains 20 distinct task contracts and 22 source-backed scoring clauses. It preserves 13 one-to-one Elliott-Connolly coordination patterns and seven non-variant task families with explicit stricter adaptations; this is public contract evidence only, not private measurement, controller, task-success, or runnable evidence."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/leap_hand/left_hand.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical LEAP Hand model and meshes are available for migration inspection."
@@ -560,8 +580,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable hand-control skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",

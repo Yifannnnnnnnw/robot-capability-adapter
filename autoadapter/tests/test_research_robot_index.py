@@ -14,7 +14,7 @@ REQUIRED_CANDIDATE_IDS = {
     "franka_panda",
     "kinova_gen3_robotiq_2f85",
     "ufactory_xarm7",
-    "universal_robots_ur5e",
+    "universal_robots_ur5e_robotiq_2f85",
     "piper",
     "kuka_iiwa_14",
     "leap_hand",
@@ -40,6 +40,41 @@ class ResearchRobotIndexTests(unittest.TestCase):
         self.assertEqual(len(candidate_ids), len(set(candidate_ids)))
         self.assertTrue(REQUIRED_CANDIDATE_IDS.issubset(candidate_ids))
         self.assertTrue(set(candidate_ids).isdisjoint(runnable_ids))
+
+        candidates_by_id = {
+            candidate["robot_configuration_id"]: candidate for candidate in candidates
+        }
+        ur5e = candidates_by_id["universal_robots_ur5e_robotiq_2f85"]
+        ur5e_paths = {
+            material["path"] for material in ur5e["locally_observed_source_material"]
+        }
+        self.assertIn(
+            "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/assets/scene.xml",
+            ur5e_paths,
+        )
+        self.assertIn(
+            "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
+            ur5e_paths,
+        )
+
+        leap = candidates_by_id["leap_hand"]
+        leap_paths = {
+            material["path"] for material in leap["locally_observed_source_material"]
+        }
+        self.assertIn(
+            "autoadapter/libraries/robots/leap_hand/1.0.0/tasks/sources.json",
+            leap_paths,
+        )
+        self.assertIn(
+            "autoadapter/libraries/robots/leap_hand/1.0.0/tasks/catalog.json",
+            leap_paths,
+        )
+        self.assertFalse(
+            any("20 distinct" in item for item in leap["missing_for_runnable_package"])
+        )
+        self.assertFalse(
+            any("tasks/sources.json" in item for item in leap["missing_for_runnable_package"])
+        )
 
         for candidate in candidates:
             self.assertTrue(candidate["missing_for_runnable_package"])
