@@ -421,6 +421,7 @@ def test_kinova_gen3_robotiq_2f85_asset_foundation_is_local_exact_and_actuator_l
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/skeleton/arm_serial_dls.py",
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/assets/reach_scene.xml",
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/private/instances.json",
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/reference/driver.py",
     }.issubset(observed_paths)
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "contact-capable end-effector configuration" not in missing
@@ -429,5 +430,6 @@ def test_kinova_gen3_robotiq_2f85_asset_foundation_is_local_exact_and_actuator_l
     assert "tasks/private/instances.json" not in missing
     assert "Materialize the canonical task scenes" not in missing
     assert "arm_serial_dls skeleton" not in missing
-    assert "reference driver" in missing
+    assert "reference driver" not in missing
+    assert "positive control" in missing
     assert "dynamic canary" in missing

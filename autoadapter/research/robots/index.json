@@ -135,6 +135,11 @@
           "observation": "The canonical package contains 20 private instances with matching bindings and guards. Every Framework reset resolves in its local scene without robot-fixture pre-contact, complete max-step idle physics remains outside every task criterion, and all 53 declared end-effector waypoints pass position-only IK within 3 mm. This is reset and geometry evidence, not contact, grasp, task-success, positive-control, or runnable evidence."
         },
         {
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/reference/driver.py",
+          "kind": "canonical_reference_calibration_driver",
+          "observation": "The calibration-only skeleton-assisted reference driver preserves the four continuous Gen3 hinges, synchronizes after Framework reset, and uses actuator-only Direct-MuJoCo execution for contact, fixture, side-grasp transport, peg insertion, and rotation skills. Focused no-video Harness checks passed all 20 canonical tasks with trusted guards; this is controller feasibility evidence, not the required video-backed positive control, dynamic model evidence, or runnable admission."
+        },
+        {
           "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/assets/scene.xml",
           "kind": "canonical_arm_component_foundation",
           "observation": "The separately retained arm-only Kinova Gen3 package is useful component and provenance material, but it is not the contact-capable robot configuration indexed here."
@@ -171,7 +176,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
