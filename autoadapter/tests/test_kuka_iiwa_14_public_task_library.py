@@ -768,14 +768,17 @@ class KukaIiwa14PublicTaskLibraryTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, public_text)
 
-    def test_kuka_is_not_runnable_and_private_artifacts_are_absent(self) -> None:
+    def test_kuka_private_calibration_does_not_imply_runtime_admission(self) -> None:
         self._load_and_validate()
         runnable_index = _read_json(RUNNABLE_INDEX_PATH)
         self.assertNotIn("kuka_iiwa_14", runnable_index["robots"])
 
+        self.assertEqual(
+            sorted(path.name for path in (TASKS_ROOT / "private").iterdir()),
+            ["bindings.json", "guards.json", "instances.json"],
+        )
+        self.assertTrue((PACKAGE_ROOT / "reference" / "driver.py").is_file())
         forbidden_paths = (
-            TASKS_ROOT / "private",
-            PACKAGE_ROOT / "reference",
             PACKAGE_ROOT / "controller",
             PACKAGE_ROOT / "IK",
             PACKAGE_ROOT / "canary",

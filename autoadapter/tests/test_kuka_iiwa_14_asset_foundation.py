@@ -303,8 +303,11 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     assert "tasks/sources.json" not in missing
     assert sorted(path.name for path in (PACKAGE_ROOT / "tasks").iterdir()) == [
         "catalog.json",
+        "private",
         "sources.json",
     ]
-    assert not (PACKAGE_ROOT / "tasks" / "private").exists()
+    assert sorted(
+        path.name for path in (PACKAGE_ROOT / "tasks" / "private").iterdir()
+    ) == ["bindings.json", "guards.json", "instances.json"]
     assert (PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
-    assert not (PACKAGE_ROOT / "reference").exists()
+    assert (PACKAGE_ROOT / "reference" / "driver.py").is_file()

@@ -1,0 +1,195 @@
+{
+  "robot_configuration_id": "kuka_iiwa_14",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2",
+  "guards": [
+    {
+      "guard_id": "guard_actuator_and_physics_step",
+      "kind": "actuator_and_physics_step_required"
+    },
+    {
+      "guard_id": "guard_no_direct_state_write",
+      "kind": "no_direct_state_write"
+    },
+    {
+      "guard_id": "guard_canonical_model_data",
+      "kind": "canonical_model_data"
+    },
+    {
+      "guard_id": "guard-contact-mw_push_to_goal",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "workpiece_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_push_wall",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "workpiece_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_sweep_into_goal",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "workpiece_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_drawer_open",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "drawer_handle_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_drawer_close",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "drawer_handle_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_button_press",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "front_button_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_button_press_topdown",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "top_button_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_handle_press",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "vertical_handle_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_door_open",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "door_handle_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_door_close",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "door_handle_geom",
+        "door_panel_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_faucet_open",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "faucet_tip_geom",
+        "faucet_arm"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_dial_turn",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "dial_tip_geom",
+        "dial_face"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_lever_pull",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "lever_tip_geom",
+        "lever_arm"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_door_lock",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "door_lock_control"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_door_unlock",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "door_unlock_control"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_faucet_close",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "faucet_tip_geom",
+        "faucet_arm"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_soccer",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "soccer_ball_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_window_open",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "window_handle_geom"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-mw_window_close",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_name": "link7_contact_geom",
+      "task_geom_names": [
+        "window_handle_geom"
+      ],
+      "minimum_steps": 1
+    }
+  ]
+}

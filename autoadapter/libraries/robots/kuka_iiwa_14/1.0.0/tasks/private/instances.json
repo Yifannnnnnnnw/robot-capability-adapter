@@ -1,0 +1,1336 @@
+{
+  "robot_configuration_id": "kuka_iiwa_14",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2",
+  "instances": [
+    {
+      "instance_id": "kuka-iiwa-14-mw_reach_target",
+      "task_id": "mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_reach_target",
+          "task_parameters": {
+            "target_position": [
+              0.55,
+              0.1,
+              0.43
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "terminal_endpoint": "binding-mw_reach_target"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_push_to_goal",
+      "task_id": "mw_push_to_goal",
+      "scene_entrypoint": "assets/push_to_goal_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_push_to_goal",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              0.006,
+              0.416
+            ],
+            "target_position": [
+              0.48,
+              0.18,
+              0.416
+            ],
+            "tool_target_position": [
+              0.48,
+              0.09,
+              0.416
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "object_goal_distance": "binding-mw_push_to_goal"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_push_to_goal"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_push_wall",
+      "task_id": "mw_push_wall",
+      "scene_entrypoint": "assets/wall_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_push_wall",
+          "task_parameters": {
+            "contact_position": [
+              0.46,
+              0.002,
+              0.43
+            ],
+            "route_position": [
+              0.46,
+              0.052,
+              0.43
+            ],
+            "target_position": [
+              0.46,
+              0.18,
+              0.43
+            ],
+            "tool_target_position": [
+              0.46,
+              0.102,
+              0.43
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "object_goal_distance": "binding-mw_push_wall"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_push_wall"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_sweep_into_goal",
+      "task_id": "mw_sweep_into_goal",
+      "scene_entrypoint": "assets/sweep_into_goal_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_sweep_into_goal",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              -0.002,
+              0.425
+            ],
+            "target_position": [
+              0.48,
+              0.18,
+              0.385
+            ],
+            "tool_target_position": [
+              0.48,
+              0.12,
+              0.425
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "swept_object_distance": "binding-mw_sweep_into_goal"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_sweep_into_goal"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_drawer_open",
+      "task_id": "mw_drawer_open",
+      "scene_entrypoint": "assets/drawer_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_drawer_open",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              0.142,
+              0.575
+            ],
+            "target_position": [
+              0.48,
+              -0.005,
+              0.56
+            ],
+            "tool_target_position": [
+              0.48,
+              0.062,
+              0.575
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "open_handle_error": "binding-mw_drawer_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_drawer_open"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_drawer_close",
+      "task_id": "mw_drawer_close",
+      "scene_entrypoint": "assets/drawer_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_drawer_close",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              -0.072,
+              0.575
+            ],
+            "target_position": [
+              0.48,
+              0.075,
+              0.56
+            ],
+            "tool_target_position": [
+              0.48,
+              0.008,
+              0.575
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0,
+          "drawer_slide": -0.08
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "closed_drawer_distance": "binding-mw_drawer_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_drawer_close"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_button_press",
+      "task_id": "mw_button_press",
+      "scene_entrypoint": "assets/button_front_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_button_press",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              0.058,
+              0.47
+            ],
+            "target_position": [
+              0.48,
+              0.18,
+              0.47
+            ],
+            "tool_target_position": [
+              0.48,
+              0.108,
+              0.47
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "pressed_button_distance": "binding-mw_button_press"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_button_press"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_button_press_topdown",
+      "task_id": "mw_button_press_topdown",
+      "scene_entrypoint": "assets/button_topdown_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_button_press_topdown",
+          "task_parameters": {
+            "contact_position": [
+              0.5,
+              0.1,
+              0.547
+            ],
+            "target_position": [
+              0.5,
+              0.1,
+              0.425
+            ],
+            "tool_target_position": [
+              0.5,
+              0.1,
+              0.502
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "topdown_button_distance": "binding-mw_button_press_topdown"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_button_press_topdown"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_handle_press",
+      "task_id": "mw_handle_press",
+      "scene_entrypoint": "assets/handle_vertical_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_handle_press",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              0.1,
+              0.549
+            ],
+            "target_position": [
+              0.48,
+              0.1,
+              0.43
+            ],
+            "tool_target_position": [
+              0.48,
+              0.1,
+              0.508
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "handle_target_distance": "binding-mw_handle_press"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_handle_press"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_door_open",
+      "task_id": "mw_door_open",
+      "scene_entrypoint": "assets/door_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_open",
+          "task_parameters": {
+            "contact_position": [
+              0.44,
+              0.008,
+              0.47
+            ],
+            "route_position": [
+              0.456,
+              0.1,
+              0.47
+            ],
+            "target_position": [
+              0.3,
+              0.22,
+              0.47
+            ],
+            "tool_target_position": [
+              0.418,
+              0.184,
+              0.47
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "door_open_axis_error": "binding-mw_door_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_door_open"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_door_close",
+      "task_id": "mw_door_close",
+      "scene_entrypoint": "assets/door_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_close",
+          "task_parameters": {
+            "contact_position": [
+              0.284,
+              0.237,
+              0.47
+            ],
+            "route_position": [
+              0.375,
+              0.219,
+              0.47
+            ],
+            "target_position": [
+              0.44,
+              0.08,
+              0.47
+            ],
+            "tool_target_position": [
+              0.44,
+              0.152,
+              0.47
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0,
+          "door_hinge": 1.2
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "closed_door_distance": "binding-mw_door_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_door_close"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_faucet_open",
+      "task_id": "mw_faucet_open",
+      "scene_entrypoint": "assets/faucet_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_faucet_open",
+          "task_parameters": {
+            "contact_position": [
+              0.53,
+              0.046,
+              0.47
+            ],
+            "route_position": [
+              0.558,
+              0.104,
+              0.47
+            ],
+            "target_position": [
+              0.479,
+              0.195,
+              0.47
+            ],
+            "tool_target_position": [
+              0.548,
+              0.168,
+              0.47
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "faucet_target_distance": "binding-mw_faucet_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_faucet_open"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_dial_turn",
+      "task_id": "mw_dial_turn",
+      "scene_entrypoint": "assets/dial_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_dial_turn",
+          "task_parameters": {
+            "contact_position": [
+              0.5,
+              0.07,
+              0.594
+            ],
+            "route_position": [
+              0.5,
+              0.072,
+              0.525
+            ],
+            "target_position": [
+              0.5,
+              0.134,
+              0.427
+            ],
+            "tool_target_position": [
+              0.5,
+              0.065,
+              0.454
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "dial_target_distance": "binding-mw_dial_turn"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_dial_turn"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_lever_pull",
+      "task_id": "mw_lever_pull",
+      "scene_entrypoint": "assets/lever_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_lever_pull",
+          "task_parameters": {
+            "contact_position": [
+              0.386,
+              0.12,
+              0.53
+            ],
+            "route_position": [
+              0.478,
+              0.12,
+              0.553
+            ],
+            "target_position": [
+              0.56,
+              0.12,
+              0.43
+            ],
+            "target_angle": 1.5707963267948966,
+            "tool_target_position": [
+              0.56,
+              0.12,
+              0.504
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "lever_angle_error": "binding-mw_lever_pull"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_lever_pull"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_door_lock",
+      "task_id": "mw_door_lock",
+      "scene_entrypoint": "assets/door_lock_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_lock",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              0.1,
+              0.552
+            ],
+            "target_position": [
+              0.48,
+              0.1,
+              0.43
+            ],
+            "tool_target_position": [
+              0.48,
+              0.1,
+              0.506
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "door_lock_axis_error": "binding-mw_door_lock"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_door_lock"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_door_unlock",
+      "task_id": "mw_door_unlock",
+      "scene_entrypoint": "assets/door_unlock_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_unlock",
+          "task_parameters": {
+            "contact_position": [
+              0.395,
+              0.1,
+              0.47
+            ],
+            "target_position": [
+              0.53,
+              0.1,
+              0.47
+            ],
+            "tool_target_position": [
+              0.445,
+              0.1,
+              0.47
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "door_unlock_axis_error": "binding-mw_door_unlock"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_door_unlock"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_faucet_close",
+      "task_id": "mw_faucet_close",
+      "scene_entrypoint": "assets/faucet_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_faucet_close",
+          "task_parameters": {
+            "contact_position": [
+              0.41,
+              0.221,
+              0.47
+            ],
+            "route_position": [
+              0.474,
+              0.226,
+              0.47
+            ],
+            "target_position": [
+              0.53,
+              0.12,
+              0.47
+            ],
+            "tool_target_position": [
+              0.53,
+              0.194,
+              0.47
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0,
+          "faucet_hinge": 1.2
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "faucet_close_target_distance": "binding-mw_faucet_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_faucet_close"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_soccer",
+      "task_id": "mw_soccer",
+      "scene_entrypoint": "assets/soccer_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_soccer",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              -0.01,
+              0.44
+            ],
+            "target_position": [
+              0.48,
+              0.2,
+              0.44
+            ],
+            "tool_target_position": [
+              0.48,
+              0.11,
+              0.44
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "soccer_ball_goal_distance": "binding-mw_soccer"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_soccer"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_window_open",
+      "task_id": "mw_window_open",
+      "scene_entrypoint": "assets/window_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_window_open",
+          "task_parameters": {
+            "contact_position": [
+              0.363,
+              0.0,
+              0.5
+            ],
+            "target_position": [
+              0.55,
+              0.0,
+              0.5
+            ],
+            "tool_target_position": [
+              0.463,
+              0.0,
+              0.5
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "window_open_axis_error": "binding-mw_window_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_window_open"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "kuka-iiwa-14-mw_window_close",
+      "task_id": "mw_window_close",
+      "scene_entrypoint": "assets/window_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_window_close",
+          "task_parameters": {
+            "contact_position": [
+              0.637,
+              0.0,
+              0.5
+            ],
+            "target_position": [
+              0.45,
+              0.0,
+              0.5
+            ],
+            "tool_target_position": [
+              0.537,
+              0.0,
+              0.5
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": -0.13480555,
+          "joint2": -0.19423601,
+          "joint3": -0.23833583,
+          "joint4": -1.94562248,
+          "joint5": -0.01401762,
+          "joint6": 0.44345798,
+          "joint7": 0.0,
+          "window_slide": 0.1
+        },
+        "actuator_controls": {
+          "actuator1": -0.13480555,
+          "actuator2": -0.19423601,
+          "actuator3": -0.23833583,
+          "actuator4": -1.94562248,
+          "actuator5": -0.01401762,
+          "actuator6": 0.44345798,
+          "actuator7": 0.0
+        }
+      },
+      "clause_bindings": {
+        "window_close_axis_error": "binding-mw_window_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data",
+        "guard-contact-mw_window_close"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    }
+  ]
+}
