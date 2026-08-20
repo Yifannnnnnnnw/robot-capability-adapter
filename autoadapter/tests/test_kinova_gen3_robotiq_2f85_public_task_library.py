@@ -238,9 +238,11 @@ def test_kinova_public_identity_has_no_donor_remnants_and_is_non_runtime() -> No
         "skeleton",
         "tasks",
     ]
-    assert sorted(path.name for path in (PACKAGE_ROOT / "reference").iterdir()) == [
-        "driver.py"
-    ]
+    assert sorted(
+        path.name
+        for path in (PACKAGE_ROOT / "reference").iterdir()
+        if path.suffix == ".py"
+    ) == ["driver.py", "rendering.py"]
     assert sorted(path.name for path in TASKS_ROOT.iterdir()) == [
         "catalog.json",
         "private",
