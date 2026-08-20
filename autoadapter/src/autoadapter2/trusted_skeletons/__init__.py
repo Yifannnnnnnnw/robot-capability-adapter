@@ -13,6 +13,11 @@ from .quadruped_position_policy import (
     BarkourPositionPolicySkeleton,
     QuadrupedPositionPolicySpec,
 )
+from .stretch_mobile_manipulation import (
+    StretchMobileManipulationSkeleton,
+    StretchMobileManipulationSpec,
+    StretchUnreachableError,
+)
 
 __all__ = [
     "ArmSerialDLSSkeleton",
@@ -30,4 +35,7 @@ __all__ = [
     "QuadrupedPDGaitSkeleton",
     "QuadrupedPositionPolicySpec",
     "QuadrupedSpec",
+    "StretchMobileManipulationSkeleton",
+    "StretchMobileManipulationSpec",
+    "StretchUnreachableError",
 ]

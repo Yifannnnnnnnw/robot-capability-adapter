@@ -823,6 +823,11 @@
           "observation": "The task-neutral Stretch control skeleton exposes bounded named actuator controls, public observations, and real MuJoCo stepping without direct generalized-state writes. It contains no task dispatch, planning, or reference policy."
         },
         {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/skeleton/mobile_manipulation.py",
+          "kind": "trusted_mobile_manipulation_skeleton_inventory",
+          "observation": "The canonical package now exposes bounded state-dependent feedback for base yaw, signed base travel, gripper position, and world-frame positioning of the public gripper-slider body through the side-arm geometry. Direct-MuJoCo positive controls reach 45 degrees within 0.0075 rad, travel 0.15 m within 0.0075 m, and reach a world tool target within 0.0032 m using only data.ctrl and mj_step. This closes a low-level control-foundation gap only; it is not task-scene feasibility, fixture manipulation, or package-wide reference evidence."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/hello_robot_stretch/stretch.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Hello Robot Stretch model and meshes are available for migration inspection."
@@ -853,7 +858,7 @@
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json with source-equivalent physical metrics and false-success guards.",
         "Provide a calibration-only mobile-manipulator reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
+        "Complete a video-backed package-wide positive control across the private task scenes; the canonical-scene base, side-arm, and gripper feedback checks are low-level evidence only.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
         "Perform final human package and admission review, then add Stretch 2 to the runnable index only if the dynamic canary passes."
       ]
