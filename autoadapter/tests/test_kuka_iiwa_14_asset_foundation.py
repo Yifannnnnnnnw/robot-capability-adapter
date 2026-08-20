@@ -122,7 +122,25 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     assert morphology["public_observations"] == {
         "end_effector_site": "attachment_site",
         "end_effector_body": "link7",
-        "contact_geoms": {"link7": {"type": "sphere", "radius_m": 0.06}},
+        "contact_geoms": {
+            "link7_contact_geom": {
+                "body_name": "link7",
+                "type": "sphere",
+                "radius_m": 0.06,
+            }
+        },
+    }
+    assert morphology["public_affordances"] == {
+        "actions": ["joint_position_control"],
+        "observations": [
+            "joint_positions",
+            "joint_velocities",
+            "end_effector_pose",
+            "named_body_pose",
+            "named_site_pose",
+            "contact_state",
+            "simulation_time",
+        ],
     }
     assert morphology["reset_fact"] == {
         "owner": "framework",
@@ -231,6 +249,10 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     ]
     assert len(link7_spheres) == 1
     sphere_id = link7_spheres[0]
+    assert (
+        mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, sphere_id)
+        == "link7_contact_geom"
+    )
     assert float(model.geom_size[sphere_id, 0]) == 0.06
     assert int(model.geom_contype[sphere_id]) != 0
     assert int(model.geom_conaffinity[sphere_id]) != 0

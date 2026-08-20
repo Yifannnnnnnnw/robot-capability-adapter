@@ -80,7 +80,8 @@
     "end_effector_site": "attachment_site",
     "end_effector_body": "link7",
     "contact_geoms": {
-      "link7": {
+      "link7_contact_geom": {
+        "body_name": "link7",
         "type": "sphere",
         "radius_m": 0.06
       }
@@ -96,6 +97,7 @@
       "end_effector_pose",
       "named_body_pose",
       "named_site_pose",
+      "contact_state",
       "simulation_time"
     ]
   },

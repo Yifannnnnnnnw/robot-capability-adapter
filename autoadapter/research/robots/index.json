@@ -385,12 +385,17 @@
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/assets/scene.xml",
           "kind": "canonical_mujoco_asset_foundation",
-          "observation": "The canonical package contains the complete 20-file local KUKA iiwa 14 closure copied byte-for-byte from the inspected migration source. Both the bare model and scene load in MuJoCo 3.3.6; actuator-driven liveness is verified. This is asset and control-liveness evidence only, not task or runnable evidence."
+          "observation": "The canonical package preserves the complete 20-file local KUKA iiwa 14 source closure. The only model adaptation assigns the existing link7 collision sphere the stable name link7_contact_geom for exact Harness contact-pair evidence without changing its physical attributes. Both the bare model and scene load in MuJoCo 3.3.6; actuator-driven liveness is verified."
         },
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/morphology.json",
           "kind": "canonical_morphology_foundation",
-          "observation": "The canonical morphology records a fixed-base seven-axis direct-joint arm, attachment_site end effector, contact-enabled link7 sphere, exact home state and servo facts, and the absence of a gripper and actuator force limits."
+          "observation": "The canonical morphology records a fixed-base seven-axis direct-joint arm, attachment_site end effector, named contact-enabled link7 sphere, contact-state observation, exact home state and servo facts, and the absence of a gripper and actuator force limits."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/assets/reach_scene.xml",
+          "kind": "provisional_task_scene_set",
+          "observation": "All 16 local KUKA task scenes load and step in MuJoCo 3.3.6, start from qpos0 without robot-task contact, and keep passive fixtures outside their public success thresholds for 20 simulated seconds. This is scene and false-success foundation evidence, not task-success or runnable evidence."
         },
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/sources.json",
@@ -400,7 +405,7 @@
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/catalog.json",
           "kind": "canonical_task_catalog",
-          "observation": "The provisional KUKA public snapshot contains 20 reviewed bare-flange contact task contracts with unchanged source scoring obligations and no grasp semantics. Conditional rotary and pull applicability still requires private scene and contact positive-control evidence; observed_task_count remains 5 for the inspected legacy catalog below."
+          "observation": "The provisional KUKA public snapshot contains 20 reviewed bare-flange contact task contracts with unchanged source scoring obligations and no grasp semantics. Conditional contact applicability still requires private instances, bindings, guards, calibrated waypoints, and contact positive-control evidence; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
           "path": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/asset_closure.json",
