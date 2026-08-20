@@ -134,6 +134,10 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/unitree_g1/1.0.0/tasks/catalog.json",
             g1_paths,
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/unitree_g1/1.0.0/skeleton/joint_position.py",
+            g1_paths,
+        )
         self.assertFalse(
             any("asset closure" in item for item in g1["missing_for_runnable_package"])
         )
@@ -145,6 +149,9 @@ class ResearchRobotIndexTests(unittest.TestCase):
         )
         self.assertFalse(
             any("tasks/sources.json" in item for item in g1["missing_for_runnable_package"])
+        )
+        self.assertFalse(
+            any("humanoid-control skeleton" in item for item in g1["missing_for_runnable_package"])
         )
 
         stretch = candidates_by_id["hello_robot_stretch_2"]

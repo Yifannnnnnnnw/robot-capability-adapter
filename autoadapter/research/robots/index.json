@@ -726,6 +726,11 @@
           "observation": "The canonical G1 public snapshot contains 20 distinct source-backed task contracts and 20 machine-expressible scoring clauses: thirteen HumanoidBench tasks, five RoboCup challenges, and two Safety Gym tasks. Each records its canonical 29-actuator morphology adaptation, and focused validation loads the exact MuJoCo scene. This is public contract evidence only, not private evaluation, humanoid control, task success, or runnable evidence; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
+          "path": "autoadapter/libraries/robots/unitree_g1/1.0.0/skeleton/joint_position.py",
+          "kind": "canonical_skeleton_inventory",
+          "observation": "The task-neutral G1 skeleton binds the exact 29 joint-position actuators, enforces model and control ranges, exposes public joint/base/site observations, and advances the canonical MuJoCo session without direct qpos or qvel writes. It is low-level control inventory only, not a balance, locomotion, reward, or reference policy."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/unitree_g1/g1.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Unitree G1 model and meshes are available for migration inspection."
@@ -752,8 +757,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable humanoid-control skeleton and a calibration-only reference driver for this configuration.",
+        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json with source-equivalent HumanoidBench rewards and physical RoboCup/Safety Gym metrics.",
+        "Provide a calibration-only balance and locomotion reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
