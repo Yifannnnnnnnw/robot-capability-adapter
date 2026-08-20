@@ -184,6 +184,66 @@ class RobotPackageTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
+    def _replace_first_contract(
+        self,
+        *,
+        metric: str,
+        unit: str,
+        comparator: str,
+        threshold: float | int,
+        temporal: dict[str, object],
+        aggregation: str,
+        parameter_schemas: dict[str, object],
+        public_parameters: dict[str, object],
+        binding: dict[str, object],
+        repetitions: int = 1,
+        max_steps: int = 10,
+        timeout_sim_s: float = 1.0,
+    ) -> None:
+        catalog_path = self.root / "tasks" / "catalog.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        task = catalog["tasks"][0]
+        task["invocation_schema"]["request"]["task_parameters"] = {
+            "type": "object",
+            "required": list(parameter_schemas),
+            "properties": parameter_schemas,
+            "additional_properties": False,
+        }
+        task["scoring"] = [
+            {
+                "clause_id": "completion",
+                "metric": metric,
+                "unit": unit,
+                "comparator": comparator,
+                "threshold": threshold,
+                "temporal": temporal,
+                "aggregation": {"kind": aggregation},
+                "source_refs": [
+                    {
+                        "source_id": "source-1",
+                        "specific_reference": "Section 2 tolerance",
+                        "support": "direct",
+                    }
+                ],
+            }
+        ]
+        _write_json(catalog_path, catalog)
+
+        bindings_path = self.root / "tasks" / "private" / "bindings.json"
+        bindings = json.loads(bindings_path.read_text(encoding="utf-8"))
+        bindings["bindings"].append(binding)
+        _write_json(bindings_path, bindings)
+
+        instances_path = self.root / "tasks" / "private" / "instances.json"
+        instances = json.loads(instances_path.read_text(encoding="utf-8"))
+        instance = instances["instances"][0]
+        instance["public_arguments"]["request"]["task_parameters"] = public_parameters
+        instance["clause_bindings"]["completion"] = binding["binding_id"]
+        instance["repetitions"] = repetitions
+        instance["max_steps"] = max_steps
+        instance["timeout_sim_s"] = timeout_sim_s
+        _write_json(instances_path, instances)
+
     def test_complete_package_loads(self) -> None:
         package = load_robot_package(self.root)
 
@@ -395,6 +455,297 @@ class RobotPackageTests(unittest.TestCase):
         instance["repetition_variants"].pop()
         _write_json(instances_path, document)
         with self.assertRaisesRegex(RobotPackageError, "one entry per repetition"):
+            load_robot_package(self.root)
+
+    def test_leap_binding_kinds_require_their_exact_private_parameters(self) -> None:
+        bindings_path = self.root / "tasks" / "private" / "bindings.json"
+        original = json.loads(bindings_path.read_text(encoding="utf-8"))
+        kinds_and_units = (
+            ("in_hand_object_pattern_success", "trial"),
+            ("final_concatenated_site_position_error", "m"),
+            ("final_body_position_offset_error", "m"),
+            ("final_body_quaternion_error", "rad"),
+            ("final_maximum_joint_position_error", "rad"),
+            ("final_wrapped_joint_position_error", "rad"),
+            ("maximum_joint_linear_trajectory_error", "rad"),
+            ("body_target_solved_sample_count", "control_step"),
+            ("body_target_drop_event_count", "event"),
+            ("mean_two_body_orbit_tracking_fraction", "ratio"),
+        )
+        for kind, unit in kinds_and_units:
+            with self.subTest(kind=kind):
+                document = json.loads(json.dumps(original))
+                binding = document["bindings"][0]
+                binding["kind"] = kind
+                binding["unit"] = unit
+                binding["parameters"] = {}
+                _write_json(bindings_path, document)
+                with self.assertRaisesRegex(
+                    RobotPackageError, "misses required fields"
+                ):
+                    load_robot_package(self.root)
+
+    def test_control_step_budget_cannot_be_used_as_a_joint_target(self) -> None:
+        bindings_path = self.root / "tasks" / "private" / "bindings.json"
+        document = json.loads(bindings_path.read_text(encoding="utf-8"))
+        document["bindings"][0]["parameters"]["target_argument"] = (
+            "request.task_parameters.max_control_steps"
+        )
+        _write_json(bindings_path, document)
+
+        with self.assertRaisesRegex(RobotPackageError, "control-step budget"):
+            load_robot_package(self.root)
+
+    def test_body_yaw_change_degrees_cannot_be_declared_as_radians(self) -> None:
+        bindings_path = self.root / "tasks" / "private" / "bindings.json"
+        document = json.loads(bindings_path.read_text(encoding="utf-8"))
+        document["bindings"][0]["kind"] = "body_yaw_change_deg"
+        _write_json(bindings_path, document)
+
+        with self.assertRaisesRegex(RobotPackageError, "unit must be deg"):
+            load_robot_package(self.root)
+
+    def test_ec_fixed_trials_require_three_independent_binary_repetitions(self) -> None:
+        self._replace_first_contract(
+            metric="ec_pinch_successful_trial_count",
+            unit="trial",
+            comparator="==",
+            threshold=3,
+            temporal={"kind": "fixed_trials", "trial_count": 3},
+            aggregation="all_trials",
+            parameter_schemas={
+                "trial_count": {
+                    "type": "integer",
+                    "unit": "trial",
+                    "frame": "none",
+                }
+            },
+            public_parameters={"trial_count": 3},
+            binding={
+                "binding_id": "ec-pinch",
+                "metric": "ec_pinch_successful_trial_count",
+                "unit": "trial",
+                "kind": "in_hand_object_pattern_success",
+                "parameters": {
+                    "body_name": "object",
+                    "reference_body_name": "world",
+                    "object_geom_names": ["object"],
+                    "required_robot_geom_groups": [["finger"]],
+                    "minimum_contact_steps": 1,
+                    "motion_kind": "translation",
+                    "axis": 0,
+                    "minimum_translation_range_m": 0.01,
+                },
+            },
+            repetitions=1,
+        )
+
+        with self.assertRaisesRegex(RobotPackageError, "every fixed_trials repetition"):
+            load_robot_package(self.root)
+
+    def test_baoding_mean_cannot_be_bound_to_contact_count(self) -> None:
+        number = {"type": "number", "unit": "m", "frame": "right_palm"}
+        self._replace_first_contract(
+            metric="mean_two_ball_solved_fraction",
+            unit="ratio",
+            comparator="==",
+            threshold=1,
+            temporal={"kind": "fixed_horizon", "max_control_steps": 2},
+            aggregation="mean_over_control_steps",
+            parameter_schemas={
+                "max_control_steps": {
+                    "type": "integer",
+                    "unit": "control_step",
+                    "frame": "none",
+                },
+                "radii": {
+                    "type": "array",
+                    "unit": "m",
+                    "frame": "right_palm",
+                    "items": number,
+                    "length": 2,
+                },
+                "period": {"type": "number", "unit": "s", "frame": "none"},
+            },
+            public_parameters={
+                "max_control_steps": 2,
+                "radii": [0.025, 0.028],
+                "period": 5.0,
+            },
+            binding={
+                "binding_id": "bad-baoding",
+                "metric": "mean_two_ball_solved_fraction",
+                "unit": "ratio",
+                "kind": "contact_sample_count",
+                "parameters": {},
+            },
+        )
+
+        with self.assertRaisesRegex(RobotPackageError, "misinterprets source metric"):
+            load_robot_package(self.root)
+
+    def test_manipulated_block_body_must_have_a_scene_joint(self) -> None:
+        (self.root / "assets" / "scene.xml").write_text(
+            '<mujoco model="fixed-block"><worldbody><body name="palm"/>'
+            '<body name="block"/></worldbody></mujoco>',
+            encoding="utf-8",
+        )
+        vector = {
+            "type": "array",
+            "unit": "m",
+            "frame": "right_palm",
+            "items": {"type": "number"},
+            "length": 3,
+        }
+        quaternion = {
+            "type": "array",
+            "unit": "quaternion",
+            "frame": "right_palm",
+            "items": {"type": "number"},
+            "length": 4,
+        }
+        self._replace_first_contract(
+            metric="block_target_euclidean_position_error",
+            unit="m",
+            comparator="<",
+            threshold=0.01,
+            temporal={"kind": "terminal_step", "max_control_steps": 1},
+            aggregation="same_state_conjunction",
+            parameter_schemas={
+                "position": vector,
+                "orientation": quaternion,
+                "max_control_steps": {
+                    "type": "integer",
+                    "unit": "control_step",
+                    "frame": "none",
+                },
+            },
+            public_parameters={
+                "position": [0.0, 0.0, 0.0],
+                "orientation": [1.0, 0.0, 0.0, 0.0],
+                "max_control_steps": 1,
+            },
+            binding={
+                "binding_id": "block-position",
+                "metric": "block_target_euclidean_position_error",
+                "unit": "m",
+                "kind": "final_body_position_offset_error",
+                "parameters": {
+                    "body_name": "block",
+                    "reference_body_name": "palm",
+                    "target_argument": "request.task_parameters.position",
+                    "orientation_target_argument": "request.task_parameters.orientation",
+                    "maximum_orientation_error_rad": 0.1,
+                    "physics_steps_per_control_step": 1,
+                    "control_steps_argument": "request.task_parameters.max_control_steps",
+                },
+            },
+            max_steps=1,
+        )
+
+        with self.assertRaisesRegex(RobotPackageError, "fixed, not manipulable"):
+            load_robot_package(self.root)
+
+    def test_source_duration_must_match_timestep_and_physics_steps(self) -> None:
+        (self.root / "assets" / "scene.xml").write_text(
+            '<mujoco model="moving-block"><worldbody><body name="palm"/>'
+            '<body name="block"><freejoint/><geom type="box" size="0.01 0.01 0.01"/>'
+            "</body></worldbody></mujoco>",
+            encoding="utf-8",
+        )
+        vector = {
+            "type": "array",
+            "unit": "m",
+            "frame": "right_palm",
+            "items": {"type": "number"},
+            "length": 3,
+        }
+        quaternion = {
+            "type": "array",
+            "unit": "quaternion",
+            "frame": "right_palm",
+            "items": {"type": "number"},
+            "length": 4,
+        }
+        self._replace_first_contract(
+            metric="block_target_euclidean_position_error",
+            unit="m",
+            comparator="<",
+            threshold=0.01,
+            temporal={
+                "kind": "terminal_step",
+                "max_control_steps": 2,
+                "duration_s": 1.0,
+            },
+            aggregation="same_state_conjunction",
+            parameter_schemas={
+                "position": vector,
+                "orientation": quaternion,
+                "max_control_steps": {
+                    "type": "integer",
+                    "unit": "control_step",
+                    "frame": "none",
+                },
+            },
+            public_parameters={
+                "position": [0.0, 0.0, 0.0],
+                "orientation": [1.0, 0.0, 0.0, 0.0],
+                "max_control_steps": 2,
+            },
+            binding={
+                "binding_id": "block-position",
+                "metric": "block_target_euclidean_position_error",
+                "unit": "m",
+                "kind": "final_body_position_offset_error",
+                "parameters": {
+                    "body_name": "block",
+                    "reference_body_name": "palm",
+                    "target_argument": "request.task_parameters.position",
+                    "orientation_target_argument": "request.task_parameters.orientation",
+                    "maximum_orientation_error_rad": 0.1,
+                    "physics_steps_per_control_step": 1,
+                    "control_steps_argument": "request.task_parameters.max_control_steps",
+                },
+            },
+            max_steps=2,
+            timeout_sim_s=1.0,
+        )
+
+        with self.assertRaisesRegex(RobotPackageError, "source duration is inconsistent"):
+            load_robot_package(self.root)
+
+    def test_zero_contact_score_cannot_require_contact_guard(self) -> None:
+        catalog_path = self.root / "tasks" / "catalog.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        catalog["tasks"][0]["scoring"][0]["comparator"] = "=="
+        catalog["tasks"][0]["scoring"][0]["threshold"] = 0
+        _write_json(catalog_path, catalog)
+
+        bindings_path = self.root / "tasks" / "private" / "bindings.json"
+        bindings = json.loads(bindings_path.read_text(encoding="utf-8"))
+        bindings["bindings"][0]["kind"] = "contact_sample_count"
+        bindings["bindings"][0]["parameters"] = {}
+        _write_json(bindings_path, bindings)
+
+        guards_path = self.root / "tasks" / "private" / "guards.json"
+        guards = json.loads(guards_path.read_text(encoding="utf-8"))
+        guards["guards"].append(
+            {
+                "guard_id": "required-contact",
+                "kind": "named_geom_contact_pair_required",
+                "robot_geom_name": "finger",
+                "task_geom_names": ["object"],
+                "minimum_steps": 1,
+            }
+        )
+        _write_json(guards_path, guards)
+
+        instances_path = self.root / "tasks" / "private" / "instances.json"
+        instances = json.loads(instances_path.read_text(encoding="utf-8"))
+        instances["instances"][0]["guard_ids"].append("required-contact")
+        _write_json(instances_path, instances)
+
+        with self.assertRaisesRegex(RobotPackageError, "require contact"):
             load_robot_package(self.root)
 
     def test_only_explicit_index_entry_is_runnable(self) -> None:

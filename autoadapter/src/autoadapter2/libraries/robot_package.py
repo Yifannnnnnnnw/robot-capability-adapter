@@ -41,6 +41,16 @@ _SUPPORTED_BINDING_KINDS = {
     "named_geom_contact_step_count",
     "contact_sample_count",
     "physics_step_count",
+    "in_hand_object_pattern_success",
+    "final_concatenated_site_position_error",
+    "final_body_position_offset_error",
+    "final_body_quaternion_error",
+    "final_maximum_joint_position_error",
+    "final_wrapped_joint_position_error",
+    "maximum_joint_linear_trajectory_error",
+    "body_target_solved_sample_count",
+    "body_target_drop_event_count",
+    "mean_two_body_orbit_tracking_fraction",
 }
 _REQUIRED_GUARD_KINDS = {
     "actuator_and_physics_step_required",
@@ -52,6 +62,171 @@ _SUPPORTED_GUARD_KINDS = _REQUIRED_GUARD_KINDS | {
     "named_geom_contact_pair_required",
     "named_joints_remain_near_reset",
     "terminal_body_stability",
+}
+
+_LEAP_BINDING_UNITS = {
+    "in_hand_object_pattern_success": "trial",
+    "final_concatenated_site_position_error": "m",
+    "final_body_position_offset_error": "m",
+    "final_body_quaternion_error": "rad",
+    "final_maximum_joint_position_error": "rad",
+    "final_wrapped_joint_position_error": "rad",
+    "maximum_joint_linear_trajectory_error": "rad",
+    "body_target_solved_sample_count": "control_step",
+    "body_target_drop_event_count": "event",
+    "mean_two_body_orbit_tracking_fraction": "ratio",
+}
+
+_LEAP_BINDING_REQUIRED_PARAMETERS = {
+    "in_hand_object_pattern_success": {
+        "body_name",
+        "reference_body_name",
+        "object_geom_names",
+        "required_robot_geom_groups",
+        "minimum_contact_steps",
+        "motion_kind",
+    },
+    "final_concatenated_site_position_error": {
+        "site_names",
+        "reference_body_name",
+        "target_argument",
+        "physics_steps_per_control_step",
+        "control_steps_argument",
+    },
+    "final_body_position_offset_error": {
+        "body_name",
+        "reference_body_name",
+        "target_argument",
+        "orientation_target_argument",
+        "maximum_orientation_error_rad",
+        "physics_steps_per_control_step",
+        "control_steps_argument",
+    },
+    "final_body_quaternion_error": {
+        "body_name",
+        "reference_body_name",
+        "target_argument",
+        "position_target_argument",
+        "maximum_position_error_m",
+        "physics_steps_per_control_step",
+        "control_steps_argument",
+    },
+    "final_maximum_joint_position_error": {
+        "joint_names",
+        "target_argument",
+        "physics_steps_per_control_step",
+        "control_steps_argument",
+    },
+    "final_wrapped_joint_position_error": {
+        "joint_name",
+        "target_argument",
+        "physics_steps_per_control_step",
+        "control_steps_argument",
+    },
+    "maximum_joint_linear_trajectory_error": {
+        "joint_name",
+        "velocity_argument",
+        "control_period_s",
+        "control_steps_argument",
+        "physics_steps_per_control_step",
+    },
+    "body_target_solved_sample_count": {
+        "body_name",
+        "reference_body_name",
+        "target_argument",
+        "solved_distance_m",
+        "drop_distance_m",
+        "control_period_s",
+        "control_steps_argument",
+        "physics_steps_per_control_step",
+    },
+    "body_target_drop_event_count": {
+        "body_name",
+        "reference_body_name",
+        "target_argument",
+        "drop_distance_m",
+        "solved_distance_m",
+        "minimum_solved_steps",
+        "control_period_s",
+        "control_steps_argument",
+        "physics_steps_per_control_step",
+    },
+    "mean_two_body_orbit_tracking_fraction": {
+        "body_names",
+        "reference_body_name",
+        "orbit_center",
+        "radii_argument",
+        "period_argument",
+        "maximum_tracking_error_m",
+        "minimum_source_height",
+        "source_height_offset_m",
+        "control_period_s",
+        "control_steps_argument",
+        "physics_steps_per_control_step",
+    },
+}
+
+_LEAP_METRIC_BINDING_KINDS = {
+    "concatenated_fingertip_cartesian_l2_error": {
+        "final_concatenated_site_position_error"
+    },
+    "block_target_euclidean_position_error": {"final_body_position_offset_error"},
+    "block_target_shortest_quaternion_angle_error": {"final_body_quaternion_error"},
+    "maximum_absolute_joint_position_error": {"final_maximum_joint_position_error"},
+    "absolute_wrapped_fixture_target_angle_error": {
+        "final_wrapped_joint_position_error"
+    },
+    "maximum_absolute_unbounded_fixture_target_angle_error": {
+        "maximum_joint_linear_trajectory_error"
+    },
+    "object_hold_solved_control_step_count": {"body_target_solved_sample_count"},
+    "object_hold_drop_event_count": {"body_target_drop_event_count"},
+    "mean_two_ball_solved_fraction": {"mean_two_body_orbit_tracking_fraction"},
+}
+
+_LEAP_METRIC_CONTRACTS = {
+    "concatenated_fingertip_cartesian_l2_error": (
+        "terminal_step",
+        "all_four_fingertips",
+    ),
+    "block_target_euclidean_position_error": (
+        "terminal_step",
+        "same_state_conjunction",
+    ),
+    "block_target_shortest_quaternion_angle_error": (
+        "terminal_step",
+        "same_state_conjunction",
+    ),
+    "maximum_absolute_joint_position_error": (
+        "terminal_step",
+        "maximum_over_all_16_joints",
+    ),
+    "absolute_wrapped_fixture_target_angle_error": (
+        "terminal_step",
+        "single_trial",
+    ),
+    "maximum_absolute_unbounded_fixture_target_angle_error": (
+        "continuous",
+        "maximum_over_control_steps",
+    ),
+    "object_hold_solved_control_step_count": (
+        "fixed_horizon",
+        "count_successful_steps",
+    ),
+    "object_hold_drop_event_count": ("fixed_horizon", "count_events"),
+    "mean_two_ball_solved_fraction": (
+        "fixed_horizon",
+        "mean_over_control_steps",
+    ),
+}
+
+_LEAP_MOVABLE_BODY_FIELDS = {
+    "in_hand_object_pattern_success": ("body_name",),
+    "final_body_position_offset_error": ("body_name",),
+    "final_body_quaternion_error": ("body_name",),
+    "body_target_solved_sample_count": ("body_name",),
+    "body_target_drop_event_count": ("body_name",),
+    "mean_two_body_orbit_tracking_fraction": ("body_names",),
 }
 
 
@@ -472,6 +647,410 @@ def _validate_asset_closure(package_root: Path, entrypoint: Path) -> None:
                 pending.append(included)
 
 
+def _validate_leap_binding_parameters(
+    binding: Mapping[str, Any], *, where: str
+) -> None:
+    kind = str(binding["kind"])
+    if kind not in _LEAP_BINDING_UNITS:
+        return
+    if binding["unit"] != _LEAP_BINDING_UNITS[kind]:
+        raise RobotPackageError(
+            f"{where}.unit is incompatible with trusted binding kind {kind!r}"
+        )
+    parameters = binding["parameters"]
+    required = _LEAP_BINDING_REQUIRED_PARAMETERS[kind]
+    missing = sorted(required - set(parameters))
+    if missing:
+        raise RobotPackageError(
+            f"{where}.parameters misses required fields {missing}"
+        )
+    for field in required & {
+        "body_name",
+        "reference_body_name",
+        "target_argument",
+        "control_steps_argument",
+        "joint_name",
+        "velocity_argument",
+        "orientation_target_argument",
+        "position_target_argument",
+        "radii_argument",
+        "period_argument",
+        "motion_kind",
+    }:
+        if not isinstance(parameters[field], str) or not parameters[field].strip():
+            raise RobotPackageError(
+                f"{where}.parameters.{field} must be a non-empty string"
+            )
+    for field in required & {
+        "object_geom_names",
+        "required_robot_geom_groups",
+        "site_names",
+        "joint_names",
+        "body_names",
+        "orbit_center",
+    }:
+        if not isinstance(parameters[field], list) or not parameters[field]:
+            raise RobotPackageError(
+                f"{where}.parameters.{field} must be a non-empty list"
+            )
+    for field in required & {
+        "object_geom_names",
+        "site_names",
+        "joint_names",
+        "body_names",
+    }:
+        if any(
+            not isinstance(name, str) or not name.strip()
+            for name in parameters[field]
+        ):
+            raise RobotPackageError(
+                f"{where}.parameters.{field} must contain only names"
+            )
+    for field in required & {
+        "minimum_contact_steps",
+        "physics_steps_per_control_step",
+    }:
+        value = parameters[field]
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise RobotPackageError(
+                f"{where}.parameters.{field} must be a positive integer"
+            )
+    for field in required & {
+        "solved_distance_m",
+        "drop_distance_m",
+        "control_period_s",
+        "maximum_tracking_error_m",
+        "maximum_orientation_error_rad",
+        "maximum_position_error_m",
+    }:
+        value = parameters[field]
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or float(value) <= 0.0
+        ):
+            raise RobotPackageError(
+                f"{where}.parameters.{field} must be a positive finite number"
+            )
+    if "minimum_solved_steps" in required:
+        value = parameters["minimum_solved_steps"]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise RobotPackageError(
+                f"{where}.parameters.minimum_solved_steps must be a non-negative integer"
+            )
+
+    target_argument = parameters.get("target_argument")
+    if isinstance(target_argument, str) and target_argument.endswith(
+        ".max_control_steps"
+    ):
+        raise RobotPackageError(
+            f"{where}.parameters.target_argument cannot use a control-step budget"
+        )
+
+    if kind == "mean_two_body_orbit_tracking_fraction":
+        if len(parameters["body_names"]) != 2:
+            raise RobotPackageError(
+                f"{where}.parameters.body_names must contain exactly two bodies"
+            )
+        center = parameters["orbit_center"]
+        if len(center) != 3 or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            for value in center
+        ):
+            raise RobotPackageError(
+                f"{where}.parameters.orbit_center must contain three finite numbers"
+            )
+        for field in ("minimum_source_height", "source_height_offset_m"):
+            value = parameters[field]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+            ):
+                raise RobotPackageError(
+                    f"{where}.parameters.{field} must be a finite number"
+                )
+
+    if kind == "in_hand_object_pattern_success":
+        motion_kind = parameters["motion_kind"]
+        motion_requirements = {
+            "translation": {"axis", "minimum_translation_range_m"},
+            "translation_return": {
+                "axis",
+                "minimum_translation_range_m",
+                "maximum_return_error_m",
+            },
+            "translation_cycle": {
+                "axis",
+                "minimum_translation_range_m",
+                "minimum_direction_changes",
+            },
+            "rotation": {"minimum_cumulative_rotation_deg"},
+            "rotation_cycle": {
+                "minimum_cumulative_rotation_deg",
+                "minimum_direction_changes",
+            },
+            "joint": {"joint_name", "minimum_joint_range_rad"},
+            "contact_slide": {
+                "site_names",
+                "axis",
+                "minimum_site_translation_range_m",
+            },
+        }
+        if motion_kind not in motion_requirements:
+            raise RobotPackageError(
+                f"{where}.parameters.motion_kind is unsupported"
+            )
+        missing_motion = sorted(
+            motion_requirements[str(motion_kind)] - set(parameters)
+        )
+        if missing_motion:
+            raise RobotPackageError(
+                f"{where}.parameters misses motion fields {missing_motion}"
+            )
+        groups = parameters["required_robot_geom_groups"]
+        if any(
+            not isinstance(group, list)
+            or not group
+            or any(not isinstance(name, str) or not name.strip() for name in group)
+            for group in groups
+        ):
+            raise RobotPackageError(
+                f"{where}.parameters.required_robot_geom_groups is invalid"
+            )
+        if any(
+            not isinstance(name, str) or not name.strip()
+            for name in parameters["object_geom_names"]
+        ):
+            raise RobotPackageError(
+                f"{where}.parameters.object_geom_names is invalid"
+            )
+        if "axis" in motion_requirements[str(motion_kind)]:
+            axis = parameters["axis"]
+            if isinstance(axis, bool) or not isinstance(axis, int) or axis not in {0, 1, 2}:
+                raise RobotPackageError(
+                    f"{where}.parameters.axis must be 0, 1, or 2"
+                )
+        for field in motion_requirements[str(motion_kind)] & {
+            "minimum_direction_changes",
+        }:
+            value = parameters[field]
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                raise RobotPackageError(
+                    f"{where}.parameters.{field} must be a positive integer"
+                )
+        for field in (
+            "minimum_simultaneous_contact_samples",
+            "minimum_contact_group_transitions",
+        ):
+            if field not in parameters:
+                continue
+            value = parameters[field]
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                raise RobotPackageError(
+                    f"{where}.parameters.{field} must be a positive integer"
+                )
+        for field in motion_requirements[str(motion_kind)] & {
+            "minimum_translation_range_m",
+            "maximum_return_error_m",
+            "minimum_cumulative_rotation_deg",
+            "minimum_joint_range_rad",
+            "minimum_site_translation_range_m",
+        }:
+            value = parameters[field]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+                or float(value) <= 0.0
+            ):
+                raise RobotPackageError(
+                    f"{where}.parameters.{field} must be a positive finite number"
+                )
+        if "translation_direction" in parameters:
+            direction = parameters["translation_direction"]
+            if isinstance(direction, bool) or direction not in {-1, 1}:
+                raise RobotPackageError(
+                    f"{where}.parameters.translation_direction must be -1 or 1"
+                )
+        if motion_kind == "contact_slide" and len(parameters["site_names"]) != len(
+            parameters["required_robot_geom_groups"]
+        ):
+            raise RobotPackageError(
+                f"{where}.parameters.site_names must match the contact groups"
+            )
+
+
+def _validate_leap_clause_binding(
+    clause: Mapping[str, Any], binding: Mapping[str, Any], *, where: str
+) -> None:
+    metric = str(clause["metric"])
+    expected_kinds = _LEAP_METRIC_BINDING_KINDS.get(metric)
+    expected_contract = _LEAP_METRIC_CONTRACTS.get(metric)
+    if metric.startswith("ec_") and metric.endswith("_successful_trial_count"):
+        expected_kinds = {"in_hand_object_pattern_success"}
+        expected_contract = ("fixed_trials", "all_trials")
+    if expected_kinds is None or expected_contract is None:
+        return
+    if binding["kind"] not in expected_kinds:
+        raise RobotPackageError(
+            f"{where} misinterprets source metric {metric!r} with binding kind "
+            f"{binding['kind']!r}"
+        )
+    temporal = clause["temporal"]
+    aggregation = clause["aggregation"]
+    actual_contract = (temporal.get("kind"), aggregation.get("kind"))
+    if actual_contract != expected_contract:
+        raise RobotPackageError(
+            f"{where} changes the trusted temporal or aggregation contract for {metric!r}"
+        )
+
+
+def _validate_leap_scene_contract(
+    scene: Path,
+    *,
+    instance: Mapping[str, Any],
+    clauses: Mapping[str, Mapping[str, Any]],
+    clause_bindings: Mapping[str, Any],
+    bindings: Mapping[str, Mapping[str, Any]],
+    public_arguments: Mapping[str, Any],
+    where: str,
+) -> None:
+    selected = [
+        (clause, bindings[str(clause_bindings[clause_id])])
+        for clause_id, clause in clauses.items()
+        if str(clause["metric"]) in _LEAP_METRIC_BINDING_KINDS
+        or (
+            str(clause["metric"]).startswith("ec_")
+            and str(clause["metric"]).endswith("_successful_trial_count")
+        )
+    ]
+    if not selected:
+        return
+    try:
+        import mujoco
+
+        model = mujoco.MjModel.from_xml_path(str(scene))
+    except Exception as exc:
+        raise RobotPackageError(
+            f"cannot inspect LEAP scene contract: {type(exc).__name__}: {exc}"
+        ) from exc
+
+    for clause, binding in selected:
+        parameters = binding["parameters"]
+        kind = str(binding["kind"])
+        body_fields = _LEAP_MOVABLE_BODY_FIELDS.get(kind, ())
+        if kind == "in_hand_object_pattern_success" and parameters.get(
+            "motion_kind"
+        ) == "joint":
+            body_fields = ()
+        for field in body_fields:
+            raw_names = parameters[field]
+            names = raw_names if isinstance(raw_names, list) else [raw_names]
+            for name in names:
+                body_id = mujoco.mj_name2id(
+                    model, mujoco.mjtObj.mjOBJ_BODY, str(name)
+                )
+                if body_id < 0:
+                    raise RobotPackageError(
+                        f"{where} binding body {name!r} is absent from its scene"
+                    )
+                if int(model.body_jntnum[body_id]) == 0:
+                    raise RobotPackageError(
+                        f"{where} binding body {name!r} is fixed, not manipulable"
+                    )
+        raw_joint_names: list[str] = []
+        if "joint_name" in parameters:
+            raw_joint_names.append(str(parameters["joint_name"]))
+        if isinstance(parameters.get("joint_names"), list):
+            raw_joint_names.extend(str(name) for name in parameters["joint_names"])
+        for name in raw_joint_names:
+            if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name) < 0:
+                raise RobotPackageError(
+                    f"{where} binding joint {name!r} is absent from its scene"
+                )
+
+        temporal = clause["temporal"]
+        temporal_kind = temporal.get("kind")
+        if temporal_kind not in {"terminal_step", "fixed_horizon", "continuous"}:
+            continue
+        maximum_control_steps = temporal.get("max_control_steps")
+        physics_steps_per_control_step = parameters.get(
+            "physics_steps_per_control_step"
+        )
+        if (
+            isinstance(maximum_control_steps, bool)
+            or not isinstance(maximum_control_steps, int)
+            or maximum_control_steps <= 0
+            or isinstance(physics_steps_per_control_step, bool)
+            or not isinstance(physics_steps_per_control_step, int)
+            or physics_steps_per_control_step <= 0
+        ):
+            raise RobotPackageError(
+                f"{where} source horizon requires positive control and physics steps"
+            )
+        expected_physics_steps = (
+            maximum_control_steps * physics_steps_per_control_step
+        )
+        argument_name = str(parameters["control_steps_argument"])
+        argument_value: Any = public_arguments
+        for part in argument_name.split("."):
+            if not isinstance(argument_value, Mapping) or part not in argument_value:
+                raise RobotPackageError(
+                    f"{where} cannot resolve control-step budget {argument_name!r}"
+                )
+            argument_value = argument_value[part]
+        if argument_value != maximum_control_steps:
+            raise RobotPackageError(
+                f"{where} public control-step budget differs from its source horizon"
+            )
+        if instance["max_steps"] != expected_physics_steps:
+            raise RobotPackageError(
+                f"{where}.max_steps must equal the complete source physics horizon "
+                f"{expected_physics_steps}"
+            )
+
+        timestep = float(model.opt.timestep)
+        control_period = parameters.get("control_period_s")
+        if control_period is not None:
+            expected_period = timestep * physics_steps_per_control_step
+            if not math.isclose(
+                float(control_period), expected_period, rel_tol=0.0, abs_tol=1e-9
+            ):
+                raise RobotPackageError(
+                    f"{where} control period is inconsistent with scene timestep"
+                )
+            expected_rate = 1.0 / float(control_period)
+            for field in ("sample_hz", "video_fps"):
+                rate = instance.get(field)
+                if (
+                    isinstance(rate, bool)
+                    or not isinstance(rate, (int, float))
+                    or not math.isclose(
+                        float(rate), expected_rate, rel_tol=0.0, abs_tol=1e-9
+                    )
+                ):
+                    raise RobotPackageError(
+                        f"{where}.{field} must sample every source control step"
+                    )
+
+        physics_duration = expected_physics_steps * timestep
+        source_duration = temporal.get("duration_s")
+        if source_duration is not None and not math.isclose(
+            float(source_duration), physics_duration, rel_tol=0.0, abs_tol=1e-9
+        ):
+            raise RobotPackageError(
+                f"{where} source duration is inconsistent with timestep and step budget"
+            )
+        if float(instance["timeout_sim_s"]) + 1e-9 < physics_duration:
+            raise RobotPackageError(
+                f"{where}.timeout_sim_s is shorter than the complete physics horizon"
+            )
+
+
 def _validate_private_inputs(
     *,
     package_root: Path,
@@ -510,6 +1089,18 @@ def _validate_private_inputs(
             raise RobotPackageError(f"{where}.kind is not implemented by the trusted Harness")
         if not isinstance(binding.get("parameters"), dict):
             raise RobotPackageError(f"{where}.parameters must be an object")
+        target_argument = binding["parameters"].get("target_argument")
+        if isinstance(target_argument, str) and target_argument.endswith(
+            ".max_control_steps"
+        ):
+            raise RobotPackageError(
+                f"{where}.parameters.target_argument cannot use a control-step budget"
+            )
+        if binding["kind"] == "body_yaw_change_deg" and binding["unit"] != "deg":
+            raise RobotPackageError(
+                f"{where}.unit must be deg for body_yaw_change_deg"
+            )
+        _validate_leap_binding_parameters(binding, where=where)
         bindings[binding_id] = binding
 
     guard_values = _required_list(documents["guards"], "guards", where="guards.json")
@@ -720,6 +1311,11 @@ def _validate_private_inputs(
             clause = clauses[clause_id]
             if binding["metric"] != clause["metric"] or binding["unit"] != clause["unit"]:
                 raise RobotPackageError(f"{where} uses an incompatible binding for {clause_id!r}")
+            _validate_leap_clause_binding(
+                clause,
+                binding,
+                where=f"{where}.clause_bindings[{clause_id!r}]",
+            )
 
         guard_ids = instance.get("guard_ids")
         if not isinstance(guard_ids, list) or not guard_ids or any(
@@ -734,6 +1330,28 @@ def _validate_private_inputs(
         max_steps = instance.get("max_steps")
         if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 1:
             raise RobotPackageError(f"{where}.repetitions must be a positive integer")
+        for clause in clauses.values():
+            temporal = clause["temporal"]
+            if temporal.get("kind") != "fixed_trials":
+                continue
+            trial_count = temporal.get("trial_count")
+            if (
+                isinstance(trial_count, bool)
+                or not isinstance(trial_count, int)
+                or trial_count <= 0
+            ):
+                raise RobotPackageError(
+                    f"{where} fixed_trials requires a positive trial_count"
+                )
+            task_parameters = instance["public_arguments"]["request"][
+                "task_parameters"
+            ]
+            if repetitions != trial_count or task_parameters.get(
+                "trial_count"
+            ) != trial_count:
+                raise RobotPackageError(
+                    f"{where} must execute every fixed_trials repetition independently"
+                )
         repetition_variants = instance.get("repetition_variants")
         if repetition_variants is not None:
             if not isinstance(repetition_variants, list) or len(repetition_variants) != repetitions:
@@ -754,6 +1372,16 @@ def _validate_private_inputs(
                         task_id=task_id,
                         where=f"{variant_where}.public_arguments",
                     )
+                    for clause in clauses.values():
+                        temporal = clause["temporal"]
+                        if temporal.get("kind") == "fixed_trials" and variant[
+                            "public_arguments"
+                        ]["request"]["task_parameters"].get(
+                            "trial_count"
+                        ) != temporal.get("trial_count"):
+                            raise RobotPackageError(
+                                f"{variant_where} changes the fixed_trials count"
+                            )
                 if "reset" in variant:
                     validate_reset(variant["reset"], where=f"{variant_where}.reset")
         if (
@@ -765,12 +1393,32 @@ def _validate_private_inputs(
         if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
             raise RobotPackageError(f"{where}.max_steps must be a positive integer")
 
+        if any(
+            binding["kind"] == "contact_sample_count"
+            and clauses[clause_id]["comparator"] == "=="
+            and clauses[clause_id]["threshold"] == 0
+            for clause_id, binding_id in clause_bindings.items()
+            for binding in (bindings[str(binding_id)],)
+        ) and "named_geom_contact_pair_required" in selected_guard_kinds:
+            raise RobotPackageError(
+                f"{where} cannot require contact while scoring zero contact samples"
+            )
+
         scene_relative = _required_text(instance, "scene_entrypoint", where=where)
         scene = _contained_path(package_root, scene_relative, field=f"{where}.scene_entrypoint")
         try:
             scene.relative_to((package_root / "assets").resolve())
         except ValueError as exc:
             raise RobotPackageError(f"{where}.scene_entrypoint must live under assets/") from exc
+        _validate_leap_scene_contract(
+            scene,
+            instance=instance,
+            clauses=clauses,
+            clause_bindings=clause_bindings,
+            bindings=bindings,
+            public_arguments=instance["public_arguments"],
+            where=where,
+        )
         scenes.add(scene)
 
     if covered_tasks != set(tasks_by_id):

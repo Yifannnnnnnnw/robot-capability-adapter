@@ -90,6 +90,271 @@ def _joint_position(sample: Mapping[str, Any], name: str) -> float:
     return float(positions[name])
 
 
+def _body_quaternion(
+    sample: Mapping[str, Any], name: str
+) -> tuple[float, float, float, float]:
+    quaternions = sample.get("body_quaternions")
+    if not isinstance(quaternions, Mapping) or name not in quaternions:
+        raise MeasurementError(f"body quaternion {name!r} is unavailable")
+    return _vector(quaternions[name], size=4)  # type: ignore[return-value]
+
+
+def _normalized_quaternion(
+    value: Any,
+) -> tuple[float, float, float, float]:
+    quaternion = _vector(value, size=4)
+    norm = math.sqrt(math.fsum(component * component for component in quaternion))
+    if norm <= 0.0:
+        raise MeasurementError("measurement quaternion must be non-zero")
+    return tuple(component / norm for component in quaternion)  # type: ignore[return-value]
+
+
+def _quaternion_product(
+    left: Sequence[float], right: Sequence[float]
+) -> tuple[float, float, float, float]:
+    lw, lx, ly, lz = _normalized_quaternion(left)
+    rw, rx, ry, rz = _normalized_quaternion(right)
+    return (
+        lw * rw - lx * rx - ly * ry - lz * rz,
+        lw * rx + lx * rw + ly * rz - lz * ry,
+        lw * ry - lx * rz + ly * rw + lz * rx,
+        lw * rz + lx * ry - ly * rx + lz * rw,
+    )
+
+
+def _relative_quaternion(
+    sample: Mapping[str, Any], body_name: str, reference_body_name: str
+) -> tuple[float, float, float, float]:
+    reference = _normalized_quaternion(
+        _body_quaternion(sample, reference_body_name)
+    )
+    inverse_reference = (
+        reference[0],
+        -reference[1],
+        -reference[2],
+        -reference[3],
+    )
+    return _normalized_quaternion(
+        _quaternion_product(inverse_reference, _body_quaternion(sample, body_name))
+    )
+
+
+def _rotate_inverse(
+    quaternion: Sequence[float], vector: Sequence[float]
+) -> tuple[float, float, float]:
+    w, x, y, z = _normalized_quaternion(quaternion)
+    vx, vy, vz = _vector(vector, size=3)
+    # This is R(q)^T v, expanded to keep the trusted measurement NumPy-free.
+    return (
+        (1.0 - 2.0 * (y * y + z * z)) * vx
+        + 2.0 * (x * y + w * z) * vy
+        + 2.0 * (x * z - w * y) * vz,
+        2.0 * (x * y - w * z) * vx
+        + (1.0 - 2.0 * (x * x + z * z)) * vy
+        + 2.0 * (y * z + w * x) * vz,
+        2.0 * (x * z + w * y) * vx
+        + 2.0 * (y * z - w * x) * vy
+        + (1.0 - 2.0 * (x * x + y * y)) * vz,
+    )
+
+
+def _point_in_body_frame(
+    sample: Mapping[str, Any],
+    point: Sequence[float],
+    reference_body_name: str,
+) -> tuple[float, float, float]:
+    origin = _body_position(sample, reference_body_name)
+    displacement = tuple(
+        coordinate - reference
+        for coordinate, reference in zip(_vector(point, size=3), origin)
+    )
+    return _rotate_inverse(
+        _body_quaternion(sample, reference_body_name), displacement
+    )
+
+
+def _body_position_in_frame(
+    sample: Mapping[str, Any], body_name: str, reference_body_name: str
+) -> tuple[float, float, float]:
+    return _point_in_body_frame(
+        sample, _body_position(sample, body_name), reference_body_name
+    )
+
+
+def _yaw_rad(quaternion: Sequence[float]) -> float:
+    w, x, y, z = _normalized_quaternion(quaternion)
+    return math.atan2(
+        2.0 * (w * z + x * y),
+        1.0 - 2.0 * (y * y + z * z),
+    )
+
+
+def _unwrapped(values: Sequence[float]) -> list[float]:
+    if not values:
+        raise MeasurementError("angle trajectory must not be empty")
+    result = [float(values[0])]
+    for value in values[1:]:
+        delta = (float(value) - result[-1] + math.pi) % (2.0 * math.pi) - math.pi
+        result.append(result[-1] + delta)
+    return result
+
+
+def _positive_number(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise MeasurementError(f"{name} must be numeric")
+    result = float(value)
+    if not math.isfinite(result) or result <= 0.0:
+        raise MeasurementError(f"{name} must be positive")
+    return result
+
+
+def _positive_integer(value: Any, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise MeasurementError(f"{name} must be a positive integer")
+    return value
+
+
+def _control_samples(
+    parameters: Mapping[str, Any],
+    *,
+    evidence: Mapping[str, Any],
+    public_arguments: Mapping[str, Any],
+) -> list[Mapping[str, Any]]:
+    samples = _samples(evidence)
+    period = _positive_number(parameters.get("control_period_s"), "control_period_s")
+    count_argument = parameters.get("control_steps_argument")
+    if not isinstance(count_argument, str) or not count_argument:
+        raise MeasurementError("control_steps_argument must be a non-empty string")
+    count = _positive_integer(
+        _argument(public_arguments, count_argument), count_argument
+    )
+    if len(samples) < count + 1:
+        raise MeasurementError(
+            f"trusted evidence contains fewer than {count} control-step samples"
+        )
+    times = _sample_times(samples)
+    start = times[0]
+    selected = samples[1 : count + 1]
+    tolerance = max(1.0e-9, 0.25 * period)
+    for index, sample in enumerate(selected, start=1):
+        actual = float(sample["time"])
+        expected = start + index * period
+        if not math.isclose(actual, expected, rel_tol=0.0, abs_tol=tolerance):
+            raise MeasurementError(
+                "trusted samples do not match the declared control period"
+            )
+    return selected
+
+
+def _source_horizon(
+    binding: Mapping[str, Any],
+    temporal: Mapping[str, Any],
+    *,
+    evidence: Mapping[str, Any],
+    public_arguments: Mapping[str, Any],
+) -> tuple[int, int, int]:
+    maximum_control_steps = _positive_integer(
+        temporal.get("max_control_steps"), "max_control_steps"
+    )
+    parameters = binding.get("parameters", {})
+    if not isinstance(parameters, Mapping):
+        raise MeasurementError("binding parameters must be an object")
+    physics_steps_per_control_step = _positive_integer(
+        parameters.get("physics_steps_per_control_step"),
+        "physics_steps_per_control_step",
+    )
+    budget_argument = parameters.get("control_steps_argument")
+    if not isinstance(budget_argument, str) or not budget_argument:
+        raise MeasurementError("control_steps_argument must be text")
+    requested = _positive_integer(
+        _argument(public_arguments, budget_argument), budget_argument
+    )
+    if requested != maximum_control_steps:
+        raise MeasurementError(
+            "public control-step budget differs from the source criterion"
+        )
+    step_count = evidence.get("step_count")
+    if isinstance(step_count, bool) or not isinstance(step_count, int):
+        raise MeasurementError("source horizon requires trusted physics step_count")
+    return (
+        step_count,
+        maximum_control_steps,
+        maximum_control_steps * physics_steps_per_control_step,
+    )
+
+
+def _contact_step_count(
+    evidence: Mapping[str, Any],
+    robot_geom_names: set[str],
+    object_geom_names: set[str],
+) -> int:
+    records = evidence.get("contact_pair_step_counts")
+    if not isinstance(records, list):
+        raise MeasurementError("per-step contact evidence is unavailable")
+    total = 0
+    for record in records:
+        if not isinstance(record, Mapping):
+            raise MeasurementError("per-step contact evidence is invalid")
+        geom1 = record.get("geom1")
+        geom2 = record.get("geom2")
+        step_count = record.get("step_count")
+        if (
+            not isinstance(geom1, str)
+            or not isinstance(geom2, str)
+            or isinstance(step_count, bool)
+            or not isinstance(step_count, int)
+            or step_count < 0
+        ):
+            raise MeasurementError("per-step contact evidence is invalid")
+        if (geom1 in robot_geom_names and geom2 in object_geom_names) or (
+            geom2 in robot_geom_names and geom1 in object_geom_names
+        ):
+            total += step_count
+    return total
+
+
+def _contacted_group_indices(
+    sample: Mapping[str, Any],
+    robot_geom_groups: Sequence[set[str]],
+    object_geom_names: set[str],
+) -> set[int]:
+    contacts = sample.get("contacts")
+    if not isinstance(contacts, list):
+        raise MeasurementError("sample contact evidence is unavailable")
+    matched: set[int] = set()
+    for contact in contacts:
+        if not isinstance(contact, Mapping):
+            raise MeasurementError("sample contact evidence is invalid")
+        pair = {str(contact.get("geom1")), str(contact.get("geom2"))}
+        if not pair.intersection(object_geom_names):
+            continue
+        matched.update(
+            index
+            for index, group in enumerate(robot_geom_groups)
+            if pair.intersection(group)
+        )
+    return matched
+
+
+def _contact_group_transition_count(active_groups: Sequence[set[int]]) -> int:
+    return sum(
+        1
+        for previous, current in zip(active_groups, active_groups[1:])
+        if previous and current and previous != current
+    )
+
+
+def _direction_change_count(values: Sequence[float], *, epsilon: float) -> int:
+    deltas = [
+        float(current) - float(previous)
+        for previous, current in zip(values, values[1:])
+        if abs(float(current) - float(previous)) > epsilon
+    ]
+    return sum(
+        1 for previous, current in zip(deltas, deltas[1:]) if previous * current < 0.0
+    )
+
+
 def _yaw_deg(quaternion: Sequence[float]) -> float:
     w, x, y, z = _vector(quaternion, size=4)
     sin_yaw = 2.0 * (w * z + x * y)
@@ -116,6 +381,455 @@ def measure(
     samples = _samples(evidence)
     first = samples[0]
     final = samples[-1]
+
+    if kind == "in_hand_object_pattern_success":
+        body_name = str(parameters["body_name"])
+        reference_body_name = str(parameters["reference_body_name"])
+        raw_object_names = parameters.get("object_geom_names")
+        raw_groups = parameters.get("required_robot_geom_groups")
+        if (
+            not isinstance(raw_object_names, Sequence)
+            or isinstance(raw_object_names, (str, bytes))
+            or not raw_object_names
+            or not isinstance(raw_groups, Sequence)
+            or isinstance(raw_groups, (str, bytes))
+            or not raw_groups
+        ):
+            raise MeasurementError(
+                "in-hand pattern requires object geoms and robot geom groups"
+            )
+        object_geom_names = {str(name) for name in raw_object_names}
+        robot_geom_groups: list[set[str]] = []
+        for raw_group in raw_groups:
+            if (
+                not isinstance(raw_group, Sequence)
+                or isinstance(raw_group, (str, bytes))
+                or not raw_group
+            ):
+                raise MeasurementError("in-hand robot geom group must not be empty")
+            robot_geom_groups.append({str(name) for name in raw_group})
+        minimum_contact_steps = _positive_integer(
+            parameters.get("minimum_contact_steps", 1),
+            "minimum_contact_steps",
+        )
+        if any(
+            _contact_step_count(evidence, group, object_geom_names)
+            < minimum_contact_steps
+            for group in robot_geom_groups
+        ):
+            return 0.0
+        active_groups = [
+            _contacted_group_indices(sample, robot_geom_groups, object_geom_names)
+            for sample in samples
+        ]
+        minimum_simultaneous_samples = parameters.get(
+            "minimum_simultaneous_contact_samples"
+        )
+        if minimum_simultaneous_samples is not None:
+            required_samples = _positive_integer(
+                minimum_simultaneous_samples,
+                "minimum_simultaneous_contact_samples",
+            )
+            simultaneous_samples = sum(
+                len(active) == len(robot_geom_groups) for active in active_groups
+            )
+            if simultaneous_samples < required_samples:
+                return 0.0
+        minimum_transitions = parameters.get("minimum_contact_group_transitions")
+        if minimum_transitions is not None and _contact_group_transition_count(
+            active_groups
+        ) < _positive_integer(
+            minimum_transitions, "minimum_contact_group_transitions"
+        ):
+            return 0.0
+
+        motion_kind = parameters.get("motion_kind")
+        if motion_kind in {"translation", "translation_return", "translation_cycle"}:
+            axis = int(parameters["axis"])
+            if axis not in {0, 1, 2}:
+                raise MeasurementError("in-hand translation axis must be 0, 1, or 2")
+            coordinates = [
+                _body_position_in_frame(sample, body_name, reference_body_name)[axis]
+                for sample in samples
+            ]
+            required_range = _positive_number(
+                parameters.get("minimum_translation_range_m"),
+                "minimum_translation_range_m",
+            )
+            if max(coordinates) - min(coordinates) < required_range:
+                return 0.0
+            direction = parameters.get("translation_direction")
+            if direction is not None:
+                if isinstance(direction, bool) or direction not in {-1, 1}:
+                    raise MeasurementError("translation_direction must be -1 or 1")
+                if max(
+                    int(direction) * (coordinate - coordinates[0])
+                    for coordinate in coordinates
+                ) < required_range:
+                    return 0.0
+            if motion_kind == "translation_return":
+                return_tolerance = _positive_number(
+                    parameters.get("maximum_return_error_m"),
+                    "maximum_return_error_m",
+                )
+                if abs(coordinates[-1] - coordinates[0]) > return_tolerance:
+                    return 0.0
+            if motion_kind == "translation_cycle":
+                required_changes = _positive_integer(
+                    parameters.get("minimum_direction_changes"),
+                    "minimum_direction_changes",
+                )
+                if _direction_change_count(coordinates, epsilon=1.0e-5) < required_changes:
+                    return 0.0
+            return 1.0
+
+        if motion_kind == "contact_slide":
+            axis = int(parameters["axis"])
+            if axis not in {0, 1, 2}:
+                raise MeasurementError("contact-slide axis must be 0, 1, or 2")
+            raw_site_names = parameters.get("site_names")
+            if (
+                not isinstance(raw_site_names, Sequence)
+                or isinstance(raw_site_names, (str, bytes))
+                or len(raw_site_names) != len(robot_geom_groups)
+            ):
+                raise MeasurementError(
+                    "contact slide requires one site per robot geom group"
+                )
+            required_range = _positive_number(
+                parameters.get("minimum_site_translation_range_m"),
+                "minimum_site_translation_range_m",
+            )
+            for group_index, site_name in enumerate(raw_site_names):
+                coordinates = [
+                    _point_in_body_frame(
+                        sample,
+                        _site_position(sample, str(site_name)),
+                        body_name,
+                    )[axis]
+                    for sample, active in zip(samples, active_groups)
+                    if group_index in active
+                ]
+                if (
+                    len(coordinates) < 2
+                    or max(coordinates) - min(coordinates) < required_range
+                ):
+                    return 0.0
+            return 1.0
+
+        if motion_kind in {"rotation", "rotation_cycle"}:
+            angles = _unwrapped(
+                [
+                    _yaw_rad(
+                        _relative_quaternion(
+                            sample, body_name, reference_body_name
+                        )
+                    )
+                    for sample in samples
+                ]
+            )
+            cumulative_deg = math.degrees(
+                math.fsum(
+                    abs(current - previous)
+                    for previous, current in zip(angles, angles[1:])
+                )
+            )
+            minimum_cumulative = _positive_number(
+                parameters.get("minimum_cumulative_rotation_deg"),
+                "minimum_cumulative_rotation_deg",
+            )
+            if cumulative_deg < minimum_cumulative:
+                return 0.0
+            minimum_net = parameters.get("minimum_net_rotation_deg")
+            if minimum_net is not None and abs(
+                math.degrees(angles[-1] - angles[0])
+            ) < _positive_number(minimum_net, "minimum_net_rotation_deg"):
+                return 0.0
+            if motion_kind == "rotation_cycle":
+                required_changes = _positive_integer(
+                    parameters.get("minimum_direction_changes"),
+                    "minimum_direction_changes",
+                )
+                if _direction_change_count(angles, epsilon=math.radians(0.1)) < required_changes:
+                    return 0.0
+            return 1.0
+
+        if motion_kind == "joint":
+            positions = [
+                _joint_position(sample, str(parameters["joint_name"]))
+                for sample in samples
+            ]
+            required_range = _positive_number(
+                parameters.get("minimum_joint_range_rad"),
+                "minimum_joint_range_rad",
+            )
+            return 1.0 if max(positions) - min(positions) >= required_range else 0.0
+
+        raise MeasurementError(f"unsupported in-hand motion kind {motion_kind!r}")
+
+    if kind == "final_concatenated_site_position_error":
+        raw_names = parameters.get("site_names")
+        if (
+            not isinstance(raw_names, Sequence)
+            or isinstance(raw_names, (str, bytes))
+            or not raw_names
+        ):
+            raise MeasurementError("concatenated site measurement requires site_names")
+        site_names = [str(name) for name in raw_names]
+        reference_body_name = str(parameters["reference_body_name"])
+        target = _vector(
+            _argument(public_arguments, str(parameters["target_argument"])),
+            size=3 * len(site_names),
+        )
+        actual = tuple(
+            coordinate
+            for site_name in site_names
+            for coordinate in _point_in_body_frame(
+                final,
+                _site_position(final, site_name),
+                reference_body_name,
+            )
+        )
+        return _distance(actual, target)
+
+    if kind == "final_body_position_offset_error":
+        body_name = str(parameters["body_name"])
+        reference_body_name = str(parameters["reference_body_name"])
+        initial = _body_position_in_frame(first, body_name, reference_body_name)
+        terminal = _body_position_in_frame(final, body_name, reference_body_name)
+        actual_offset = tuple(end - start for start, end in zip(initial, terminal))
+        target_offset = _vector(
+            _argument(public_arguments, str(parameters["target_argument"])), size=3
+        )
+        actual_orientation = _relative_quaternion(
+            final, body_name, reference_body_name
+        )
+        target_orientation = _normalized_quaternion(
+            _argument(
+                public_arguments,
+                str(parameters["orientation_target_argument"]),
+            )
+        )
+        orientation_cosine = abs(
+            math.fsum(
+                left * right
+                for left, right in zip(actual_orientation, target_orientation)
+            )
+        )
+        orientation_error = 2.0 * math.acos(
+            min(1.0, max(0.0, orientation_cosine))
+        )
+        if orientation_error >= _positive_number(
+            parameters.get("maximum_orientation_error_rad"),
+            "maximum_orientation_error_rad",
+        ):
+            raise MeasurementError(
+                "same-state block orientation conjunction did not pass"
+            )
+        return _distance(actual_offset, target_offset)
+
+    if kind == "final_body_quaternion_error":
+        actual = _relative_quaternion(
+            final,
+            str(parameters["body_name"]),
+            str(parameters["reference_body_name"]),
+        )
+        target = _normalized_quaternion(
+            _argument(public_arguments, str(parameters["target_argument"]))
+        )
+        initial_position = _body_position_in_frame(
+            first, str(parameters["body_name"]), str(parameters["reference_body_name"])
+        )
+        final_position = _body_position_in_frame(
+            final, str(parameters["body_name"]), str(parameters["reference_body_name"])
+        )
+        actual_offset = tuple(
+            end - start for start, end in zip(initial_position, final_position)
+        )
+        target_offset = _vector(
+            _argument(
+                public_arguments,
+                str(parameters["position_target_argument"]),
+            ),
+            size=3,
+        )
+        if _distance(actual_offset, target_offset) >= _positive_number(
+            parameters.get("maximum_position_error_m"),
+            "maximum_position_error_m",
+        ):
+            raise MeasurementError(
+                "same-state block position conjunction did not pass"
+            )
+        cosine = abs(math.fsum(left * right for left, right in zip(actual, target)))
+        return 2.0 * math.acos(min(1.0, max(0.0, cosine)))
+
+    if kind == "final_maximum_joint_position_error":
+        raw_names = parameters.get("joint_names")
+        if (
+            not isinstance(raw_names, Sequence)
+            or isinstance(raw_names, (str, bytes))
+            or not raw_names
+        ):
+            raise MeasurementError("maximum joint error requires joint_names")
+        names = [str(name) for name in raw_names]
+        targets = _vector(
+            _argument(public_arguments, str(parameters["target_argument"])),
+            size=len(names),
+        )
+        return max(
+            abs(_joint_position(final, name) - target)
+            for name, target in zip(names, targets)
+        )
+
+    if kind == "final_wrapped_joint_position_error":
+        actual = _joint_position(final, str(parameters["joint_name"]))
+        target = float(
+            _argument(public_arguments, str(parameters["target_argument"]))
+        )
+        if not math.isfinite(target):
+            raise MeasurementError("wrapped joint target must be finite")
+        return abs((actual - target + math.pi) % (2.0 * math.pi) - math.pi)
+
+    if kind == "maximum_joint_linear_trajectory_error":
+        name = str(parameters["joint_name"])
+        velocity = float(
+            _argument(public_arguments, str(parameters["velocity_argument"]))
+        )
+        if not math.isfinite(velocity):
+            raise MeasurementError("joint target velocity must be finite")
+        control_samples = _control_samples(
+            parameters,
+            evidence=evidence,
+            public_arguments=public_arguments,
+        )
+        trajectory_samples = [first, *control_samples]
+        times = _sample_times(trajectory_samples)
+        initial = _joint_position(first, name)
+        return max(
+            abs(
+                _joint_position(sample, name)
+                - (initial + velocity * (time - times[0]))
+            )
+            for sample, time in zip(trajectory_samples, times)
+        )
+
+    if kind in {"body_target_solved_sample_count", "body_target_drop_event_count"}:
+        selected = _control_samples(
+            parameters,
+            evidence=evidence,
+            public_arguments=public_arguments,
+        )
+        body_name = str(parameters["body_name"])
+        reference_body_name = str(parameters["reference_body_name"])
+        target = _vector(
+            _argument(public_arguments, str(parameters["target_argument"])), size=3
+        )
+        distances = [
+            _distance(
+                _body_position_in_frame(sample, body_name, reference_body_name),
+                target,
+            )
+            for sample in selected
+        ]
+        if kind == "body_target_solved_sample_count":
+            solved_threshold = _positive_number(
+                parameters.get("solved_distance_m"), "solved_distance_m"
+            )
+            drop_threshold = _positive_number(
+                parameters.get("drop_distance_m"), "drop_distance_m"
+            )
+            if any(distance > drop_threshold for distance in distances):
+                raise MeasurementError(
+                    "same-horizon object-hold no-drop conjunction did not pass"
+                )
+            return float(sum(distance < solved_threshold for distance in distances))
+        drop_threshold = _positive_number(
+            parameters.get("drop_distance_m"), "drop_distance_m"
+        )
+        solved_threshold = _positive_number(
+            parameters.get("solved_distance_m"), "solved_distance_m"
+        )
+        solved_count = sum(distance < solved_threshold for distance in distances)
+        minimum_solved_steps = parameters.get("minimum_solved_steps")
+        if (
+            isinstance(minimum_solved_steps, bool)
+            or not isinstance(minimum_solved_steps, int)
+            or minimum_solved_steps < 0
+        ):
+            raise MeasurementError(
+                "minimum_solved_steps must be a non-negative integer"
+            )
+        if solved_count <= minimum_solved_steps:
+            raise MeasurementError(
+                "same-horizon object-hold solved-step conjunction did not pass"
+            )
+        events = 0
+        previously_dropped = False
+        for distance in distances:
+            dropped = distance > drop_threshold
+            if dropped and not previously_dropped:
+                events += 1
+            previously_dropped = dropped
+        return float(events)
+
+    if kind == "mean_two_body_orbit_tracking_fraction":
+        selected = _control_samples(
+            parameters,
+            evidence=evidence,
+            public_arguments=public_arguments,
+        )
+        raw_names = parameters.get("body_names")
+        if (
+            not isinstance(raw_names, Sequence)
+            or isinstance(raw_names, (str, bytes))
+            or len(raw_names) != 2
+        ):
+            raise MeasurementError("two-body orbit requires exactly two body names")
+        names = [str(name) for name in raw_names]
+        reference_body_name = str(parameters["reference_body_name"])
+        center = _vector(parameters.get("orbit_center"), size=3)
+        radii = _vector(
+            _argument(public_arguments, str(parameters["radii_argument"])), size=2
+        )
+        period = _positive_number(
+            _argument(public_arguments, str(parameters["period_argument"])),
+            "orbit period",
+        )
+        maximum_error = _positive_number(
+            parameters.get("maximum_tracking_error_m"),
+            "maximum_tracking_error_m",
+        )
+        height_offset = float(parameters.get("source_height_offset_m", 0.0))
+        minimum_height = float(parameters["minimum_source_height"])
+        if not math.isfinite(height_offset) or not math.isfinite(minimum_height):
+            raise MeasurementError("source-frame height parameters must be finite")
+        start_time = float(_samples(evidence)[0]["time"])
+        successful = 0
+        for sample in selected:
+            phase = 2.0 * math.pi * (float(sample["time"]) - start_time) / period
+            targets = (
+                (
+                    center[0] + radii[0] * math.cos(phase),
+                    center[1] + radii[1] * math.sin(phase),
+                    center[2],
+                ),
+                (
+                    center[0] + radii[0] * math.cos(phase + math.pi),
+                    center[1] + radii[1] * math.sin(phase + math.pi),
+                    center[2],
+                ),
+            )
+            actual = [
+                _body_position_in_frame(sample, name, reference_body_name)
+                for name in names
+            ]
+            if all(
+                _distance(position, target) < maximum_error
+                and position[2] + height_offset >= minimum_height
+                for position, target in zip(actual, targets)
+            ):
+                successful += 1
+        return successful / len(selected)
 
     if kind == "final_site_position_error":
         actual = _site_position(final, str(parameters["site_name"]))
@@ -468,6 +1182,86 @@ def evaluate_temporal(
         raise MeasurementError("criterion comparator and threshold are required")
     samples = _samples(evidence)
 
+    if kind == "fixed_trials":
+        value = measure(
+            binding, evidence=evidence, public_arguments=public_arguments
+        )
+        if not math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-9) and not math.isclose(
+            value, 1.0, rel_tol=0.0, abs_tol=1.0e-9
+        ):
+            raise MeasurementError(
+                "fixed_trials requires one trusted binary outcome per repetition"
+            )
+        return {"kind": kind, "passed": True, "value": value}
+
+    if kind == "terminal_step":
+        step_count, maximum_control_steps, maximum_physics_steps = _source_horizon(
+            binding,
+            temporal,
+            evidence=evidence,
+            public_arguments=public_arguments,
+        )
+        times = _sample_times(samples)
+        elapsed = times[-1] - times[0]
+        duration_value = temporal.get("duration_s")
+        duration_complete = True
+        if duration_value is not None:
+            duration_s = _positive_number(duration_value, "duration_s")
+            duration_complete = elapsed + 1.0e-9 >= duration_s
+        return {
+            "kind": kind,
+            "passed": (
+                step_count == maximum_physics_steps and duration_complete
+            ),
+            "value": measure(
+                binding, evidence=evidence, public_arguments=public_arguments
+            ),
+            "physics_step_count": step_count,
+            "maximum_physics_steps": maximum_physics_steps,
+            "valid_duration_s": elapsed,
+        }
+
+    if kind == "fixed_horizon":
+        step_count, maximum_control_steps, maximum_physics_steps = _source_horizon(
+            binding,
+            temporal,
+            evidence=evidence,
+            public_arguments=public_arguments,
+        )
+        parameters = binding.get("parameters", {})
+        if not isinstance(parameters, Mapping):
+            raise MeasurementError("binding parameters must be an object")
+        period = _positive_number(
+            parameters.get("control_period_s"), "control_period_s"
+        )
+        times = _sample_times(samples)
+        elapsed = times[-1] - times[0]
+        required = maximum_control_steps * period
+        if (
+            step_count != maximum_physics_steps
+            or elapsed + max(1.0e-9, 0.25 * period) < required
+        ):
+            return {
+                "kind": kind,
+                "passed": False,
+                "value": None,
+                "physics_step_count": step_count,
+                "required_physics_steps": maximum_physics_steps,
+                "valid_duration_s": elapsed,
+                "required_duration_s": required,
+            }
+        return {
+            "kind": kind,
+            "passed": True,
+            "value": measure(
+                binding, evidence=evidence, public_arguments=public_arguments
+            ),
+            "physics_step_count": step_count,
+            "required_physics_steps": maximum_physics_steps,
+            "valid_duration_s": elapsed,
+            "required_duration_s": required,
+        }
+
     if kind == "terminal_state" or kind.startswith("terminal_state_"):
         return {
             "kind": kind,
@@ -584,6 +1378,20 @@ def evaluate_temporal(
 
     if kind == "continuous":
         required = duration()
+        horizon_complete = True
+        horizon_evidence: dict[str, Any] = {}
+        if "max_control_steps" in temporal:
+            step_count, _, maximum_physics_steps = _source_horizon(
+                binding,
+                temporal,
+                evidence=evidence,
+                public_arguments=public_arguments,
+            )
+            horizon_complete = step_count == maximum_physics_steps
+            horizon_evidence = {
+                "physics_step_count": step_count,
+                "required_physics_steps": maximum_physics_steps,
+            }
         window = _continuous_value(
             binding,
             evidence=evidence,
@@ -598,6 +1406,7 @@ def evaluate_temporal(
                 "valid_duration_s": _sample_times(samples)[-1]
                 - _sample_times(samples)[0],
                 "required_duration_s": required,
+                **horizon_evidence,
             }
         value, valid_duration, end_index = window
         if binding.get("kind") in _STATE_BINDING_KINDS:
@@ -620,10 +1429,11 @@ def evaluate_temporal(
             state_passed = True
         return {
             "kind": kind,
-            "passed": state_passed,
+            "passed": state_passed and horizon_complete,
             "value": value,
             "valid_duration_s": valid_duration,
             "required_duration_s": required,
+            **horizon_evidence,
         }
 
     raise MeasurementError(f"unsupported temporal kind {kind!r}")
@@ -651,7 +1461,42 @@ def aggregate_criterion(
         return {"kind": kind, "passed": False, "value": None}
 
     numeric_values = [float(value) for value in values]
+    if kind == "all_trials":
+        if any(
+            not (
+                math.isclose(value, 0.0, rel_tol=0.0, abs_tol=1.0e-9)
+                or math.isclose(value, 1.0, rel_tol=0.0, abs_tol=1.0e-9)
+            )
+            for value in numeric_values
+        ):
+            return {"kind": kind, "passed": False, "value": None}
+        successful_trial_count = math.fsum(numeric_values)
+        passed = all(temporal_passes) and compare(
+            successful_trial_count,
+            comparator=comparator,
+            threshold=threshold,
+        )
+        return {
+            "kind": kind,
+            "passed": passed,
+            "value": successful_trial_count,
+        }
     if kind == "single_trial":
+        if len(numeric_values) != 1:
+            return {"kind": kind, "passed": False, "value": None}
+        passed = bool(temporal_passes[0]) and compare(
+            numeric_values[0], comparator=comparator, threshold=threshold
+        )
+        return {"kind": kind, "passed": passed, "value": numeric_values[0]}
+    if kind in {
+        "all_four_fingertips",
+        "same_state_conjunction",
+        "maximum_over_all_16_joints",
+        "maximum_over_control_steps",
+        "count_successful_steps",
+        "count_events",
+        "mean_over_control_steps",
+    }:
         if len(numeric_values) != 1:
             return {"kind": kind, "passed": False, "value": None}
         passed = bool(temporal_passes[0]) and compare(
