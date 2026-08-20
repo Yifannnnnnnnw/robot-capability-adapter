@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "experiment_id": "chapter3-b1",
+  "track": "B1",
+  "freeze_status": "draft",
+  "protocol": "../../protocols/b1-driver-synthesis.json",
+  "backbone_set": "../../components/backbone_sets/declared-seven.json",
+  "task_set": "../../components/task_sets/b1-source-tasks.json",
+  "replicate_set": "../../components/replicate_sets/formal-r5.json",
+  "condition_coverage": [
+    {
+      "condition": "skeleton-assisted",
+      "robot_set": "../../components/robot_sets/all-14.json"
+    },
+    {
+      "condition": "from-scratch",
+      "robot_set": "../../components/robot_sets/chapter3-five.json"
+    }
+  ],
+  "expected_generation_condition_replicates": 665,
+  "maximum_submitted_driver_attempts": 1995,
+  "run_task_demo": false
+}

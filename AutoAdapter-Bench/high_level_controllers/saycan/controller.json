@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "controller_id": "saycan",
+  "display_name": "SayCan",
+  "audit_status": "pending",
+  "adapter_status": "absent",
+  "backbone_mode": "pending-replacement-audit",
+  "model_backed_roles": [],
+  "eligible_robot_ids": [],
+  "eligible_backbone_ids": [],
+  "source_revision": null,
+  "prompt_revision": null,
+  "native_budgets": null
+}

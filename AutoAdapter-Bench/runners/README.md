@@ -1,13 +1,18 @@
 # Benchmark Runners
 
-Runners are thin entry points over `autoadapter2`; they do not implement robot
-control or a second Harness.
+`manifest.py` resolves component references, verifies declared counts, checks
+canonical package and runnable-index availability, and emits deterministic B1
+unit IDs. It does not invoke a model or MuJoCo.
 
-```text
-run_b1.py   # fixed interface -> STUDY -> GENERATE/GEN_ALGO -> validation -> Repair
-run_b2.py   # published controller -> Capability Router -> fixed reference driver
+`run_b1.py` is intentionally not present until the canonical mainline exposes
+the approved driver-synthesis-only stopping boundary. `run_b2.py` is
+intentionally not present until at least one high-level-controller adapter and
+the B2 task set pass audit. This avoids a runner that silently executes Task
+Demo in B1 or a placeholder B2 implementation.
+
+From this directory:
+
+```bash
+python runners/manifest.py validate
+python runners/manifest.py b1-matrix --output /tmp/chapter3-b1-units.json
 ```
-
-Both runners load the frozen config, preserve failed and blocked cells, record
-model usage and wall time, and write one result per experimental unit. B2 grades
-the actual formal rollout and never substitutes call-log replay for execution.

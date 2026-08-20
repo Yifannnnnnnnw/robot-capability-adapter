@@ -1,12 +1,14 @@
 # Focused Checks
 
-Add only checks required by the benchmark path:
+The benchmark checks cover only composition contracts:
 
-- the manifest resolves all 14 canonical robot packages;
-- every B2 method adapter can enter and exit its declared public interface;
-- B1 conditions receive the same fixed capability interface and validation suite;
-- B2 methods receive the same fixed reference driver for each robot; and
-- each observed false-success defect has one focused regression check.
+- the complete robot set retains exactly 14 declared IDs;
+- the Chapter 3 B1 recipe resolves to 490 primary plus 175 ablation units;
+- B1 cannot enable Task Demo;
+- the Chapter 3 B2 plan computes 280 episodes but remains blocked until its
+  controller, task set, fixed driver, and interface are admitted;
+- package availability and runnable-index admission are reported separately;
+- all high-level-controller catalogue entries resolve to their audit files.
 
-Canonical robot, Harness, and driver-synthesis tests remain under
+Canonical robot, synthesis, MuJoCo, and Harness tests remain under
 `../../autoadapter/tests/`.

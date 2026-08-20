@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "protocol_id": "b1-driver-synthesis",
+  "protocol_version": "0.1.0",
+  "track": "B1",
+  "statistical_unit": "independent-generation-condition-replicate",
+  "allowed_generation_conditions": [
+    "skeleton-assisted",
+    "from-scratch"
+  ],
+  "primary_generation_condition": "skeleton-assisted",
+  "max_driver_attempts_per_condition": 3,
+  "run_task_demo": false,
+  "run_high_level_controller": false,
+  "stages": [
+    "tgcd",
+    "ivc",
+    "study",
+    "generate",
+    "private-driver-validation",
+    "bounded-repair",
+    "final-driver-outcome"
+  ],
+  "paired_condition_rule": {
+    "block": [
+      "robot",
+      "backbone",
+      "replicate"
+    ],
+    "shared": [
+      "capability-design",
+      "complete-validation-suite"
+    ],
+    "isolated": [
+      "model-session",
+      "workspace",
+      "candidate",
+      "validation-feedback",
+      "repair-history"
+    ]
+  },
+  "primary_outcomes": [
+    "pass_at_0",
+    "final_pass_within_three_attempts",
+    "valid_driver_count",
+    "valid_driver_rate",
+    "repair_gain",
+    "attempts_to_first_pass",
+    "cell_completion"
+  ],
+  "required_recording": {
+    "identity": [
+      "run_id",
+      "unit_id",
+      "protocol_version",
+      "experiment_recipe",
+      "git_commit",
+      "robot",
+      "backbone",
+      "condition",
+      "replicate",
+      "condition_pair_id"
+    ],
+    "model": [
+      "vendor",
+      "exact_model_id",
+      "transport",
+      "inference_settings",
+      "token_limit",
+      "timeout_s",
+      "provider_request_id",
+      "retry_count",
+      "provider_error"
+    ],
+    "resources": [
+      "utc_started_at",
+      "utc_finished_at",
+      "total_wall_time_s",
+      "stage_wall_times_s",
+      "model_wall_time_s",
+      "tool_wall_time_s",
+      "harness_wall_time_s",
+      "input_tokens",
+      "output_tokens",
+      "cache_read_tokens",
+      "cache_write_tokens",
+      "reasoning_tokens",
+      "other_provider_token_categories",
+      "price_snapshot_date",
+      "billing_currency",
+      "unit_prices",
+      "per_call_cost",
+      "total_model_cost"
+    ],
+    "synthesis_trace": [
+      "stage",
+      "model_turn_index",
+      "action_type",
+      "tool_name",
+      "tool_outcome",
+      "elapsed_s",
+      "submission_event",
+      "stage_transition"
+    ],
+    "driver_validation": [
+      "capability_design_id",
+      "validation_suite_id",
+      "attempt_index",
+      "source_audit_outcome",
+      "public_smoke_outcome",
+      "private_case_count",
+      "private_case_verdicts",
+      "repair_transition",
+      "final_validation_verdict",
+      "no_valid_submission_reason",
+      "terminal_failure_class"
+    ],
+    "evidence": [
+      "candidate_path",
+      "report_paths",
+      "event_trace_path",
+      "video_paths",
+      "trusted_evidence_paths"
+    ]
+  },
+  "synthesis_action_types": [
+    "observe_or_plan",
+    "execute_clean",
+    "execute_error",
+    "submit"
+  ],
+  "shared_resource_accounting": {
+    "count_once_per": [
+      "robot",
+      "backbone",
+      "replicate"
+    ],
+    "resources": [
+      "tgcd",
+      "ivc"
+    ]
+  }
+}

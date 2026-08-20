@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "protocol_id": "b2-capability-use",
+  "protocol_version": "0.1.0",
+  "track": "B2",
+  "statistical_unit": "physical-controller-episode",
+  "driver_policy": "fixed-validated-benchmark-driver",
+  "interface_policy": "fixed-robot-capability-interface",
+  "trusted_verdict": "complete-task-physical-harness-success",
+  "controller_completion_is_verdict": false,
+  "primary_outcomes": [
+    "complete_task_physical_success"
+  ],
+  "secondary_outcomes": [
+    "controller_output_validity",
+    "capability_selection_validity",
+    "argument_binding_validity",
+    "plan_code_or_bt_validity",
+    "capability_chain_completion",
+    "invalid_calls",
+    "unnecessary_calls",
+    "model_calls",
+    "tokens",
+    "cost",
+    "wall_time",
+    "failure_class"
+  ],
+  "required_recording": {
+    "identity": [
+      "run_id",
+      "unit_id",
+      "protocol_version",
+      "experiment_recipe",
+      "git_commit",
+      "robot",
+      "backbone",
+      "high_level_controller",
+      "task_template",
+      "private_seed",
+      "episode"
+    ],
+    "fixed_inputs": [
+      "driver_id",
+      "driver_validation_evidence",
+      "capability_interface_id",
+      "controller_version",
+      "model_backed_role"
+    ],
+    "model_and_resources": [
+      "vendor",
+      "exact_model_id",
+      "transport",
+      "inference_settings",
+      "provider_request_ids",
+      "provider_errors",
+      "model_calls",
+      "input_tokens",
+      "output_tokens",
+      "cache_tokens",
+      "total_model_cost",
+      "utc_started_at",
+      "utc_finished_at",
+      "total_wall_time_s",
+      "controller_wall_time_s",
+      "capability_wall_time_s",
+      "harness_wall_time_s"
+    ],
+    "controller_trace": [
+      "turn_index",
+      "output_grammar_valid",
+      "capability_name",
+      "public_arguments",
+      "argument_binding_valid",
+      "capability_execution_outcome",
+      "invalid_call",
+      "unnecessary_call",
+      "call_budget_used",
+      "controller_self_reported_completion"
+    ],
+    "trusted_task_result": [
+      "task_clause_results",
+      "physical_harness_verdict",
+      "terminal_failure_class",
+      "video_paths",
+      "trusted_evidence_paths"
+    ]
+  }
+}

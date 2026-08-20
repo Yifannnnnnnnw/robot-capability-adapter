@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "authority_revision": "0.19.20",
+  "freeze_status": "draft",
+  "backbones": [
+    {
+      "id": "M1",
+      "family": "Sonnet 4.6",
+      "vendor": "Anthropic",
+      "proposed_model_id": "claude-sonnet-4-6",
+      "transport": "anthropic-messages",
+      "transport_status": "missing",
+      "inference_settings": null,
+      "price_snapshot": null
+    },
+    {
+      "id": "M2",
+      "family": "Opus 5",
+      "vendor": "Anthropic",
+      "proposed_model_id": "claude-opus-5",
+      "transport": "anthropic-messages",
+      "transport_status": "missing",
+      "inference_settings": null,
+      "price_snapshot": null
+    },
+    {
+      "id": "M3",
+      "family": "Haiku 4.5",
+      "vendor": "Anthropic",
+      "proposed_model_id": "claude-haiku-4-5-20251001",
+      "transport": "anthropic-messages",
+      "transport_status": "missing",
+      "inference_settings": null,
+      "price_snapshot": null
+    },
+    {
+      "id": "M4",
+      "family": "Nova Pro",
+      "vendor": "Amazon",
+      "proposed_model_id": "amazon.nova-pro-v1:0",
+      "transport": "amazon-bedrock-converse",
+      "transport_status": "missing",
+      "inference_settings": null,
+      "price_snapshot": null
+    },
+    {
+      "id": "M5",
+      "family": "DeepSeek V4 Pro",
+      "vendor": "DeepSeek",
+      "proposed_model_id": "deepseek-v4-pro",
+      "transport": "openai-compatible",
+      "transport_status": "real-run-observed",
+      "inference_settings": null,
+      "price_snapshot": null
+    },
+    {
+      "id": "M6",
+      "family": "Ministral 3 8B",
+      "vendor": "Mistral",
+      "proposed_model_id": "ministral-8b-2512",
+      "transport": "openai-compatible",
+      "transport_status": "unverified",
+      "inference_settings": null,
+      "price_snapshot": null
+    },
+    {
+      "id": "M7",
+      "family": "Qwen3 32B",
+      "vendor": "Alibaba",
+      "proposed_model_id": "qwen3-32b",
+      "transport": "openai-compatible",
+      "transport_status": "unverified",
+      "inference_settings": null,
+      "price_snapshot": null
+    }
+  ]
+}

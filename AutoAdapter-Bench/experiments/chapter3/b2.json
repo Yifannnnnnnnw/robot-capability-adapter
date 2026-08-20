@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "experiment_id": "chapter3-b2-code-bt",
+  "track": "B2",
+  "freeze_status": "blocked",
+  "protocol": "../../protocols/b2-capability-use.json",
+  "robot_set": "../../components/robot_sets/chapter3-b2-two.json",
+  "backbone_set": "../../components/backbone_sets/declared-seven.json",
+  "task_set": "../../components/task_sets/b2-compositional-five.json",
+  "high_level_controller": "../../high_level_controllers/code_bt/controller.json",
+  "private_seed_ids": [
+    "s01",
+    "s02"
+  ],
+  "episodes_per_task_seed": 2,
+  "expected_controller_episodes_if_admitted": 280,
+  "fixed_driver_selection": null,
+  "fixed_interface_selection": null,
+  "blocked_reasons": [
+    "Formal B2 freeze gates are incomplete"
+  ]
+}

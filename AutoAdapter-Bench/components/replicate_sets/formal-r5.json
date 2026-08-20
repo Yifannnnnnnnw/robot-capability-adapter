@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "replicate_set_id": "formal-r5",
+  "replicate_ids": [
+    "r01",
+    "r02",
+    "r03",
+    "r04",
+    "r05"
+  ],
+  "random_state_policy": "pending-formal-freeze"
+}

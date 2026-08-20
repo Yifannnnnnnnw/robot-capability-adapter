@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "replicate_set_id": "pilot-r1",
+  "replicate_ids": [
+    "r01"
+  ],
+  "random_state_policy": "diagnostic-pending-freeze"
+}

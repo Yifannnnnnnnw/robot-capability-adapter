@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "controller_id": "react",
+  "display_name": "ReAct",
+  "audit_status": "pending",
+  "adapter_status": "mainline-path-not-yet-b2-audited",
+  "backbone_mode": "pending-replacement-audit",
+  "model_backed_roles": [],
+  "eligible_robot_ids": [],
+  "eligible_backbone_ids": [],
+  "source_revision": null,
+  "prompt_revision": null,
+  "native_budgets": null
+}

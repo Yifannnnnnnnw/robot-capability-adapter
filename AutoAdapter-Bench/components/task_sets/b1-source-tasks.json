@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "task_set_id": "b1-source-tasks",
+  "track": "B1",
+  "source": "canonical-per-robot-mainline-task-library",
+  "selection": "complete-sealed-capability-validation-suite",
+  "copied_into_benchmark": false
+}
