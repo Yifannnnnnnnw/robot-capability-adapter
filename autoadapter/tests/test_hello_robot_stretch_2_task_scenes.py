@@ -315,6 +315,14 @@ def test_stretch_fixture_world_transform_is_representative() -> None:
     drawer_joint_id = _id(drawer_model, mujoco.mjtObj.mjOBJ_JOINT, "drawer_slide")
     np.testing.assert_allclose(drawer_model.jnt_axis[drawer_joint_id], (0.0, 1.0, 0.0))
 
+    handle_model = _load("handle_vertical_scene.xml")
+    handle_data = mujoco.MjData(handle_model)
+    mujoco.mj_forward(handle_model, handle_data)
+    handle_id = _id(handle_model, mujoco.mjtObj.mjOBJ_BODY, "vertical_handle")
+    np.testing.assert_allclose(
+        handle_data.xpos[handle_id], (0.10, -0.48, 0.56), atol=1e-9
+    )
+
     door_model = _load("door_scene.xml")
     door_frame_id = _id(door_model, mujoco.mjtObj.mjOBJ_GEOM, "door_frame")
     np.testing.assert_allclose(door_model.geom_pos[door_frame_id], (0.08, -0.30, 0.47))
