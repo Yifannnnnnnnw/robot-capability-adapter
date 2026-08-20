@@ -327,6 +327,26 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
         (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
     )
     assert "ufactory_xarm7" not in runnable_index["robots"]
+
+    research_index = json.loads(
+        (ROOT / "research" / "robots" / "index.json").read_text(encoding="utf-8")
+    )
+    candidate = next(
+        item
+        for item in research_index["candidates"]
+        if item["robot_configuration_id"] == "ufactory_xarm7"
+    )
+    observed_paths = {
+        item["path"] for item in candidate["locally_observed_source_material"]
+    }
+    assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/assets/scene.xml" in observed_paths
+    assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/morphology.json" in observed_paths
+    missing = " ".join(candidate["missing_for_runnable_package"])
+    assert "complete local MuJoCo asset closure" not in missing
+    assert "current mainline morphology.json" not in missing
+    assert "at least 20 distinct applicable source-backed tasks" in missing
+    assert "dynamic canary" in missing
+
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == ["assets", "morphology.json"]
     assert not (PACKAGE_ROOT / "tasks").exists()
     assert not (PACKAGE_ROOT / "skeleton").exists()

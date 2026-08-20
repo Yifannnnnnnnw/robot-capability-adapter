@@ -155,6 +155,16 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/assets/scene.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical package now contains the complete local Menagerie xArm7 closure. It loads as a seven-joint arm with a real tendon-actuated two-finger gripper, four contact pads, and a link_tcp site."
+        },
+        {
+          "path": "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical morphology records seven position-controlled arm joints, the gripper tendon actuator and passive coupling, contact observations, reset facts, and pinned source lineage without claiming runnable status."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/ufactory_xarm7/xarm7.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical xArm7 Menagerie model and meshes are available for migration inspection."
@@ -181,8 +191,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under a canonical xArm7 package; legacy Menagerie files are migration inputs only.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
         "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
