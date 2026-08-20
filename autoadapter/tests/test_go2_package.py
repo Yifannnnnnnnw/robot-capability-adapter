@@ -5,6 +5,7 @@ import json
 import math
 import re
 import tempfile
+import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 
@@ -445,6 +446,58 @@ def test_go2_private_resets_do_not_pre_satisfy_a_task() -> None:
             assert not all(clause_passes), (
                 f"reset already satisfies {instance['task_id']} variant "
                 f"{variant_index}"
+            )
+
+
+def test_go2_private_scenes_collide_and_reset_without_deep_penetration() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = json.loads(
+        (package.private_dir / "instances.json").read_text(encoding="utf-8")
+    )["instances"]
+    marker_names = {
+        "apex_line",
+        "command_axis",
+        "course_hold_radius",
+        "entry_line",
+        "exit_line",
+        "finish_line",
+        "hold_radius",
+        "landing_line",
+        "map_limit",
+        "off_radius",
+        "start_line",
+    }
+
+    for scene_entrypoint in {item["scene_entrypoint"] for item in instances}:
+        scene = package.root / scene_entrypoint
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        for geom in ET.parse(scene).findall("./worldbody//geom"):
+            name = geom.get("name")
+            geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, name)
+            assert geom_id >= 0, (scene.name, name)
+            contype = int(model.geom_contype[geom_id])
+            conaffinity = int(model.geom_conaffinity[geom_id])
+            if name in marker_names:
+                assert contype == 0 and conaffinity == 0, (scene.name, name)
+            else:
+                assert (contype & 1) or (conaffinity & 1), (scene.name, name)
+
+    for instance in instances:
+        scene = package.root / instance["scene_entrypoint"]
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        data = mujoco.MjData(model)
+        variants = instance.get("repetition_variants") or [{}]
+        for variant_index, variant in enumerate(variants):
+            reset = variant.get("reset") or instance["reset"]
+            apply_framework_reset(mujoco, model, data, reset)
+            minimum_distance = min(
+                (float(data.contact[index].dist) for index in range(data.ncon)),
+                default=math.inf,
+            )
+            assert minimum_distance >= -0.005, (
+                instance["task_id"],
+                variant_index,
+                minimum_distance,
             )
 
 
