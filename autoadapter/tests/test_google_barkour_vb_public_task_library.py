@@ -16,6 +16,7 @@ MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 GO2_SOURCES_PATH = GO2_PACKAGE_ROOT / "tasks" / "sources.json"
 GO2_CATALOG_PATH = GO2_PACKAGE_ROOT / "tasks" / "catalog.json"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
+RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 SOURCE_ORDER = (
     "SRC-LEE-2020",
@@ -549,6 +550,36 @@ def test_google_barkour_vb_public_task_library_snapshot() -> None:
 
     runnable_index = _read_json(RUNNABLE_INDEX_PATH)
     assert "google_barkour_vb" not in runnable_index["robots"]
+
+    research_index = _read_json(RESEARCH_INDEX_PATH)
+    research_candidate = next(
+        candidate
+        for candidate in research_index["candidates"]
+        if candidate["robot_configuration_id"] == "google_barkour_vb"
+    )
+    research_observations = {
+        item["kind"]: item["observation"]
+        for item in research_candidate["locally_observed_source_material"]
+    }
+    catalog_observation = research_observations["canonical_task_catalog"]
+    assert "provisional" in catalog_observation
+    assert "20 catalog records" in catalog_observation
+    assert "10 source-closed task directions" in catalog_observation
+    assert "Lee payload" in catalog_observation
+    assert "QRC" in catalog_observation
+    assert "Shi" in catalog_observation
+    assert "runnable evidence" in catalog_observation
+    assert any(
+        "remaining 10" in missing
+        and "primary-source anchors" in missing
+        and "reported outcomes" in missing
+        and "pass thresholds" in missing
+        for missing in research_candidate["missing_for_runnable_package"]
+    )
+    assert any(
+        "dynamic canary" in missing
+        for missing in research_candidate["missing_for_runnable_package"]
+    )
     task_entries = list((PACKAGE_ROOT / "tasks").iterdir())
     assert sorted(entry.name for entry in task_entries) == ["catalog.json", "sources.json"]
     assert all(entry.is_file() for entry in task_entries)
