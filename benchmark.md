@@ -1,7 +1,7 @@
 # Auto-Adapter 2.0 Benchmark Protocol
 
 > **Status:** protocol draft; non-normative until aligned with `AUTOADAPTER_2_AUTHORITY.md`<br>
-> **Authority baseline:** `AA2-AUTH` revision `0.19.18`<br>
+> **Authority baseline:** `AA2-AUTH` revision `0.19.19`<br>
 > **Prepared:** 2026-08-20<br>
 > **Execution scope:** canonical `autoadapter/` Direct-MuJoCo mainline only<br>
 > **Robot cohort:** one fixed cohort of 14 configurations listed in Section 2<br>
@@ -50,7 +50,7 @@ require retraining or alter the published method, it has no backbone factor and 
 `a x other factors` with that system pinned. The resulting design is intentionally unbalanced
 across architectures.
 
-**Authority decision required.** Revision `0.19.18` currently declares one fixed bounded ReAct
+**Authority decision required.** Revision `0.19.19` retains one fixed bounded ReAct
 controller for formal capability-interface use. This draft instead requires a predeclared set of
 published high-level-controller methods and architecture-specific backbone treatment. Until the
 Authority is explicitly aligned, these comparisons can run only as exploratory pilots; evidence
@@ -96,7 +96,8 @@ Before Experiment 3, one versioned experiment manifest must declare all 14 confi
 
 - each `robot_configuration_id` and morphology category;
 - exact package and Task Library snapshot versions;
-- the Producer backbone set and, for every selected B2 method, its source/version,
+- the exact provider model ID, endpoint, decoding/context configuration, and price snapshot for
+  every Authority-declared Producer family and, for every selected B2 method, its source/version,
   backbone-replacement classification, and valid `B_a` or fixed-system identity;
 - generation replicate count, task instances, seeds, and budgets.
 
@@ -106,20 +107,37 @@ is an execution prerequisite, not cohort membership. Diagnostic cells may run as
 become available, but the formal benchmark is incomplete until all 14 configurations have the
 required B1 and B2 results. No ready subset becomes a replacement headline cohort.
 
-**Authority consistency note.** `AA2-AUTH` revision `0.19.18` still uses an older robot-set and
+**Authority consistency note.** `AA2-AUTH` revision `0.19.19` still uses an older robot-set and
 research-question structure. The Authority must be synchronised with this fixed 14-robot,
 two-sub-benchmark scope before formal benchmark evidence is collected; until then, the Authority
 remains normative.
 
 ## 3. B1: Driver Synthesis
 
-### 3.1 Experimental matrix
+### 3.1 Producer backbone set and experimental matrix
+
+The Authority-declared planned B1 set has `M = 7` Producer model families:
+
+| Producer ID | Model family | Vendor | Formal protocol status |
+|---|---|---|---|
+| M1 | Sonnet 4.6 | Anthropic | Exact provider identifier and endpoint pending manifest freeze |
+| M2 | Opus 4.8 | Anthropic | Exact provider identifier and endpoint pending manifest freeze |
+| M3 | Haiku 4.5 | Anthropic | Exact provider identifier and endpoint pending manifest freeze |
+| M4 | Nova Pro | Amazon | Exact provider identifier and endpoint pending manifest freeze |
+| M5 | DeepSeek V3.2 | DeepSeek | Exact provider identifier and endpoint pending manifest freeze |
+| M6 | Ministral 8B | Mistral | Exact provider identifier and endpoint pending manifest freeze |
+| M7 | Qwen3 32B | Alibaba | Exact provider identifier and endpoint pending manifest freeze |
+
+The table fixes the planned model-family scope, not a movable label for whichever endpoint is
+available later. Before formal runs, the manifest must pin exact revisions, endpoints, decoding
+settings, context limits, token-accounting fields, billing currency, and unit-price snapshot. A
+blocked family remains visible unless an explicit Authority/protocol revision changes the set.
 
 The primary matrix is:
 
 ```text
 14 fixed-cohort robots (N = 14)
-  x M Producer LLM backbones
+  x 7 Authority-declared Producer LLM backbones (M = 7)
   x R independent generation replicates
   x 2 generation conditions
 ```
@@ -171,7 +189,7 @@ model versions and endpoints must be pinned in the experiment manifest immediate
 
 ### 3.4 B1 outcomes
 
-Primary metrics:
+Primary driver-validation metrics:
 
 | Metric | Definition |
 |---|---|
@@ -181,13 +199,33 @@ Primary metrics:
 | Attempts to pass | Submitted driver count until first complete pass; failures retain the attempt cap |
 | Cell completion | Whether the named robot/model/condition/replicate reached a trusted terminal verdict |
 
+Primary resource metrics:
+
+| Metric | Definition |
+|---|---|
+| Model calls | Count every applicable TGCD, model-backed IVC, STUDY, GENERATE/GEN_ALGO, and Repair inference call, including failed calls |
+| Input tokens | Sum provider-reported input tokens; report cache-read/cache-write tokens separately when exposed |
+| Output tokens | Sum provider-reported visible output and reasoning tokens, retaining separate categories when exposed |
+| Model cost | Actual billed amount when exposed; otherwise an estimate from the manifest-pinned currency, unit-price snapshot, and reported token categories |
+| Attempt-0 wall time | Elapsed wall time from the condition's first STUDY call through the trusted capability-validation verdict for attempt `0` |
+| Terminal wall time | Elapsed wall time from the condition's first STUDY call through its final trusted capability-validation verdict, including Repairs |
+| Paired-replicate wall time | Actual elapsed time from the first shared TGCD call until both generation conditions reach terminal capability-validation verdicts |
+| Phase-time breakdown | Shared TGCD/IVC time plus condition-specific model-service, development/probe, audit/import/smoke, and MuJoCo-validation time where measurable |
+
+Resource accounting is reported at three levels: shared resources once per
+`robot x Producer backbone x replicate`, incremental resources for each generation condition, and
+the total for the complete paired replicate. Shared TGCD/IVC calls, tokens, cost, and time must not
+be duplicated into both conditions. Failed and blocked cells retain all resources consumed before
+termination. Task Demo calls, tokens, cost, and time are reported separately and do not enter B1
+driver-synthesis resource totals.
+
 Required secondary reporting:
 
 - TGCD structural validity, task coverage, capability count, and IVC audit outcome;
 - per-capability, per-clause, and per-case validation results;
 - failure class: design/audit, import/API, smoke/runtime, physical criterion, guard, isolation, or
   resource limit;
-- model calls, input/output tokens, wall time, development probes, MuJoCo steps, and estimated cost;
+- development-probe count, output volume, MuJoCo steps, and simulated time;
 - Task Demo verdict reported separately from driver synthesis;
 - paired condition contrast for every robot/model/replicate, including failed cells.
 
@@ -309,7 +347,7 @@ published method logic; it then contributes only `architecture x other factors`,
 system fixed. Otherwise it remains literature context because it would bypass or duplicate the
 driver.
 
-The current bounded ReAct controller remains the Authority `0.19.18` baseline until the Authority is
+The current bounded ReAct controller remains the Authority `0.19.19` baseline until the Authority is
 revised. It is not treated as a sufficient new robot high-level-control architecture merely to fill
 the comparison table. A hand-authored deterministic controller remains a solvability calibration,
 not a leaderboard method.
@@ -398,16 +436,22 @@ Harness verdict.
 
 1. Publish raw numerator/denominator counts and confidence intervals for every named cell.
 2. Pair the two B1 generation conditions within robot/model/generation replicate.
-3. Within each `replaceable` B2 architecture, pair its valid backbones on the same
+3. Report B1 calls, token categories, cost, attempt-0 wall time, and terminal wall time for every
+   cell, including failures. Summarise distributions and paired condition differences; do not
+   report resource use only among successful drivers.
+4. Report total B1 spend divided by the number of finally admitted drivers as a derived
+   cost-per-admitted-driver measure. When no driver passes, report total spend and zero admitted
+   drivers rather than an imputed finite cost.
+5. Within each `replaceable` B2 architecture, pair its valid backbones on the same
    robot/task/seed/episode block.
-4. Compare different B2 architectures as complete systems unless a common-backbone matched block
+6. Compare different B2 architectures as complete systems unless a common-backbone matched block
    supports an explicit `architecture x backbone` analysis. Never infer a global backbone ranking
    from the unbalanced union of `B_a` sets.
-5. Use a hierarchical logistic model or block bootstrap only as a secondary summary when sample
+7. Use a hierarchical logistic model or block bootstrap only as a secondary summary when sample
    size supports it; never let a model-derived aggregate hide raw failed cells.
-6. Report per-robot results and macro-average across robots. Do not micro-average all validation
+8. Report per-robot results and macro-average across robots. Do not micro-average all validation
    cases as if they were independent drivers.
-7. Report fixed trained systems without a counterfactual backbone effect and keep failed or
+9. Report fixed trained systems without a counterfactual backbone effect and keep failed or
    unsupported method cells visible.
 
 ## 6. Execution phases
@@ -417,7 +461,7 @@ Harness verdict.
 | P0: Calibration | Reference drivers, Harness, false-success checks, and video path | Complete trusted calibration reports and videos |
 | P1: Cohort package completion | Complete the Authority-required package inputs for all 14 robots; run named diagnostics as each implementation becomes available | One manifest declares all 14 and every package resolves through the canonical loader |
 | P2: Full-cohort canary | 14 robots x two generation conditions, one real model, `R=1` | All 28 named cells reach trusted terminal verdicts; failures remain visible |
-| P3: Full-cohort synthesis pilot | All 14 robots, `M` Producer models, `R=3` | Variance/failure report; no protocol changes after formal inputs are fixed |
+| P3: Full-cohort synthesis pilot | All 14 robots, all 7 Authority-declared Producer backbones, `R=3` | Variance/failure/resource report; no protocol changes after formal inputs are fixed |
 | P4: Published-controller audit and pilot | Reproduce each candidate method, decide driver compatibility and backbone mode, then run one held-out compatibility cell | Final `A`; every applicable `B_a`; pinned fixed-system/algorithm identities, paper/code versions, adaptation record, observed ABI gaps |
 | P5: Formal B1/B2 | Fixed 14-robot cohort, declared method-specific matrices, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, within-method backbone contrasts, whole-system method comparisons, declared limitations |
 
@@ -431,6 +475,10 @@ For each B1 generation replicate retain:
 
 - experiment configuration and exact robot/package/task snapshot IDs;
 - real model provider, exact model ID, decoding settings, and call records;
+- provider usage fields for input/output/cache/reasoning tokens, actual billing when available,
+  otherwise the currency and unit-price snapshot used for estimation;
+- timestamps and phase durations sufficient to reproduce shared, condition-specific, attempt-0,
+  terminal, model-service, probe, and MuJoCo-validation wall-time measures;
 - `capability_design.json` and IVC audit;
 - unchanged `capability_validation_suite.json` identity across matched conditions and Repairs;
 - condition-specific STUDY/GENERATE trace and every submitted `driver.py`;
@@ -504,9 +552,10 @@ claims must remain bounded to this project's independent Direct-MuJoCo evidence.
    method comparison exploratory.
 2. Declare all 14 robot configurations in one Experiment 3 manifest and use one common cohort
    denominator.
-3. Select and pin the B1 Producer endpoints independently. For B2, freeze final `A` and record each
-   method's paper/code version, applicable `B_a` or pinned no-backbone system/algorithm identity,
-   and driver adapter.
+3. Pin exact provider identifiers, endpoints, decoding/context settings, token fields, billing
+   currency, and price snapshots for all seven Authority-declared B1 Producer families. For B2,
+   freeze final `A` and record each method's paper/code version, applicable `B_a` or pinned
+   no-backbone system/algorithm identity, and driver adapter.
 4. Fix `R`, B2 task templates, seeds, `E`, common outer execution budgets, each architecture's
    method-native internal budget, and the controller-method-blind driver-selection rule before
    inspecting formal outcomes.

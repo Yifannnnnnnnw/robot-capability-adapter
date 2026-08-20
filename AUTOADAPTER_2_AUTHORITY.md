@@ -4,9 +4,22 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.18`<br>
+> **Document revision / 文档版本：** `0.19.19`<br>
 > **Effective date / 生效日期：** 2026-08-20<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.19` restores the seven-family planned RQ1 Producer-backbone coverage that was
+declared before the Direct-MuJoCo Authority rewrite, while leaving exact provider identifiers,
+endpoints, inference settings, and formal price snapshots to the versioned experiment manifest.
+It also makes model calls, input/output tokens, model cost, and wall time primary B1 resource
+outcomes alongside driver-validation outcomes. This is a protocol-accounting clarification; it
+does not change the two generation conditions, attempt budget, robot inputs, or Harness authority.
+
+**中文辅助说明。** `0.19.19` 恢复 Direct-MuJoCo Authority 重写前已声明的七个 RQ1 Producer
+backbone family；准确 provider identifier、endpoint、inference 配置和正式价格快照仍由版本化
+experiment manifest 固定。本修订还将模型调用次数、输入/输出 token、模型费用和 wall time 与
+driver validation 结果一同列为 B1 主要资源结果。这只是 protocol accounting 澄清，不改变两种
+生成条件、attempt 预算、机器人输入或 Harness 判定权。
 
 Revision `0.19.18` declares the fixed bounded ReAct high-level-controller path for post-admission
 Task Demo capability-interface use. Model calls remain in the Framework parent while capability
@@ -664,7 +677,33 @@ manifest 必须声明全部纳入的机器人配置及其 morphology 类别。�
 Library、来源 lineage、asset closure、validation 和 evidence 要求。只有 MJCF 或 URDF asset
 的机器人不属于已准入实验案例。
 
-### 1.4 Research questions / 研究问题
+### 1.4 Planned RQ1 Producer LLM coverage / 规划中的 RQ1 Producer LLM 覆盖
+
+The planned B1 Producer-backbone set contains seven model families (`M = 7`):
+
+| Model family | Vendor | Protocol status |
+|---|---|---|
+| Sonnet 4.6 | Anthropic | Exact identifier pending |
+| Opus 4.8 | Anthropic | Exact identifier pending |
+| Haiku 4.5 | Anthropic | Exact identifier pending |
+| Nova Pro | Amazon | Exact identifier pending |
+| DeepSeek V3.2 | DeepSeek | Exact identifier pending |
+| Ministral 8B | Mistral | Exact identifier pending |
+| Qwen3 32B | Alibaba | Exact identifier pending |
+
+Inclusion defines planned RQ1 scope; it does not claim that exact provider identifiers, revisions,
+endpoints, inference settings, context limits, or prices are already frozen. Before a formal B1
+run, the versioned experiment manifest must pin those facts for every family. An unavailable family
+must remain a visible blocked cell or be removed through an explicit Authority/protocol revision;
+it may not be silently replaced after outcomes are inspected.
+
+**中文辅助说明。** B1 规划中的 Producer backbone 集合包含上述七个模型 family（`M = 7`）。
+纳入表格表示 RQ1 的规划范围，并不表示准确 provider identifier、revision、endpoint、inference
+配置、context limit 或价格已经冻结。正式 B1 运行前，版本化 experiment manifest 必须为每个
+family 固定这些信息。不可用 family 必须保留为可见 blocked cell，或通过明确的 Authority/protocol
+修订删除；不得在查看结果后静默替换。
+
+### 1.5 Research questions / 研究问题
 
 The project evaluates three controlled research questions:
 
@@ -710,6 +749,20 @@ pass criteria remain an evaluated output and may therefore differ across LLM bac
 generation condition, all backbones receive the same public inputs; the two generation conditions
 differ only in their authorised access to the trusted skeleton.
 
+B1 primary reporting contains both driver-validation and resource outcomes:
+
+| Primary result family | Required measures |
+|---|---|
+| Driver validation | Initial `pass@0`, final pass within the maximum three submitted driver attempts, Repair gain, attempts to first pass, and cell completion |
+| Model use | Model-call count plus provider-reported input, output, cached, and reasoning tokens where available |
+| Monetary cost | Actual billed model cost when exposed by the provider; otherwise an estimate using the manifest-pinned currency, unit-price snapshot, and token categories |
+| Time | Wall time to the attempt-0 validation verdict and to the terminal capability-validation verdict, with model-service, development/probe, and MuJoCo-validation time reported separately where measurable |
+
+The resource ledger counts every applicable model call in TGCD, model-backed IVC, STUDY,
+GENERATE/GEN_ALGO, and Repair, including failed calls and failed cells. Shared TGCD/IVC resources
+are recorded once per `robot x Producer backbone x replicate` and are not duplicated into both
+generation conditions. Task Demo resources remain separate from B1 driver-synthesis resources.
+
 Reference drivers are positive controls for the Framework and Direct-MuJoCo execution route. They
 are not model conditions and cannot be counted as evidence of model-based robot-specific driver
 synthesis or capability-interface use. RQ3 is descriptive and associational: the declared design does
@@ -744,7 +797,14 @@ not identify a causal morphology effect.
 在 RQ1 driver synthesis 中，固定 validation criteria 是指固定来源 task 通过标准、私有 task instance、
 测量语义和 Harness 判定规则。由模型生成的 capability-level pass criteria 仍是被评估输出，因此
 可以随 LLM backbone 不同而变化。在每种生成条件内，所有 backbone 接收相同公开输入；两种生成
-条件只在是否获准访问 trusted skeleton 这一点上不同。Reference driver 是 Framework 和
+条件只在是否获准访问 trusted skeleton 这一点上不同。B1 主要结果同时包含 driver validation 与
+资源结果：首次 `pass@0`、三次 driver 提交预算内的最终通过、Repair gain、首次通过所需 attempt
+和 cell completion；全部适用模型调用及 provider 可提供的 input/output/cached/reasoning token；
+实际账单费用或按 manifest 固定价格快照估算的模型费用；以及到 attempt-0 verdict 和最终 terminal
+verdict 的 wall time，并在可测量时分别报告 model service、development/probe 和 MuJoCo validation
+时间。TGCD 与 model-backed IVC 的共享资源每个 `robot x Producer backbone x replicate` 只记录
+一次，不得在两个生成条件中重复计费；Task Demo 资源与 B1 driver synthesis 分开报告。
+Reference driver 是 Framework 和
 Direct-MuJoCo 执行路径的正向对照，不是模型条件，不能计为 model-based robot-specific driver
 synthesis 或 capability-interface use 的证据。RQ3 只能进行描述性和关联性解释；当前设计不能识别
 morphology 的因果效应。
