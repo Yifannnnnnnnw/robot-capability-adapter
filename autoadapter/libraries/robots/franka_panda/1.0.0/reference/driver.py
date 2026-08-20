@@ -92,6 +92,13 @@ class ReferenceFrankaPandaDriver:
         body_id = self._id(mujoco.mjtObj.mjOBJ_BODY, name)
         return np.asarray(self.data.xpos[body_id], dtype=float).copy()
 
+    def _body_point_position(self, name: str, local_position: np.ndarray) -> np.ndarray:
+        body_id = self._id(mujoco.mjtObj.mjOBJ_BODY, name)
+        rotation = np.asarray(self.data.xmat[body_id], dtype=float).reshape(3, 3)
+        return self._body_position(name) + rotation @ _vector(
+            local_position, name="local_position"
+        )
+
     def _set_arm_target(self, target: np.ndarray) -> None:
         self._arm_target = np.asarray(target, dtype=float).copy()
         for actuator_id, value in zip(self._actuator_ids, target):
@@ -260,13 +267,7 @@ class ReferenceFrankaPandaDriver:
                 max_joint_delta=0.018,
             )
 
-    def _pick_place_hop(
-        self,
-        destination_xy: np.ndarray,
-        *,
-        high_lift: bool,
-        carry_segments: int = 30,
-    ) -> None:
+    def _grasp_and_lift_object(self, *, high_lift: bool) -> None:
         object_position = self._body_position("workpiece")
         grasp = object_position + np.asarray((0.0, 0.0, 0.111))
         normal_pregrasp = grasp + np.asarray((0.0, 0.0, 0.095))
@@ -306,8 +307,45 @@ class ReferenceFrankaPandaDriver:
         self._hold_arm_target(normal_target, steps=240)
         if high_target is not None:
             self._hold_arm_target(high_target, steps=240)
+
+    def _pick_place_hop(
+        self,
+        destination_xy: np.ndarray,
+        *,
+        high_lift: bool,
+        carry_segments: int = 30,
+    ) -> None:
+        self._grasp_and_lift_object(high_lift=high_lift)
         self._carry_pick_place_object(destination_xy, segments=carry_segments)
         self._set_gripper(GRIPPER_OPEN)
+        self._idle(250)
+
+    def _insert_peg(self, target: np.ndarray) -> None:
+        self._grasp_and_lift_object(high_lift=True)
+        self._carry_pick_place_object(
+            np.asarray((target[0], 0.02)),
+            segments=30,
+        )
+
+        peg_head = self._body_point_position(
+            "workpiece", np.asarray((0.0, -0.054, 0.0))
+        )
+        aligned_hand = self._ee_position()
+        aligned_hand[2] += target[2] - peg_head[2]
+        self._pose_steps(
+            aligned_hand,
+            self._pick_rotation,
+            steps=1200,
+            gain=1.2,
+            max_joint_delta=0.03,
+        )
+
+        peg_head = self._body_point_position(
+            "workpiece", np.asarray((0.0, -0.054, 0.0))
+        )
+        workpiece = self._body_position("workpiece")
+        insertion_xy = workpiece[:2] + target[:2] - peg_head[:2]
+        self._carry_pick_place_object(insertion_xy, segments=45)
         self._idle(250)
 
     def _reach_parameter(
@@ -383,9 +421,16 @@ class ReferenceFrankaPandaDriver:
         task_id, parameters = _request(request)
         start = _vector(parameters["start_position"], name="start_position")
         target = self._reach_parameter(parameters)
-        if task_id in {"mw_pick_place", "mw_pick_place_wall"}:
+        if task_id in {
+            "mw_pick_place",
+            "mw_pick_place_wall",
+            "mw_peg_insertion_side",
+        }:
             self._arm_target = self._current_q()
             self._pick_rotation = self._ee_rotation()
+            if task_id == "mw_peg_insertion_side":
+                self._insert_peg(target)
+                return
             if task_id == "mw_pick_place_wall":
                 self._pick_rotation = WORLD_Z_QUARTER_TURN @ self._pick_rotation
                 self._pick_place_hop(

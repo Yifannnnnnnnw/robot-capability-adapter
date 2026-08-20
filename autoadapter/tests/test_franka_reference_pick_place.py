@@ -149,9 +149,13 @@ def _suite(package: object, design: dict, task_id: str) -> dict:
 
 @pytest.mark.parametrize(
     ("task_id", "threshold"),
-    (("mw_pick_place", 0.07), ("mw_pick_place_wall", 0.07)),
+    (
+        ("mw_pick_place", 0.07),
+        ("mw_pick_place_wall", 0.07),
+        ("mw_peg_insertion_side", 0.07),
+    ),
 )
-def test_franka_reference_pick_place_passes_real_harness(
+def test_franka_reference_object_case_passes_real_harness(
     task_id: str, threshold: float
 ) -> None:
     package = load_robot_package(PACKAGE_ROOT)
