@@ -21,6 +21,10 @@ from autoadapter2.trusted_skeletons.quadruped_pd_gait import (
     QuadrupedPDGaitSkeleton,
     QuadrupedSpec,
 )
+from autoadapter2.trusted_skeletons.go2_velocity_policy import (
+    Go2VelocityPolicySkeleton,
+    Go2VelocityPolicySpec,
+)
 from autoadapter2.validation_compiler import (
     sample_task_demo_suite,
     validate_capability_validation_suite,
@@ -152,6 +156,17 @@ def test_go2_skeleton_inventory_resolves_to_the_visible_runtime_contract() -> No
     assert inventory.QuadrupedPDGaitSkeleton is QuadrupedPDGaitSkeleton
     assert inventory.QuadrupedSpec is QuadrupedSpec
 
+    policy_inventory_path = PACKAGE_ROOT / "skeleton" / "go2_velocity_policy.py"
+    policy_module_spec = importlib.util.spec_from_file_location(
+        "mainline_go2_velocity_policy_inventory", policy_inventory_path
+    )
+    assert policy_module_spec is not None and policy_module_spec.loader is not None
+    policy_inventory = importlib.util.module_from_spec(policy_module_spec)
+    policy_module_spec.loader.exec_module(policy_inventory)
+    assert policy_inventory.Go2VelocityPolicySkeleton is Go2VelocityPolicySkeleton
+    assert policy_inventory.Go2VelocityPolicySpec is Go2VelocityPolicySpec
+    assert policy_inventory.GO2_VELOCITY_POLICY_SPEC.base_body_name == "base_link"
+
     package = load_robot_package(PACKAGE_ROOT)
     design, _suite = _design_and_suite(package)
     inputs = build_public_generation_inputs(
@@ -169,6 +184,14 @@ def test_go2_skeleton_inventory_resolves_to_the_visible_runtime_contract() -> No
     assert "def command_planar_velocity(" in runtime_source
     assert "duration: float = 1.0" in runtime_source
     assert "del vy, yaw_rate" not in runtime_source
+    policy_runtime_path = (
+        "runtime/autoadapter2/trusted_skeletons/go2_velocity_policy.py"
+    )
+    assert policy_runtime_path in source_files
+    policy_runtime_source = source_files[policy_runtime_path]
+    assert "class Go2VelocityPolicySkeleton" in policy_runtime_source
+    assert "def command_planar_velocity(" in policy_runtime_source
+    assert "import torch" not in policy_runtime_source
 
 
 def test_go2_package_snapshot_and_private_coverage() -> None:
@@ -350,13 +373,14 @@ def test_go2_arbitrary_renderer_dispatches_by_task_id() -> None:
         source = driver_path.read_text(encoding="utf-8")
         audit = audit_driver_source(
             source,
-            condition="from-scratch",
+            condition="skeleton-assisted",
             capability_methods=tuple(
                 capability["method_name"] for capability in design["capabilities"]
             ),
         )
         assert audit.ctrl_references > 0
         assert audit.physics_step_references > 0
+        assert audit.imports_trusted_skeleton
         assert "task_id == \"GO2-T01\"" in source
         assert "ReferenceGo2Driver.walk_forward(self, request)" in source
         assert "ReferenceGo2Driver.traverse_stairs(self, request)" in source

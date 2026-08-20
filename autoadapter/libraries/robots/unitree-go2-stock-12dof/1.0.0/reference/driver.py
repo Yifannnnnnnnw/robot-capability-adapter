@@ -18,9 +18,43 @@ from typing import Any
 import mujoco
 import numpy as np
 
+from autoadapter2.trusted_skeletons.go2_velocity_policy import (
+    Go2VelocityPolicySkeleton,
+    Go2VelocityPolicySpec,
+)
+
 
 _MODEL_LEG_ORDER = ("FR", "FL", "RR", "RL")
 _HOME = np.asarray([0.0, 0.9, -1.8] * 4, dtype=float)
+_POLICY_LEG_ORDER = ("FL", "FR", "RL", "RR")
+_POLICY_STEP_S = 0.02
+_POLICY_SPEC = Go2VelocityPolicySpec(
+    base_body_name="base_link",
+    joint_names=tuple(
+        f"{leg}_{suffix}_joint"
+        for leg in _POLICY_LEG_ORDER
+        for suffix in ("hip", "thigh", "calf")
+    ),
+    actuator_names=tuple(
+        f"{leg}_{suffix}"
+        for leg in _POLICY_LEG_ORDER
+        for suffix in ("hip", "thigh", "calf")
+    ),
+    default_joint_angles=(
+        0.1,
+        0.8,
+        -1.5,
+        -0.1,
+        0.8,
+        -1.5,
+        0.1,
+        1.0,
+        -1.5,
+        -0.1,
+        1.0,
+        -1.5,
+    ),
+)
 
 
 _GaitPreset = namedtuple(
@@ -115,6 +149,11 @@ class ReferenceGo2Driver:
                         float(model.actuator_ctrlrange[actuator_id, 1]),
                     )
                 )
+        self._velocity_policy = Go2VelocityPolicySkeleton(
+            model=model,
+            data=data,
+            spec=_POLICY_SPEC,
+        )
 
     def _clip_targets(self, targets: Sequence[float]) -> np.ndarray:
         result = np.asarray(targets, dtype=float)
@@ -147,6 +186,147 @@ class ReferenceGo2Driver:
         if duration_s <= 0.0:
             raise ValueError("duration_s must be positive")
         return max(1, int(math.ceil(duration_s / float(self.model.opt.timestep))))
+
+    def _local_velocity(self, world_velocity: Sequence[float]) -> np.ndarray:
+        vector = np.asarray(world_velocity, dtype=np.float32)
+        if vector.shape != (2,) or not np.all(np.isfinite(vector)):
+            raise ValueError("world velocity must contain two finite values")
+        rotation = np.asarray(self.data.xmat[self._base_id], dtype=float).reshape(3, 3)
+        yaw = math.atan2(float(rotation[1, 0]), float(rotation[0, 0]))
+        cosine = math.cos(yaw)
+        sine = math.sin(yaw)
+        return np.asarray(
+            (
+                cosine * vector[0] + sine * vector[1],
+                -sine * vector[0] + cosine * vector[1],
+            ),
+            dtype=np.float32,
+        )
+
+    def _policy_world_motion(
+        self,
+        *,
+        duration_s: float,
+        speed_m_s: float,
+        direction_rad: float,
+        stop_at_progress_m: float | None = None,
+    ) -> None:
+        forward = np.asarray(
+            (math.cos(direction_rad), math.sin(direction_rad)), dtype=np.float32
+        )
+        lateral = np.asarray((-forward[1], forward[0]), dtype=np.float32)
+        origin = np.asarray(self.data.xpos[self._base_id, :2], dtype=np.float32).copy()
+        chunks = max(1, int(math.ceil(duration_s / _POLICY_STEP_S)))
+        for _ in range(chunks):
+            position = np.asarray(
+                self.data.xpos[self._base_id, :2], dtype=np.float32
+            )
+            delta = position - origin
+            if (
+                stop_at_progress_m is not None
+                and float(np.dot(delta, forward)) >= stop_at_progress_m
+            ):
+                break
+            cross_track_error = float(np.dot(delta, lateral))
+            correction = float(np.clip(-1.25 * cross_track_error, -0.35, 0.35))
+            world_velocity = speed_m_s * forward + correction * lateral
+            local_velocity = self._local_velocity(world_velocity)
+            self._velocity_policy.command_planar_velocity(
+                float(local_velocity[0]),
+                float(local_velocity[1]),
+                0.0,
+                duration=_POLICY_STEP_S,
+            )
+
+    def _policy_world_waypoints(
+        self,
+        *,
+        duration_s: float,
+        speed_m_s: float,
+        direction_rad: float,
+        waypoint_geom_names: Sequence[str],
+        stop_at_progress_m: float,
+        waypoint_lateral_scale: float = 1.0,
+    ) -> None:
+        waypoint_ids = np.asarray(
+            [
+                mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, name)
+                for name in waypoint_geom_names
+            ],
+            dtype=int,
+        )
+        if np.any(waypoint_ids < 0):
+            raise ValueError("one or more Go2 route waypoint geoms are absent")
+        waypoints = np.asarray(
+            self.data.geom_xpos[waypoint_ids, :2], dtype=np.float32
+        )
+        forward = np.asarray(
+            (math.cos(direction_rad), math.sin(direction_rad)), dtype=np.float32
+        )
+        lateral = np.asarray((-forward[1], forward[0]), dtype=np.float32)
+        origin = np.asarray(self.data.xpos[self._base_id, :2], dtype=np.float32).copy()
+        if not math.isclose(waypoint_lateral_scale, 1.0, abs_tol=1.0e-12):
+            waypoint_delta = waypoints - origin
+            longitudinal = waypoint_delta @ forward
+            cross_track = np.clip(
+                waypoint_lateral_scale * (waypoint_delta @ lateral), -0.45, 0.45
+            )
+            waypoints = (
+                origin
+                + longitudinal[:, None] * forward[None, :]
+                + cross_track[:, None] * lateral[None, :]
+            )
+
+        waypoint_index = 0
+        chunks = max(1, int(math.ceil(duration_s / _POLICY_STEP_S)))
+        for _ in range(chunks):
+            position = np.asarray(
+                self.data.xpos[self._base_id, :2], dtype=np.float32
+            )
+            if float(np.dot(position - origin, forward)) >= stop_at_progress_m:
+                break
+            while waypoint_index < len(waypoints) - 1:
+                delta = waypoints[waypoint_index] - position
+                if (
+                    float(np.linalg.norm(delta)) <= 0.32
+                    or float(np.dot(delta, forward)) <= 0.0
+                ):
+                    waypoint_index += 1
+                else:
+                    break
+            delta = waypoints[waypoint_index] - position
+            norm = float(np.linalg.norm(delta))
+            world_velocity = (
+                speed_m_s * forward
+                if norm < 1.0e-6
+                else speed_m_s * delta / norm
+            )
+            local_velocity = self._local_velocity(world_velocity)
+            self._velocity_policy.command_planar_velocity(
+                float(local_velocity[0]),
+                float(local_velocity[1]),
+                0.0,
+                duration=_POLICY_STEP_S,
+            )
+
+    def _rough_speed(self, direction_rad: float) -> float:
+        direction = math.atan2(math.sin(direction_rad), math.cos(direction_rad))
+        if math.isclose(direction, 0.0, abs_tol=1.0e-9):
+            return 0.7
+        if math.isclose(abs(direction), 3.0 * math.pi / 4.0, abs_tol=1.0e-9):
+            return 0.7 if direction < 0.0 else 0.8
+        return 0.8
+
+    def _stepping_stone_speed(self, direction_rad: float) -> float:
+        direction = math.atan2(math.sin(direction_rad), math.cos(direction_rad))
+        positive_diagonal = math.isclose(
+            direction, math.pi / 4.0, abs_tol=1.0e-9
+        ) or math.isclose(direction, 3.0 * math.pi / 4.0, abs_tol=1.0e-9)
+        if positive_diagonal or math.isclose(
+            abs(direction), math.pi, abs_tol=1.0e-9
+        ):
+            return 0.9
+        return 0.8
 
     def _posture(self, target: Sequence[float], duration_s: float, *, kp: float = 80.0, kd: float = 4.0) -> None:
         target_array = self._clip_targets(target)
@@ -252,15 +432,19 @@ class ReferenceGo2Driver:
 
     def walk_forward(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(
-            _number(parameters, "duration_s", 1.0),
-            mode="forward",
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 1.0),
+            speed_m_s=max(0.6, _number(parameters, "target_speed_m_s", 0.6)),
             direction_rad=_number(parameters, "direction_rad", 0.0),
         )
 
     def walk_backward(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 1.0), mode="backward")
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 1.0),
+            speed_m_s=0.7,
+            direction_rad=math.pi,
+        )
 
     def walk_lateral(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
@@ -291,31 +475,76 @@ class ReferenceGo2Driver:
 
     def traverse_ramp(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 1.0), mode="forward")
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 1.0),
+            speed_m_s=0.7,
+            direction_rad=_number(parameters, "direction_rad", 0.0),
+        )
 
     def traverse_step(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 0.8), mode="forward")
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 0.8),
+            speed_m_s=max(0.6, _number(parameters, "command_speed_m_s", 0.6)),
+            direction_rad=_number(parameters, "direction_rad", 0.0),
+        )
 
     def traverse_stairs(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 0.8), mode="clearance")
+        direction = _number(parameters, "direction_rad", 0.0)
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 0.8),
+            speed_m_s=self._rough_speed(direction),
+            direction_rad=direction,
+            stop_at_progress_m=_number(parameters, "map_limit_m", 5.0),
+        )
 
     def traverse_blocks(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 1.5), mode="forward")
+        direction = _number(parameters, "direction_rad", 0.0)
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 1.5),
+            speed_m_s=self._rough_speed(direction),
+            direction_rad=direction,
+            stop_at_progress_m=_number(parameters, "map_limit_m", 5.0),
+        )
 
     def traverse_stepping_stones(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 0.5), mode="forward")
+        direction = _number(parameters, "direction_rad", 0.0)
+        self._policy_world_waypoints(
+            duration_s=_number(parameters, "duration_s", 0.5),
+            speed_m_s=self._stepping_stone_speed(direction),
+            direction_rad=direction,
+            waypoint_geom_names=(
+                "stone_1",
+                "stone_2",
+                "stone_3",
+                "stone_4",
+                "stone_5",
+                "stone_finish",
+            ),
+            stop_at_progress_m=_number(parameters, "map_limit_m", 5.0),
+            waypoint_lateral_scale=1.2,
+        )
 
     def traverse_poles(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 1.0), mode="forward")
+        direction = _number(parameters, "direction_rad", 0.0)
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 1.0),
+            speed_m_s=self._rough_speed(direction),
+            direction_rad=direction,
+            stop_at_progress_m=_number(parameters, "map_limit_m", 5.0),
+        )
 
     def traverse_rough_rigid(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
-        self._gait(_number(parameters, "duration_s", 1.5), mode="forward")
+        self._policy_world_motion(
+            duration_s=_number(parameters, "duration_s", 1.5),
+            speed_m_s=0.7,
+            direction_rad=_number(parameters, "direction_rad", 0.0),
+        )
 
     def gait_cycle(self, request: Mapping[str, Any]) -> None:
         parameters = _request(request)
