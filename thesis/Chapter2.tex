@@ -192,6 +192,61 @@ interfaces and drivers.
 \subsection{Interfaces and Drivers}
 \label{sec:interfaces-drivers}
 
+A high-level controller needs a stable boundary for delegating a task decision
+without knowing how a particular robot will realise it. Research on action
+representations distinguishes the intended effect of an action from the
+end-effector, joint, or actuator commands used to produce that effect
+\citep{zech2019action}. Reviews of capability-based frameworks identify a
+similar separation, despite varied uses of task, skill, and primitive: an
+operation is exposed in terms meaningful to a caller and then grounded in
+hardware-facing control \citep{pantano2022capabilitysurvey}. This thesis calls
+the caller-facing contract the robot capability interface. It defines what an
+operation means, when it may be requested, and what evidence would demonstrate
+its outcome. It also fixes conventions such as units and reference frames,
+which would otherwise make a call ambiguous, but does not itself execute the
+operation.
+
+Execution instead depends on software that connects task-level requests to
+the control facilities of one robot, yet no universal artefact serves this
+purpose. \citet{tripathi2026testdriven} generate a standalone Python
+controller for a Webots navigation task. ROS~2 instead separates controllers
+from dynamically loaded hardware components, while SkiROS2 composes executable
+skill implementations above ROS
+\citep{macenski2022ros2,ros2control2026hardware,mayr2023skiros2}.
+LeRobot takes a more compact route by defining a Python \texttt{Robot} class
+that exchanges actions and observations through a motor bus or manufacturer
+interface \citep{lerobot2026hardware}. These systems expose different software
+boundaries, but each connects an operation understood by higher-level software
+to a robot-specific means of execution.
+
+Auto-Adapter places this connection in one generated Python robot-specific
+driver for each robot configuration. Its public methods implement the
+capability interface, while the code behind them maps requests and feedback to
+the representations used by the robot. The driver may invoke existing control
+facilities or supply the required motion generation and feedback logic itself
+\citep{lynch2017modern}. One artefact may therefore span responsibilities that
+other systems divide among several components, while the task-level sequence
+remains with the high-level controller.
+
+The division of work between the high-level controller and the driver changes
+with capability granularity. A coarse-grained operation leaves fewer decisions
+to the high-level controller, but requires the driver to realise more movement
+and recovery behind one call. A fine-grained operation permits more
+recomposition, but asks the high-level controller to coordinate more steps and
+respond to intermediate feedback; neither allocation is uniformly preferable
+\citep{zech2019action,pantano2022capabilitysurvey}. AutoAdapter-Bench therefore
+compares capability-interface use across declared granularities under matched
+task and execution conditions, and separately compares LLM backbones in
+synthesising drivers for low-level motion-control capabilities. The execution
+principle applies in simulation and on physical robots, whether the driver
+reaches the robot through a simulator API, middleware, or a manufacturer
+interface. Under either route, an accepted call shows that the software
+exchange completed; successful behaviour requires an observed change in the
+robot or environment. Auto-Adapter therefore reports capability-interface use
+and driver synthesis as separate outcomes. The next subsection examines how
+morphology and control structure change the corresponding implementation
+requirements.
+
 \subsection{Morphology and Control}
 \label{sec:morphology-control}
 
