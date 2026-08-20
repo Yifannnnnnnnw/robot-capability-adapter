@@ -844,7 +844,12 @@
         {
           "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/reference/driver.py",
           "kind": "canonical_reference_calibration",
-          "observation": "The actuator-only reference driver passes the complete real private Harness for all 20 v2 tasks, including the replacement window open/close and faucet-close routes. Every trial passes its source clause, private case, core guards, control-change evidence, and direct-state-write rejection. This focused run records no videos and is not yet the required video-backed package-wide positive control."
+          "observation": "The actuator-only reference driver passes the complete real private Harness for all 20 v2 tasks, including the replacement window open/close and faucet-close routes. Every trial passes its source clause, private case, core guards, control-change evidence, and direct-state-write rejection; the retained package-wide run includes complete readable videos for every case."
+        },
+        {
+          "path": "autoadapter/evidence/README.md",
+          "kind": "tracked_reference_positive_control_record",
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven Stretch 2 package-wide reference positive control. All core guards and canonical-model checks passed, no direct state write was detected, and all 20 independently decoded 800x600 videos were complete and task-readable after the evidence-framebuffer and window-camera fixes. This is calibration evidence only, not model-generation or runnable-admission evidence."
         },
         {
           "path": "demo2/legacy_assets/menagerie/hello_robot_stretch/stretch.xml",
@@ -873,7 +878,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Complete a video-backed package-wide positive control across all 20 private cases; the current focused reference evidence covers 20/20 without videos.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
         "Perform final human package and admission review, then add Stretch 2 to the runnable index only if the dynamic canary passes."
       ]

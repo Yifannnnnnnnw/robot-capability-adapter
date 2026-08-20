@@ -199,6 +199,7 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/assets/reach_scene.xml",
             "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/private/instances.json",
             "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/reference/driver.py",
+            "autoadapter/evidence/README.md",
         ):
             self.assertIn(path, stretch_paths)
         reference_observation = next(
@@ -207,13 +208,13 @@ class ResearchRobotIndexTests(unittest.TestCase):
             if material["kind"] == "canonical_reference_calibration"
         )
         self.assertIn("all 20", reference_observation)
-        self.assertIn("no videos", reference_observation)
+        self.assertIn("complete readable videos", reference_observation)
         missing = " ".join(stretch["missing_for_runnable_package"])
         self.assertNotIn("research candidate only", missing)
         self.assertNotIn("Create Framework-private", missing)
         self.assertNotIn("Add the package check", missing)
         self.assertNotIn("remaining three", missing)
-        self.assertIn("video-backed package-wide positive control", missing)
+        self.assertNotIn("video-backed package-wide positive control", missing)
         self.assertIn("dynamic canary", missing)
 
         barkour = candidates_by_id["google_barkour_vb"]

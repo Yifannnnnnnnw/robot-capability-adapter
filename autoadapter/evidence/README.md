@@ -273,6 +273,40 @@ establish Task Demo or driver-synthesis success, and does not admit this
 configuration to the runnable index. A real-model dynamic canary and final
 admission review remain required.
 
+## Stretch 2 Package-Wide Reference Positive Control
+
+Run `stretch-reference-positive-control-20260820T215313Z`, on repository commit
+`85eddd2`, passed all 20 canonical Stretch 2 Task Library cases with the
+reviewed skeleton-assisted calibration driver and real MuJoCo 3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- tasks, source clauses, and private cases: `20/20` each, including the v2
+  window-open, window-close, and faucet-close routes;
+- actuator control was observed before physics stepping and changed from reset
+  in every trial;
+- all core guards passed, all canonical model/data checks passed, and no direct
+  `qpos` or `qvel` write was detected;
+- maximum trial length: 22,088 physics steps, within its declared private-case
+  budget;
+- videos: `20/20` complete H.264, independently decoded at `800x600` and 10
+  fps, with 12 to 443 frames per case; and
+- pick-place, window-open, window-close, faucet-close, and lever-pull terminal
+  frames were visually checked for nonblank, task-readable framing and visible
+  terminal task state.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/stretch-reference-positive-control-20260820T215313Z/`. Its
+`reference_report.json`, complete 20-case suite, capability design, and
+per-case videos remain together. The final run includes the evidence-framebuffer
+fix from `1c299ed` and the window-camera visibility fix from `f63f057`.
+
+This result establishes package-wide reference feasibility for the canonical
+Stretch 2 assets, mobile-manipulation feedback baseline, trusted measurements,
+guards, Harness, package loader, and video path. It is calibration evidence
+only: it is not model-generated or dynamic evidence, does not establish Task
+Demo or driver-synthesis success, and does not admit Stretch 2 to the runnable
+index. A real-model dynamic canary and final admission review remain required.
+
 ## SO-101 Package-Wide Reference Positive Control
 
 Run `so101-reference-positive-control-20260820T152422Z`, on repository commit
@@ -425,8 +459,8 @@ AutoAdapter 2.0 benchmark success.
    geometry-specific measurements such as peg-head alignment.
 4. Add close evidence cameras and verify readable per-case videos.
 5. Complete the required human task-admission review for every robot in the
-   Authority-declared thirteen-configuration cohort.
-6. Recalibrate every package reference, then run the 26-cell initial
+   Authority-declared eleven-configuration cohort.
+6. Recalibrate every package reference, then run the 22-cell initial
    all-robot shakedown with the manifest-pinned minimal model, per-cell
    Evolution outcomes, and post-round Experience dispositions. The historical
    four-cell diagnostic above cannot satisfy or reduce that scope.
