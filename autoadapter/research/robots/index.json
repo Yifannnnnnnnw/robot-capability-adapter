@@ -655,6 +655,16 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/assets/scene.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical package copies all 44 local Menagerie files byte-for-byte; assets/scene.xml is the selected joint-position scene with a 29-file local runtime closure and MuJoCo 3.3.6 model dimensions nq=nv=16 and nu=14. The filtered-Cartesian actuator alternative remains unused."
+        },
+        {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical morphology records the fixed-base bimanual joint-position controls, mirrored finger equalities, public joint/gripper actions, and state/site/contact observations from the selected ALOHA scene; it does not add tasks, a skeleton, a reference driver, or runnable status."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/aloha/aloha.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical ALOHA model, actuator fragments, and meshes are available for migration inspection."
@@ -681,8 +691,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under a canonical ALOHA 2 package; legacy Menagerie files are migration inputs only.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
         "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",

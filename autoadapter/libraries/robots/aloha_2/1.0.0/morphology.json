@@ -1,0 +1,268 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "aloha_2",
+  "robot_configuration_id": "aloha_2",
+  "package_version": "1.0.0",
+  "morphology_kind": "fixed_base_bimanual_manipulator",
+  "base_type": "fixed",
+  "degrees_of_freedom": {
+    "arm_per_side": 6,
+    "actuated_gripper_slide_per_side": 1,
+    "passive_mirrored_finger_slide_per_side": 1
+  },
+  "mjcf_entrypoint": "assets/scene.xml",
+  "mujoco": {
+    "version": "3.3.6",
+    "nq": 16,
+    "nv": 16,
+    "nu": 14,
+    "njnt": 16,
+    "nsite": 7,
+    "nsensor": 0,
+    "ncam": 6,
+    "neq": 2,
+    "nkey": 1,
+    "na": 0
+  },
+  "public_control": {
+    "actuation": "joint_position",
+    "transmission": "direct_joint",
+    "joint_types": {
+      "arm": "hinge",
+      "finger": "slide"
+    },
+    "joint_names": [
+      "left/waist",
+      "left/shoulder",
+      "left/elbow",
+      "left/forearm_roll",
+      "left/wrist_angle",
+      "left/wrist_rotate",
+      "left/left_finger",
+      "left/right_finger",
+      "right/waist",
+      "right/shoulder",
+      "right/elbow",
+      "right/forearm_roll",
+      "right/wrist_angle",
+      "right/wrist_rotate",
+      "right/left_finger",
+      "right/right_finger"
+    ],
+    "actuator_names": [
+      "left/waist",
+      "left/shoulder",
+      "left/elbow",
+      "left/forearm_roll",
+      "left/wrist_angle",
+      "left/wrist_rotate",
+      "left/gripper",
+      "right/waist",
+      "right/shoulder",
+      "right/elbow",
+      "right/forearm_roll",
+      "right/wrist_angle",
+      "right/wrist_rotate",
+      "right/gripper"
+    ],
+    "actuator_joint_map": {
+      "left/waist": "left/waist",
+      "left/shoulder": "left/shoulder",
+      "left/elbow": "left/elbow",
+      "left/forearm_roll": "left/forearm_roll",
+      "left/wrist_angle": "left/wrist_angle",
+      "left/wrist_rotate": "left/wrist_rotate",
+      "left/gripper": "left/left_finger",
+      "right/waist": "right/waist",
+      "right/shoulder": "right/shoulder",
+      "right/elbow": "right/elbow",
+      "right/forearm_roll": "right/forearm_roll",
+      "right/wrist_angle": "right/wrist_angle",
+      "right/wrist_rotate": "right/wrist_rotate",
+      "right/gripper": "right/left_finger"
+    },
+    "arm_joint_names_by_side": {
+      "left": [
+        "left/waist",
+        "left/shoulder",
+        "left/elbow",
+        "left/forearm_roll",
+        "left/wrist_angle",
+        "left/wrist_rotate"
+      ],
+      "right": [
+        "right/waist",
+        "right/shoulder",
+        "right/elbow",
+        "right/forearm_roll",
+        "right/wrist_angle",
+        "right/wrist_rotate"
+      ]
+    },
+    "actuated_finger_joint_names": [
+      "left/left_finger",
+      "right/left_finger"
+    ],
+    "mirrored_finger_joint_names": [
+      "left/right_finger",
+      "right/right_finger"
+    ],
+    "arm_joint_limits_rad": {
+      "left/waist": [-3.14158, 3.14158],
+      "left/shoulder": [-1.85005, 1.25664],
+      "left/elbow": [-1.76278, 1.6057],
+      "left/forearm_roll": [-3.14158, 3.14158],
+      "left/wrist_angle": [-1.8675, 2.23402],
+      "left/wrist_rotate": [-3.14158, 3.14158],
+      "right/waist": [-3.14158, 3.14158],
+      "right/shoulder": [-1.85005, 1.25664],
+      "right/elbow": [-1.76278, 1.6057],
+      "right/forearm_roll": [-3.14158, 3.14158],
+      "right/wrist_angle": [-1.8675, 2.23402],
+      "right/wrist_rotate": [-3.14158, 3.14158]
+    },
+    "gripper_joint_range_m": [0.0, 0.041],
+    "gripper_ctrl_range_m": [0.002, 0.037],
+    "gripper_direction": {
+      "smaller_command": "closed",
+      "larger_command": "open",
+      "unit": "m"
+    },
+    "gripper_equalities": [
+      {
+        "controlled_joint": "left/left_finger",
+        "mirrored_joint": "left/right_finger",
+        "relation": "mirrored_joint = controlled_joint",
+        "polycoef": [0.0, 1.0, 0.0, 0.0, 0.0]
+      },
+      {
+        "controlled_joint": "right/left_finger",
+        "mirrored_joint": "right/right_finger",
+        "relation": "mirrored_joint = controlled_joint",
+        "polycoef": [0.0, 1.0, 0.0, 0.0, 0.0]
+      }
+    ],
+    "actuator_state": "none"
+  },
+  "public_observations": {
+    "state": [
+      "joint_positions",
+      "joint_velocities",
+      "gripper_positions",
+      "simulation_time"
+    ],
+    "site_names": [
+      "worldref",
+      "left/gripper",
+      "left/left_finger",
+      "left/right_finger",
+      "right/gripper",
+      "right/left_finger",
+      "right/right_finger"
+    ],
+    "contact_geoms": [
+      "floor",
+      "table",
+      "left/left_g0",
+      "left/left_g1",
+      "left/left_g2",
+      "left/right_g0",
+      "left/right_g1",
+      "left/right_g2",
+      "right/left_g0",
+      "right/left_g1",
+      "right/left_g2",
+      "right/right_g0",
+      "right/right_g1",
+      "right/right_g2"
+    ],
+    "sensors": [],
+    "cameras": [
+      "teleoperator_pov",
+      "collaborator_pov",
+      "overhead_cam",
+      "worms_eye_cam",
+      "wrist_cam_left",
+      "wrist_cam_right"
+    ]
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control",
+      "gripper_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "named_site_positions",
+      "named_site_poses",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default": "model_qpos0",
+    "available_keyframe": "neutral_pose",
+    "neutral_qpos": [
+      0.0,
+      -0.96,
+      1.16,
+      0.0,
+      -0.3,
+      0.0,
+      0.0084,
+      0.0084,
+      0.0,
+      -0.96,
+      1.16,
+      0.0,
+      -0.3,
+      0.0,
+      0.0084,
+      0.0084
+    ],
+    "neutral_ctrl": [
+      0.0,
+      -0.96,
+      1.16,
+      0.0,
+      -0.3,
+      0.0,
+      0.0084,
+      0.0,
+      -0.96,
+      1.16,
+      0.0,
+      -0.3,
+      0.0,
+      0.0084
+    ]
+  },
+  "contact_facts": {
+    "named_active_finger_spheres": [
+      "left/left_g0",
+      "left/left_g1",
+      "left/left_g2",
+      "left/right_g0",
+      "left/right_g1",
+      "left/right_g2",
+      "right/left_g0",
+      "right/left_g1",
+      "right/left_g2",
+      "right/right_g0",
+      "right/right_g1",
+      "right/right_g2"
+    ],
+    "table_and_floor": ["table", "floor"]
+  },
+  "asset_provenance": {
+    "model_title": "ALOHA Description (MJCF)",
+    "upstream": "https://github.com/google-deepmind/mujoco_menagerie/tree/da76818e269b82289eba39808e2fb91d679d6994/aloha",
+    "derived_revision": "da76818e269b82289eba39808e2fb91d679d6994",
+    "source_path": "aloha/scene.xml",
+    "license": "BSD-3-Clause",
+    "license_file": "assets/LICENSE",
+    "source_file": "assets/SOURCE.md"
+  }
+}
