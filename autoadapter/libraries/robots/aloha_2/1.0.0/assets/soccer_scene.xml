@@ -7,9 +7,9 @@
       <site name="soccer_ball_center" size="0.004" rgba="1 1 1 0" />
     </body>
     <body name="soccer_goal" pos="0.2 0.20 0.03">
-      <geom name="soccer_goal_back" type="box" pos="0 0.045 0" size="0.045 0.006 0.04" mass="0" contype="2" conaffinity="2" rgba="0.12 0.72 0.38 0.8" />
-      <geom name="soccer_goal_left" type="box" pos="-0.045 0 0" size="0.006 0.045 0.04" mass="0" contype="2" conaffinity="2" rgba="0.12 0.72 0.38 0.8" />
-      <geom name="soccer_goal_right" type="box" pos="0.045 0 0" size="0.006 0.045 0.04" mass="0" contype="2" conaffinity="2" rgba="0.12 0.72 0.38 0.8" />
+      <geom name="soccer_goal_back" type="box" pos="0 0.045 0" size="0.045 0.006 0.04" mass="0" contype="1" conaffinity="3" rgba="0.12 0.72 0.38 0.8" />
+      <geom name="soccer_goal_left" type="box" pos="-0.045 0 0" size="0.006 0.045 0.04" mass="0" contype="1" conaffinity="3" rgba="0.12 0.72 0.38 0.8" />
+      <geom name="soccer_goal_right" type="box" pos="0.045 0 0" size="0.006 0.045 0.04" mass="0" contype="1" conaffinity="3" rgba="0.12 0.72 0.38 0.8" />
       <site name="soccer_goal_site" size="0.006" rgba="0.12 0.85 0.38 0.75" />
     </body>
     <camera name="evidence" pos="0 -1.1 0.60" xyaxes="1 0 0 0 0.2 0.8" />

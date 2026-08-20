@@ -1,7 +1,10 @@
 <mujoco model="aloha_2_drawer">
   <include file="scene.xml" />
   <worldbody>
-    <geom name="drawer_housing" type="box" pos="0.2 0.15 0.04" size="0.115 0.075 0.045" mass="0" contype="2" conaffinity="2" rgba="0.20 0.24 0.28 1" />
+    <geom name="drawer_housing" type="box" pos="0.2 0.218 0.04" size="0.115 0.007 0.045" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
+    <geom name="drawer_housing_left" type="box" pos="0.095 0.15 0.04" size="0.01 0.061 0.045" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
+    <geom name="drawer_housing_right" type="box" pos="0.305 0.15 0.04" size="0.01 0.061 0.045" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
+    <geom name="drawer_housing_top" type="box" pos="0.2 0.15 0.08" size="0.095 0.061 0.005" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
     <body name="drawer" pos="0.2 0.11 0.04">
       <joint name="drawer_slide" type="slide" axis="0 1 0" range="-0.08 0" damping="0.25" frictionloss="0.02" />
       <geom name="drawer_front" type="box" size="0.09 0.018 0.035" mass="0.06" conaffinity="2" friction="0.8 0.08 0.008" rgba="0.72 0.36 0.14 1" />

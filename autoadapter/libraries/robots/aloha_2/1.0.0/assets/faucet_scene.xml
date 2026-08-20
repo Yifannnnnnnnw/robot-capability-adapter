@@ -1,7 +1,7 @@
 <mujoco model="aloha_2_faucet">
   <include file="scene.xml" />
   <worldbody>
-    <geom name="faucet_base" type="cylinder" pos="0.17 0.12 0.03" size="0.035 0.03" mass="0" contype="0" conaffinity="0" rgba="0.18 0.30 0.40 1" />
+    <geom name="faucet_base" type="cylinder" pos="0.17 0.12 0.025" size="0.035 0.025" mass="0" contype="1" conaffinity="3" rgba="0.18 0.30 0.40 1" />
     <body name="faucet_handle" pos="0.17 0.12 0.06">
       <joint name="faucet_hinge" type="hinge" axis="0 0 1" range="0 1.2" limited="true" damping="0.10" frictionloss="0.008" />
       <geom name="faucet_arm" type="capsule" fromto="0 0 0 0.08 0 0" size="0.009" mass="0.025" conaffinity="2" friction="0.9 0.08 0.008" rgba="0.12 0.58 0.86 1" />

@@ -1,7 +1,7 @@
 <mujoco model="aloha_2_wall">
   <include file="scene.xml" />
   <worldbody>
-    <geom name="wall" type="box" pos="0.245 0.12 0.04" size="0.045 0.012 0.04" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.76 0.34 0.14 1" />
+    <geom name="wall" type="box" pos="0.245 0.12 0.04" size="0.045 0.012 0.04" mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01" rgba="0.76 0.34 0.14 1" />
     <body name="workpiece" pos="0.18 0.08 0.02">
       <freejoint />
       <geom name="workpiece_geom" type="box" size="0.018 0.018 0.018" mass="0.02" conaffinity="2" friction="1.5 0.1 0.01" condim="4" rgba="0.10 0.55 0.92 1" />

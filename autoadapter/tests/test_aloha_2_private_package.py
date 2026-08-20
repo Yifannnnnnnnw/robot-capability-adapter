@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import xml.etree.ElementTree as ET
 
 import mujoco
 import numpy as np
@@ -189,6 +190,21 @@ def _read(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _static_task_geom_names(node: ET.Element, *, moving: bool = False) -> tuple[str, ...]:
+    names: list[str] = []
+    for child in node:
+        if child.tag == "geom" and not moving:
+            name = child.get("name")
+            if name:
+                names.append(name)
+        elif child.tag == "body":
+            child_moving = moving or any(
+                item.tag in {"joint", "freejoint"} for item in child
+            )
+            names.extend(_static_task_geom_names(child, moving=child_moving))
+    return tuple(names)
+
+
 def _design(package: object) -> dict:
     tasks = {task["task_id"]: task for task in package.tasks}  # type: ignore[attr-defined]
     capabilities = []
@@ -357,6 +373,7 @@ def test_aloha_2_bindings_guards_and_selected_arm_are_exact() -> None:
 def test_aloha_2_private_resets_are_framework_owned_and_initially_fail() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     instances = _read(package.private_dir / "instances.json")["instances"]
+    assert len({instance["scene_entrypoint"] for instance in instances}) == 16
     bindings = {
         binding["binding_id"]: binding
         for binding in _read(package.private_dir / "bindings.json")["bindings"]
@@ -385,11 +402,23 @@ def test_aloha_2_private_resets_are_framework_owned_and_initially_fail() -> None
         required = tasks[task_id]["invocation_schema"]["request"]["task_parameters"]["required"]
         assert set(request["task_parameters"]) == set(required)
 
-        model = mujoco.MjModel.from_xml_path(
-            str(package.root / instance["scene_entrypoint"])
-        )
+        scene_path = package.root / instance["scene_entrypoint"]
+        worldbody = ET.parse(scene_path).getroot().find("worldbody")
+        assert worldbody is not None
+        model = mujoco.MjModel.from_xml_path(str(scene_path))
+        for name in _static_task_geom_names(worldbody):
+            geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, name)
+            assert geom_id >= 0, f"{task_id}: {name}"
+            contype = int(model.geom_contype[geom_id])
+            conaffinity = int(model.geom_conaffinity[geom_id])
+            if name.endswith("_goal_marker"):
+                assert (contype, conaffinity) == (0, 0)
+            else:
+                assert contype & 1, f"{task_id}: {name} contype"
+                assert conaffinity & 1, f"{task_id}: {name} conaffinity"
         data = mujoco.MjData(model)
         apply_framework_reset(mujoco, model, data, instance["reset"])
+        mujoco.mj_forward(model, data)
         if task_id in FREE_BODY_STARTS:
             body_name, expected_position = FREE_BODY_STARTS[task_id]
             body_id = mujoco.mj_name2id(
@@ -421,6 +450,29 @@ def test_aloha_2_private_resets_are_framework_owned_and_initially_fail() -> None
                 comparator=criterion["comparator"],
                 threshold=criterion["threshold"],
             ), f"reset already passes {task_id}: value={value}"
+
+        reset_controls = np.asarray(data.ctrl).copy()
+        minimum_distance = min(
+            (float(data.contact[index].dist) for index in range(data.ncon)),
+            default=float("inf"),
+        )
+        for _ in range(100):
+            mujoco.mj_step(model, data)
+            minimum_distance = min(
+                minimum_distance,
+                min(
+                    (
+                        float(data.contact[index].dist)
+                        for index in range(data.ncon)
+                    ),
+                    default=float("inf"),
+                ),
+            )
+        np.testing.assert_array_equal(data.ctrl, reset_controls)
+        assert minimum_distance >= -0.005, (
+            f"{task_id}: minimum reset/settling contact distance "
+            f"{minimum_distance}"
+        )
 
 
 def test_aloha_2_reference_driver_is_right_arm_actuator_only() -> None:
