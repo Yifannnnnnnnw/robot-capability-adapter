@@ -9,7 +9,7 @@
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
     <geom name="work_surface" type="box" pos="0.1 -0.5 0.33" size="0.16 0.20 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
     <geom name="top_button_housing" type="cylinder" pos="0.1 -0.5 0.44" size="0.045 0.01" mass="0" contype="0" conaffinity="0" rgba="0.20 0.24 0.28 1" />
-    <body name="top_button" pos="0.1 -0.5 0.475" quat="0.7071067811865476 0 0 -0.7071067811865475">
+    <body name="top_button" pos="0.1 -0.5 0.475" quat="0.7071067811865476 0 0 -0.7071067811865475" gravcomp="1">
       <joint name="top_button_slide" type="slide" axis="0 0 1" range="-0.05 0" damping="0.35" frictionloss="0.02" />
       <geom name="top_button_geom" type="cylinder" size="0.028 0.012" mass="0.02" conaffinity="2" friction="0.8 0.08 0.008" rgba="0.12 0.58 0.92 1" />
       <site name="top_button_site" size="0.004" rgba="1 1 1 0" />

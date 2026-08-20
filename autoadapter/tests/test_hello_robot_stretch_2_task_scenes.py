@@ -6,6 +6,8 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
+from autoadapter2.harness.session import apply_framework_reset
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS_ROOT = (
@@ -326,3 +328,33 @@ def test_stretch_fixture_world_transform_is_representative() -> None:
     bin_left_id = _id(bin_model, mujoco.mjtObj.mjOBJ_GEOM, "bin_left")
     np.testing.assert_allclose(bin_model.geom_pos[bin_left_id], (0.11, -0.385, 0.44))
     np.testing.assert_allclose(bin_model.geom_size[bin_left_id], (0.09, 0.005, 0.03))
+
+
+def test_stretch_fixtures_do_not_self_complete_without_robot_contact() -> None:
+    cases = (
+        ("drawer_scene.xml", "drawer_slide", 0.0),
+        ("drawer_scene.xml", "drawer_slide", -0.08),
+        ("button_topdown_scene.xml", "top_button_slide", 0.0),
+        ("handle_vertical_scene.xml", "vertical_handle_slide", 0.0),
+        ("handle_vertical_scene.xml", "vertical_handle_slide", -0.055),
+    )
+    for scene_name, joint_name, reset_position in cases:
+        model = _load(scene_name)
+        data = mujoco.MjData(model)
+        apply_framework_reset(
+            mujoco,
+            model,
+            data,
+            {
+                "kind": "default",
+                "joint_positions": {joint_name: reset_position},
+            },
+        )
+        joint_id = _id(model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
+        qpos_address = int(model.jnt_qposadr[joint_id])
+        initial = float(data.qpos[qpos_address])
+
+        for _ in range(2000):
+            mujoco.mj_step(model, data)
+
+        assert abs(float(data.qpos[qpos_address]) - initial) < 0.001
