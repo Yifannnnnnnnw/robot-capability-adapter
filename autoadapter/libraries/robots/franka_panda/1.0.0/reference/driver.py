@@ -191,13 +191,41 @@ class ReferenceFrankaPandaDriver:
                 steps=700,
                 residual_tolerance=0.08 if task_id == "mw_push_wall" else 0.25,
             )
+            self._step_to(
+                self._tool_target(parameters),
+                steps=1200,
+                residual_tolerance=0.12,
+                gain=0.2,
+                max_joint_delta=0.012,
+            )
+            return
+        tool_target = self._tool_target(parameters)
+        if task_id == "mw_push_to_goal":
+            self._step_to(
+                tool_target,
+                steps=1200,
+                residual_tolerance=0.18,
+                gain=0.2,
+                max_joint_delta=0.012,
+            )
+            return
+        target = self._reach_parameter(parameters)
+        push_height = max(float(target[2]) + 0.024, 0.44)
         self._step_to(
-            self._tool_target(parameters),
-            steps=1200,
-            residual_tolerance=0.12,
-            gain=0.2,
-            max_joint_delta=0.012,
+            np.asarray((contact[0], contact[1], push_height), dtype=float),
+            steps=700,
+            residual_tolerance=0.10,
+            gain=0.4,
+            max_joint_delta=0.025,
         )
+        self._step_to(
+            np.asarray((tool_target[0], tool_target[1], push_height), dtype=float),
+            steps=1400,
+            residual_tolerance=0.15,
+            gain=0.35,
+            max_joint_delta=0.02,
+        )
+        self._idle(90)
 
     def object_task(self, request: Any) -> None:
         task_id, parameters = _request(request)
@@ -267,6 +295,8 @@ class ReferenceFrankaPandaDriver:
         task_id, parameters = _request(request)
         if task_id in {"mw_drawer_open", "mw_drawer_close", "mw_handle_pull"}:
             contact = _vector(parameters["contact_position"], name="contact_position")
+            if task_id == "mw_handle_pull":
+                contact = contact + np.asarray((0.0, 0.0, -0.08))
             approach = _vector(
                 parameters.get("approach_position", contact + np.asarray((0.0, -0.07, 0.0))),
                 name="approach_position",
@@ -276,12 +306,19 @@ class ReferenceFrankaPandaDriver:
             self._idle(30)
             self._step_to(approach, residual_tolerance=0.08, wrist_roll=wrist_roll)
             self._step_to(contact, residual_tolerance=0.08, wrist_roll=wrist_roll)
-            self._set_gripper((0.05 + 0.17453) / (1.74533 + 0.17453) * 255.0)
+            self._set_gripper(
+                0.0
+                if task_id == "mw_handle_pull"
+                else (0.05 + 0.17453) / (1.74533 + 0.17453) * 255.0
+            )
             self._idle(80)
+            tool_target = self._tool_target(parameters)
+            if task_id == "mw_handle_pull":
+                tool_target = tool_target + np.asarray((0.0, 0.0, 0.05))
             self._step_to(
-                self._tool_target(parameters),
+                tool_target,
                 steps=1000,
-                residual_tolerance=0.10,
+                residual_tolerance=0.18 if task_id == "mw_handle_pull" else 0.10,
                 wrist_roll=wrist_roll,
                 gain=0.5,
                 max_joint_delta=0.025,
@@ -319,12 +356,20 @@ class ReferenceFrankaPandaDriver:
                 max_joint_delta=0.025,
             )
         if task_id == "mw_door_open":
+            open_target = self._tool_target(parameters) + np.asarray((-0.25, 0.20, 0.0))
+            self._step_to(
+                open_target,
+                steps=1800,
+                residual_tolerance=0.40,
+                gain=0.3,
+                max_joint_delta=0.02,
+            )
             self._idle(60)
             return
         self._step_to(
             self._tool_target(parameters),
             steps=1000,
-            residual_tolerance=0.08 if task_id in {"mw_door_open", "mw_door_close"} else 0.10,
+            residual_tolerance=0.11 if task_id == "mw_door_close" else (0.08 if task_id == "mw_door_open" else 0.10),
             gain=0.3,
             max_joint_delta=0.02,
         )
