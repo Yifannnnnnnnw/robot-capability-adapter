@@ -1,31 +1,32 @@
 \chapter[Background and Literature Review]{Background and Literature Review}
 \label{chapter:background}
 
-\begin{quote}\itshape
-The purpose of this chapter is to establish the shared conceptual and
-methodological foundations for the empirical studies in this thesis. The first
-part positions two related research objects within embodied AI and robotic
-systems: the design and use of reusable robot capability interfaces, and the
-synthesis of the robot-specific drivers that implement them. The second part
-reviews LLM coding agents and research on using LLMs to generate, validate,
-and revise robot-control software. The chapter concludes by deriving the
-research gaps examined in Chapters~3--5.
-\end{quote}
+Embodied and generalist robot intelligence seeks not only to interpret a task,
+but also to transform that interpretation into actions that a particular robot
+can execute. Although recent generalist models have expanded the range of
+tasks, environments, and embodiments addressed through shared representations
+and policies, physical execution remains conditioned by each robot's
+morphology, action space, control hierarchy, and software interface
+\citep{brooks1991intelligence,brohan2022rt1,openxembodiment2024}. The same
+task-level command may therefore require substantially different
+implementations across robotic platforms. Consequently, generality at the
+model level does not, by itself, establish generality at deployment: a
+practical mechanism is still required to connect general task intent to
+reliable robot-specific execution.
 
-Research in embodied AI has broadened from systems designed for a single task
-on a single robot to methods that seek to transfer learned behaviour across
-tasks and embodiments. However, task-level transfer does not by itself provide
-the software needed to execute that behaviour on a new robot. A high-level
-system may interpret an objective or select an operation, but it can affect a
-robot only through a stable robot capability interface and a robot-specific
-driver. The driver implements that interface for the robot's morphology,
-actuation, and control configuration. At this execution boundary, research on
-LLM agents has expanded from using models to call supplied robot interfaces to
-using them to generate and repair the software beneath those interfaces.
-Executable code alone does not establish the intended physical state change,
-so generated drivers must be judged using observations and validation rules
-outside their control. Understanding this boundary begins with embodied AI and
-the software path from task intent to physical execution.
+This chapter reviews the relevant literature through two linked questions.
+First, within which physical and software structures does robot intelligence
+operate? Second, can a large language model (LLM) agent generate the software
+required to connect general task intent with executable behaviour on a
+particular robot? Three distinctions are maintained throughout the review.
+Invoking a supplied capability interface is distinguished from synthesising
+either a new capability or the robot-specific driver that implements it. A
+capability is treated as a bounded and reusable unit of functionality, rather
+than as a complete task-level skill. Finally, successful execution in
+simulation is interpreted as evidence about the simulated system and not as
+evidence of hardware performance. Section~1 establishes the embodied,
+control, interface, and morphology context, whereas Section~2 examines
+LLM-based robot programming, software synthesis, and behavioural validation.
 
 
 \section[Application Domain]{Application Domain: Robot Capability Interfaces}
