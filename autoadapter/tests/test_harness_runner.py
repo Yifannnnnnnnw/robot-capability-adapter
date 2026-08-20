@@ -15,7 +15,11 @@ import mujoco
 from autoadapter2.harness import run_private_suite
 from autoadapter2.harness import runner as harness_runner
 from autoadapter2.harness.measurements import evaluate_guards
-from autoadapter2.harness.session import TrackedMuJoCoSession, apply_framework_reset
+from autoadapter2.harness.session import (
+    StepBudgetExceeded,
+    TrackedMuJoCoSession,
+    apply_framework_reset,
+)
 from autoadapter2.libraries import RobotPackage
 from autoadapter2.react import ToolCall, ToolTurn
 
@@ -489,6 +493,31 @@ class HarnessRunnerTests(unittest.TestCase):
             for record in evidence["contact_pair_min_distances"]
         ]
         self.assertEqual(pairs, [{"box", "floor"}])
+
+    def test_sim_time_budget_does_not_report_legal_step_as_direct_write(self) -> None:
+        model = mujoco.MjModel.from_xml_string(
+            """<mujoco><option timestep="0.002"/><worldbody>
+  <body><freejoint/><geom type="sphere" size="0.02"/></body>
+</worldbody></mujoco>"""
+        )
+        data = mujoco.MjData(model)
+        tracker = TrackedMuJoCoSession(
+            mujoco=mujoco,
+            model=model,
+            data=data,
+            max_steps=2,
+            max_sim_time_s=0.001,
+        )
+
+        with tracker:
+            with self.assertRaises(StepBudgetExceeded):
+                mujoco.mj_step(model, data)
+        tracker.finish()
+
+        evidence = tracker.evidence()
+        self.assertEqual(evidence["step_count"], 1)
+        self.assertFalse(evidence["direct_state_write_detected"])
+        self.assertEqual(evidence["direct_state_write_fields"], [])
 
     def test_unknown_temporal_or_aggregation_fails_closed(self) -> None:
         worker = self._worker_result(

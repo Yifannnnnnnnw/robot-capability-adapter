@@ -219,13 +219,13 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
                 self.contact_pair_step_counts.get(pair, 0) + 1
             )
         elapsed = float(self.data.time) - self.initial_time
+        self._last_qpos = np.array(self.data.qpos, dtype=float, copy=True)
+        self._last_qvel = np.array(self.data.qvel, dtype=float, copy=True)
+        self._last_time = float(self.data.time)
         if elapsed > self.max_sim_time_s + 1e-12:
             raise StepBudgetExceeded(
                 f"candidate exceeded {self.max_sim_time_s} simulated seconds"
             )
-        self._last_qpos = np.array(self.data.qpos, dtype=float, copy=True)
-        self._last_qvel = np.array(self.data.qvel, dtype=float, copy=True)
-        self._last_time = float(self.data.time)
         if float(self.data.time) + 1e-12 >= self._next_sample_time:
             self.samples.append(self.snapshot())
             if self.capture_frame is not None:
