@@ -201,6 +201,41 @@ is not a model-generated condition, does not establish Task Demo or
 driver-synthesis success, and does not admit ALOHA to the runnable index. A
 real-model dynamic canary and final admission review remain required.
 
+## Kinova Gen3 + Robotiq 2F-85 Package-Wide Reference Positive Control
+
+Run `kinova-reference-positive-control-20260820T110159Z`, on mainline commit
+`a493170`, passed all 20 fixed Kinova Gen3 plus Robotiq 2F-85 Task Library
+cases with the reviewed skeleton-assisted calibration driver and real MuJoCo
+3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- the exact package loader check passed for robot identity, version, public
+  snapshot, 20 tasks, one source, local closure, and reference-driver loading;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control was observed before physics stepping and changed from reset
+  in every trial;
+- all core guards passed, including exact task-contact checks where applicable,
+  and no direct `qpos` or `qvel` write was detected;
+- maximum trial length: 6,130 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete H.264, independently decoded at `800x600`, with 7
+  to 124 frames per case; and
+- push-to-goal, pick-place, sweep-into-goal, drawer-open, door-open, side peg
+  insertion, and bin-picking terminal frames were visually checked for
+  nonblank, task-readable framing and visible terminal task state.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/kinova-reference-positive-control-20260820T110159Z/`.
+Its `reference_report.json`, complete 20-case suite, and per-case videos remain
+together.
+
+This result establishes package-wide reference feasibility for the canonical
+Kinova Gen3 plus Robotiq 2F-85 assets, skeleton-assisted actuator trajectory
+baseline, trusted measurements, guards, Harness, package loader, and video
+path. It is calibration evidence only: it is not model-generated or dynamic
+evidence, does not establish Task Demo or driver-synthesis success, and does
+not admit this configuration to the runnable index. A real-model dynamic
+canary and final admission review remain required.
+
 ## Latest Historical Diagnostic Run
 
 This run predates Authority `0.19.2`: its five sampled cases were used directly

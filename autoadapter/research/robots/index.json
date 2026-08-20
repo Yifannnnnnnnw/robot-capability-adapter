@@ -140,6 +140,11 @@
           "observation": "The calibration-only skeleton-assisted reference driver preserves the four continuous Gen3 hinges, synchronizes after Framework reset, and uses actuator-only Direct-MuJoCo execution for contact, fixture, side-grasp transport, peg insertion, and rotation skills. Focused no-video Harness checks passed all 20 canonical tasks with trusted guards; this is controller feasibility evidence, not the required video-backed positive control, dynamic model evidence, or runnable admission."
         },
         {
+          "path": "autoadapter/evidence/README.md",
+          "kind": "tracked_reference_positive_control_record",
+          "observation": "The tracked evidence record points to the retained 20/20 skeleton-assisted actuator-driven Kinova Gen3 plus Robotiq 2F-85 package-wide reference positive control with all guards passing and complete independently decoded 800x600 per-case videos. The exact package loader check also passed. This is calibration evidence only, not model-generation or runnable-admission evidence."
+        },
+        {
           "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/assets/scene.xml",
           "kind": "canonical_arm_component_foundation",
           "observation": "The separately retained arm-only Kinova Gen3 package is useful component and provenance material, but it is not the contact-capable robot configuration indexed here."
@@ -176,8 +181,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
         "Perform final human package and admission review, then add this exact configuration to the runnable index only if the dynamic canary passes."
       ]
