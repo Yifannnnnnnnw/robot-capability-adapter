@@ -45,6 +45,7 @@ class ResearchRobotIndexTests(unittest.TestCase):
             candidate["robot_configuration_id"]: candidate for candidate in candidates
         }
         ur5e = candidates_by_id["universal_robots_ur5e_robotiq_2f85"]
+        self.assertEqual(ur5e["observed_task_count"], 20)
         ur5e_paths = {
             material["path"] for material in ur5e["locally_observed_source_material"]
         }
@@ -82,6 +83,7 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/private/instances.json",
             ur5e_paths,
         )
+        self.assertIn("autoadapter/evidence/README.md", ur5e_paths)
         self.assertFalse(
             any(
                 "arm_serial_dls skeleton" in item
@@ -94,6 +96,33 @@ class ResearchRobotIndexTests(unittest.TestCase):
                 for item in ur5e["missing_for_runnable_package"]
             )
         )
+        self.assertFalse(
+            any(
+                phrase in item
+                for item in ur5e["missing_for_runnable_package"]
+                for phrase in (
+                    "calibration-only reference driver",
+                    "package check",
+                    "positive control",
+                )
+            )
+        )
+        self.assertTrue(
+            any(
+                "dynamic canary" in item
+                for item in ur5e["missing_for_runnable_package"]
+            )
+        )
+
+        for robot_id in (
+            "franka_panda",
+            "kinova_gen3_robotiq_2f85",
+            "ufactory_xarm7",
+            "piper",
+            "kuka_iiwa_14",
+            "aloha_2",
+        ):
+            self.assertEqual(candidates_by_id[robot_id]["observed_task_count"], 20)
 
         leap = candidates_by_id["leap_hand"]
         leap_paths = {

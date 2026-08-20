@@ -18,7 +18,7 @@
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 1,
       "proposed_wave": 1,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/franka_panda/1.0.0/assets/pushbench.xml",
@@ -97,7 +97,7 @@
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 2,
       "proposed_wave": 1,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/assets/scene.xml",
@@ -191,7 +191,7 @@
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 3,
       "proposed_wave": 1,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/assets/scene.xml",
@@ -270,7 +270,7 @@
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 4,
       "proposed_wave": 1,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/assets/scene.xml",
@@ -306,6 +306,11 @@
           "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/private/instances.json",
           "kind": "canonical_private_task_package",
           "observation": "The exact composite package contains 20 private instances covering the public snapshot, matching metric bindings, core authenticity guards, 19 task-specific Robotiq pad-contact guards, one reach gripper-neutral guard, and three applicable terminal object-stability guards. Focused checks prove that no reset already satisfies its complete public criterion and that private task scenes are excluded from the model-visible canonical MJCF closure. This is private evaluation-structure evidence only, not contact execution, task success, positive control, or runnable evidence."
+        },
+        {
+          "path": "autoadapter/evidence/README.md",
+          "kind": "tracked_reference_positive_control_record",
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven UR5e plus Robotiq 2F-85 package-wide reference positive control with complete per-case videos, source-clause coverage, private-case coverage, contact guards, object-stability guards, and direct-state-write rejection. This remains calibration evidence only and does not establish model-generated driver success or runnable admission."
         },
         {
           "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
@@ -354,10 +359,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Provide a calibration-only reference driver for the exact composite configuration.",
-        "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
+        "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
+        "Perform final human package and admission review, then add the exact UR5e plus Robotiq 2F-85 configuration to the runnable index only if the dynamic canary passes; prior reference evidence alone does not admit it."
       ]
     },
     {
@@ -366,7 +369,7 @@
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 5,
       "proposed_wave": 1,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/assets/piper.xml",
@@ -459,7 +462,7 @@
       "morphology_category": "fixed_serial_arm",
       "proposed_sequence": 6,
       "proposed_wave": 1,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/assets/scene.xml",
@@ -869,7 +872,7 @@
       "morphology_category": "bimanual",
       "proposed_sequence": 11,
       "proposed_wave": 3,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/aloha_2/1.0.0/assets/scene.xml",
