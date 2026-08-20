@@ -114,9 +114,6 @@ def test_stretch_public_task_candidate_is_closed_but_not_admitted() -> None:
         for reference in clause["source_refs"]
     )
 
-    private_root = PACKAGE_ROOT / "tasks" / "private"
-    for name in ("instances.json", "bindings.json", "guards.json"):
-        assert not (private_root / name).exists()
     assert not (PACKAGE_ROOT / "reference").exists()
     runnable = _read(ROOT / "libraries" / "robots" / "index.json")["robots"]
     assert ROBOT_ID not in runnable

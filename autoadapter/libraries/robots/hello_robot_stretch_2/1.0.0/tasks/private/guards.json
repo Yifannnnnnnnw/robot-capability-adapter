@@ -1,0 +1,23 @@
+{
+  "robot_configuration_id": "hello_robot_stretch_2",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "hello-robot-stretch-2-metaworld-source-protocols-2026-08-20-v1",
+  "guards": [
+    {
+      "guard_id": "guard_actuator_and_physics_step",
+      "kind": "actuator_and_physics_step_required"
+    },
+    {
+      "guard_id": "guard_no_direct_state_write",
+      "kind": "no_direct_state_write"
+    },
+    {
+      "guard_id": "guard_canonical_model_data",
+      "kind": "canonical_model_data"
+    },
+    {
+      "guard_id": "guard_complete_video",
+      "kind": "complete_video"
+    }
+  ]
+}
