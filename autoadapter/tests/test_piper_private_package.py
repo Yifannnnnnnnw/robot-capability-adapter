@@ -338,8 +338,8 @@ def test_piper_public_ee_waypoints_and_grasp_rolls_are_reachable() -> None:
         assert abs(float(skeleton.get_joint_positions()[-1]) - wrist_roll) <= 0.011
 
 
-def test_piper_private_package_remains_non_runtime_without_skeleton_or_reference() -> None:
+def test_piper_private_package_remains_non_runtime_without_reference() -> None:
     runnable_index = _read(RUNNABLE_INDEX_PATH)
     assert "piper" not in runnable_index["robots"]
-    assert not (PIPER_PACKAGE_ROOT / "skeleton").exists()
+    assert (PIPER_PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
     assert not (PIPER_PACKAGE_ROOT / "reference").exists()

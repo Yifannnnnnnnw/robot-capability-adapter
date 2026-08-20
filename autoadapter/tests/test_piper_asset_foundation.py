@@ -380,7 +380,7 @@ def test_piper_model_facts_and_actuator_driven_gripper_liveness() -> None:
     _assert_finite(data)
 
 
-def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> None:
+def test_piper_is_non_runtime_and_package_has_no_reference() -> None:
     runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
     assert "piper" not in runnable_index["robots"]
 
@@ -404,20 +404,34 @@ def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> Non
         if record["kind"] == "provisional_task_scenes"
     )
     assert "17 task scenes" in scene_record["observation"]
-    assert "collision compatibility" in scene_record["observation"]
-    assert "task success remain unverified" in scene_record["observation"]
+    assert "cannot push link1 or link2 at reset" in scene_record["observation"]
+    assert (
+        "contact behavior and task success are unverified"
+        in scene_record["observation"]
+    )
+    assert (
+        "autoadapter/libraries/robots/piper/1.0.0/tasks/private/instances.json"
+        in observed_paths
+    )
+    assert (
+        "autoadapter/libraries/robots/piper/1.0.0/skeleton/arm_serial_dls.py"
+        in observed_paths
+    )
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
     assert "at least 20 distinct applicable source-backed tasks" not in missing
     assert "Create tasks/sources.json" not in missing
-    assert "tasks/private/instances.json" in missing
+    assert "tasks/private/instances.json" not in missing
+    assert "arm_serial_dls skeleton" not in missing
+    assert "calibration-only reference driver" in missing
     assert "positive control" in missing
     assert "dynamic canary" in missing
 
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "skeleton",
         "tasks",
     ]
     tasks_root = PACKAGE_ROOT / "tasks"
@@ -427,5 +441,5 @@ def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> Non
         "sources.json",
     ]
     assert (tasks_root / "private").is_dir()
-    assert not (PACKAGE_ROOT / "skeleton").exists()
+    assert (PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
     assert not (PACKAGE_ROOT / "reference").exists()

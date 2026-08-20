@@ -219,7 +219,9 @@ class PiperPublicTaskLibraryTests(unittest.TestCase):
         self.assertTrue((PIPER_TASKS_ROOT / "catalog.json").is_file())
         self.assertTrue((PIPER_TASKS_ROOT / "sources.json").is_file())
         self.assertTrue((PIPER_TASKS_ROOT / "private").is_dir())
-        self.assertFalse((PIPER_PACKAGE_ROOT / "skeleton").exists())
+        self.assertTrue(
+            (PIPER_PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
+        )
         self.assertFalse((PIPER_PACKAGE_ROOT / "reference").exists())
 
 

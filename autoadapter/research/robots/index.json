@@ -312,7 +312,17 @@
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/assets/reach_scene.xml",
           "kind": "provisional_task_scenes",
-          "observation": "All 17 task scenes are exact structural transforms of the reviewed xArm7 scene set and parse, load, and step with the canonical Piper model. They are provisional scene inputs only: Piper reachability, robot-fixture collision compatibility, contact behavior, and task success remain unverified."
+          "observation": "All 17 task scenes are reviewed structural transforms of the xArm7 scene set and parse, load, and step with the canonical Piper model. The elevated pick-place floor uses the static-fixture collision mask so it cannot push link1 or link2 at reset. These remain provisional scene inputs: contact behavior and task success are unverified."
+        },
+        {
+          "path": "autoadapter/libraries/robots/piper/1.0.0/tasks/private/instances.json",
+          "kind": "canonical_private_task_package",
+          "observation": "The Framework-private package binds all 20 public tasks to local scenes, resets, measurements, and guards. Trusted reset measurements reject all 20 criteria before action, and position IK reaches all 53 declared end-effector waypoints within 0.003 m; this is foundation evidence, not contact, grasp, or task-success evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/piper/1.0.0/skeleton/arm_serial_dls.py",
+          "kind": "canonical_skeleton_inventory",
+          "observation": "The package exposes only the capability-neutral trusted ArmSerialDLSSkeleton family. A live canonical MuJoCo smoke check resolves the Piper joints, ee_site, actuator controls, and physical gripper direction without adding task semantics."
         },
         {
           "path": "general_demo/libraries/assets/piper/1.0.0/asset_closure.json",
@@ -351,8 +361,7 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
+        "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
