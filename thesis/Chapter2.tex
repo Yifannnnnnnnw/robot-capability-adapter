@@ -12,22 +12,20 @@ and revise robot-control software. The chapter concludes by deriving the
 research gaps examined in Chapters~3--5.
 \end{quote}
 
-The literature relevant to Auto-Adapter is distributed across robotics,
-machine learning, software engineering, programming languages, and language
-agents. A review organised only around recent model families would obscure the
-research object, because Auto-Adapter does not propose a new policy, VLA, or
-task planner. Conversely, a review restricted to device drivers would miss the
-reason a reusable robot interface has become increasingly important: a growing
-range of downstream systems expects such an interface to exist.
-
-The chapter therefore follows the lifecycle of a robot capability adapter.
-It first asks what layer is being generated and which information that layer
-must preserve. It then considers who consumes the layer, how comparable
-software artefacts have been synthesised, how generated robot code has been
-tested and repaired, and why validation itself must not become a new
-per-robot engineering bottleneck. This organisation keeps policy generation,
-primitive implementation, runtime binding, and behavioural judgement as
-separate research problems.
+Research in embodied AI has broadened from systems designed for a single task
+on a single robot to methods that seek to transfer learned behaviour across
+tasks and embodiments. However, task-level transfer does not by itself provide
+the software needed to execute that behaviour on a new robot. A high-level
+system may interpret an objective or select an operation, but it can affect a
+robot only through a stable robot capability interface and a robot-specific
+driver. The driver implements that interface for the robot's morphology,
+actuation, and control configuration. At this execution boundary, research on
+LLM agents has expanded from using models to call supplied robot interfaces to
+using them to generate and repair the software beneath those interfaces.
+Executable code alone does not establish the intended physical state change,
+so generated drivers must be judged using observations and validation rules
+outside their control. Understanding this boundary begins with embodied AI and
+the software path from task intent to physical execution.
 
 
 \section[Application Domain]{Application Domain: Robot Capability Interfaces}
