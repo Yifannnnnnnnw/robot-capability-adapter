@@ -1,0 +1,26 @@
+{
+  "artifact_id": "unitree-mjlab-g1-velocity-v0",
+  "artifact_role": "trusted_task_neutral_velocity_policy",
+  "source_repository": "https://github.com/unitreerobotics/unitree_rl_mjlab",
+  "source_revision": "1425b15f73bd4095f0df53709d7c389c3eb9e790",
+  "source_path": "deploy/robots/g1/config/policy/velocity/v0/exported/policy.onnx",
+  "source_format": "ONNX",
+  "retained_format": "NumPy compressed state dictionary",
+  "retained_resource": "src/autoadapter2/trusted_skeletons/data/g1_velocity_policy.npz",
+  "architecture": {
+    "observation_size": 98,
+    "hidden_layers": [512, 256, 128],
+    "action_size": 29,
+    "activation": "ELU",
+    "normalization": "bundled mean and divisor"
+  },
+  "control": {
+    "physics_timestep_s": 0.005,
+    "policy_period_s": 0.02,
+    "actuation": "joint_position",
+    "command": ["local_vx_m_s", "local_vy_m_s", "yaw_rate_rad_s"]
+  },
+  "license": "Apache-2.0",
+  "license_file": "reference/g1_velocity_policy_LICENSE.txt",
+  "onnx_runtime_required": false
+}
