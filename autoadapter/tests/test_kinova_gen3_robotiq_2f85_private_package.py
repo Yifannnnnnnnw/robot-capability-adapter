@@ -254,7 +254,7 @@ def test_kinova_framework_resets_resolve_in_every_task_scene() -> None:
         assert np.isfinite(data.ctrl).all()
 
 
-def test_kinova_private_resets_do_not_start_in_deep_contact() -> None:
+def test_kinova_private_resets_and_idle_settling_avoid_deep_contact() -> None:
     instances = _read(KINOVA_PRIVATE_ROOT / "instances.json")["instances"]
     assert len(instances) == 20
 
@@ -265,21 +265,24 @@ def test_kinova_private_resets_do_not_start_in_deep_contact() -> None:
         data = mujoco.MjData(model)
         apply_framework_reset(mujoco, model, data, instance["reset"])
         mujoco.mj_forward(model, data)
-        if data.ncon == 0:
-            continue
-        contact = min(
-            (data.contact[index] for index in range(data.ncon)),
-            key=lambda item: float(item.dist),
-        )
-        geom_names = tuple(
-            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, int(geom_id))
-            or f"geom:{geom_id}"
-            for geom_id in (contact.geom1, contact.geom2)
-        )
-        assert float(contact.dist) >= MIN_RESET_CONTACT_DISTANCE, (
-            f"{instance['task_id']} starts at {float(contact.dist):.9f} m "
-            f"between {geom_names}"
-        )
+        for idle_step in range(101):
+            if idle_step:
+                mujoco.mj_step(model, data)
+            if data.ncon == 0:
+                continue
+            contact = min(
+                (data.contact[index] for index in range(data.ncon)),
+                key=lambda item: float(item.dist),
+            )
+            geom_names = tuple(
+                mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, int(geom_id))
+                or f"geom:{geom_id}"
+                for geom_id in (contact.geom1, contact.geom2)
+            )
+            assert float(contact.dist) >= MIN_RESET_CONTACT_DISTANCE, (
+                f"{instance['task_id']} reaches {float(contact.dist):.9f} m "
+                f"between {geom_names} at idle step {idle_step}"
+            )
 
 
 def test_kinova_public_ee_waypoints_are_position_ik_feasible() -> None:

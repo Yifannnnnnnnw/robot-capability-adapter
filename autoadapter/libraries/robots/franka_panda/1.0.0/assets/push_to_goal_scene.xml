@@ -6,10 +6,10 @@
   <worldbody>
     <light pos="0.35 -0.2 1.45" dir="0.2 0.1 -1" directional="true" />
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
-    <geom name="work_surface" type="box" pos="0.5 0.08 0.33" size="0.24 0.14 0.08" mass="0" contype="1" conaffinity="1" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
+    <geom name="work_surface" type="box" pos="0.5 0.08 0.33" size="0.24 0.14 0.08" mass="0" contype="1" conaffinity="1" solref="0.005 1" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
     <body name="workpiece" pos="0.48 0.10 0.416">
       <freejoint />
-      <geom name="workpiece_geom" type="cylinder" size="0.032 0.006" mass="0.025" conaffinity="2" friction="0.8 0.08 0.008" condim="4" rgba="0.10 0.55 0.92 1" />
+      <geom name="workpiece_geom" type="cylinder" size="0.032 0.006" mass="0.025" conaffinity="2" solref="0.005 1" friction="0.8 0.08 0.008" condim="4" rgba="0.10 0.55 0.92 1" />
     </body>
     <body name="push_goal" pos="0.48 0.18 0.412">
       <geom name="push_goal_marker" type="cylinder" size="0.04 0.002" contype="0" conaffinity="0" rgba="0.12 0.72 0.38 0.55" />
