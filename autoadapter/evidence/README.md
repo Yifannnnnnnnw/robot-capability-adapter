@@ -273,6 +273,39 @@ establish Task Demo or driver-synthesis success, and does not admit this
 configuration to the runnable index. A real-model dynamic canary and final
 admission review remain required.
 
+## SO-101 Package-Wide Reference Positive Control
+
+Run `so101-reference-positive-control-20260820T152422Z`, on repository commit
+`33946d9`, passed all 20 cases in the current
+`robotstudio-so101-source-protocols-2026-08-18-v5` Task Library snapshot with
+the reviewed calibration driver and real MuJoCo 3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- the focused package check passed for the exact SO-101 identity, current
+  public snapshot, 20 tasks, private package, local scene closure, skeleton,
+  and reference driver;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control was observed before physics stepping and changed from reset
+  in every trial;
+- all core guards passed and no direct `qpos` or `qvel` write was detected;
+- maximum trial length: 3,710 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete H.264, independently decoded at `800x600` and 10
+  fps, with 8 to 187 frames per case; and
+- push-to-goal, pick-place, drawer-open, door-close, side peg insertion, and
+  faucet-open terminal frames were visually checked for nonblank, task-readable
+  framing and visible terminal task state.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/so101-reference-positive-control-20260820T152422Z/`. Its
+`reference_report.json`, complete 20-case suite, capability design, and
+per-case videos remain together.
+
+This run supersedes the old five-case SO-101 reference gate and its low-resolution
+historical replay for package calibration. It establishes current-package
+reference feasibility only: it is not model-generated or dynamic evidence,
+does not establish Task Demo or driver-synthesis success, and does not replace
+the required current-model canary and final all-cohort admission review.
+
 ## Barkour Flat-Controller Calibration Gate
 
 Run `barkour-flat-bridge-20260820T125848Z` retained a locally trained official
