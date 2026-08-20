@@ -626,7 +626,12 @@
         {
           "path": "autoadapter/research/robots/google_barkour_vb_reference_review.md",
           "kind": "reference_controller_source_review",
-          "observation": "The official-source review found a compatible pinned BarkourJoystick training environment in MuJoCo Playground v0.0.5 but no official pretrained vB checkpoint in the inspected repositories or release assets. It records the 465-value observation history, 12-value action mapping, observation-normalizer requirement, 20 ms to canonical 1 ms CPU bridge, material dynamics mismatch, and the need for specialist obstacle policies plus a reference-only course planner. This is a bounded implementation plan, not controller or task-success evidence."
+          "observation": "The official-source review found a compatible pinned BarkourJoystick training environment in MuJoCo Playground v0.0.5 but no official pretrained vB checkpoint in the inspected repositories or release assets. It records the retained 465-value observation-history actor, 12-value action mapping, observation normalizer, exact 20 ms to canonical 1 ms CPU bridge, completed flat calibration gate, material dynamics mismatch, and the continuing need for specialist obstacle policies plus a reference-only course planner. This is bounded research and calibration evidence, not package-wide task-success or runnable evidence."
+        },
+        {
+          "path": "autoadapter/runs/barkour-flat-bridge-20260820T125848Z/summary.json",
+          "kind": "ignored_flat_controller_calibration_run",
+          "observation": "A locally trained 100,270,080-step BarkourJoystick actor, including its observation normalizer, matched exported NumPy inference within 3.10e-06 and completed the unmodified canonical CPU bridge using only data.ctrl and 20 one-millisecond MuJoCo steps per action. The five-second stand and all eight 0.4 m/s direction checks completed without falls; all nine videos decode and representative cases were visually checked. This closes only the flat-controller calibration gate, not private cases, trusted Harness verdicts, obstacle coverage, a package-wide positive control, or runnable status."
         },
         {
           "path": "demo2/legacy_assets/menagerie/google_barkour_vb/barkour_vb.xml",
@@ -656,7 +661,6 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Train and retain a reviewed MuJoCo Playground v0.0.5 BarkourJoystick actor with its observation normalizer, then pass the exact canonical CPU dynamics bridge.",
         "Provide a capability-neutral quadruped_pd_gait skeleton and a calibration-only reference driver; obstacle and full-course cases also require reviewed specialist policies and a reference-only planner.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",

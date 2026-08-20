@@ -109,6 +109,27 @@ class ResearchRobotIndexTests(unittest.TestCase):
             any("morphology.json" in item for item in g1["missing_for_runnable_package"])
         )
 
+        barkour = candidates_by_id["google_barkour_vb"]
+        barkour_paths = {
+            material["path"] for material in barkour["locally_observed_source_material"]
+        }
+        self.assertIn(
+            "autoadapter/runs/barkour-flat-bridge-20260820T125848Z/summary.json",
+            barkour_paths,
+        )
+        self.assertFalse(
+            any(
+                "Train and retain" in item
+                for item in barkour["missing_for_runnable_package"]
+            )
+        )
+        self.assertTrue(
+            any(
+                "specialist policies" in item
+                for item in barkour["missing_for_runnable_package"]
+            )
+        )
+
         for candidate in candidates:
             self.assertTrue(candidate["missing_for_runnable_package"])
 

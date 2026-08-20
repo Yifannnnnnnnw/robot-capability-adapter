@@ -2,15 +2,17 @@
 
 Review date: 2026-08-20
 
-This is a research input. It does not add a controller, establish task success,
-or admit Google Barkour vB to the runnable package index.
+This is a research and calibration record. It does not add a runnable-package
+controller, establish package-wide task success, or admit Google Barkour vB to
+the runnable package index.
 
 ## Decision
 
-Use the official MuJoCo Playground `BarkourJoystick` environment as the first
-trusted training reference, pinned to release `v0.0.5` at commit
-`81dfe512c9f2f03107fda1e31de585d04bb30bc4`. Train and retain our own policy
-artifact; do not assume an external checkpoint exists.
+The first flat-ground reference is now a locally trained actor from the
+official MuJoCo Playground `BarkourJoystick` environment, pinned to release
+`v0.0.5` at commit `81dfe512c9f2f03107fda1e31de585d04bb30bc4`.
+The actor, observation normalizer, and interface metadata are retained with the
+calibration run. No external checkpoint is treated as evidence.
 
 The inspected official repositories and release assets provide the vB model,
 training environment, PPO entrypoint, robot hardware software, and the older v0
@@ -22,6 +24,13 @@ third-party artifact on the internet.
 Release `v0.0.5` is the latest inspected Playground release compatible with the
 current MuJoCo 3.3.6 mainline before `v0.1.0` changes its dependency floor to
 MuJoCo 3.4. It is therefore the first reproduction target.
+
+The successful reproduction used NVIDIA's `nvcr.io/nvidia/jax:25.10-py3`
+container, its bundled JAX `0.7.2` build, and an isolated Brax `0.13.0`
+overlay. Brax `0.12.4` could not serialize this checkpoint shape, and `0.12.5`
+could save it but could not restore it with the container's Orbax `0.11.25`.
+Brax `0.13.0` passed training, save, restore, deterministic export, and
+inference without replacing the pinned Playground environment.
 
 ## Primary material
 
@@ -80,11 +89,41 @@ same retained policy must pass a canonical CPU cross-simulator gate. If it does
 not, retrain or fine-tune with dynamics randomization that includes the exact
 canonical target. Do not silently alter the canonical asset to fit the policy.
 
+## Completed flat-ground calibration gate
+
+The official PPO configuration completed 100,270,080 environment steps from a
+100 million-step request. Evaluation reward rose from `1.510` at step zero to
+`36.961` at the final checkpoint. The retained deterministic actor export
+matched its JAX inference function on 256 probes with maximum absolute error
+`3.0994415283203125e-06`, below the `5e-05` export tolerance.
+
+The same artifact then ran against the unmodified canonical CPU scene with
+MuJoCo 3.3.6. The bridge wrote only `data.ctrl`, held each action for 20
+canonical 1 ms physics steps, preserved the official delayed previous-action
+observation, and used the official 15 by 31 observation history. It did not
+write `qpos` or `qvel` and did not replace the canonical damping, friction loss,
+or servo gain.
+
+The five-second zero command stayed upright with post-settling mean local
+planar speed `0.055918 m/s`; this is a stable stand calibration, not a strict
+zero-drift claim. All eight independently reset `0.4 m/s` direction trials ran
+for 5,000 canonical physics steps without a fall. Post-settling local planar
+speed ranged from `0.503131` to `0.836905 m/s`, and direction error ranged from
+`0.2854` to `7.5250` degrees. These measurements clear the flat calibration
+gate corresponding to the public speed and heading bounds, but they are not a
+Framework/Harness task verdict.
+
+All nine retained case videos decode fully as H.264 at 640 by 480, 25 fps, and
+126 frames. Stand, forward, 90-degree, and worst-heading 225-degree cases were
+visually checked for nonblank, readable follow-camera framing and an upright
+robot. The ignored raw record is retained at
+`autoadapter/runs/barkour-flat-bridge-20260820T125848Z/`.
+
 ## Coverage boundary
 
-`BarkourJoystick` is a sound low-level reference for stand, commanded planar
-locomotion, orientation, and waypoint-following experiments after the CPU gate
-passes. It is not evidence for the complete 20-task public catalog.
+`BarkourJoystick` is now a sound low-level reference candidate for stand,
+commanded planar locomotion, orientation, and waypoint-following experiments.
+It is not evidence for the complete 20-task public catalog.
 
 The public catalog also contains a 3 rad/s turn, steps, trap terrains, an
 A-frame, a broad jump, and the complete timed course. The Barkour paper solves
@@ -104,18 +143,13 @@ private verdict logic.
 
 ## Minimum acceptance sequence
 
-1. Reproduce deterministic inference in the pinned official environment and
-   retain the actor, observation normalizer, PPO/environment configuration,
-   joint order, home pose, action scale, control period, source revision, and
-   license record together.
-2. Replay that exact artifact on the canonical CPU scene using only
-   `data.ctrl` and 20 physics steps per policy action. Reject non-finite state,
-   falls, joint-limit violations, order mismatches, or direct state writes.
-3. Run focused flat-ground checks for a five-second stand and 0.4 m/s commands
-   in all eight public directions, including the public heading bound. Retain
-   Harness measurements and readable videos.
-4. Only after the flat bridge passes, create private fixtures and reference
+1. Preserve the completed deterministic actor export, source/runtime pins, CPU
+   bridge measurements, and videos as calibration inputs.
+2. Convert the reviewed interface into a capability-neutral trusted skeleton
+   and a separately owned calibration reference without leaking task IDs,
+   private waypoints, bindings, or verdict logic.
+3. Create Framework-private fixtures and reference
    cases for step and navigation tasks. Add specialist policies one obstacle
    family at a time, each with its own focused positive control.
-5. Run the complete package-wide reference positive control before any
+4. Run the complete package-wide reference positive control before any
    real-model dynamic canary or runnable-index review.

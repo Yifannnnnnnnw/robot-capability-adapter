@@ -236,6 +236,34 @@ evidence, does not establish Task Demo or driver-synthesis success, and does
 not admit this configuration to the runnable index. A real-model dynamic
 canary and final admission review remain required.
 
+## Barkour Flat-Controller Calibration Gate
+
+Run `barkour-flat-bridge-20260820T125848Z` retained a locally trained official
+MuJoCo Playground v0.0.5 `BarkourJoystick` actor and replayed it on the
+unmodified canonical Barkour vB CPU scene with real MuJoCo 3.3.6 physics:
+
+- the official PPO run completed 100,270,080 environment steps and improved
+  evaluation reward from `1.510` to `36.961`;
+- the retained actor includes the observation normalizer and matched JAX
+  inference on 256 probes with maximum absolute error `3.10e-06`;
+- the CPU bridge wrote only `data.ctrl` and held each policy action for exactly
+  20 canonical 1 ms physics steps;
+- a five-second zero command remained upright, with `0.055918 m/s`
+  post-settling local planar drift;
+- all eight independently reset `0.4 m/s` direction checks completed 5,000
+  physics steps without a fall; minimum post-settling local speed was
+  `0.503131 m/s` and maximum direction error was `7.525` degrees; and
+- all nine H.264 videos decode completely at `640x480`, 25 fps, and 126 frames;
+  four representative cases, including the worst direction error, were
+  visually checked for nonblank, readable follow-camera framing.
+
+The ignored raw record is retained locally at
+`autoadapter/runs/barkour-flat-bridge-20260820T125848Z/`, including the actor,
+per-case measurements, summary, and videos. This is research calibration only,
+not a Framework/Harness package positive control. It does not establish the
+3 rad/s turn, steps, trap terrain, A-frame, broad jump, complete course,
+real-model synthesis, or runnable-index admission.
+
 ## Latest Historical Diagnostic Run
 
 This run predates Authority `0.19.2`: its five sampled cases were used directly
