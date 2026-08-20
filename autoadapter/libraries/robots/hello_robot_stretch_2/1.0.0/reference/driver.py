@@ -262,11 +262,7 @@ class ReferenceStretch2Driver:
                 f"Stretch contact task did not converge; residual={error:.5f}"
             )
 
-    def object_task(self, request: Any) -> None:
-        task_id, parameters = _request(request)
-        if task_id != "mw_pick_place":
-            raise ValueError(f"unsupported Stretch object calibration task {task_id!r}")
-
+    def _grasp_workpiece(self) -> None:
         self._control.set_wrist_yaw(0.0)
         self._control.set_gripper(0.04)
         workpiece = self._body_position("workpiece")
@@ -278,6 +274,53 @@ class ReferenceStretch2Driver:
         )
         self._pressure_gripper(-0.005, steps=500)
 
+    def _side_peg(self, parameters: Mapping[str, Any]) -> None:
+        target = _vector(parameters["target_position"], name="target_position")
+        weights = np.asarray((1.0, 2.0, 2.0))
+        initial_head = self._site_position("peg_head_site")
+        self._grasp_workpiece()
+
+        for head_target in (
+            np.asarray((initial_head[0], target[1], target[2])),
+            np.asarray(((initial_head[0] + target[0]) / 2.0, target[1], target[2])),
+            target,
+        ):
+            delta = head_target - self._site_position("peg_head_site")
+            try:
+                self._control.move_tool_to_position(
+                    self._tool_position() + delta,
+                    tolerance_m=0.03,
+                )
+            except RuntimeError:
+                residual = float(
+                    np.linalg.norm(
+                        weights
+                        * (self._site_position("peg_head_site") - head_target)
+                    )
+                )
+                if residual > 0.06:
+                    raise
+
+        self._idle(300)
+        error = float(
+            np.linalg.norm(
+                weights * (self._site_position("peg_head_site") - target)
+            )
+        )
+        if error > 0.07:
+            raise RuntimeError(
+                f"Stretch side peg did not converge; residual={error:.5f}"
+            )
+
+    def object_task(self, request: Any) -> None:
+        task_id, parameters = _request(request)
+        if task_id == "mw_peg_insertion_side":
+            self._side_peg(parameters)
+            return
+        if task_id != "mw_pick_place":
+            raise ValueError(f"unsupported Stretch object calibration task {task_id!r}")
+
+        self._grasp_workpiece()
         self._control.move_tool_to_position(
             self._tool_position() + np.asarray((0.0, 0.0, 0.12)),
             tolerance_m=0.03,
