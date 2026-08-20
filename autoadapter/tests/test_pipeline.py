@@ -90,6 +90,40 @@ def test_mainline_manifest_pins_model_empty_experience_and_seed_policy() -> None
     assert len(config.robots) * len(config.generation_conditions) == 22
 
 
+def test_formal_robot_canaries_mirror_mainline_manifest_contract() -> None:
+    root = Path(__file__).resolve().parents[1]
+    config_dir = root / "configs" / "experiments"
+    mainline = json.loads((config_dir / "mainline.json").read_text(encoding="utf-8"))
+    expected_robots = {
+        "robotstudio_so101",
+        "unitree-go2-stock-12dof",
+        "franka_panda",
+        "kinova_gen3_robotiq_2f85",
+        "ufactory_xarm7",
+        "universal_robots_ur5e_robotiq_2f85",
+        "piper",
+        "kuka_iiwa_14",
+        "leap_hand",
+        "hello_robot_stretch_2",
+        "aloha_2",
+    }
+    canary_paths = sorted(config_dir.glob("*-canary.json"))
+    canaries = [
+        json.loads(path.read_text(encoding="utf-8")) for path in canary_paths
+    ]
+    canary_robots = [canary["robots"][0] for canary in canaries]
+
+    assert len(canaries) == len(expected_robots)
+    assert set(canary_robots) == expected_robots
+    assert len(canary_robots) == len(set(canary_robots))
+    assert {"unitree_g1", "google_barkour_vb"}.isdisjoint(canary_robots)
+    for path, canary in zip(canary_paths, canaries):
+        assert len(canary["robots"]) == 1, path.name
+        assert canary["generation_conditions"] == ["skeleton-assisted"], path.name
+        for key in ("model", "experience", "evolution", "seeds"):
+            assert canary[key] == mainline[key], path.name
+
+
 def test_model_preflight_rejects_a_runtime_model_substitution() -> None:
     manifest = ExperimentConfig.from_mapping(
         {

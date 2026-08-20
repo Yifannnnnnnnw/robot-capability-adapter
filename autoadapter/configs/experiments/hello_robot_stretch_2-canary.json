@@ -1,7 +1,7 @@
 {
-  "experiment_id": "autoadapter2-kinova_gen3_robotiq_2f85-skeleton-canary",
+  "experiment_id": "autoadapter2-hello_robot_stretch_2-skeleton-canary",
   "robots": [
-    "kinova_gen3_robotiq_2f85"
+    "hello_robot_stretch_2"
   ],
   "generation_conditions": [
     "skeleton-assisted"
