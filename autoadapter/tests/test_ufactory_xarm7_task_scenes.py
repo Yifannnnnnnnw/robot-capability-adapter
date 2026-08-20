@@ -219,6 +219,5 @@ def test_xarm7_scene_geometry_is_world_framed_and_package_remains_non_runtime() 
         (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
     )
     assert "ufactory_xarm7" not in runnable_index["robots"]
-    assert not (PACKAGE_ROOT / "tasks" / "private").exists()
     assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()

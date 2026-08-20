@@ -1,0 +1,1524 @@
+{
+  "robot_configuration_id": "ufactory_xarm7",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "ufactory-xarm7-metaworld-source-protocols-2026-08-20-v1",
+  "instances": [
+    {
+      "instance_id": "xarm7-mw_reach_target",
+      "task_id": "mw_reach_target",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_reach_target",
+          "task_parameters": {
+            "target_position": [
+              0.55,
+              0.1,
+              0.43
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "terminal_endpoint": "binding-mw_reach_target"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_push_to_goal",
+      "task_id": "mw_push_to_goal",
+      "scene_entrypoint": "assets/push_to_goal_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_push_to_goal",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              0.03,
+              0.438
+            ],
+            "target_position": [
+              0.48,
+              0.18,
+              0.41600000000000004
+            ],
+            "tool_target_position": [
+              0.48,
+              0.18,
+              0.438
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "object_goal_distance": "binding-mw_push_to_goal"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_pick_place",
+      "task_id": "mw_pick_place",
+      "scene_entrypoint": "assets/pick_place_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_pick_place",
+          "task_parameters": {
+            "start_position": [
+              0.48,
+              0.08,
+              0.43
+            ],
+            "grasp_position": [
+              0.48,
+              0.07,
+              0.445
+            ],
+            "grasp_wrist_roll": -1.5707963267948966,
+            "grasp_gripper": 185.33077932765934,
+            "target_position": [
+              0.48,
+              -0.08,
+              0.51
+            ],
+            "release_position": [
+              0.471,
+              -0.078,
+              0.5220000000000001
+            ],
+            "tool_target_position": [
+              0.471,
+              -0.078,
+              0.5220000000000001
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "placed_object_distance": "binding-mw_pick_place"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_pick_place_wall",
+      "task_id": "mw_pick_place_wall",
+      "scene_entrypoint": "assets/pick_place_wall_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_pick_place_wall",
+          "task_parameters": {
+            "start_position": [
+              0.48,
+              0.08,
+              0.43
+            ],
+            "grasp_position": [
+              0.48,
+              0.07,
+              0.445
+            ],
+            "grasp_wrist_roll": -1.5707963267948966,
+            "grasp_gripper": 198.6129978227579,
+            "target_position": [
+              0.6,
+              0.08,
+              0.51
+            ],
+            "release_position": [
+              0.591,
+              0.082,
+              0.5220000000000001
+            ],
+            "tool_target_position": [
+              0.591,
+              0.082,
+              0.5220000000000001
+            ],
+            "route_position": [
+              0.54,
+              0.08,
+              0.55
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "placed_object_distance": "binding-mw_pick_place_wall"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_push_wall",
+      "task_id": "mw_push_wall",
+      "scene_entrypoint": "assets/wall_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_push_wall",
+          "task_parameters": {
+            "contact_position": [
+              0.45999999999999996,
+              0.03,
+              0.438
+            ],
+            "target_position": [
+              0.45999999999999996,
+              0.18,
+              0.43
+            ],
+            "tool_target_position": [
+              0.45999999999999996,
+              0.18,
+              0.438
+            ],
+            "route_position": [
+              0.45999999999999996,
+              0.16,
+              0.438
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "object_goal_distance": "binding-mw_push_wall"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_sweep_into_goal",
+      "task_id": "mw_sweep_into_goal",
+      "scene_entrypoint": "assets/sweep_into_goal_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_sweep_into_goal",
+          "task_parameters": {
+            "contact_position": [
+              0.48,
+              0.03,
+              0.45
+            ],
+            "target_position": [
+              0.48,
+              0.18,
+              0.385
+            ],
+            "tool_target_position": [
+              0.48,
+              0.21,
+              0.45
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "swept_object_distance": "binding-mw_sweep_into_goal"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_drawer_open",
+      "task_id": "mw_drawer_open",
+      "scene_entrypoint": "assets/drawer_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_drawer_open",
+          "task_parameters": {
+            "contact_position": [
+              0.472,
+              0.075,
+              0.45
+            ],
+            "target_position": [
+              0.48,
+              -0.005,
+              0.45
+            ],
+            "tool_target_position": [
+              0.472,
+              -0.005,
+              0.45
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "open_handle_error": "binding-mw_drawer_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_drawer_close",
+      "task_id": "mw_drawer_close",
+      "scene_entrypoint": "assets/drawer_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_drawer_close",
+          "task_parameters": {
+            "contact_position": [
+              0.472,
+              -0.005,
+              0.45
+            ],
+            "target_position": [
+              0.48,
+              0.075,
+              0.45
+            ],
+            "tool_target_position": [
+              0.472,
+              0.075,
+              0.45
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0,
+          "drawer_slide": -0.08
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "closed_drawer_distance": "binding-mw_drawer_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_button_press",
+      "task_id": "mw_button_press",
+      "scene_entrypoint": "assets/button_front_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_button_press",
+          "task_parameters": {
+            "contact_position": [
+              0.497,
+              0.08,
+              0.49000000000000005
+            ],
+            "target_position": [
+              0.48,
+              0.18,
+              0.47
+            ],
+            "tool_target_position": [
+              0.497,
+              0.19,
+              0.49000000000000005
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "pressed_button_distance": "binding-mw_button_press"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_button_press_topdown",
+      "task_id": "mw_button_press_topdown",
+      "scene_entrypoint": "assets/button_topdown_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_button_press_topdown",
+          "task_parameters": {
+            "contact_position": [
+              0.497,
+              0.1,
+              0.49499999999999994
+            ],
+            "target_position": [
+              0.5,
+              0.1,
+              0.425
+            ],
+            "tool_target_position": [
+              0.497,
+              0.1,
+              0.39499999999999996
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "topdown_button_distance": "binding-mw_button_press_topdown"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_handle_press",
+      "task_id": "mw_handle_press",
+      "scene_entrypoint": "assets/handle_vertical_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_handle_press",
+          "task_parameters": {
+            "contact_position": [
+              0.497,
+              0.1,
+              0.5000000000000001
+            ],
+            "target_position": [
+              0.48,
+              0.1,
+              0.43
+            ],
+            "tool_target_position": [
+              0.497,
+              0.1,
+              0.39999999999999997
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "handle_target_distance": "binding-mw_handle_press"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_handle_pull",
+      "task_id": "mw_handle_pull",
+      "scene_entrypoint": "assets/handle_vertical_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_handle_pull",
+          "task_parameters": {
+            "contact_position": [
+              0.472,
+              0.1,
+              0.43
+            ],
+            "target_position": [
+              0.48,
+              0.1,
+              0.48
+            ],
+            "tool_target_position": [
+              0.472,
+              0.1,
+              0.48000000000000004
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0,
+          "vertical_handle_slide": -0.05
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "pulled_handle_distance": "binding-mw_handle_pull"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_door_open",
+      "task_id": "mw_door_open",
+      "scene_entrypoint": "assets/door_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_open",
+          "task_parameters": {
+            "contact_position": [
+              0.43700000000000006,
+              0.08,
+              0.49000000000000005
+            ],
+            "route_position": [
+              0.41600000000000004,
+              0.159,
+              0.49000000000000005
+            ],
+            "target_position": [
+              0.30000000000000004,
+              0.22,
+              0.47
+            ],
+            "tool_target_position": [
+              0.30000000000000004,
+              0.22,
+              0.49000000000000005
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "door_open_axis_error": "binding-mw_door_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_door_close",
+      "task_id": "mw_door_close",
+      "scene_entrypoint": "assets/door_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_door_close",
+          "task_parameters": {
+            "contact_position": [
+              0.351,
+              0.211,
+              0.49000000000000005
+            ],
+            "route_position": [
+              0.41600000000000004,
+              0.159,
+              0.49000000000000005
+            ],
+            "target_position": [
+              0.44000000000000006,
+              0.08,
+              0.47
+            ],
+            "tool_target_position": [
+              0.44000000000000006,
+              0.08,
+              0.49000000000000005
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0,
+          "door_hinge": 1.2
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "closed_door_distance": "binding-mw_door_close"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_faucet_open",
+      "task_id": "mw_faucet_open",
+      "scene_entrypoint": "assets/faucet_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_faucet_open",
+          "task_parameters": {
+            "contact_position": [
+              0.527,
+              0.12,
+              0.49000000000000005
+            ],
+            "route_position": [
+              0.513,
+              0.165,
+              0.49000000000000005
+            ],
+            "target_position": [
+              0.479,
+              0.195,
+              0.47
+            ],
+            "tool_target_position": [
+              0.476,
+              0.195,
+              0.49000000000000005
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "faucet_target_distance": "binding-mw_faucet_open"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_dial_turn",
+      "task_id": "mw_dial_turn",
+      "scene_entrypoint": "assets/dial_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_dial_turn",
+          "task_parameters": {
+            "contact_position": [
+              0.497,
+              0.07,
+              0.54
+            ],
+            "route_position": [
+              0.497,
+              0.0875,
+              0.4835
+            ],
+            "target_position": [
+              0.5,
+              0.134,
+              0.427
+            ],
+            "tool_target_position": [
+              0.497,
+              0.134,
+              0.447
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "dial_target_distance": "binding-mw_dial_turn"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_lever_pull",
+      "task_id": "mw_lever_pull",
+      "scene_entrypoint": "assets/lever_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_lever_pull",
+          "task_parameters": {
+            "contact_position": [
+              0.45699999999999996,
+              0.12,
+              0.55
+            ],
+            "route_position": [
+              0.525,
+              0.12,
+              0.505
+            ],
+            "target_position": [
+              0.56,
+              0.12,
+              0.43
+            ],
+            "tool_target_position": [
+              0.575,
+              0.12,
+              0.42
+            ],
+            "target_angle": 1.5707963267948966
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "lever_angle_error": "binding-mw_lever_pull"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_peg_insertion_side",
+      "task_id": "mw_peg_insertion_side",
+      "scene_entrypoint": "assets/peg_insertion_side_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_peg_insertion_side",
+          "task_parameters": {
+            "start_position": [
+              0.48,
+              0.08,
+              0.43
+            ],
+            "target_position": [
+              0.48,
+              -0.092,
+              0.48
+            ],
+            "release_position": [
+              0.45499999999999996,
+              -0.04,
+              0.5160000000000001
+            ],
+            "tool_target_position": [
+              0.45499999999999996,
+              -0.04,
+              0.5160000000000001
+            ],
+            "route_position": [
+              0.45499999999999996,
+              -0.005,
+              0.5160000000000001
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "peg_target_distance": "binding-mw_peg_insertion_side"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_bin_picking",
+      "task_id": "mw_bin_picking",
+      "scene_entrypoint": "assets/bin_picking_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_bin_picking",
+          "task_parameters": {
+            "start_position": [
+              0.48,
+              0.11,
+              0.44
+            ],
+            "grasp_position": [
+              0.48,
+              0.105,
+              0.44
+            ],
+            "grasp_wrist_roll": 1.5707963267948966,
+            "grasp_gripper": 198.6129978227579,
+            "target_position": [
+              0.48,
+              -0.11,
+              0.44
+            ],
+            "release_position": [
+              0.471,
+              -0.108,
+              0.5000000000000001
+            ],
+            "tool_target_position": [
+              0.471,
+              -0.108,
+              0.5000000000000001
+            ],
+            "route_position": [
+              0.48,
+              0.0,
+              0.55
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "binned_object_distance": "binding-mw_bin_picking"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "xarm7-mw_pick_out_of_hole",
+      "task_id": "mw_pick_out_of_hole",
+      "scene_entrypoint": "assets/pick_out_of_hole_scene.xml",
+      "public_arguments": {
+        "request": {
+          "task_id": "mw_pick_out_of_hole",
+          "task_parameters": {
+            "start_position": [
+              0.48,
+              0.08,
+              0.43
+            ],
+            "grasp_position": [
+              0.48,
+              0.105,
+              0.44
+            ],
+            "grasp_wrist_roll": -1.5707963267948966,
+            "grasp_gripper": 198.6129978227579,
+            "route_position": [
+              0.45999999999999996,
+              0.0,
+              0.5700000000000001
+            ],
+            "target_position": [
+              0.44000000000000006,
+              -0.08,
+              0.55
+            ],
+            "release_position": [
+              0.43100000000000005,
+              -0.078,
+              0.562
+            ],
+            "tool_target_position": [
+              0.43100000000000005,
+              -0.078,
+              0.562
+            ]
+          }
+        }
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": -0.247,
+          "joint3": 0.0,
+          "joint4": 0.909,
+          "joint5": 0.0,
+          "joint6": 1.15644,
+          "joint7": 0.0,
+          "left_driver_joint": 0.0,
+          "left_finger_joint": 0.0,
+          "left_inner_knuckle_joint": 0.0,
+          "right_driver_joint": 0.0,
+          "right_finger_joint": 0.0,
+          "right_inner_knuckle_joint": 0.0
+        },
+        "actuator_controls": {
+          "act1": 0.0,
+          "act2": -0.247,
+          "act3": 0.0,
+          "act4": 0.909,
+          "act5": 0.0,
+          "act6": 1.15644,
+          "act7": 0.0,
+          "gripper": 0.0
+        }
+      },
+      "clause_bindings": {
+        "extracted_object_distance": "binding-mw_pick_out_of_hole"
+      },
+      "guard_ids": [
+        "guard_actuator_and_physics_step",
+        "guard_no_direct_state_write",
+        "guard_canonical_model_data"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 10000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    }
+  ]
+}

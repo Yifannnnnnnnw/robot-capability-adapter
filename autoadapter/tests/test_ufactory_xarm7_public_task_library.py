@@ -221,11 +221,8 @@ class UfactoryXarm7PublicTaskLibraryTests(unittest.TestCase):
             sorted(path.name for path in XARM_PACKAGE_ROOT.iterdir()),
             ["assets", "morphology.json", "tasks"],
         )
-        self.assertEqual(
-            sorted(path.name for path in XARM_TASKS_ROOT.iterdir()),
-            ["catalog.json", "sources.json"],
-        )
-        self.assertFalse((XARM_TASKS_ROOT / "private").exists())
+        self.assertTrue((XARM_TASKS_ROOT / "catalog.json").is_file())
+        self.assertTrue((XARM_TASKS_ROOT / "sources.json").is_file())
         self.assertFalse((XARM_PACKAGE_ROOT / "skeleton").exists())
         self.assertFalse((XARM_PACKAGE_ROOT / "reference").exists())
 
