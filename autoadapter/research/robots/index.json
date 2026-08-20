@@ -486,6 +486,16 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/assets/scene.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical package contains the complete 23-file local Google Barkour vB closure copied byte-for-byte from the inspected migration source. The scene loads in MuJoCo 3.3.6 as a free-base quadruped and actuator-driven control liveness is verified. This is asset and control-liveness evidence only, not task, gait, dynamic-success, or runnable evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical morphology records the floating-base four-leg, twelve-joint position-servo facts, direct mappings, named foot and IMU/sensor observations, home reset, and pinned source/license lineage without claiming tasks, manipulation, locomotion, gait performance, terrain success, controller availability, or runnable status."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/google_barkour_vb/barkour_vb.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Google Barkour vB model, URDF, and meshes are available for migration inspection."
@@ -512,8 +522,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under a canonical Barkour vB package; legacy Menagerie files are migration inputs only.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
         "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
