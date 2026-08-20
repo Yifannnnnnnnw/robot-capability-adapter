@@ -278,6 +278,16 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/piper/1.0.0/assets/piper.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical package now contains the complete 93-file local Piper closure and uses neutral piper.xml as its entrypoint. It loads as a six-axis arm with one directly actuated, equality-mirrored two-finger gripper; retained pickbench.xml and pushbench.xml are source assets, not task evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/piper/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical morphology records six arm joints, the slide gripper and passive mirrored finger, the ee_site frame, contact-body facts, home reset, and pinned direct source revision without claiming task support or runnable status."
+        },
+        {
           "path": "general_demo/libraries/assets/piper/1.0.0/asset_closure.json",
           "kind": "asset_closure_record",
           "observation": "The recorded closure marks UPSTREAM_CACHE_REQUIRED; its 86 entries include 82 mesh entries without a local vendored path."
@@ -314,8 +324,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under the canonical package; the observed General Demo closure explicitly leaves mesh materialization dependent on an upstream cache.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
         "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",

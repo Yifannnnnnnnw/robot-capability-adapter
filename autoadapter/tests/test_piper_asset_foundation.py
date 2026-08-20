@@ -14,6 +14,7 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "piper" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
+RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 XML_ENTRYPOINTS = ("piper.xml", "scene.xml", "pickbench.xml", "pushbench.xml")
 ARM_JOINT_NAMES = [
@@ -365,6 +366,26 @@ def test_piper_model_facts_and_actuator_driven_gripper_liveness() -> None:
 def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> None:
     runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
     assert "piper" not in runnable_index["robots"]
+
+    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
+    candidate = next(
+        item
+        for item in research_index["candidates"]
+        if item["robot_configuration_id"] == "piper"
+    )
+    observed_paths = {
+        item["path"] for item in candidate["locally_observed_source_material"]
+    }
+    assert "autoadapter/libraries/robots/piper/1.0.0/assets/piper.xml" in observed_paths
+    assert "autoadapter/libraries/robots/piper/1.0.0/morphology.json" in observed_paths
+    missing = " ".join(candidate["missing_for_runnable_package"])
+    assert "complete local MuJoCo asset closure" not in missing
+    assert "current mainline morphology.json" not in missing
+    assert "at least 20 distinct applicable source-backed tasks" in missing
+    assert "tasks/private/instances.json" in missing
+    assert "positive control" in missing
+    assert "dynamic canary" in missing
+
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
