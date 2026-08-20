@@ -275,9 +275,24 @@ class RobotPackageTests(unittest.TestCase):
         _write_json(guards_path, guards)
         self.assertEqual(load_robot_package(self.root).robot_configuration_id, "example-arm")
 
+        multiple_robot_geoms = json.loads(json.dumps(guards))
+        multiple_robot_geoms["guards"][-1].pop("robot_geom_name")
+        multiple_robot_geoms["guards"][-1]["robot_geom_names"] = [
+            "left/left_g0",
+            "left/left_g1",
+            "left/left_g2",
+        ]
+        _write_json(guards_path, multiple_robot_geoms)
+        self.assertEqual(load_robot_package(self.root).robot_configuration_id, "example-arm")
+
         invalid_variants = (
             ("task_geom_names", [], "task_geom_names must be a non-empty list"),
             ("minimum_steps", 0, "minimum_steps must be a positive integer"),
+            (
+                "robot_geom_names",
+                ["left/left_g0"],
+                "exactly one of robot_geom_name or robot_geom_names",
+            ),
         )
         for field, value, message in invalid_variants:
             with self.subTest(field=field):

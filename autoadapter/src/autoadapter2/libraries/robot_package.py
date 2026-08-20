@@ -523,7 +523,27 @@ def _validate_private_inputs(
         if kind not in _SUPPORTED_GUARD_KINDS:
             raise RobotPackageError(f"{where}.kind is not implemented by the trusted Harness")
         if kind == "named_geom_contact_pair_required":
-            robot_geom_name = _required_text(guard, "robot_geom_name", where=where)
+            has_robot_geom_name = "robot_geom_name" in guard
+            has_robot_geom_names = "robot_geom_names" in guard
+            if has_robot_geom_name == has_robot_geom_names:
+                raise RobotPackageError(
+                    f"{where} must contain exactly one of robot_geom_name or robot_geom_names"
+                )
+            if has_robot_geom_name:
+                robot_geom_names = [_required_text(guard, "robot_geom_name", where=where)]
+            else:
+                robot_geom_names = guard.get("robot_geom_names")
+                if (
+                    not isinstance(robot_geom_names, list)
+                    or not robot_geom_names
+                    or any(
+                        not isinstance(name, str) or not name.strip()
+                        for name in robot_geom_names
+                    )
+                ):
+                    raise RobotPackageError(
+                        f"{where}.robot_geom_names must be a non-empty list of names"
+                    )
             task_geom_names = guard.get("task_geom_names")
             if (
                 not isinstance(task_geom_names, list)
@@ -531,9 +551,9 @@ def _validate_private_inputs(
                 or any(not isinstance(name, str) or not name.strip() for name in task_geom_names)
             ):
                 raise RobotPackageError(f"{where}.task_geom_names must be a non-empty list of names")
-            if robot_geom_name in task_geom_names:
+            if set(robot_geom_names).intersection(task_geom_names):
                 raise RobotPackageError(
-                    f"{where}.task_geom_names must not contain robot_geom_name"
+                    f"{where}.task_geom_names must not contain a selected robot geom"
                 )
             minimum_steps = guard.get("minimum_steps")
             if (

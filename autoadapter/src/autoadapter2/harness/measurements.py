@@ -666,15 +666,31 @@ def evaluate_guards(
             outcomes[guard_id] = bool(video.get("complete"))
         elif kind == "named_geom_contact_pair_required":
             robot_geom_name = guard.get("robot_geom_name")
+            robot_geom_names = guard.get("robot_geom_names")
             task_geom_names = guard.get("task_geom_names")
             minimum_steps = guard.get("minimum_steps")
             records = evidence.get("contact_pair_step_counts")
             outcome = False
+            has_robot_geom_name = "robot_geom_name" in guard
+            has_robot_geom_names = "robot_geom_names" in guard
+            robot_names: set[str] = set()
+            if has_robot_geom_name != has_robot_geom_names:
+                if isinstance(robot_geom_name, str) and robot_geom_name.strip():
+                    robot_names.add(robot_geom_name)
+                elif (
+                    isinstance(robot_geom_names, list)
+                    and robot_geom_names
+                    and all(
+                        isinstance(name, str) and bool(name.strip())
+                        for name in robot_geom_names
+                    )
+                ):
+                    robot_names.update(robot_geom_names)
             if (
-                isinstance(robot_geom_name, str)
+                robot_names
                 and isinstance(task_geom_names, list)
                 and task_geom_names
-                and all(isinstance(name, str) for name in task_geom_names)
+                and all(isinstance(name, str) and bool(name.strip()) for name in task_geom_names)
                 and isinstance(minimum_steps, int)
                 and not isinstance(minimum_steps, bool)
                 and minimum_steps > 0
@@ -699,8 +715,8 @@ def evaluate_guards(
                     ):
                         valid_records = False
                         break
-                    if (geom1 == robot_geom_name and geom2 in task_names) or (
-                        geom2 == robot_geom_name and geom1 in task_names
+                    if (geom1 in robot_names and geom2 in task_names) or (
+                        geom2 in robot_names and geom1 in task_names
                     ):
                         contact_steps += step_count
                 outcome = valid_records and contact_steps >= minimum_steps

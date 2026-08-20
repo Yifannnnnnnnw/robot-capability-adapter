@@ -489,6 +489,30 @@ class HarnessRunnerTests(unittest.TestCase):
             {"robot-task-contact": True},
         )
 
+        finger_bank_guard = {
+            "guard_id": "selected-finger-contact",
+            "kind": "named_geom_contact_pair_required",
+            "robot_geom_names": ["left/left_g0", "left/left_g1", "left/left_g2"],
+            "task_geom_names": ["workpiece_geom"],
+            "minimum_steps": 1,
+        }
+        wrong_arm = self._worker_result([])
+        wrong_arm["physical_evidence"]["contact_pair_step_counts"] = [
+            {"geom1": "right/left_g0", "geom2": "workpiece_geom", "step_count": 4},
+        ]
+        selected_arm = self._worker_result([])
+        selected_arm["physical_evidence"]["contact_pair_step_counts"] = [
+            {"geom1": "workpiece_geom", "geom2": "left/left_g2", "step_count": 1},
+        ]
+        self.assertEqual(
+            evaluate_guards([finger_bank_guard], worker_result=wrong_arm),
+            {"selected-finger-contact": False},
+        )
+        self.assertEqual(
+            evaluate_guards([finger_bank_guard], worker_result=selected_arm),
+            {"selected-finger-contact": True},
+        )
+
     def test_physical_execution_requires_clean_canonical_stepped_trials(self) -> None:
         base_samples = [{"time": 0.0, "joint_positions": {"shoulder_pan": 0.2}}]
         variants = (
