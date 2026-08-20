@@ -141,6 +141,54 @@ problems separately.
 \subsection{Generalist Robot Intelligence}
 \label{sec:generalist-robot-intelligence}
 
+Within a hierarchical robot system, generalist intelligence at the high level
+concerns interpreting varied task instructions and coordinating reusable
+capabilities, rather than directly predicting actuator commands. The methods
+below are compared by what the LLM outputs, how that output is constrained,
+and what feedback returns after execution.
+
+Direct planners first generated sequences over fixed actions. Zero-Shot
+Planner maps free-form steps to admissible actions, while SayCan combines
+task-relevance and skill-feasibility scores. Grounded Decoding adds affordance
+or safety objectives during token generation, whereas Text2Motion checks
+geometric feasibility across an entire skill sequence
+\citep{huang2022zeroshotplanner,ahn2022saycan,
+huang2023groundeddecoding,lin2023text2motion}. These methods improve
+grounding, but still assume supplied skills, policies, and feasibility models.
+
+Closed-loop methods revise plans from execution evidence. Inner Monologue
+converts scene, success--failure, and human feedback into text. Interactive
+Task Planning separates a planner from a function-calling executor. SayPlan
+searches a hierarchical 3D scene graph, validates plans in a scene-graph
+simulator, and delegates navigation to a classical planner. DoReMi continuously
+monitors language-defined constraints and triggers recovery when plan and
+execution diverge
+\citep{huang2023innermonologue,li2025interactiveplanning,
+rana2023sayplan,guo2024doremi}. Their behaviour therefore depends on feedback
+projection, tool contracts, monitoring, and memory---not only on the backbone.
+
+Other methods constrain the output structurally. ProgPrompt produces
+Python-like task programs with allowed actions, assertions, and recovery
+branches. LLM-as-BT-Planner generates behaviour trees directly: its
+prompt-based route can compare backbones under a fixed grammar and parser,
+whereas its fine-tuned route fixes a checkpoint. Code-BT instead generates
+constrained code and converts its abstract syntax tree into a behaviour tree
+\citep{singh2023progprompt,ao2025llmbtplanner,zhang2025codebt}.
+In symbolic hybrids, LLM+P and AutoTAMP translate language into formal
+specifications for classical solvers. HBTP uses the LLM as a heuristic for
+fixed behaviour-tree expansion, while UHBTP replaces it with a classical
+domain-independent heuristic
+\citep{liu2023llmplusp,chen2024autotamp,cai2025hbtp,chen2025btpg}.
+
+Across these families, the LLM acts as a generator, scorer, feedback
+controller, translator, or heuristic. Yet all begin with executable operations
+or formal action models. Auto-Adapter targets this preceding boundary by
+constructing a capability interface and synthesising its robot-specific
+driver. AutoAdapter-Bench separately evaluates driver synthesis and use of a
+fixed interface, while matched use-track comparisons keep the bounded ReAct
+controller fixed \citep{yao2023react}. The next section therefore examines
+interfaces and drivers.
+
 \subsection{Interfaces and Drivers}
 \label{sec:interfaces-drivers}
 
