@@ -1,0 +1,25 @@
+<mujoco model="kuka_iiwa_14_soccer">
+  <include file="iiwa14.xml" />
+  <visual>
+    <global offwidth="800" offheight="600" />
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0" />
+  </visual>
+  <worldbody>
+    <light pos="0.35 -0.2 1.45" dir="0.2 0.1 -1" directional="true" />
+    <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
+    <geom name="work_surface" type="box" pos="0.48 0.10 0.33" size="0.22 0.18 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
+    <body name="soccer_ball" pos="0.48 0.08 0.44">
+      <freejoint />
+      <geom name="soccer_ball_geom" type="sphere" size="0.03" mass="0.025" conaffinity="2" friction="0.8 0.08 0.008" condim="4" rgba="0.92 0.16 0.14 1" />
+      <site name="soccer_ball_center" size="0.004" rgba="1 1 1 0" />
+    </body>
+    <body name="soccer_goal" pos="0.48 0.20 0.44">
+      <geom name="soccer_goal_back" type="box" pos="0 0.045 0" size="0.045 0.006 0.04" mass="0" contype="2" conaffinity="2" rgba="0.12 0.72 0.38 0.8" />
+      <geom name="soccer_goal_left" type="box" pos="-0.045 0 0" size="0.006 0.045 0.04" mass="0" contype="2" conaffinity="2" rgba="0.12 0.72 0.38 0.8" />
+      <geom name="soccer_goal_right" type="box" pos="0.045 0 0" size="0.006 0.045 0.04" mass="0" contype="2" conaffinity="2" rgba="0.12 0.72 0.38 0.8" />
+      <site name="soccer_goal_site" size="0.006" rgba="0.12 0.85 0.38 0.75" />
+    </body>
+    <body name="evidence_target" pos="0.48 0.14 0.44" />
+    <camera name="evidence" mode="targetbody" target="evidence_target" pos="0.86 -0.56 0.73" fovy="38" />
+  </worldbody>
+</mujoco>
