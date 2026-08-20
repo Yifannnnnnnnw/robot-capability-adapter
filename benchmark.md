@@ -4,7 +4,8 @@
 > **Authority baseline:** `AA2-AUTH` revision `0.19.18`<br>
 > **Prepared:** 2026-08-20<br>
 > **Execution scope:** canonical `autoadapter/` Direct-MuJoCo mainline only<br>
-> **Excluded from denominators:** real SDK, Translation, hardware, historical `demo2/`, and incomplete research candidates
+> **Robot cohort:** one fixed cohort of 14 configurations listed in Section 2<br>
+> **Excluded from denominators:** real SDK, Translation, hardware, and historical `demo2/`
 
 ## 0. Executive decision
 
@@ -77,52 +78,41 @@ continue to use its declared ReAct path. This draft does not silently override t
 6. Reference drivers and hand-authored controllers are calibration controls. They are not model
    conditions and do not establish model-based synthesis or capability-interface use.
 
-## 2. Robot population
+## 2. Fixed 14-robot cohort
 
-### 2.1 Current acceptance pair
+The benchmark defines one scientific cohort with `N = 14`. `robotstudio_so101` and
+`unitree-go2-stock-12dof` are members of this same cohort, not a separate benchmark group. Current
+package readiness and implementation order do not create different scientific populations or
+denominators.
 
-The current runnable index contains only:
-
-| Robot configuration | Morphology | Benchmark role |
-|---|---|---|
-| `robotstudio_so101` | Fixed-base serial manipulator | Initial arm engineering acceptance |
-| `unitree-go2-stock-12dof` | Free-base quadruped | Initial locomotion engineering acceptance |
-
-These two robots are the first mainline acceptance pair. They are not the complete Experiment 3
-cohort and cannot support a general morphology claim by themselves.
-
-### 2.2 Planned multi-robot universe
-
-The current non-runtime research index adds 12 candidates:
-
-| Morphology category | Planned configurations |
+| Morphology category | Robot configurations |
 |---|---|
-| Fixed serial arm | `franka_panda`, `kinova_gen3`, `ufactory_xarm7`, `universal_robots_ur5e`, `piper`, `kuka_iiwa_14` |
+| Fixed serial manipulator | `robotstudio_so101`, `franka_panda`, `kinova_gen3`, `ufactory_xarm7`, `universal_robots_ur5e`, `piper`, `kuka_iiwa_14` |
 | Hand | `leap_hand` |
-| Quadruped | `google_barkour_vb` |
+| Quadruped | `unitree-go2-stock-12dof`, `google_barkour_vb` |
 | Humanoid | `unitree_g1` |
 | Mobile manipulator | `hello_robot_stretch_2` |
 | Bimanual | `aloha_2` |
 | Legged arm | `boston_dynamics_spot_with_arm` |
 
-Together with the acceptance pair, this is a planning universe of 14 configurations across seven
-morphology categories. It is not yet the benchmark denominator. Directory presence, an MJCF/URDF,
-or a historical run does not make a robot an admitted case.
+### 2.1 Formal cohort rule
 
-### 2.3 Formal cohort rule
+Before Experiment 3, one versioned experiment manifest must declare all 14 configurations and:
 
-Before Experiment 3, one versioned experiment manifest must declare:
-
-- every included `robot_configuration_id` and morphology category;
+- each `robot_configuration_id` and morphology category;
 - exact package and Task Library snapshot versions;
-- B1 and B2 eligibility;
 - Producer and Consumer backbone sets;
 - generation replicate count, task instances, seeds, and budgets.
 
-Let `N` be the number of admitted, manifest-declared robots. All B1 headline results use this fixed
-`N`. B2 should use the same cohort. If a robot cannot support the compositional use suite or does not
-produce the prespecified validated generated driver, the B2 manifest must report it as ineligible or
-missing before Consumer results are inspected; it must not disappear silently from the denominator.
+Every configuration must satisfy the same Authority-defined Task Library, source-lineage,
+asset-closure, validation, and evidence requirements before its formal cell runs. Package completion
+is an execution prerequisite, not cohort membership. Diagnostic cells may run as implementations
+become available, but the formal benchmark is incomplete until all 14 configurations have the
+required B1 and B2 results. No ready subset becomes a replacement headline cohort.
+
+**Authority consistency note.** `AA2-AUTH` revision `0.19.18` still uses an older robot-set
+structure. The Authority must be synchronised with this fixed 14-robot cohort decision before
+formal benchmark evidence is collected; until then, the Authority remains normative.
 
 ## 3. B1: Driver Synthesis
 
@@ -131,7 +121,7 @@ missing before Consumer results are inspected; it must not disappear silently fr
 The primary matrix is:
 
 ```text
-N admitted robots
+14 fixed-cohort robots (N = 14)
   x M Producer LLM backbones
   x R independent generation replicates
   x 2 generation conditions
@@ -221,12 +211,14 @@ complete compositional physical tasks. For each robot, fix before Consumer trial
 
 The driver must be selected by a prespecified, Consumer-blind rule from an admitted generation cell.
 Record its Producer model, generation condition, replicate, and final attempt. Do not select the
-driver after observing which one helps a Consumer model most.
+driver after observing which one helps a Consumer model most. If the prespecified generated driver
+is unavailable for a robot, report that blocking cell and complete it before the formal B2 run; do
+not shrink the 14-robot cohort.
 
 The B2 matrix is:
 
 ```text
-N eligible admitted robots
+14 fixed-cohort robots (N = 14)
   x M Consumer LLM backbones
   x T compositional task templates
   x S matched private seeds
@@ -369,14 +361,15 @@ tasks, assets, and controller structure.
 | Phase | Scope | Exit evidence |
 |---|---|---|
 | P0: Calibration | Reference drivers, Harness, false-success checks, and video path | Complete trusted calibration reports and videos |
-| P1: Mainline acceptance | Two robots x two generation conditions, real model, `R=1` diagnostic | Four named cells reach terminal verdicts; success claims follow Authority Section 6.2 |
-| P2: Robot admission | Build candidates in research-index order; admit only complete packages | Versioned runnable index and Experiment 3 manifest with `N > 2` |
-| P3: Multi-robot synthesis pilot | All selected robots, `M` Producer models, `R=3` | Variance/failure report; no protocol changes after formal inputs are fixed |
-| P4: High-level-controller pilot | H0, H1, and H2 on one arm and one quadruped | Architecture choice, observed ABI gaps, bounded controller contract |
-| P5: Formal B1/B2/B3 | Fixed cohort, models, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, paired analysis, declared limitations |
+| P1: Cohort package completion | Complete the Authority-required package inputs for all 14 robots; run named diagnostics as each implementation becomes available | One manifest declares all 14 and every package resolves through the canonical loader |
+| P2: Full-cohort canary | 14 robots x two generation conditions, one real model, `R=1` | All 28 named cells reach trusted terminal verdicts; failures remain visible |
+| P3: Full-cohort synthesis pilot | All 14 robots, `M` Producer models, `R=3` | Variance/failure report; no protocol changes after formal inputs are fixed |
+| P4: High-level-controller pilot | H0, H1, and H2 on early runnable cells, then verify the selected architecture across all 14 robots | Architecture choice, observed ABI gaps, bounded controller contract |
+| P5: Formal B1/B2/B3 | Fixed 14-robot cohort, models, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, paired analysis, declared limitations |
 
-P1 remains valuable engineering evidence but is not substituted for P5. Start real runs as soon as
-the minimum path exists; do not delay them for speculative controller middleware or broad schemas.
+Early diagnostic cells are implementation evidence within the same cohort. Start them as soon as
+the minimum path exists, but retain the fixed 14-robot denominator for P2-P5 and do not delay real
+runs for speculative controller middleware or broad schemas.
 
 ## 8. Required run artefacts
 
@@ -442,10 +435,11 @@ claims must remain bounded to this project's independent Direct-MuJoCo evidence.
 
 1. Confirm whether to revise the Authority from the current direct ReAct controller to H2, or keep
    ReAct as the formal path and treat H2 only as a separate exploratory experiment.
-2. Admit and declare the Experiment 3 robot cohort; do not use the two-robot acceptance pair as the
-   cohort by default.
+2. Declare all 14 robot configurations in one Experiment 3 manifest and use one common cohort
+   denominator.
 3. Select and pin at least three Producer/Consumer backbone endpoints using a provider-diverse,
    predeclared rule.
 4. Fix `R`, B2 task templates, seeds, controller episode count, call/turn budgets, and driver
    selection rule before inspecting formal model outcomes.
-5. Run P1 immediately, then use only observed P3/P4 failures to justify any additional mechanism.
+5. Run named diagnostics as packages become available, then use only observed P3/P4 failures to
+   justify any additional mechanism.
