@@ -90,7 +90,7 @@
       "kind": "final_site_axis_error",
       "parameters": {
         "site_name": "front_button_site",
-        "axis": 1,
+        "axis": 0,
         "target_argument": "request.task_parameters.target_position"
       }
     },

@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from autoadapter2.harness.session import apply_framework_reset
+from autoadapter2.harness.measurements import measure
 from autoadapter2.libraries.robot_package import (
     RobotPackageError,
     _validate_private_inputs,
@@ -269,6 +270,12 @@ def test_stretch_private_records_match_the_reviewed_rotation_and_reset_transform
     )
     reach_binding["kind"] = "final_body_position_error"
     reach_binding["parameters"]["body_name"] = "link_gripper_slider"
+    front_button_binding = next(
+        binding
+        for binding in expected_bindings["bindings"]
+        if binding["binding_id"] == "binding-mw_button_press"
+    )
+    front_button_binding["parameters"]["axis"] = 0
     assert _read(PRIVATE_ROOT / "bindings.json") == expected_bindings
 
     expected_guards = copy.deepcopy(_read(FRANKA_PRIVATE_ROOT / "guards.json"))
@@ -324,3 +331,44 @@ def test_stretch_framework_resets_load_and_step_every_referenced_scene() -> None
         assert data.time > start_time
         assert abs(float(data.xpos[base_id, 2])) < 0.05
         assert data.xmat[base_id, 8] > 0.99
+
+
+def test_stretch_front_button_reset_cannot_pass_the_rotated_axis_binding() -> None:
+    tasks = {task["task_id"]: task for task in _validated_public_tasks()}
+    instances = {
+        instance["task_id"]: instance
+        for instance in _read(PRIVATE_ROOT / "instances.json")["instances"]
+    }
+    bindings = {
+        binding["binding_id"]: binding
+        for binding in _read(PRIVATE_ROOT / "bindings.json")["bindings"]
+    }
+    task = tasks["mw_button_press"]
+    instance = instances["mw_button_press"]
+    clause = task["scoring"][0]
+    binding = bindings[instance["clause_bindings"][clause["clause_id"]]]
+    assert binding["parameters"]["axis"] == 0
+
+    model = mujoco.MjModel.from_xml_path(str(PACKAGE_ROOT / instance["scene_entrypoint"]))
+    data = mujoco.MjData(model)
+    apply_framework_reset(mujoco, model, data, instance["reset"])
+    site_name = binding["parameters"]["site_name"]
+    site_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, site_name)
+    assert site_id >= 0
+    value = measure(
+        binding,
+        evidence={
+            "samples": [
+                {
+                    "time": float(data.time),
+                    "site_positions": {
+                        site_name: data.site_xpos[site_id].astype(float).tolist()
+                    },
+                }
+            ]
+        },
+        public_arguments=instance["public_arguments"],
+    )
+
+    assert value == pytest.approx(0.05)
+    assert value > clause["threshold"]
