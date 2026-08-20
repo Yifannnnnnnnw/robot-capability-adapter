@@ -283,7 +283,7 @@ Capability Validation -> Task Demo flow has executed.
 - Overall strict verdict: fail, because one of four cells did not pass its final
   five-case suite
 - Primary report retained locally at
-  `demo3/runs/deepseek-full-convergence-20260818T144502Z/experiment_report.json`
+  `autoadapter/runs/historical-demo3/deepseek-full-convergence-20260818T144502Z/experiment_report.json`
 
 | Cell | Attempt trajectory | Final physical verdict |
 |---|---|---|
@@ -306,7 +306,7 @@ regression checks. A trusted replay of the frozen SO-101 skeleton final driver
 produced five complete `640x480` videos without changing its `3/5` physical
 result:
 
-`demo3/runs/deepseek-full-convergence-20260818T144502Z/cells/robotstudio_so101/skeleton-assisted/high-resolution-replay/`
+`autoadapter/runs/historical-demo3/deepseek-full-convergence-20260818T144502Z/cells/robotstudio_so101/skeleton-assisted/high-resolution-replay/`
 
 SO-101 from-scratch attempt 2 and both later Go2 cells were recorded directly at
 `640x480`. Visual inspection also found that the SO-101 default camera is too
@@ -354,10 +354,12 @@ AutoAdapter 2.0 benchmark success.
 3. Bind source-equivalent metrics, temporal rules, and aggregation, including
    geometry-specific measurements such as peg-head alignment.
 4. Add close evidence cameras and verify readable per-case videos.
-5. Obtain the required human task-admission review, then freeze the two Task
-   Library snapshots.
-6. Recalibrate the references and rerun all four real-model cells from the
-   beginning.
+5. Complete the required human task-admission review for every robot in the
+   Authority-declared fourteen-configuration cohort.
+6. Recalibrate every package reference, then run the 28-cell initial
+   all-robot shakedown with the manifest-pinned minimal model, per-cell
+   Evolution outcomes, and post-round Experience dispositions. The historical
+   four-cell diagnostic above cannot satisfy or reduce that scope.
 
 ## Local Verification
 

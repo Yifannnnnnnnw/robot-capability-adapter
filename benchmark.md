@@ -1,7 +1,7 @@
 # Auto-Adapter 2.0 Benchmark Protocol
 
 > **Status:** protocol draft; non-normative until aligned with `AUTOADAPTER_2_AUTHORITY.md`<br>
-> **Authority baseline:** `AA2-AUTH` revision `0.19.19`<br>
+> **Authority baseline:** `AA2-AUTH` revision `0.19.20`<br>
 > **Prepared:** 2026-08-20<br>
 > **Execution scope:** canonical `autoadapter/` Direct-MuJoCo mainline only<br>
 > **Robot cohort:** one fixed cohort of 14 configurations listed in Section 2<br>
@@ -50,7 +50,7 @@ require retraining or alter the published method, it has no backbone factor and 
 `a x other factors` with that system pinned. The resulting design is intentionally unbalanced
 across architectures.
 
-**Authority decision required.** Revision `0.19.19` retains one fixed bounded ReAct
+**Authority decision required.** Revision `0.19.20` retains one fixed bounded ReAct
 controller for formal capability-interface use. This draft instead requires a predeclared set of
 published high-level-controller methods and architecture-specific backbone treatment. Until the
 Authority is explicitly aligned, these comparisons can run only as exploratory pilots; evidence
@@ -82,7 +82,7 @@ denominators.
 
 | Morphology category | Robot configurations |
 |---|---|
-| Fixed serial manipulator | `robotstudio_so101`, `franka_panda`, `kinova_gen3`, `ufactory_xarm7`, `universal_robots_ur5e`, `piper`, `kuka_iiwa_14` |
+| Fixed serial manipulator | `robotstudio_so101`, `franka_panda`, `kinova_gen3_robotiq_2f85`, `ufactory_xarm7`, `universal_robots_ur5e_robotiq_2f85`, `piper`, `kuka_iiwa_14` |
 | Hand | `leap_hand` |
 | Quadruped | `unitree-go2-stock-12dof`, `google_barkour_vb` |
 | Humanoid | `unitree_g1` |
@@ -107,10 +107,10 @@ is an execution prerequisite, not cohort membership. Diagnostic cells may run as
 become available, but the formal benchmark is incomplete until all 14 configurations have the
 required B1 and B2 results. No ready subset becomes a replacement headline cohort.
 
-**Authority consistency note.** `AA2-AUTH` revision `0.19.19` still uses an older robot-set and
-research-question structure. The Authority must be synchronised with this fixed 14-robot,
-two-sub-benchmark scope before formal benchmark evidence is collected; until then, the Authority
-remains normative.
+**Authority consistency note.** `AA2-AUTH` revision `0.19.20` now fixes the same fourteen exact
+robot configurations and the full-cohort B1 boundary. This draft's proposed multi-method B2
+controller comparison is still broader than the Authority's fixed ReAct path and remains
+non-normative until an explicit later Authority decision.
 
 ## 3. B1: Driver Synthesis
 
@@ -127,6 +127,12 @@ The Authority-declared planned B1 set has `M = 7` Producer model families:
 | M5 | DeepSeek V3.2 | DeepSeek | Exact provider identifier and endpoint pending manifest freeze |
 | M6 | Ministral 8B | Mistral | Exact provider identifier and endpoint pending manifest freeze |
 | M7 | Qwen3 32B | Alibaba | Exact provider identifier and endpoint pending manifest freeze |
+
+Before the seven-family comparison, the Authority-required initial shakedown uses the exact pinned
+Ministral 8B configuration for all fourteen robots under both generation conditions: 28 cells per
+replicate, empty prior Experience, Evolution after every terminal cell, and one post-round
+Experience disposition per cell. It checks the complete execution path and may count as the M6 B1
+replicate only when prospectively declared and formally evidenced.
 
 The table fixes the planned model-family scope, not a movable label for whichever endpoint is
 available later. Before formal runs, the manifest must pin exact revisions, endpoints, decoding
@@ -375,7 +381,7 @@ published method logic; it then contributes only `architecture x other factors`,
 system fixed. Otherwise it remains literature context because it would bypass or duplicate the
 driver.
 
-The current bounded ReAct controller remains the Authority `0.19.19` baseline until the Authority is
+The current bounded ReAct controller remains the Authority `0.19.20` baseline until the Authority is
 revised. It is not treated as a sufficient new robot high-level-control architecture merely to fill
 the comparison table. A hand-authored deterministic controller remains a solvability calibration,
 not a leaderboard method.

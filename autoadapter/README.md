@@ -6,8 +6,14 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
 
 ## Experiment
 
-- `robotstudio_so101`: 20 sourced manipulation tasks.
-- `unitree-go2-stock-12dof`: 20 sourced locomotion tasks.
+- The formal mainline cohort is the exact fourteen-configuration set in
+  `AUTOADAPTER_2_AUTHORITY.md` Section 1.3: SO-101, Go2, Franka Panda, Kinova
+  Gen3 + Robotiq 2F-85, xArm7, UR5e + Robotiq 2F-85, Piper, KUKA iiwa 14,
+  LEAP Hand, Barkour vB, Unitree G1, Stretch 2, ALOHA 2, and Spot with arm.
+- Construction remains incremental, but a formal manifest may not omit a
+  declared robot. Every package needs 20 or more sourced tasks, complete local
+  assets and private bindings/guards, a skeleton, package checks, and a
+  video-complete reference positive control before the first full-cohort round.
 - Real-model TGCD reads each public Task Library and authors 5-10 capability
   groupings, effects, methods, and typed interfaces. Each capability selects
   one source-backed primary validation contract and may add one materially
@@ -17,11 +23,12 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
   `capability_validation_suite.json`. Independently, the Framework samples
   five original Task Library tasks and compiles all of their scoring clauses
   into `task_demo_suite.json`; generation cannot read either suite.
-- Both package-local references must pass the complete capability validation
-  suites before dynamic
-  Driver Synthesis starts.
-- The default mainline's four dynamic cells are the two robots crossed with
-  the preserved `skeleton-assisted` and `from-scratch` conditions.
+- Every selected package-local reference must pass its complete capability
+  validation suite before that robot's dynamic Driver Synthesis starts.
+- The initial all-robot shakedown crosses all fourteen robots with the preserved
+  `skeleton-assisted` and `from-scratch` conditions: 28 cells per replicate,
+  all using one manifest-pinned Ministral 8B configuration and empty prior
+  Experience.
 - Each cell runs interactive AutoAdapter 1.0-style STUDY and GENERATE/GEN_ALGO,
   complete canonical capability validation, up to two report-driven Repair
   attempts, a five-task Task Demo only after admission, and Evolution. Task Demo
@@ -29,6 +36,9 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
   and never triggers same-run Repair. ReAct model calls stay in the Framework
   parent while capability calls use the admitted driver in one persistent,
   credential-free MuJoCo worker per trial.
+- Evolution runs after every terminal shakedown cell, including failed driver
+  cells. After the round, a human review records one Experience disposition per
+  cell; accepted Experience can affect only a later matched run.
 - STUDY, generation, and Repair use bounded multi-turn tool conversations. The
   model can inspect staged public files, run public-only MuJoCo probes, revise
   its driver, and call one atomic `check_driver(source, checks)` operation. The
@@ -88,9 +98,11 @@ pyenv exec python -m autoadapter2 check-only
 pyenv exec python -m pytest -q
 ```
 
-The default command reads `configs/experiments/mainline.json`. The focused
-single-cell package checks use `so101-canary.json` or `go2-canary.json` through
-`--config configs/experiments/<name>.json`.
+The default command reads `configs/experiments/mainline.json`, whose formal
+version must select the complete declared cohort. Focused single-robot package
+checks use an explicit canary through
+`--config configs/experiments/<canary-name>.json`; the existing SO-101 and Go2
+canaries are diagnostics, not a definition of mainline scope.
 
 The real-model command reads credentials only from environment variables. From
 the repository root, the current DeepSeek configuration can be loaded without
@@ -108,7 +120,7 @@ export MUJOCO_GL=cgl
 pyenv exec python -m autoadapter2 full --run-id <run-id>
 ```
 
-To exercise only the newly generated four-cell path without rerunning reference
+To exercise only the newly generated dynamic cells without rerunning reference
 calibration, add `--skip-reference-calibration`. This is explicitly diagnostic:
 the report records the skip and can never claim formal mainline success.
 
@@ -129,7 +141,7 @@ MetaWorld, locomotion-paper, or industrial benchmark results.
 Each retained `runs/<run-id>/` package contains public capability designs,
 Harness-private suites, reference calibration reports, condition-local model
 and probe evidence, candidate attempts, capability-validation reports, Task
-Demo reports, per-case videos, cell reports, and the final paired
+Demo reports, per-case videos, cell reports, and the final cohort
 `experiment_report.json`. These fields keep pipeline completion, capability
 admission, Task Demo, physical execution, and both video outcomes separate.
 

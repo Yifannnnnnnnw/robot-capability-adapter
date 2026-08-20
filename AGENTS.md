@@ -2,7 +2,7 @@
 
 ## Objective
 
-Build the simplest experiment-grade AutoAdapter 2.0 Direct-MuJoCo mainline that can run the real-model, two-robot end-to-end synthesis experiment as quickly as possible. Real-SDK and Translation work is an independent extension.
+Build the simplest experiment-grade AutoAdapter 2.0 Direct-MuJoCo mainline for the complete robot cohort declared by `AUTOADAPTER_2_AUTHORITY.md`. Configure and calibrate every declared robot before the formal initial all-robot shakedown; then run every robot under both generation conditions with the manifest-pinned minimal Producer model, execute Evolution for every terminal cell, and review the resulting Experience records. Real-SDK and Translation work is an independent extension.
 
 `AUTOADAPTER_2_AUTHORITY.md` is the sole design authority. Do not add production-grade, enterprise-scale, speculative, or future-oriented machinery. When several implementations satisfy the Authority, choose the smallest direct implementation.
 
@@ -30,7 +30,7 @@ Keep tasks small. Concurrent tasks must not edit overlapping files.
 
 - Use the smallest implementation that exercises the real model, Direct-MuJoCo, trusted Harness, and Framework mainline.
 - Any run claimed as SDK-grounded evidence must exercise the real SDK, Translation, and MuJoCo path. Documentation and focused unit-test tasks do not require a full SDK integration run.
-- Start the real end-to-end path as soon as the minimum required inputs and code exist.
+- Start focused package checks, reference positive controls, and diagnostic real-model canaries as soon as each robot's minimum required inputs and code exist. Start the formal initial all-robot shakedown only after the complete Authority-declared cohort is ready.
 - Early end-to-end runs may be diagnostic. A run counts as formal evidence only when the applicable Authority isolation, authenticity, verdict, and video requirements are satisfied.
 - Do not delay a real run for broad review, refactoring, documentation, speculative hardening, or additional tests.
 - Do not build speculative failure machinery. Implement only Authority-required boundaries and fixes for failures observed in focused checks or real runs.
