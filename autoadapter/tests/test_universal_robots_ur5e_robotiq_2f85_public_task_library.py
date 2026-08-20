@@ -234,6 +234,7 @@ def test_universal_robots_ur5e_public_identity_has_no_donor_remnants_and_is_non_
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "reference",
         "skeleton",
         "tasks",
     ]
@@ -242,7 +243,12 @@ def test_universal_robots_ur5e_public_identity_has_no_donor_remnants_and_is_non_
         "private",
         "sources.json",
     ]
-    assert not (PACKAGE_ROOT / "reference").exists()
+    assert sorted(
+        path.name for path in (PACKAGE_ROOT / "reference").iterdir() if path.is_file()
+    ) == [
+        "driver.py",
+        "rendering.py",
+    ]
     assert (PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
     assert sorted(path.name for path in (TASKS_ROOT / "private").iterdir()) == [
         "bindings.json",

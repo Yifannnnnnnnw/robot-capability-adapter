@@ -308,10 +308,15 @@ def test_universal_robots_ur5e_asset_foundation_is_local_and_live() -> None:
     assert "universal_robots_ur5e" not in runnable_index["robots"]
 
     research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
+    candidate_ids = {
+        item["robot_configuration_id"] for item in research_index["candidates"]
+    }
+    assert "universal_robots_ur5e" not in candidate_ids
     candidate = next(
         item
         for item in research_index["candidates"]
-        if item["robot_configuration_id"] == "universal_robots_ur5e"
+        if item["robot_configuration_id"]
+        == "universal_robots_ur5e_robotiq_2f85"
     )
     observed_paths = {
         item["path"] for item in candidate["locally_observed_source_material"]
@@ -320,8 +325,3 @@ def test_universal_robots_ur5e_asset_foundation_is_local_and_live() -> None:
         "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
         "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/morphology.json",
     }.issubset(observed_paths)
-    missing = " ".join(candidate["missing_for_runnable_package"])
-    assert "Materialize and verify a complete local MuJoCo asset closure" not in missing
-    assert "Create the current mainline morphology.json" not in missing
-    assert "20 distinct applicable source-backed tasks" in missing
-    assert "dynamic canary" in missing
