@@ -33,10 +33,11 @@ expose this remaining work directly: adding hardware still requires
 connections, calibration, state reading, and command writing
 \citep{lerobot2026hardware,ros2control2026hardware}. This thesis calls the
 decision-making program that chooses robot operations the
-\emph{high-level controller}, and the reusable interface that hides
-robot-specific execution details the \emph{robot capability layer}. The
-executable implementation of that layer for one declared robot configuration
-is the \emph{robot-specific driver}. Each operation exposed by the layer is a
+\emph{high-level controller}. It calls the reusable, caller-facing interface
+that hides robot-specific execution details the \emph{robot capability
+interface}. The executable implementation of that interface for one declared
+robot configuration is the \emph{robot-specific driver}. Each operation
+exposed by the interface is a
 \emph{capability}; the word \emph{skill} is reserved for a task-level,
 temporally extended behaviour such as a pick-and-place sequence.
 
@@ -47,11 +48,11 @@ self-contained drivers that all passed its
 structural-and-smoke onboarding harness, at a mean LLM-inference cost of
 US\$\(2.98 \pm 0.84\) and \(7.8 \pm 1.6\) minutes of wall-clock time per robot
 \citep{wang2026autoadapter}. This onboarding result did not establish full
-behavioural assurance. The same study also separated capability-layer use from
+behavioural assurance. The same study also separated capability-interface use from
 driver synthesis: all seven evaluated LLMs could operate through the same
-fixed capability layer backed by the same fixed and validated driver, whereas
+fixed capability interface backed by the same fixed and validated driver, whereas
 only three produced a driver that passed driver validation
-\citep{wang2026autoadapter}. Using an available robot capability layer therefore
+\citep{wang2026autoadapter}. Using an available robot capability interface therefore
 does not establish that the same model can synthesise a driver that implements
 it.
 
@@ -72,8 +73,8 @@ later runs through \emph{Evolution}, but cannot alter the run that produced
 it.
 
 Three uncertainties then become central. First, LLM backbones may differ both
-in synthesising a robot-specific driver that implements a capability layer and
-in using the same fixed layer backed by the same fixed and validated driver
+in synthesising a robot-specific driver that implements a capability interface and
+in using the same fixed interface backed by the same fixed and validated driver
 through the same high-level-controller implementation. Second, the value of
 task-grounded capability design, source-grounded capability-level pass-criteria
 design, and continued Evolution must be established rather than assumed.
@@ -86,9 +87,9 @@ associations and failure patterns, but cannot establish a causal morphology
 effect.
 
 These uncertainties motivate a controlled study of when Auto-Adapter can
-design reusable robot capability layers and generate and validate their
+design reusable robot capability interfaces and generate and validate their
 robot-specific drivers. The thesis evaluates driver synthesis and
-capability-layer use separately, analyses the framework's principal
+capability-interface use separately, analyses the framework's principal
 components, and compares driver synthesis across robot morphologies under
 matched conditions. The next section converts this motivation into explicit
 research objectives and questions.
@@ -99,23 +100,23 @@ research objectives and questions.
 \label{sec:research-questions}
 
 The aim of this thesis is to determine, under controlled conditions, when LLMs
-can synthesise robot-specific drivers and use reusable robot capability layers.
+can synthesise robot-specific drivers and use reusable robot capability interfaces.
 Auto-Adapter provides the experimental framework for examining three sources
 of variation: the LLM backbone, selected framework mechanisms, and robot
 morphology. Chapter~3 uses AutoAdapter-Bench to evaluate robot-specific driver
-synthesis and capability-layer use as separate outcomes. Evidence that a model
-can operate an available capability layer does not establish that it can
-synthesise a driver implementing that layer, or vice versa.
+synthesis and capability-interface use as separate outcomes. Evidence that a model
+can operate an available capability interface does not establish that it can
+synthesise a driver implementing that interface, or vice versa.
 
 This aim is expressed through three research questions:
 
 \begin{enumerate}
     \item \textbf{RQ1---Comparison of LLM backbones in robot-specific driver
-    synthesis and capability-layer use.}
+    synthesis and capability-interface use.}
     To what extent do LLM backbones differ in synthesising a robot-specific
-    driver that implements a reusable robot capability layer under
+    driver that implements a reusable robot capability interface under
     skeleton-assisted and from-scratch generation conditions, and in using the
-    same fixed capability layer backed by the same fixed and validated driver
+    same fixed capability interface backed by the same fixed and validated driver
     through the same high-level-controller implementation to complete matched
     tasks?
 
@@ -158,7 +159,7 @@ experiments.
 \label{sec:research-programme}
 
 The thesis begins with a broad comparison of LLM backbones in
-robot-specific driver synthesis and capability-layer use through
+robot-specific driver synthesis and capability-interface use through
 AutoAdapter-Bench. It then narrows the analysis to three mechanisms within
 Auto-Adapter: task-grounded capability design, source-grounded
 capability-level pass-criteria design, and Continued Evolution. Finally, it
@@ -168,24 +169,24 @@ reported in Chapters~3--5:
 
 \begin{enumerate}[leftmargin=*,itemsep=1em]
     \item \textbf{Experiment 1---Comparison of LLM backbones in
-    robot-specific driver synthesis and capability-layer use
+    robot-specific driver synthesis and capability-interface use
     (AutoAdapter-Bench, Chapter~3).}
     AutoAdapter-Bench compares the same set of LLM backbones in two tracks.
     The \textbf{driver-synthesis track} holds the Auto-Adapter framework,
     robot inputs, source-backed Task Library, source-task pass standards,
     private-case construction policy, Harness measurement and verdict rules,
     and resource budget fixed within each generation condition. For each
-    backbone and robot configuration, one robot capability layer design is
+    backbone and robot configuration, one robot capability interface design is
     sealed and used in both generation conditions; the backbone then
     synthesises a corresponding robot-specific driver in each condition. The
     conditions differ only in authorised access to the trusted skeleton. We
     compare independent driver-validation outcomes, failure patterns, and
     resource use; the capability-level pass criteria authored by each model
     remain evaluated outputs rather than fixed inputs. The \textbf{use track}
-    gives the same backbones a fixed capability layer backed by the same fixed
+    gives the same backbones a fixed capability interface backed by the same fixed
     and validated robot-specific driver, the same high-level-controller
     implementation, matched tasks, evaluation protocol, and budget. It compares
-    task completion while preventing successful capability-layer use from
+    task completion while preventing successful capability-interface use from
     being interpreted as driver-synthesis evidence.
 
     \item \textbf{Experiment 2---Component analysis of the Auto-Adapter
@@ -244,14 +245,14 @@ The scientific contributions are as follows:
 \begin{enumerate}[leftmargin=*,itemsep=0.8em]
 
   \item AutoAdapter-Bench: separating robot-specific driver synthesis from
-  capability-layer use.
+  capability-interface use.
 
   Tool-use research typically measures whether a model can call an interface
   that is already available
   \citep{ahn2022saycan,liang2023codeaspolicies,huang2023voxposer}.
   AutoAdapter-Bench asks a different question: can the same model synthesise a
   robot-specific driver implementing that interface? It compares the same LLM
-  backbones in separate tracks for driver synthesis and capability-layer use.
+  backbones in separate tracks for driver synthesis and capability-interface use.
   This makes robot-specific driver synthesis a separate empirical object and
   prevents successful use from being counted as driver-synthesis evidence; it
   does not assume that the two outcomes are statistically independent.
@@ -315,17 +316,17 @@ contributions are as follows:
 
   Auto-Adapter gives integration teams a consistent package for each declared
   robot configuration. The package records the simulator assets, morphology and control
-  facts, source-backed tasks, validation inputs, robot capability layer, and
+  facts, source-backed tasks, validation inputs, robot capability interface, and
   robot-specific driver used in a run. This makes the robot-specific
   integration boundary visible. It allows matched high-level controllers to
-  complete tasks through the same fixed capability layer and the same fixed and
+  complete tasks through the same fixed capability interface and the same fixed and
   validated robot-specific driver instead of hiding robot behaviour in one-off
   task scripts.
 
   \item Evidence for comparing LLM backbones and diagnosing failures.
 
   AutoAdapter-Bench records the LLM backbone, generation condition, robot
-  configuration, outcomes for driver synthesis and capability-layer use,
+  configuration, outcomes for driver synthesis and capability-interface use,
   failure patterns, resource use, and per-trial evidence under matched
   conditions. These records help engineering teams compare LLM backbones,
   reproduce runs, and diagnose where an LLM-assisted robot-software workflow
@@ -350,23 +351,23 @@ The structure of this thesis is organised as follows:
 
   \item Chapter~2---Background and Literature Review. This chapter
   establishes the concepts and literature needed for the study. It defines the
-  relationship between high-level controllers, robot capability layers, and
+  relationship between high-level controllers, robot capability interfaces, and
   robot-specific drivers, then reviews LLM tool use, robot-software synthesis,
   independent validation, repair, and cross-embodiment research. It concludes
-  by identifying the assumption that robot capability layers, the robot-specific
+  by identifying the assumption that robot capability interfaces, the robot-specific
   drivers that implement them, capability-level pass criteria, and executable
   validation already exist, thereby motivating the three experiments.
 
   \item Chapter~3---AutoAdapter-Bench: Comparing LLM Backbones in Driver
-  Synthesis and Capability-Layer Use. This chapter presents Experiment~1. The
+  Synthesis and Capability-Interface Use. This chapter presents Experiment~1. The
   driver-synthesis track compares LLM backbones under skeleton-assisted and
   from-scratch conditions. Within each condition, the Auto-Adapter framework,
   robot inputs, source-backed Task Library, source-task pass standards, Harness
   measurement and verdict rules, and resource budget are fixed; only
-  trusted-skeleton access differs. Each backbone designs a capability layer and
+  trusted-skeleton access differs. Each backbone designs a capability interface and
   synthesises its robot-specific driver, while model-authored capability-level
   pass criteria remain evaluated outputs. The use track compares the same
-  backbones using a fixed capability layer backed by the same fixed and
+  backbones using a fixed capability interface backed by the same fixed and
   validated robot-specific driver, the same high-level-controller
   implementation, and matched tasks. The two outcomes are reported separately
   and motivate Chapter~4.
