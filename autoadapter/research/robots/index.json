@@ -543,6 +543,11 @@
           "observation": "The Barkour public snapshot v2 contains 31 source-backed scoring clauses; its 20-task public source contract is closed. This is catalog research state only, not task-success or runnable evidence; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
+          "path": "autoadapter/research/robots/google_barkour_vb_reference_review.md",
+          "kind": "reference_controller_source_review",
+          "observation": "The official-source review found a compatible pinned BarkourJoystick training environment in MuJoCo Playground v0.0.5 but no official pretrained vB checkpoint in the inspected repositories or release assets. It records the 465-value observation history, 12-value action mapping, observation-normalizer requirement, 20 ms to canonical 1 ms CPU bridge, material dynamics mismatch, and the need for specialist obstacle policies plus a reference-only course planner. This is a bounded implementation plan, not controller or task-success evidence."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/google_barkour_vb/barkour_vb.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Google Barkour vB model, URDF, and meshes are available for migration inspection."
@@ -570,7 +575,8 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable quadruped_pd_gait skeleton and a calibration-only reference driver for this configuration.",
+        "Train and retain a reviewed MuJoCo Playground v0.0.5 BarkourJoystick actor with its observation normalizer, then pass the exact canonical CPU dynamics bridge.",
+        "Provide a capability-neutral quadruped_pd_gait skeleton and a calibration-only reference driver; obstacle and full-course cases also require reviewed specialist policies and a reference-only planner.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
