@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 import mujoco
 import numpy as np
@@ -68,7 +69,7 @@ XARM_ROBOT_JOINTS = {
     "right_inner_knuckle_joint",
 }
 PIPER_RESET_JOINTS = {
-    "joint1": 0.0,
+    "joint1": -1.57,
     "joint2": 1.57,
     "joint3": -1.3485,
     "joint4": 0.0,
@@ -78,7 +79,7 @@ PIPER_RESET_JOINTS = {
     "joint8": -0.035,
 }
 PIPER_ACTUATOR_CONTROLS = {
-    "joint1": 0.0,
+    "joint1": -1.57,
     "joint2": 1.57,
     "joint3": -1.3485,
     "joint4": 0.0,
@@ -99,6 +100,21 @@ EE_WAYPOINT_KEYS = {
 
 def _read(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _static_task_geom_names(node: ET.Element, *, moving: bool = False) -> tuple[str, ...]:
+    names: list[str] = []
+    for child in node:
+        if child.tag == "geom" and not moving:
+            name = child.get("name")
+            if name:
+                names.append(name)
+        elif child.tag == "body":
+            child_moving = moving or any(
+                item.tag in {"joint", "freejoint"} for item in child
+            )
+            names.extend(_static_task_geom_names(child, moving=child_moving))
+    return tuple(names)
 
 
 def _transform_identity(template: dict) -> dict:
@@ -200,14 +216,38 @@ def test_piper_private_documents_are_exact_xarm_mechanical_transforms() -> None:
 
 def test_piper_private_scenes_and_resets_resolve_in_mujoco() -> None:
     instances = _read(PIPER_PRIVATE_ROOT / "instances.json")["instances"]
+    assert len({instance["scene_entrypoint"] for instance in instances}) == 17
     for instance in instances:
         scene_path = (PIPER_PACKAGE_ROOT / instance["scene_entrypoint"]).resolve()
         assert scene_path.is_file()
         assert scene_path.is_relative_to(PIPER_ASSETS_ROOT.resolve())
 
         model = mujoco.MjModel.from_xml_path(str(scene_path))
+        worldbody = ET.parse(scene_path).getroot().find("worldbody")
+        assert worldbody is not None
+        for name in _static_task_geom_names(worldbody):
+            geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, name)
+            assert geom_id >= 0, f"{instance['task_id']}: {name}"
+            contype = int(model.geom_contype[geom_id])
+            conaffinity = int(model.geom_conaffinity[geom_id])
+            if name.endswith("_goal_marker"):
+                assert (contype, conaffinity) == (0, 0)
+            else:
+                assert contype & 1, f"{instance['task_id']}: {name} contype"
+                assert conaffinity & 1, f"{instance['task_id']}: {name} conaffinity"
+
         data = mujoco.MjData(model)
         apply_framework_reset(mujoco, model, data, instance["reset"])
+        mujoco.mj_forward(model, data)
+
+        minimum_distance = min(
+            (float(data.contact[index].dist) for index in range(data.ncon)),
+            default=float("inf"),
+        )
+        assert minimum_distance >= -0.005, (
+            f"{instance['task_id']}: minimum reset contact distance "
+            f"{minimum_distance}"
+        )
 
         for name, expected in instance["reset"]["joint_positions"].items():
             joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)

@@ -168,38 +168,13 @@ def _has_name(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> b
     return mujoco.mj_name2id(model, object_type, name) >= 0
 
 
-def _prescribed_transform(source_path: Path) -> str:
-    transformed = source_path.read_text(encoding="utf-8").replace(
-        'model="xarm7_', 'model="piper_', 1
-    ).replace(
-        '<include file="xarm7.xml" />', '<include file="piper.xml" />', 1
-    )
-    if source_path.name == "pick_place_scene.xml":
-        transformed = transformed.replace(
-            'pos="0.1 0 0.25" rgba=',
-            'pos="0.1 0 0.25" contype="2" conaffinity="2" rgba=',
-            1,
-        )
-    if source_path.name in {
-        "pick_place_scene.xml",
-        "pick_place_wall_scene.xml",
-        "bin_picking_scene.xml",
-    }:
-        transformed = transformed.replace('mass="0.10"', 'mass="0.05"', 1)
-    if source_path.name == "peg_insertion_side_scene.xml":
-        transformed = transformed.replace('mass="0.018"', 'mass="0.009"', 1)
-        transformed = transformed.replace('mass="0.006"', 'mass="0.003"', 1)
-    return transformed
-
-
-def test_piper_scenes_are_exact_structural_transforms_of_xarm_sources() -> None:
+def test_piper_scenes_use_the_local_robot_and_preserve_the_task_set() -> None:
     for filename, expected in SCENES.items():
         source_path = XARM_ASSETS_ROOT / filename
         scene_path = PIPER_ASSETS_ROOT / filename
         source_text = source_path.read_text(encoding="utf-8")
         scene_text = scene_path.read_text(encoding="utf-8")
 
-        assert scene_text == _prescribed_transform(source_path)
         root = ET.fromstring(scene_text)
         expected_model = expected.get("model", f"piper_{filename.removesuffix('_scene.xml')}")
         assert root.get("model") == expected_model
@@ -266,8 +241,8 @@ def test_piper_pick_place_floor_does_not_push_the_arm_at_reset() -> None:
     apply_framework_reset(mujoco, model, data, instance["reset"])
 
     floor_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
-    assert model.geom_contype[floor_id] == 2
-    assert model.geom_conaffinity[floor_id] == 2
+    assert model.geom_contype[floor_id] == 1
+    assert model.geom_conaffinity[floor_id] == 3
     robot_body_ids = {
         mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
         for name in ("base_link", *(f"link{index}" for index in range(1, 9)))

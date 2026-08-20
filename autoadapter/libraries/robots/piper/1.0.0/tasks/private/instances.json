@@ -22,7 +22,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -32,7 +32,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -87,7 +87,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -97,7 +97,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -164,7 +164,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -174,7 +174,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -246,7 +246,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -256,7 +256,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -316,7 +316,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -326,7 +326,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -381,7 +381,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -391,7 +391,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -446,7 +446,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -456,7 +456,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -511,7 +511,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -522,7 +522,7 @@
           "drawer_slide": -0.08
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -577,7 +577,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -587,7 +587,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -642,7 +642,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -652,7 +652,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -707,7 +707,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -717,7 +717,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -772,7 +772,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -783,7 +783,7 @@
           "vertical_handle_slide": -0.055
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -843,7 +843,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -853,7 +853,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -913,7 +913,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -924,7 +924,7 @@
           "door_hinge": 1.2
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -984,7 +984,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -994,7 +994,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1054,7 +1054,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1064,7 +1064,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1125,7 +1125,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1135,7 +1135,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1200,7 +1200,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1210,7 +1210,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1282,7 +1282,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1292,7 +1292,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1364,7 +1364,7 @@
       "reset": {
         "kind": "default",
         "joint_positions": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
@@ -1374,7 +1374,7 @@
           "joint8": -0.035
         },
         "actuator_controls": {
-          "joint1": 0.0,
+          "joint1": -1.57,
           "joint2": 1.57,
           "joint3": -1.3485,
           "joint4": 0.0,
