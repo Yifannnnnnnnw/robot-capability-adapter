@@ -1,0 +1,24 @@
+<mujoco model="stretch_pick_place_wall">
+  <include file="stretch.xml" />
+  <statistic meansize="0.05" extent="1.2" />
+  <visual>
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0" />
+  </visual>
+  <worldbody>
+    <light pos="-0.2 -0.35 1.45" dir="0.1 -0.2 -1" directional="true" />
+    <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
+    <geom name="work_surface" type="box" pos="0.08 -0.48 0.33" size="0.20 0.23 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
+    <geom name="wall" type="box" pos="0.08 -0.54 0.45" size="0.07 0.012 0.04" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.76 0.34 0.14 1" />
+    <body name="workpiece" pos="0.08 -0.48 0.43" quat="0.7071067811865476 0 0 -0.7071067811865475">
+      <freejoint />
+      <geom name="workpiece_geom" type="cylinder" size="0.02 0.02" mass="0.10" conaffinity="2" friction="1 0.1 0.002" condim="4" solimp="0.99 0.99 0.01" solref="0.01 1" rgba="0.10 0.55 0.92 1" />
+      <site name="workpiece_center" size="0.004" rgba="1 1 1 0" />
+    </body>
+    <geom name="wall_pick_goal_pedestal" type="box" pos="0.08 -0.6 0.451" size="0.042 0.042 0.041" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.12 0.52 0.30 1" />
+    <body name="wall_pick_goal" pos="0.08 -0.6 0.51" quat="0.7071067811865476 0 0 -0.7071067811865475">
+      <geom name="wall_pick_goal_marker" type="cylinder" size="0.034 0.002" contype="0" conaffinity="0" rgba="0.12 0.72 0.38 0.55" />
+    </body>
+    <body name="evidence_target" pos="0.08 -0.54 0.45" quat="0.7071067811865476 0 0 -0.7071067811865475" />
+    <camera name="evidence" mode="targetbody" target="evidence_target" pos="-0.55 -0.82 0.72" fovy="38" />
+  </worldbody>
+</mujoco>
