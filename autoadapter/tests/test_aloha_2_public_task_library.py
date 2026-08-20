@@ -10,11 +10,12 @@ from autoadapter2.libraries.robot_package import _validate_sources, _validate_ta
 ROOT = Path(__file__).resolve().parents[1]
 TASKS_ROOT = ROOT / "libraries" / "robots" / "aloha_2" / "1.0.0" / "tasks"
 FRANKA_TASKS_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "tasks"
+KUKA_TASKS_ROOT = ROOT / "libraries" / "robots" / "kuka_iiwa_14" / "1.0.0" / "tasks"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 
 PINNED_METAWORLD_COMMIT = "7ea2b501c4a698c8533cdc55a396fe2734e2649d"
 PINNED_ALOHA_COMMIT = "da76818e269b82289eba39808e2fb91d679d6994"
-SNAPSHOT_ID = "aloha-2-metaworld-source-protocols-2026-08-20-v1"
+SNAPSHOT_ID = "aloha-2-metaworld-source-protocols-2026-08-20-v2"
 EXPECTED_TASK_IDS = [
     "mw_reach_target",
     "mw_push_to_goal",
@@ -33,9 +34,9 @@ EXPECTED_TASK_IDS = [
     "mw_faucet_open",
     "mw_dial_turn",
     "mw_lever_pull",
-    "mw_peg_insertion_side",
-    "mw_bin_picking",
-    "mw_pick_out_of_hole",
+    "mw_soccer",
+    "mw_window_open",
+    "mw_window_close",
 ]
 
 
@@ -48,22 +49,29 @@ def _renamed(name: str) -> str:
 
 
 class Aloha2PublicTaskLibraryTests(unittest.TestCase):
-    def _load(self) -> tuple[dict, dict, tuple[dict, ...], tuple[dict, ...]]:
+    def _load(self) -> tuple[dict, dict, tuple[dict, ...], tuple[dict, ...], tuple[dict, ...]]:
         sources_path = TASKS_ROOT / "sources.json"
         catalog_path = TASKS_ROOT / "catalog.json"
         sources_document = _read_json(sources_path)
         catalog_document = _read_json(catalog_path)
         franka_catalog = _read_json(FRANKA_TASKS_ROOT / "catalog.json")
+        kuka_catalog = _read_json(KUKA_TASKS_ROOT / "catalog.json")
         sources = _validate_sources(sources_document, path=sources_path)
         tasks = _validate_tasks(
             catalog_document,
             path=catalog_path,
             source_ids={str(source["source_id"]) for source in sources},
         )
-        return sources_document, catalog_document, tasks, tuple(franka_catalog["tasks"])
+        return (
+            sources_document,
+            catalog_document,
+            tasks,
+            tuple(franka_catalog["tasks"]),
+            tuple(kuka_catalog["tasks"]),
+        )
 
     def test_validators_identity_sources_and_task_order(self) -> None:
-        sources_document, catalog, tasks, franka_tasks = self._load()
+        sources_document, catalog, tasks, franka_tasks, _ = self._load()
 
         self.assertEqual(sources_document["robot_configuration_id"], "aloha_2")
         self.assertEqual(sources_document["package_version"], "1.0.0")
@@ -114,9 +122,13 @@ class Aloha2PublicTaskLibraryTests(unittest.TestCase):
         self.assertFalse(any("legacy" in task_id or "proxy" in task_id for task_id in task_ids))
 
     def test_scoring_contracts_and_source_references_are_preserved(self) -> None:
-        _, _, tasks, franka_tasks = self._load()
+        _, _, tasks, franka_tasks, kuka_tasks = self._load()
 
-        for actual_task, expected_task in zip(tasks, franka_tasks):
+        expected_tasks = list(franka_tasks[:17]) + [
+            next(expected for expected in kuka_tasks if expected["task_id"] == task["task_id"])
+            for task in tasks[17:]
+        ]
+        for actual_task, expected_task in zip(tasks, expected_tasks):
             self.assertEqual(actual_task["task_id"], expected_task["task_id"])
             self.assertEqual(
                 actual_task["source_task_or_operation"],
@@ -153,10 +165,30 @@ class Aloha2PublicTaskLibraryTests(unittest.TestCase):
                     self.assertIn("ALOHA 2", actual_ref["adaptation"])
                     self.assertIn("source numerical obligation is unchanged", actual_ref["adaptation"])
 
-    def test_invocation_schema_is_selected_arm_specific(self) -> None:
-        _, _, tasks, franka_tasks = self._load()
+        replacements = {task["task_id"]: task for task in tasks[17:]}
+        soccer_clause = replacements["mw_soccer"]["scoring"][0]
+        self.assertEqual(soccer_clause["metric"], "ball_goal_distance")
+        self.assertEqual(soccer_clause["threshold"], 0.07)
+        self.assertEqual(soccer_clause["temporal"], {"kind": "terminal_state_after_ball_contact"})
+        self.assertIn("unweighted Euclidean", replacements["mw_soccer"]["adaptation"])
+        self.assertIn("x-scaled reward-shaping distance", replacements["mw_soccer"]["adaptation"])
+        for task_id, temporal_kind in (
+            ("mw_window_open", "terminal_state_after_open"),
+            ("mw_window_close", "terminal_state_after_close"),
+        ):
+            clause = replacements[task_id]["scoring"][0]
+            self.assertEqual(clause["metric"], "window_handle_x_axis_error")
+            self.assertEqual(clause["threshold"], 0.05)
+            self.assertEqual(clause["temporal"], {"kind": temporal_kind})
 
-        for actual_task, expected_task in zip(tasks, franka_tasks):
+    def test_invocation_schema_is_selected_arm_specific(self) -> None:
+        _, _, tasks, franka_tasks, kuka_tasks = self._load()
+
+        expected_tasks = list(franka_tasks[:17]) + [
+            next(expected for expected in kuka_tasks if expected["task_id"] == task["task_id"])
+            for task in tasks[17:]
+        ]
+        for actual_task, expected_task in zip(tasks, expected_tasks):
             actual_invocation = actual_task["invocation_schema"]
             expected_invocation = expected_task["invocation_schema"]
             self.assertEqual(actual_invocation["envelope"], "request")
@@ -173,19 +205,11 @@ class Aloha2PublicTaskLibraryTests(unittest.TestCase):
             expected_properties = {"task_arm"} | {
                 _renamed(name) for name in expected_parameters["properties"]
             }
-            if actual_task["task_id"] == "mw_peg_insertion_side":
-                expected_properties.update(
-                    {"grasp_position", "grasp_wrist_rotate", "grasp_gripper"}
-                )
             self.assertEqual(set(actual_parameters["properties"]), expected_properties)
 
             expected_required = ["task_arm"] + [
                 _renamed(name) for name in expected_parameters["required"]
             ]
-            if actual_task["task_id"] == "mw_peg_insertion_side":
-                expected_required.extend(
-                    ["grasp_position", "grasp_wrist_rotate", "grasp_gripper"]
-                )
             self.assertEqual(actual_parameters["required"], expected_required)
 
             task_arm = actual_parameters["properties"]["task_arm"]
@@ -226,6 +250,11 @@ class Aloha2PublicTaskLibraryTests(unittest.TestCase):
                 self.assertIn("left/gripper", description)
                 self.assertIn("right/gripper", description)
 
+            if actual_task["task_id"] in {"mw_soccer", "mw_window_open", "mw_window_close"}:
+                target_description = actual_parameters["properties"]["target_position"]["description"]
+                self.assertIn("affected task entity or fixture target", target_description)
+                self.assertIn("not a selected-arm end-effector waypoint", target_description)
+
             if "grasp_wrist_rotate" in actual_parameters["properties"]:
                 wrist = actual_parameters["properties"]["grasp_wrist_rotate"]
                 self.assertEqual(wrist["type"], "number")
@@ -241,7 +270,7 @@ class Aloha2PublicTaskLibraryTests(unittest.TestCase):
                 self.assertIn("larger values are open", gripper["description"])
 
     def test_aloha_applicability_and_runnable_boundary(self) -> None:
-        sources_document, catalog, tasks, _ = self._load()
+        sources_document, catalog, tasks, _, _ = self._load()
         public_text = json.dumps(
             {"sources": sources_document, "catalog": catalog},
             sort_keys=True,
@@ -264,14 +293,17 @@ class Aloha2PublicTaskLibraryTests(unittest.TestCase):
             "mw_door_lock",
             "mw_door_unlock",
             "mw_faucet_close",
-            "mw_soccer",
-            "mw_window_open",
-            "mw_window_close",
+            "mw_peg_insertion_side",
+            "mw_bin_picking",
+            "mw_pick_out_of_hole",
             "task passed",
             "7-dof",
             "the the",
         ):
             self.assertNotIn(forbidden, public_text)
+
+        for present in ("mw_soccer", "mw_window_open", "mw_window_close"):
+            self.assertIn(present, public_text)
 
         for task in tasks:
             applicability = task["applicability"].lower()

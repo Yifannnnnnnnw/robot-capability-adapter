@@ -682,7 +682,7 @@
         {
           "path": "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/catalog.json",
           "kind": "canonical_task_catalog",
-          "observation": "The provisional ALOHA 2 public snapshot contains 20 distinct selected-arm task contracts with unchanged source scoring obligations. task_arm selects left or right while the other arm remains neutral; the catalog makes no genuine-bimanual, private-scene, controller, task-success, or runnable claim, and observed_task_count remains 5 for the inspected legacy catalog below."
+          "observation": "The provisional ALOHA 2 public snapshot v2 contains 20 distinct selected-arm task contracts with unchanged source scoring obligations; v2 substitutes mw_soccer, mw_window_open, and mw_window_close for the three deferred grasp-heavy public tasks to keep this research-only catalog within selected-arm applicability. task_arm selects left or right while the other arm remains neutral; this is catalog evidence only and makes no implementation, task-passing, admission, or runnable claim, and observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
           "path": "demo2/legacy_assets/menagerie/aloha/aloha.xml",

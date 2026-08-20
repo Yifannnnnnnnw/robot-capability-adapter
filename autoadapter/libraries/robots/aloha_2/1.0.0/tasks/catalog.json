@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "aloha_2",
   "package_version": "1.0.0",
-  "snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v1",
+  "snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v2",
   "tasks": [
     {
       "task_id": "mw_reach_target",
@@ -2471,29 +2471,29 @@
       }
     },
     {
-      "task_id": "mw_peg_insertion_side",
-      "name": "Insert a peg from the side",
-      "description": "Grasp a peg and align and insert it into a side-entry hole.",
-      "source_task_or_operation": "Meta-World sawyer_peg_insertion_side_v3 peg-insertion-side",
-      "applicability": "The ALOHA 2 is a bimanual MuJoCo configuration with two 6-axis arms and joint-position gripper actuators. This is single-arm execution: select one arm, use that arm's gripper site and finger contacts when the task requires contact, and keep the other arm at neutral; it is not a genuine bimanual task. The selected arm's two-finger gripper can grasp a small peg and perform constrained alignment and insertion.",
-      "adaptation": "Adapt a constrained peg insertion to the canonical ALOHA 2 configuration using only the selected arm and its private scene fixtures. Preserve the source scoring metric \"peg_target_distance\", m unit, comparator \"<=\", and threshold 0.07; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim.",
+      "task_id": "mw_soccer",
+      "name": "Push a ball into a goal",
+      "description": "Use the selected ALOHA 2 arm's gripper-site contact to move a free rolling ball until its centre is within the source goal tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_soccer_v3 soccer",
+      "applicability": "The ALOHA 2 is a bimanual MuJoCo configuration with two 6-axis arms and joint-position gripper actuators. This is single-arm execution: select one arm, use that arm's named gripper site and finger contacts, and keep the other arm at neutral; it is not a genuine bimanual task. The selected arm can contact and move a free rolling ball toward a private physical goal fixture without retaining the ball.",
+      "adaptation": "Adapt contact-driven soccer to the canonical ALOHA 2 configuration using the selected arm and its private ball and goal fixtures. Preserve the source unweighted Euclidean ball-centre-to-goal metric, comparator \"<=\", threshold 0.07 m, and terminal-after-ball-contact requirement; the source numerical obligation is unchanged. Do not substitute the x-scaled reward-shaping distance. This catalog records applicability only and makes no task execution or task-passing claim.",
       "scene_assumptions": [
-        "A rigid peg and side-entry hole are mounted in a reachable tabletop fixture.",
-        "The peg diameter, clearance, and approach direction permit insertion with the ALOHA 2 selected-arm's 6-DoF arm."
+        "A free rolling ball and physical goal fixture preserve the source soccer operation and are placed within the selected arm's reachable tabletop workspace.",
+        "The reset starts outside the 0.07 m tolerance and the tabletop permits contact-only ball motion without lifting."
       ],
       "observation_assumptions": [
-        "The observation exposes peg and insertion target positions.",
-        "The private binding evaluates the terminal peg-head error with the source axis weights."
+        "The observation exposes ball-centre and goal positions in a common world metre frame.",
+        "The private binding can evaluate terminal unweighted Euclidean ball-to-goal distance and confirm contact-driven ball motion."
       ],
       "scoring": [
         {
-          "clause_id": "peg_target_distance",
-          "metric": "peg_target_distance",
+          "clause_id": "soccer_ball_goal_distance",
+          "metric": "ball_goal_distance",
           "unit": "m",
           "comparator": "<=",
           "threshold": 0.07,
           "temporal": {
-            "kind": "terminal_state_after_insertion"
+            "kind": "terminal_state_after_ball_contact"
           },
           "aggregation": {
             "kind": "single_trial"
@@ -2501,9 +2501,15 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_peg_insertion_side_v3.py, evaluate_state lines 93-128 and compute_reward lines 164-177: obj_to_target is norm((pegHead - target) * [1, 2, 2]) and success is obj_to_target <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_soccer_v3.py, evaluate_state lines 69-100 and compute_reward lines 227-267, especially line 264, at pinned commit: evaluate_state receives the unweighted Euclidean ball-to-target norm and success is <= 0.07; line 236's x-scaled distance is reward shaping only. metaworld/assets/sawyer_xyz/sawyer_soccer.xml lines 12-23 define the free ball and goal fixture.",
               "support": "adapted",
-              "adaptation": "Adapt a constrained peg insertion to the canonical ALOHA 2 configuration using only the selected arm and its private scene fixtures. Preserve the source scoring metric \"peg_target_distance\", m unit, comparator \"<=\", and threshold 0.07; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim."
+              "adaptation": "Adapt contact-driven soccer to the canonical ALOHA 2 configuration using the selected arm and its private ball and goal fixtures. Preserve the source unweighted Euclidean ball-centre-to-goal metric, comparator \"<=\", threshold 0.07 m, and terminal-after-ball-contact requirement; the source numerical obligation is unchanged. Do not substitute the x-scaled reward-shaping distance. This catalog records applicability only and makes no task execution or task-passing claim."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate with the selected ALOHA 2 arm and private ball and goal fixtures, requiring it at terminal state after ball contact in one private trial. Preserve the source temporal and aggregation obligations; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim."
             }
           ]
         }
@@ -2519,19 +2525,14 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "mw_peg_insertion_side",
+          "task_id": "mw_soccer",
           "task_parameters": {
             "type": "object",
             "required": [
               "task_arm",
-              "start_position",
+              "contact_position",
               "target_position",
-              "release_position",
-              "tool_target_position",
-              "route_position",
-              "grasp_position",
-              "grasp_wrist_rotate",
-              "grasp_gripper"
+              "tool_target_position"
             ],
             "properties": {
               "task_arm": {
@@ -2572,13 +2573,13 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; for mw_reach_target only, it is the selected arm's named gripper-site target."
+                "description": "Desired terminal world-frame position of the affected task entity or fixture target; it is not a selected-arm end-effector waypoint."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "task_fixture",
-                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
+                "description": "Desired terminal angle of the affected task fixture. It is not a selected-arm wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2588,17 +2589,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) used after contact or grasp to drive the task entity toward its target."
-              },
-              "release_position": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "length": 3,
-                "unit": "m",
-                "frame": "world",
-                "description": "Commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) at the placement region; maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
+                "description": "Final commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) used after contact to drive the task entity toward its target."
               },
               "route_position": {
                 "type": "array",
@@ -2608,29 +2599,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) between contact or grasp and tool_target_position."
-              },
-              "grasp_position": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "length": 3,
-                "unit": "m",
-                "frame": "world",
-                "description": "Commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) where the gripper aligns and closes around the object before lifting."
-              },
-              "grasp_wrist_rotate": {
-                "type": "number",
-                "unit": "rad",
-                "frame": "selected_arm/wrist_rotate",
-                "description": "Selected-arm wrist-rotation target in radians used while approaching, grasping, and carrying the object."
-              },
-              "grasp_gripper": {
-                "type": "number",
-                "unit": "m",
-                "frame": "selected_arm/gripper_actuator",
-                "description": "Finite selected-arm MuJoCo slide-position gripper control in [0.002,0.037] m; smaller values are closed and larger values are open."
+                "description": "Intermediate commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) between contact and tool_target_position."
               }
             },
             "additional_properties": false
@@ -2639,29 +2608,29 @@
       }
     },
     {
-      "task_id": "mw_bin_picking",
-      "name": "Pick an object from a bin",
-      "description": "Grasp an object in a bin and place it at the specified target location.",
-      "source_task_or_operation": "Meta-World sawyer_bin_picking_v3 bin-picking",
-      "applicability": "The ALOHA 2 is a bimanual MuJoCo configuration with two 6-axis arms and joint-position gripper actuators. This is single-arm execution: select one arm, use that arm's gripper site and finger contacts when the task requires contact, and keep the other arm at neutral; it is not a genuine bimanual task. The selected arm's two-finger gripper can reach into a shallow bin, grasp a small object, and transport it to a nearby goal.",
-      "adaptation": "Adapt bin picking to the canonical ALOHA 2 configuration using only the selected arm and its private scene fixtures. Preserve the source scoring metric \"object_goal_distance\", m unit, comparator \"<=\", and threshold 0.05; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim.",
+      "task_id": "mw_window_open",
+      "name": "Open a sliding window",
+      "description": "Use the selected ALOHA 2 arm's gripper-site contact to drive a sliding window handle along its opening axis until it reaches the source target tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_window_open_v3 window-open",
+      "applicability": "The ALOHA 2 is a bimanual MuJoCo configuration with two 6-axis arms and joint-position gripper actuators. This is single-arm execution: select one arm, use that arm's named gripper site and finger contacts, and keep the other arm at neutral; it is not a genuine bimanual task. The selected arm can open a private constrained sliding window when the handle exposes a reachable face opposite the opening direction.",
+      "adaptation": "Adapt contact-driven window opening to the canonical ALOHA 2 configuration using the selected arm and its private constrained sliding-window fixture. Preserve the source absolute window-handle x-axis error metric, comparator \"<=\", threshold 0.05 m, and terminal-after-open requirement; the source numerical obligation is unchanged. Require contact-driven positive-axis slide motion. This catalog records applicability only and makes no task execution or task-passing claim.",
       "scene_assumptions": [
-        "A shallow bin contains one graspable rigid object and is placed within the ALOHA 2 selected-arm reachable workspace.",
-        "The bin walls leave enough clearance for the gripper to enter, close, and withdraw the object."
+        "A sliding window exposes an opposite handle face reachable by the selected arm's gripper site and moves along the task x axis.",
+        "The reset starts outside the 0.05 m tolerance and provides clearance for sustained opening contact without frame interpenetration."
       ],
       "observation_assumptions": [
-        "The observation exposes object and target positions and the gripper state.",
-        "The private binding measures the terminal object center against the target-bin center."
+        "The observation exposes window-handle and target positions in a common metre frame.",
+        "The private binding can evaluate terminal absolute x-axis error and confirm opening-direction slider displacement."
       ],
       "scoring": [
         {
-          "clause_id": "binned_object_distance",
-          "metric": "object_goal_distance",
+          "clause_id": "window_open_axis_error",
+          "metric": "window_handle_x_axis_error",
           "unit": "m",
           "comparator": "<=",
           "threshold": 0.05,
           "temporal": {
-            "kind": "terminal_state_after_pick_and_place"
+            "kind": "terminal_state_after_open"
           },
           "aggregation": {
             "kind": "single_trial"
@@ -2669,9 +2638,15 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_bin_picking_v3.py, evaluate_state lines 93-116 and compute_reward lines 161-172: obj_to_target is the Euclidean object-to-target norm and success is obj_to_target <= 0.05.",
+              "specific_reference": "metaworld/envs/sawyer_window_open_v3.py, TARGET_RADIUS line 27, evaluate_state lines 79-101, and compute_reward lines 136-137 at pinned commit: target_to_obj is absolute handle x-axis error and success is <= 0.05.",
               "support": "adapted",
-              "adaptation": "Adapt bin picking to the canonical ALOHA 2 configuration using only the selected arm and its private scene fixtures. Preserve the source scoring metric \"object_goal_distance\", m unit, comparator \"<=\", and threshold 0.05; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim."
+              "adaptation": "Adapt contact-driven window opening to the canonical ALOHA 2 configuration using the selected arm and its private constrained sliding-window fixture. Preserve the source absolute window-handle x-axis error metric, comparator \"<=\", threshold 0.05 m, and terminal-after-open requirement; the source numerical obligation is unchanged. Require contact-driven positive-axis slide motion. This catalog records applicability only and makes no task execution or task-passing claim."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate with the selected ALOHA 2 arm and private sliding-window fixture, requiring it at terminal state after opening in one private trial. Preserve the source temporal and aggregation obligations; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim."
             }
           ]
         }
@@ -2687,19 +2662,14 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "mw_bin_picking",
+          "task_id": "mw_window_open",
           "task_parameters": {
             "type": "object",
             "required": [
               "task_arm",
-              "start_position",
+              "contact_position",
               "target_position",
-              "release_position",
-              "tool_target_position",
-              "grasp_position",
-              "grasp_wrist_rotate",
-              "grasp_gripper",
-              "route_position"
+              "tool_target_position"
             ],
             "properties": {
               "task_arm": {
@@ -2740,13 +2710,13 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; for mw_reach_target only, it is the selected arm's named gripper-site target."
+                "description": "Desired terminal world-frame position of the affected task entity or fixture target; it is not a selected-arm end-effector waypoint."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "task_fixture",
-                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
+                "description": "Desired terminal angle of the affected task fixture. It is not a selected-arm wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2756,17 +2726,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) used after contact or grasp to drive the task entity toward its target."
-              },
-              "release_position": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "length": 3,
-                "unit": "m",
-                "frame": "world",
-                "description": "Commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) at the placement region; maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
+                "description": "Final commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) used after contact to drive the task entity toward its target."
               },
               "route_position": {
                 "type": "array",
@@ -2776,29 +2736,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) between contact or grasp and tool_target_position."
-              },
-              "grasp_position": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "length": 3,
-                "unit": "m",
-                "frame": "world",
-                "description": "Commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) where the gripper aligns and closes around the object before lifting."
-              },
-              "grasp_wrist_rotate": {
-                "type": "number",
-                "unit": "rad",
-                "frame": "selected_arm/wrist_rotate",
-                "description": "Selected-arm wrist-rotation target in radians used while approaching, grasping, and carrying the object."
-              },
-              "grasp_gripper": {
-                "type": "number",
-                "unit": "m",
-                "frame": "selected_arm/gripper_actuator",
-                "description": "Finite selected-arm MuJoCo slide-position gripper control in [0.002,0.037] m; smaller values are closed and larger values are open."
+                "description": "Intermediate commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) between contact and tool_target_position."
               }
             },
             "additional_properties": false
@@ -2807,29 +2745,29 @@
       }
     },
     {
-      "task_id": "mw_pick_out_of_hole",
-      "name": "Pick an object out of a hole",
-      "description": "Extract a graspable object from a hole and move it to its target position.",
-      "source_task_or_operation": "Meta-World sawyer_pick_out_of_hole_v3 pick-out-of-hole",
-      "applicability": "The ALOHA 2 is a bimanual MuJoCo configuration with two 6-axis arms and joint-position gripper actuators. This is single-arm execution: select one arm, use that arm's gripper site and finger contacts when the task requires contact, and keep the other arm at neutral; it is not a genuine bimanual task. The selected arm's two-finger gripper can align over a shallow hole, grasp a small object, and extract it along a reachable path.",
-      "adaptation": "Adapt pick-out-of-hole extraction to the canonical ALOHA 2 configuration using only the selected arm and its private scene fixtures. Preserve the source scoring metric \"object_goal_distance\", m unit, comparator \"<=\", and threshold 0.07; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim.",
+      "task_id": "mw_window_close",
+      "name": "Close a sliding window",
+      "description": "Use the selected ALOHA 2 arm's gripper-site contact to push a sliding window handle along its closing axis until it reaches the source target tolerance.",
+      "source_task_or_operation": "Meta-World sawyer_window_close_v3 window-close",
+      "applicability": "The ALOHA 2 is a bimanual MuJoCo configuration with two 6-axis arms and joint-position gripper actuators. This is single-arm execution: select one arm, use that arm's named gripper site and finger contacts, and keep the other arm at neutral; it is not a genuine bimanual task. The selected arm can push a reachable private sliding-window handle toward its closed stop.",
+      "adaptation": "Adapt contact-driven window closing to the canonical ALOHA 2 configuration using the selected arm and its private constrained sliding-window fixture. Preserve the source absolute window-handle x-axis error metric, comparator \"<=\", threshold 0.05 m, and terminal-after-close requirement; the source numerical obligation is unchanged. Require contact-driven closing-axis slide motion. This catalog records applicability only and makes no task execution or task-passing claim.",
       "scene_assumptions": [
-        "A shallow hole fixture contains one graspable rigid object and leaves a reachable clearance for the gripper.",
-        "The hole depth and object geometry permit extraction by the ALOHA 2 selected-arm without an additional contact tool."
+        "A sliding window has a reachable collidable handle face and moves along the task x axis toward a closed stop.",
+        "The reset starts outside the 0.05 m tolerance and provides clearance for sustained closing contact without frame interpenetration."
       ],
       "observation_assumptions": [
-        "The observation exposes object and goal positions plus gripper state.",
-        "The private binding measures the terminal object center against the elevated target outside the recess."
+        "The observation exposes window-handle and target positions in a common metre frame.",
+        "The private binding can evaluate terminal absolute x-axis error and confirm closing-direction slider displacement."
       ],
       "scoring": [
         {
-          "clause_id": "extracted_object_distance",
-          "metric": "object_goal_distance",
+          "clause_id": "window_close_axis_error",
+          "metric": "window_handle_x_axis_error",
           "unit": "m",
           "comparator": "<=",
-          "threshold": 0.07,
+          "threshold": 0.05,
           "temporal": {
-            "kind": "terminal_state_after_extraction_and_place"
+            "kind": "terminal_state_after_close"
           },
           "aggregation": {
             "kind": "single_trial"
@@ -2837,9 +2775,15 @@
           "source_refs": [
             {
               "source_id": "metaworld_repo",
-              "specific_reference": "metaworld/envs/sawyer_pick_out_of_hole_v3.py, evaluate_state lines 66-93 and compute_reward lines 138-147: obj_to_target is the Euclidean object-to-target norm and success is obj_to_target <= 0.07.",
+              "specific_reference": "metaworld/envs/sawyer_window_close_v3.py, TARGET_RADIUS line 28, evaluate_state lines 83-105, and compute_reward lines 143-144 at pinned commit: target_to_obj is absolute handle x-axis error and success is <= 0.05.",
               "support": "adapted",
-              "adaptation": "Adapt pick-out-of-hole extraction to the canonical ALOHA 2 configuration using only the selected arm and its private scene fixtures. Preserve the source scoring metric \"object_goal_distance\", m unit, comparator \"<=\", and threshold 0.07; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim."
+              "adaptation": "Adapt contact-driven window closing to the canonical ALOHA 2 configuration using the selected arm and its private constrained sliding-window fixture. Preserve the source absolute window-handle x-axis error metric, comparator \"<=\", threshold 0.05 m, and terminal-after-close requirement; the source numerical obligation is unchanged. Require contact-driven closing-axis slide motion. This catalog records applicability only and makes no task execution or task-passing claim."
+            },
+            {
+              "source_id": "metaworld_repo",
+              "specific_reference": "docs/evaluation/evaluation.md, lines 9-23 at pinned commit: each environment publishes info[\"success\"]; MT1/MT10/MT50 count success if that flag is 1 at any point during an episode and average success across tasks and 50 goal episodes.",
+              "support": "adapted",
+              "adaptation": "Use the cited per-task success predicate with the selected ALOHA 2 arm and private sliding-window fixture, requiring it at terminal state after closing in one private trial. Preserve the source temporal and aggregation obligations; the source numerical obligation is unchanged. This catalog records applicability only and makes no task execution or task-passing claim."
             }
           ]
         }
@@ -2855,19 +2799,14 @@
             "task_id",
             "task_parameters"
           ],
-          "task_id": "mw_pick_out_of_hole",
+          "task_id": "mw_window_close",
           "task_parameters": {
             "type": "object",
             "required": [
               "task_arm",
-              "start_position",
+              "contact_position",
               "target_position",
-              "release_position",
-              "tool_target_position",
-              "grasp_position",
-              "grasp_wrist_rotate",
-              "grasp_gripper",
-              "route_position"
+              "tool_target_position"
             ],
             "properties": {
               "task_arm": {
@@ -2890,16 +2829,6 @@
                 "frame": "world",
                 "description": "Initial world-frame position of the affected task entity or fixture feature; it is not a selected-arm end-effector waypoint."
               },
-              "grasp_position": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "length": 3,
-                "unit": "m",
-                "frame": "world",
-                "description": "Commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) where the gripper aligns and closes around the object before lifting."
-              },
               "contact_position": {
                 "type": "array",
                 "items": {
@@ -2918,13 +2847,13 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Desired terminal world-frame position of the affected task entity or fixture feature; for mw_reach_target only, it is the selected arm's named gripper-site target."
+                "description": "Desired terminal world-frame position of the affected task entity or fixture target; it is not a selected-arm end-effector waypoint."
               },
               "target_angle": {
                 "type": "number",
                 "unit": "rad",
                 "frame": "task_fixture",
-                "description": "Desired terminal angle of the affected task fixture. It is not a robot wrist-joint target."
+                "description": "Desired terminal angle of the affected task fixture. It is not a selected-arm wrist-joint target."
               },
               "tool_target_position": {
                 "type": "array",
@@ -2934,17 +2863,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) used after contact or grasp to drive the task entity toward its target."
-              },
-              "release_position": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "length": 3,
-                "unit": "m",
-                "frame": "world",
-                "description": "Commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) at the placement region; maintain grasp while moving here and release only after arrival, except an insertion task may retain grasp."
+                "description": "Final commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) used after contact to drive the task entity toward its target."
               },
               "route_position": {
                 "type": "array",
@@ -2954,19 +2873,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) between contact or grasp and tool_target_position."
-              },
-              "grasp_wrist_rotate": {
-                "type": "number",
-                "unit": "rad",
-                "frame": "selected_arm/wrist_rotate",
-                "description": "Selected-arm wrist-rotation target in radians used while approaching, grasping, and carrying the object."
-              },
-              "grasp_gripper": {
-                "type": "number",
-                "unit": "m",
-                "frame": "selected_arm/gripper_actuator",
-                "description": "Finite selected-arm MuJoCo slide-position gripper control in [0.002,0.037] m; smaller values are closed and larger values are open."
+                "description": "Intermediate commanded world-frame position of the selected arm's named gripper site (left/gripper or right/gripper) between contact and tool_target_position."
               }
             },
             "additional_properties": false
