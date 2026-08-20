@@ -130,7 +130,7 @@ PASSIVE_DISTANCE_CHECKS = {
     "wall_scene.xml": ("workpiece", [0.46, 0.18, 0.412], 0.07),
     "sweep_into_goal_scene.xml": ("workpiece", [0.48, 0.18, 0.385], 0.05),
     "soccer_scene.xml": ("soccer_ball", [0.48, 0.20, 0.44], 0.07),
-    "drawer_scene.xml": ("drawer_handle", [0.48, -0.005, 0.45], 0.03),
+    "drawer_scene.xml": ("drawer_handle", [0.48, -0.005, 0.56], 0.03),
     "button_front_scene.xml": ("front_button", [0.48, 0.18, 0.47], 0.02),
     "button_topdown_scene.xml": ("top_button", [0.50, 0.10, 0.425], 0.024),
     "handle_vertical_scene.xml": ("vertical_handle", [0.48, 0.10, 0.43], 0.02),
@@ -277,12 +277,17 @@ def test_kuka_iiwa_14_fixture_axes_positions_and_gravity_compensation() -> None:
     np.testing.assert_allclose(model.body_pos[_body_id(model, "door_unlock_housing")], [0.54, 0.10, 0.47], atol=1e-9)
     model = mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / "window_scene.xml"))
     assert float(model.body_gravcomp[_body_id(model, "window")]) == 1.0
-    np.testing.assert_allclose(model.body_pos[_body_id(model, "window_handle")], [0.0, -0.035, 0.0], atol=1e-9)
+    np.testing.assert_allclose(model.body_pos[_body_id(model, "window_handle")], [0.0, -0.12, 0.0], atol=1e-9)
 
     model = mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / "drawer_scene.xml"))
     drawer_housing = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "drawer_housing")
     assert int(model.geom_contype[drawer_housing]) == 0
     assert int(model.geom_conaffinity[drawer_housing]) == 0
+    np.testing.assert_allclose(
+        model.body_pos[_body_id(model, "drawer_handle")],
+        [0.0, -0.035, 0.11],
+        atol=1e-9,
+    )
 
     model = mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / "soccer_scene.xml"))
     ball_geom = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "soccer_ball_geom")
@@ -302,6 +307,44 @@ def test_kuka_iiwa_14_fixture_axes_positions_and_gravity_compensation() -> None:
         "window_frame_bottom",
     ):
         assert _has_name(model, mujoco.mjtObj.mjOBJ_GEOM, geom_name)
+
+
+def test_kuka_iiwa_14_drawer_and_window_handles_clear_the_link7_contact_sphere() -> None:
+    model = mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / "drawer_scene.xml"))
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    link7_geom = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_GEOM, "link7_contact_geom"
+    )
+    drawer_front = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_GEOM, "drawer_front"
+    )
+    drawer_handle = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_GEOM, "drawer_handle_geom"
+    )
+    sphere_radius = float(model.geom_size[link7_geom, 0])
+    drawer_front_top = float(
+        data.geom_xpos[drawer_front, 2] + model.geom_size[drawer_front, 2]
+    )
+    assert float(data.geom_xpos[drawer_handle, 2] - sphere_radius) > drawer_front_top
+
+    model = mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / "window_scene.xml"))
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    link7_geom = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_GEOM, "link7_contact_geom"
+    )
+    window_panel = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_GEOM, "window_panel"
+    )
+    window_handle = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_GEOM, "window_handle_geom"
+    )
+    sphere_radius = float(model.geom_size[link7_geom, 0])
+    panel_front = float(
+        data.geom_xpos[window_panel, 1] - model.geom_size[window_panel, 1]
+    )
+    assert float(data.geom_xpos[window_handle, 1] + sphere_radius) < panel_front
 
 
 def test_kuka_iiwa_14_passive_fixtures_stay_outside_public_success_thresholds() -> None:
