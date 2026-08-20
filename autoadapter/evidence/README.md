@@ -28,8 +28,8 @@ The implementation includes:
 
 ## Franka Package-Wide Reference Positive Control
 
-Run `franka-reference-positive-control-20260820T013634Z`, on mainline commit
-`1d73581`, passed all 20 fixed Franka Task Library cases with the reviewed
+Run `franka-reference-positive-control-20260820T034710Z`, on mainline commit
+`0d047c7`, passed all 20 fixed Franka Task Library cases with the reviewed
 Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 
 - pipeline, physical execution, and structured Harness validation: passed;
@@ -40,18 +40,21 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 - maximum trial length: 8,680 physics steps, below the 10,000-step case limit;
 - videos: `20/20` complete, independently decodable at `800x600`, with 4 to
   175 frames per case; and
-- representative object-case videos were visually checked for nonblank,
-  task-readable framing.
+- the corrected `mw_handle_pull` case started at `vertical_handle_slide=-0.055`,
+  physically moved to about `-0.0126`, and finished with `0.0126 m` error; and
+- representative object-case and handle-pull videos were visually checked for
+  nonblank, task-readable framing.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/franka-reference-positive-control-20260820T013634Z/`.
+`autoadapter/runs/franka-reference-positive-control-20260820T034710Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
 
-The preceding run `franka-reference-positive-control-20260820T013256Z` is also
-retained and truthfully failed video completeness: all 20 physical criteria
-passed, but the requested `800x600` renderer exceeded the prior `640x480`
-offscreen framebuffer and produced zero frames. Commit `1d73581` added the
-focused framebuffer regression before the successful rerun.
+The earlier runs ending `013634Z` and `013256Z` are retained as diagnostics,
+not current positive-control evidence. The former predates commit `0d047c7`:
+its handle-pull reset already satisfied the public `<=0.05 m` criterion, so its
+reported 20/20 is superseded even though the driver also moved the handle. The
+latter additionally failed video completeness because the requested `800x600`
+renderer exceeded the prior `640x480` offscreen framebuffer.
 
 This result establishes package-wide reference feasibility for the canonical
 Franka assets, controller baseline, trusted measurements, Harness, and video
@@ -61,8 +64,8 @@ real-model dynamic canary and final admission review remain required.
 
 ## xArm7 Package-Wide Reference Positive Control
 
-Run `xarm7-reference-positive-control-20260820T031649Z`, on mainline commit
-`e93d302`, passed all 20 fixed xArm7 Task Library cases with the reviewed
+Run `xarm7-reference-positive-control-20260820T034432Z`, on mainline commit
+`0d047c7`, passed all 20 fixed xArm7 Task Library cases with the reviewed
 Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 
 - pipeline, physical execution, and structured Harness validation: passed;
@@ -73,15 +76,18 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 - maximum trial length: 6,935 physics steps, below the 10,000-step case limit;
 - videos: `20/20` complete H.264, independently decoded at `800x600`, with 25
   to 140 frames per case; and
-- pick-place and sweep terminal frames were visually checked for nonblank,
-  task-readable framing and visible terminal object placement.
+- the corrected `mw_handle_pull` case started at `vertical_handle_slide=-0.055`,
+  physically moved to about `-0.0214`, and finished with `0.0215 m` error; and
+- pick-place, sweep, and handle-pull terminal frames were visually checked for
+  nonblank, task-readable framing and visible terminal task state.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/xarm7-reference-positive-control-20260820T031649Z/`.
+`autoadapter/runs/xarm7-reference-positive-control-20260820T034432Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
-The preceding sandboxed diagnostic run ending `031554Z` passed all physical
-criteria but failed requested video creation because macOS CoreGraphics was
-unavailable in the sandbox; it is not positive-control evidence.
+The earlier run ending `031649Z` is retained as a pre-fix diagnostic: its
+handle-pull reset already satisfied the public criterion, so its reported 20/20
+is superseded. The sandboxed run ending `031554Z` also predates the fix and
+failed requested video creation because macOS CoreGraphics was unavailable.
 
 This result establishes package-wide reference feasibility for the canonical
 xArm7 assets, controller baseline, trusted measurements, Harness, and video

@@ -379,6 +379,7 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert evidence_observation["path"] == "autoadapter/evidence/README.md"
     assert "20/20" in evidence_observation["observation"]
     assert "videos" in evidence_observation["observation"]
+    assert "starts outside" in evidence_observation["observation"]
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing

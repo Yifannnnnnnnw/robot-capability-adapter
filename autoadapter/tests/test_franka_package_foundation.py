@@ -370,6 +370,7 @@ class FrankaPackageFoundationTests(unittest.TestCase):
         self.assertEqual(evidence_observation["path"], "autoadapter/evidence/README.md")
         self.assertIn("20/20", evidence_observation["observation"])
         self.assertIn("videos", evidence_observation["observation"])
+        self.assertIn("starts outside", evidence_observation["observation"])
         missing = candidate["missing_for_runnable_package"]
         self.assertFalse(any("local MuJoCo asset closure" in item for item in missing))
         self.assertFalse(any("current mainline morphology.json" in item for item in missing))

@@ -75,3 +75,13 @@ def test_handle_pull_private_case_requires_physical_change(robot_id: str) -> Non
         comparator=criterion["comparator"],
         threshold=criterion["threshold"],
     )
+
+
+def test_reference_evidence_supersedes_the_false_success_runs() -> None:
+    evidence = (ROOT / "evidence" / "README.md").read_text(encoding="utf-8")
+
+    assert "franka-reference-positive-control-20260820T034710Z" in evidence
+    assert "xarm7-reference-positive-control-20260820T034432Z" in evidence
+    assert "franka-reference-positive-control-20260820T013634Z" not in evidence
+    assert "xarm7-reference-positive-control-20260820T031649Z" not in evidence
+    assert evidence.count("superseded") >= 2

@@ -63,7 +63,7 @@
         {
           "path": "autoadapter/evidence/README.md",
           "kind": "tracked_reference_positive_control_record",
-          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven Franka package-wide reference positive control with complete per-case videos."
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven Franka package-wide reference positive control with complete per-case videos. Its corrected handle-pull reset starts outside the public criterion and the trusted terminal state records physical fixture movement; pre-fix runs are explicitly superseded."
         },
         {
           "path": "demo2/legacy_assets/franka_panda/panda.xml",
@@ -192,7 +192,7 @@
         {
           "path": "autoadapter/evidence/README.md",
           "kind": "tracked_reference_positive_control_record",
-          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven xArm7 package-wide reference positive control with all guards passing and complete independently decoded 800x600 per-case videos. This is calibration evidence only, not model-generation or runnable-admission evidence."
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven xArm7 package-wide reference positive control with all guards passing and complete independently decoded 800x600 per-case videos. Its corrected handle-pull reset starts outside the public criterion and the trusted terminal state records physical fixture movement. This is calibration evidence only, not model-generation or runnable-admission evidence."
         },
         {
           "path": "demo2/legacy_assets/menagerie/ufactory_xarm7/xarm7.xml",
