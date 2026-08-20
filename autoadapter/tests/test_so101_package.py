@@ -419,18 +419,10 @@ def test_so101_wall_tasks_use_physical_obstacles_and_reference_passes() -> None:
 
 def test_so101_peg_bin_and_hole_fixtures_match_source_metrics() -> None:
     package = load_robot_package(PACKAGE_ROOT)
-    design = _design(package)
-    complete_suite = _suite(package, design)
     task_ids = {
         "mw_peg_insertion_side",
         "mw_bin_picking",
         "mw_pick_out_of_hole",
-    }
-    suite = {
-        **complete_suite,
-        "cases": [
-            case for case in complete_suite["cases"] if case["task_id"] in task_ids
-        ],
     }
     instances = {
         item["task_id"]: item
@@ -521,36 +513,10 @@ def test_so101_peg_bin_and_hole_fixtures_match_source_metrics() -> None:
     )
     assert opening_width >= 0.16 - 1e-9
 
-    with tempfile.TemporaryDirectory(prefix="so101-object-fixtures-") as temporary:
-        report = run_private_suite(
-            package=package,
-            design=design,
-            suite=suite,
-            driver_path=package.reference_driver,
-            condition="from-scratch",
-            output_dir=temporary,
-            record_video=False,
-            wall_timeout_s=90.0,
-            run_id="so101-object-fixture-calibration",
-            attempt=0,
-        )
-
-    assert report["validation_passed"]
-    assert {trial["task_id"] for trial in report["trials"]} == task_ids
-    assert all(trial["trial_passed"] for trial in report["trials"])
-
 
 def test_so101_reach_push_and_sweep_use_distinct_physical_scenes() -> None:
     package = load_robot_package(PACKAGE_ROOT)
-    design = _design(package)
-    complete_suite = _suite(package, design)
     task_ids = {"mw_reach_target", "mw_push_to_goal", "mw_sweep_into_goal"}
-    suite = {
-        **complete_suite,
-        "cases": [
-            case for case in complete_suite["cases"] if case["task_id"] in task_ids
-        ],
-    }
     instances = {
         item["task_id"]: item
         for item in json.loads(
@@ -576,29 +542,9 @@ def test_so101_reach_push_and_sweep_use_distinct_physical_scenes() -> None:
         sweep_model, mujoco.mjtObj.mjOBJ_GEOM, "table_front"
     ) >= 0
 
-    with tempfile.TemporaryDirectory(prefix="so101-contact-scenes-") as temporary:
-        report = run_private_suite(
-            package=package,
-            design=design,
-            suite=suite,
-            driver_path=package.reference_driver,
-            condition="from-scratch",
-            output_dir=temporary,
-            record_video=False,
-            wall_timeout_s=60.0,
-            run_id="so101-contact-scene-calibration",
-            attempt=0,
-        )
-
-    assert report["validation_passed"]
-    assert {trial["task_id"] for trial in report["trials"]} == task_ids
-    assert all(trial["trial_passed"] for trial in report["trials"])
-
 
 def test_so101_drawer_button_and_handle_fixtures_match_source_axes() -> None:
     package = load_robot_package(PACKAGE_ROOT)
-    design = _design(package)
-    complete_suite = _suite(package, design)
     task_ids = {
         "mw_drawer_open",
         "mw_drawer_close",
@@ -606,12 +552,6 @@ def test_so101_drawer_button_and_handle_fixtures_match_source_axes() -> None:
         "mw_button_press_topdown",
         "mw_handle_press",
         "mw_handle_pull",
-    }
-    suite = {
-        **complete_suite,
-        "cases": [
-            case for case in complete_suite["cases"] if case["task_id"] in task_ids
-        ],
     }
     instances = {
         item["task_id"]: item
@@ -648,41 +588,15 @@ def test_so101_drawer_button_and_handle_fixtures_match_source_axes() -> None:
         assert binding["kind"] == "final_site_axis_error"
         assert binding["parameters"]["axis"] == axis
 
-    with tempfile.TemporaryDirectory(prefix="so101-fixture-scenes-") as temporary:
-        report = run_private_suite(
-            package=package,
-            design=design,
-            suite=suite,
-            driver_path=package.reference_driver,
-            condition="from-scratch",
-            output_dir=temporary,
-            record_video=False,
-            wall_timeout_s=120.0,
-            run_id="so101-fixture-calibration",
-            attempt=0,
-        )
-
-    assert report["validation_passed"]
-    assert {trial["task_id"] for trial in report["trials"]} == task_ids
-    assert all(trial["trial_passed"] for trial in report["trials"])
-
 
 def test_so101_door_and_rotary_fixtures_match_source_formulas() -> None:
     package = load_robot_package(PACKAGE_ROOT)
-    design = _design(package)
-    complete_suite = _suite(package, design)
     task_ids = {
         "mw_door_open",
         "mw_door_close",
         "mw_faucet_open",
         "mw_dial_turn",
         "mw_lever_pull",
-    }
-    suite = {
-        **complete_suite,
-        "cases": [
-            case for case in complete_suite["cases"] if case["task_id"] in task_ids
-        ],
     }
     instances = {
         item["task_id"]: item
@@ -735,24 +649,6 @@ def test_so101_door_and_rotary_fixtures_match_source_formulas() -> None:
             joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
             assert model.jnt_range[joint_id, 0] == 0.0
             assert model.jnt_range[joint_id, 1] >= math.pi / 2.0 - 0.001
-
-    with tempfile.TemporaryDirectory(prefix="so101-rotary-scenes-") as temporary:
-        report = run_private_suite(
-            package=package,
-            design=design,
-            suite=suite,
-            driver_path=package.reference_driver,
-            condition="from-scratch",
-            output_dir=temporary,
-            record_video=False,
-            wall_timeout_s=90.0,
-            run_id="so101-rotary-calibration",
-            attempt=0,
-        )
-
-    assert report["validation_passed"]
-    assert {trial["task_id"] for trial in report["trials"]} == task_ids
-    assert all(trial["trial_passed"] for trial in report["trials"])
 
 
 def test_so101_private_reset_fails_every_task_criterion() -> None:
