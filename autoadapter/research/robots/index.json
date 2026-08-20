@@ -175,6 +175,11 @@
           "observation": "The canonical xArm7 public snapshot contains 20 reviewed task contracts with unchanged source scoring obligations and xArm7-specific applicability and invocation facts; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
+          "path": "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/assets/reach_scene.xml",
+          "kind": "canonical_task_scene_set",
+          "observation": "All 17 canonical xArm7 task scenes are local and tested for MJCF identity, MuJoCo 3.3.6 loading, physics liveness, task symbols, and 800x600 video dimensions. This is scene feasibility evidence, not contact, grasp, or task-success evidence."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/ufactory_xarm7/xarm7.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical xArm7 Menagerie model and meshes are available for migration inspection."
@@ -202,7 +207,6 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Create local task scenes and verify that all 20 public task contracts remain physically applicable to the exact xArm7 configuration without weakening their source obligations.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
