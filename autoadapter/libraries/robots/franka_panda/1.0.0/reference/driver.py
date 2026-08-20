@@ -267,11 +267,16 @@ class ReferenceFrankaPandaDriver:
                 max_joint_delta=0.018,
             )
 
-    def _grasp_and_lift_object(self, *, high_lift: bool) -> None:
+    def _grasp_and_lift_object(
+        self, *, high_lift: bool, high_clearance: float = 0.13
+    ) -> None:
+        high_clearance = float(high_clearance)
+        if not math.isfinite(high_clearance) or high_clearance <= 0.0:
+            raise ValueError("high_clearance must be a positive finite number")
         object_position = self._body_position("workpiece")
         grasp = object_position + np.asarray((0.0, 0.0, 0.111))
         normal_pregrasp = grasp + np.asarray((0.0, 0.0, 0.095))
-        high_pregrasp = grasp + np.asarray((0.0, 0.0, 0.13))
+        high_pregrasp = grasp + np.asarray((0.0, 0.0, high_clearance))
 
         self._set_gripper(GRIPPER_OPEN)
         self._idle(30)
@@ -314,8 +319,12 @@ class ReferenceFrankaPandaDriver:
         *,
         high_lift: bool,
         carry_segments: int = 30,
+        high_clearance: float = 0.13,
     ) -> None:
-        self._grasp_and_lift_object(high_lift=high_lift)
+        self._grasp_and_lift_object(
+            high_lift=high_lift,
+            high_clearance=high_clearance,
+        )
         self._carry_pick_place_object(destination_xy, segments=carry_segments)
         self._set_gripper(GRIPPER_OPEN)
         self._idle(250)
@@ -423,6 +432,7 @@ class ReferenceFrankaPandaDriver:
         target = self._reach_parameter(parameters)
         if task_id in {
             "mw_bin_picking",
+            "mw_pick_out_of_hole",
             "mw_pick_place",
             "mw_pick_place_wall",
             "mw_peg_insertion_side",
@@ -434,6 +444,14 @@ class ReferenceFrankaPandaDriver:
                     target[:2],
                     high_lift=True,
                     carry_segments=90,
+                )
+                return
+            if task_id == "mw_pick_out_of_hole":
+                self._pick_place_hop(
+                    target[:2],
+                    high_lift=True,
+                    carry_segments=70,
+                    high_clearance=0.16,
                 )
                 return
             if task_id == "mw_peg_insertion_side":
