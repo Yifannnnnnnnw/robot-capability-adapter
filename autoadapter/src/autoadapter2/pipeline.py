@@ -79,6 +79,83 @@ class PipelineError(RuntimeError):
     """Raised when the experiment cannot be admitted or composed."""
 
 
+def _validated_model_manifest(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise PipelineError("model must be an object")
+    required_fields = {
+        "vendor",
+        "api_protocol",
+        "model_id",
+        "revision",
+        "base_url",
+        "context_window_tokens",
+        "max_output_tokens",
+        "temperature",
+        "thinking",
+        "tool_history_mode",
+        "price_snapshot",
+    }
+    if set(value) != required_fields:
+        missing = sorted(required_fields - set(value))
+        extra = sorted(set(value) - required_fields)
+        detail = []
+        if missing:
+            detail.append("missing " + ", ".join(missing))
+        if extra:
+            detail.append("unexpected " + ", ".join(extra))
+        raise PipelineError("invalid model manifest fields: " + "; ".join(detail))
+    for field_name in (
+        "vendor",
+        "api_protocol",
+        "model_id",
+        "revision",
+        "base_url",
+        "thinking",
+        "tool_history_mode",
+    ):
+        if not isinstance(value[field_name], str) or not value[field_name].strip():
+            raise PipelineError(f"model.{field_name} must be a non-empty string")
+    if value["api_protocol"] not in {"openai", "openai-compatible"}:
+        raise PipelineError("model.api_protocol is unsupported")
+    if not str(value["base_url"]).startswith("https://"):
+        raise PipelineError("model.base_url must use HTTPS")
+    for field_name in ("context_window_tokens", "max_output_tokens"):
+        if isinstance(value[field_name], bool) or not isinstance(value[field_name], int):
+            raise PipelineError(f"model.{field_name} must be an integer")
+        if value[field_name] <= 0:
+            raise PipelineError(f"model.{field_name} must be positive")
+    if value["max_output_tokens"] > value["context_window_tokens"]:
+        raise PipelineError("model.max_output_tokens exceeds its context window")
+    temperature = value["temperature"]
+    if isinstance(temperature, bool) or not isinstance(temperature, (int, float)):
+        raise PipelineError("model.temperature must be numeric")
+    if float(temperature) != 0.0:
+        raise PipelineError("mainline model.temperature must be 0")
+    if value["tool_history_mode"] not in {"native", "text-observation"}:
+        raise PipelineError("model.tool_history_mode is unsupported")
+
+    price = value["price_snapshot"]
+    required_price_fields = {
+        "date",
+        "currency",
+        "input_per_million_tokens",
+        "output_per_million_tokens",
+    }
+    if not isinstance(price, Mapping) or set(price) != required_price_fields:
+        raise PipelineError("model.price_snapshot has invalid fields")
+    if not isinstance(price["date"], str) or not price["date"].strip():
+        raise PipelineError("model.price_snapshot.date must be a non-empty string")
+    if not isinstance(price["currency"], str) or not price["currency"].strip():
+        raise PipelineError("model.price_snapshot.currency must be a non-empty string")
+    for field_name in ("input_per_million_tokens", "output_per_million_tokens"):
+        amount = price[field_name]
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise PipelineError(f"model.price_snapshot.{field_name} must be numeric")
+        if float(amount) < 0.0:
+            raise PipelineError(f"model.price_snapshot.{field_name} cannot be negative")
+    return copy.deepcopy(dict(value))
+
+
 @dataclass(frozen=True)
 class ExperimentConfig:
     """The small run configuration selected from ``configs/experiments``."""
@@ -90,6 +167,14 @@ class ExperimentConfig:
     probe_budget: ProbeBudget = ProbeBudget()
     record_video: bool = True
     worker_wall_timeout_s: float = 120.0
+    model_manifest: Mapping[str, Any] | None = None
+    experience_input: tuple[Mapping[str, Any], ...] = ()
+    experience_review_queue_output: str = "experience_review_queue.json"
+    experience_snapshot_output: str = "experience_snapshot.json"
+    task_demo_seed_template: str = "{run_id}:{robot_configuration_id}"
+    experience_declared: bool = False
+    seeds_declared: bool = False
+    evolution_declared: bool = False
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "ExperimentConfig":
@@ -163,6 +248,63 @@ class ExperimentConfig:
         if worker_timeout_value <= 0:
             raise PipelineError("validation.worker_wall_timeout_s must be positive")
 
+        model_manifest = value.get("model")
+        if model_manifest is not None:
+            model_manifest = _validated_model_manifest(model_manifest)
+
+        experience_declared = "experience" in value
+        experience_config = value.get("experience", {})
+        if not isinstance(experience_config, Mapping):
+            raise PipelineError("experience must be an object")
+        experience_input_value = experience_config.get("input", [])
+        if not isinstance(experience_input_value, list):
+            raise PipelineError("experience.input must be a list")
+        if not all(isinstance(item, Mapping) for item in experience_input_value):
+            raise PipelineError("experience.input records must be objects")
+        review_queue_output = experience_config.get(
+            "review_queue_output", "experience_review_queue.json"
+        )
+        snapshot_output = experience_config.get(
+            "snapshot_output", "experience_snapshot.json"
+        )
+        for field_name, output_name in (
+            ("experience.review_queue_output", review_queue_output),
+            ("experience.snapshot_output", snapshot_output),
+        ):
+            if (
+                not isinstance(output_name, str)
+                or not output_name.strip()
+                or Path(output_name).name != output_name
+            ):
+                raise PipelineError(f"{field_name} must be one file name")
+
+        seeds_declared = "seeds" in value
+        seeds = value.get("seeds", {})
+        if not isinstance(seeds, Mapping):
+            raise PipelineError("seeds must be an object")
+        seed_template = seeds.get(
+            "task_demo_selection", "{run_id}:{robot_configuration_id}"
+        )
+        if not isinstance(seed_template, str) or not seed_template.strip():
+            raise PipelineError("seeds.task_demo_selection must be a non-empty string")
+        if seed_template != "{run_id}:{robot_configuration_id}":
+            raise PipelineError(
+                "seeds.task_demo_selection must be "
+                "'{run_id}:{robot_configuration_id}'"
+            )
+
+        evolution_declared = "evolution" in value
+        evolution = value.get("evolution", {})
+        if not isinstance(evolution, Mapping):
+            raise PipelineError("evolution must be an object")
+        if evolution_declared and evolution != {
+            "after_each_terminal_cell": True,
+            "outcome_field": "cells[].outcomes.Evolution",
+        }:
+            raise PipelineError(
+                "evolution must require each terminal cell and the canonical outcome field"
+            )
+
         return cls(
             experiment_id=experiment_id.strip(),
             robots=robots,
@@ -171,6 +313,16 @@ class ExperimentConfig:
             probe_budget=probe_budget,
             record_video=record_video,
             worker_wall_timeout_s=worker_timeout_value,
+            model_manifest=model_manifest,
+            experience_input=tuple(
+                _copy(dict(item)) for item in experience_input_value
+            ),
+            experience_review_queue_output=review_queue_output.strip(),
+            experience_snapshot_output=snapshot_output.strip(),
+            task_demo_seed_template=seed_template,
+            experience_declared=experience_declared,
+            seeds_declared=seeds_declared,
+            evolution_declared=evolution_declared,
         )
 
     @classmethod
@@ -185,7 +337,7 @@ class ExperimentConfig:
         return cls.from_mapping(value)
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        result: dict[str, Any] = {
             "experiment_id": self.experiment_id,
             "robots": list(self.robots),
             "generation_conditions": list(self.generation_conditions),
@@ -200,6 +352,24 @@ class ExperimentConfig:
                 "worker_wall_timeout_s": self.worker_wall_timeout_s,
             },
         }
+        if self.model_manifest is not None:
+            result["model"] = _copy(dict(self.model_manifest))
+        if self.experience_declared:
+            result["experience"] = {
+                "input": [_copy(dict(item)) for item in self.experience_input],
+                "review_queue_output": self.experience_review_queue_output,
+                "snapshot_output": self.experience_snapshot_output,
+            }
+        if self.seeds_declared:
+            result["seeds"] = {
+                "task_demo_selection": self.task_demo_seed_template,
+            }
+        if self.evolution_declared:
+            result["evolution"] = {
+                "after_each_terminal_cell": True,
+                "outcome_field": "cells[].outcomes.Evolution",
+            }
+        return result
 
 
 @dataclass(frozen=True)
@@ -416,6 +586,52 @@ def _client_identity(client: Any, explicit: Mapping[str, Any] | None) -> dict[st
     return {
         "provider": str(provider or "unknown"),
         "model": str(model or "unknown"),
+    }
+
+
+def _validate_model_preflight(
+    client: Any,
+    manifest: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    if manifest is None:
+        return None
+    runtime = getattr(client, "config", None)
+    if runtime is None:
+        raise PipelineError("manifest-pinned run requires a model client config")
+    actual = {
+        "vendor": getattr(runtime, "provider", None),
+        "api_protocol": getattr(runtime, "api_protocol", None),
+        "model_id": getattr(runtime, "model", None),
+        "base_url": str(getattr(runtime, "base_url", "")).rstrip("/"),
+        "max_output_tokens": getattr(runtime, "max_tokens", None),
+        "thinking": getattr(runtime, "thinking", None) or "disabled",
+        "tool_history_mode": getattr(runtime, "tool_history_mode", None),
+        "temperature": 0.0,
+    }
+    expected = {
+        "vendor": manifest["vendor"],
+        "api_protocol": manifest["api_protocol"],
+        "model_id": manifest["model_id"],
+        "base_url": str(manifest["base_url"]).rstrip("/"),
+        "max_output_tokens": manifest["max_output_tokens"],
+        "thinking": manifest["thinking"],
+        "tool_history_mode": manifest["tool_history_mode"],
+        "temperature": float(manifest["temperature"]),
+    }
+    mismatches = [
+        field_name
+        for field_name in expected
+        if actual[field_name] != expected[field_name]
+    ]
+    if mismatches:
+        raise PipelineError(
+            "runtime model differs from the prospective manifest: "
+            + ", ".join(mismatches)
+        )
+    return {
+        "matched": True,
+        "runtime": actual,
+        "manifest": _copy(dict(manifest)),
     }
 
 
@@ -1543,6 +1759,15 @@ def run_experiment(
         config = ExperimentConfig.from_path(config_path or root / DEFAULT_CONFIG_PATH)
     elif not isinstance(config, ExperimentConfig):
         config = ExperimentConfig.from_mapping(config)
+    if config.experience_declared:
+        if config.experience_input:
+            if experience is not None:
+                raise PipelineError(
+                    "experience is declared in the manifest and cannot be overridden"
+                )
+            experience = tuple(config.experience_input)
+        elif experience is not None and bool(experience):
+            raise PipelineError("the initial shakedown manifest requires empty Experience")
     selected_hooks = hooks or PipelineHooks()
     selected_run_id = run_id or _new_run_id(config.experiment_id)
     destination = Path(output_dir).resolve() if output_dir is not None else root / "runs" / selected_run_id
@@ -1574,6 +1799,9 @@ def run_experiment(
         except Exception as exc:
             raise PipelineError(f"real model client configuration failed: {exc}") from exc
     identity = _client_identity(client, model_identity)
+    model_preflight = _validate_model_preflight(client, config.model_manifest)
+    if model_preflight is not None:
+        _write(destination / "model_preflight.json", model_preflight)
     stage_log: list[dict[str, Any]] = []
     designs: dict[str, Mapping[str, Any]] = {}
     capability_suites: dict[str, Mapping[str, Any]] = {}
@@ -1652,7 +1880,10 @@ def run_experiment(
                 design=_copy(dict(design)),
             )
             capability_suite = _copy(dict(capability_suite))
-            selection_seed = f"{selected_run_id}:{robot}"
+            selection_seed = config.task_demo_seed_template.format(
+                run_id=selected_run_id,
+                robot_configuration_id=robot,
+            )
             task_demo_suite = sample_task_demo_suite(
                 package=package,
                 design=design,
@@ -1788,7 +2019,7 @@ def run_experiment(
             expected_conditions=config.generation_conditions,
             cells=(),
         )
-        _write(destination / "experience_review_queue.json", review_queue)
+        _write(destination / config.experience_review_queue_output, review_queue)
         result = {
             "experiment_id": config.experiment_id,
             "code_version": __version__,
@@ -1871,7 +2102,7 @@ def run_experiment(
         expected_conditions=config.generation_conditions,
         cells=cell_reports,
     )
-    _write(destination / "experience_review_queue.json", review_queue)
+    _write(destination / config.experience_review_queue_output, review_queue)
     all_cells_passed = bool(
         paired["summary"]["all_cells_final_capability_validation_passed"]
     )

@@ -19,6 +19,7 @@ from autoadapter2.pipeline import (
     ExperimentConfig,
     PipelineError,
     PipelineHooks,
+    _validate_model_preflight,
     _stage_evidence,
     _public_experience,
     render_reference_driver,
@@ -56,6 +57,100 @@ def test_config_accepts_a_single_robot_single_condition_canary() -> None:
 
     assert config.robots == ("r-arm",)
     assert config.generation_conditions == ("skeleton-assisted",)
+
+
+def test_mainline_manifest_pins_model_empty_experience_and_seed_policy() -> None:
+    root = Path(__file__).resolve().parents[1]
+    config = ExperimentConfig.from_path(root / "configs" / "experiments" / "mainline.json")
+
+    assert config.model_manifest == {
+        "vendor": "mistral",
+        "api_protocol": "openai-compatible",
+        "model_id": "ministral-8b-2512",
+        "revision": "25.12",
+        "base_url": "https://api.mistral.ai/v1",
+        "context_window_tokens": 262144,
+        "max_output_tokens": 16384,
+        "temperature": 0.0,
+        "thinking": "disabled",
+        "tool_history_mode": "native",
+        "price_snapshot": {
+            "date": "2026-08-20",
+            "currency": "EUR",
+            "input_per_million_tokens": 0.13,
+            "output_per_million_tokens": 0.13,
+        },
+    }
+    assert config.experience_declared
+    assert config.experience_input == ()
+    assert config.evolution_declared
+    assert config.task_demo_seed_template == "{run_id}:{robot_configuration_id}"
+    assert len(config.robots) == 12
+    assert len(config.robots) * len(config.generation_conditions) == 24
+
+
+def test_model_preflight_rejects_a_runtime_model_substitution() -> None:
+    manifest = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "model-preflight",
+            "robots": ["r-arm"],
+            "generation_conditions": ["skeleton-assisted"],
+            "model": {
+                "vendor": "mistral",
+                "api_protocol": "openai-compatible",
+                "model_id": "ministral-8b-2512",
+                "revision": "25.12",
+                "base_url": "https://api.mistral.ai/v1",
+                "context_window_tokens": 262144,
+                "max_output_tokens": 16384,
+                "temperature": 0.0,
+                "thinking": "disabled",
+                "tool_history_mode": "native",
+                "price_snapshot": {
+                    "date": "2026-08-20",
+                    "currency": "EUR",
+                    "input_per_million_tokens": 0.13,
+                    "output_per_million_tokens": 0.13,
+                },
+            },
+        }
+    ).model_manifest
+    assert manifest is not None
+    matching = SimpleNamespace(
+        config=SimpleNamespace(
+            provider="mistral",
+            api_protocol="openai-compatible",
+            model="ministral-8b-2512",
+            base_url="https://api.mistral.ai/v1/",
+            max_tokens=16384,
+            thinking="disabled",
+            tool_history_mode="native",
+        )
+    )
+    assert _validate_model_preflight(matching, manifest)["matched"] is True
+
+    matching.config.model = "deepseek-v4-pro"
+    with pytest.raises(PipelineError, match="model_id"):
+        _validate_model_preflight(matching, manifest)
+
+
+def test_declared_empty_experience_rejects_same_round_input(tmp_path: Path) -> None:
+    config = {
+        "experiment_id": "empty-experience",
+        "robots": ["r-arm"],
+        "generation_conditions": ["skeleton-assisted"],
+        "experience": {
+            "input": [],
+            "review_queue_output": "experience_review_queue.json",
+            "snapshot_output": "experience_snapshot.json",
+        },
+    }
+    with pytest.raises(PipelineError, match="requires empty Experience"):
+        run_experiment(
+            tmp_path,
+            config=config,
+            experience={"r-arm": [{"lesson": "same-round leak"}]},
+        )
 
 
 @pytest.mark.parametrize(
