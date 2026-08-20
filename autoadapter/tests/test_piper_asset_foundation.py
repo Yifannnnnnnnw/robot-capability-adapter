@@ -50,6 +50,10 @@ TOP_LEVEL_FILES = {
     "pushbench.xml",
     "reach_scene.xml",
     "push_to_goal_scene.xml",
+    "drawer_scene.xml",
+    "button_front_scene.xml",
+    "button_topdown_scene.xml",
+    "handle_vertical_scene.xml",
 }
 
 
@@ -113,7 +117,7 @@ def test_canonical_closure_has_exact_shape_and_no_symlinks() -> None:
         for path in entries
         if path.is_file()
     )
-    assert len(files) == 95
+    assert len(files) == 99
     assert {path.name for path in files if len(path.parts) == 1} == TOP_LEVEL_FILES
 
     mesh_files = [path for path in files if path.parts[0] == "assets"]

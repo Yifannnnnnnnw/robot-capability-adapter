@@ -29,6 +29,35 @@ SCENES = {
         "cameras": ("evidence",),
         "sites": (),
     },
+    "drawer_scene.xml": {
+        "dimensions": (9, 9, 7),
+        "bodies": ("drawer", "drawer_handle", "evidence_target"),
+        "geoms": ("work_surface", "drawer_housing", "drawer_front", "drawer_handle_geom"),
+        "cameras": ("evidence",),
+        "sites": ("drawer_handle_site",),
+    },
+    "button_front_scene.xml": {
+        "dimensions": (9, 9, 7),
+        "bodies": ("front_button", "evidence_target"),
+        "geoms": ("work_surface", "button_housing", "front_button_geom"),
+        "cameras": ("evidence",),
+        "sites": ("front_button_site",),
+    },
+    "button_topdown_scene.xml": {
+        "dimensions": (9, 9, 7),
+        "bodies": ("top_button", "evidence_target"),
+        "geoms": ("work_surface", "top_button_housing", "top_button_geom"),
+        "cameras": ("evidence",),
+        "sites": ("top_button_site",),
+    },
+    "handle_vertical_scene.xml": {
+        "dimensions": (9, 9, 7),
+        "model": "piper_vertical_handle",
+        "bodies": ("vertical_handle", "evidence_target"),
+        "geoms": ("work_surface", "handle_housing", "vertical_handle_geom"),
+        "cameras": ("evidence",),
+        "sites": ("vertical_handle_site",),
+    },
 }
 
 
@@ -45,7 +74,7 @@ def _prescribed_transform(source_path: Path) -> str:
 
 
 def test_piper_scenes_are_exact_structural_transforms_of_xarm_sources() -> None:
-    for filename in SCENES:
+    for filename, expected in SCENES.items():
         source_path = XARM_ASSETS_ROOT / filename
         scene_path = PIPER_ASSETS_ROOT / filename
         source_text = source_path.read_text(encoding="utf-8")
@@ -53,7 +82,8 @@ def test_piper_scenes_are_exact_structural_transforms_of_xarm_sources() -> None:
 
         assert scene_text == _prescribed_transform(source_path)
         root = ET.fromstring(scene_text)
-        assert root.get("model") == f"piper_{filename.removesuffix('_scene.xml')}"
+        expected_model = expected.get("model", f"piper_{filename.removesuffix('_scene.xml')}")
+        assert root.get("model") == expected_model
         includes = root.findall("include")
         assert len(includes) == 1
         assert includes[0].get("file") == "piper.xml"
