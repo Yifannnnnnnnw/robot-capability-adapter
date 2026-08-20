@@ -35,8 +35,9 @@ def _finite(value: float, field_name: str) -> float:
 class ArmSpec:
     """Robot-specific names and numerical limits needed by the arm skeleton.
 
-    Names and limits are public morphology/configuration facts.  The spec does
-    not contain task effects or generated capability contracts.
+    Names, finite limits, and continuous-hinge identities are public
+    morphology/configuration facts.  The spec does not contain task effects or
+    generated capability contracts.
     """
 
     ee_site_name: str | None = None
@@ -45,6 +46,7 @@ class ArmSpec:
     arm_joint_names: Sequence[str] = field(default_factory=tuple)
     arm_actuator_names: Sequence[str] = field(default_factory=tuple)
     joint_limits: Mapping[str, Sequence[float]] = field(default_factory=dict)
+    continuous_joint_names: Sequence[str] = field(default_factory=tuple)
     home_qpos: Sequence[float] | None = None
     ik_damping: float = 1e-3
     ik_max_iter: int = 30
@@ -79,8 +81,23 @@ class ArmSpec:
         if len(set(joints)) != len(joints) or len(set(actuators)) != len(actuators):
             raise ValueError("arm joint and actuator names must be unique")
 
+        continuous = tuple(self.continuous_joint_names)
+        if any(not isinstance(name, str) or not name.strip() for name in continuous):
+            raise ValueError("continuous_joint_names must contain non-empty strings")
+        if len(set(continuous)) != len(continuous):
+            raise ValueError("continuous_joint_names must be unique")
+        unknown_continuous = set(continuous) - set(joints)
+        if unknown_continuous:
+            raise ValueError("continuous_joint_names must be a subset of arm_joint_names")
+
         normalized_limits: dict[str, tuple[float, float]] = {}
         for name in joints:
+            if name in continuous:
+                if name in self.joint_limits:
+                    raise ValueError(
+                        f"continuous joint {name!r} must not declare a finite joint limit"
+                    )
+                continue
             if name not in self.joint_limits:
                 raise ValueError(f"joint_limits missing entry for {name!r}")
             pair = tuple(self.joint_limits[name])
@@ -126,6 +143,7 @@ class ArmSpec:
         object.__setattr__(self, "arm_joint_names", joints)
         object.__setattr__(self, "arm_actuator_names", actuators)
         object.__setattr__(self, "joint_limits", normalized_limits)
+        object.__setattr__(self, "continuous_joint_names", continuous)
         object.__setattr__(self, "home_qpos", home)
         object.__setattr__(self, "ik_damping", damping)
         object.__setattr__(self, "ik_max_iter", int(self.ik_max_iter))
@@ -168,6 +186,7 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
         self._arm_qvel_adr: list[int] = []
         self._arm_actuator_ids: list[int] = []
         self._gripper_actuator_ids: list[int] = []
+        self._continuous_joint_indices: tuple[int, ...] = ()
         self._q_lo: Any = None
         self._q_hi: Any = None
         self._home_q: Any = None
@@ -223,7 +242,9 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
 
         self._arm_qpos_adr = []
         self._arm_qvel_adr = []
-        for name in self.spec.arm_joint_names:
+        continuous_names = set(self.spec.continuous_joint_names)
+        continuous_indices: list[int] = []
+        for index, name in enumerate(self.spec.arm_joint_names):
             joint_id = int(mj.mj_name2id(model, mj.mjtObj.mjOBJ_JOINT, name))
             if joint_id < 0:
                 raise ValueError(f"arm joint {name!r} is absent from the model")
@@ -234,8 +255,15 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             )
             if joint_type not in allowed:
                 raise ValueError(f"arm joint {name!r} must be hinge or slide")
+            if name in continuous_names:
+                if joint_type != int(mj.mjtJoint.mjJNT_HINGE):
+                    raise ValueError(f"continuous joint {name!r} must be a hinge")
+                if bool(model.jnt_limited[joint_id]):
+                    raise ValueError(f"continuous joint {name!r} is limited in the model")
+                continuous_indices.append(index)
             self._arm_qpos_adr.append(int(model.jnt_qposadr[joint_id]))
             self._arm_qvel_adr.append(int(model.jnt_dofadr[joint_id]))
+        self._continuous_joint_indices = tuple(continuous_indices)
 
         self._arm_actuator_ids = []
         for name in self.spec.arm_actuator_names:
@@ -252,11 +280,17 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             self._gripper_actuator_ids.append(actuator_id)
 
         self._q_lo = np.asarray(
-            [self.spec.joint_limits[name][0] for name in self.spec.arm_joint_names],
+            [
+                -math.inf if name in continuous_names else self.spec.joint_limits[name][0]
+                for name in self.spec.arm_joint_names
+            ],
             dtype=float,
         )
         self._q_hi = np.asarray(
-            [self.spec.joint_limits[name][1] for name in self.spec.arm_joint_names],
+            [
+                math.inf if name in continuous_names else self.spec.joint_limits[name][1]
+                for name in self.spec.arm_joint_names
+            ],
             dtype=float,
         )
         if self.spec.home_qpos is None:
@@ -288,6 +322,16 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             raise ValueError("target_xyz must have shape (3,)")
         if not np.all(np.isfinite(result)):
             raise ValueError("target_xyz must contain finite values")
+        return result
+
+    def _nearest_continuous_equivalent(self, q: Any, reference: Any) -> Any:
+        """Choose the nearest 2-pi-equivalent target for continuous hinges."""
+
+        np = self._load_numpy()
+        result = np.array(q, dtype=float, copy=True)
+        for index in self._continuous_joint_indices:
+            delta = float(result[index] - reference[index])
+            result[index] = float(reference[index]) + (delta + math.pi) % math.tau - math.pi
         return result
 
     def _ee_position(self) -> Any:
@@ -419,11 +463,12 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
         if duration_value < 0:
             raise ValueError("duration must be non-negative")
         np = self._load_numpy()
-        target = np.clip(target, self._q_lo, self._q_hi)
         start = np.asarray(
             [self.data.ctrl[actuator_id] for actuator_id in self._arm_actuator_ids],
             dtype=float,
         )
+        target = self._nearest_continuous_equivalent(target, start)
+        target = np.clip(target, self._q_lo, self._q_hi)
         steps = max(1, int(math.ceil(duration_value / self._timestep)))
         for index in range(steps):
             fraction = (index + 1) / steps
@@ -460,9 +505,11 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
         pinned_roll: float | None = None
         controlled_count = self._dof
         if wrist_roll is not None:
-            pinned_roll = float(
-                np.clip(_finite(wrist_roll, "wrist_roll"), self._q_lo[-1], self._q_hi[-1])
-            )
+            current = self.get_joint_positions()
+            requested = current.copy()
+            requested[-1] = _finite(wrist_roll, "wrist_roll")
+            requested = self._nearest_continuous_equivalent(requested, current)
+            pinned_roll = float(np.clip(requested[-1], self._q_lo[-1], self._q_hi[-1]))
             controlled_count -= 1
             if controlled_count < 1:
                 raise ValueError("wrist_roll pinning requires at least two arm joints")

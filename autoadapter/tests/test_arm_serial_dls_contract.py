@@ -64,6 +64,62 @@ class ArmSerialDLSContractTests(unittest.TestCase):
         self.assertEqual(spec.arm_joint_names, ("joint_1",))
         self.assertEqual(spec.arm_actuator_names, ("actuator_1",))
         self.assertEqual(spec.joint_limits, {"joint_1": (-1.0, 1.0)})
+        self.assertEqual(spec.continuous_joint_names, ())
+
+        continuous = ArmSpec(
+            ee_body_name="tool_body",
+            arm_joint_names=["spin"],
+            arm_actuator_names=["spin"],
+            joint_limits={},
+            continuous_joint_names=["spin"],
+        )
+        self.assertEqual(continuous.joint_limits, {})
+        self.assertEqual(continuous.continuous_joint_names, ("spin",))
+
+        with self.assertRaises(ValueError):
+            ArmSpec(
+                ee_body_name="tool_body",
+                arm_joint_names=["spin"],
+                arm_actuator_names=["spin"],
+                joint_limits={"spin": (-1.0, 1.0)},
+                continuous_joint_names=["spin"],
+            )
+
+    def test_continuous_hinge_moves_to_the_nearest_equivalent_target(self) -> None:
+        model = mujoco.MjModel.from_xml_string(
+            """
+            <mujoco>
+              <worldbody>
+                <body>
+                  <joint name="spin" type="hinge"/>
+                  <geom name="tool_geom" type="capsule" size="0.01 0.1" pos="0 0.1 0"/>
+                </body>
+              </worldbody>
+              <actuator>
+                <position name="spin" joint="spin"/>
+              </actuator>
+              <keyframe>
+                <key name="half_turn" qpos="3.141592653589793" ctrl="3.141592653589793"/>
+              </keyframe>
+            </mujoco>
+            """
+        )
+        data = mujoco.MjData(model)
+        mujoco.mj_resetDataKeyframe(model, data, 0)
+        skeleton = ArmSerialDLSSkeleton.from_session(
+            model=model,
+            data=data,
+            spec=ArmSpec(
+                ee_geom_name="tool_geom",
+                arm_joint_names=("spin",),
+                arm_actuator_names=("spin",),
+                joint_limits={},
+                continuous_joint_names=("spin",),
+            ),
+        )
+
+        skeleton.move_joints((-np.pi + 0.1,), duration=0.0)
+        np.testing.assert_allclose(data.ctrl, (np.pi + 0.1,), atol=1e-12)
 
     def test_geom_endpoint_drives_fk_and_ik_from_the_geom_center(self) -> None:
         model = mujoco.MjModel.from_xml_string(

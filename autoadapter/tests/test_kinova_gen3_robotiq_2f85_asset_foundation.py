@@ -45,6 +45,7 @@ ARM_JOINT_LIMITS = {
     "joint_4": [-2.57, 2.57],
     "joint_6": [-2.09, 2.09],
 }
+UNLIMITED_JOINT_NAMES = ["joint_1", "joint_3", "joint_5", "joint_7"]
 ARM_ACTUATOR_CTRLRANGES = {
     "joint_2": [-2.2497294058206907, 2.2497294058206907],
     "joint_4": [-2.5795966344476193, 2.5795966344476193],
@@ -176,7 +177,23 @@ def test_kinova_gen3_robotiq_2f85_asset_foundation_is_local_exact_and_actuator_l
         "fingers_actuator": "tendon:split",
     }
     assert control["arm_joint_limits_rad"] == ARM_JOINT_LIMITS
+    assert control["unlimited_joint_names"] == UNLIMITED_JOINT_NAMES
     assert control["actuator_ctrlrange_rad"] == ARM_ACTUATOR_CTRLRANGES
+    assert control["unlimited_actuator_names"] == UNLIMITED_JOINT_NAMES
+    assert control["position_actuator_defaults"] == {
+        "large_actuator": {
+            "actuator_names": ["joint_1", "joint_2", "joint_3", "joint_4"],
+            "kp": 2000.0,
+            "kv": 100.0,
+            "forcerange": [-105.0, 105.0],
+        },
+        "small_actuator": {
+            "actuator_names": ["joint_5", "joint_6", "joint_7"],
+            "kp": 500.0,
+            "kv": 50.0,
+            "forcerange": [-52.0, 52.0],
+        },
+    }
     assert control["gripper_ctrl_range_native"] == [0.0, 255.0]
     assert control["gripper_joint_range_rad"] == [0.0, 0.8]
     assert control["gripper_joint_ranges_rad"] == GRIPPER_JOINT_RANGES
@@ -384,11 +401,13 @@ def test_kinova_gen3_robotiq_2f85_asset_foundation_is_local_exact_and_actuator_l
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/morphology.json",
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/sources.json",
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/catalog.json",
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/skeleton/arm_serial_dls.py",
     }.issubset(observed_paths)
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "contact-capable end-effector configuration" not in missing
     assert "20 distinct applicable source-backed tasks" not in missing
     assert "Create tasks/sources.json" not in missing
     assert "tasks/private/instances.json" in missing
-    assert "arm_serial_dls skeleton" in missing
+    assert "arm_serial_dls skeleton" not in missing
+    assert "reference driver" in missing
     assert "dynamic canary" in missing

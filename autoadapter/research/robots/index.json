@@ -120,6 +120,11 @@
           "observation": "The canonical public snapshot contains 20 distinct reviewed task contracts with unchanged source scoring obligations and exact Kinova Gen3 plus Robotiq 2F-85 applicability and invocation facts; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/skeleton/arm_serial_dls.py",
+          "kind": "canonical_skeleton_inventory",
+          "observation": "The capability-neutral arm_serial_dls inventory binds the exact composite configuration through the shared trusted skeleton. Its explicit continuous-joint contract leaves the four unlimited Gen3 hinges unclipped and selects nearest 2-pi-equivalent interpolation targets; the smoke check uses the canonical MuJoCo session and real actuator stepping without task or reference logic."
+        },
+        {
           "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/assets/scene.xml",
           "kind": "canonical_arm_component_foundation",
           "observation": "The separately retained arm-only Kinova Gen3 package is useful component and provenance material, but it is not the contact-capable robot configuration indexed here."
@@ -158,7 +163,7 @@
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Materialize the canonical task scenes and verify local asset closure, required symbols, reset liveness, and applicable contact geometry for the exact composite configuration.",
-        "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
+        "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
