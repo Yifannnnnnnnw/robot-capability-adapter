@@ -59,6 +59,36 @@ path. It is not a model-generated condition, does not establish Task Demo or
 driver-synthesis success, and does not admit Franka to the runnable index. A
 real-model dynamic canary and final admission review remain required.
 
+## xArm7 Package-Wide Reference Positive Control
+
+Run `xarm7-reference-positive-control-20260820T031649Z`, on mainline commit
+`e93d302`, passed all 20 fixed xArm7 Task Library cases with the reviewed
+Framework-owned reference driver and real MuJoCo 3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control observed before physics stepping and changed from reset in
+  every trial;
+- all guards passed, with no direct `qpos` or `qvel` write detected;
+- maximum trial length: 6,935 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete H.264, independently decoded at `800x600`, with 25
+  to 140 frames per case; and
+- pick-place and sweep terminal frames were visually checked for nonblank,
+  task-readable framing and visible terminal object placement.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/xarm7-reference-positive-control-20260820T031649Z/`.
+Its `reference_report.json`, 20-case suite, and per-case videos remain together.
+The preceding sandboxed diagnostic run ending `031554Z` passed all physical
+criteria but failed requested video creation because macOS CoreGraphics was
+unavailable in the sandbox; it is not positive-control evidence.
+
+This result establishes package-wide reference feasibility for the canonical
+xArm7 assets, controller baseline, trusted measurements, Harness, and video
+path. It is not a model-generated condition, does not establish Task Demo or
+driver-synthesis success, and does not admit xArm7 to the runnable index. A
+real-model dynamic canary and final admission review remain required.
+
 ## Latest Historical Diagnostic Run
 
 This run predates Authority `0.19.2`: its five sampled cases were used directly

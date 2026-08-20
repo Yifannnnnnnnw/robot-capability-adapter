@@ -371,6 +371,14 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
         "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/skeleton/arm_serial_dls.py"
         in observed_paths
     )
+    evidence_observation = next(
+        item
+        for item in candidate["locally_observed_source_material"]
+        if item["kind"] == "tracked_reference_positive_control_record"
+    )
+    assert evidence_observation["path"] == "autoadapter/evidence/README.md"
+    assert "20/20" in evidence_observation["observation"]
+    assert "videos" in evidence_observation["observation"]
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
@@ -379,9 +387,11 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert "tasks/private/instances.json" not in missing
     assert "local task scenes" not in missing
     assert "skeleton" not in missing
-    assert "reference driver" in missing
-    assert "positive control" in missing
+    assert "reference driver" not in missing
+    assert "package check" not in missing
+    assert "positive control" not in missing
     assert "dynamic canary" in missing
+    assert "runnable index" in missing
 
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
