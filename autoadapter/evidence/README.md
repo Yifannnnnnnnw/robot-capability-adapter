@@ -2,10 +2,13 @@
 
 ## Current Qualification
 
-The real-model, Direct-MuJoCo mainline orchestration is operational, but the
-current robot Task Libraries and private scenes have not passed the Authority's
-required human source-and-applicability review. The latest run is therefore
-retained as a diagnostic engineering baseline, not as formal benchmark evidence.
+The real-model Direct-MuJoCo orchestration is operational. Authority `0.19.24`
+qualifies robot construction through complete canonical packages, source-backed
+Task Libraries, real fixture collision layers, resets and applicable passive
+settling within the 5 mm penetration limit, and a shared Harness that reports
+task-metric success separately from physical integrity. No retained run yet
+contains the complete 22-cell all-robot Ministral 8B shakedown, so this file does
+not claim that the model-generated mainline has completed or succeeded.
 
 The implementation includes:
 
@@ -20,13 +23,24 @@ The implementation includes:
   capability on the submitted revision;
 - explicit submission before a candidate consumes a Harness attempt;
 - Framework-owned canonical MuJoCo sessions, actuator/physics-step guards, and
-  direct-state-write rejection; and
+  direct-state-write rejection;
+- per-step contact-penetration evidence that rejects physical integrity below
+  `-0.005 m`, independently of the task metric; and
 - complete IVC-authored Capability Validation followed, only after admission,
   by a separately reported random five-task Task Demo; and
 - independent per-case video and separate pipeline, Capability Validation,
   Task Demo, and video verdicts.
 
-## Franka Package-Wide Reference Positive Control
+All historical package-wide reference diagnostic sections below are retained
+records from the earlier calibration phase. They predate the per-step
+penetration verdict introduced by commit `d705641`. Their reported `20/20`
+values describe the task metrics, then-current guards, actuator evidence, and
+videos recorded at that time; they do not independently establish current
+physical success or runnable admission under Authority `0.19.24`. Hidden
+reference drivers remain useful diagnostic oracles, but their planner success
+is not a mainline gate.
+
+## Historical Franka Package-Wide Reference Diagnostic
 
 Run `franka-reference-positive-control-20260820T034710Z`, on mainline commit
 `0d047c7`, passed all 20 fixed Franka Task Library cases with the reviewed
@@ -59,13 +73,12 @@ reported 20/20 is superseded even though the driver also moved the handle. The
 latter additionally failed video completeness because the requested `800x600`
 renderer exceeded the prior `640x480` offscreen framebuffer.
 
-This result establishes package-wide reference feasibility for the canonical
-Franka assets, controller baseline, trusted measurements, Harness, and video
-path. It is not a model-generated condition, does not establish Task Demo or
-driver-synthesis success, and does not admit Franka to the runnable index. A
-real-model dynamic canary and final admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical Franka assets, controller baseline, measurements, Harness, and video
+path. Under Authority `0.19.24` it is neither current physical-success nor
+admission evidence and does not establish Task Demo or driver-synthesis success.
 
-## xArm7 Package-Wide Reference Positive Control
+## Historical xArm7 Package-Wide Reference Diagnostic
 
 Run `xarm7-reference-positive-control-20260820T034432Z`, on mainline commit
 `0d047c7`, passed all 20 fixed xArm7 Task Library cases with the reviewed
@@ -93,13 +106,12 @@ satisfied the public criterion, so its reported 20/20 is superseded. The
 sandboxed `031554Z` run also predates the fix and failed requested video
 creation because macOS CoreGraphics was unavailable.
 
-This result establishes package-wide reference feasibility for the canonical
-xArm7 assets, controller baseline, trusted measurements, Harness, and video
-path. It is not a model-generated condition, does not establish Task Demo or
-driver-synthesis success, and does not admit xArm7 to the runnable index. A
-real-model dynamic canary and final admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical xArm7 assets, controller baseline, measurements, Harness, and video
+path. Under Authority `0.19.24` it is neither current physical-success nor
+admission evidence and does not establish Task Demo or driver-synthesis success.
 
-## Piper Package-Wide Reference Positive Control
+## Historical Piper Package-Wide Reference Diagnostic
 
 Run `piper-reference-positive-control-20260820T044929Z`, on mainline commit
 `7c9658b`, passed all 20 fixed Piper Task Library cases with the reviewed
@@ -127,13 +139,12 @@ The sandboxed run ending `044817Z` was a diagnostic and has been removed from
 local raw evidence. All 20 physical criteria passed, but macOS CoreGraphics was
 unavailable and every requested video had zero frames.
 
-This result establishes package-wide reference feasibility for the canonical
-Piper assets, controller baseline, trusted measurements, Harness, and video
-path. It is not a model-generated condition, does not establish Task Demo or
-driver-synthesis success, and does not admit Piper to the runnable index. A
-real-model dynamic canary and final admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical Piper assets, controller baseline, measurements, Harness, and video
+path. Under Authority `0.19.24` it is neither current physical-success nor
+admission evidence and does not establish Task Demo or driver-synthesis success.
 
-## KUKA iiwa 14 Package-Wide Reference Positive Control
+## Historical KUKA iiwa 14 Package-Wide Reference Diagnostic
 
 Run `kuka-reference-positive-control-20260820T070515Z`, on mainline commit
 `3459d17`, passed all 20 fixed KUKA iiwa 14 Task Library cases with the reviewed
@@ -160,14 +171,13 @@ removed from local raw evidence. All metrics, physical execution, and guards
 passed, but macOS CoreGraphics was unavailable and every requested video had
 zero frames.
 
-This result establishes package-wide reference feasibility for the canonical
-KUKA assets, compact actuator trajectory baseline, trusted measurements,
-exact-contact guards, Harness, and video path. It is not a model-generated
-condition, does not establish Task Demo or driver-synthesis success, and does
-not admit KUKA to the runnable index. A real-model dynamic canary and final
-admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical KUKA assets, actuator trajectory baseline, measurements, guards,
+Harness, and video path. Under Authority `0.19.24` it is neither current
+physical-success nor admission evidence and does not establish Task Demo or
+driver-synthesis success.
 
-## ALOHA 2 Package-Wide Reference Positive Control
+## Historical ALOHA 2 Package-Wide Reference Diagnostic
 
 Run `aloha-reference-positive-control-20260820T100317Z`, on mainline commit
 `2e156e7`, passed all 20 fixed ALOHA selected-arm Task Library cases with the
@@ -194,14 +204,13 @@ Its `reference_report.json`, complete 20-case suite, and per-case videos remain
 together. The sandboxed run ending `100244Z` is diagnostic only: macOS
 CoreGraphics was unavailable and every requested video had zero frames.
 
-This result establishes package-wide reference feasibility for the canonical
-ALOHA assets, selected-arm actuator trajectory baseline, trusted measurements,
-other-arm neutrality guard, exact-contact guards, Harness, and video path. It
-is not a model-generated condition, does not establish Task Demo or
-driver-synthesis success, and does not admit ALOHA to the runnable index. A
-real-model dynamic canary and final admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical ALOHA assets, selected-arm actuator trajectory baseline, measurements,
+guards, Harness, and video path. Under Authority `0.19.24` it is neither current
+physical-success nor admission evidence and does not establish Task Demo or
+driver-synthesis success.
 
-## Kinova Gen3 + Robotiq 2F-85 Package-Wide Reference Positive Control
+## Historical Kinova Gen3 + Robotiq 2F-85 Package-Wide Reference Diagnostic
 
 Run `kinova-reference-positive-control-20260820T110159Z`, on mainline commit
 `a493170`, passed all 20 fixed Kinova Gen3 plus Robotiq 2F-85 Task Library
@@ -228,15 +237,13 @@ The ignored raw run is retained locally at
 Its `reference_report.json`, complete 20-case suite, and per-case videos remain
 together.
 
-This result establishes package-wide reference feasibility for the canonical
-Kinova Gen3 plus Robotiq 2F-85 assets, skeleton-assisted actuator trajectory
-baseline, trusted measurements, guards, Harness, package loader, and video
-path. It is calibration evidence only: it is not model-generated or dynamic
-evidence, does not establish Task Demo or driver-synthesis success, and does
-not admit this configuration to the runnable index. A real-model dynamic
-canary and final admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical Kinova Gen3 plus Robotiq 2F-85 assets, trajectory baseline,
+measurements, guards, Harness, package loader, and video path. Under Authority
+`0.19.24` it is neither current physical-success nor admission evidence and does
+not establish Task Demo or driver-synthesis success.
 
-## UR5e + Robotiq 2F-85 Package-Wide Reference Positive Control
+## Historical UR5e + Robotiq 2F-85 Package-Wide Reference Diagnostic
 
 Run `ur5e-robotiq-reference-positive-control-20260820T150621Z`, on mainline
 commit `4b08753`, passed all 20 fixed UR5e plus Robotiq 2F-85 Task Library cases
@@ -265,15 +272,13 @@ The ignored raw run is retained locally at
 Its `reference_report.json`, complete 20-case suite, capability design, and
 per-case videos remain together.
 
-This result establishes package-wide reference feasibility for the canonical
-UR5e plus Robotiq 2F-85 assets, pose-DLS actuator trajectory baseline, trusted
-measurements, guards, Harness, package loader, and video path. It is calibration
-evidence only: it is not model-generated or dynamic evidence, does not
-establish Task Demo or driver-synthesis success, and does not admit this
-configuration to the runnable index. A real-model dynamic canary and final
-admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical UR5e plus Robotiq 2F-85 assets, pose-DLS trajectory baseline,
+measurements, guards, Harness, package loader, and video path. Under Authority
+`0.19.24` it is neither current physical-success nor admission evidence and does
+not establish Task Demo or driver-synthesis success.
 
-## Stretch 2 Package-Wide Reference Positive Control
+## Historical Stretch 2 Package-Wide Reference Diagnostic
 
 Run `stretch-reference-positive-control-20260820T215313Z`, on repository commit
 `85eddd2`, passed all 20 canonical Stretch 2 Task Library cases with the
@@ -300,14 +305,13 @@ The ignored raw run is retained locally at
 per-case videos remain together. The final run includes the evidence-framebuffer
 fix from `1c299ed` and the window-camera visibility fix from `f63f057`.
 
-This result establishes package-wide reference feasibility for the canonical
-Stretch 2 assets, mobile-manipulation feedback baseline, trusted measurements,
-guards, Harness, package loader, and video path. It is calibration evidence
-only: it is not model-generated or dynamic evidence, does not establish Task
-Demo or driver-synthesis success, and does not admit Stretch 2 to the runnable
-index. A real-model dynamic canary and final admission review remain required.
+This historical result records diagnostic reference feasibility for the then
+canonical Stretch 2 assets, feedback baseline, measurements, guards, Harness,
+package loader, and video path. Under Authority `0.19.24` it is neither current
+physical-success nor admission evidence and does not establish Task Demo or
+driver-synthesis success.
 
-## SO-101 Package-Wide Reference Positive Control
+## Historical SO-101 Package-Wide Reference Diagnostic
 
 Run `so101-reference-positive-control-20260820T152422Z`, on repository commit
 `33946d9`, passed all 20 cases in the current
@@ -334,11 +338,10 @@ The ignored raw run is retained locally at
 `reference_report.json`, complete 20-case suite, capability design, and
 per-case videos remain together.
 
-This run supersedes the old five-case SO-101 reference gate and its low-resolution
-historical replay for package calibration. It establishes current-package
-reference feasibility only: it is not model-generated or dynamic evidence,
-does not establish Task Demo or driver-synthesis success, and does not replace
-the required current-model canary and final all-cohort admission review.
+This historical run superseded the older five-case SO-101 diagnostic and its
+low-resolution replay at the time. Under Authority `0.19.24` it records
+reference feasibility only: it is neither current physical-success nor
+admission evidence and does not establish Task Demo or driver-synthesis success.
 
 ## Barkour Flat-Controller Calibration Gate
 
@@ -417,7 +420,11 @@ SO-101 from-scratch attempt 2 and both later Go2 cells were recorded directly at
 distant. Camera framing must be corrected as part of the scene rebuild; raising
 resolution alone is not sufficient evidence quality.
 
-## Source And Scene Audit
+## Historical Source And Scene Audit
+
+The following findings describe the retained 2026-08-18 SO-101/Go2 diagnostic
+and its then-current packages. They explain why that four-cell run is historical;
+they are not a current audit of the rebuilt eleven-robot package set.
 
 The robot morphology assets have traceable pinned upstreams:
 
@@ -449,23 +456,23 @@ adaptation that changes task meaning must fail closed. Accordingly, the current
 not be reported as MetaWorld, locomotion-paper, industrial-standard, or formal
 AutoAdapter 2.0 benchmark success.
 
-## Required Before Formal Evidence
+## Required Before Initial Shakedown Evidence
 
-1. Verify every task clause against a pinned primary source and correct its exact
-   section, table, protocol, or source-line anchor.
-2. Port or faithfully adapt task-distinct fixtures and initialization semantics;
-   document every robot-specific transform without weakening the source task.
-3. Bind source-equivalent metrics, temporal rules, and aggregation, including
-   geometry-specific measurements such as peg-head alignment.
-4. Add close evidence cameras and verify readable per-case videos.
-5. Complete the required human task-admission review for every robot in the
-   Authority-declared eleven-configuration cohort.
-6. Recalibrate every package reference, then run the 22-cell initial
-   all-robot shakedown with the manifest-pinned minimal model, per-cell
-   Evolution outcomes, and post-round Experience dispositions. The historical
+1. Resolve all eleven exact package IDs from the runnable index and pass the
+   self-contained package check.
+2. Pass the Authority `0.19.24` simulator-integrity checks for every package:
+   physical fixture collisions, valid private resets, applicable 100-step
+   passive settling, and the fixed 5 mm penetration bound.
+3. Pass the focused shared-Harness regressions that keep task-metric success and
+   physical integrity independent and reject metric-only false success.
+4. Run the complete 22-cell manifest-pinned Ministral 8B shakedown with empty
+   prior Experience. Hidden reference diagnostics may be run or skipped; they
+   do not gate generated cells.
+5. Retain one Evolution outcome for every terminal cell, then record one
+   reviewed Experience disposition per cell for later runs. The historical
    four-cell diagnostic above cannot satisfy or reduce that scope.
 
-## Local Verification
+## Historical Local Verification
 
 - Full suite after canonical migration: `198 passed, 32 subtests passed`.
 - Video-resolution focused checks: `3 passed`.

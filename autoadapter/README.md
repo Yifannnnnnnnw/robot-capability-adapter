@@ -13,8 +13,9 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
   research backups and are not part of the formal cohort.
 - Construction remains incremental, but a formal manifest may not omit a
   declared robot. Every package needs 20 or more sourced tasks, complete local
-  assets and private bindings/guards, a skeleton, package checks, and a
-  video-complete reference positive control before the first full-cohort round.
+  assets and private bindings/guards, a skeleton, package checks, real fixture
+  collision layers, valid resets, and the shared metric/physical-integrity
+  Harness verdict before the first full-cohort round.
 - Real-model TGCD reads each public Task Library and authors 5-10 capability
   groupings, effects, methods, and typed interfaces. Each capability selects
   one source-backed primary validation contract and may add one materially
@@ -24,8 +25,9 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
   `capability_validation_suite.json`. Independently, the Framework samples
   five original Task Library tasks and compiles all of their scoring clauses
   into `task_demo_suite.json`; generation cannot read either suite.
-- Every selected package-local reference must pass its complete capability
-  validation suite before that robot's dynamic Driver Synthesis starts.
+- A selected package-local reference is a hidden, optional diagnostic oracle.
+  Its source never enters model context, and its planner success does not gate
+  dynamic Driver Synthesis when the package and simulator-integrity checks pass.
 - The initial all-robot shakedown crosses all eleven robots with the preserved
   `skeleton-assisted` and `from-scratch` conditions: 22 cells per replicate,
   all using one manifest-pinned Ministral 8B configuration and empty prior
@@ -106,8 +108,8 @@ checks use an explicit canary through
 canaries are diagnostics, not a definition of mainline scope.
 
 The real-model command reads credentials only from environment variables. From
-the repository root, the current DeepSeek configuration can be loaded without
-putting a secret inside the mainline:
+the repository root, the manifest-selected provider configuration can be loaded
+without putting a secret inside the mainline:
 
 ```bash
 set -a
@@ -121,9 +123,9 @@ export MUJOCO_GL=cgl
 pyenv exec python -m autoadapter2 full --run-id <run-id>
 ```
 
-To exercise only the newly generated dynamic cells without rerunning reference
-calibration, add `--skip-reference-calibration`. This is explicitly diagnostic:
-the report records the skip and can never claim formal mainline success.
+To skip the optional hidden reference diagnostics and start with the generated
+dynamic cells, add `--skip-reference-calibration`. The report records the skip;
+formal success still depends on the generated cells and shared Harness verdicts.
 
 After an API interruption,
 `--reuse-sealed-inputs-from autoadapter/runs/<prior-run>` reuses that run's
@@ -133,11 +135,10 @@ still keeps all private suite files outside candidate workspaces.
 
 ## Evidence
 
-The current robot models have pinned upstream provenance, but a post-run audit
-found that several task fixtures and measurements are local proxies that do not
-yet satisfy the Authority's source-faithful Task Library admission rule. Current
-real-model results are diagnostic only and must not be described as official
-MetaWorld, locomotion-paper, or industrial benchmark results.
+The robot models have pinned upstream provenance, while the executable tasks and
+fixtures remain the declared local Direct-MuJoCo adaptations. Results must not
+be described as official MetaWorld, locomotion-paper, industrial-benchmark,
+hardware, or sim-to-real results.
 
 Each retained `runs/<run-id>/` package contains public capability designs,
 Harness-private suites, reference calibration reports, condition-local model
