@@ -86,6 +86,11 @@ FIXTURE_RESET_JOINT_POSITIONS = {
     "mw_faucet_close": {"faucet_hinge": 1.2},
 }
 CALIBRATED_PARAMETER_OVERRIDES = {
+    "mw_pick_place": {
+        "target_position": [-0.08, -0.62, 0.51],
+        "release_position": [-0.078, -0.611, 0.6020000000000001],
+        "tool_target_position": [-0.078, -0.611, 0.6020000000000001],
+    },
     "mw_drawer_open": {
         "contact_position": [0.005, -0.48, 0.55],
         "target_position": [-0.075, -0.48, 0.55],

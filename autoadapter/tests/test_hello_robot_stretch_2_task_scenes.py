@@ -265,6 +265,55 @@ def test_stretch_task_scenes_load_step_and_expose_fixture_contracts() -> None:
         assert -0.05 < float(data.xpos[base_id, 2]) < 0.05
 
 
+def test_stretch_static_fixtures_accept_robot_collision_layer() -> None:
+    for scene_name in SCENE_NAMES:
+        model = _load(scene_name)
+        for geom_id in range(model.ngeom):
+            if int(model.geom_bodyid[geom_id]) != 0:
+                continue
+            geom_name = mujoco.mj_id2name(
+                model, mujoco.mjtObj.mjOBJ_GEOM, geom_id
+            )
+            if geom_name is None:
+                continue
+            assert int(model.geom_conaffinity[geom_id]) & 1, (
+                f"{scene_name}: static fixture {geom_name!r} does not accept "
+                "the robot collision layer"
+            )
+
+
+def test_stretch_private_resets_have_no_deep_initial_penetration() -> None:
+    instances = json.loads(
+        (PACKAGE_ROOT / "tasks/private/instances.json").read_text(encoding="utf-8")
+    )["instances"]
+    for instance in instances:
+        model = _load(Path(instance["scene_entrypoint"]).name)
+        data = mujoco.MjData(model)
+        apply_framework_reset(
+            mujoco,
+            model,
+            data,
+            instance.get("reset"),
+        )
+        contacts = [
+            (
+                float(contact.dist),
+                mujoco.mj_id2name(
+                    model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom1)
+                ),
+                mujoco.mj_id2name(
+                    model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom2)
+                ),
+            )
+            for contact in data.contact[: data.ncon]
+        ]
+        deepest = min(contacts, default=(0.0, None, None))
+        assert deepest[0] >= -0.005, (
+            f"{instance['task_id']}: initial contact {deepest[1:]} penetrates "
+            f"{-deepest[0]:.6f} m"
+        )
+
+
 def test_stretch_fixture_world_transform_is_representative() -> None:
     checks = {
         "reach_scene.xml": (("reach_goal", (0.10, -0.55, 0.43)),),

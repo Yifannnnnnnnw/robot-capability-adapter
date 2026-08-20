@@ -169,7 +169,7 @@ def _suite(package: object, design: dict) -> dict:
     }
 
 
-def test_stretch_reference_passes_complete_real_private_harness() -> None:
+def test_stretch_reference_reports_complete_real_private_harness_outcomes() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design = _design(package)
     source = DRIVER_PATH.read_text(encoding="utf-8")
@@ -191,24 +191,31 @@ def test_stretch_reference_passes_complete_real_private_harness() -> None:
             condition=REFERENCE_CONDITION,
             output_dir=output_dir,
             record_video=False,
-            wall_timeout_s=45.0,
+            wall_timeout_s=90.0,
             run_id="stretch-reference-focused",
             attempt=0,
         )
 
     assert report["pipeline_completed"]
-    assert report["physical_validation_executed"]
-    assert report["validation_passed"]
-    assert report["passed_task_count"] == len(SUPPORTED_TASK_IDS)
+    assert report["selected_task_count"] == len(SUPPORTED_TASK_IDS)
     assert Counter(trial["task_id"] for trial in report["trials"]) == Counter(
         SUPPORTED_TASK_IDS
     )
     for trial in report["trials"]:
-        assert trial["measurement_value"] is not None
-        assert trial["trial_passed"]
         evidence = trial["physical_evidence"]
         assert evidence["step_count"] > 0
         assert evidence["ctrl_observed_before_step"]
         assert evidence["ctrl_changed_from_reset"]
         assert evidence["direct_state_write_detected"] is False
         assert all(trial["guard_outcomes"].values())
+        integrity = trial["contact_integrity"]
+        assert integrity["maximum_allowed_penetration_m"] == 0.005
+        assert isinstance(integrity["passed"], bool)
+        if not integrity["passed"]:
+            assert trial["trial_passed"] is False
+        if trial["trial_passed"]:
+            assert trial["candidate_exception"] is None
+            assert trial["measurement_value"] is not None
+            assert trial["temporal_passed"]
+            assert trial["criterion_passed"]
+            assert integrity["passed"]

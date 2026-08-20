@@ -204,7 +204,7 @@ class ReferenceStretch2Driver:
 
         target = _vector(parameters["target_position"], name="target_position")
         self._control.set_wrist_yaw(0.0)
-        self._control.set_gripper(-0.005)
+        self._control.set_gripper(0.0)
         # Center the angled finger boxes low enough to engage the workpiece.
         contact_height = float(self._body_position("workpiece")[2]) + 0.024
 
@@ -273,7 +273,7 @@ class ReferenceStretch2Driver:
             accepted_error_m=0.05,
             attempts=3,
         )
-        self._pressure_gripper(-0.005, steps=500)
+        self._pressure_gripper(0.0, steps=500)
 
     def _side_peg(self, parameters: Mapping[str, Any]) -> None:
         target = _vector(parameters["target_position"], name="target_position")
@@ -487,7 +487,7 @@ class ReferenceStretch2Driver:
             return float(np.linalg.norm(site - target))
 
         self._control.set_wrist_yaw(0.0)
-        self._control.set_gripper(-0.005)
+        self._control.set_gripper(0.0)
         contact = _vector(
             parameters["contact_position"], name="contact_position"
         )
@@ -537,7 +537,7 @@ class ReferenceStretch2Driver:
             return abs(float(self._site_position(site_name)[0] - target[0]))
 
         self._control.set_wrist_yaw(0.0)
-        self._control.set_gripper(-0.005)
+        self._control.set_gripper(0.0)
         current = _vector(
             parameters["contact_position"], name="contact_position"
         )
@@ -623,7 +623,7 @@ class ReferenceStretch2Driver:
             return self._fixture_error(site_name, parameters)
 
         self._control.set_wrist_yaw(0.0)
-        self._control.set_gripper(-0.005)
+        self._control.set_gripper(0.0)
         for angle in np.linspace(start_angle, 0.0, 13):
             cosine = float(np.cos(angle))
             sine = float(np.sin(angle))
@@ -702,7 +702,7 @@ class ReferenceStretch2Driver:
                 return self._fixture_error(site_name, parameters)
 
         self._control.set_wrist_yaw(0.0)
-        self._control.set_gripper(-0.005)
+        self._control.set_gripper(0.0)
         current = _vector(
             parameters["contact_position"], name="contact_position"
         )
