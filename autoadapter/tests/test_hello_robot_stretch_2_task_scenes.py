@@ -189,6 +189,12 @@ def test_stretch_active_task_scene_set_is_local_and_closed() -> None:
             "ambient": "0.35 0.35 0.35",
             "specular": "0 0 0",
         }
+        framebuffer = root.find("visual/global")
+        assert framebuffer is not None
+        assert framebuffer.attrib == {
+            "offwidth": "800",
+            "offheight": "600",
+        }
 
         floor = root.find("./worldbody/geom[@name='floor']")
         assert floor is not None

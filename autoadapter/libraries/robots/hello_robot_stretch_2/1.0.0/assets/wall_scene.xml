@@ -2,6 +2,7 @@
   <include file="stretch.xml" />
   <statistic meansize="0.05" extent="1.2" />
   <visual>
+    <global offwidth="800" offheight="600" />
     <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0" />
   </visual>
   <worldbody>
