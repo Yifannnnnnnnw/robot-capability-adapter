@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import copy
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
 
 
@@ -85,6 +85,48 @@ _CURRENT_RUN_MUTATION_FIELDS = {
     "final_capability_validation_passed",
     "task_demo_passed",
 }
+
+_PUBLIC_EVOLUTION_FIELDS = {
+    "non_blocking",
+    "terminal_report_read",
+    "evolution_attempted",
+    "evolution_completed",
+    "proposal_created",
+    "proposal",
+    "model_call_count",
+    "model_calls",
+    "model_input_compacted",
+    "model_input_chars",
+    "current_run_unchanged",
+    "failure",
+}
+
+_PUBLIC_PROPOSAL_FIELDS = {
+    "observation",
+    "lesson",
+    "recommendation",
+    "scope",
+    "evidence",
+}
+
+# Queue projection is intentionally stricter than the model-input check: a custom Evolution
+# hook must not be able to smuggle private definitions into a run-level reviewer artifact.
+_QUEUE_PRIVATE_FIELD_MARKERS = (
+    "private",
+    "suite",
+    "binding",
+    "guard",
+    "criterion",
+    "criteria",
+    "trajectory",
+    "harness",
+    "reference",
+    "candidate",
+    "driver",
+    "credential",
+    "secret",
+    "api_key",
+)
 
 
 def _error(exc: BaseException) -> dict[str, str]:
@@ -304,6 +346,123 @@ def _validate_proposal(response: Mapping[str, Any]) -> dict[str, Any] | None:
     return copy.deepcopy(dict(proposal))
 
 
+def _normalise_field_name(key: Any) -> str:
+    return str(key).strip().lower().replace("-", "_").replace(".", "_")
+
+
+def _is_queue_private_field(key: Any) -> bool:
+    name = _normalise_field_name(key)
+    return any(marker in name for marker in _QUEUE_PRIVATE_FIELD_MARKERS)
+
+
+def _public_queue_value(value: Any, *, proposal: bool = False) -> Any:
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, child in value.items():
+            name = _normalise_field_name(key)
+            if _is_queue_private_field(name):
+                continue
+            if proposal and name not in _PUBLIC_PROPOSAL_FIELDS:
+                continue
+            result[str(key)] = _public_queue_value(child)
+        return result
+    if isinstance(value, list):
+        return [_public_queue_value(child) for child in value]
+    if isinstance(value, tuple):
+        return [_public_queue_value(child) for child in value]
+    return copy.deepcopy(value)
+
+
+def project_public_evolution_outcome(outcome: Any) -> dict[str, Any] | None:
+    """Return the small public Evolution result suitable for human review."""
+
+    if not isinstance(outcome, Mapping):
+        return None
+    selected = {
+        str(key): value
+        for key, value in outcome.items()
+        if str(key) in _PUBLIC_EVOLUTION_FIELDS
+    }
+    projected = _public_queue_value(selected)
+    proposal = projected.get("proposal")
+    if isinstance(proposal, Mapping):
+        projected["proposal"] = _public_queue_value(proposal, proposal=True)
+    return projected
+
+
+def build_experience_review_queue(
+    *,
+    run_id: str,
+    experiment_id: str,
+    expected_robots: Sequence[str],
+    expected_conditions: Sequence[str],
+    cells: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Build one deterministic, review-only queue from terminal public cell outcomes."""
+
+    expected = [
+        (str(robot), str(condition))
+        for robot in expected_robots
+        for condition in expected_conditions
+    ]
+    by_id: dict[str, Mapping[str, Any]] = {}
+    for cell in cells:
+        if not isinstance(cell, Mapping):
+            continue
+        cell_id = cell.get("cell_id")
+        if isinstance(cell_id, str) and cell_id not in by_id:
+            by_id[cell_id] = cell
+
+    records: list[dict[str, Any]] = []
+    retained = 0
+    all_cells_present = True
+    all_cells_completed = True
+    for robot, condition in expected:
+        cell_id = f"{robot}::{condition}"
+        cell = by_id.get(cell_id)
+        if cell is None:
+            all_cells_present = False
+            all_cells_completed = False
+            evolution: dict[str, Any] | None = None
+        else:
+            all_cells_completed = all_cells_completed and bool(
+                cell.get("pipeline_completed")
+            )
+            outcomes = cell.get("outcomes")
+            raw_evolution = (
+                outcomes.get("Evolution")
+                if isinstance(outcomes, Mapping) and "Evolution" in outcomes
+                else cell.get("evolution")
+            )
+            evolution = project_public_evolution_outcome(raw_evolution)
+            retained += int(evolution is not None)
+        records.append(
+            {
+                "source_run_id": run_id,
+                "cell_id": cell_id,
+                "robot_configuration_id": robot,
+                "generation_condition": condition,
+                "evolution": evolution,
+                "disposition": None,
+                "reason": None,
+            }
+        )
+
+    expected_count = len(expected)
+    return {
+        "artifact_type": "experience_review_queue",
+        "experiment_id": experiment_id,
+        "run_id": run_id,
+        "cell_pipeline_completed": all_cells_present and all_cells_completed,
+        "expected_evolution_outcome_count": expected_count,
+        "retained_evolution_outcome_count": retained,
+        "all_evolution_outcomes_retained": retained == expected_count,
+        "reviewed_disposition_count": 0,
+        "dispositions_complete": False,
+        "records": records,
+    }
+
+
 def run_evolution(
     client: JsonGenerator,
     terminal_report: Mapping[str, Any],
@@ -373,9 +532,11 @@ evolve_terminal_report = run_evolution
 
 
 __all__ = [
+    "build_experience_review_queue",
     "EVOLUTION_SYSTEM_PROMPT",
     "EvolutionError",
     "JsonGenerator",
     "evolve_terminal_report",
+    "project_public_evolution_outcome",
     "run_evolution",
 ]
