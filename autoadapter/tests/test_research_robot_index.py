@@ -131,10 +131,20 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/google_barkour_vb/1.0.0/reference/flat_joystick.py",
             barkour_paths,
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/google_barkour_vb/1.0.0/skeleton/quadruped_position_policy.py",
+            barkour_paths,
+        )
         self.assertEqual(barkour["morphology_family"], "quadruped_position_policy")
         self.assertFalse(
             any(
                 "Train and retain" in item
+                for item in barkour["missing_for_runnable_package"]
+            )
+        )
+        self.assertFalse(
+            any(
+                "Provide a capability-neutral quadruped_position_policy skeleton" in item
                 for item in barkour["missing_for_runnable_package"]
             )
         )

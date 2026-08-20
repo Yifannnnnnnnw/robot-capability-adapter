@@ -397,7 +397,10 @@ def test_google_barkour_vb_asset_foundation_is_local_and_live() -> None:
         if item["kind"] == "reference_controller_source_review"
     )
     assert "no official pretrained vb checkpoint" in reference_review["observation"].lower()
-    assert "not controller or task-success evidence" in reference_review["observation"].lower()
+    assert (
+        "not package-wide task-success or runnable evidence"
+        in reference_review["observation"].lower()
+    )
     review_text = REFERENCE_REVIEW_PATH.read_text(encoding="utf-8")
     assert "81dfe512c9f2f03107fda1e31de585d04bb30bc4" in review_text
     assert "465 values" in review_text
@@ -413,5 +416,6 @@ def test_google_barkour_vb_asset_foundation_is_local_and_live() -> None:
         "sources.json",
     ]
     assert not (PACKAGE_ROOT / "tasks" / "private").exists()
-    assert not (PACKAGE_ROOT / "skeleton").exists()
-    assert not (PACKAGE_ROOT / "reference").exists()
+    assert (PACKAGE_ROOT / "skeleton" / "quadruped_position_policy.py").is_file()
+    assert (PACKAGE_ROOT / "reference" / "flat_joystick.py").is_file()
+    assert not (PACKAGE_ROOT / "reference" / "driver.py").exists()

@@ -641,7 +641,12 @@
         {
           "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/reference/flat_joystick.py",
           "kind": "package_local_flat_calibration_helper",
-          "observation": "The retained actor, observation normalizer, pinned source/runtime/training metadata, and NumPy inference plus exact 20-by-1-ms canonical CPU bridge are now self-contained under the robot package. Focused tests reproduce a five-second upright stand and all eight flat 0.4 m/s directions without falls. The helper has no task dispatch, private definitions, scene loading, simulator reset, verdict logic, or reference/driver.py entrypoint; specialist policies and a complete calibration driver remain missing."
+          "observation": "The retained actor, observation normalizer, pinned source/runtime/training metadata, and exact 20-by-1-ms canonical CPU bridge are self-contained under the robot package and trusted skeleton resource. Focused tests reproduce a five-second upright stand and all eight flat 0.4 m/s directions without falls. The wrapper has no task dispatch, private definitions, scene loading, simulator reset, verdict logic, or reference/driver.py entrypoint; specialist policies and a complete package-wide positive-control driver remain missing."
+        },
+        {
+          "path": "autoadapter/libraries/robots/google_barkour_vb/1.0.0/skeleton/quadruped_position_policy.py",
+          "kind": "trusted_position_policy_skeleton_inventory",
+          "observation": "The public package now exposes a task-neutral Barkour position-policy skeleton backed by the retained actor and observation normalizer in the trusted runtime package. A skeleton-assisted probe stages that resource without reference or private files, and a candidate-worker check executes 200 canonical MuJoCo steps through data.ctrl. This closes the flat position-policy skeleton gap only, not obstacle specialists, a package-wide positive control, or runnable status."
         },
         {
           "path": "demo2/legacy_assets/menagerie/google_barkour_vb/barkour_vb.xml",
@@ -671,7 +676,7 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide a capability-neutral quadruped_position_policy skeleton and a complete calibration-only reference driver; obstacle and full-course cases also require reviewed specialist policies and a reference-only planner.",
+        "Provide a complete package-wide positive-control reference driver; obstacle and full-course cases require reviewed specialist policies and a reference-only planner.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."

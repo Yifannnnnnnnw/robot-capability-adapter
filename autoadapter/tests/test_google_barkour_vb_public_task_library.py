@@ -401,5 +401,6 @@ def test_google_barkour_vb_public_task_library_snapshot() -> None:
     assert sorted(entry.name for entry in task_entries) == ["catalog.json", "sources.json"]
     assert all(entry.is_file() for entry in task_entries)
     assert not (PACKAGE_ROOT / "tasks" / "private").exists()
-    assert not (PACKAGE_ROOT / "skeleton").exists()
-    assert not (PACKAGE_ROOT / "reference").exists()
+    assert (PACKAGE_ROOT / "skeleton" / "quadruped_position_policy.py").is_file()
+    assert (PACKAGE_ROOT / "reference" / "flat_joystick.py").is_file()
+    assert not (PACKAGE_ROOT / "reference" / "driver.py").exists()
