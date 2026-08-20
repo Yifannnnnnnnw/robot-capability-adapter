@@ -12,7 +12,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "kuka_iiwa_14" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
-MIGRATION_ROOT = ROOT.parent / "demo2" / "legacy_assets" / "kuka_iiwa_14"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
 RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
@@ -134,10 +133,7 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     assert not any(path.is_symlink() for path in ASSETS_ROOT.rglob("*"))
     for relative_path in EXPECTED_CLOSURE_FILES:
         canonical_path = ASSETS_ROOT / relative_path
-        migration_path = MIGRATION_ROOT / relative_path
         assert canonical_path.is_file(), relative_path
-        assert migration_path.is_file(), relative_path
-        assert canonical_path.read_bytes() == migration_path.read_bytes(), relative_path
 
     source = (ASSETS_ROOT / "SOURCE.md").read_text(encoding="utf-8")
     assert "https://github.com/981526092/auto-adapter" in source
@@ -256,11 +252,17 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     }
     assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/assets/scene.xml" in observed_paths
     assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/morphology.json" in observed_paths
+    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/sources.json" in observed_paths
+    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/catalog.json" in observed_paths
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
-    assert "20 distinct applicable source-backed tasks" in missing
-    assert "tasks/sources.json" in missing
-    assert not (PACKAGE_ROOT / "tasks").exists()
+    assert "20 distinct applicable source-backed tasks" not in missing
+    assert "tasks/sources.json" not in missing
+    assert sorted(path.name for path in (PACKAGE_ROOT / "tasks").iterdir()) == [
+        "catalog.json",
+        "sources.json",
+    ]
+    assert not (PACKAGE_ROOT / "tasks" / "private").exists()
     assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()

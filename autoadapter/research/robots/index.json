@@ -393,6 +393,16 @@
           "observation": "The canonical morphology records a fixed-base seven-axis direct-joint arm, attachment_site end effector, contact-enabled link7 sphere, exact home state and servo facts, and the absence of a gripper and actuator force limits."
         },
         {
+          "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The provisional KUKA public snapshot contains the pinned Meta-World source record used by every scoring clause in the 20-task catalog. This is source-contract evidence only, not scene, contact, task-success, or runnable evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The provisional KUKA public snapshot contains 20 reviewed bare-flange contact task contracts with unchanged source scoring obligations and no grasp semantics. Conditional rotary and pull applicability still requires private scene and contact positive-control evidence; observed_task_count remains 5 for the inspected legacy catalog below."
+        },
+        {
           "path": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/asset_closure.json",
           "kind": "asset_closure_record",
           "observation": "The recorded closure marks UPSTREAM_CACHE_REQUIRED; its 15 entries include 13 mesh entries without a local vendored path."
@@ -429,8 +439,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
