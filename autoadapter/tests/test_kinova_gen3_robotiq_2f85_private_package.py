@@ -27,7 +27,7 @@ XARM_PRIVATE_ROOT = (
 
 ROBOT_ID = "kinova_gen3_robotiq_2f85"
 SNAPSHOT_ID = "kinova-gen3-robotiq-2f85-metaworld-source-protocols-2026-08-20-v1"
-HOME_ARM = [0.0, 0.26179939, 3.14159265, -2.26892803, 0.0, 0.95993109, 1.57079633]
+HOME_ARM = [1.04719755, 0.26179939, 3.14159265, -2.26892803, 0.0, 0.95993109, 1.57079633]
 ARM_JOINTS = tuple(f"joint_{index}" for index in range(1, 8))
 ARM_ACTUATORS = ARM_JOINTS
 GRIPPER_JOINTS = (
@@ -70,6 +70,7 @@ ARM_LIMITS = {
     "joint_6": (-2.09, 2.09),
 }
 CONTINUOUS_JOINTS = ("joint_1", "joint_3", "joint_5", "joint_7")
+MIN_RESET_CONTACT_DISTANCE = -0.005
 
 
 def _read(path: Path) -> dict:
@@ -251,6 +252,34 @@ def test_kinova_framework_resets_resolve_in_every_task_scene() -> None:
         assert np.isfinite(data.qpos).all()
         assert np.isfinite(data.qvel).all()
         assert np.isfinite(data.ctrl).all()
+
+
+def test_kinova_private_resets_do_not_start_in_deep_contact() -> None:
+    instances = _read(KINOVA_PRIVATE_ROOT / "instances.json")["instances"]
+    assert len(instances) == 20
+
+    for instance in instances:
+        model = mujoco.MjModel.from_xml_path(
+            str(KINOVA_PACKAGE_ROOT / instance["scene_entrypoint"])
+        )
+        data = mujoco.MjData(model)
+        apply_framework_reset(mujoco, model, data, instance["reset"])
+        mujoco.mj_forward(model, data)
+        if data.ncon == 0:
+            continue
+        contact = min(
+            (data.contact[index] for index in range(data.ncon)),
+            key=lambda item: float(item.dist),
+        )
+        geom_names = tuple(
+            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, int(geom_id))
+            or f"geom:{geom_id}"
+            for geom_id in (contact.geom1, contact.geom2)
+        )
+        assert float(contact.dist) >= MIN_RESET_CONTACT_DISTANCE, (
+            f"{instance['task_id']} starts at {float(contact.dist):.9f} m "
+            f"between {geom_names}"
+        )
 
 
 def test_kinova_public_ee_waypoints_are_position_ik_feasible() -> None:

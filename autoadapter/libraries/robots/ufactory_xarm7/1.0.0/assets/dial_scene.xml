@@ -7,8 +7,8 @@
   <worldbody>
     <light pos="0.35 -0.2 1.45" dir="0.2 0.1 -1" directional="true" />
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
-    <geom name="work_surface" type="box" pos="0.5 0.13 0.33" size="0.20 0.18 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
-    <geom name="dial_mount" type="box" pos="0.5 0.19 0.52" size="0.045 0.025 0.12" mass="0" contype="0" conaffinity="0" rgba="0.20 0.24 0.28 1" />
+    <geom name="work_surface" type="box" pos="0.5 0.13 0.33" size="0.20 0.18 0.08" mass="0" contype="1" conaffinity="1" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
+    <geom name="dial_mount" type="box" pos="0.535 0.17 0.52" size="0.020 0.075 0.13" mass="0" contype="1" conaffinity="1" rgba="0.20 0.24 0.28 1" />
     <body name="dial" pos="0.5 0.17 0.52">
       <joint name="dial_hinge" type="hinge" axis="1 0 0" range="0 1.2" limited="true" damping="0.09" frictionloss="0.008" />
       <geom name="dial_face" type="cylinder" size="0.055 0.012" quat="0.7071068 0 0.7071068 0" mass="0.03" conaffinity="2" friction="0.8 0.08 0.008" rgba="0.28 0.32 0.38 1" />
