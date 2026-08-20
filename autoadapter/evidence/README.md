@@ -26,6 +26,39 @@ The implementation includes:
 - independent per-case video and separate pipeline, Capability Validation,
   Task Demo, and video verdicts.
 
+## Franka Package-Wide Reference Positive Control
+
+Run `franka-reference-positive-control-20260820T013634Z`, on mainline commit
+`1d73581`, passed all 20 fixed Franka Task Library cases with the reviewed
+Framework-owned reference driver and real MuJoCo 3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control observed before physics stepping and changed from reset in
+  every trial;
+- all guards passed, with no direct `qpos` or `qvel` write detected;
+- maximum trial length: 8,680 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete, independently decodable at `800x600`, with 4 to
+  175 frames per case; and
+- representative object-case videos were visually checked for nonblank,
+  task-readable framing.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/franka-reference-positive-control-20260820T013634Z/`.
+Its `reference_report.json`, 20-case suite, and per-case videos remain together.
+
+The preceding run `franka-reference-positive-control-20260820T013256Z` is also
+retained and truthfully failed video completeness: all 20 physical criteria
+passed, but the requested `800x600` renderer exceeded the prior `640x480`
+offscreen framebuffer and produced zero frames. Commit `1d73581` added the
+focused framebuffer regression before the successful rerun.
+
+This result establishes package-wide reference feasibility for the canonical
+Franka assets, controller baseline, trusted measurements, Harness, and video
+path. It is not a model-generated condition, does not establish Task Demo or
+driver-synthesis success, and does not admit Franka to the runnable index. A
+real-model dynamic canary and final admission review remain required.
+
 ## Latest Historical Diagnostic Run
 
 This run predates Authority `0.19.2`: its five sampled cases were used directly

@@ -416,12 +416,12 @@ def test_franka_real_private_harness_reach_positive_control() -> None:
     assert trial["measurement_value"] <= 0.05
 
 
-def test_franka_remains_non_runtime_until_full_follow_up_evidence() -> None:
+def test_franka_remains_non_runtime_until_dynamic_canary_and_admission() -> None:
     runnable_index = _read(RUNNABLE_INDEX_PATH)
     assert "franka_panda" not in runnable_index["robots"]
     research_index = _read(RESEARCH_INDEX_PATH)
     candidate = next(item for item in research_index["candidates"] if item["robot_configuration_id"] == "franka_panda")
     missing = candidate["missing_for_runnable_package"]
-    assert any("full 20-task Direct-MuJoCo positive control" in item for item in missing)
+    assert not any("20-task Direct-MuJoCo positive control" in item for item in missing)
     assert any("dynamic canary" in item for item in missing)
     assert any("runnable index" in item for item in missing)

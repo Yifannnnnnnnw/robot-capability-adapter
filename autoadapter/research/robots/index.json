@@ -61,6 +61,11 @@
           "observation": "All 17 canonical task scenes are local under the Franka package and are tested for MJCF closure, MuJoCo loading, and physics liveness."
         },
         {
+          "path": "autoadapter/evidence/README.md",
+          "kind": "tracked_reference_positive_control_record",
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven Franka package-wide reference positive control with complete per-case videos."
+        },
+        {
           "path": "demo2/legacy_assets/franka_panda/panda.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "Demo2 contains additional historical Panda XML and mesh material for migration inspection only."
@@ -82,9 +87,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Complete the full 20-task Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
-        "Admit Franka Panda to the runnable index only after the complete package, positive control, and dynamic canary requirements are met."
+        "Perform final human package and admission review, then add Franka Panda to the runnable index only if the dynamic canary passes; the reference positive control alone does not admit it."
       ]
     },
     {
@@ -95,6 +99,16 @@
       "proposed_wave": 1,
       "observed_task_count": 5,
       "locally_observed_source_material": [
+        {
+          "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/assets/scene.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical package now contains the complete local Menagerie Gen3 closure and loads as a seven-actuator arm-only MuJoCo model. It has no contact-capable gripper."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical morphology records the seven position-controlled arm joints, pinch site, keyframes, and source lineage without claiming manipulation affordances or runnable status."
+        },
         {
           "path": "demo2/legacy_assets/menagerie/kinova_gen3/gen3.xml",
           "kind": "legacy_mujoco_asset",
@@ -122,9 +136,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under a canonical Kinova Gen3 package; legacy Menagerie files are migration inputs only.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
+        "Select and materialize an exact contact-capable end-effector configuration under a distinct robot_configuration_id; the current arm-only kinova_gen3 asset can support reach but cannot execute the 19 contact or grasp tasks needed by the proposed Meta-World snapshot.",
+        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards for that exact contact-capable configuration.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
