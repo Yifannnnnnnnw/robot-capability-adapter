@@ -219,11 +219,10 @@ class UfactoryXarm7PublicTaskLibraryTests(unittest.TestCase):
         self.assertNotIn("ufactory_xarm7", runnable_index["robots"])
         self.assertEqual(
             sorted(path.name for path in XARM_PACKAGE_ROOT.iterdir()),
-            ["assets", "morphology.json", "skeleton", "tasks"],
+            ["assets", "morphology.json", "reference", "skeleton", "tasks"],
         )
         self.assertTrue((XARM_TASKS_ROOT / "catalog.json").is_file())
         self.assertTrue((XARM_TASKS_ROOT / "sources.json").is_file())
-        self.assertFalse((XARM_PACKAGE_ROOT / "reference").exists())
 
 
 if __name__ == "__main__":

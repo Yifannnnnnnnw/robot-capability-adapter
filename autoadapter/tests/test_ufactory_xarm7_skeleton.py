@@ -97,4 +97,3 @@ def test_xarm7_public_morphology_builds_a_live_session_bound_skeleton() -> None:
         (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
     )
     assert "ufactory_xarm7" not in runnable_index["robots"]
-    assert not (PACKAGE_ROOT / "reference").exists()

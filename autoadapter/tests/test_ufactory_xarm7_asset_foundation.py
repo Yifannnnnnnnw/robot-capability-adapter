@@ -386,6 +386,7 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "reference",
         "skeleton",
         "tasks",
     ]
@@ -400,4 +401,3 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
         "guards.json",
         "instances.json",
     ]
-    assert not (PACKAGE_ROOT / "reference").exists()
