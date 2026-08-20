@@ -312,7 +312,7 @@
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/assets/reach_scene.xml",
           "kind": "provisional_task_scenes",
-          "observation": "All 17 task scenes are reviewed Piper-specific transforms of the xArm7 scene set and parse, load, and step with the canonical Piper model. The elevated pick-place floor uses the static-fixture collision mask so it cannot push link1 or link2 at reset. Grasp-object masses and the peg mass are calibrated to the Piper gripper and pass the complete non-video reference suite; formal video positive-control evidence remains pending."
+          "observation": "All 17 task scenes are reviewed Piper-specific transforms of the xArm7 scene set and parse, load, and step with the canonical Piper model. The elevated pick-place floor uses the static-fixture collision mask so it cannot push link1 or link2 at reset. Grasp-object masses and the peg mass are calibrated to the Piper gripper and pass the complete video-backed reference positive control."
         },
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/tasks/private/instances.json",
@@ -327,7 +327,12 @@
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/reference/driver.py",
           "kind": "canonical_reference_calibration",
-          "observation": "The calibration-only reference drives the canonical Piper model through actuator controls and MuJoCo physics. One complete non-video Harness regression passed all 20 private cases with all guards; this is calibration evidence only and is not a video-complete positive control, model-generation result, or runnable-admission claim."
+          "observation": "The calibration-only reference drives the canonical Piper model through actuator controls and MuJoCo physics. The complete Harness regression and retained video-backed positive control pass all 20 private cases with all guards; this is calibration evidence only and is not a model-generation result or runnable-admission claim."
+        },
+        {
+          "path": "autoadapter/evidence/README.md",
+          "kind": "tracked_reference_positive_control_record",
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven Piper package-wide reference positive control with all guards passing and complete independently decoded 800x600 per-case videos. Representative manipulation and fixture terminal frames were visually checked. This is calibration evidence only, not model-generation or runnable-admission evidence."
         },
         {
           "path": "general_demo/libraries/assets/piper/1.0.0/asset_closure.json",
@@ -367,7 +372,6 @@
       ],
       "missing_for_runnable_package": [
         "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
       ]
     },

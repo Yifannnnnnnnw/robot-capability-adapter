@@ -405,7 +405,7 @@ def test_piper_is_non_runtime_and_package_has_no_reference() -> None:
     )
     assert "17 task scenes" in scene_record["observation"]
     assert "cannot push link1 or link2 at reset" in scene_record["observation"]
-    assert "complete non-video reference suite" in scene_record["observation"]
+    assert "video-backed reference positive control" in scene_record["observation"]
     assert (
         "autoadapter/libraries/robots/piper/1.0.0/tasks/private/instances.json"
         in observed_paths
@@ -418,6 +418,7 @@ def test_piper_is_non_runtime_and_package_has_no_reference() -> None:
         "autoadapter/libraries/robots/piper/1.0.0/reference/driver.py"
         in observed_paths
     )
+    assert "autoadapter/evidence/README.md" in observed_paths
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
@@ -426,7 +427,7 @@ def test_piper_is_non_runtime_and_package_has_no_reference() -> None:
     assert "tasks/private/instances.json" not in missing
     assert "arm_serial_dls skeleton" not in missing
     assert "calibration-only reference driver" not in missing
-    assert "positive control" in missing
+    assert "positive control" not in missing
     assert "dynamic canary" in missing
 
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [

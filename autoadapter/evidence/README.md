@@ -95,6 +95,40 @@ path. It is not a model-generated condition, does not establish Task Demo or
 driver-synthesis success, and does not admit xArm7 to the runnable index. A
 real-model dynamic canary and final admission review remain required.
 
+## Piper Package-Wide Reference Positive Control
+
+Run `piper-reference-positive-control-20260820T044929Z`, on mainline commit
+`7c9658b`, passed all 20 fixed Piper Task Library cases with the reviewed
+Framework-owned reference driver and real MuJoCo 3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control observed before physics stepping and changed from reset in
+  every trial;
+- all guards passed, with no direct `qpos` or `qvel` write detected;
+- maximum trial length: 8,514 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete H.264, independently decoded at `800x600`, with 5
+  to 172 frames per case;
+- the corrected `mw_handle_pull` case started at
+  `vertical_handle_slide=-0.055`, physically moved to about `0.00222`, and
+  finished with `0.00223 m` error; and
+- pick-place, peg-insertion, sweep, and handle-pull terminal frames were
+  visually checked for nonblank, task-readable framing and visible terminal
+  task state.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/piper-reference-positive-control-20260820T044929Z/`.
+Its `reference_report.json`, 20-case suite, and per-case videos remain together.
+The sandboxed run ending `044817Z` is retained as a diagnostic only: all 20
+physical criteria passed, but macOS CoreGraphics was unavailable and every
+requested video had zero frames.
+
+This result establishes package-wide reference feasibility for the canonical
+Piper assets, controller baseline, trusted measurements, Harness, and video
+path. It is not a model-generated condition, does not establish Task Demo or
+driver-synthesis success, and does not admit Piper to the runnable index. A
+real-model dynamic canary and final admission review remain required.
+
 ## Latest Historical Diagnostic Run
 
 This run predates Authority `0.19.2`: its five sampled cases were used directly
