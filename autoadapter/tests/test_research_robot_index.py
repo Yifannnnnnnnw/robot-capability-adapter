@@ -184,6 +184,7 @@ class ResearchRobotIndexTests(unittest.TestCase):
         )
 
         stretch = candidates_by_id["hello_robot_stretch_2"]
+        self.assertEqual(stretch["observed_task_count"], 20)
         stretch_paths = {
             material["path"] for material in stretch["locally_observed_source_material"]
         }
@@ -193,13 +194,32 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/sources.json",
             "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/catalog.json",
             "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/skeleton/stretch_control.py",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/skeleton/mobile_manipulation.py",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/assets/reach_scene.xml",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/private/instances.json",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/reference/driver.py",
         ):
             self.assertIn(path, stretch_paths)
-        self.assertFalse(
-            any("Materialize and verify" in item for item in stretch["missing_for_runnable_package"])
+        reference_observation = next(
+            material["observation"]
+            for material in stretch["locally_observed_source_material"]
+            if material["kind"] == "partial_reference_calibration"
         )
+        self.assertIn("11/20", reference_observation)
+        missing = " ".join(stretch["missing_for_runnable_package"])
+        self.assertNotIn("research candidate only", missing)
+        self.assertNotIn("Create Framework-private", missing)
+        self.assertNotIn("Add the package check", missing)
+        self.assertIn("remaining nine-task", missing)
         self.assertTrue(
-            any("research candidate only" in item for item in stretch["missing_for_runnable_package"])
+            all(
+                task_id in missing
+                for task_id in (
+                    "mw_pick_place_wall",
+                    "mw_bin_picking",
+                    "mw_pick_out_of_hole",
+                )
+            )
         )
 
         barkour = candidates_by_id["google_barkour_vb"]

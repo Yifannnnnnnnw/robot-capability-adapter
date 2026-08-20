@@ -798,7 +798,7 @@
       "morphology_category": "mobile_manipulator",
       "proposed_sequence": 10,
       "proposed_wave": 3,
-      "observed_task_count": 5,
+      "observed_task_count": 20,
       "locally_observed_source_material": [
         {
           "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/assets/scene.xml",
@@ -817,8 +817,8 @@
         },
         {
           "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/catalog.json",
-          "kind": "canonical_task_catalog_candidate",
-          "observation": "The research-only catalog contains 20 structurally closed Meta-World task adaptations. Sol has not yet accepted their task-specific scene feasibility, private metrics, or positive controls, so this catalog is not runnable evidence and observed_task_count remains 5 for the legacy catalog below."
+          "kind": "canonical_task_catalog",
+          "observation": "The canonical public snapshot contains 20 structurally closed Meta-World task adaptations with source-linked machine-expressible scoring clauses. The complete package loader accepts the catalog, source records, local asset closure, private inputs, skeleton, and reference entrypoint. This proves package structure only; it does not replace the incomplete package-wide reference positive control."
         },
         {
           "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/skeleton/stretch_control.py",
@@ -829,6 +829,21 @@
           "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/skeleton/mobile_manipulation.py",
           "kind": "trusted_mobile_manipulation_skeleton_inventory",
           "observation": "The canonical package now exposes bounded state-dependent feedback for base yaw, signed base travel, gripper position, and world-frame positioning of the public gripper-slider body through the side-arm geometry. Direct-MuJoCo positive controls reach 45 degrees within 0.0075 rad, travel 0.15 m within 0.0075 m, and reach a world tool target within 0.0032 m using only data.ctrl and mj_step. This closes a low-level control-foundation gap only; it is not task-scene feasibility, fixture manipulation, or package-wide reference evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/assets/reach_scene.xml",
+          "kind": "canonical_task_scene_set",
+          "observation": "The package contains 17 local task-scene entrypoints covering all 20 public tasks. Focused checks compile every scene in MuJoCo 3.3.6, verify finite non-success resets, and retain the canonical Stretch model plus an 800x600 evidence camera."
+        },
+        {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/private/instances.json",
+          "kind": "canonical_private_task_package",
+          "observation": "The Framework-private package contains 20 instances with complete public-task coverage, source-equivalent metric bindings, core actuator/physics, canonical-session, and direct-state-write guards, bounded trial settings, and no reset that already satisfies its full criterion."
+        },
+        {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/reference/driver.py",
+          "kind": "partial_reference_calibration",
+          "observation": "The actuator-only reference driver passes the real private Harness for 11/20 tasks: reach, three contact pushes, pick-place, drawer open/close, front/top button press, and vertical handle press/pull. All selected trials pass source clauses, private cases, core guards, control-change evidence, and direct-state-write rejection. This focused run records no videos and is not a package-wide positive control."
         },
         {
           "path": "demo2/legacy_assets/menagerie/hello_robot_stretch/stretch.xml",
@@ -857,11 +872,9 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Complete Sol review of the 20 public task adaptations and materialize collision-checked task-specific scenes; the current catalog is a research candidate only.",
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json with source-equivalent physical metrics and false-success guards.",
-        "Provide a calibration-only mobile-manipulator reference driver for this configuration.",
-        "Add the package check for the complete canonical package.",
-        "Complete a video-backed package-wide positive control across the private task scenes; the canonical-scene base, side-arm, and gripper feedback checks are low-level evidence only.",
+        "Complete or revise the remaining nine-task reference snapshot. The user explicitly deferred mw_pick_place_wall, mw_bin_picking, and mw_pick_out_of_hole; they must be replaced or formally resolved before 20/20 rather than silently counted.",
+        "Calibrate the remaining side insertion, door, and rotation routes plus any approved replacements using actuator-driven MuJoCo physics.",
+        "Complete a video-backed package-wide positive control across all 20 private cases; the current focused reference evidence covers 11 tasks without videos.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
         "Perform final human package and admission review, then add Stretch 2 to the runnable index only if the dynamic canary passes."
       ]
