@@ -1,0 +1,7 @@
+{
+  "robot_id":"unitree_g1","estimated_class":"humanoid","nq":36,"nv":35,"nu":29,"base_body":"pelvis","free_joint":"floating_base_joint",
+  "leg_joint_names":["left_hip_pitch_joint","left_hip_roll_joint","left_hip_yaw_joint","left_knee_joint","left_ankle_pitch_joint","left_ankle_roll_joint","right_hip_pitch_joint","right_hip_roll_joint","right_hip_yaw_joint","right_knee_joint","right_ankle_pitch_joint","right_ankle_roll_joint"],
+  "waist_joint_names":["waist_yaw_joint","waist_roll_joint","waist_pitch_joint"],
+  "upper_body_joint_names":["left_shoulder_pitch_joint","left_shoulder_roll_joint","left_shoulder_yaw_joint","left_elbow_joint","left_wrist_roll_joint","left_wrist_pitch_joint","left_wrist_yaw_joint","right_shoulder_pitch_joint","right_shoulder_roll_joint","right_shoulder_yaw_joint","right_elbow_joint","right_wrist_roll_joint","right_wrist_pitch_joint","right_wrist_yaw_joint"],
+  "actuator_mapping":"each non-base joint has an identically named position actuator","keyframes":["stand"],"source_commit":"da76818e269b82289eba39808e2fb91d679d6994","notes":"Capability methods command only position actuators and step physics; the floating base is never assigned directly."
+}

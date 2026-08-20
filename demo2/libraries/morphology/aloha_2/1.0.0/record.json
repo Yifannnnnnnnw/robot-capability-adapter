@@ -1,0 +1,37 @@
+{
+  "record_type": "morphology",
+  "schema_version": "1.0.0",
+  "id": "aloha_2",
+  "version": "1.0.0",
+  "robot_model_id": "aloha_2",
+  "robot_configuration_id": "aloha_2",
+  "tasks": {"robot_configuration_id": "aloha_2", "catalog_version": "1.0.0"},
+  "stage1": {
+    "action_affordances": ["driver Cartesian motion", "driver bimanual Cartesian motion", "driver bimanual gripper motion"],
+    "observation_affordances": ["left and right gripper pose observation", "left and right finger joint observation"],
+    "unit_allowlist": ["m", "s", "none", "unitless"],
+    "frame_allowlist": ["world", "none"]
+  },
+  "driver": {"family": "AlohaBimanualPositionActuatorWrapper", "source": "demo2/reference_drivers/aloha_2/driver.py"},
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "base_type": "fixed_bimanual",
+  "actuated_dof": 14,
+  "joint_dof": 16,
+  "nq": 16,
+  "nv": 16,
+  "nu": 14,
+  "joint_names": ["left/waist", "left/shoulder", "left/elbow", "left/forearm_roll", "left/wrist_angle", "left/wrist_rotate", "left/left_finger", "left/right_finger", "right/waist", "right/shoulder", "right/elbow", "right/forearm_roll", "right/wrist_angle", "right/wrist_rotate", "right/left_finger", "right/right_finger"],
+  "actuator_names": ["left/waist", "left/shoulder", "left/elbow", "left/forearm_roll", "left/wrist_angle", "left/wrist_rotate", "left/gripper", "right/waist", "right/shoulder", "right/elbow", "right/forearm_roll", "right/wrist_angle", "right/wrist_rotate", "right/gripper"],
+  "end_effector_sites": ["left/gripper", "right/gripper"],
+  "state": ["joint_position", "joint_velocity", "left_gripper_pose", "right_gripper_pose"],
+  "units": {"arm_joint_position": "rad", "finger_joint_position": "m", "actuator_command": "native_mujoco_control", "length": "m", "time": "s"},
+  "mujoco": {
+    "version": "3.3.6",
+    "entrypoint": "menagerie/aloha/scene.xml",
+    "reset": {"keyframe": "neutral_pose"},
+    "frames": {"body_names": ["left/base_link", "right/base_link"], "site_names": ["left/gripper", "right/gripper", "left/left_finger", "left/right_finger", "right/left_finger", "right/right_finger"]},
+    "sensor_names": [],
+    "render": {"camera": "overhead_cam", "width": 640, "height": 480, "fps": 30}
+  },
+  "source": {"repository": "https://github.com/google-deepmind/mujoco_menagerie", "commit": "da76818e269b82289eba39808e2fb91d679d6994", "path": "aloha/scene.xml", "license": "BSD-3-Clause"}
+}

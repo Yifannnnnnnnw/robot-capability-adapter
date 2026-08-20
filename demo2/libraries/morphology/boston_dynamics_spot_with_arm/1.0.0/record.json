@@ -1,0 +1,10 @@
+{
+  "record_type":"morphology","schema_version":"1.0.0","id":"boston_dynamics_spot_with_arm","version":"1.0.0","robot_model_id":"boston_dynamics_spot_with_arm","robot_configuration_id":"boston_dynamics_spot_with_arm",
+  "tasks":{"robot_configuration_id":"boston_dynamics_spot_with_arm","catalog_version":"1.0.0"},
+  "stage1":{"action_affordances":["position-actuated leg joints","position-actuated arm joints"],"observation_affordances":["free-base pose","body linear velocity","body position","body orientation","joint position observation"],"unit_allowlist":["m","rad","s","none","unitless"],"frame_allowlist":["world","initial_body_yaw","joint","none"]},
+  "driver":{"family":"SpotPositionServoWrapper","source":"demo2/reference_drivers/boston_dynamics_spot_with_arm/driver.py"},"route":"DIRECT_MUJOCO_EXPERIMENTAL","base_type":"free","nq":26,"nv":25,"nu":19,
+  "joint_names":["freejoint","fl_hx","fl_hy","fl_kn","fr_hx","fr_hy","fr_kn","hl_hx","hl_hy","hl_kn","hr_hx","hr_hy","hr_kn","arm_sh0","arm_sh1","arm_el0","arm_el1","arm_wr0","arm_wr1","arm_f1x"],
+  "actuator_names":["fl_hx","fl_hy","fl_kn","fr_hx","fr_hy","fr_kn","hl_hx","hl_hy","hl_kn","hr_hx","hr_hy","hr_kn","arm_sh0","arm_sh1","arm_el0","arm_el1","arm_wr0","arm_wr1","arm_f1x"],
+  "mujoco":{"version":"3.3.6","entrypoint":"menagerie/boston_dynamics_spot/scene_arm.xml","reset":{"keyframe":"home"},"frames":{"body_names":["body"],"site_names":[]},"sensor_names":[],"render":{"camera":"free","width":640,"height":480,"fps":30}},
+  "source":{"repository":"https://github.com/google-deepmind/mujoco_menagerie","commit":"da76818e269b82289eba39808e2fb91d679d6994","path":"boston_dynamics_spot/scene_arm.xml","license":"BSD-3-Clause"}
+}

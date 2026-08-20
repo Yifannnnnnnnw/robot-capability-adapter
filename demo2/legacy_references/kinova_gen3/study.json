@@ -1,0 +1,32 @@
+{
+  "robot_id": "kinova_gen3",
+  "estimated_class": "arm",
+  "dof": 7,
+  "nq": 7,
+  "nv": 7,
+  "nu": 7,
+  "arm_joint_names": [
+    "joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "joint_7"
+  ],
+  "arm_actuator_names": [
+    "joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "joint_7"
+  ],
+  "joint_limits": {
+    "joint_1": [-6.283185307179586, 6.283185307179586],
+    "joint_2": [-2.24, 2.24],
+    "joint_3": [-6.283185307179586, 6.283185307179586],
+    "joint_4": [-2.57, 2.57],
+    "joint_5": [-6.283185307179586, 6.283185307179586],
+    "joint_6": [-2.09, 2.09],
+    "joint_7": [-6.283185307179586, 6.283185307179586]
+  },
+  "continuous_source_joints": ["joint_1", "joint_3", "joint_5", "joint_7"],
+  "driver_continuous_joint_clamp_rad": 6.283185307179586,
+  "ee_site": "pinch_site",
+  "ee_body": "bracelet_link",
+  "keyframes": ["home", "retract"],
+  "home_qpos": [0.0, 0.261799, 3.141593, -2.268928, 0.0, 0.959931, 1.570796],
+  "actuator_type_hint": "position",
+  "source_commit": "da76818e269b82289eba39808e2fb91d679d6994",
+  "notes": "Official Menagerie Gen3; one position actuator per arm joint and pinch_site as the DLS reference."
+}

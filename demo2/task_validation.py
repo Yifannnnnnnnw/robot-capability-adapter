@@ -42,6 +42,28 @@ _SUPPORTED_INVOCATIONS = {
     "reject_unreachable_and_return_home": "reject_unreachable_and_return_home",
     "grasp_and_lift": "grasp_and_lift",
     "move_to_waypoint_and_return": "move_to_waypoint_and_return",
+    # Menagerie task packages use the public effect name as the operator.
+    "trace_cartesian_path": "trace_cartesian_path",
+    "move_cartesian_offset_and_return": "move_cartesian_offset_and_return",
+    "visit_cartesian_waypoints": "visit_cartesian_waypoints",
+    "set_joint_posture_and_hold": "set_joint_posture_and_hold",
+    "flex_index_finger_and_hold": "flex_index_finger_and_hold",
+    "set_symmetric_finger_posture": "set_symmetric_finger_posture",
+    "set_thumb_opposition_and_hold": "set_thumb_opposition_and_hold",
+    "cycle_to_pregrasp_posture": "cycle_to_pregrasp_posture",
+    "move_bimanual_targets": "move_bimanual_targets",
+    "cycle_bimanual_grippers": "cycle_bimanual_grippers",
+    "move_bimanual_offset_and_return": "move_bimanual_offset_and_return",
+    "drive_base_forward": "drive_base_forward",
+    "set_lift_height": "set_lift_height",
+    "extend_arm": "extend_arm",
+    "rotate_wrist": "rotate_wrist",
+    "cycle_gripper": "cycle_gripper",
+    "set_body_height_and_hold": "set_body_height_and_hold",
+    "walk_bounded_direction_and_stop": "walk_bounded_direction_and_stop",
+    "set_arm_joint_posture_and_hold": "set_arm_joint_posture_and_hold",
+    "set_upper_body_posture_and_hold": "set_upper_body_posture_and_hold",
+    "set_leg_posture_and_hold": "set_leg_posture_and_hold",
 }
 
 _SUPPORTED_MEASUREMENTS = {
@@ -64,14 +86,45 @@ _SUPPORTED_MEASUREMENTS = {
     "invocation_count",
     "history_waypoint_order",
     "trace_baseline_delta",
+    "joint_vector_error",
+    "joint_symmetry_error",
+    "initial_yaw_lateral_drift",
+    "initial_yaw_lateral_displacement",
+    "initial_yaw_forward_drift",
+    "final_planar_speed",
 }
 
 _SUPPORTED_GUARDS = {
     "trusted-external-verdict",
+    "trusted-mujoco-state",
     "finite-required-state",
     "scene-entrypoint-bound",
     "no-body-or-head-floor-contact",
 }
+
+_BASE_BODY_MEASUREMENTS = {
+    "body_height",
+    "upright_score",
+    "planar_speed",
+    "final_planar_speed",
+    "height_ratio",
+    "horizontal_drift",
+    "initial_yaw_forward_displacement",
+    "initial_yaw_lateral_displacement_abs",
+    "initial_yaw_lateral_drift",
+    "initial_yaw_lateral_displacement",
+    "initial_yaw_forward_drift",
+    "body_height_error",
+}
+
+_INVOCATION_EFFECT_ALIASES = {
+    ("stand_and_hold", "stand_and_hold"),
+}
+
+
+def _supports_invocation_effect(operator: Any, effect: Any) -> bool:
+    name = str(operator)
+    return _SUPPORTED_INVOCATIONS.get(name) == effect or (name, effect) in _INVOCATION_EFFECT_ALIASES
 
 _REQUIRED_TEST_FIELDS = {
     "requirement_id",
@@ -194,6 +247,20 @@ def _required_names(test: Mapping[str, Any]) -> tuple[set[str], set[str], set[st
         reference = measurement.get("reference", {})
         if isinstance(reference, Mapping):
             add_path(reference.get("observation_path"))
+        parameters = test.get("parameters", {})
+        if isinstance(parameters, Mapping):
+            names_path = measurement.get("joint_names_path")
+            if isinstance(names_path, str) and names_path.startswith("parameters."):
+                values = parameters.get(names_path.removeprefix("parameters."), [])
+                if isinstance(values, list):
+                    joints.update(str(value) for value in values if isinstance(value, str))
+            pairs_path = measurement.get("joint_pairs_path")
+            if isinstance(pairs_path, str) and pairs_path.startswith("parameters."):
+                pairs = parameters.get(pairs_path.removeprefix("parameters."), [])
+                if isinstance(pairs, list):
+                    for pair in pairs:
+                        if isinstance(pair, list):
+                            joints.update(str(value) for value in pair if isinstance(value, str))
     parameters = test.get("parameters", {})
     if isinstance(parameters, Mapping):
         target = parameters.get("target_object_id")
@@ -249,6 +316,28 @@ class _Capture:
                 if identifier >= 0:
                     self.base_body = candidate
                     self._body_ids[candidate] = identifier
+        if self.base_body is None:
+            declared: list[str] = []
+            for criterion in self.test.get("criteria", []):
+                measurement = (
+                    criterion.get("measurement")
+                    if isinstance(criterion, Mapping)
+                    else None
+                )
+                if not isinstance(measurement, Mapping):
+                    continue
+                if measurement.get("operator") not in _BASE_BODY_MEASUREMENTS:
+                    continue
+                path = measurement.get("observation_path")
+                fields = path.split(".") if isinstance(path, str) else []
+                if len(fields) >= 2 and fields[0] == "bodies" and fields[1] in self._body_ids:
+                    declared.append(fields[1])
+            if declared:
+                if len(set(declared)) != 1:
+                    raise TaskValidationError(
+                        "base-body measurements declare more than one physical body"
+                    )
+                self.base_body = declared[0]
         self.trace: list[dict[str, Any]] = []
         self.phase = "initial"
         self.ticks = 0
@@ -365,7 +454,7 @@ def _reset_robot(robot: Any, reset: Mapping[str, Any]) -> None:
     mode = reset.get("mode")
     if mode == "source_scene_default":
         mj.mj_resetData(model, data)
-    elif mode == "keyframe":
+    elif mode in {"keyframe", "source_keyframe"}:
         keyframe = reset.get("keyframe")
         if not isinstance(keyframe, str) or not keyframe:
             raise TaskValidationError("keyframe reset requires a keyframe name")
@@ -720,6 +809,41 @@ def _measure(
         )
         return bool(matches), detail
 
+    if operator == "joint_vector_error":
+        names = _parameter(parameters, measurement.get("joint_names_path"))
+        reference = measurement.get("reference")
+        if not isinstance(reference, Mapping):
+            raise TaskValidationError("joint vector error requires a reference object")
+        targets = _parameter(parameters, reference.get("value_path"))
+        if not isinstance(names, list) or not all(isinstance(value, str) for value in names):
+            raise TaskValidationError("joint vector error requires joint_names")
+        try:
+            target_values = np.asarray(targets, dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise TaskValidationError("joint vector target must be numeric") from exc
+        if target_values.shape != (len(names),) or not np.isfinite(target_values).all():
+            raise TaskValidationError("joint vector target length must match joint_names")
+        errors = [
+            max(abs(float(sample["joints"][name]) - float(target)) for name, target in zip(names, target_values, strict=True))
+            for sample in samples
+        ]
+        return max(errors), f"maximum per-joint absolute error across {len(samples)} trusted sample(s)"
+
+    if operator == "joint_symmetry_error":
+        pairs = _parameter(parameters, measurement.get("joint_pairs_path"))
+        if not isinstance(pairs, list) or not pairs:
+            raise TaskValidationError("joint symmetry error requires joint_pairs")
+        normalized: list[tuple[str, str]] = []
+        for pair in pairs:
+            if not isinstance(pair, list) or len(pair) != 2 or not all(isinstance(value, str) for value in pair):
+                raise TaskValidationError("each joint symmetry pair must contain two joint names")
+            normalized.append((pair[0], pair[1]))
+        errors = [
+            max(abs(float(sample["joints"][left]) - float(sample["joints"][right])) for left, right in normalized)
+            for sample in samples
+        ]
+        return max(errors), f"maximum paired-joint difference across {len(samples)} trusted sample(s)"
+
     base = _base_samples(capture, samples)
     positions = [np.asarray(value["position"], dtype=float) for value in base]
     rotations = [np.asarray(value["rotation"], dtype=float) for value in base]
@@ -734,7 +858,7 @@ def _measure(
     if operator == "upright_score":
         values = [float(value[2, 2]) for value in rotations]
         return min(values), f"minimum trusted torso upright score across {len(values)} sample(s)"
-    if operator == "planar_speed":
+    if operator in {"planar_speed", "final_planar_speed"}:
         values = [float(np.linalg.norm(sample["planar_velocity"])) for sample in samples]
         return max(values), f"maximum trusted planar speed across {len(values)} sample(s)"
     if operator == "height_ratio":
@@ -750,6 +874,9 @@ def _measure(
     if operator in {
         "initial_yaw_forward_displacement",
         "initial_yaw_lateral_displacement_abs",
+        "initial_yaw_lateral_drift",
+        "initial_yaw_lateral_displacement",
+        "initial_yaw_forward_drift",
     }:
         forward = np.asarray(initial_rot[:2, 0], dtype=float)
         norm = float(np.linalg.norm(forward))
@@ -760,10 +887,16 @@ def _measure(
         displacements = [value[:2] - initial_pos[:2] for value in positions]
         if operator == "initial_yaw_forward_displacement":
             return float(np.dot(displacements[-1], forward)), "final displacement in initial-yaw forward axis"
-        values = [abs(float(np.dot(value, lateral))) for value in displacements]
-        return max(values), "maximum absolute displacement in initial-yaw lateral axis"
+        if operator == "initial_yaw_lateral_displacement":
+            return float(np.dot(displacements[-1], lateral)), "final displacement in initial-yaw lateral axis"
+        axis = forward if operator == "initial_yaw_forward_drift" else lateral
+        values = [abs(float(np.dot(value, axis))) for value in displacements]
+        return max(values), f"maximum absolute drift in initial-yaw {'forward' if axis is forward else 'lateral'} axis"
     if operator == "body_height_error":
-        reference = float(_parameter(parameters, measurement.get("reference_path")))
+        reference_path = measurement.get("reference_path")
+        if reference_path is None and isinstance(measurement.get("reference"), Mapping):
+            reference_path = measurement["reference"].get("value_path")
+        reference = float(_parameter(parameters, reference_path))
         values = [abs(float(value[2]) - reference) for value in positions]
         return max(values), f"maximum absolute body-height error across {len(values)} sample(s)"
     raise TaskValidationError(f"unsupported measurement operator: {operator!r}")
@@ -810,10 +943,13 @@ def _invoke(robot: Any, test: Mapping[str, Any], capture: _Capture) -> dict[str,
     if not isinstance(invocation, Mapping) or not isinstance(parameters, Mapping):
         raise TaskValidationError("invocation and parameters must be objects")
     operator = invocation.get("operator")
-    expected_effect = _SUPPORTED_INVOCATIONS.get(str(operator))
-    if expected_effect is None:
+    if str(operator) not in _SUPPORTED_INVOCATIONS:
         raise TaskValidationError(f"unsupported invocation operator: {operator!r}")
-    if effect != expected_effect or method_name != effect or invocation.get("effect") != effect:
+    if (
+        not _supports_invocation_effect(operator, effect)
+        or method_name != effect
+        or invocation.get("effect") != effect
+    ):
         raise TaskValidationError("method/effect/invocation binding is inconsistent")
     method = getattr(robot, str(method_name), None)
     if not callable(method):
@@ -839,6 +975,35 @@ def _invoke(robot: Any, test: Mapping[str, Any], capture: _Capture) -> dict[str,
             raise TaskValidationError(f"{label} must be a finite 3-vector")
         return result
 
+    def distance_target(metric: str) -> np.ndarray:
+        measurement: Mapping[str, Any] | None = None
+        for criterion in test.get("criteria", []):
+            candidate = criterion.get("measurement") if isinstance(criterion, Mapping) else None
+            if isinstance(candidate, Mapping) and candidate.get("metric") == metric:
+                measurement = candidate
+                break
+        if measurement is None or measurement.get("operator") != "distance":
+            raise TaskValidationError(f"resolved distance measurement unavailable for {metric!r}")
+        reference_path = measurement.get("reference_path")
+        reference = measurement.get("reference")
+        if reference_path is not None:
+            target = vector3(_parameter(parameters, reference_path), f"{metric} reference")
+        elif isinstance(reference, Mapping) and "observation_path" in reference:
+            target = vector3(
+                _observation(capture.trace[0], reference["observation_path"]),
+                f"{metric} reference",
+            )
+        elif isinstance(reference, Mapping) and "value" in reference:
+            target = vector3(reference["value"], f"{metric} reference")
+        else:
+            raise TaskValidationError(f"distance measurement for {metric!r} lacks a reference")
+        offset_path = measurement.get("reference_offset_path")
+        if offset_path is not None:
+            target = target + vector3(
+                _parameter(parameters, offset_path), f"{metric} reference offset"
+            )
+        return target
+
     capture.phase = "motion"
 
     if operator == "reach_above_object":
@@ -853,10 +1018,35 @@ def _invoke(robot: Any, test: Mapping[str, Any], capture: _Capture) -> dict[str,
         call(target_position=target.tolist(), duration=_number(invocation, "duration_s", 1.0))
         context["target_position"] = target.tolist()
     elif operator == "reach_target":
-        target = vector3(parameters.get("target_position_m"), "target_position_m")
-        call(target_position=target.tolist(), duration=_number(invocation, "duration_s", 1.0))
+        arm = invocation.get("arm")
+        if arm is None:
+            target = vector3(parameters.get("target_position_m"), "target_position_m")
+            call(target_position=target.tolist(), duration=_number(invocation, "duration_s", 1.0))
+        else:
+            if arm not in {"left", "right"}:
+                raise TaskValidationError("reach arm must be 'left' or 'right'")
+            target = distance_target(f"{arm}_target_error_m")
+            call(
+                target_position=target.tolist(),
+                arm=arm,
+                duration=_number(invocation, "duration_s", 1.0),
+            )
         context["target_position"] = target.tolist()
-    elif operator == "trace_square_and_return":
+    elif operator == "move_bimanual_targets":
+        targets = {
+            arm: distance_target(f"{arm}_bimanual_target_error_m")
+            for arm in ("left", "right")
+        }
+        call(
+            left_target_position=targets["left"].tolist(),
+            right_target_position=targets["right"].tolist(),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+        context.update({
+            "left_target_position": targets["left"].tolist(),
+            "right_target_position": targets["right"].tolist(),
+        })
+    elif operator in {"trace_square_and_return", "trace_cartesian_path"}:
         path = test["criteria"][0]["measurement"].get("observation_path")
         start = np.asarray(_observation(capture.trace[0], path), dtype=float)
         side = float(parameters.get("square_side_m"))
@@ -886,11 +1076,11 @@ def _invoke(robot: Any, test: Mapping[str, Any], capture: _Capture) -> dict[str,
         target = np.asarray(initial["position"], dtype=float) + offset
         call(contact_position=target.tolist(), duration=_number(invocation, "duration_s", 1.0))
         context["contact_position"] = target.tolist()
-    elif operator == "offset_and_return":
+    elif operator in {"offset_and_return", "move_cartesian_offset_and_return"}:
         offset = vector3(parameters.get("offset_m"), "offset_m")
         call(offset=offset.tolist(), duration=_number(invocation, "duration_s", 1.0))
         context["offset"] = offset.tolist()
-    elif operator == "visit_waypoints":
+    elif operator in {"visit_waypoints", "visit_cartesian_waypoints"}:
         raw_waypoints = parameters.get("waypoints_m")
         try:
             waypoint_values = np.asarray(raw_waypoints, dtype=float)
@@ -952,8 +1142,102 @@ def _invoke(robot: Any, test: Mapping[str, Any], capture: _Capture) -> dict[str,
         waypoint = vector3(parameters.get("waypoint_m"), "waypoint_m")
         call(waypoint=waypoint.tolist(), duration=_number(invocation, "duration_s", 1.0))
         context["waypoint"] = waypoint.tolist()
+    elif operator == "set_joint_posture_and_hold":
+        names = parameters.get("joint_names")
+        targets = parameters.get("target_joint_positions_rad")
+        call(
+            joint_names=names,
+            target_joint_positions=targets,
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "flex_index_finger_and_hold":
+        call(
+            target_joint_positions=parameters.get("target_joint_positions_rad"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "set_symmetric_finger_posture":
+        call(
+            joint_pairs=parameters.get("joint_pairs"),
+            target_joint_positions=parameters.get("target_joint_positions_rad"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "set_thumb_opposition_and_hold":
+        call(
+            target_joint_positions=parameters.get("target_joint_positions_rad"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "cycle_to_pregrasp_posture":
+        call(
+            joint_names=parameters.get("joint_names"),
+            target_joint_positions=parameters.get("target_joint_positions_rad"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "cycle_bimanual_grippers":
+        call(duration=_number(invocation, "duration_s", 1.0))
+    elif operator == "move_bimanual_offset_and_return":
+        left_offset = vector3(parameters.get("left_offset_m"), "left_offset_m")
+        right_offset = vector3(parameters.get("right_offset_m"), "right_offset_m")
+        call(
+            left_offset=left_offset.tolist(),
+            right_offset=right_offset.tolist(),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+        context.update({
+            "left_offset": left_offset.tolist(),
+            "right_offset": right_offset.tolist(),
+        })
+    elif operator == "drive_base_forward":
+        call(
+            distance=_number(invocation, "distance_m"),
+            duration=_number(invocation, "duration_s", 2.0),
+        )
+    elif operator == "set_lift_height":
+        call(
+            delta_height=_number(invocation, "delta_height_m"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "extend_arm":
+        call(
+            extension=_number(invocation, "extension_m"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "rotate_wrist":
+        call(
+            delta_yaw=_number(invocation, "delta_yaw_rad"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "cycle_gripper":
+        call(duration=_number(invocation, "duration_s", 1.0))
     elif operator == "stand_and_hold":
-        call(duration=_number(invocation, "duration_s", 2.0))
+        default_duration = 2.0 if effect == "stand_up" else 1.0
+        call(duration=_number(invocation, "duration_s", default_duration))
+    elif operator == "set_body_height_and_hold":
+        call(
+            target_body_height=_number(invocation, "target_body_height_m"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
+    elif operator == "walk_bounded_direction_and_stop":
+        direction = invocation.get("direction")
+        if direction not in {
+            "forward_initial_body_yaw",
+            "lateral_positive_initial_body_yaw",
+        }:
+            raise TaskValidationError("unsupported bounded-walk direction")
+        call(
+            direction=direction,
+            distance=_number(invocation, "distance_m"),
+            duration=_number(invocation, "duration_s", 2.0),
+        )
+    elif operator in {
+        "set_arm_joint_posture_and_hold",
+        "set_upper_body_posture_and_hold",
+        "set_leg_posture_and_hold",
+    }:
+        call(
+            joint_names=parameters.get("joint_names"),
+            target_joint_positions=parameters.get("target_joint_positions_rad"),
+            duration=_number(invocation, "duration_s", 1.0),
+        )
     elif operator == "sit_and_hold":
         call(duration=_number(invocation, "duration_s", 1.5))
     elif operator == "hold_current_upright":
@@ -991,7 +1275,7 @@ def _guard_results(capture: _Capture, test: Mapping[str, Any]) -> list[dict[str,
         detail = ""
         if guard_id not in _SUPPORTED_GUARDS:
             detail = f"unsupported guard {guard_id!r}"
-        elif guard_id == "trusted-external-verdict":
+        elif guard_id in {"trusted-external-verdict", "trusted-mujoco-state"}:
             ok = True
             detail = "verdict computed only from harness-read MuJoCo model/data"
         elif guard_id == "finite-required-state":

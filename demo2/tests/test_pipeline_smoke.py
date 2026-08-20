@@ -2,9 +2,135 @@ from __future__ import annotations
 
 import json
 
+import demo2.pipeline as pipeline
 from demo2.pipeline import SUPPORTED_ROBOTS, _summary, inspect_package, resolve_package, run_all
 from demo2.precision_policy import policy_record
 from demo2.stage1_scope import DecisionScope
+
+
+NEW_REFERENCE_ROBOTS = {"kinova_gen3", "leap_hand"}
+SECOND_REFERENCE_ROBOTS = {"ufactory_xarm7", "aloha_2"}
+THIRD_REFERENCE_ROBOTS = {
+    "hello_robot_stretch_2",
+    "boston_dynamics_spot_with_arm",
+    "unitree_g1",
+    "google_barkour_vb",
+}
+
+
+def test_new_reference_robots_resolve_inspect_and_are_run_all_targets(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    assert NEW_REFERENCE_ROBOTS <= set(SUPPORTED_ROBOTS)
+    for robot_id in NEW_REFERENCE_ROBOTS:
+        package = resolve_package(robot_id)
+        inspected = inspect_package(robot_id)
+        assert package.reference_study_path.is_file()
+        assert inspected["robot_id"] == robot_id
+        assert inspected["capability_effects"]
+        assert inspected["complete_mjcf"]
+
+    calls: list[tuple[str, bool, bool]] = []
+
+    def fake_run_robot(
+        robot_id,
+        output_root,
+        *,
+        settings,
+        reference_calibration,
+        record_video,
+    ):
+        del output_root, settings
+        calls.append((robot_id, reference_calibration, record_video))
+        return {
+            "robot_id": robot_id,
+            "run_status": "RUN_COMPLETED",
+            "pipeline_completed": True,
+            "physical_validation_executed": True,
+            "all_tasks_passed": False,
+            "validation_passed": False,
+            "requirements_passed": 0,
+        }
+
+    monkeypatch.setattr(pipeline, "run_robot", fake_run_robot)
+    summary = run_all(
+        tmp_path / "registered-reference-robots",
+        reference_calibration=True,
+        record_video=False,
+    )
+
+    assert [robot_id for robot_id, _, _ in calls] == list(SUPPORTED_ROBOTS)
+    assert all(reference_calibration is True for _, reference_calibration, _ in calls)
+    assert all(record_video is False for _, _, record_video in calls)
+    assert NEW_REFERENCE_ROBOTS <= set(summary["robots"])
+
+
+def test_second_reference_robots_are_registered_run_all_targets(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    assert SECOND_REFERENCE_ROBOTS <= set(SUPPORTED_ROBOTS)
+    assert pipeline.REFERENCE_STUDIES["ufactory_xarm7"] == "ufactory_xarm7/study.json"
+    assert pipeline.REFERENCE_STUDIES["aloha_2"] == "aloha_2/study.json"
+    for robot_id in SECOND_REFERENCE_ROBOTS:
+        package = resolve_package(robot_id)
+        inspected = inspect_package(robot_id)
+        assert package.reference_study_path.is_file()
+        assert inspected["robot_id"] == robot_id
+        assert inspected["capability_effects"]
+        assert inspected["complete_mjcf"]
+
+    calls: list[str] = []
+
+    def fake_run_robot(robot_id, output_root, **kwargs):
+        del output_root, kwargs
+        calls.append(robot_id)
+        return {
+            "robot_id": robot_id,
+            "run_status": "RUN_COMPLETED",
+            "all_tasks_passed": False,
+            "requirements_passed": 0,
+        }
+
+    monkeypatch.setattr(pipeline, "run_robot", fake_run_robot)
+    summary = run_all(tmp_path / "second-reference-robots", reference_calibration=True)
+
+    assert calls == list(SUPPORTED_ROBOTS)
+    assert SECOND_REFERENCE_ROBOTS <= set(summary["robots"])
+
+
+def test_third_reference_robots_are_registered_run_all_targets(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    assert THIRD_REFERENCE_ROBOTS <= set(SUPPORTED_ROBOTS)
+    assert set(SUPPORTED_ROBOTS) == set(pipeline.REFERENCE_STUDIES)
+    for robot_id in THIRD_REFERENCE_ROBOTS:
+        package = resolve_package(robot_id)
+        inspected = inspect_package(robot_id)
+        assert package.reference_study_path.is_file()
+        assert inspected["robot_id"] == robot_id
+        assert inspected["capability_effects"]
+        assert inspected["complete_mjcf"]
+
+    calls: list[str] = []
+
+    def fake_run_robot(robot_id, output_root, **kwargs):
+        del output_root, kwargs
+        calls.append(robot_id)
+        return {
+            "robot_id": robot_id,
+            "run_status": "RUN_COMPLETED",
+            "all_tasks_passed": False,
+            "requirements_passed": 0,
+        }
+
+    monkeypatch.setattr(pipeline, "run_robot", fake_run_robot)
+    summary = run_all(tmp_path / "third-reference-robots", reference_calibration=True)
+
+    assert calls == list(SUPPORTED_ROBOTS)
+    assert THIRD_REFERENCE_ROBOTS <= set(summary["robots"])
 
 
 def test_supported_robot_packages_resolve() -> None:

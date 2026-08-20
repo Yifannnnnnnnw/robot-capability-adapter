@@ -1,7 +1,89 @@
-{"artifact_type":"task_evaluation_private","schema_version":"1.0.0","evaluation_id":"leap_hand-task-evaluation","evaluation_version":"1.0.0","catalog_id":"leap_hand-tasks","catalog_version":"1.0.0","robot_configuration_id":"leap_hand","visibility":"DEMO_EVALUATION_HARNESS_ONLY","review_status":"DRAFT","execution_route":"DIRECT_MUJOCO_EXPERIMENTAL","forbidden_recipients":["stage1","stage2","generated_capability_layer","repair","demo_consumer"],"common_guards":[{"guard_id":"trusted-mujoco-state","rule":"Only trusted MuJoCo joint state may support success; command receipts and self-report are not evidence."},{"guard_id":"finite-required-state","rule":"NaN, infinity, missing state, or unavailable measurement fails the trial."},{"guard_id":"scene-entrypoint-bound","rule":"Use only the declared official Menagerie left-hand scene reference."}],"definitions":{"continuous_dwell":"Every terminal check holds at every required harness sample.","experimental_threshold":"The numerical value is a draft starting point and has not been physically calibrated."},"criteria":[
-  {"task_id":"L01","criterion_status":"EXPERIMENTAL_UNCALIBRATED","review_status":"DRAFT","criterion_text":"All 16 joint positions are within 0.15 rad of the supplied neutral posture for 1.0 s.","scene_entrypoint":"leap_hand/scene_left.xml","scene_assets":[],"checks":[{"metric":"hand_joint_vector_error_rad","comparator":"<=","value":0.15}]},
-  {"task_id":"L02","criterion_status":"EXPERIMENTAL_UNCALIBRATED","review_status":"DRAFT","criterion_text":"The four index-finger joint positions are within 0.15 rad of the supplied flexion posture for 1.0 s.","scene_entrypoint":"leap_hand/scene_left.xml","scene_assets":[],"checks":[{"metric":"index_joint_vector_error_rad","comparator":"<=","value":0.15}]},
-  {"task_id":"L03","criterion_status":"EXPERIMENTAL_UNCALIBRATED","review_status":"DRAFT","criterion_text":"The eight middle/ring joint pairs differ by at most 0.15 rad in aggregate for 1.0 s.","scene_entrypoint":"leap_hand/scene_left.xml","scene_assets":[],"checks":[{"metric":"middle_ring_symmetry_error_rad","comparator":"<=","value":0.15}]},
-  {"task_id":"L04","criterion_status":"EXPERIMENTAL_UNCALIBRATED","review_status":"DRAFT","criterion_text":"The four thumb joint positions are within 0.15 rad of the supplied opposition posture for 1.0 s.","scene_entrypoint":"leap_hand/scene_left.xml","scene_assets":[],"checks":[{"metric":"thumb_joint_vector_error_rad","comparator":"<=","value":0.15}]},
-  {"task_id":"L05","criterion_status":"EXPERIMENTAL_UNCALIBRATED","review_status":"DRAFT","criterion_text":"After the bounded motion, all 12 finger/thumb joints are within 0.20 rad of the supplied pre-grasp posture.","scene_entrypoint":"leap_hand/scene_left.xml","scene_assets":[],"checks":[{"metric":"pregrasp_joint_vector_error_rad","comparator":"<=","value":0.20}]}
-]}
+{
+  "artifact_type": "task_evaluation_private",
+  "schema_version": "1.0.0",
+  "evaluation_id": "leap_hand-task-evaluation",
+  "evaluation_version": "1.0.0",
+  "catalog_id": "leap_hand-tasks",
+  "catalog_version": "1.0.0",
+  "robot_configuration_id": "leap_hand",
+  "visibility": "DEMO_EVALUATION_HARNESS_ONLY",
+  "review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+  "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "forbidden_recipients": ["stage1", "stage2", "generated_capability_layer", "repair", "demo_consumer"],
+  "common_guards": [
+    {"guard_id": "trusted-external-verdict", "rule": "Only trusted MuJoCo joint state may support success; command receipts and self-report are not evidence."},
+    {"guard_id": "finite-required-state", "rule": "NaN, infinity, missing state, or unavailable measurement fails the trial."},
+    {"guard_id": "scene-entrypoint-bound", "rule": "Use only the declared vendored official Menagerie left-hand scene."}
+  ],
+  "definitions": {
+    "continuous_dwell": "Every terminal check holds at every required harness sample.",
+    "threshold_basis": "The 0.02 rad max-absolute-error and 0.5 s dwell are the human-approved Demo2 research protocol, not a manufacturer performance claim."
+  },
+  "criteria": [
+    {
+      "task_id": "L01",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "criterion_text": "All 16 joint positions remain within 0.02 rad max absolute error of the supplied neutral posture continuously for 0.5 s.",
+      "scene_entrypoint": "menagerie/leap_hand/scene_left.xml",
+      "scene_assets": [],
+      "continuous_dwell_s": 0.5,
+      "checks": [
+        {"metric": "hand_joint_vector_error_rad", "comparator": "<=", "value": 0.02, "threshold_basis": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL; max absolute per-joint error."}
+      ],
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "scene-entrypoint-bound"]
+    },
+    {
+      "task_id": "L02",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "criterion_text": "The four index-finger joint positions remain within 0.02 rad max absolute error of the supplied flexion posture continuously for 0.5 s.",
+      "scene_entrypoint": "menagerie/leap_hand/scene_left.xml",
+      "scene_assets": [],
+      "continuous_dwell_s": 0.5,
+      "checks": [
+        {"metric": "index_joint_vector_error_rad", "comparator": "<=", "value": 0.02, "threshold_basis": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL; max absolute per-joint error."}
+      ],
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "scene-entrypoint-bound"]
+    },
+    {
+      "task_id": "L03",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "criterion_text": "Every declared middle/ring joint pair remains within 0.02 rad symmetry error continuously for 0.5 s.",
+      "scene_entrypoint": "menagerie/leap_hand/scene_left.xml",
+      "scene_assets": [],
+      "continuous_dwell_s": 0.5,
+      "checks": [
+        {"metric": "middle_ring_symmetry_error_rad", "comparator": "<=", "value": 0.02, "threshold_basis": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL; maximum absolute paired-joint difference."}
+      ],
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "scene-entrypoint-bound"]
+    },
+    {
+      "task_id": "L04",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "criterion_text": "The four thumb joint positions remain within 0.02 rad max absolute error of the supplied opposition posture continuously for 0.5 s.",
+      "scene_entrypoint": "menagerie/leap_hand/scene_left.xml",
+      "scene_assets": [],
+      "continuous_dwell_s": 0.5,
+      "checks": [
+        {"metric": "thumb_joint_vector_error_rad", "comparator": "<=", "value": 0.02, "threshold_basis": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL; max absolute per-joint error."}
+      ],
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "scene-entrypoint-bound"]
+    },
+    {
+      "task_id": "L05",
+      "criterion_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+      "criterion_text": "After the bounded motion, all 12 selected joints remain within 0.02 rad max absolute error of the supplied pre-grasp posture continuously for 0.5 s.",
+      "scene_entrypoint": "menagerie/leap_hand/scene_left.xml",
+      "scene_assets": [],
+      "continuous_dwell_s": 0.5,
+      "checks": [
+        {"metric": "pregrasp_joint_vector_error_rad", "comparator": "<=", "value": 0.02, "threshold_basis": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL; max absolute per-joint error; no object/contact claim."}
+      ],
+      "guard_ids": ["trusted-external-verdict", "finite-required-state", "scene-entrypoint-bound"]
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "record_type": "morphology",
+  "schema_version": "1.0.0",
+  "id": "leap_hand",
+  "version": "1.0.0",
+  "robot_model_id": "leap_hand",
+  "robot_configuration_id": "leap_hand",
+  "tasks": {
+    "robot_configuration_id": "leap_hand",
+    "catalog_version": "1.0.0"
+  },
+  "stage1": {
+    "action_affordances": [
+      "driver joint posture motion",
+      "position-actuated hand joints"
+    ],
+    "observation_affordances": [
+      "joint position observation",
+      "index joint position observation",
+      "paired joint position observation",
+      "thumb joint position observation"
+    ],
+    "unit_allowlist": ["rad", "s", "unitless", "none"],
+    "frame_allowlist": ["none", "joint"]
+  },
+  "driver": {
+    "family": "LeapHandPositionActuatorWrapper",
+    "source": "demo2/reference_drivers/leap_hand/driver.py"
+  },
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "base_type": "fixed",
+  "actuated_dof": 16,
+  "joint_names": [
+    "if_mcp", "if_rot", "if_pip", "if_dip",
+    "mf_mcp", "mf_rot", "mf_pip", "mf_dip",
+    "rf_mcp", "rf_rot", "rf_pip", "rf_dip",
+    "th_cmc", "th_axl", "th_mcp", "th_ipl"
+  ],
+  "actuator_names": [
+    "if_mcp_act", "if_rot_act", "if_pip_act", "if_dip_act",
+    "mf_mcp_act", "mf_rot_act", "mf_pip_act", "mf_dip_act",
+    "rf_mcp_act", "rf_rot_act", "rf_pip_act", "rf_dip_act",
+    "th_cmc_act", "th_axl_act", "th_mcp_act", "th_ipl_act"
+  ],
+  "actuator_joint_map": {
+    "if_mcp_act": "if_mcp",
+    "if_rot_act": "if_rot",
+    "if_pip_act": "if_pip",
+    "if_dip_act": "if_dip",
+    "mf_mcp_act": "mf_mcp",
+    "mf_rot_act": "mf_rot",
+    "mf_pip_act": "mf_pip",
+    "mf_dip_act": "mf_dip",
+    "rf_mcp_act": "rf_mcp",
+    "rf_rot_act": "rf_rot",
+    "rf_pip_act": "rf_pip",
+    "rf_dip_act": "rf_dip",
+    "th_cmc_act": "th_cmc",
+    "th_axl_act": "th_axl",
+    "th_mcp_act": "th_mcp",
+    "th_ipl_act": "th_ipl"
+  },
+  "state": ["joint_position", "joint_velocity"],
+  "units": {
+    "joint_position": "rad",
+    "joint_velocity": "rad/s",
+    "actuator_command": "rad",
+    "time": "s"
+  },
+  "mujoco": {
+    "version": "3.3.6",
+    "entrypoint": "menagerie/leap_hand/scene_left.xml",
+    "reset": {"mode": "model_default"},
+    "frames": {"body_names": ["palm"], "site_names": []},
+    "sensor_names": [
+      "if_mcp_sensor", "if_rot_sensor", "if_pip_sensor", "if_dip_sensor",
+      "mf_mcp_sensor", "mf_rot_sensor", "mf_pip_sensor", "mf_dip_sensor",
+      "rf_mcp_sensor", "rf_rot_sensor", "rf_pip_sensor", "rf_dip_sensor",
+      "th_cmc_sensor", "th_axl_sensor", "th_mcp_sensor", "th_ipl_sensor"
+    ],
+    "render": {"camera": "free", "width": 640, "height": 480, "fps": 30}
+  },
+  "source": {
+    "repository": "https://github.com/google-deepmind/mujoco_menagerie",
+    "commit": "da76818e269b82289eba39808e2fb91d679d6994",
+    "path": "leap_hand/scene_left.xml",
+    "license": "MIT"
+  }
+}

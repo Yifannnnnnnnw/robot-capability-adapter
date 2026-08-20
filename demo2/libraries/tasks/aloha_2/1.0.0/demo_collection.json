@@ -6,8 +6,9 @@
   "catalog_id": "aloha_2-tasks",
   "catalog_version": "1.0.0",
   "robot_configuration_id": "aloha_2",
-  "review_status": "DRAFT_REVIEW_REQUIRED",
+  "review_status": "HUMAN_APPROVED",
+  "protocol_review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
-  "selection_policy": "Exactly A01-A05 in listed order for a selected preparation run; Stage1 may merge requirements or disposition a subset, but this collection itself has no runtime subset selection.",
+  "selection_policy": "Exactly A01-A05 in listed order under the approved Demo2 experiment protocol; Stage1 may merge requirements or disposition a subset.",
   "task_ids": ["A01", "A02", "A03", "A04", "A05"]
 }

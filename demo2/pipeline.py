@@ -62,6 +62,14 @@ SUPPORTED_ROBOTS = (
     "piper",
     "universal_robots_ur5e",
     "pushbench",
+    "kinova_gen3",
+    "leap_hand",
+    "ufactory_xarm7",
+    "aloha_2",
+    "hello_robot_stretch_2",
+    "boston_dynamics_spot_with_arm",
+    "unitree_g1",
+    "google_barkour_vb",
 )
 REFERENCE_STUDIES = {
     "robotstudio_so101": "so101/study.json",
@@ -71,6 +79,14 @@ REFERENCE_STUDIES = {
     "piper": "piper/study.json",
     "universal_robots_ur5e": "ur5e/study.json",
     "pushbench": "pushbench/study.json",
+    "kinova_gen3": "kinova_gen3/study.json",
+    "leap_hand": "leap_hand/study.json",
+    "ufactory_xarm7": "ufactory_xarm7/study.json",
+    "aloha_2": "aloha_2/study.json",
+    "hello_robot_stretch_2": "hello_robot_stretch_2/study.json",
+    "boston_dynamics_spot_with_arm": "boston_dynamics_spot_with_arm/study.json",
+    "unitree_g1": "unitree_g1/study.json",
+    "google_barkour_vb": "google_barkour_vb/study.json",
 }
 
 

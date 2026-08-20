@@ -5,7 +5,9 @@
   "catalog_version": "1.0.0",
   "robot_model_id": "hello-robot-stretch-2",
   "robot_configuration_id": "hello_robot_stretch_2",
-  "catalog_review_status": "DRAFT_REVIEW_REQUIRED",
+  "catalog_review_status": "HUMAN_APPROVED",
+  "migration_review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL",
+  "protocol_note": "Thresholds are a human-approved protocol for this study and are not manufacturer performance claims.",
   "execution_route": "DIRECT_MUJOCO_EXPERIMENTAL",
   "configuration_boundary": {
     "base_type": "mobile_free_base",
@@ -15,18 +17,18 @@
     "actuators": ["forward", "turn", "lift", "arm_extend", "wrist_yaw", "grip", "head_pan", "head_tilt"],
     "model_range_facts": "Lift range is -0.5..0.6 m; each telescope joint is 0..0.13 m with 0..0.52 m arm-extend control range; wrist range is -1.75..4 rad; gripper slide range is -0.005..0.04 m.",
     "measurement_frames": ["base_link", "link_gripper_slider", "joint_lift", "joint_wrist_yaw", "joint_gripper_slide"],
-    "scene_entrypoint": "general_demo/libraries/assets/hello_robot_stretch_2/1.0.0/scene.xml"
+    "scene_entrypoint": "menagerie/hello_robot_stretch/scene.xml"
   },
   "source_registry": [
     {"source_id": "mujoco-menagerie-stretch-2", "kind": "official_menagerie_model", "url": "https://github.com/google-deepmind/mujoco_menagerie/tree/main/hello_robot_stretch", "model_url": "https://raw.githubusercontent.com/google-deepmind/mujoco_menagerie/main/hello_robot_stretch/stretch.xml", "facts": "Hello Robot Stretch 2 identity, 17-DoF mobile-manipulator morphology, joint ranges, body names, no explicit site, and actuator/tendon names."},
     {"source_id": "hello-robot-stretch-2", "kind": "official_robot_model_source", "url": "https://hello-robot.com/", "facts": "Original robot and Clear BSD model provenance as recorded by Menagerie."}
   ],
-  "source_status": "PUBLIC_REFERENCE_ONLY; MJCF and assets intentionally not vendored in this preparation package",
+  "source_status": "SOURCE_CLOSED_AT_MENAGERIE_COMMIT_da76818e269b82289eba39808e2fb91d679d6994; locally vendored for this experiment",
   "tasks": [
-    {"task_id": "ST01", "description": "Drive the Stretch base forward by the specified short distance and stop.", "task_type": "bounded_base_translation", "task_review_status": "DRAFT_RESEARCH_CURATED", "difficulty_rationale": "Single planar mobile-base primitive measured from the free base pose.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Forward displacement is at least 0.15 m; threshold is an experimental conservative choice below the 0.20 m target."},
-    {"task_id": "ST02", "description": "Raise the Stretch lift to the specified height change and hold.", "task_type": "lift_control", "task_review_status": "DRAFT_RESEARCH_CURATED", "difficulty_rationale": "Single prismatic lift primitive using the declared joint_lift range.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Lift joint displacement is at least 0.08 m; threshold is an experimental conservative choice within the -0.5..0.6 m model range."},
-    {"task_id": "ST03", "description": "Extend the Stretch telescoping arm by the specified short amount and hold.", "task_type": "telescoping_extension", "task_review_status": "DRAFT_RESEARCH_CURATED", "difficulty_rationale": "Uses the model's coupled four-joint arm-extend tendon as one mobile-manipulator primitive.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Gripper-slider Z displacement is at least 0.12 m; threshold is an experimental conservative choice within the 0..0.52 m control range."},
-    {"task_id": "ST04", "description": "Rotate the Stretch wrist to the specified small yaw change and hold.", "task_type": "wrist_rotation", "task_review_status": "DRAFT_RESEARCH_CURATED", "difficulty_rationale": "Single wrist-yaw primitive after the mobile arm is reset.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Wrist excursion is at least 0.20 rad; threshold is an experimental conservative choice within the -1.75..4 rad range."},
-    {"task_id": "ST05", "description": "Open and close the Stretch gripper once and expose the observed finger motion.", "task_type": "gripper_cycle", "task_review_status": "DRAFT_RESEARCH_CURATED", "difficulty_rationale": "Single gripper-slide primitive with the two finger joints coupled by equality constraints.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Gripper slide excursion is at least 0.01 m in each direction; threshold is an experimental conservative choice within the -0.005..0.04 m range."}
+    {"task_id": "ST01", "description": "Drive the Stretch base forward by the specified short distance and stop.", "task_type": "bounded_base_translation", "task_review_status": "HUMAN_APPROVED", "migration_review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL", "difficulty_rationale": "Single planar mobile-base primitive measured from the free base pose.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Study protocol: travel 0.15-0.25 m, then remain at or below 0.05 m/s for 0.5 s; not a manufacturer claim."},
+    {"task_id": "ST02", "description": "Raise the Stretch lift to the specified height change and hold.", "task_type": "lift_control", "task_review_status": "HUMAN_APPROVED", "migration_review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL", "difficulty_rationale": "Single prismatic lift primitive using the declared joint_lift range.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Study protocol: final lift displacement 0.09-0.11 m for 0.5 s; not a manufacturer claim."},
+    {"task_id": "ST03", "description": "Extend the Stretch telescoping arm by the specified short amount and hold.", "task_type": "telescoping_extension", "task_review_status": "HUMAN_APPROVED", "migration_review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL", "difficulty_rationale": "Uses the model's coupled four-joint arm-extend tendon as one mobile-manipulator primitive.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Study protocol: final extension 0.14-0.16 m for 0.5 s; not a manufacturer claim."},
+    {"task_id": "ST04", "description": "Rotate the Stretch wrist to the specified small yaw change and hold.", "task_type": "wrist_rotation", "task_review_status": "HUMAN_APPROVED", "migration_review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL", "difficulty_rationale": "Single wrist-yaw primitive after the mobile arm is reset.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Study protocol: final wrist excursion 0.28-0.32 rad for 0.5 s; not a manufacturer claim."},
+    {"task_id": "ST05", "description": "Open and close the Stretch gripper once and expose the observed finger motion.", "task_type": "gripper_cycle", "task_review_status": "HUMAN_APPROVED", "migration_review_status": "HUMAN_APPROVED_EXPERIMENT_PROTOCOL", "difficulty_rationale": "Single gripper-slide primitive with the two finger joints coupled by equality constraints.", "source_ids": ["mujoco-menagerie-stretch-2"], "criterion_summary": "Study protocol: at least 0.01 m opening and closing excursion; not a manufacturer claim."}
   ]
 }

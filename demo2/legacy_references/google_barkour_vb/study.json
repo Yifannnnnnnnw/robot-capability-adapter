@@ -1,0 +1,5 @@
+{
+  "robot_id":"google_barkour_vb","estimated_class":"quadruped","nq":19,"nv":18,"nu":12,"base_body":"torso","free_joint":"torso",
+  "leg_joint_groups":{"FL":["abduction_front_left","hip_front_left","knee_front_left"],"HL":["abduction_hind_left","hip_hind_left","knee_hind_left"],"FR":["abduction_front_right","hip_front_right","knee_front_right"],"HR":["abduction_hind_right","hip_hind_right","knee_hind_right"]},
+  "actuator_mapping":"each leg joint has an identically named position actuator","home_leg_positions":[0,0.5,1.0],"keyframes":["home"],"sites":["base_frame","foot_front_left","foot_hind_left","foot_front_right","foot_hind_right"],"source_commit":"da76818e269b82289eba39808e2fb91d679d6994","notes":"Capability methods command only the 12 position actuators and step physics."
+}

@@ -1,0 +1,7 @@
+{
+  "robot_id": "ufactory_xarm7", "estimated_class": "arm", "dof": 7, "nq": 13, "nv": 13, "nu": 8,
+  "arm_joint_names": ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7"],
+  "arm_actuator_names": ["act1", "act2", "act3", "act4", "act5", "act6", "act7"],
+  "joint_limits": {"joint1": [-6.28319, 6.28319], "joint2": [-2.059, 2.0944], "joint3": [-6.28319, 6.28319], "joint4": [-0.19198, 3.927], "joint5": [-6.28319, 6.28319], "joint6": [-1.69297, 3.14159], "joint7": [-6.28319, 6.28319]},
+  "ee_site": "link_tcp", "ee_body": "xarm_gripper_base_link", "keyframes": ["home"], "home_qpos": [0.0, -0.247, 0.0, 0.909, 0.0, 1.15644, 0.0], "gripper_actuator_names": ["gripper"], "gripper_ctrlrange": [0.0, 255.0], "actuator_type_hint": "position", "source_commit": "da76818e269b82289eba39808e2fb91d679d6994"
+}

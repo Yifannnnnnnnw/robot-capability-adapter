@@ -10,6 +10,7 @@ from demo2.precision_policy import policy_record
 from demo2.task_validation import (
     _SUPPORTED_INVOCATIONS,
     _SUPPORTED_MEASUREMENTS,
+    _supports_invocation_effect,
     task_repair_feedback,
     validate_task_driver,
 )
@@ -402,12 +403,20 @@ def test_driver_load_failure_still_reports_every_declared_criterion(
     assert all("load boom" in item["error"] for item in report["requirements"][0]["criteria"])
 
 
-def test_all_three_current_direct_adapters_use_supported_operators() -> None:
+def test_all_registered_direct_adapters_use_supported_operators() -> None:
     task_root = Path(__file__).resolve().parents[1] / "libraries" / "tasks"
     configurations = (
         "robotstudio_so101",
         "franka_panda",
         "unitree-go2-stock-12dof",
+        "kinova_gen3",
+        "leap_hand",
+        "ufactory_xarm7",
+        "aloha_2",
+        "hello_robot_stretch_2",
+        "boston_dynamics_spot_with_arm",
+        "unitree_g1",
+        "google_barkour_vb",
     )
     observed_invocations: set[str] = set()
     observed_measurements: set[str] = set()
@@ -420,7 +429,7 @@ def test_all_three_current_direct_adapters_use_supported_operators() -> None:
         for task in adapter["tasks"]:
             invocation = task["invocation"]
             observed_invocations.add(invocation["operator"])
-            assert _SUPPORTED_INVOCATIONS[invocation["operator"]] == invocation["effect"]
+            assert _supports_invocation_effect(invocation["operator"], invocation["effect"])
             for measurement in task["measurements"]:
                 observed_measurements.add(measurement["operator"])
                 assert measurement["operator"] in _SUPPORTED_MEASUREMENTS

@@ -1,0 +1,40 @@
+{
+  "record_type": "morphology",
+  "schema_version": "1.0.0",
+  "id": "ufactory_xarm7",
+  "version": "1.0.0",
+  "robot_model_id": "ufactory_xarm7",
+  "robot_configuration_id": "ufactory_xarm7",
+  "tasks": {"robot_configuration_id": "ufactory_xarm7", "catalog_version": "1.0.0"},
+  "stage1": {
+    "action_affordances": ["driver Cartesian motion"],
+    "observation_affordances": ["TCP pose observation"],
+    "unit_allowlist": ["m", "s", "none", "unitless"],
+    "frame_allowlist": ["world", "robot_base", "none"]
+  },
+  "driver": {"family": "ArmSerialDLSSkeleton", "source": "demo2/reference_drivers/ufactory_xarm7/driver.py"},
+  "route": "DIRECT_MUJOCO_EXPERIMENTAL",
+  "base_type": "fixed",
+  "actuated_dof": 8,
+  "arm_dof": 7,
+  "nq": 13,
+  "nv": 13,
+  "nu": 8,
+  "joint_names": ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7", "left_driver_joint", "left_finger_joint", "left_inner_knuckle_joint", "right_driver_joint", "right_finger_joint", "right_inner_knuckle_joint"],
+  "arm_joint_names": ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "joint7"],
+  "actuator_names": ["act1", "act2", "act3", "act4", "act5", "act6", "act7", "gripper"],
+  "arm_actuator_names": ["act1", "act2", "act3", "act4", "act5", "act6", "act7"],
+  "actuator_joint_map": {"act1": "joint1", "act2": "joint2", "act3": "joint3", "act4": "joint4", "act5": "joint5", "act6": "joint6", "act7": "joint7", "gripper": "left_driver_joint/right_driver_joint tendon"},
+  "state": ["joint_position", "joint_velocity", "end_effector_pose"],
+  "units": {"joint_position": "rad", "joint_velocity": "rad/s", "actuator_command": "native_mujoco_control", "length": "m", "time": "s"},
+  "end_effector_sites": ["link_tcp"],
+  "mujoco": {
+    "version": "3.3.6",
+    "entrypoint": "menagerie/ufactory_xarm7/scene.xml",
+    "reset": {"keyframe": "home"},
+    "frames": {"body_names": ["xarm_gripper_base_link"], "site_names": ["link_tcp"]},
+    "sensor_names": [],
+    "render": {"camera": "free", "width": 640, "height": 480, "fps": 30}
+  },
+  "source": {"repository": "https://github.com/google-deepmind/mujoco_menagerie", "commit": "da76818e269b82289eba39808e2fb91d679d6994", "path": "ufactory_xarm7/scene.xml", "license": "BSD-3-Clause"}
+}
