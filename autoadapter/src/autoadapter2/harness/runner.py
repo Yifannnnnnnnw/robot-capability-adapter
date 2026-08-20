@@ -618,11 +618,14 @@ def run_private_suite(
                 isinstance(controller_value, Mapping)
                 and bool(controller_value.get("completed"))
             )
-            base_passed = (
+            physical_integrity_passed = (
                 physical_execution_passed
                 and bool(contact_integrity["passed"])
                 and bool(guard_outcomes)
                 and all(guard_outcomes.values())
+            )
+            base_passed = (
+                physical_integrity_passed
                 and video_evidence_passed
                 and controller_completed
             )
@@ -675,6 +678,8 @@ def run_private_suite(
                     "physical_evidence": worker.get("physical_evidence", {}),
                     "physical_execution_passed": physical_execution_passed,
                     "contact_integrity": contact_integrity,
+                    "physical_integrity_passed": physical_integrity_passed,
+                    "task_metric_passed": False,
                     "trial_passed": False,
                     "_criterion": criterion,
                     "_base_passed": base_passed,
@@ -718,10 +723,12 @@ def run_private_suite(
             trial["aggregation_passed"] = bool(aggregation_result["passed"])
             trial["aggregation_value"] = aggregation_result.get("value")
             trial["criterion_passed"] = bool(aggregation_result["passed"])
+            trial["task_metric_passed"] = bool(trial["temporal_passed"]) and bool(
+                aggregation_result["passed"]
+            )
             trial["trial_passed"] = (
                 bool(trial["_base_passed"])
-                and bool(trial["temporal_passed"])
-                and bool(aggregation_result["passed"])
+                and bool(trial["task_metric_passed"])
             )
             trial.pop("_criterion", None)
             trial.pop("_base_passed", None)
@@ -766,6 +773,12 @@ def run_private_suite(
     physical_executed = bool(trials) and all(
         trial["physical_execution_passed"] for trial in trials
     )
+    task_metric_passed = bool(trials) and all(
+        trial["task_metric_passed"] for trial in trials
+    )
+    physical_integrity_passed = bool(trials) and all(
+        trial["physical_integrity_passed"] for trial in trials
+    )
     validation_passed = bool(trials) and all(trial["trial_passed"] for trial in trials)
     video_complete = bool(trials) and all(
         (not record_video) or bool(trial["video"].get("complete")) for trial in trials
@@ -794,6 +807,8 @@ def run_private_suite(
     return {
         "pipeline_completed": pipeline_completed,
         "physical_validation_executed": physical_executed,
+        "task_metric_passed": task_metric_passed,
+        "physical_integrity_passed": physical_integrity_passed,
         "validation_passed": validation_passed,
         "passed_task_count": passed_fully_evaluated_tasks,
         "task_count": len(fully_evaluated_tasks),

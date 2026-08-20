@@ -455,12 +455,16 @@ class HarnessRunnerTests(unittest.TestCase):
         trial = report["trials"][0]
         self.assertTrue(trial["temporal_passed"])
         self.assertTrue(trial["criterion_passed"])
+        self.assertTrue(trial["task_metric_passed"])
         self.assertFalse(trial["contact_integrity"]["passed"])
+        self.assertFalse(trial["physical_integrity_passed"])
         self.assertEqual(
             trial["contact_integrity"]["deepest_contact_pair"]["geom2"],
             "workpiece_geom",
         )
         self.assertFalse(trial["trial_passed"])
+        self.assertTrue(report["task_metric_passed"])
+        self.assertFalse(report["physical_integrity_passed"])
         self.assertFalse(report["validation_passed"])
 
     def test_session_tracks_transient_contact_depth_every_step(self) -> None:
