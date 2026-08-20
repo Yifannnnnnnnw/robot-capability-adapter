@@ -90,6 +90,25 @@ class ResearchRobotIndexTests(unittest.TestCase):
             any("tasks/sources.json" in item for item in leap["missing_for_runnable_package"])
         )
 
+        g1 = candidates_by_id["unitree_g1"]
+        g1_paths = {
+            material["path"] for material in g1["locally_observed_source_material"]
+        }
+        self.assertIn(
+            "autoadapter/libraries/robots/unitree_g1/1.0.0/assets/scene.xml",
+            g1_paths,
+        )
+        self.assertIn(
+            "autoadapter/libraries/robots/unitree_g1/1.0.0/morphology.json",
+            g1_paths,
+        )
+        self.assertFalse(
+            any("asset closure" in item for item in g1["missing_for_runnable_package"])
+        )
+        self.assertFalse(
+            any("morphology.json" in item for item in g1["missing_for_runnable_package"])
+        )
+
         for candidate in candidates:
             self.assertTrue(candidate["missing_for_runnable_package"])
 
