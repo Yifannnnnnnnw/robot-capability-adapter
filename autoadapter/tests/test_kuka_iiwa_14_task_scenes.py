@@ -281,8 +281,13 @@ def test_kuka_iiwa_14_fixture_axes_positions_and_gravity_compensation() -> None:
 
     model = mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / "drawer_scene.xml"))
     drawer_housing = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "drawer_housing")
-    assert int(model.geom_contype[drawer_housing]) == 0
-    assert int(model.geom_conaffinity[drawer_housing]) == 0
+    assert int(model.geom_contype[drawer_housing]) & 1
+    assert int(model.geom_conaffinity[drawer_housing]) & 1
+    for name in ("drawer_housing_left", "drawer_housing_right", "drawer_housing_top"):
+        geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, name)
+        assert geom_id >= 0
+        assert int(model.geom_contype[geom_id]) & 1
+        assert int(model.geom_conaffinity[geom_id]) & 1
     np.testing.assert_allclose(
         model.body_pos[_body_id(model, "drawer_handle")],
         [0.0, -0.035, 0.11],

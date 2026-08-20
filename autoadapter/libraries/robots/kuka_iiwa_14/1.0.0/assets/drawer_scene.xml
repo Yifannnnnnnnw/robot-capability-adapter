@@ -7,8 +7,11 @@
   <worldbody>
     <light pos="0.35 -0.2 1.45" dir="0.2 0.1 -1" directional="true" />
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
-    <geom name="work_surface" type="box" pos="0.48 0.06 0.33" size="0.22 0.18 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
-    <geom name="drawer_housing" type="box" pos="0.48 0.15 0.45" size="0.115 0.075 0.045" mass="0" contype="0" conaffinity="0" rgba="0.20 0.24 0.28 1" />
+    <geom name="work_surface" type="box" pos="0.48 0.06 0.33" size="0.22 0.18 0.08" mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
+    <geom name="drawer_housing" type="box" pos="0.48 0.218 0.45" size="0.115 0.007 0.045" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
+    <geom name="drawer_housing_left" type="box" pos="0.375 0.15 0.45" size="0.01 0.068 0.045" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
+    <geom name="drawer_housing_right" type="box" pos="0.585 0.15 0.45" size="0.01 0.068 0.045" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
+    <geom name="drawer_housing_top" type="box" pos="0.48 0.15 0.49" size="0.095 0.068 0.005" mass="0" contype="1" conaffinity="3" rgba="0.20 0.24 0.28 1" />
     <body name="drawer" pos="0.48 0.11 0.45">
       <joint name="drawer_slide" type="slide" axis="0 1 0" range="-0.08 0" damping="0.25" frictionloss="0.02" />
       <geom name="drawer_front" type="box" size="0.09 0.018 0.035" mass="0.06" conaffinity="2" friction="0.8 0.08 0.008" rgba="0.72 0.36 0.14 1" />
