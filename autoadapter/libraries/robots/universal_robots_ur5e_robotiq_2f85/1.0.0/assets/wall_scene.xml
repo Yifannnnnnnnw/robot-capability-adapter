@@ -7,8 +7,8 @@
   <worldbody>
     <light pos="0.3 0.2 1.4" dir="-0.2 0.2 -1" directional="true"/>
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1"/>
-    <geom name="work_surface" type="box" pos="-0.14 0.62 0.20" size="0.22 0.16 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1"/>
-    <geom name="wall" type="box" pos="-0.085 0.62 0.32" size="0.045 0.012 0.04" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.76 0.34 0.14 1"/>
+    <geom name="work_surface" type="box" pos="-0.14 0.62 0.20" size="0.22 0.16 0.08" mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1"/>
+    <geom name="wall" type="box" pos="-0.085 0.62 0.32" size="0.045 0.012 0.04" mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01" rgba="0.76 0.34 0.14 1"/>
     <body name="workpiece" pos="-0.15 0.58 0.30">
       <freejoint/>
       <geom name="workpiece_geom" type="box" size="0.018 0.018 0.018" mass="0.02" conaffinity="2" friction="1.5 0.1 0.01" condim="4" rgba="0.10 0.55 0.92 1"/>
