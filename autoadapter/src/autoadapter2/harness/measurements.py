@@ -721,6 +721,31 @@ def evaluate_guards(
                         contact_steps += step_count
                 outcome = valid_records and contact_steps >= minimum_steps
             outcomes[guard_id] = outcome
+        elif kind == "named_joints_remain_near_reset":
+            tolerances = guard.get("joint_tolerances")
+            deviations = evidence.get("joint_max_abs_deviation_from_reset")
+            outcome = False
+            if (
+                isinstance(tolerances, Mapping)
+                and tolerances
+                and isinstance(deviations, Mapping)
+            ):
+                try:
+                    outcome = all(
+                        isinstance(name, str)
+                        and bool(name.strip())
+                        and not isinstance(tolerance, bool)
+                        and math.isfinite(float(tolerance))
+                        and float(tolerance) > 0.0
+                        and name in deviations
+                        and not isinstance(deviations[name], bool)
+                        and math.isfinite(float(deviations[name]))
+                        and 0.0 <= float(deviations[name]) <= float(tolerance)
+                        for name, tolerance in tolerances.items()
+                    )
+                except (TypeError, ValueError):
+                    outcome = False
+            outcomes[guard_id] = outcome
         elif kind == "terminal_body_stability":
             samples = evidence.get("samples")
             body_name = guard.get("body_name")

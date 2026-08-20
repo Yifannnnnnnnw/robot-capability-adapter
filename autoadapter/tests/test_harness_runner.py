@@ -513,6 +513,43 @@ class HarnessRunnerTests(unittest.TestCase):
             {"selected-finger-contact": True},
         )
 
+    def test_named_joint_neutral_guard_uses_per_joint_peak_deviation(self) -> None:
+        guard = {
+            "guard_id": "other-arm-neutral",
+            "kind": "named_joints_remain_near_reset",
+            "joint_tolerances": {
+                "left/waist": 0.01,
+                "left/left_finger": 0.0005,
+            },
+        }
+        neutral = self._worker_result([])
+        neutral["physical_evidence"]["joint_max_abs_deviation_from_reset"] = {
+            "left/waist": 0.009,
+            "left/left_finger": 0.0004,
+        }
+        moved = self._worker_result([])
+        moved["physical_evidence"]["joint_max_abs_deviation_from_reset"] = {
+            "left/waist": 0.011,
+            "left/left_finger": 0.0,
+        }
+        missing = self._worker_result([])
+        missing["physical_evidence"]["joint_max_abs_deviation_from_reset"] = {
+            "left/waist": 0.0,
+        }
+
+        self.assertEqual(
+            evaluate_guards([guard], worker_result=neutral),
+            {"other-arm-neutral": True},
+        )
+        self.assertEqual(
+            evaluate_guards([guard], worker_result=moved),
+            {"other-arm-neutral": False},
+        )
+        self.assertEqual(
+            evaluate_guards([guard], worker_result=missing),
+            {"other-arm-neutral": False},
+        )
+
     def test_physical_execution_requires_clean_canonical_stepped_trials(self) -> None:
         base_samples = [{"time": 0.0, "joint_positions": {"shoulder_pan": 0.2}}]
         variants = (

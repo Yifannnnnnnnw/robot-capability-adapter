@@ -134,6 +134,11 @@ class HarnessWorkerTests(unittest.TestCase):
         self.assertEqual(result["physical_evidence"]["step_count"], 1)
         self.assertTrue(result["physical_evidence"]["ctrl_changed_from_reset"])
         self.assertFalse(result["physical_evidence"]["direct_state_write_detected"])
+        deviations = result["physical_evidence"][
+            "joint_max_abs_deviation_from_reset"
+        ]
+        self.assertGreater(deviations["shoulder_pan"], 0.0)
+        self.assertGreaterEqual(deviations["shoulder_lift"], 0.0)
 
     def test_nested_controller_can_retain_the_canonical_session(self) -> None:
         self.driver_path.write_text(_nested_controller_source(), encoding="utf-8")

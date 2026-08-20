@@ -302,6 +302,37 @@ class RobotPackageTests(unittest.TestCase):
                 with self.assertRaisesRegex(RobotPackageError, message):
                     load_robot_package(self.root)
 
+    def test_named_joint_neutral_guard_requires_per_joint_tolerances(self) -> None:
+        guards_path = self.root / "tasks" / "private" / "guards.json"
+        guards = json.loads(guards_path.read_text(encoding="utf-8"))
+        guards["guards"].append(
+            {
+                "guard_id": "other-arm-neutral",
+                "kind": "named_joints_remain_near_reset",
+                "joint_tolerances": {
+                    "left/waist": 0.01,
+                    "left/left_finger": 0.0005,
+                },
+            }
+        )
+        _write_json(guards_path, guards)
+        self.assertEqual(
+            load_robot_package(self.root).robot_configuration_id,
+            "example-arm",
+        )
+
+        invalid_tolerances = ({}, {"left/waist": 0.0}, {"left/waist": True})
+        for tolerances in invalid_tolerances:
+            with self.subTest(tolerances=tolerances):
+                invalid = json.loads(json.dumps(guards))
+                invalid["guards"][-1]["joint_tolerances"] = tolerances
+                _write_json(guards_path, invalid)
+                with self.assertRaisesRegex(
+                    RobotPackageError,
+                    "joint_tolerances",
+                ):
+                    load_robot_package(self.root)
+
     def test_mjcf_include_cannot_escape_assets(self) -> None:
         (self.root / "outside.xml").write_text(
             '<mujoco model="outside"/>', encoding="utf-8"

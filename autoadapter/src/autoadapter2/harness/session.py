@@ -107,6 +107,27 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
         self._last_qpos = np.array(self.data.qpos, dtype=float, copy=True)
         self._last_qvel = np.array(self.data.qvel, dtype=float, copy=True)
         self._last_time = float(self.data.time)
+        self._tracked_joint_qpos_addresses: dict[str, int] = {}
+        for index in range(int(self.model.njnt)):
+            joint_type = int(self.model.jnt_type[index])
+            if joint_type not in {
+                int(self.mujoco.mjtJoint.mjJNT_HINGE),
+                int(self.mujoco.mjtJoint.mjJNT_SLIDE),
+            }:
+                continue
+            name = self.mujoco.mj_id2name(
+                self.model, self.mujoco.mjtObj.mjOBJ_JOINT, index
+            ) or f"joint_{index}"
+            self._tracked_joint_qpos_addresses[name] = int(
+                self.model.jnt_qposadr[index]
+            )
+        self._initial_joint_positions = {
+            name: float(self.data.qpos[address])
+            for name, address in self._tracked_joint_qpos_addresses.items()
+        }
+        self.joint_max_abs_deviation_from_reset = {
+            name: 0.0 for name in self._tracked_joint_qpos_addresses
+        }
         self.samples.append(self.snapshot())
         self._next_sample_time = self.initial_time + self.sample_period_s
 
@@ -162,6 +183,13 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
         import numpy as np
 
         self.step_count += 1
+        for name, address in self._tracked_joint_qpos_addresses.items():
+            deviation = abs(
+                float(self.data.qpos[address]) - self._initial_joint_positions[name]
+            )
+            self.joint_max_abs_deviation_from_reset[name] = max(
+                self.joint_max_abs_deviation_from_reset[name], deviation
+            )
         pairs: set[tuple[str, str]] = set()
         for index in range(int(self.data.ncon)):
             contact = self.data.contact[index]
@@ -282,5 +310,8 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
                 {"geom1": pair[0], "geom2": pair[1], "step_count": count}
                 for pair, count in sorted(self.contact_pair_step_counts.items())
             ],
+            "joint_max_abs_deviation_from_reset": dict(
+                sorted(self.joint_max_abs_deviation_from_reset.items())
+            ),
             "samples": self.samples,
         }

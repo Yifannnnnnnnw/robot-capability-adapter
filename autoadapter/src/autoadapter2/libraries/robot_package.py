@@ -49,6 +49,7 @@ _REQUIRED_GUARD_KINDS = {
 _SUPPORTED_GUARD_KINDS = _REQUIRED_GUARD_KINDS | {
     "complete_video",
     "named_geom_contact_pair_required",
+    "named_joints_remain_near_reset",
     "terminal_body_stability",
 }
 
@@ -562,6 +563,27 @@ def _validate_private_inputs(
                 or minimum_steps <= 0
             ):
                 raise RobotPackageError(f"{where}.minimum_steps must be a positive integer")
+        elif kind == "named_joints_remain_near_reset":
+            tolerances = guard.get("joint_tolerances")
+            if not isinstance(tolerances, dict) or not tolerances:
+                raise RobotPackageError(
+                    f"{where}.joint_tolerances must be a non-empty object"
+                )
+            for joint_name, tolerance in tolerances.items():
+                if not isinstance(joint_name, str) or not joint_name.strip():
+                    raise RobotPackageError(
+                        f"{where}.joint_tolerances keys must be non-empty names"
+                    )
+                if (
+                    isinstance(tolerance, bool)
+                    or not isinstance(tolerance, (int, float))
+                    or not math.isfinite(float(tolerance))
+                    or float(tolerance) <= 0.0
+                ):
+                    raise RobotPackageError(
+                        f"{where}.joint_tolerances[{joint_name!r}] "
+                        "must be a positive finite number"
+                    )
         elif kind == "terminal_body_stability":
             _required_text(guard, "body_name", where=where)
             for field in ("minimum_height_m", "minimum_upright_cosine"):
