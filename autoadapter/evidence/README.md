@@ -167,6 +167,40 @@ condition, does not establish Task Demo or driver-synthesis success, and does
 not admit KUKA to the runnable index. A real-model dynamic canary and final
 admission review remain required.
 
+## ALOHA 2 Package-Wide Reference Positive Control
+
+Run `aloha-reference-positive-control-20260820T100317Z`, on mainline commit
+`2e156e7`, passed all 20 fixed ALOHA selected-arm Task Library cases with the
+reviewed Framework-owned reference driver and real MuJoCo 3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control was observed before physics stepping and changed from reset
+  in every trial;
+- all four core guards passed in every trial, including nonselected-arm neutral
+  enforcement and direct-state-write rejection;
+- all 19 contact tasks passed their exact selected-finger-to-task-geometry
+  contact guard;
+- maximum trial length: 6,600 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete H.264, independently decoded at `800x600`, with 12
+  to 133 frames per case; and
+- pick-place, sweep-into-goal, door-open, and soccer terminal frames were
+  visually checked for nonblank, task-readable framing and visible terminal
+  task state.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/aloha-reference-positive-control-20260820T100317Z/`.
+Its `reference_report.json`, complete 20-case suite, and per-case videos remain
+together. The sandboxed run ending `100244Z` is diagnostic only: macOS
+CoreGraphics was unavailable and every requested video had zero frames.
+
+This result establishes package-wide reference feasibility for the canonical
+ALOHA assets, selected-arm actuator trajectory baseline, trusted measurements,
+other-arm neutrality guard, exact-contact guards, Harness, and video path. It
+is not a model-generated condition, does not establish Task Demo or
+driver-synthesis success, and does not admit ALOHA to the runnable index. A
+real-model dynamic canary and final admission review remain required.
+
 ## Latest Historical Diagnostic Run
 
 This run predates Authority `0.19.2`: its five sampled cases were used directly

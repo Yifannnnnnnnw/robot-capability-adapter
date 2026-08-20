@@ -684,7 +684,7 @@
         {
           "path": "autoadapter/libraries/robots/aloha_2/1.0.0/morphology.json",
           "kind": "canonical_morphology_foundation",
-          "observation": "The canonical morphology records the fixed-base bimanual joint-position controls, mirrored finger equalities, public joint/gripper actions, and state/site/contact observations from the selected ALOHA scene; it does not itself establish private task bindings, a skeleton, a reference driver, or runnable status."
+          "observation": "The canonical morphology records the fixed-base bimanual joint-position controls, mirrored finger equalities, public joint/gripper actions, and state/site/contact observations from the selected ALOHA scene. This public structure record does not itself establish task success, model generation, admission, or runnable status."
         },
         {
           "path": "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/sources.json",
@@ -704,7 +704,22 @@
         {
           "path": "autoadapter/libraries/robots/aloha_2/1.0.0/skeleton/arm_serial_dls.py",
           "kind": "canonical_skeleton_inventory",
-          "observation": "The capability-neutral arm_serial_dls inventory binds either selected ALOHA arm and its gripper to the canonical MuJoCo session using public names, limits, neutral pose, and gripper controls. Focused left/right checks execute actuator-only Cartesian motion and gripper control while the nonselected arm remains within per-joint neutral tolerances. This is capability-neutral motion evidence only; task validation, calibration-driver evidence, admission, and runnable status remain outstanding."
+          "observation": "The capability-neutral arm_serial_dls inventory binds either selected ALOHA arm and its gripper to the canonical MuJoCo session using public names, limits, neutral pose, and gripper controls. Focused left/right checks execute actuator-only Cartesian motion and gripper control while the nonselected arm remains within per-joint neutral tolerances. This remains capability-neutral motion inventory, not task-specific reference logic or runnable admission."
+        },
+        {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/private/instances.json",
+          "kind": "canonical_private_task_package",
+          "observation": "The Framework-private package binds all 20 selected-arm public tasks to 16 local scenes, explicit resets, trusted measurements, four core guards, and 19 task-specific exact contact-pair guards. Every case fixes one task arm and requires the nonselected arm to remain within its reviewed neutral tolerance."
+        },
+        {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/reference/driver.py",
+          "kind": "canonical_reference_calibration",
+          "observation": "The calibration-only reference executes reviewed selected-arm joint and gripper targets through the 14 canonical actuator controls and advances only with MuJoCo physics steps. It resynchronizes after the Framework reset, keeps the nonselected arm neutral, does not write qpos or qvel, and does not admit the package to runtime."
+        },
+        {
+          "path": "autoadapter/evidence/README.md",
+          "kind": "tracked_reference_positive_control_record",
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven ALOHA package-wide reference positive control. All 19 contact tasks passed their exact selected-finger-to-task-geometry guard, all cases kept the other arm neutral, no direct state write was detected, and all 20 independently decoded 800x600 videos were complete. This is calibration evidence only, not model-generation or runnable-admission evidence."
         },
         {
           "path": "demo2/legacy_assets/menagerie/aloha/aloha.xml",
@@ -733,11 +748,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide a calibration-only reference driver for this configuration.",
-        "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
+        "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
+        "Perform final human package and admission review, then add ALOHA 2 to the runnable index only if the dynamic canary passes; prior reference evidence alone does not admit it."
       ]
     },
     {

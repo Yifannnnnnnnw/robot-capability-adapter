@@ -632,6 +632,7 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         item
         for item in candidate["locally_observed_source_material"]
         if item["path"].startswith("autoadapter/libraries/robots/aloha_2/")
+        or item["kind"] == "tracked_reference_positive_control_record"
     ]
     assert {item["kind"] for item in canonical_observations} == {
         "canonical_mujoco_asset_foundation",
@@ -640,6 +641,9 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         "canonical_task_catalog",
         "canonical_task_scene_set",
         "canonical_skeleton_inventory",
+        "canonical_private_task_package",
+        "canonical_reference_calibration",
+        "tracked_reference_positive_control_record",
     }
     assert {
         item["path"] for item in canonical_observations
@@ -650,16 +654,29 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/catalog.json",
         "autoadapter/libraries/robots/aloha_2/1.0.0/assets/reach_scene.xml",
         "autoadapter/libraries/robots/aloha_2/1.0.0/skeleton/arm_serial_dls.py",
+        "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/private/instances.json",
+        "autoadapter/libraries/robots/aloha_2/1.0.0/reference/driver.py",
+        "autoadapter/evidence/README.md",
     }
+    non_evidence_observations = [
+        item
+        for item in canonical_observations
+        if item["kind"] != "tracked_reference_positive_control_record"
+    ]
     assert all(
         phrase not in item["observation"].lower()
-        for item in canonical_observations
-        for phrase in ("task success", "task passed", "positive control", "admitted")
+        for item in non_evidence_observations
+        for phrase in ("task passed", "positive control", "admitted")
     )
+    evidence_observation = next(
+        item
+        for item in canonical_observations
+        if item["kind"] == "tracked_reference_positive_control_record"
+    )
+    assert evidence_observation["path"] == "autoadapter/evidence/README.md"
+    assert "20/20" in evidence_observation["observation"]
+    assert "calibration evidence only" in evidence_observation["observation"]
     assert candidate["missing_for_runnable_package"] == [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide a calibration-only reference driver for this configuration.",
-        "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
+        "Perform final human package and admission review, then add ALOHA 2 to the runnable index only if the dynamic canary passes; prior reference evidence alone does not admit it.",
     ]
