@@ -47,9 +47,11 @@ class StretchMobileManipulationSpec:
     turn_actuator_name: str
     lift_actuator_name: str
     arm_actuator_name: str
+    wrist_actuator_name: str
     gripper_actuator_name: str
     lift_joint_name: str
     arm_joint_names: Sequence[str]
+    wrist_joint_name: str
     gripper_joint_name: str
     expected_physics_timestep_s: float = 0.002
     turn_gain: float = 5.0
@@ -66,8 +68,10 @@ class StretchMobileManipulationSpec:
             "turn_actuator_name",
             "lift_actuator_name",
             "arm_actuator_name",
+            "wrist_actuator_name",
             "gripper_actuator_name",
             "lift_joint_name",
+            "wrist_joint_name",
             "gripper_joint_name",
         ):
             object.__setattr__(
@@ -167,14 +171,20 @@ class StretchMobileManipulationSkeleton(SessionBoundSkeleton):
             self.spec.turn_actuator_name,
             self.spec.lift_actuator_name,
             self.spec.arm_actuator_name,
+            self.spec.wrist_actuator_name,
             self.spec.gripper_actuator_name,
         )
         actuator_ids = tuple(
             self._id(mj.mjtObj.mjOBJ_ACTUATOR, name) for name in actuator_names
         )
-        self._forward_id, self._turn_id, self._lift_id, self._arm_id, self._grip_id = (
-            actuator_ids
-        )
+        (
+            self._forward_id,
+            self._turn_id,
+            self._lift_id,
+            self._arm_id,
+            self._wrist_id,
+            self._grip_id,
+        ) = actuator_ids
         for name, actuator_id in zip(actuator_names, actuator_ids, strict=True):
             if not bool(self.model.actuator_ctrllimited[actuator_id]):
                 raise ValueError(f"Stretch actuator {name!r} must be bounded")
@@ -199,6 +209,15 @@ class StretchMobileManipulationSkeleton(SessionBoundSkeleton):
             arm_addresses.append(int(self.model.jnt_qposadr[joint_id]))
         self._arm_qpos_addresses = np.asarray(arm_addresses, dtype=np.int64)
 
+        wrist_joint_id = self._id(
+            mj.mjtObj.mjOBJ_JOINT, self.spec.wrist_joint_name
+        )
+        if int(self.model.jnt_type[wrist_joint_id]) != int(
+            mj.mjtJoint.mjJNT_HINGE
+        ):
+            raise ValueError("Stretch wrist joint must be revolute")
+        self._wrist_qpos_address = int(self.model.jnt_qposadr[wrist_joint_id])
+
         gripper_joint_id = self._id(
             mj.mjtObj.mjOBJ_JOINT, self.spec.gripper_joint_name
         )
@@ -219,6 +238,9 @@ class StretchMobileManipulationSkeleton(SessionBoundSkeleton):
         )
         self._arm_range = np.asarray(
             self.model.actuator_ctrlrange[self._arm_id], dtype=float
+        )
+        self._wrist_range = np.asarray(
+            self.model.actuator_ctrlrange[self._wrist_id], dtype=float
         )
         self._gripper_range = np.asarray(
             self.model.actuator_ctrlrange[self._grip_id], dtype=float
@@ -272,6 +294,7 @@ class StretchMobileManipulationSkeleton(SessionBoundSkeleton):
             "arm_extension_m": float(
                 np.sum(self.data.qpos[self._arm_qpos_addresses])
             ),
+            "wrist_yaw_rad": float(self.data.qpos[self._wrist_qpos_address]),
             "gripper_position_m": float(
                 self.data.qpos[self._gripper_qpos_address]
             ),
@@ -413,6 +436,41 @@ class StretchMobileManipulationSkeleton(SessionBoundSkeleton):
             "final_position_m": float(
                 self.data.qpos[self._gripper_qpos_address]
             ),
+        }
+
+    def set_wrist_yaw(
+        self,
+        angle_rad: float,
+        *,
+        tolerance_rad: float = 0.01,
+        maximum_steps: int | None = None,
+    ) -> dict[str, Any]:
+        """Move the canonical wrist-yaw joint to a bounded angle target."""
+
+        self._resolve()
+        target = _finite(angle_rad, "angle_rad")
+        if target < self._wrist_range[0] or target > self._wrist_range[1]:
+            raise ValueError("wrist target is outside the canonical range")
+        tolerance = _positive(tolerance_rad, "tolerance_rad")
+        limit = self._step_limit(maximum_steps)
+        self._stop_base()
+        dwell = 0
+        for step in range(1, limit + 1):
+            self.data.ctrl[self._wrist_id] = target
+            self._load_mujoco().mj_step(self.model, self.data)
+            error = target - float(self.data.qpos[self._wrist_qpos_address])
+            dwell = dwell + 1 if abs(error) <= tolerance else 0
+            if dwell >= 20:
+                break
+        else:
+            raise RuntimeError("Stretch wrist yaw did not converge")
+        self._assert_finite_and_upright()
+        final_position = float(self.data.qpos[self._wrist_qpos_address])
+        return {
+            "physics_steps": step,
+            "target_angle_rad": target,
+            "final_angle_rad": final_position,
+            "final_error_rad": abs(target - final_position),
         }
 
     def move_tool_to_position(

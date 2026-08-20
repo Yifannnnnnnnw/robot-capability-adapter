@@ -89,15 +89,18 @@ def test_stretch_base_turns_and_drives_with_feedback() -> None:
     assert np.isfinite(state["base_position"]).all()
 
 
-def test_stretch_side_arm_reaches_world_target_and_moves_gripper() -> None:
+def test_stretch_side_arm_reaches_world_target_and_moves_wrist_and_gripper() -> None:
     _, _, data, skeleton = _session()
     target = np.asarray((0.20, -0.45, 0.75), dtype=float)
     reach = skeleton.move_tool_to_position(target)
+    wrist = skeleton.set_wrist_yaw(1.2)
     grip = skeleton.set_gripper(0.03)
 
     assert reach["final_error_m"] < 0.01
     assert reach["minimum_error_m"] < 0.01
     assert np.linalg.norm(reach["final_position"] - target) < 0.01
+    assert wrist["final_error_rad"] < 0.01
+    assert abs(skeleton.get_state()["wrist_yaw_rad"] - 1.2) < 0.01
     assert abs(grip["final_position_m"] - 0.03) < 0.002
     assert np.isfinite(data.qpos).all()
     assert np.isfinite(data.qvel).all()

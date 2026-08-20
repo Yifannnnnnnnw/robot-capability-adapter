@@ -14,6 +14,7 @@ STRETCH_MOBILE_MANIPULATION_SPEC = StretchMobileManipulationSpec(
     turn_actuator_name="turn",
     lift_actuator_name="lift",
     arm_actuator_name="arm_extend",
+    wrist_actuator_name="wrist_yaw",
     gripper_actuator_name="grip",
     lift_joint_name="joint_lift",
     arm_joint_names=(
@@ -22,6 +23,7 @@ STRETCH_MOBILE_MANIPULATION_SPEC = StretchMobileManipulationSpec(
         "joint_arm_l1",
         "joint_arm_l0",
     ),
+    wrist_joint_name="joint_wrist_yaw",
     gripper_joint_name="joint_gripper_slide",
 )
 
