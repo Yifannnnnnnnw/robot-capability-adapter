@@ -5,6 +5,9 @@ import inspect
 import unittest
 from pathlib import Path
 
+import mujoco
+import numpy as np
+
 from autoadapter2.driver_synthesis import SessionBoundSkeleton, discover_primitives
 from autoadapter2.trusted_skeletons import ArmSerialDLSSkeleton, ArmSpec
 from autoadapter2.trusted_skeletons import arm_serial_dls
@@ -42,6 +45,14 @@ class ArmSerialDLSContractTests(unittest.TestCase):
                 arm_actuator_names=("actuator_1",),
                 joint_limits={},
             )
+        with self.assertRaises(ValueError):
+            ArmSpec(
+                ee_site_name="tool_site",
+                ee_geom_name="tool_geom",
+                arm_joint_names=("joint_1",),
+                arm_actuator_names=("actuator_1",),
+                joint_limits={"joint_1": (-1.0, 1.0)},
+            )
 
     def test_spec_normalizes_public_configuration_values(self) -> None:
         spec = ArmSpec(
@@ -53,6 +64,47 @@ class ArmSerialDLSContractTests(unittest.TestCase):
         self.assertEqual(spec.arm_joint_names, ("joint_1",))
         self.assertEqual(spec.arm_actuator_names, ("actuator_1",))
         self.assertEqual(spec.joint_limits, {"joint_1": (-1.0, 1.0)})
+
+    def test_geom_endpoint_drives_fk_and_ik_from_the_geom_center(self) -> None:
+        model = mujoco.MjModel.from_xml_string(
+            """
+            <mujoco>
+              <compiler autolimits="true"/>
+              <worldbody>
+                <body>
+                  <joint name="slide" type="slide" axis="1 0 0" range="-1 1"/>
+                  <geom name="tool_geom" type="sphere" size="0.01" pos="0 0.2 0"/>
+                </body>
+              </worldbody>
+              <actuator>
+                <position name="slide_actuator" joint="slide"/>
+              </actuator>
+            </mujoco>
+            """
+        )
+        data = mujoco.MjData(model)
+        mujoco.mj_forward(model, data)
+        skeleton = ArmSerialDLSSkeleton.from_session(
+            model=model,
+            data=data,
+            spec=ArmSpec(
+                ee_geom_name="tool_geom",
+                arm_joint_names=("slide",),
+                arm_actuator_names=("slide_actuator",),
+                joint_limits={"slide": (-1.0, 1.0)},
+                ik_max_iter=50,
+                ik_tolerance=1e-6,
+            ),
+        )
+
+        position, _ = skeleton.get_ee_pose()
+        geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "tool_geom")
+        np.testing.assert_allclose(position, data.geom_xpos[geom_id], atol=0.0)
+
+        target = position + np.asarray((0.1, 0.0, 0.0))
+        solved = skeleton.ik(target, q_init=(0.0,))
+        np.testing.assert_allclose(solved, (0.1,), atol=1e-6)
+        np.testing.assert_allclose(skeleton.fk(solved)["pos"], target, atol=1e-6)
 
     def test_skeleton_uses_the_canonical_session_objects(self) -> None:
         model = object()

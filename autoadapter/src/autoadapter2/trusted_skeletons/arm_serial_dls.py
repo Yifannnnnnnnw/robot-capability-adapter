@@ -41,6 +41,7 @@ class ArmSpec:
 
     ee_site_name: str | None = None
     ee_body_name: str | None = None
+    ee_geom_name: str | None = None
     arm_joint_names: Sequence[str] = field(default_factory=tuple)
     arm_actuator_names: Sequence[str] = field(default_factory=tuple)
     joint_limits: Mapping[str, Sequence[float]] = field(default_factory=dict)
@@ -57,8 +58,11 @@ class ArmSpec:
     def __post_init__(self) -> None:
         site = _nonempty_name(self.ee_site_name, "ee_site_name")
         body = _nonempty_name(self.ee_body_name, "ee_body_name")
-        if (site is None) == (body is None):
-            raise ValueError("set exactly one of ee_site_name or ee_body_name")
+        geom = _nonempty_name(self.ee_geom_name, "ee_geom_name")
+        if sum(value is not None for value in (site, body, geom)) != 1:
+            raise ValueError(
+                "set exactly one of ee_site_name, ee_body_name, or ee_geom_name"
+            )
 
         joints = tuple(self.arm_joint_names)
         actuators = tuple(self.arm_actuator_names)
@@ -118,6 +122,7 @@ class ArmSpec:
 
         object.__setattr__(self, "ee_site_name", site)
         object.__setattr__(self, "ee_body_name", body)
+        object.__setattr__(self, "ee_geom_name", geom)
         object.__setattr__(self, "arm_joint_names", joints)
         object.__setattr__(self, "arm_actuator_names", actuators)
         object.__setattr__(self, "joint_limits", normalized_limits)
@@ -156,7 +161,9 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
         self._resolved = False
         self._ee_site_id = -1
         self._ee_body_id = -1
+        self._ee_geom_id = -1
         self._ee_use_site = False
+        self._ee_use_geom = False
         self._arm_qpos_adr: list[int] = []
         self._arm_qvel_adr: list[int] = []
         self._arm_actuator_ids: list[int] = []
@@ -200,6 +207,13 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             if self._ee_site_id < 0:
                 raise ValueError(f"EE site {self.spec.ee_site_name!r} is absent from the model")
             self._ee_use_site = True
+        elif self.spec.ee_geom_name is not None:
+            self._ee_geom_id = int(
+                mj.mj_name2id(model, mj.mjtObj.mjOBJ_GEOM, self.spec.ee_geom_name)
+            )
+            if self._ee_geom_id < 0:
+                raise ValueError(f"EE geom {self.spec.ee_geom_name!r} is absent from the model")
+            self._ee_use_geom = True
         else:
             self._ee_body_id = int(
                 mj.mj_name2id(model, mj.mjtObj.mjOBJ_BODY, self.spec.ee_body_name)
@@ -280,17 +294,23 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
         np = self._load_numpy()
         if self._ee_use_site:
             return np.array(self.data.site_xpos[self._ee_site_id], dtype=float, copy=True)
+        if self._ee_use_geom:
+            return np.array(self.data.geom_xpos[self._ee_geom_id], dtype=float, copy=True)
         return np.array(self.data.xpos[self._ee_body_id], dtype=float, copy=True)
 
     def _ee_rotation(self) -> Any:
         np = self._load_numpy()
         if self._ee_use_site:
             return np.array(self.data.site_xmat[self._ee_site_id], dtype=float, copy=True).reshape(3, 3)
+        if self._ee_use_geom:
+            return np.array(self.data.geom_xmat[self._ee_geom_id], dtype=float, copy=True).reshape(3, 3)
         return np.array(self.data.xmat[self._ee_body_id], dtype=float, copy=True).reshape(3, 3)
 
     def _ee_position_jacobian(self, jacobian: Any) -> None:
         if self._ee_use_site:
             self._mj.mj_jacSite(self.model, self.data, jacobian, None, self._ee_site_id)
+        elif self._ee_use_geom:
+            self._mj.mj_jacGeom(self.model, self.data, jacobian, None, self._ee_geom_id)
         else:
             self._mj.mj_jacBody(self.model, self.data, jacobian, None, self._ee_body_id)
 
