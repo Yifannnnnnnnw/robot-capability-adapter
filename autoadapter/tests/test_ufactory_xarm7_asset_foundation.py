@@ -363,19 +363,31 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/sources.json" in observed_paths
     assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/catalog.json" in observed_paths
     assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/assets/reach_scene.xml" in observed_paths
+    assert (
+        "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/private/instances.json"
+        in observed_paths
+    )
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
     assert "at least 20 distinct applicable source-backed tasks" not in missing
     assert "Create tasks/sources.json" not in missing
-    assert "tasks/private/instances.json" in missing
+    assert "tasks/private/instances.json" not in missing
     assert "local task scenes" not in missing
     assert "positive control" in missing
     assert "dynamic canary" in missing
 
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == ["assets", "morphology.json", "tasks"]
     tasks_root = PACKAGE_ROOT / "tasks"
-    assert sorted(path.name for path in tasks_root.iterdir()) == ["catalog.json", "sources.json"]
-    assert not (tasks_root / "private").exists()
+    assert sorted(path.name for path in tasks_root.iterdir()) == [
+        "catalog.json",
+        "private",
+        "sources.json",
+    ]
+    assert sorted(path.name for path in (tasks_root / "private").iterdir()) == [
+        "bindings.json",
+        "guards.json",
+        "instances.json",
+    ]
     assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()

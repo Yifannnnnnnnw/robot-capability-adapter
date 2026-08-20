@@ -180,6 +180,11 @@
           "observation": "All 17 canonical xArm7 task scenes are local and tested for MJCF identity, MuJoCo 3.3.6 loading, physics liveness, task symbols, and 800x600 video dimensions. This is scene feasibility evidence, not contact, grasp, or task-success evidence."
         },
         {
+          "path": "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/private/instances.json",
+          "kind": "canonical_private_task_package",
+          "observation": "The canonical package contains 20 private instances with matching bindings and guards. Every Framework reset resolves in its local scene, and every declared end-effector waypoint passes a position-only IK feasibility check within 3 mm. This is reset and geometry evidence, not contact, grasp, task-success, positive-control, or runnable evidence."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/ufactory_xarm7/xarm7.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical xArm7 Menagerie model and meshes are available for migration inspection."
@@ -206,7 +211,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
