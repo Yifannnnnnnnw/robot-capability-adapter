@@ -1,0 +1,72 @@
+{
+  "artifact_type": "barkour_joystick_deterministic_actor",
+  "format_version": "1.0.0",
+  "checkpoint_step": "000100270080",
+  "environment": "BarkourJoystick",
+  "observation_size": 465,
+  "observation_history_frames": 15,
+  "observation_frame_size": 31,
+  "action_size": 12,
+  "hidden_layer_sizes": [
+    128,
+    128,
+    128,
+    128
+  ],
+  "activation": "swish",
+  "deterministic_output": "tanh(first_12_actor_logits)",
+  "normalization": "(observation - mean) / std",
+  "action_scale_rad": 0.3,
+  "control_period_s": 0.02,
+  "playground_version": "0.0.5",
+  "playground_commit": "81dfe512c9f2f03107fda1e31de585d04bb30bc4",
+  "training_menagerie_commit": "14ceccf557cc47240202f2354d684eca58ff8de4",
+  "canonical_package_menagerie_commit": "da76818e269b82289eba39808e2fb91d679d6994",
+  "brax_version": "0.13.0",
+  "jax_version": "0.7.2.dev20251001+9b0b777ff",
+  "mujoco_version": "3.3.6",
+  "container_image": "nvcr.io/nvidia/jax:25.10-py3",
+  "source_license": {
+    "spdx": "Apache-2.0",
+    "locator": "https://github.com/google-deepmind/mujoco_playground/blob/81dfe512c9f2f03107fda1e31de585d04bb30bc4/LICENSE"
+  },
+  "training": {
+    "requested_environment_steps": 100000000,
+    "checkpoint_environment_steps": 100270080,
+    "num_envs": 8192,
+    "num_evals": 10,
+    "episode_length": 1000,
+    "unroll_length": 20,
+    "batch_size": 256,
+    "num_minibatches": 32,
+    "num_updates_per_batch": 4,
+    "learning_rate": 0.0003,
+    "entropy_cost": 0.01,
+    "actor_hidden_layer_sizes": [
+      128,
+      128,
+      128,
+      128
+    ],
+    "critic_hidden_layer_sizes": [
+      256,
+      256,
+      256,
+      256,
+      256
+    ],
+    "activation": "swish",
+    "training_simulation_timestep_s": 0.004,
+    "training_control_timestep_s": 0.02,
+    "observation_noise_level": 0.05,
+    "initial_evaluation_reward": 1.51,
+    "final_evaluation_reward": 36.961
+  },
+  "verification": {
+    "probe_seed": 20260820,
+    "probe_count": 256,
+    "jax_numpy_max_abs_error": 3.0994415283203125e-06,
+    "retained_numpy_max_abs_error": 3.0994415283203125e-06,
+    "tolerance": 5e-05
+  }
+}
