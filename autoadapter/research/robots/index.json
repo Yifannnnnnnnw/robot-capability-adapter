@@ -312,7 +312,7 @@
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/assets/reach_scene.xml",
           "kind": "provisional_task_scenes",
-          "observation": "All 17 task scenes are reviewed structural transforms of the xArm7 scene set and parse, load, and step with the canonical Piper model. The elevated pick-place floor uses the static-fixture collision mask so it cannot push link1 or link2 at reset. These remain provisional scene inputs: contact behavior and task success are unverified."
+          "observation": "All 17 task scenes are reviewed Piper-specific transforms of the xArm7 scene set and parse, load, and step with the canonical Piper model. The elevated pick-place floor uses the static-fixture collision mask so it cannot push link1 or link2 at reset. Grasp-object masses and the peg mass are calibrated to the Piper gripper and pass the complete non-video reference suite; formal video positive-control evidence remains pending."
         },
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/tasks/private/instances.json",
@@ -323,6 +323,11 @@
           "path": "autoadapter/libraries/robots/piper/1.0.0/skeleton/arm_serial_dls.py",
           "kind": "canonical_skeleton_inventory",
           "observation": "The package exposes only the capability-neutral trusted ArmSerialDLSSkeleton family. A live canonical MuJoCo smoke check resolves the Piper joints, ee_site, actuator controls, and physical gripper direction without adding task semantics."
+        },
+        {
+          "path": "autoadapter/libraries/robots/piper/1.0.0/reference/driver.py",
+          "kind": "canonical_reference_calibration",
+          "observation": "The calibration-only reference drives the canonical Piper model through actuator controls and MuJoCo physics. One complete non-video Harness regression passed all 20 private cases with all guards; this is calibration evidence only and is not a video-complete positive control, model-generation result, or runnable-admission claim."
         },
         {
           "path": "general_demo/libraries/assets/piper/1.0.0/asset_closure.json",
@@ -361,7 +366,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."

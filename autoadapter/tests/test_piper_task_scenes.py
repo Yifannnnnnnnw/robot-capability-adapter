@@ -180,6 +180,15 @@ def _prescribed_transform(source_path: Path) -> str:
             'pos="0.1 0 0.25" contype="2" conaffinity="2" rgba=',
             1,
         )
+    if source_path.name in {
+        "pick_place_scene.xml",
+        "pick_place_wall_scene.xml",
+        "bin_picking_scene.xml",
+    }:
+        transformed = transformed.replace('mass="0.10"', 'mass="0.05"', 1)
+    if source_path.name == "peg_insertion_side_scene.xml":
+        transformed = transformed.replace('mass="0.018"', 'mass="0.009"', 1)
+        transformed = transformed.replace('mass="0.006"', 'mass="0.003"', 1)
     return transformed
 
 
@@ -290,9 +299,28 @@ def test_piper_pick_place_floor_does_not_push_the_arm_at_reset() -> None:
     np.testing.assert_allclose(data.site_xpos[ee_site_id], initial_ee, atol=1e-10)
 
 
+def test_piper_grasp_workpieces_use_the_calibrated_mass() -> None:
+    for filename in (
+        "pick_place_scene.xml",
+        "pick_place_wall_scene.xml",
+        "bin_picking_scene.xml",
+    ):
+        model = mujoco.MjModel.from_xml_path(str(PIPER_ASSETS_ROOT / filename))
+        body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "workpiece")
+        assert model.body_mass[body_id] == 0.05
+
+    peg_model = mujoco.MjModel.from_xml_path(
+        str(PIPER_ASSETS_ROOT / "peg_insertion_side_scene.xml")
+    )
+    peg_body_id = mujoco.mj_name2id(
+        peg_model, mujoco.mjtObj.mjOBJ_BODY, "workpiece"
+    )
+    assert peg_model.body_mass[peg_body_id] == 0.012
+
+
 def test_piper_task_scene_package_remains_non_runtime() -> None:
     runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
     assert "piper" not in runnable_index["robots"]
     assert (PIPER_PACKAGE_ROOT / "tasks" / "private").is_dir()
     assert (PIPER_PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
-    assert not (PIPER_PACKAGE_ROOT / "reference").exists()
+    assert (PIPER_PACKAGE_ROOT / "reference" / "driver.py").is_file()

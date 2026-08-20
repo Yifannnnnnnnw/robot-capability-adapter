@@ -142,7 +142,7 @@
               0.445
             ],
             "grasp_wrist_roll": -1.5707963267948966,
-            "grasp_gripper": 0.019,
+            "grasp_gripper": 0.0,
             "target_position": [
               0.48,
               -0.08,
@@ -219,7 +219,7 @@
               0.445
             ],
             "grasp_wrist_roll": -1.5707963267948966,
-            "grasp_gripper": 0.019,
+            "grasp_gripper": 0.0,
             "target_position": [
               0.6,
               0.08,
@@ -1255,7 +1255,7 @@
               0.44
             ],
             "grasp_wrist_roll": 1.5707963267948966,
-            "grasp_gripper": 0.019,
+            "grasp_gripper": 0.0,
             "target_position": [
               0.48,
               -0.11,
@@ -1337,7 +1337,7 @@
               0.44
             ],
             "grasp_wrist_roll": -1.5707963267948966,
-            "grasp_gripper": 0.019,
+            "grasp_gripper": 0.0,
             "route_position": [
               0.45999999999999996,
               0.0,

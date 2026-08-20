@@ -114,7 +114,7 @@ def _transform_instances(template: dict) -> dict:
         instance["instance_id"] = instance["instance_id"].replace("xarm7-", "piper-", 1)
         parameters = instance["public_arguments"]["request"]["task_parameters"]
         if "grasp_gripper" in parameters:
-            parameters["grasp_gripper"] = 0.019
+            parameters["grasp_gripper"] = 0.0
 
         fixture_positions = {
             name: value
@@ -174,7 +174,7 @@ def test_piper_private_documents_are_exact_xarm_mechanical_transforms() -> None:
     ]
     assert len(grasp_instances) == 4
     assert all(
-        item["public_arguments"]["request"]["task_parameters"]["grasp_gripper"] == 0.019
+        item["public_arguments"]["request"]["task_parameters"]["grasp_gripper"] == 0.0
         for item in grasp_instances
     )
 
@@ -338,8 +338,8 @@ def test_piper_public_ee_waypoints_and_grasp_rolls_are_reachable() -> None:
         assert abs(float(skeleton.get_joint_positions()[-1]) - wrist_roll) <= 0.011
 
 
-def test_piper_private_package_remains_non_runtime_without_reference() -> None:
+def test_piper_private_package_remains_non_runtime_with_reference() -> None:
     runnable_index = _read(RUNNABLE_INDEX_PATH)
     assert "piper" not in runnable_index["robots"]
     assert (PIPER_PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
-    assert not (PIPER_PACKAGE_ROOT / "reference").exists()
+    assert (PIPER_PACKAGE_ROOT / "reference" / "driver.py").is_file()

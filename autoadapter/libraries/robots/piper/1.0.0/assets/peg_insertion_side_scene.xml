@@ -14,8 +14,8 @@
     <geom name="hole_top" type="box" pos="0.48 -0.08 0.53" size="0.03 0.008 0.02" mass="0" contype="2" conaffinity="2" rgba="0.25 0.28 0.34 1" />
     <body name="workpiece" pos="0.48 0.08 0.43">
       <freejoint />
-      <geom name="peg_grasp_geom" type="box" size="0.018 0.018 0.018" mass="0.018" conaffinity="2" friction="1.5 0.1 0.01" condim="4" rgba="0.10 0.55 0.92 1" />
-      <geom name="peg_shaft_geom" type="box" pos="0 -0.033 0" size="0.012 0.021 0.012" mass="0.006" conaffinity="2" friction="1.2 0.1 0.01" condim="4" rgba="0.16 0.66 0.96 1" />
+      <geom name="peg_grasp_geom" type="box" size="0.018 0.018 0.018" mass="0.009" conaffinity="2" friction="1.5 0.1 0.01" condim="4" rgba="0.10 0.55 0.92 1" />
+      <geom name="peg_shaft_geom" type="box" pos="0 -0.033 0" size="0.012 0.021 0.012" mass="0.003" conaffinity="2" friction="1.2 0.1 0.01" condim="4" rgba="0.16 0.66 0.96 1" />
       <site name="peg_head_site" pos="0 -0.054 0" size="0.004" rgba="1 1 1 0" />
     </body>
     <body name="peg_goal" pos="0.48 -0.092 0.48">

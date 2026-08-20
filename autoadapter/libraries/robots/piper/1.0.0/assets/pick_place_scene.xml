@@ -10,7 +10,7 @@
     <geom name="work_surface" type="box" pos="0.49 0 0.33" size="0.20 0.17 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
     <body name="workpiece" pos="0.48 0.08 0.43">
       <freejoint />
-      <geom name="workpiece_geom" type="cylinder" size="0.02 0.02" mass="0.10" conaffinity="2" friction="1 0.1 0.002" condim="4" solimp="0.99 0.99 0.01" solref="0.01 1" rgba="0.95 0.42 0.08 1" />
+      <geom name="workpiece_geom" type="cylinder" size="0.02 0.02" mass="0.05" conaffinity="2" friction="1 0.1 0.002" condim="4" solimp="0.99 0.99 0.01" solref="0.01 1" rgba="0.95 0.42 0.08 1" />
       <site name="workpiece_center" size="0.004" rgba="1 1 1 0" />
     </body>
     <geom name="goal_pedestal" type="box" pos="0.48 -0.08 0.451" size="0.045 0.045 0.041" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.12 0.52 0.30 1" />

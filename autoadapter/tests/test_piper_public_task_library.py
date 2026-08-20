@@ -222,7 +222,7 @@ class PiperPublicTaskLibraryTests(unittest.TestCase):
         self.assertTrue(
             (PIPER_PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
         )
-        self.assertFalse((PIPER_PACKAGE_ROOT / "reference").exists())
+        self.assertTrue((PIPER_PACKAGE_ROOT / "reference" / "driver.py").is_file())
 
 
 if __name__ == "__main__":
