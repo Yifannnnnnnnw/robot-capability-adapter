@@ -299,6 +299,37 @@ performing this wider software task.
 \subsection{Coding Agents}
 \label{sec:coding-agents}
 
+Early LLM code generation treated programming as function completion. HumanEval
+tests functions generated from docstrings \citep{chen2021codex}. It provides
+little context about an existing software system. Success therefore does not
+demonstrate repository-level coding.
+
+SWE-bench instead evaluates codebase issues \citep{jimenez2024swebench}.
+SWE-agent exposes code and execution results through an agent--computer
+interface \citep{yang2024sweagent}. Interaction therefore becomes part of the
+coding method.
+
+ReAct alternates reasoning and action so observations can revise later steps
+\citep{yao2023react}. CodeAct makes executable code the agent's action
+\citep{wang2024codeact}. Auto-Adapter adopts a bounded version of this process.
+The agent studies public robot material before producing a driver. MuJoCo probes
+expose faults for repair. Public feedback supports development, not behavioural
+correctness.
+
+Initial structure also changes synthesis. Program sketching shows how a partial
+program expresses strategy while synthesis fills omissions
+\citep{solarlezama2013sketching}. This principle motivates comparing
+\texttt{skeleton-assisted} with \texttt{from-scratch}; it does not presume a
+benefit. Auto-Adapter fixes the task and interaction budget between conditions.
+Both receive the same public feedback.
+
+Feedback has two roles. Reflexion guides later attempts through verbal
+reflection, whereas ExpeL extracts reusable knowledge across tasks
+\citep{shinn2023reflexion,zhao2024expel}. Repair changes only the current driver.
+Evolution can inform only a later matched run. This boundary prevents
+accumulated experience from altering the current verdict. Coding-agent methods
+thus define the generation procedure; the next subsection defines its output.
+
 \subsection{Tool and Driver Synthesis}
 \label{sec:tool-driver-synthesis}
 
