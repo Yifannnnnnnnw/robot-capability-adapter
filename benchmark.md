@@ -15,24 +15,21 @@ sub-benchmarks:
 | Track | Scientific object | Manipulated factor | Fixed core |
 |---|---|---|---|
 | **B1: Driver Synthesis** | A generated robot-specific driver | Producer LLM backbone and the two Authority-defined generation conditions | Auto-Adapter workflow, robot inputs, suites, Harness, budgets |
-| **B2: Capability-Interface Use** | A high-level controller using one fixed interface and one fixed validated generated driver | Consumer LLM backbone | Controller architecture, prompt, capability exposure, driver, tasks, budgets |
+| **B2: Published High-Level Control** | A published high-level-controller method using one fixed interface and one fixed validated generated driver | Published architecture `a`, plus `b in B_a` only when that architecture exposes a replaceable LLM/VLM backbone | Driver, capability exposure, tasks, seeds, outer execution budgets, Harness |
 
-No single aggregate score combines B1 and B2. A model may be good at synthesising drivers and poor
-at using capabilities, or the reverse.
+No single aggregate score combines B1 and B2. B1 asks which models can synthesise drivers. B2 does
+not claim a new Auto-Adapter high-level controller: it compares selected methods from the robotics
+literature above the same generated driver and capability boundary.
 
-The recommended B2 controller is a genuine robot task-level controller:
+Every B2 method follows this common integration boundary while retaining its published planning,
+feedback, and execution logic:
 
 ```text
-public task + public observation
+selected published controller method a
+  [backbone b in B_a only when the method permits replacement]
               |
               v
-     LLM/VLM task planner
-              |
-              v
- typed Behavior Tree or task graph
-              |
-              v
- deterministic executive + bounded recovery
+ thin method adapter: public observation and capability-name/ABI mapping only
               |
               v
        Capability Router
@@ -42,23 +39,23 @@ public task + public observation
               |
               v
           Direct MuJoCo
-              |
-              v
- Framework-owned public outcome monitor -> executive/planner replan input
 
 Private Harness state and verdict remain on an independent path.
 ```
 
-`ReAct`, `CodeAct`, and `Plan-and-Execute` are reasoning or orchestration patterns, not sufficient
-robot high-level-control architectures by themselves. ReAct may be used inside the planner's
-bounded decision loop, but the executive, capability boundary, feedback path, and recovery semantics
-must be explicit.
+There is no global `M`-backbone factor in B2. A selected architecture `a` receives a predeclared
+valid backbone set `B_a` only when its published high-level model is replaceable; B2 then evaluates
+`a x B_a x other factors`. If the method is a fixed trained checkpoint, or replacement would
+require retraining or alter the published method, it has no backbone factor and B2 evaluates only
+`a x other factors` with that system pinned. The resulting design is intentionally unbalanced
+across architectures.
 
 **Authority decision required.** Revision `0.19.18` currently declares one fixed bounded ReAct
-controller for formal capability-interface use. This draft recommends a planner plus deterministic
-BT/task-graph executive as the formal B2 architecture. Until the Authority is explicitly aligned,
-the new controller can run only as an exploratory pilot; evidence under the current Authority must
-continue to use its declared ReAct path. This draft does not silently override the Authority.
+controller for formal capability-interface use. This draft instead requires a predeclared set of
+published high-level-controller methods and architecture-specific backbone treatment. Until the
+Authority is explicitly aligned, these comparisons can run only as exploratory pilots; evidence
+under the current Authority must continue to use its declared ReAct path. This draft does not
+silently override the Authority.
 
 ## 1. Benchmark boundaries
 
@@ -99,7 +96,8 @@ Before Experiment 3, one versioned experiment manifest must declare all 14 confi
 
 - each `robot_configuration_id` and morphology category;
 - exact package and Task Library snapshot versions;
-- Producer and Consumer backbone sets;
+- the Producer backbone set and, for every selected B2 method, its source/version,
+  backbone-replacement classification, and valid `B_a` or fixed-system identity;
 - generation replicate count, task instances, seeds, and budgets.
 
 Every configuration must satisfy the same Authority-defined Task Library, source-lineage,
@@ -195,84 +193,148 @@ Required secondary reporting:
 
 Do not pool away a failed robot or report a repaired pass as an initial pass.
 
-## 4. B2: Capability-Interface Use
+## 4. B2: Published High-Level Control
 
 ### 4.1 Experimental object
 
-B2 measures whether different Consumer LLM backbones can use the same robot capability interface to
-complete compositional physical tasks. For each robot, fix before Consumer trials:
+B2 compares selected published high-level-controller methods that can use the same generated robot
+capabilities to complete compositional physical tasks. For each robot, fix before any method trial:
 
 - one model-generated capability interface;
 - one fixed, validated model-generated driver implementing it;
-- one Capability Router and public observation projection;
-- one controller architecture, prompt, BT/task-graph schema, decision budget, and recovery policy;
-- one task suite, private instances, seeds, timeouts, and Harness rules.
+- one Capability Router and bounded public observation projection;
+- one task suite, private instances, seeds, physical timeouts, capability-call caps, and Harness
+  rules.
 
-The driver must be selected by a prespecified, Consumer-blind rule from an admitted generation cell.
-Record its Producer model, generation condition, replicate, and final attempt. Do not select the
-driver after observing which one helps a Consumer model most. If the prespecified generated driver
-is unavailable for a robot, report that blocking cell and complete it before the formal B2 run; do
-not shrink the 14-robot cohort.
+The controller algorithm, prompts, planners, scorers, feedback loop, and execution semantics are not
+globally fixed: they define the published method being compared. They must instead remain fixed
+within each architecture `a`, apart from an explicitly valid backbone replacement.
+Method-native planning or replan budgets are likewise frozen within `a`; the outer physical timeout
+and capability-call cap remain common across methods.
 
-The B2 matrix is:
+The driver must be selected by a prespecified, controller-method-blind rule from an admitted B1
+cell. Record its Producer model, generation condition, replicate, and final attempt. Do not select a
+driver after observing which one helps a controller or backbone most. If the selected generated
+driver is unavailable for a robot, complete that blocking cell before formal B2 runs; do not shrink
+the 14-robot cohort.
+
+### 4.2 Architecture-specific experimental matrix
+
+Let `A` be the predeclared set of published controller methods. Each method is assigned one of three
+backbone modes before formal task outcomes are inspected:
+
+- `replaceable`: the published high-level LLM/VLM is an external module and `B_a` is the set of
+  compatible backbones that can be substituted without retraining or changing method logic;
+- `fixed_system`: the controller is a trained checkpoint or coupled learned system; it has no
+  backbone factor and its exact published checkpoint/system identity is pinned;
+- `no_learned_backbone`: the method is classical or deterministic; it has no backbone factor and
+  one published algorithm configuration is pinned.
+
+The formal design is the following union of method-specific blocks:
 
 ```text
-14 fixed-cohort robots (N = 14)
-  x M Consumer LLM backbones
-  x T compositional task templates
-  x S matched private seeds
-  x C independent controller episodes
+for every replaceable method a in A_replaceable:
+  14 fixed-cohort robots (N = 14)
+    x every valid b in B_a
+    x T compositional task templates
+    x S matched private seeds
+    x E independent controller episodes
+
+for every method a in A_fixed or A_no_learned_backbone:
+  14 fixed-cohort robots (N = 14)
+    x T compositional task templates
+    x S matched private seeds
+    x E independent controller episodes
 ```
 
-The same backbone set should be used in B1 and B2 where endpoints support both roles, but the
-Producer and Consumer results remain separate.
+Thus a replaceable method contributes `architecture a x |B_a| backbones x other factors`. A fixed
+trained method contributes only `architecture a x other factors`, with its checkpoint held fixed.
+There is no global B2 backbone count, no requirement that all `B_a` have the same size, and no
+invented backbone swap added merely to make a rectangular table. B1 Producer models and B2
+backbone sets are selected independently because they answer different questions.
 
-### 4.2 Recommended controller architecture
+Within a replaceable architecture, matched `b in B_a` comparisons estimate a backbone effect for
+that method. Across architectures, the default estimand is a complete published-system comparison.
+An `architecture x backbone` interaction may be estimated only on the subset of architectures and
+backbones that form a genuinely matched factorial block.
 
-The primary controller should use this fixed architecture across all Consumer backbones:
+### 4.3 Backbone-replacement audit
 
-1. **Task planner.** An LLM consumes only the public task, public capability contracts, bounded
-   public state, and prior public call observations. It emits or patches a typed BT/task graph.
-2. **Static checker.** Framework code rejects unknown capabilities, invalid request envelopes,
-   cycles outside declared bounds, and plans exceeding call/turn budgets.
-3. **Deterministic executive.** The Framework executes ordering, branching, bounded retry, timeout,
-   and fallback semantics. It invokes only the Capability Router.
-4. **Capability Router.** It maps a typed node to the fixed `method(request=request)` ABI. Every
-   request contains `task_id` and `task_parameters` accepted by the public contract.
-5. **Public outcome monitor.** After each synchronous capability call, the Framework returns only
-   the exception, bounded public post-call state, and public progress observations. The planner may
-   repair the remaining tree within a fixed replan budget.
-6. **Independent Harness.** Private state, bindings, guards, criteria, and the physical verdict stay
-   outside the controller path.
+Before declaring a method `replaceable` or admitting a model to `B_a`, the reproduction audit must
+establish all of the following from the paper and pinned public implementation:
 
-The current driver ABI is synchronous and generated methods commonly return `None`. The first B2
-pilot therefore does not require a driver ABI redesign. The Framework can form post-call
-observations from public state plus exceptions after each call. Event-triggered feedback during a
-long-running capability is a later extension only if an observed pilot failure requires it.
+1. The high-level foundation model is exposed as a separable inference module.
+2. Replacing it does not retrain or replace controller policies, affordance/value functions,
+   low-level skills, capability implementations, or feedback modules.
+3. Every proposed replacement supports the method's required interface, such as option likelihoods,
+   tool calls, code generation, structured output, or visual input.
+4. The method's algorithm, prompts or in-context examples, planning/execution semantics, decoding
+   policy, budgets, and non-backbone weights remain fixed across `B_a`. Only provider transport and
+   mechanically equivalent schema formatting may differ.
+5. A held-out compatibility check, separate from formal tasks, confirms that the replacement can
+   enter and exit the published method interface without method-specific repair.
 
-Use an LLM over structured public observations by default. A VLM is eligible only when the same
-declared public visual observation is available to every Consumer; the current benchmark does not
-claim visual perception merely because recent hierarchical-control papers use VLMs.
+If conditions 1-2 fail, treat an otherwise executable released method as `fixed_system`. If a
+candidate model fails conditions 3-5, exclude that model from `B_a`; do not repair the method around
+it. A method with neither a valid replacement path nor an executable fixed system is not admitted.
+Do not call a retrained alternative a backbone substitution. Training the same architecture around
+several foundation models would be a separate training benchmark and is outside B2.
 
-### 4.3 Architecture controls and non-primary alternatives
+### 4.4 Candidate methods and preliminary classification
 
-| ID | Controller | Role |
-|---|---|---|
-| H0 | Hand-authored deterministic BT/task graph | Solvability and execution-path positive control; not a model leaderboard entry |
-| H1 | Current bounded ReAct direct-call loop | Authority `0.19.18` baseline and ablation |
-| H2 | LLM-generated/repaired BT or task graph with deterministic executive | Recommended formal B2 architecture |
-| H3 | PDDL/HTN planner compiled to a BT executive | Optional later classical baseline after public symbolic preconditions/effects exist |
+The following literature methods are candidates for the driver-compatibility reproduction audit.
+The labels are preliminary until the P4 paper/code audit is recorded; passing that audit, rather
+than popularity, determines the final set `A`.
 
-H1 versus H2 is an architecture-selection pilot, not part of the formal RQ1 backbone matrix. Once
-H2 is selected and the Authority is aligned, formal B2 varies only the Consumer backbone. A formal
-architecture factorial would be a new research question and must not be mixed into the current
-backbone claim.
+| Published method or variant | High-level mechanism | Preliminary backbone treatment | Fit above the generated driver |
+|---|---|---|---|
+| SayCan | LM option scoring combined with a fixed skill affordance/value score | `replaceable` among LMs exposing comparable option scores; keep the affordance component fixed | Conditional: every capability needs a predeclared public affordance/value scorer; driver mapping alone is insufficient |
+| Inner Monologue | Prompted LM planning with execution-success, scene, or human-language feedback | `replaceable` among compatible text LMs; keep the feedback projection and prompts fixed | Strong for post-call public feedback and replanning |
+| Interactive Task Planning with Language Models | Function/tool-calling task planner with interaction history and replanning | `replaceable` only among models supporting the required tool-call contract | Strong because public capabilities are the tools |
+| LLM as BT-Planner, prompting/ICL variant | LLM emits a Behavior Tree under a published grammar and examples | `replaceable` among models satisfying the same tree-output contract | Strong if the published BT executor calls only public capabilities |
+| LLM as BT-Planner, fine-tuned variant | A separately fine-tuned smaller LLM emits the Behavior Tree | `fixed_system`; no backbone factor; pin the exact evaluated checkpoint if reproducibly available | Conditional on checkpoint/code availability; another base model is not a valid swap without repeating training |
+| Code-BT | LLM generates API-using code whose control flow is extracted into a Behavior Tree | Candidate `replaceable` set limited to code-capable LMs; final classification requires code audit | Strong if API leaves map exactly to public capabilities and the published parser/executor is unchanged |
+| HBTP | LLM reasoning supplies a heuristic path, action-space pruning, and reflective feedback to a fixed BT planner | Candidate `replaceable` set limited to LMs satisfying the same symbolic heuristic contract; keep BT expansion fixed | Strong when action models are derived only from public capability preconditions/effects |
+| UHBTP from BTPG | Domain-independent heuristics guide published symbolic BT planning | `no_learned_backbone`; no backbone factor and one algorithm configuration is pinned | Strong classical control if its action model can be derived without private evaluation state |
 
-Direct VLA control, full task-and-motion planning, MPC, or policies that emit actuator commands are
-not primary B2 alternatives because they bypass or duplicate the generated driver. Hierarchical VLA
-research remains useful evidence for planner/executor separation, monitoring, and bounded replanning.
+If a paper provides several independently trained checkpoints, predeclare each selected checkpoint
+as a distinct fixed-system variant. Their comparison is a complete-system comparison, not a
+backbone factor.
 
-### 4.4 Compositional task suite
+RoboAgent, Hi Robot, hierarchical humanoid VLM planning, Steerable VLA, and VLAs-as-Tools are not
+automatically admitted B2 cells. Their published systems couple high-level reasoning to trained
+VLM/VLA capability or action components. A selected fixed system from this group may enter only if
+its high-level component can invoke the same generated driver without retraining or replacing
+published method logic; it then contributes only `architecture x other factors`, with the released
+system fixed. Otherwise it remains literature context because it would bypass or duplicate the
+driver.
+
+The current bounded ReAct controller remains the Authority `0.19.18` baseline until the Authority is
+revised. It is not treated as a sufficient new robot high-level-control architecture merely to fill
+the comparison table. A hand-authored deterministic controller remains a solvability calibration,
+not a leaderboard method.
+
+### 4.5 Method-faithful integration rule
+
+The Auto-Adapter integration layer may only:
+
+- map published action, skill, or tool names to fixed public capability IDs;
+- convert a published call into the fixed `method(request=request)` envelope;
+- project the common bounded public observation into the method's declared input form; and
+- normalize provider transport or mechanically equivalent schemas across a valid `B_a`.
+
+It may not add a planner, BT executive, affordance scorer, retry policy, recovery state machine,
+memory, or feedback channel absent from the published method. It may not combine components from
+different papers, expose private Harness state, emit actuator commands, or repair one method's
+outputs with another model. Method-specific dependencies such as SayCan's affordance score or a
+published BT executor are part of architecture `a` and remain fixed across that architecture's
+backbone block. Every nontrivial adaptation and deviation from public code must be reported.
+
+The synchronous driver ABI may remain unchanged for the first pilot. A method receives only the
+public post-call state and exceptions that its published feedback contract permits. A VLM method is
+eligible only if the same declared public visual observation is available in every matched cell.
+
+### 4.6 Compositional task suite
 
 The existing five-task Task Demo is not sufficient by itself: a source task can map to one
 capability and one driver call. B2 needs a separately sealed use suite that forces composition.
@@ -284,8 +346,9 @@ Recommended formal suite per robot:
   tasks;
 - each nominal solution requires 2-5 capability calls and at least two distinct capabilities;
 - `S = 3` matched private initialisations/seeds per template;
-- `C = 2` independent controller episodes per template/seed;
-- identical public task wording, seeds, call budget, and timeout across Consumer backbones.
+- `E = 2` independent controller episodes per template/seed;
+- identical public task wording, seeds, capability-call budget, and timeout for every eligible
+  architecture and, where replaceable, every `b in B_a`.
 
 Illustrative task families:
 
@@ -300,26 +363,27 @@ Illustrative task families:
 The actual task definitions and thresholds must come from admitted source standards and the exact
 robot's public affordances. The examples above are patterns, not pre-authored task contracts.
 
-### 4.5 B2 outcomes
+### 4.7 B2 outcomes
 
 Primary metric:
 
 - **Physical task success:** complete-task Harness success rate over the fixed matched episode set.
 
-Secondary metrics:
+Universal secondary metrics:
 
 | Dimension | Metric |
 |---|---|
-| Plan construction | Typed-plan parse/check rate; unknown-capability and invalid-request rate |
-| Capability selection | Admissible selection rate under the public contracts and preconditions; unnecessary-call rate |
-| Chaining | Valid ordering and argument binding; distinct-capability chain completion |
-| Feedback use | Replan trigger count; recovery success after a failed or perturbed call |
+| Capability use | Valid public-capability selection and argument-binding rate; unknown or inadmissible call rate |
+| Chaining | Valid ordering; distinct-capability chain completion; unnecessary-call rate |
 | Progress | Fraction of source-backed task clauses or declared subgoals physically satisfied |
-| Efficiency | Capability calls, planner turns, wall time, model tokens, and cost per episode |
+| Efficiency | Capability calls, model/planner turns where applicable, wall time, tokens, and cost per episode |
 | Safety and integrity | Guard violations, timeouts, direct-control attempts, and private-boundary violations |
 
-Controller self-reported success is logged only as a diagnostic. It never replaces the Harness
-verdict.
+Method-specific diagnostics, such as LM option scores, BT parse/check rate, generated-code validity,
+or replan/recovery counts, are reported only where the published method produces them. Mark other
+cells `not applicable`; do not score an architecture as failing for lacking another architecture's
+internal artefact. Controller self-reported success is diagnostic only and never replaces the
+Harness verdict.
 
 ## 5. Pairing and analysis
 
@@ -327,18 +391,24 @@ verdict.
 
 - B1 unit: one independently generated driver replicate.
 - B1 nested observations: capabilities, cases, clauses, attempts, and Task Demo trials.
-- B2 unit: one controller episode, blocked by robot, task template, seed, and controller replicate.
+- B2 unit: one controller episode, blocked by architecture and, where applicable, valid backbone;
+  then by robot, task template, seed, and episode replicate.
 
 ### 5.2 Reporting
 
 1. Publish raw numerator/denominator counts and confidence intervals for every named cell.
 2. Pair the two B1 generation conditions within robot/model/generation replicate.
-3. Pair B2 Consumer backbones on the same robot/task/seed/controller-replicate block.
-4. Use a hierarchical logistic model or block bootstrap only as a secondary summary when sample
+3. Within each `replaceable` B2 architecture, pair its valid backbones on the same
+   robot/task/seed/episode block.
+4. Compare different B2 architectures as complete systems unless a common-backbone matched block
+   supports an explicit `architecture x backbone` analysis. Never infer a global backbone ranking
+   from the unbalanced union of `B_a` sets.
+5. Use a hierarchical logistic model or block bootstrap only as a secondary summary when sample
    size supports it; never let a model-derived aggregate hide raw failed cells.
-5. Report per-robot results and macro-average across robots. Do not micro-average all validation
+6. Report per-robot results and macro-average across robots. Do not micro-average all validation
    cases as if they were independent drivers.
-6. Keep exploratory architecture-pilot results separate from formal backbone comparisons.
+7. Report fixed trained systems without a counterfactual backbone effect and keep failed or
+   unsupported method cells visible.
 
 ## 6. Execution phases
 
@@ -348,8 +418,8 @@ verdict.
 | P1: Cohort package completion | Complete the Authority-required package inputs for all 14 robots; run named diagnostics as each implementation becomes available | One manifest declares all 14 and every package resolves through the canonical loader |
 | P2: Full-cohort canary | 14 robots x two generation conditions, one real model, `R=1` | All 28 named cells reach trusted terminal verdicts; failures remain visible |
 | P3: Full-cohort synthesis pilot | All 14 robots, `M` Producer models, `R=3` | Variance/failure report; no protocol changes after formal inputs are fixed |
-| P4: High-level-controller pilot | H0, H1, and H2 on early runnable cells, then verify the selected architecture across all 14 robots | Architecture choice, observed ABI gaps, bounded controller contract |
-| P5: Formal B1/B2 | Fixed 14-robot cohort, models, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, paired analysis, declared limitations |
+| P4: Published-controller audit and pilot | Reproduce each candidate method, decide driver compatibility and backbone mode, then run one held-out compatibility cell | Final `A`; every applicable `B_a`; pinned fixed-system/algorithm identities, paper/code versions, adaptation record, observed ABI gaps |
+| P5: Formal B1/B2 | Fixed 14-robot cohort, declared method-specific matrices, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, within-method backbone contrasts, whole-system method comparisons, declared limitations |
 
 Early diagnostic cells are implementation evidence within the same cohort. Start them as soon as
 the minimum path exists, but retain the fixed 14-robot denominator for P2-P5 and do not delay real
@@ -370,8 +440,13 @@ For each B1 generation replicate retain:
 For each B2 episode retain:
 
 - fixed interface/driver identity and its originating B1 cell;
-- public task, public observations, typed BT/task graph, static-check result, calls, and replans;
-- controller model calls and budget use;
+- published method name, paper/code version, architecture variant, backbone mode, and exact
+  backbone/checkpoint/algorithm identity;
+- the applicable predeclared `B_a` or no-backbone classification, replacement audit, and method
+  adaptation/deviation record;
+- public task, public observations, capability calls, and method-native plans, trees, code, scores,
+  feedback, or replans where applicable;
+- controller/model calls and budget use where applicable;
 - independent Harness report, guard results, trajectory summary, and video.
 
 Human-readable IDs, versions, paths, and run IDs are sufficient. This protocol does not add
@@ -379,7 +454,13 @@ cryptographic evidence chains, registries, lifecycle states, or promotion workfl
 
 ## 8. Literature basis
 
-The architecture and metrics are grounded in four lines of robotics research:
+The references below supply candidate published controller methods, their method-specific
+dependencies, and benchmark metrics. They do not define a new Auto-Adapter controller assembled
+from selected paper components. The reproduction audit must use each cited paper together with its
+pinned public implementation to make the final `replaceable`, `fixed_system`, or
+`no_learned_backbone` decision.
+
+The candidates and metrics are grounded in four lines of robotics research:
 
 1. **Classical task planning and TAMP** establish the distinction between discrete task-level
    decisions and continuous robot execution, but do not justify bypassing the generated driver.
@@ -391,7 +472,7 @@ The architecture and metrics are grounded in four lines of robotics research:
    capability selection, progress feedback, and capability-chain evaluation. Their learned action
    policies or registry machinery are not copied into the Direct-MuJoCo mainline.
 
-Core references now present in the Zotero library; the 13 newly imported records are in the
+Core references now present in the Zotero library; the 14 newly imported records are in the
 `Auto_Adapter` collection:
 
 | Topic | Reference |
@@ -404,7 +485,8 @@ Core references now present in the Zotero library; the 13 newly imported records
 | Interactive capability execution | Li et al., [Interactive Task Planning with Language Models](https://openreview.net/forum?id=VmfWywWuYQ), 2025 |
 | LLM-generated BTs | Ao et al., [LLM as BT-Planner](https://arxiv.org/abs/2409.10444), ICRA 2025 |
 | Code-mediated BT generation | Zhang et al., [Code-BT](https://www.ijcai.org/proceedings/2025/980), IJCAI 2025 |
-| BT benchmark design | Chen et al., [BTPG](https://www.ijcai.org/proceedings/2025/969), IJCAI 2025 |
+| LLM-guided BT planning | Cai et al., [HBTP](https://doi.org/10.1109/ICRA55743.2025.11127999), ICRA 2025 |
+| BT benchmark and UHBTP | Chen et al., [BTPG](https://www.ijcai.org/proceedings/2025/969), IJCAI 2025 |
 | Hierarchical VLA control | Shi et al., [Hi Robot](https://arxiv.org/abs/2502.19417), 2025 |
 | VLM planning and monitoring | Schakkal et al., [Hierarchical Vision-Language Planning for Multi-Step Humanoid Manipulation](https://arxiv.org/abs/2506.22827), 2025 |
 | Steerable hierarchical policies | Chen et al., [Steerable Vision-Language-Action Policies](https://arxiv.org/abs/2602.13193), 2026 preprint |
@@ -417,13 +499,16 @@ claims must remain bounded to this project's independent Direct-MuJoCo evidence.
 
 ## 9. Decisions before formal runs
 
-1. Confirm whether to revise the Authority from the current direct ReAct controller to H2, or keep
-   ReAct as the formal path and treat H2 only as a separate exploratory experiment.
+1. Confirm whether to revise the Authority from one fixed ReAct controller to the predeclared set
+   of published B2 methods with architecture-specific backbone treatment; until then, keep the new
+   method comparison exploratory.
 2. Declare all 14 robot configurations in one Experiment 3 manifest and use one common cohort
    denominator.
-3. Select and pin at least three Producer/Consumer backbone endpoints using a provider-diverse,
-   predeclared rule.
-4. Fix `R`, B2 task templates, seeds, controller episode count, call/turn budgets, and driver
-   selection rule before inspecting formal model outcomes.
+3. Select and pin the B1 Producer endpoints independently. For B2, freeze final `A` and record each
+   method's paper/code version, applicable `B_a` or pinned no-backbone system/algorithm identity,
+   and driver adapter.
+4. Fix `R`, B2 task templates, seeds, `E`, common outer execution budgets, each architecture's
+   method-native internal budget, and the controller-method-blind driver-selection rule before
+   inspecting formal outcomes.
 5. Run named diagnostics as packages become available, then use only observed P3/P4 failures to
    justify any additional mechanism.
