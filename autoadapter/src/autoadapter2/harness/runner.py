@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import select
 import shutil
@@ -29,6 +30,63 @@ from .measurements import (
 
 class HarnessError(RuntimeError):
     """Raised when trusted validation infrastructure cannot execute a case."""
+
+
+_MAXIMUM_ALLOWED_PENETRATION_M = 0.005
+
+
+def _contact_integrity(worker_result: Mapping[str, Any]) -> dict[str, Any]:
+    """Reject geometric overlap beyond the shared soft-contact tolerance."""
+
+    evidence = worker_result.get("physical_evidence")
+    result: dict[str, Any] = {
+        "passed": False,
+        "maximum_allowed_penetration_m": _MAXIMUM_ALLOWED_PENETRATION_M,
+        "minimum_contact_distance_m": None,
+        "deepest_contact_pair": None,
+    }
+    if not isinstance(evidence, Mapping) or not bool(
+        evidence.get("contact_monitoring_complete")
+    ):
+        return result
+
+    value = evidence.get("minimum_contact_distance_m")
+    if value is None:
+        result["passed"] = True
+        return result
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return result
+    minimum_distance = float(value)
+    if not math.isfinite(minimum_distance):
+        return result
+
+    result["minimum_contact_distance_m"] = minimum_distance
+    records = evidence.get("contact_pair_min_distances")
+    if isinstance(records, list):
+        deepest: Mapping[str, Any] | None = None
+        for record in records:
+            if not isinstance(record, Mapping):
+                continue
+            distance = record.get("minimum_distance_m")
+            if (
+                isinstance(distance, (int, float))
+                and not isinstance(distance, bool)
+                and math.isfinite(float(distance))
+                and (
+                    deepest is None
+                    or float(distance)
+                    < float(deepest["minimum_distance_m"])
+                )
+            ):
+                deepest = record
+        if deepest is not None:
+            result["deepest_contact_pair"] = {
+                "geom1": deepest.get("geom1"),
+                "geom2": deepest.get("geom2"),
+                "minimum_distance_m": float(deepest["minimum_distance_m"]),
+            }
+    result["passed"] = minimum_distance >= -_MAXIMUM_ALLOWED_PENETRATION_M
+    return result
 
 
 def _read_object(path: Path) -> dict[str, Any]:
@@ -543,6 +601,7 @@ def run_private_suite(
             except Exception as exc:
                 measurement_error = f"{type(exc).__name__}: {exc}"
             physical_execution_passed = _physical_execution_completed(worker)
+            contact_integrity = _contact_integrity(worker)
             video = worker.get("video", {})
             video_manifest = dict(video) if isinstance(video, Mapping) else {}
             if record_video and not physical_execution_passed:
@@ -561,6 +620,7 @@ def run_private_suite(
             )
             base_passed = (
                 physical_execution_passed
+                and bool(contact_integrity["passed"])
                 and bool(guard_outcomes)
                 and all(guard_outcomes.values())
                 and video_evidence_passed
@@ -614,6 +674,7 @@ def run_private_suite(
                     "controller_completed": controller_completed,
                     "physical_evidence": worker.get("physical_evidence", {}),
                     "physical_execution_passed": physical_execution_passed,
+                    "contact_integrity": contact_integrity,
                     "trial_passed": False,
                     "_criterion": criterion,
                     "_base_passed": base_passed,

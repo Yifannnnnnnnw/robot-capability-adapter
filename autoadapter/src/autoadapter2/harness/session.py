@@ -102,6 +102,8 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
         self.ctrl_changed = False
         self.samples: list[dict[str, Any]] = []
         self.contact_pair_step_counts: dict[tuple[str, str], int] = {}
+        self.contact_pair_min_distances: dict[tuple[str, str], float] = {}
+        self.minimum_contact_distance_m: float | None = None
         self.initial_time = float(self.data.time)
         self.initial_ctrl = np.array(self.data.ctrl, dtype=float, copy=True)
         self._last_qpos = np.array(self.data.qpos, dtype=float, copy=True)
@@ -201,7 +203,17 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
                     )
                     or f"geom_{geom_id}"
                 )
-            pairs.add(tuple(sorted(names)))
+            pair = tuple(sorted(names))
+            pairs.add(pair)
+            distance = float(contact.dist)
+            previous = self.contact_pair_min_distances.get(pair)
+            if previous is None or distance < previous:
+                self.contact_pair_min_distances[pair] = distance
+            if (
+                self.minimum_contact_distance_m is None
+                or distance < self.minimum_contact_distance_m
+            ):
+                self.minimum_contact_distance_m = distance
         for pair in pairs:
             self.contact_pair_step_counts[pair] = (
                 self.contact_pair_step_counts.get(pair, 0) + 1
@@ -309,6 +321,18 @@ class TrackedMuJoCoSession(AbstractContextManager["TrackedMuJoCoSession"]):
             "contact_pair_step_counts": [
                 {"geom1": pair[0], "geom2": pair[1], "step_count": count}
                 for pair, count in sorted(self.contact_pair_step_counts.items())
+            ],
+            "contact_monitoring_complete": True,
+            "minimum_contact_distance_m": self.minimum_contact_distance_m,
+            "contact_pair_min_distances": [
+                {
+                    "geom1": pair[0],
+                    "geom2": pair[1],
+                    "minimum_distance_m": distance,
+                }
+                for pair, distance in sorted(
+                    self.contact_pair_min_distances.items()
+                )
             ],
             "joint_max_abs_deviation_from_reset": dict(
                 sorted(self.joint_max_abs_deviation_from_reset.items())

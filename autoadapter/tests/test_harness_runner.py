@@ -15,7 +15,7 @@ import mujoco
 from autoadapter2.harness import run_private_suite
 from autoadapter2.harness import runner as harness_runner
 from autoadapter2.harness.measurements import evaluate_guards
-from autoadapter2.harness.session import apply_framework_reset
+from autoadapter2.harness.session import TrackedMuJoCoSession, apply_framework_reset
 from autoadapter2.libraries import RobotPackage
 from autoadapter2.react import ToolCall, ToolTurn
 
@@ -243,6 +243,9 @@ class HarnessRunnerTests(unittest.TestCase):
                 "ctrl_observed_before_step": True,
                 "ctrl_changed_from_reset": True,
                 "direct_state_write_detected": False,
+                "contact_monitoring_complete": True,
+                "minimum_contact_distance_m": None,
+                "contact_pair_min_distances": [],
                 "samples": samples,
             },
             "video": {"requested": False, "complete": False, "frame_count": 0},
@@ -417,6 +420,75 @@ class HarnessRunnerTests(unittest.TestCase):
         self.assertTrue(trial["temporal_passed"])
         self.assertEqual(trial["temporal_evidence"]["sample_index"], 1)
         self.assertTrue(trial["trial_passed"])
+
+    def test_metric_success_cannot_mask_deep_penetration(self) -> None:
+        worker = self._worker_result(
+            [{"time": 0.0, "joint_positions": {"shoulder_pan": 0.2}}]
+        )
+        worker["physical_evidence"].update(
+            {
+                "minimum_contact_distance_m": -0.012,
+                "contact_pair_min_distances": [
+                    {
+                        "geom1": "work_surface",
+                        "geom2": "workpiece_geom",
+                        "minimum_distance_m": -0.012,
+                    }
+                ],
+            }
+        )
+
+        report = self._run_worker_result(
+            worker,
+            criterion={
+                "comparator": "<=",
+                "threshold": 0.05,
+                "temporal": {"kind": "terminal_state"},
+                "aggregation": {"kind": "single_trial"},
+            },
+        )
+
+        trial = report["trials"][0]
+        self.assertTrue(trial["temporal_passed"])
+        self.assertTrue(trial["criterion_passed"])
+        self.assertFalse(trial["contact_integrity"]["passed"])
+        self.assertEqual(
+            trial["contact_integrity"]["deepest_contact_pair"]["geom2"],
+            "workpiece_geom",
+        )
+        self.assertFalse(trial["trial_passed"])
+        self.assertFalse(report["validation_passed"])
+
+    def test_session_tracks_transient_contact_depth_every_step(self) -> None:
+        model = mujoco.MjModel.from_xml_string(
+            """<mujoco><worldbody>
+  <geom name="floor" type="plane" size="1 1 0.1"/>
+  <body name="overlapping_box" pos="0 0 0.01">
+    <freejoint/>
+    <geom name="box" type="box" size="0.02 0.02 0.02"/>
+  </body>
+</worldbody></mujoco>"""
+        )
+        data = mujoco.MjData(model)
+        tracker = TrackedMuJoCoSession(
+            mujoco=mujoco,
+            model=model,
+            data=data,
+            max_steps=2,
+            max_sim_time_s=1.0,
+        )
+
+        with tracker:
+            mujoco.mj_step(model, data)
+
+        evidence = tracker.evidence()
+        self.assertTrue(evidence["contact_monitoring_complete"])
+        self.assertLess(evidence["minimum_contact_distance_m"], -0.005)
+        pairs = [
+            {record["geom1"], record["geom2"]}
+            for record in evidence["contact_pair_min_distances"]
+        ]
+        self.assertEqual(pairs, [{"box", "floor"}])
 
     def test_unknown_temporal_or_aggregation_fails_closed(self) -> None:
         worker = self._worker_result(
