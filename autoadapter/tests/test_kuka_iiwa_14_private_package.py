@@ -10,7 +10,8 @@ import numpy as np
 
 from autoadapter2.driver_synthesis import audit_driver_source
 from autoadapter2.harness import run_private_suite
-from autoadapter2.harness.session import apply_framework_reset
+from autoadapter2.harness.measurements import compare, measure
+from autoadapter2.harness.session import TrackedMuJoCoSession, apply_framework_reset
 from autoadapter2.libraries import load_robot_package
 
 
@@ -332,6 +333,48 @@ def test_kuka_private_resets_are_framework_owned_and_exact() -> None:
         for name, expected in expected_controls.items():
             actuator_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
             np.testing.assert_allclose(data.ctrl[actuator_id], expected, rtol=0.0, atol=0.0)
+
+
+def test_kuka_private_reset_fails_every_task_criterion() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = _read(package.private_dir / "instances.json")["instances"]
+    bindings = _read(package.private_dir / "bindings.json")["bindings"]
+    binding_by_id = {binding["binding_id"]: binding for binding in bindings}
+    task_by_id = {task["task_id"]: task for task in package.tasks}
+
+    checked = 0
+    for instance in instances:
+        model = mujoco.MjModel.from_xml_path(
+            str(package.root / instance["scene_entrypoint"])
+        )
+        data = mujoco.MjData(model)
+        apply_framework_reset(mujoco, model, data, instance["reset"])
+        tracker = TrackedMuJoCoSession(
+            mujoco=mujoco,
+            model=model,
+            data=data,
+            max_steps=1,
+            max_sim_time_s=1.0,
+            sample_hz=20.0,
+        )
+        task = task_by_id[instance["task_id"]]
+        for clause_id, binding_id in instance["clause_bindings"].items():
+            criterion = next(
+                clause for clause in task["scoring"] if clause["clause_id"] == clause_id
+            )
+            value = measure(
+                binding_by_id[binding_id],
+                evidence={"samples": [tracker.snapshot()], "step_count": 0},
+                public_arguments=instance["public_arguments"],
+            )
+            assert not compare(
+                value,
+                comparator=criterion["comparator"],
+                threshold=criterion["threshold"],
+            ), f"reset already passes {instance['task_id']}: value={value}"
+            checked += 1
+
+    assert checked == len(TASK_IDS)
 
 
 def test_kuka_reference_driver_is_actuator_only_and_compact() -> None:

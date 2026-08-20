@@ -296,11 +296,34 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
         "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/"
         "skeleton/arm_serial_dls.py"
     ) in observed_paths
+    assert (
+        "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/"
+        "tasks/private/instances.json"
+    ) in observed_paths
+    assert (
+        "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/reference/driver.py"
+        in observed_paths
+    )
+    evidence_observation = next(
+        item
+        for item in candidate["locally_observed_source_material"]
+        if item["kind"] == "tracked_reference_positive_control_record"
+    )
+    assert evidence_observation["path"] == "autoadapter/evidence/README.md"
+    assert "20/20" in evidence_observation["observation"]
+    assert "exact link7_contact_geom" in evidence_observation["observation"]
+    assert "videos" in evidence_observation["observation"]
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
     assert "20 distinct applicable source-backed tasks" not in missing
     assert "tasks/sources.json" not in missing
+    assert "tasks/private/instances.json" not in missing
+    assert "reference driver" not in missing
+    assert "package check" not in missing
+    assert "positive control" not in missing
+    assert "dynamic canary" in missing
+    assert "runnable index" in missing
     assert sorted(path.name for path in (PACKAGE_ROOT / "tasks").iterdir()) == [
         "catalog.json",
         "private",

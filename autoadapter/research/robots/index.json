@@ -405,12 +405,27 @@
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/catalog.json",
           "kind": "canonical_task_catalog",
-          "observation": "The provisional KUKA public snapshot v2 contains 20 reviewed bare-flange contact task contracts with unchanged source scoring obligations and no grasp semantics. Contact, route, and tool-target waypoints now identify the world-frame center of link7_contact_geom, while the reach target remains attachment_site-based. Conditional contact applicability still requires private instances, bindings, guards, calibrated waypoints, and contact positive-control evidence; observed_task_count remains 5 for the inspected legacy catalog below."
+          "observation": "The KUKA public snapshot v2 contains 20 reviewed bare-flange contact task contracts with unchanged source scoring obligations and no grasp semantics. Contact, route, and tool-target waypoints identify the world-frame center of link7_contact_geom, while the reach target remains attachment_site-based; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/skeleton/arm_serial_dls.py",
           "kind": "canonical_skeleton_foundation",
           "observation": "The package exposes the capability-neutral trusted serial-arm DLS family. A focused MuJoCo smoke constructs it from public morphology facts and verifies that FK/IK track the exact link7_contact_geom center; it contains no task dispatch, private trajectory, reference logic, or runnable claim."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/private/instances.json",
+          "kind": "canonical_private_task_package",
+          "observation": "The Framework-private package binds all 20 public tasks to 16 local scenes, explicit resets, trusted measurements, three core guards, and 19 task-specific exact contact-pair guards. KUKA arm reset state is Framework-owned and closing tasks apply only their reviewed fixture-joint overrides."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/reference/driver.py",
+          "kind": "canonical_reference_calibration",
+          "observation": "The calibration-only reference replays 86 reviewed joint targets through the seven canonical actuator controls and advances only with MuJoCo physics steps. It does not construct or reset a model, write qpos or qvel, import the trusted skeleton, or admit the package to runtime."
+        },
+        {
+          "path": "autoadapter/evidence/README.md",
+          "kind": "tracked_reference_positive_control_record",
+          "observation": "The tracked evidence record points to the retained 20/20 actuator-driven KUKA package-wide reference positive control. All 19 contact tasks passed their exact link7_contact_geom-to-task-geom guard, no direct state write was detected, and all 20 independently decoded 800x600 videos were complete. This is calibration evidence only, not model-generation or runnable-admission evidence."
         },
         {
           "path": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/asset_closure.json",
@@ -449,11 +464,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide a calibration-only reference driver for this configuration.",
-        "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
+        "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
+        "Perform final human package and admission review, then add KUKA iiwa 14 to the runnable index only if the dynamic canary passes; prior reference evidence alone does not admit it."
       ]
     },
     {

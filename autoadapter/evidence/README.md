@@ -131,6 +131,39 @@ path. It is not a model-generated condition, does not establish Task Demo or
 driver-synthesis success, and does not admit Piper to the runnable index. A
 real-model dynamic canary and final admission review remain required.
 
+## KUKA iiwa 14 Package-Wide Reference Positive Control
+
+Run `kuka-reference-positive-control-20260820T070515Z`, on mainline commit
+`3459d17`, passed all 20 fixed KUKA iiwa 14 Task Library cases with the reviewed
+Framework-owned reference driver and real MuJoCo 3.3.6 physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control was observed before physics stepping and changed from reset
+  in every trial;
+- all three core guards passed, all 19 contact tasks passed their exact
+  `link7_contact_geom` to task-geometry guard, and no direct `qpos` or `qvel`
+  write was detected;
+- maximum trial length: 7,940 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete H.264, independently decoded at `800x600`, with 44
+  to 160 frames per case; and
+- push-to-goal, drawer-open, lever-pull, and window-close trajectories were
+  visually checked for nonblank, task-readable framing and visible task change.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/kuka-reference-positive-control-20260820T070515Z/`.
+Its `reference_report.json`, complete 20-case suite, and per-case videos remain
+together. The sandboxed run ending `070441Z` is diagnostic only: all metrics,
+physical execution, and guards passed, but macOS CoreGraphics was unavailable
+and every requested video had zero frames.
+
+This result establishes package-wide reference feasibility for the canonical
+KUKA assets, compact actuator trajectory baseline, trusted measurements,
+exact-contact guards, Harness, and video path. It is not a model-generated
+condition, does not establish Task Demo or driver-synthesis success, and does
+not admit KUKA to the runnable index. A real-model dynamic canary and final
+admission review remain required.
+
 ## Latest Historical Diagnostic Run
 
 This run predates Authority `0.19.2`: its five sampled cases were used directly
