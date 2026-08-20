@@ -144,6 +144,7 @@ class ResearchRobotIndexTests(unittest.TestCase):
         )
 
         g1 = candidates_by_id["unitree_g1"]
+        self.assertEqual(g1["mainline_disposition"], "optional_backup_only")
         g1_paths = {
             material["path"] for material in g1["locally_observed_source_material"]
         }

@@ -85,8 +85,9 @@ def test_mainline_manifest_pins_model_empty_experience_and_seed_policy() -> None
     assert config.experience_input == ()
     assert config.evolution_declared
     assert config.task_demo_seed_template == "{run_id}:{robot_configuration_id}"
-    assert len(config.robots) == 12
-    assert len(config.robots) * len(config.generation_conditions) == 24
+    assert len(config.robots) == 11
+    assert "unitree_g1" not in config.robots
+    assert len(config.robots) * len(config.generation_conditions) == 22
 
 
 def test_model_preflight_rejects_a_runtime_model_substitution() -> None:
