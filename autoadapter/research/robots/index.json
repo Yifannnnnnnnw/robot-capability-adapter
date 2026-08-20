@@ -576,6 +576,11 @@
           "observation": "The canonical right-hand snapshot contains 20 distinct task contracts and 22 source-backed scoring clauses. It preserves 13 one-to-one Elliott-Connolly coordination patterns and seven non-variant task families with explicit stricter adaptations; this is public contract evidence only, not private measurement, controller, task-success, or runnable evidence."
         },
         {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/skeleton/hand_joint_position.py",
+          "kind": "canonical_trusted_skeleton",
+          "observation": "The canonical package re-exports a capability-neutral trusted hand skeleton with public joint and fingertip observations plus bounded actuator-only joint-position feedback. It contains no task dispatch, reset, target trajectory, scoring, or calibration-reference logic."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/leap_hand/left_hand.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical LEAP Hand model and meshes are available for migration inspection."
@@ -603,7 +608,7 @@
       ],
       "missing_for_runnable_package": [
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable hand-control skeleton and a calibration-only reference driver for this configuration.",
+        "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."

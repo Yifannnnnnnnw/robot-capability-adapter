@@ -353,6 +353,6 @@ def test_leap_hand_asset_foundation_is_local_and_live() -> None:
     assert "Create the current mainline morphology.json" not in missing
     assert "20 distinct applicable source-backed tasks" not in missing
     assert "tasks/private/instances.json" in missing
-    assert "hand-control skeleton" in missing
+    assert "hand-control skeleton" not in missing
     assert "positive control" in missing
     assert "dynamic canary" in missing

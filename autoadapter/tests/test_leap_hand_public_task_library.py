@@ -445,5 +445,5 @@ def test_leap_hand_public_task_library_snapshot() -> None:
     task_entries = sorted(entry.name for entry in (PACKAGE_ROOT / "tasks").iterdir())
     assert task_entries == ["catalog.json", "sources.json"]
     assert not (PACKAGE_ROOT / "tasks" / "private").exists()
-    assert not (PACKAGE_ROOT / "skeleton").exists()
+    assert (PACKAGE_ROOT / "skeleton" / "hand_joint_position.py").is_file()
     assert not (PACKAGE_ROOT / "reference").exists()
