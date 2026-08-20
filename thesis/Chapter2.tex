@@ -360,5 +360,31 @@ success rates are therefore not directly comparable.
 \subsection{Oracles and Validation}
 \label{sec:oracles-validation}
 
+Validation requires an observation source and a pass rule. Earlier assurance
+work for hand-written robot software used developer-authored oracles. ROSRV
+monitored live ROS messages and blocked a command unless a declared safety
+property held. In one case, the turret angle had to exceed \(-0.45\) rad before
+firing \citep{huang2014rosrv}. The threshold came from the application
+specification, not from the monitor. HAROS extracts software models for model
+checking \citep{santos2021haros}. SOTER instead switches to a certified
+controller before a declared safety invariant can be violated
+\citep{desai2019soter}.
+
+Robot benchmarks later made these rules task-specific. RoboEval uses symbolic
+simulation. It checks generated action traces against temporal conditions across
+several initial states \citep{hu2024codebotler}. This tests action order, but not
+physical dynamics. ROBEL instead evaluates simulated or hardware trajectories.
+Its D'Claw pose task requires a mean joint error below \(10^\circ\). A safety
+pass also requires no position, velocity, or current-limit violations
+\citep{ahn2020robel}. LLMCap2Skill executes generated ROS~2 skills in Gazebo,
+then assesses behaviour against a manually written skill specification
+\citep{vieira2025cap2skill}.
+
+Auto-Adapter combines source-grounded rules with physics-grounded observations.
+The IVC audits task-derived metrics and thresholds before synthesis. A trusted
+Harness then evaluates private MuJoCo states and trajectories. Candidate reports
+cannot determine the verdict. This establishes simulated capability behaviour,
+not hardware safety.
+
 \subsection{Comparative Synthesis}
 \label{sec:comparative-synthesis}
