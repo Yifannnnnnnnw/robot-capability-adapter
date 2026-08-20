@@ -56,6 +56,20 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
             ur5e_paths,
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/sources.json",
+            ur5e_paths,
+        )
+        self.assertIn(
+            "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/catalog.json",
+            ur5e_paths,
+        )
+        self.assertFalse(
+            any("20 distinct" in item for item in ur5e["missing_for_runnable_package"])
+        )
+        self.assertFalse(
+            any("tasks/sources.json" in item for item in ur5e["missing_for_runnable_package"])
+        )
 
         leap = candidates_by_id["leap_hand"]
         leap_paths = {

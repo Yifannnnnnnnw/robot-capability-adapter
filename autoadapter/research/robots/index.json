@@ -283,6 +283,16 @@
           "observation": "The exact configuration morphology records the six-joint arm, native 0-open/255-closed Robotiq control, tendon and passive coupling, contact observations, home reset, and pinned component lineage without claiming runnable status."
         },
         {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The exact composite public snapshot contains the pinned Meta-World source record used by every scoring clause in the 20-task catalog."
+        },
+        {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The exact composite public snapshot contains 20 distinct reviewed task contracts with unchanged source metrics, formulas, thresholds, units, temporal semantics, aggregations, and support classifications, plus UR5e and Robotiq-specific applicability and invocation facts. This is public contract evidence only, not scene, task-success, or runnable evidence."
+        },
+        {
           "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
           "kind": "canonical_arm_component_foundation",
           "observation": "The separately retained bare-arm package contains the complete 27-file local UR5e closure, including all 20 meshes. It loads in MuJoCo 3.3.6 as a fixed six-joint position-controlled arm ending at attachment_site, but it has no gripper and is component material rather than the contact-capable configuration indexed here."
@@ -329,8 +339,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five legacy UR5e task records to at least 20 distinct source-backed tasks applicable to the exact UR5e plus Robotiq 2F-85 configuration, with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable arm_serial_dls skeleton and a calibration-only reference driver for the exact composite configuration.",
         "Add the package check for the complete canonical package.",
