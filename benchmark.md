@@ -1,10 +1,10 @@
 # Auto-Adapter 2.0 Benchmark Protocol
 
 > **Status:** protocol draft; non-normative until aligned with `AUTOADAPTER_2_AUTHORITY.md`<br>
-> **Authority baseline:** `AA2-AUTH` revision `0.19.20`<br>
+> **Authority baseline:** `AA2-AUTH` revision `0.19.22`<br>
 > **Prepared:** 2026-08-20<br>
 > **Execution scope:** canonical `autoadapter/` Direct-MuJoCo mainline only<br>
-> **Robot cohort:** one fixed cohort of 14 configurations listed in Section 2<br>
+> **Robot cohort:** one fixed cohort of 12 configurations listed in Section 2<br>
 > **Excluded from denominators:** real SDK, Translation, hardware, and historical `demo2/`
 
 ## 0. Executive decision
@@ -73,9 +73,9 @@ silently override the Authority.
 6. Reference drivers and hand-authored controllers are calibration controls. They are not model
    conditions and do not establish model-based synthesis or capability-interface use.
 
-## 2. Fixed 14-robot cohort
+## 2. Fixed 12-robot cohort
 
-The benchmark defines one scientific cohort with `N = 14`. `robotstudio_so101` and
+The benchmark defines one scientific cohort with `N = 12`. `robotstudio_so101` and
 `unitree-go2-stock-12dof` are members of this same cohort, not a separate benchmark group. Current
 package readiness and implementation order do not create different scientific populations or
 denominators.
@@ -84,15 +84,14 @@ denominators.
 |---|---|
 | Fixed serial manipulator | `robotstudio_so101`, `franka_panda`, `kinova_gen3_robotiq_2f85`, `ufactory_xarm7`, `universal_robots_ur5e_robotiq_2f85`, `piper`, `kuka_iiwa_14` |
 | Hand | `leap_hand` |
-| Quadruped | `unitree-go2-stock-12dof`, `google_barkour_vb` |
+| Quadruped | `unitree-go2-stock-12dof` |
 | Humanoid | `unitree_g1` |
 | Mobile manipulator | `hello_robot_stretch_2` |
 | Bimanual | `aloha_2` |
-| Legged arm | `boston_dynamics_spot_with_arm` |
 
 ### 2.1 Formal cohort rule
 
-Before Experiment 3, one versioned experiment manifest must declare all 14 configurations and:
+Before Experiment 3, one versioned experiment manifest must declare all 12 configurations and:
 
 - each `robot_configuration_id` and morphology category;
 - exact package and Task Library snapshot versions;
@@ -104,10 +103,10 @@ Before Experiment 3, one versioned experiment manifest must declare all 14 confi
 Every configuration must satisfy the same Authority-defined Task Library, source-lineage,
 asset-closure, validation, and evidence requirements before its formal cell runs. Package completion
 is an execution prerequisite, not cohort membership. Diagnostic cells may run as implementations
-become available, but the formal benchmark is incomplete until all 14 configurations have the
+become available, but the formal benchmark is incomplete until all 12 configurations have the
 required B1 and B2 results. No ready subset becomes a replacement headline cohort.
 
-**Authority consistency note.** `AA2-AUTH` revision `0.19.20` now fixes the same fourteen exact
+**Authority consistency note.** `AA2-AUTH` revision `0.19.22` fixes the same twelve exact
 robot configurations and the full-cohort B1 boundary. This draft's proposed multi-method B2
 controller comparison is still broader than the Authority's fixed ReAct path and remains
 non-normative until an explicit later Authority decision.
@@ -129,7 +128,7 @@ The Authority-declared planned B1 set has `M = 7` Producer model families:
 | M7 | Qwen3 32B | Alibaba | Exact provider identifier and endpoint pending manifest freeze |
 
 Before the seven-family comparison, the Authority-required initial shakedown uses the exact pinned
-Ministral 8B configuration for all fourteen robots under both generation conditions: 28 cells per
+Ministral 8B configuration for all twelve robots under both generation conditions: 24 cells per
 replicate, empty prior Experience, Evolution after every terminal cell, and one post-round
 Experience disposition per cell. It checks the complete execution path and may count as the M6 B1
 replicate only when prospectively declared and formally evidenced.
@@ -142,7 +141,7 @@ blocked family remains visible unless an explicit Authority/protocol revision ch
 The primary matrix is:
 
 ```text
-14 fixed-cohort robots (N = 14)
+12 fixed-cohort robots (N = 12)
   x 7 Authority-declared Producer LLM backbones (M = 7)
   x R independent generation replicates
   x 2 generation conditions
@@ -260,7 +259,7 @@ The driver must be selected by a prespecified, controller-method-blind rule from
 cell. Record its Producer model, generation condition, replicate, and final attempt. Do not select a
 driver after observing which one helps a controller or backbone most. If the selected generated
 driver is unavailable for a robot, complete that blocking cell before formal B2 runs; do not shrink
-the 14-robot cohort.
+the 12-robot cohort.
 
 ### 4.2 Architecture-specific experimental matrix
 
@@ -278,14 +277,14 @@ The formal design is the following union of method-specific blocks:
 
 ```text
 for every replaceable method a in A_replaceable:
-  14 fixed-cohort robots (N = 14)
+  12 fixed-cohort robots (N = 12)
     x every valid b in B_a
     x T compositional task templates
     x S matched private seeds
     x E independent controller episodes
 
 for every method a in A_fixed or A_no_learned_backbone:
-  14 fixed-cohort robots (N = 14)
+  12 fixed-cohort robots (N = 12)
     x T compositional task templates
     x S matched private seeds
     x E independent controller episodes
@@ -493,14 +492,14 @@ Harness verdict.
 | Phase | Scope | Exit evidence |
 |---|---|---|
 | P0: Calibration | Reference drivers, Harness, false-success checks, and video path | Complete trusted calibration reports and videos |
-| P1: Cohort package completion | Complete the Authority-required package inputs for all 14 robots; run named diagnostics as each implementation becomes available | One manifest declares all 14 and every package resolves through the canonical loader |
-| P2: Full-cohort canary | 14 robots x two generation conditions, one real model, `R=1` | All 28 named cells reach trusted terminal verdicts; failures remain visible |
-| P3: Full-cohort synthesis pilot | All 14 robots, all 7 Authority-declared Producer backbones, `R=3` | Variance/failure/resource report; no protocol changes after formal inputs are fixed |
+| P1: Cohort package completion | Complete the Authority-required package inputs for all 12 robots; run named diagnostics as each implementation becomes available | One manifest declares all 12 and every package resolves through the canonical loader |
+| P2: Full-cohort canary | 12 robots x two generation conditions, one real model, `R=1` | All 24 named cells reach trusted terminal verdicts; failures remain visible |
+| P3: Full-cohort synthesis pilot | All 12 robots, all 7 Authority-declared Producer backbones, `R=3` | Variance/failure/resource report; no protocol changes after formal inputs are fixed |
 | P4: Published-controller audit and pilot | Reproduce each candidate method, decide driver compatibility and backbone mode, then run one held-out compatibility cell | Final `A`; every applicable `B_a`; pinned fixed-system/algorithm identities, paper/code versions, adaptation record, observed ABI gaps |
-| P5: Formal B1/B2 | Fixed 14-robot cohort, declared method-specific matrices, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, within-method backbone contrasts, whole-system method comparisons, declared limitations |
+| P5: Formal B1/B2 | Fixed 12-robot cohort, declared method-specific matrices, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, within-method backbone contrasts, whole-system method comparisons, declared limitations |
 
 Early diagnostic cells are implementation evidence within the same cohort. Start them as soon as
-the minimum path exists, but retain the fixed 14-robot denominator for P2-P5 and do not delay real
+the minimum path exists, but retain the fixed 12-robot denominator for P2-P5 and do not delay real
 runs for speculative controller middleware or broad schemas.
 
 ## 7. Required run artefacts
@@ -584,7 +583,7 @@ claims must remain bounded to this project's independent Direct-MuJoCo evidence.
 1. Confirm whether to revise the Authority from one fixed ReAct controller to the predeclared set
    of published B2 methods with architecture-specific backbone treatment; until then, keep the new
    method comparison exploratory.
-2. Declare all 14 robot configurations in one Experiment 3 manifest and use one common cohort
+2. Declare all 12 robot configurations in one Experiment 3 manifest and use one common cohort
    denominator.
 3. Pin exact provider identifiers, endpoints, decoding/context settings, token fields, billing
    currency, and price snapshots for all seven Authority-declared B1 Producer families. For B2,

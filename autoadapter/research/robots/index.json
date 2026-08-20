@@ -8,7 +8,7 @@
   "experiment_selection_path": "autoadapter/configs/experiments/*.json",
   "build_order_basis": [
     "Wave 1 starts with fixed serial arms that can plausibly reuse the existing arm_serial_dls family, beginning with Franka Panda, then Kinova Gen3 and xArm7, followed by the other fixed arms.",
-    "Wave 2 covers the articulated hand, quadruped, and humanoid morphologies after the fixed-arm package pattern is understood.",
+    "Wave 2 covers the articulated hand and humanoid morphologies after the fixed-arm package pattern is understood; Barkour remains optional backup research outside the formal mainline.",
     "Wave 3 covers the mobile and bimanual manipulators, which require broader coordination interfaces."
   ],
   "candidates": [
@@ -618,6 +618,7 @@
       "robot_configuration_id": "google_barkour_vb",
       "morphology_family": "quadruped_position_policy",
       "morphology_category": "quadruped",
+      "mainline_disposition": "optional_backup_only",
       "proposed_sequence": 8,
       "proposed_wave": 2,
       "observed_task_count": 5,

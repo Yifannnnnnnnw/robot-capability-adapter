@@ -148,6 +148,7 @@ class ResearchRobotIndexTests(unittest.TestCase):
         )
 
         barkour = candidates_by_id["google_barkour_vb"]
+        self.assertEqual(barkour["mainline_disposition"], "optional_backup_only")
         barkour_paths = {
             material["path"] for material in barkour["locally_observed_source_material"]
         }
