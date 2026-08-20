@@ -234,12 +234,18 @@ def test_universal_robots_ur5e_public_identity_has_no_donor_remnants_and_is_non_
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "skeleton",
         "tasks",
     ]
     assert sorted(path.name for path in TASKS_ROOT.iterdir()) == [
         "catalog.json",
+        "private",
         "sources.json",
     ]
     assert not (PACKAGE_ROOT / "reference").exists()
-    assert not (PACKAGE_ROOT / "skeleton").exists()
-    assert not (TASKS_ROOT / "private").exists()
+    assert (PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
+    assert sorted(path.name for path in (TASKS_ROOT / "private").iterdir()) == [
+        "bindings.json",
+        "guards.json",
+        "instances.json",
+    ]

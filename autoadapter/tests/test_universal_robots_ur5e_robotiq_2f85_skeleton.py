@@ -91,6 +91,21 @@ def test_ur5e_robotiq_inventory_and_canonical_session_are_live() -> None:
     assert runtime_path in source_files
     assert "class ArmSerialDLSSkeleton" in source_files[runtime_path]
 
+    public_asset_paths = {
+        item["path"]
+        for item in inputs["public_robot_package"]["selected_mjcf_closure"]["files"]
+    }
+    private_scene_names = {
+        Path(instance["scene_entrypoint"]).name
+        for instance in json.loads(
+            (PACKAGE_ROOT / "tasks" / "private" / "instances.json").read_text(
+                encoding="utf-8"
+            )
+        )["instances"]
+    }
+    assert "scene.xml" in public_asset_paths
+    assert public_asset_paths.isdisjoint(private_scene_names)
+
     morphology = package.morphology
     control = morphology["public_control"]
     observations = morphology["public_observations"]
