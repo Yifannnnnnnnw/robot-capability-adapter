@@ -1,0 +1,1904 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+  "tasks": [
+    {
+      "task_id": "ec_pinch",
+      "name": "Pinch translation and return",
+      "description": "Hold the object between two fingers, flex both together to translate it toward the palm on the ventro-dorsal axis, then extend both together to return it to its start. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Pinch (P) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Bolt and Nut pair, YCB IDs 46 and 47. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_pinch_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "two_finger_object_support"
+                },
+                {
+                  "event": "simultaneous_two_finger_flexion",
+                  "object_translation_axis": "ventro_dorsal",
+                  "direction": "toward_palm"
+                },
+                {
+                  "event": "simultaneous_two_finger_extension",
+                  "outcome": "object_returned_to_start"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Pinch (P) row: two-finger support, simultaneous flexion toward the palm, and simultaneous extension back to the start define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_pinch",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_046_047_bolt_and_nut."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_dynamic_tripod",
+      "name": "Dynamic tripod translation",
+      "description": "Hold the object with three fingers and repeatedly flex and extend all three together to translate it along the ventro-dorsal axis in the writing-like dynamic-tripod pattern. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Dynamic Tripod (DT) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Small Marker, YCB ID 41. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_dynamic_tripod_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "three_finger_object_support"
+                },
+                {
+                  "event": "repetitive_simultaneous_three_finger_flexion_extension",
+                  "object_translation_axis": "ventro_dorsal"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Dynamic Tripod (DT) row: three-finger support and repetitive simultaneous flexion and extension producing ventro-dorsal translation define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_dynamic_tripod",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_041_small_marker."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_squeeze",
+      "name": "Three-finger squeeze",
+      "description": "Hold a deformable object with at least three fingers and flex the participating fingers toward its centroid until the object is compressed. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Squeeze (S) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source commercial 5 mL syringe with a measurable plunger joint. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_squeeze_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "deformable_object_support",
+                  "minimum_finger_count": 3
+                },
+                {
+                  "event": "simultaneous_flexion_toward_object_centroid",
+                  "outcome": "object_compressed"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Squeeze (S) row: support by three or more fingers followed by simultaneous inward flexion that compresses the object defines success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_squeeze",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is commercial_5_mL_syringe."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_twiddle",
+      "name": "Twiddle roll",
+      "description": "Support the object between the distal phalanx of a manipulating finger and the proximal-side surface of a stabilizing finger, then flex and extend the manipulating finger to roll the object along the stabilizing finger. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Twiddle (T) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Bolt and Nut pair, YCB IDs 46 and 47. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_twiddle_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "asymmetric_two_finger_support",
+                  "manipulating_contact": "distal_phalanx",
+                  "stabilizing_contact": "proximal_phalanx_side"
+                },
+                {
+                  "event": "manipulating_finger_flexion_extension",
+                  "object_motion": "roll_along_stabilizing_finger"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Twiddle (T) row: the specified distal-to-proximal-side contact roles and rolling caused by manipulating-finger flexion and extension define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_twiddle",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_046_047_bolt_and_nut."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_rock",
+      "name": "Round-object rock",
+      "description": "Hold a round object with at least three fingers and rotate it about the hand's ventro-dorsal axis without using the wrist or an external support. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Rock (R) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source yellow Cup, YCB ID 64. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_rock_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "round_object_support",
+                  "minimum_finger_count": 3
+                },
+                {
+                  "event": "finger_driven_object_rotation",
+                  "rotation_axis": "ventro_dorsal"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Rock (R) row: three-or-more-finger support and finger-driven rotation of a round object about the ventro-dorsal axis define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_rock",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_064_yellow_cup."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_rock_ii",
+      "name": "Opposed-grasp pivot",
+      "description": "Hold an elongated object in an opposed three-finger grasp, alternately flex and extend two fingers, and pivot the object about the third finger. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Rock II (RII) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Small Marker, YCB ID 41. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_rock_ii_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "opposed_three_finger_elongated_object_support"
+                },
+                {
+                  "event": "alternating_two_finger_flexion_extension",
+                  "object_motion": "pivot_about_third_finger"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Rock II (RII) row: an opposed three-finger grasp and alternating motion of two fingers that pivots the elongated object about the third define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_rock_ii",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_041_small_marker."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_radial_roll",
+      "name": "Radial roll",
+      "description": "Support the object between the distal phalanx of a stabilizing finger and the proximal-side surface of a manipulating finger, then flex and extend the manipulating finger to roll it along the stabilizing finger. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Radial Roll (RR) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source green Marble, YCB ID 62, with the balanced tracking-bolt arrangement described by the source. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_radial_roll_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "asymmetric_two_finger_support",
+                  "stabilizing_contact": "distal_phalanx",
+                  "manipulating_contact": "proximal_phalanx_side"
+                },
+                {
+                  "event": "manipulating_finger_flexion_extension",
+                  "object_motion": "roll_along_stabilizing_finger"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Radial Roll (RR) row: the specified proximal-side-to-distal contact roles and rolling caused by manipulating-finger flexion and extension define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_radial_roll",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_062_green_marble."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_index_roll",
+      "name": "Index roll",
+      "description": "Hold the object between two distal phalanges and repeatedly flex and extend one finger to roll the object along the other finger. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Index Roll (IR) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source green Marble, YCB ID 62, with the balanced tracking-bolt arrangement described by the source. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_index_roll_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "distal_to_distal_two_finger_support"
+                },
+                {
+                  "event": "repetitive_single_finger_flexion_extension",
+                  "object_motion": "roll_along_other_finger"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Index Roll (IR) row: distal-to-distal support and repetitive motion of one finger that rolls the object along the other define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_index_roll",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_062_green_marble."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_full_roll",
+      "name": "Full roll pivot",
+      "description": "Hold the object between two distal phalanges and repeatedly flex and extend one finger so the object pivots about a stationary point on the other finger. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Full Roll (FR) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Wood Block, YCB ID 69. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_full_roll_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "distal_to_distal_two_finger_support"
+                },
+                {
+                  "event": "repetitive_single_finger_flexion_extension",
+                  "object_motion": "pivot_about_stationary_other_finger_contact"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Full Roll (FR) row: distal-to-distal support and repetitive motion of one finger that pivots the object about a stationary contact on the other define success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_full_roll",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_069_wood_block."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_rotary_step",
+      "name": "Round-object rotary step",
+      "description": "Use a finger-gaiting sequence to incrementally rotate a round object by at least 360 degrees about the hand's ventro-dorsal axis. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Rotary Step (RS) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source yellow Cup, YCB ID 64. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_rotary_step_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "finger_gaiting_sequence",
+                  "object_shape": "round"
+                },
+                {
+                  "event": "cumulative_object_rotation",
+                  "axis": "ventro_dorsal",
+                  "comparator": ">=",
+                  "threshold": 360,
+                  "unit": "deg"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Rotary Step (RS) row: a finger-gaiting sequence on a round object with at least 360 degrees of cumulative ventro-dorsal rotation defines success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_rotary_step",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_064_yellow_cup."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_interdigital_step",
+      "name": "Elongated-object interdigital step",
+      "description": "Use a finger-gaiting sequence to incrementally pivot an elongated object by at least 360 degrees about the hand's ventro-dorsal axis. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Interdigital Step (IS) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Small Marker, YCB ID 41. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_interdigital_step_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "finger_gaiting_sequence",
+                  "object_shape": "elongated"
+                },
+                {
+                  "event": "cumulative_object_pivot",
+                  "axis": "ventro_dorsal",
+                  "comparator": ">=",
+                  "threshold": 360,
+                  "unit": "deg"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Interdigital Step (IS) row: a finger-gaiting sequence on an elongated object with at least 360 degrees of cumulative ventro-dorsal pivoting defines success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_interdigital_step",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_041_small_marker."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_linear_step",
+      "name": "Linear finger step",
+      "description": "Finger-gait along an elongated object so the fingers translate along its length, with sliding at the changing finger-object contacts. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Linear Step (LS) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Large Marker, YCB ID 40. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_linear_step_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "finger_gaiting_sequence",
+                  "object_shape": "elongated"
+                },
+                {
+                  "event": "finger_contacts_translate_along_object_length",
+                  "contact_mode": "sliding"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Linear Step (LS) row: finger gaiting that translates the finger contacts along an elongated object, generally with sliding, defines success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_linear_step",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_040_large_marker."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "ec_palmar_slide",
+      "name": "Palmar slide",
+      "description": "Hold an elongated object in a palmar grasp and extend two initially flexed contacting fingers to translate it along the hand's radio-ulnar axis. Satisfy this source criterion in each of exactly three attempts.",
+      "source_task_or_operation": "Elliott-Connolly Palmar Slide (PS) manipulation pattern.",
+      "applicability": "The canonical robot is a fixed-base right LEAP Hand with four fingers, 16 joint-position actuators, named fingertip contacts, and no arm or moving wrist. The source benchmark explicitly isolates in-hand manipulation performed by the hand without the arm or body, and its reported robot and human baseline each used only three fingers. The LEAP morphology therefore supplies the required thumb-and-finger contact set for this pattern. These facts establish physical task-family applicability only; they do not establish task success.",
+      "adaptation": "Map the source hand coordinate axes to the canonical fixed right-palm frame and retain the source object and the pattern-specific contact and motion criterion. The ring finger may remain unused when the source pattern needs only two or three digits. The source permits retries until at least three successful trials; this bounded contract evaluates exactly the first three attempts and requires all three to succeed, which is stricter and does not weaken the source obligation. This is a one-to-one source coordination pattern, not an object, axis, direction, or target-value variant.",
+      "scene_assumptions": [
+        "Use the source Large Marker, YCB ID 40. The object begins in a source-permitted suitable grasp; the concrete pose remains Framework-private.",
+        "The fixed palm orientation relative to gravity is recorded for the trial, as required by the source protocol."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the object's pose in the right-palm frame, canonical hand joint motion, named fingertip contacts, and trial boundaries.",
+        "The source-pattern event names below are public scoring semantics; simulator symbols and measurement bindings remain Framework-private."
+      ],
+      "scoring": [
+        {
+          "clause_id": "three_source_pattern_successes",
+          "metric": "ec_palmar_slide_successful_trial_count",
+          "metric_definition": {
+            "per_trial_success": {
+              "kind": "all_required_events",
+              "required_events": [
+                {
+                  "event": "palmar_grasp_of_elongated_object"
+                },
+                {
+                  "event": "two_contacting_fingers_extend_from_flexion",
+                  "object_translation_axis": "radio_ulnar"
+                }
+              ]
+            },
+            "trial_window": "from the first motion away from the initial grasp through the declared target pose"
+          },
+          "unit": "trial",
+          "comparator": "==",
+          "threshold": 3,
+          "temporal": {
+            "kind": "fixed_trials",
+            "trial_count": 3
+          },
+          "aggregation": {
+            "kind": "all_trials"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-EC-BENCHMARK-2021",
+              "specific_reference": "Appendix I Palmar Slide (PS) row: a palmar grasp followed by extension of two initially flexed contacting fingers that translates the object radio-ulnarly defines success. Section II-B requires at least three successful trials, permits retries, and records no completion-time requirement.",
+              "support": "adapted",
+              "adaptation": "The source allows unlimited retries to obtain at least three successful trials. The local contract instead fixes exactly three attempts and requires three successes, so failed attempts cannot be discarded; the source criterion and count are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "ec_palmar_slide",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "object_id",
+              "trial_count"
+            ],
+            "properties": {
+              "object_id": {
+                "type": "string",
+                "unit": "identifier",
+                "frame": "none",
+                "description": "Fixed source object identifier; required value is YCB_040_large_marker."
+              },
+              "trial_count": {
+                "type": "integer",
+                "unit": "trial",
+                "frame": "none",
+                "description": "Bounded stricter adaptation of the source repetition protocol; allowed range [3, 3]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "gym_hand_reach_all_fingertips",
+      "name": "All-fingertip Cartesian reach",
+      "description": "Move all four canonical LEAP fingertips to one requested 12-coordinate Cartesian goal so their concatenated position error is below 0.00894427191 m at the final step of a 50-step attempt.",
+      "source_task_or_operation": "Gymnasium-Robotics HandReach-v3 all-fingertip Cartesian target task.",
+      "applicability": "The canonical robot exposes four named fingertip geoms, 16 finger joint-position actuators, and a fixed palm. HandReach requires only fingertip Cartesian motion and no arm; the source wrist can be held fixed and the absent fifth fingertip is replaced by the complete four-fingertip set of the LEAP morphology. These facts establish physical task-family applicability only.",
+      "adaptation": "Use the canonical fingertip order [index, middle, ring, thumb] and hold the palm fixed. Convert the source 15-coordinate 0.01 m L2 bound to 12 coordinates as 0.01*sqrt(12/15)=0.00894427191 m, preserving the source per-coordinate RMS obligation. Require success at step 50 rather than at any intermediate source state, which is stricter. No object, axis, direction, or target-position variant is counted separately.",
+      "scene_assumptions": [
+        "No manipulated object is present; each target is a marker expressed in the fixed right-palm frame.",
+        "The private target values lie inside the canonical fingertip workspaces without requiring palm motion."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes all four canonical fingertip positions in the fixed right-palm frame and the control-step count.",
+        "The concatenated 12-coordinate L2 error is recomputed outside candidate code."
+      ],
+      "scoring": [
+        {
+          "clause_id": "all_fingertip_goal_error",
+          "metric": "concatenated_fingertip_cartesian_l2_error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.00894427190999916,
+          "threshold_provenance": "0.01*sqrt(12/15) m preserves the source per-coordinate RMS bound when substituting four LEAP fingertips for five Shadow fingertips",
+          "temporal": {
+            "kind": "terminal_step",
+            "max_control_steps": 50
+          },
+          "aggregation": {
+            "kind": "all_four_fingertips"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GYMNASIUM-HAND-1.4.2",
+              "specific_reference": "reach.py goal_distance and _is_success use the Euclidean norm of the concatenated fingertip positions with strict distance_threshold 0.01; gymnasium_robotics/__init__.py registers HandReach-v3 for 50 steps.",
+              "support": "adapted",
+              "adaptation": "Replace the source 15-coordinate five-fingertip vector by all 12 coordinates of the exact LEAP morphology and scale 0.01 m by sqrt(12/15), preserving the source per-coordinate RMS bound. Fix the unavailable wrist and sample only the terminal source-horizon state, which makes temporal success stricter."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "gym_hand_reach_all_fingertips",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_fingertip_positions_m",
+              "max_control_steps"
+            ],
+            "properties": {
+              "target_fingertip_positions_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "right_palm_cartesian",
+                "description": "Twelve values in canonical [index, middle, ring, thumb] fingertip order, with xyz contiguous for each fingertip; each private value must be reachable without palm motion.",
+                "items": {
+                  "type": "number"
+                },
+                "length": 12
+              },
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "control_step",
+                "frame": "none",
+                "description": "Fixed source horizon; allowed range [50, 50]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "gym_hand_manipulate_block_full_pose",
+      "name": "Free block full-pose matching",
+      "description": "Manipulate one free 0.05 m cube to a requested Cartesian position and quaternion orientation, with position error below 0.01 m and quaternion-angle error below 0.1 rad at the same final state of a 100-step attempt.",
+      "source_task_or_operation": "Gymnasium-Robotics HandManipulateBlockFull-v1 full 7D block-pose task.",
+      "applicability": "The canonical fixed right hand has four actuated fingers and can grasp, translate, and reorient a palm-supported free rigid cube using finger motion. The operation requires no arm or moving wrist; target offsets are expressed from the palm-supported initial object frame. These facts establish physical task-family applicability only.",
+      "adaptation": "Use the source 0.05 m cube and unchanged target-offset ranges, fix the palm and wrist, and retain both source success thresholds and their same-state conjunction. Sample only the 100-step registered terminal state, which is stricter than source per-step success. RotateZ, RotateParallel, RotateXYZ, egg, pen, and touch-sensor variants are deliberately not separate tasks.",
+      "scene_assumptions": [
+        "One free cube has source half-extents [0.025, 0.025, 0.025] m and begins supported by the palm/fingers; its concrete pose is private.",
+        "Requested position offsets from the initial object frame remain in source ranges x [-0.04, 0.04] m, y [-0.06, 0.02] m, z [0.0, 0.06] m; requested orientation is a unit quaternion."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes the cube center position and normalized quaternion in the right-palm Cartesian frame plus control-step count.",
+        "Position and shortest quaternion-angle errors are recomputed outside candidate code and must pass at the same terminal state."
+      ],
+      "scoring": [
+        {
+          "clause_id": "block_position_error",
+          "metric": "block_target_euclidean_position_error",
+          "unit": "m",
+          "comparator": "<",
+          "threshold": 0.01,
+          "temporal": {
+            "kind": "terminal_step",
+            "max_control_steps": 100
+          },
+          "aggregation": {
+            "kind": "same_state_conjunction"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GYMNASIUM-HAND-1.4.2",
+              "specific_reference": "manipulate.py _goal_distance and _is_success require d_pos < distance_threshold with default 0.01 m and multiply position and rotation success; __init__.py registers HandManipulateBlockFull-v1 for 100 steps.",
+              "support": "adapted",
+              "adaptation": "The threshold and conjunction are unchanged; the unavailable wrist is fixed and the check is restricted to the registered terminal step, which is stricter than accepting an intermediate success."
+            }
+          ]
+        },
+        {
+          "clause_id": "block_orientation_error",
+          "metric": "block_target_shortest_quaternion_angle_error",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "terminal_step",
+            "max_control_steps": 100
+          },
+          "aggregation": {
+            "kind": "same_state_conjunction"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-GYMNASIUM-HAND-1.4.2",
+              "specific_reference": "manipulate.py computes 2*acos of the clipped relative-quaternion scalar and _is_success requires d_rot < rotation_threshold with default 0.1 rad in conjunction with position success.",
+              "support": "adapted",
+              "adaptation": "The angle metric, threshold, and same-state conjunction are unchanged; only the source wrist is fixed and terminal sampling is imposed."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "gym_hand_manipulate_block_full_pose",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_position_offset_m",
+              "target_orientation_wxyz",
+              "max_control_steps"
+            ],
+            "properties": {
+              "target_position_offset_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "initial_object_cartesian",
+                "description": "Three-value xyz offset; source ranges are x [-0.04, 0.04], y [-0.06, 0.02], z [0.0, 0.06] m.",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3
+              },
+              "target_orientation_wxyz": {
+                "type": "array",
+                "unit": "quaternion",
+                "frame": "right_palm_cartesian",
+                "description": "Normalized target quaternion in wxyz order.",
+                "items": {
+                  "type": "number"
+                },
+                "length": 4
+              },
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "control_step",
+                "frame": "none",
+                "description": "Fixed registered source horizon; allowed range [100, 100]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "robel_dclaw_pose_fixed",
+      "name": "Fixed hand-joint pose matching",
+      "description": "Move all 16 canonical hand joints to a requested fixed pose so every absolute joint-position error is below 10 degrees at the final step of the 80-step, 4-second attempt.",
+      "source_task_or_operation": "ROBEL DClawPoseFixed-v0 fixed joint-pose task.",
+      "applicability": "The source and canonical robots are fixed-base, multi-finger, joint-position-actuated hands. Pose matching uses only hand joint positions and requires no arm, object, or wrist motion. The canonical 16-joint target substitutes for the source nine-joint target. These facts establish physical task-family applicability only.",
+      "adaptation": "Replace the source nine-joint D'Claw target with all 16 canonical joints in published LEAP order. Change source mean absolute error to maximum absolute error while retaining 10*pi/180 rad; max-error success implies the source mean-error obligation and is therefore stricter. Retain the 80-step/4 s horizon.",
+      "scene_assumptions": [
+        "No manipulated object or external fixture is present.",
+        "Every requested joint value lies within the public canonical joint limits."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes all 16 canonical joint positions in public joint order and the control-step count.",
+        "Maximum absolute wrapped joint error is recomputed outside candidate code."
+      ],
+      "scoring": [
+        {
+          "clause_id": "maximum_joint_pose_error",
+          "metric": "maximum_absolute_joint_position_error",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.17453292519943295,
+          "threshold_provenance": "10*pi/180 rad from ROBEL; maximum replaces mean as a stricter morphology adaptation",
+          "temporal": {
+            "kind": "terminal_step",
+            "max_control_steps": 80,
+            "duration_s": 4
+          },
+          "aggregation": {
+            "kind": "maximum_over_all_16_joints"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBEL-DCLAW-2019",
+              "specific_reference": "pose.py SUCCESS_THRESHOLD is 10*pi/180 and get_score_dict defines success as mean absolute qpos error below it; dclaw/__init__.py sets Pose to 80 steps = 4 s.",
+              "support": "adapted",
+              "adaptation": "Apply the same 10-degree bound to the maximum absolute error over all 16 local joints instead of the source mean over nine joints. This is stricter because max(error) < bound implies mean(error) < bound."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "robel_dclaw_pose_fixed",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_joint_positions_rad",
+              "max_control_steps",
+              "duration_s"
+            ],
+            "properties": {
+              "target_joint_positions_rad": {
+                "type": "array",
+                "unit": "rad",
+                "frame": "leap_hand_public_joint_order",
+                "description": "Sixteen target joint positions, each within its public canonical joint limit.",
+                "items": {
+                  "type": "number"
+                },
+                "length": 16
+              },
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "control_step",
+                "frame": "none",
+                "description": "Fixed source horizon; allowed range [80, 80]."
+              },
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "frame": "none",
+                "description": "Fixed source duration; allowed range [4, 4]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "robel_dclaw_turn_fixed",
+      "name": "Fixed-axis half-turn",
+      "description": "Rotate one fixed-axis three-lobed hand fixture from the source start angle toward pi rad so wrapped absolute target-angle error is below 0.1 rad at the final step of the 40-step, 4-second attempt.",
+      "source_task_or_operation": "ROBEL DClawTurnFixed-v0 single fixed valve turn.",
+      "applicability": "The canonical fixed hand has four actuated fingers that can contact a palm-scale fixed-axis rotary fixture. The operation needs finger-driven fixture rotation but no arm or wrist motion. The extra ring finger does not remove any source obligation. These facts establish physical task-family applicability only.",
+      "adaptation": "Rigidly place the unchanged source three-lobed fixed-axis fixture within the LEAP finger workspace. Retain source start angle 0 rad, target pi rad, wrapped error, strict 0.1 rad threshold, and 40-step/4 s terminal horizon.",
+      "scene_assumptions": [
+        "One unchanged source three-lobed rotary fixture is constrained to one hinge axis in reach of the fixed palm; concrete placement is private.",
+        "The public source protocol uses initial fixture angle 0 rad and target angle pi rad."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes unbounded fixture hinge angle, computes wrapped target error in [-pi, pi], and tracks the control horizon.",
+        "The final error is recomputed outside candidate code."
+      ],
+      "scoring": [
+        {
+          "clause_id": "fixture_target_angle_error",
+          "metric": "absolute_wrapped_fixture_target_angle_error",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.1,
+          "temporal": {
+            "kind": "terminal_step",
+            "max_control_steps": 40,
+            "duration_s": 4
+          },
+          "aggregation": {
+            "kind": "single_trial"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBEL-DCLAW-2019",
+              "specific_reference": "turn.py defines DClawTurnFixed from 0 to pi, wraps target error to [-pi, pi], and uses strict success_threshold 0.1; dclaw/__init__.py sets 40 steps = 4 s.",
+              "support": "direct"
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "robel_dclaw_turn_fixed",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "initial_fixture_angle_rad",
+              "target_fixture_angle_rad",
+              "max_control_steps",
+              "duration_s"
+            ],
+            "properties": {
+              "initial_fixture_angle_rad": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "fixture_hinge",
+                "description": "Fixed source initial angle; allowed range [0, 0]."
+              },
+              "target_fixture_angle_rad": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "fixture_hinge",
+                "description": "Fixed source target angle; allowed range [pi, pi]."
+              },
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "control_step",
+                "frame": "none",
+                "description": "Fixed source horizon; allowed range [40, 40]."
+              },
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "frame": "none",
+                "description": "Fixed source duration; allowed range [4, 4]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "robel_dclaw_screw_fixed",
+      "name": "Continuous fixed-axis rotation tracking",
+      "description": "Continuously rotate one fixed-axis three-lobed hand fixture along the source 0.5 rad/s target trajectory while keeping absolute unbounded target-angle error below 0.2 rad throughout the 80-step, 8-second attempt.",
+      "source_task_or_operation": "ROBEL DClawScrewFixed-v0 continuous fixed-velocity valve rotation.",
+      "applicability": "The canonical fixed hand has four actuated fingers that can regrasp and continuously rotate a palm-scale fixed-axis fixture. The task is finger-driven and requires no arm or wrist motion. These facts establish physical task-family applicability only.",
+      "adaptation": "Rigidly place the unchanged source three-lobed fixture within the LEAP finger workspace and retain 0.5 rad/s, 0.2 rad, 80 steps, and 8 s. Require the source error bound at every sampled step rather than only for each independently reported current score; maximum-over-time aggregation is stricter and blocks terminal-only catch-up.",
+      "scene_assumptions": [
+        "One unchanged source three-lobed rotary fixture is constrained to one unbounded hinge axis in reach of the fixed palm; concrete placement is private.",
+        "The source moving target begins at the fixture's initial angle and advances at 0.5 rad/s."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes unbounded fixture hinge angle and simulation time and reconstructs the source moving target.",
+        "Absolute unbounded tracking error and its maximum over the full horizon are recomputed outside candidate code."
+      ],
+      "scoring": [
+        {
+          "clause_id": "continuous_fixture_tracking_error",
+          "metric": "maximum_absolute_unbounded_fixture_target_angle_error",
+          "unit": "rad",
+          "comparator": "<",
+          "threshold": 0.2,
+          "temporal": {
+            "kind": "continuous",
+            "max_control_steps": 80,
+            "duration_s": 8
+          },
+          "aggregation": {
+            "kind": "maximum_over_control_steps"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-ROBEL-DCLAW-2019",
+              "specific_reference": "screw.py defines DClawScrewFixed with initial/target angle 0, target velocity 0.5 rad/s, unbounded integrated target position, and success_threshold 0.2; dclaw/__init__.py sets 80 steps = 8 s.",
+              "support": "adapted",
+              "adaptation": "Retain every source numeric value but aggregate the current source error by its maximum over the complete source horizon. Requiring all steps below 0.2 rad is stricter than accepting a terminal or isolated current-state success."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "robel_dclaw_screw_fixed",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_fixture_velocity_rad_s",
+              "max_control_steps",
+              "duration_s"
+            ],
+            "properties": {
+              "target_fixture_velocity_rad_s": {
+                "type": "number",
+                "unit": "rad/s",
+                "frame": "fixture_hinge",
+                "description": "Fixed source angular velocity; allowed range [0.5, 0.5]."
+              },
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "control_step",
+                "frame": "none",
+                "description": "Fixed source horizon; allowed range [80, 80]."
+              },
+              "duration_s": {
+                "type": "number",
+                "unit": "s",
+                "frame": "none",
+                "description": "Fixed source duration; allowed range [8, 8]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "myosuite_object_hold_fixed",
+      "name": "Object hold at a fixed target",
+      "description": "Keep a free palm-supported object within 0.010 m of its target for more than five control steps during a 75-step attempt, without ever crossing the source 0.300 m drop boundary.",
+      "source_task_or_operation": "MyoSuite myoHandObjHoldFixed-v0 object-hold task.",
+      "applicability": "The canonical fixed right hand can support a small free object palm-up and regulate its position using four actuated fingers. The source operation is hand-only and its target is local to the hand, so no arm or moving wrist is required after the source frame is rigidly aligned to the fixed LEAP palm. These facts establish physical task-family applicability only.",
+      "adaptation": "Rigidly transform the source hand, goal, object, and drop-boundary frame together into the fixed right-palm scene. Retain 0.010 m solved distance, more-than-five solved-step rule, 0.300 m drop distance, and 75-step horizon. Requiring no drop anywhere in the full horizon is stricter than source termination on first drop.",
+      "scene_assumptions": [
+        "One source-equivalent small free object begins supported above the fixed palm; its target position and concrete pose are private.",
+        "The source goal and 0.300 m drop-distance relation are preserved under one rigid scene-frame transform."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes object and goal center positions in one Cartesian frame and the 75-step horizon.",
+        "Per-step solved state and drop events are recomputed outside candidate code."
+      ],
+      "scoring": [
+        {
+          "clause_id": "minimum_solved_steps",
+          "metric": "object_hold_solved_control_step_count",
+          "metric_definition": {
+            "per_step_success": {
+              "metric": "object_goal_euclidean_distance",
+              "unit": "m",
+              "comparator": "<",
+              "threshold": 0.01
+            }
+          },
+          "unit": "control_step",
+          "comparator": ">",
+          "threshold": 5,
+          "temporal": {
+            "kind": "fixed_horizon",
+            "max_control_steps": 75
+          },
+          "aggregation": {
+            "kind": "count_successful_steps"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MYOSUITE-2.12.2",
+              "specific_reference": "obj_hold_v0.py sets solved when object-goal Euclidean distance is strictly below 0.010 m; env_base.py evaluate_success requires sum(solved) > successful_steps with default 5; myobase/__init__.py registers 75 steps.",
+              "support": "direct"
+            }
+          ]
+        },
+        {
+          "clause_id": "no_drop",
+          "metric": "object_hold_drop_event_count",
+          "metric_definition": {
+            "drop_event": {
+              "metric": "object_goal_euclidean_distance",
+              "unit": "m",
+              "comparator": ">",
+              "threshold": 0.3
+            }
+          },
+          "unit": "event",
+          "comparator": "==",
+          "threshold": 0,
+          "temporal": {
+            "kind": "fixed_horizon",
+            "max_control_steps": 75
+          },
+          "aggregation": {
+            "kind": "count_events"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MYOSUITE-2.12.2",
+              "specific_reference": "obj_hold_v0.py defines drop/done when object-goal distance is greater than 0.300 m.",
+              "support": "adapted",
+              "adaptation": "Count source drop events over all 75 steps and require zero. This preserves the 0.300 m source boundary and is stricter than merely terminating after a drop."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "myosuite_object_hold_fixed",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "target_object_position_m",
+              "max_control_steps"
+            ],
+            "properties": {
+              "target_object_position_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "right_palm_cartesian",
+                "description": "Three-value target center position supplied by the private source-equivalent scene.",
+                "items": {
+                  "type": "number"
+                },
+                "length": 3
+              },
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "control_step",
+                "frame": "none",
+                "description": "Fixed source horizon; allowed range [75, 75]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    },
+    {
+      "task_id": "myosuite_baoding_p1",
+      "name": "Two-ball Baoding circulation",
+      "description": "Track both free balls on the fixed counter-clockwise two-target orbit for all 200 control steps: each ball must remain within 0.015 m of its own moving target and neither ball may cross the source-equivalent drop plane.",
+      "source_task_or_operation": "MyoSuite myoChallengeBaodingP1-v1 fixed counter-clockwise two-ball task.",
+      "applicability": "The canonical fixed right hand has four independently actuated fingers and named contacts for sustained two-object in-hand circulation. The source motion is defined relative to a palm-up hand and requires no arm or moving wrist after the full source task frame is rigidly aligned to the fixed LEAP palm. These facts establish physical task-family applicability only.",
+      "adaptation": "Use only the fixed P1 counter-clockwise operation; clockwise, random-property, period, radius, and object variants are not separate tasks. Rigidly transform the source orbit and drop plane with the palm, retain 0.015 m, 5 s, 0.025 m, 0.028 m, and 200 steps, and require the maximum possible source mean solved fraction of 1.0. Selecting perfect source score as pass cannot weaken a maximize-only benchmark metric.",
+      "scene_assumptions": [
+        "Two free source-equivalent balls have nominal radius 0.022 m and nominal mass 0.043 kg and begin supported by the palm/fingers; concrete poses are private.",
+        "Two moving target sites are pi rad apart on the source counter-clockwise ellipse with x radius 0.025 m, y radius 0.028 m, and period 5 s.",
+        "The source z=1.25 drop plane is rigidly transformed with the source palm and targets into the canonical scene; its concrete world coordinate is private."
+      ],
+      "observation_assumptions": [
+        "The trusted Framework observes both ball centers, both moving target centers, the transformed drop plane, and all 200 control-step samples.",
+        "The source per-step solved conjunction and its mean over the horizon are recomputed outside candidate code."
+      ],
+      "scoring": [
+        {
+          "clause_id": "perfect_two_ball_tracking_fraction",
+          "metric": "mean_two_ball_solved_fraction",
+          "metric_definition": {
+            "per_step_success": {
+              "kind": "all",
+              "predicates": [
+                {
+                  "metric": "ball_1_target_euclidean_distance",
+                  "unit": "m",
+                  "comparator": "<",
+                  "threshold": 0.015
+                },
+                {
+                  "metric": "ball_2_target_euclidean_distance",
+                  "unit": "m",
+                  "comparator": "<",
+                  "threshold": 0.015
+                },
+                {
+                  "metric": "ball_1_source_frame_height",
+                  "unit": "m",
+                  "comparator": ">=",
+                  "threshold": 1.25
+                },
+                {
+                  "metric": "ball_2_source_frame_height",
+                  "unit": "m",
+                  "comparator": ">=",
+                  "threshold": 1.25
+                }
+              ]
+            }
+          },
+          "unit": "ratio",
+          "comparator": "==",
+          "threshold": 1,
+          "temporal": {
+            "kind": "fixed_horizon",
+            "max_control_steps": 200
+          },
+          "aggregation": {
+            "kind": "mean_over_control_steps"
+          },
+          "source_refs": [
+            {
+              "source_id": "SRC-MYOSUITE-2.12.2",
+              "specific_reference": "baoding_v1.py sets proximity_th=0.015 and drop_th=1.25, defines solved as both target distances below proximity_th AND neither ball below drop_th, and defines score as mean solved over horizon; myochallenge/__init__.py fixes P1 period 5 s, radii 0.025/0.028 m, and 200 steps.",
+              "support": "adapted",
+              "adaptation": "Rigidly transform the complete source palm/orbit/drop-plane frame and require score == 1, the maximum possible value of the source mean-solved metric. All source distances, orbit values, horizon, conjunction, and mean aggregation are unchanged."
+            }
+          ]
+        }
+      ],
+      "invocation_schema": {
+        "envelope": "request",
+        "required": [
+          "request"
+        ],
+        "request": {
+          "type": "object",
+          "required": [
+            "task_id",
+            "task_parameters"
+          ],
+          "task_id": "myosuite_baoding_p1",
+          "task_parameters": {
+            "type": "object",
+            "required": [
+              "orbit_period_s",
+              "orbit_radii_m",
+              "max_control_steps"
+            ],
+            "properties": {
+              "orbit_period_s": {
+                "type": "number",
+                "unit": "s",
+                "frame": "right_palm_cartesian",
+                "description": "Fixed source P1 orbit period; allowed range [5, 5]."
+              },
+              "orbit_radii_m": {
+                "type": "array",
+                "unit": "m",
+                "frame": "right_palm_cartesian",
+                "description": "Fixed source [x_radius, y_radius] values [0.025, 0.028] m.",
+                "items": {
+                  "type": "number"
+                },
+                "length": 2
+              },
+              "max_control_steps": {
+                "type": "integer",
+                "unit": "control_step",
+                "frame": "none",
+                "description": "Fixed source P1 horizon; allowed range [200, 200]."
+              }
+            },
+            "additional_properties": false
+          }
+        }
+      }
+    }
+  ]
+}

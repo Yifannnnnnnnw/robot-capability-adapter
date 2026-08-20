@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "sources": [
+    {
+      "source_id": "SRC-EC-BENCHMARK-2021",
+      "title": "The Elliott and Connolly Benchmark: A Test for Evaluating the In-Hand Dexterity of Robot Hands",
+      "organization": "IEEE-RAS International Conference on Humanoid Robots; Carnegie Mellon University",
+      "version_or_date": "2021; DOI 10.1109/HUMANOIDS47582.2021.9555798",
+      "locator": "https://doi.org/10.1109/HUMANOIDS47582.2021.9555798",
+      "specific_reference": "Abstract and Section I-A identify 13 distinct, daily-life-derived, hand-only manipulation patterns without arm or body; Section II-A defines binary Success/Failure and the translation/rotation metrics; Table II fixes the manipulation objects; Section II-B defines the start-to-target protocol, at least three successful trials, unlimited source retries, and no timing requirement; Appendix I gives the separate criteria for Pinch, Dynamic Tripod, Squeeze, Twiddle, Rock, Rock II, Radial Roll, Index Roll, Full Roll, Rotary Step, Interdigital Step, Linear Step, and Palmar Slide."
+    },
+    {
+      "source_id": "SRC-GYMNASIUM-HAND-1.4.2",
+      "title": "Gymnasium-Robotics Shadow Dexterous Hand task protocols",
+      "organization": "Farama Foundation",
+      "version_or_date": "v1.4.2, commit 42eae53b2b27321d29090c219ce2f675c596de77; MIT",
+      "locator": "https://github.com/Farama-Foundation/Gymnasium-Robotics/tree/42eae53b2b27321d29090c219ce2f675c596de77/gymnasium_robotics/envs/shadow_dexterous_hand",
+      "specific_reference": "reach.py defines the concatenated fingertip Cartesian L2 success error below 0.01 m; manipulate.py defines position error below 0.01 m AND quaternion-angle error below 0.1 rad; manipulate_block.py defines the full block-pose operation and target-offset ranges; envs/assets/hand/manipulate_block.xml defines 0.025 m cube half-extents; gymnasium_robotics/__init__.py registers HandReach-v3 for 50 steps and HandManipulateBlockFull-v1 for 100 steps."
+    },
+    {
+      "source_id": "SRC-ROBEL-DCLAW-2019",
+      "title": "ROBEL D'Claw task protocols",
+      "organization": "Google Research",
+      "version_or_date": "commit 5b0fd3704629931712c6e0f7268ace1c2154dc83; Apache-2.0",
+      "locator": "https://github.com/google-research/robel/tree/5b0fd3704629931712c6e0f7268ace1c2154dc83/robel/dclaw",
+      "specific_reference": "pose.py defines fixed joint-pose matching and mean absolute error below 10*pi/180 rad; turn.py defines a single fixed valve turn from 0 to pi rad with wrapped target error below 0.1 rad; screw.py defines continuous fixed target motion at 0.5 rad/s with target-position error below 0.2 rad; __init__.py registers 80-step/4 s Pose, 40-step/4 s Turn, and 80-step/8 s Screw episodes."
+    },
+    {
+      "source_id": "SRC-MYOSUITE-2.12.2",
+      "title": "MyoSuite hand task implementations",
+      "organization": "MyoHub",
+      "version_or_date": "v2.12.2, commit 94300995076b20ed6a8cfc65794c54bc997a0697; Apache-2.0",
+      "locator": "https://github.com/MyoHub/myosuite/tree/94300995076b20ed6a8cfc65794c54bc997a0697/myosuite/envs/myo",
+      "specific_reference": "myobase/obj_hold_v0.py defines solved as object-goal distance below 0.010 m and drop as distance above 0.300 m; env_base.py evaluate_success requires more than five solved steps; myobase/__init__.py registers a 75-step fixed hold. myochallenge/baoding_v1.py defines two-ball counter-clockwise trajectory tracking, 0.015 m per-ball proximity, no-fall conjunction, fixed 5 s period with 0.025 m and 0.028 m radii, nominal 0.022 m ball radius and 0.043 kg mass, and mean solved-fraction scoring; myochallenge/__init__.py registers the fixed P1 task for 200 steps."
+    }
+  ]
+}
