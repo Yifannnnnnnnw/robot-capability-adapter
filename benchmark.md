@@ -318,22 +318,50 @@ it. A method with neither a valid replacement path nor an executable fixed syste
 Do not call a retrained alternative a backbone substitution. Training the same architecture around
 several foundation models would be a separate training benchmark and is outside B2.
 
-### 4.4 Candidate methods and preliminary classification
+### 4.4 Concrete candidate architecture table
 
-The following literature methods are candidates for the driver-compatibility reproduction audit.
-The labels are preliminary until the P4 paper/code audit is recorded; passing that audit, rather
-than popularity, determines the final set `A`.
+The pre-audit candidate pool contains six `A_replaceable` architectures, one `A_fixed`
+architecture, and one `A_no_learned_backbone` architecture. These IDs are benchmark identifiers,
+not new Auto-Adapter methods. The formal `A` is the subset that passes the P4 paper/code,
+driver-compatibility, and backbone-replacement audits.
 
-| Published method or variant | High-level mechanism | Preliminary backbone treatment | Fit above the generated driver |
-|---|---|---|---|
-| SayCan | LM option scoring combined with a fixed skill affordance/value score | `replaceable` among LMs exposing comparable option scores; keep the affordance component fixed | Conditional: every capability needs a predeclared public affordance/value scorer; driver mapping alone is insufficient |
-| Inner Monologue | Prompted LM planning with execution-success, scene, or human-language feedback | `replaceable` among compatible text LMs; keep the feedback projection and prompts fixed | Strong for post-call public feedback and replanning |
-| Interactive Task Planning with Language Models | Function/tool-calling task planner with interaction history and replanning | `replaceable` only among models supporting the required tool-call contract | Strong because public capabilities are the tools |
-| LLM as BT-Planner, prompting/ICL variant | LLM emits a Behavior Tree under a published grammar and examples | `replaceable` among models satisfying the same tree-output contract | Strong if the published BT executor calls only public capabilities |
-| LLM as BT-Planner, fine-tuned variant | A separately fine-tuned smaller LLM emits the Behavior Tree | `fixed_system`; no backbone factor; pin the exact evaluated checkpoint if reproducibly available | Conditional on checkpoint/code availability; another base model is not a valid swap without repeating training |
-| Code-BT | LLM generates API-using code whose control flow is extracted into a Behavior Tree | Candidate `replaceable` set limited to code-capable LMs; final classification requires code audit | Strong if API leaves map exactly to public capabilities and the published parser/executor is unchanged |
-| HBTP | LLM reasoning supplies a heuristic path, action-space pruning, and reflective feedback to a fixed BT planner | Candidate `replaceable` set limited to LMs satisfying the same symbolic heuristic contract; keep BT expansion fixed | Strong when action models are derived only from public capability preconditions/effects |
-| UHBTP from BTPG | Domain-independent heuristics guide published symbolic BT planning | `no_learned_backbone`; no backbone factor and one algorithm configuration is pinned | Strong classical control if its action model can be derived without private evaluation state |
+```text
+A_replaceable candidates         = {AR1, AR2, AR3, AR4, AR5, AR6}
+A_fixed candidates               = {AF1}
+A_no_learned_backbone candidates = {AN1}
+```
+
+#### `A_replaceable`: architectures that may vary an LLM backbone
+
+| ID | Published architecture `a` | Replaceable LLM role | Can replace LLM? | Valid `B_a` gate | Fit above generated driver |
+|---|---|---|---|---|---|
+| AR1 | SayCan | Scores textual capability/skill options | Yes, conditionally | Model exposes comparable option likelihood/log scores; affordance/value scorer, prompts, and score combination remain fixed | Conditional: every capability needs a predeclared public affordance/value scorer |
+| AR2 | Inner Monologue | Prompted task planner using execution and scene feedback | Yes | Model consumes the same text prompt/history and emits the same action-plan contract; feedback projection remains fixed | Strong for public post-call feedback and replanning |
+| AR3 | Interactive Task Planning with Language Models | Function/tool-calling planner over interaction history | Yes | Model supports the same tool schema, call arguments, history, and replanning contract | Strong: public capabilities are the tools |
+| AR4 | LLM as BT-Planner, prompting/ICL variant | Generates a Behavior Tree | Yes | Model follows the same BT grammar, prompt, in-context examples, and output parser; executor remains fixed | Strong when BT leaves call only public capabilities |
+| AR5 | Code-BT | Generates API-using code before published control-flow extraction | Yes, after code audit | Model is code-capable under the same prompt/API; published parser, extraction, checker, and executor remain fixed | Conditional on faithful public-code reproduction |
+| AR6 | HBTP | Generates heuristic paths, action-space pruning, and reflective feedback for BT planning | Yes, after code audit | Model satisfies the same symbolic heuristic contract; BT expansion, action model, prompts, and reflection loop remain fixed | Strong when action models use only public capability semantics |
+
+For AR1-AR6, only the model identity `b in B_a` changes. A model that lacks the required interface is
+not a failed formal backbone cell; it is ineligible for that architecture and must not enter
+`B_a`. Conversely, prompt tuning, parser changes, new recovery logic, or retraining around a model
+would create a different method variant rather than a backbone substitution.
+
+The seven Authority-declared B1 Producer families do not automatically become every `B_a`.
+For each AR architecture, the B2 manifest independently pins only the model IDs that pass that
+method's interface audit. Overlap with the B1 set is allowed but not required.
+
+#### `A_fixed`: trained architecture with no backbone factor
+
+| ID | Published architecture `a` | Why the LLM cannot be replaced | Formal treatment | Fit above generated driver |
+|---|---|---|---|---|
+| AF1 | LLM as BT-Planner, fine-tuned variant | The BT generator is a separately trained checkpoint; changing the base model requires repeating training | Pin one reproducibly available evaluated checkpoint and run `architecture x robots x tasks x seeds x episodes` | Conditional on checkpoint/code availability and faithful BT-to-capability binding |
+
+#### `A_no_learned_backbone`: architecture without an LLM
+
+| ID | Published architecture `a` | Planning mechanism | Formal treatment | Fit above generated driver |
+|---|---|---|---|---|
+| AN1 | UHBTP from BTPG | Domain-independent heuristics guide symbolic Behavior Tree planning | Pin one published algorithm configuration and run `architecture x robots x tasks x seeds x episodes` | Strong if the required action model is derived only from public capability preconditions/effects |
 
 If a paper provides several independently trained checkpoints, predeclare each selected checkpoint
 as a distinct fixed-system variant. Their comparison is a complete-system comparison, not a
