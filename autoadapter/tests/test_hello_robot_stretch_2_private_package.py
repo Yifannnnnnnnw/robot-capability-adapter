@@ -94,6 +94,16 @@ CALIBRATED_PARAMETER_OVERRIDES = {
         "target_position": [0.005, -0.48, 0.55],
         "tool_target_position": [0.005, -0.48, 0.55],
     },
+    "mw_handle_press": {
+        "contact_position": [0.1, -0.497, 0.66],
+        "target_position": [0.1, -0.48, 0.51],
+        "tool_target_position": [0.1, -0.497, 0.56],
+    },
+    "mw_handle_pull": {
+        "contact_position": [0.1, -0.472, 0.59],
+        "target_position": [0.1, -0.48, 0.56],
+        "tool_target_position": [0.1, -0.472, 0.64],
+    },
 }
 
 
@@ -371,4 +381,44 @@ def test_stretch_front_button_reset_cannot_pass_the_rotated_axis_binding() -> No
     )
 
     assert value == pytest.approx(0.05)
+    assert value > clause["threshold"]
+
+
+def test_stretch_handle_pull_reset_cannot_pass_the_elevated_target() -> None:
+    tasks = {task["task_id"]: task for task in _validated_public_tasks()}
+    instances = {
+        instance["task_id"]: instance
+        for instance in _read(PRIVATE_ROOT / "instances.json")["instances"]
+    }
+    bindings = {
+        binding["binding_id"]: binding
+        for binding in _read(PRIVATE_ROOT / "bindings.json")["bindings"]
+    }
+    task = tasks["mw_handle_pull"]
+    instance = instances["mw_handle_pull"]
+    clause = task["scoring"][0]
+    binding = bindings[instance["clause_bindings"][clause["clause_id"]]]
+
+    model = mujoco.MjModel.from_xml_path(str(PACKAGE_ROOT / instance["scene_entrypoint"]))
+    data = mujoco.MjData(model)
+    apply_framework_reset(mujoco, model, data, instance["reset"])
+    site_name = binding["parameters"]["site_name"]
+    site_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, site_name)
+    assert site_id >= 0
+    value = measure(
+        binding,
+        evidence={
+            "samples": [
+                {
+                    "time": float(data.time),
+                    "site_positions": {
+                        site_name: data.site_xpos[site_id].astype(float).tolist()
+                    },
+                }
+            ]
+        },
+        public_arguments=instance["public_arguments"],
+    )
+
+    assert value == pytest.approx(0.055)
     assert value > clause["threshold"]
