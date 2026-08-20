@@ -377,7 +377,12 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert "positive control" in missing
     assert "dynamic canary" in missing
 
-    assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == ["assets", "morphology.json", "tasks"]
+    assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
+        "assets",
+        "morphology.json",
+        "skeleton",
+        "tasks",
+    ]
     tasks_root = PACKAGE_ROOT / "tasks"
     assert sorted(path.name for path in tasks_root.iterdir()) == [
         "catalog.json",
@@ -389,5 +394,4 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
         "guards.json",
         "instances.json",
     ]
-    assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()

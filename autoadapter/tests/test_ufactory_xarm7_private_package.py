@@ -231,5 +231,4 @@ def test_xarm7_private_package_is_still_non_runtime_and_incomplete() -> None:
         "guards.json",
         "instances.json",
     ]
-    assert not (XARM_PACKAGE_ROOT / "skeleton").exists()
     assert not (XARM_PACKAGE_ROOT / "reference").exists()
