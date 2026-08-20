@@ -7,6 +7,8 @@ from pathlib import Path
 import mujoco
 import numpy as np
 
+from autoadapter2.harness.session import apply_framework_reset
+
 
 ROOT = Path(__file__).resolve().parents[1]
 XARM_ASSETS_ROOT = ROOT / "libraries" / "robots" / "ufactory_xarm7" / "1.0.0" / "assets"
@@ -167,11 +169,18 @@ def _has_name(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> b
 
 
 def _prescribed_transform(source_path: Path) -> str:
-    return source_path.read_text(encoding="utf-8").replace(
+    transformed = source_path.read_text(encoding="utf-8").replace(
         'model="xarm7_', 'model="piper_', 1
     ).replace(
         '<include file="xarm7.xml" />', '<include file="piper.xml" />', 1
     )
+    if source_path.name == "pick_place_scene.xml":
+        transformed = transformed.replace(
+            'pos="0.1 0 0.25" rgba=',
+            'pos="0.1 0 0.25" contype="2" conaffinity="2" rgba=',
+            1,
+        )
+    return transformed
 
 
 def test_piper_scenes_are_exact_structural_transforms_of_xarm_sources() -> None:
@@ -232,6 +241,53 @@ def test_piper_scenes_load_step_and_expose_structural_contract() -> None:
         assert np.isfinite(data.qpos).all()
         assert np.isfinite(data.qvel).all()
         assert np.isfinite(data.ctrl).all()
+
+
+def test_piper_pick_place_floor_does_not_push_the_arm_at_reset() -> None:
+    instances = json.loads(
+        (PIPER_PACKAGE_ROOT / "tasks" / "private" / "instances.json").read_text(
+            encoding="utf-8"
+        )
+    )["instances"]
+    instance = next(item for item in instances if item["task_id"] == "mw_pick_place")
+    model = mujoco.MjModel.from_xml_path(
+        str(PIPER_PACKAGE_ROOT / instance["scene_entrypoint"])
+    )
+    data = mujoco.MjData(model)
+    apply_framework_reset(mujoco, model, data, instance["reset"])
+
+    floor_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+    assert model.geom_contype[floor_id] == 2
+    assert model.geom_conaffinity[floor_id] == 2
+    robot_body_ids = {
+        mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
+        for name in ("base_link", *(f"link{index}" for index in range(1, 9)))
+    }
+    for index in range(data.ncon):
+        contact = data.contact[index]
+        if floor_id not in {contact.geom1, contact.geom2}:
+            continue
+        other_geom = contact.geom2 if contact.geom1 == floor_id else contact.geom1
+        assert int(model.geom_bodyid[other_geom]) not in robot_body_ids
+
+    arm_addresses = [
+        int(
+            model.jnt_qposadr[
+                mujoco.mj_name2id(
+                    model, mujoco.mjtObj.mjOBJ_JOINT, f"joint{index}"
+                )
+            ]
+        )
+        for index in range(1, 7)
+    ]
+    ee_site_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "ee_site")
+    initial_arm = data.qpos[arm_addresses].copy()
+    initial_ee = data.site_xpos[ee_site_id].copy()
+    for _ in range(100):
+        mujoco.mj_step(model, data)
+
+    np.testing.assert_allclose(data.qpos[arm_addresses], initial_arm, atol=1e-10)
+    np.testing.assert_allclose(data.site_xpos[ee_site_id], initial_ee, atol=1e-10)
 
 
 def test_piper_task_scene_package_remains_non_runtime() -> None:
