@@ -54,6 +54,17 @@ TOP_LEVEL_FILES = {
     "button_front_scene.xml",
     "button_topdown_scene.xml",
     "handle_vertical_scene.xml",
+    "pick_place_scene.xml",
+    "pick_place_wall_scene.xml",
+    "wall_scene.xml",
+    "sweep_into_goal_scene.xml",
+    "door_scene.xml",
+    "faucet_scene.xml",
+    "dial_scene.xml",
+    "lever_scene.xml",
+    "peg_insertion_side_scene.xml",
+    "bin_picking_scene.xml",
+    "pick_out_of_hole_scene.xml",
 }
 
 
@@ -117,7 +128,7 @@ def test_canonical_closure_has_exact_shape_and_no_symlinks() -> None:
         for path in entries
         if path.is_file()
     )
-    assert len(files) == 99
+    assert len(files) == 110
     assert {path.name for path in files if len(path.parts) == 1} == TOP_LEVEL_FILES
 
     mesh_files = [path for path in files if path.parts[0] == "assets"]
