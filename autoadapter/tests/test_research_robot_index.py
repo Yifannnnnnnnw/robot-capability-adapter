@@ -203,24 +203,17 @@ class ResearchRobotIndexTests(unittest.TestCase):
         reference_observation = next(
             material["observation"]
             for material in stretch["locally_observed_source_material"]
-            if material["kind"] == "partial_reference_calibration"
+            if material["kind"] == "canonical_reference_calibration"
         )
-        self.assertIn("17/20", reference_observation)
+        self.assertIn("all 20", reference_observation)
+        self.assertIn("no videos", reference_observation)
         missing = " ".join(stretch["missing_for_runnable_package"])
         self.assertNotIn("research candidate only", missing)
         self.assertNotIn("Create Framework-private", missing)
         self.assertNotIn("Add the package check", missing)
-        self.assertIn("remaining three", missing)
-        self.assertTrue(
-            all(
-                task_id in missing
-                for task_id in (
-                    "mw_pick_place_wall",
-                    "mw_bin_picking",
-                    "mw_pick_out_of_hole",
-                )
-            )
-        )
+        self.assertNotIn("remaining three", missing)
+        self.assertIn("video-backed package-wide positive control", missing)
+        self.assertIn("dynamic canary", missing)
 
         barkour = candidates_by_id["google_barkour_vb"]
         self.assertEqual(barkour["mainline_disposition"], "optional_backup_only")

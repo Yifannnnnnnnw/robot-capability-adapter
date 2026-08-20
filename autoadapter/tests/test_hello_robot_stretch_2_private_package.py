@@ -119,10 +119,10 @@ REPLACEMENT_PARAMETERS = {
         "tool_target_position": [0.07, -0.55, 0.544],
     },
     "mw_faucet_close": {
-        "contact_position": [0.195, -0.479, 0.57],
-        "route_position": [0.165, -0.513, 0.57],
+        "contact_position": [0.189, -0.473, 0.57],
+        "route_position": [0.166, -0.514, 0.57],
         "target_position": [0.12, -0.53, 0.47],
-        "tool_target_position": [0.12, -0.527, 0.57],
+        "tool_target_position": [0.123, -0.535, 0.57],
     },
 }
 REPLACEMENT_SCENES = {

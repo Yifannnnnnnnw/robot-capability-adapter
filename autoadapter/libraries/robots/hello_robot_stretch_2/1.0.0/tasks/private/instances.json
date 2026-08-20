@@ -1331,13 +1331,13 @@
           "task_id": "mw_faucet_close",
           "task_parameters": {
             "contact_position": [
-              0.195,
-              -0.479,
+              0.189,
+              -0.473,
               0.57
             ],
             "route_position": [
-              0.165,
-              -0.513,
+              0.166,
+              -0.514,
               0.57
             ],
             "target_position": [
@@ -1346,8 +1346,8 @@
               0.47
             ],
             "tool_target_position": [
-              0.12,
-              -0.527,
+              0.123,
+              -0.535,
               0.57
             ]
           }

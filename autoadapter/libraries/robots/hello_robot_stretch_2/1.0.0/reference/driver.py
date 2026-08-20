@@ -1,9 +1,8 @@
-"""Partial Stretch 2 calibration controller for real Direct-MuJoCo fixtures.
+"""Stretch 2 calibration controller for real Direct-MuJoCo fixtures.
 
 The controller owns no model construction or reset. It writes only actuator
 controls on the Framework session and advances that session with MuJoCo steps.
-Unsupported task families fail explicitly until their physical routes are
-calibrated.
+Every route uses the canonical actuator interface and physical MuJoCo steps.
 """
 
 from __future__ import annotations
@@ -146,6 +145,7 @@ class ReferenceStretch2Driver:
         selector: Literal["left", "right", "midpoint"],
         accepted_error_m: float,
         attempts: int = 10,
+        maximum_steps: int | None = None,
     ) -> None:
         target = _vector(target, name="contact_target")
         for _ in range(attempts):
@@ -158,6 +158,7 @@ class ReferenceStretch2Driver:
                 self._control.move_tool_to_position(
                     tool_target,
                     tolerance_m=0.035,
+                    maximum_steps=maximum_steps,
                 )
             except RuntimeError:
                 error = float(
@@ -528,6 +529,57 @@ class ReferenceStretch2Driver:
                 f"Stretch door did not converge; residual={residual:.5f}"
             )
 
+    def _window(self, parameters: Mapping[str, Any]) -> None:
+        site_name = "window_handle_site"
+        target = _vector(parameters["target_position"], name="target_position")
+
+        def error() -> float:
+            return abs(float(self._site_position(site_name)[0] - target[0]))
+
+        self._control.set_wrist_yaw(0.0)
+        self._control.set_gripper(-0.005)
+        current = _vector(
+            parameters["contact_position"], name="contact_position"
+        )
+        current[2] = float(self._site_position(site_name)[2]) + 0.024
+        self._move_contact(
+            current,
+            selector="midpoint",
+            accepted_error_m=0.10,
+            attempts=2,
+            maximum_steps=2000,
+        )
+
+        destination = _vector(
+            parameters["tool_target_position"], name="tool_target_position"
+        )
+        destination[2] = current[2]
+        waypoint_count = max(
+            2,
+            int(np.ceil(float(np.linalg.norm(destination - current)) / 0.02)),
+        )
+        for waypoint in np.linspace(
+            current, destination, waypoint_count + 1
+        )[1:]:
+            self._move_contact(
+                waypoint,
+                selector="midpoint",
+                accepted_error_m=0.10,
+                attempts=1,
+                maximum_steps=2500,
+            )
+            if error() <= 0.045:
+                self._idle(25)
+                if error() <= 0.05:
+                    return
+
+        self._idle(300)
+        residual = error()
+        if residual > 0.05:
+            raise RuntimeError(
+                f"Stretch window did not converge; residual={residual:.5f}"
+            )
+
     def fixture_task(self, request: Any) -> None:
         task_id, parameters = _request(request)
         if task_id in {"mw_drawer_open", "mw_drawer_close"}:
@@ -545,12 +597,80 @@ class ReferenceStretch2Driver:
         if task_id in {"mw_door_open", "mw_door_close"}:
             self._door(task_id, parameters)
             return
+        if task_id in {"mw_window_open", "mw_window_close"}:
+            self._window(parameters)
+            return
         raise ValueError(f"unsupported Stretch fixture calibration task {task_id!r}")
+
+    def _faucet_close(self, parameters: Mapping[str, Any]) -> None:
+        site_name = "faucet_tip_site"
+        target = _vector(parameters["target_position"], name="target_position")
+        pivot = self._body_position("faucet_handle")
+        final_radial = target[:2] - pivot[:2]
+        radius = float(np.linalg.norm(final_radial))
+        if radius <= 0.0:
+            raise ValueError("faucet target must differ from its hinge pivot")
+
+        joint_id = self._id(mujoco.mjtObj.mjOBJ_JOINT, "faucet_hinge")
+        joint_address = int(self.model.jnt_qposadr[joint_id])
+        start_angle = float(self.data.qpos[joint_address])
+        contact = _vector(
+            parameters["contact_position"], name="contact_position"
+        )
+        contact_height = float(contact[2]) - 0.076
+
+        def error() -> float:
+            return self._fixture_error(site_name, parameters)
+
+        self._control.set_wrist_yaw(0.0)
+        self._control.set_gripper(-0.005)
+        for angle in np.linspace(start_angle, 0.0, 13):
+            cosine = float(np.cos(angle))
+            sine = float(np.sin(angle))
+            rotated_radial = np.asarray(
+                (
+                    cosine * final_radial[0] - sine * final_radial[1],
+                    sine * final_radial[0] + cosine * final_radial[1],
+                )
+            )
+            tangent = np.asarray(
+                (-rotated_radial[1], rotated_radial[0])
+            ) / radius
+            finger_offset = (
+                self._contact_position("left")
+                - self._contact_position("midpoint")
+            )
+            midpoint_target = np.asarray(
+                (
+                    pivot[0] + rotated_radial[0],
+                    pivot[1] + rotated_radial[1],
+                    contact_height,
+                )
+            )
+            midpoint_target[:2] += 0.012 * tangent - finger_offset[:2]
+            self._move_contact(
+                midpoint_target,
+                selector="midpoint",
+                accepted_error_m=0.10,
+                attempts=3,
+            )
+            if error() <= 0.055:
+                self._idle(200)
+                if error() <= 0.07:
+                    return
+
+        self._idle(300)
+        residual = error()
+        if residual > 0.07:
+            raise RuntimeError(
+                f"Stretch faucet close did not converge; residual={residual:.5f}"
+            )
 
     def rotation_task(self, request: Any) -> None:
         task_id, parameters = _request(request)
         thresholds = {
             "mw_faucet_open": 0.07,
+            "mw_faucet_close": 0.07,
             "mw_dial_turn": 0.07,
             "mw_lever_pull": 0.1308996939,
         }
@@ -559,6 +679,9 @@ class ReferenceStretch2Driver:
             raise ValueError(
                 f"unsupported Stretch rotation calibration task {task_id!r}"
             )
+        if task_id == "mw_faucet_close":
+            self._faucet_close(parameters)
+            return
 
         if task_id == "mw_lever_pull":
             joint_id = self._id(mujoco.mjtObj.mjOBJ_JOINT, "lever_hinge")

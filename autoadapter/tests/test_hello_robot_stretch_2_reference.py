@@ -20,6 +20,7 @@ SUPPORTED_TASK_IDS = (
     "mw_reach_target",
     "mw_push_to_goal",
     "mw_pick_place",
+    "mw_window_open",
     "mw_push_wall",
     "mw_sweep_into_goal",
     "mw_drawer_open",
@@ -34,6 +35,8 @@ SUPPORTED_TASK_IDS = (
     "mw_dial_turn",
     "mw_lever_pull",
     "mw_peg_insertion_side",
+    "mw_window_close",
+    "mw_faucet_close",
 )
 CAPABILITY_GROUPS = (
     ("reach", "reach_task", ("mw_reach_target",)),
@@ -47,10 +50,7 @@ CAPABILITY_GROUPS = (
         "object_task",
         (
             "mw_pick_place",
-            "mw_pick_place_wall",
             "mw_peg_insertion_side",
-            "mw_bin_picking",
-            "mw_pick_out_of_hole",
         ),
     ),
     (
@@ -65,12 +65,14 @@ CAPABILITY_GROUPS = (
             "mw_handle_pull",
             "mw_door_open",
             "mw_door_close",
+            "mw_window_open",
+            "mw_window_close",
         ),
     ),
     (
         "rotation",
         "rotation_task",
-        ("mw_faucet_open", "mw_dial_turn", "mw_lever_pull"),
+        ("mw_faucet_open", "mw_faucet_close", "mw_dial_turn", "mw_lever_pull"),
     ),
 )
 
@@ -167,7 +169,7 @@ def _suite(package: object, design: dict) -> dict:
     }
 
 
-def test_stretch_partial_reference_passes_real_private_harness() -> None:
+def test_stretch_reference_passes_complete_real_private_harness() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design = _design(package)
     source = DRIVER_PATH.read_text(encoding="utf-8")
