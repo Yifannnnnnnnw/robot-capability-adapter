@@ -367,6 +367,10 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
         "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/private/instances.json"
         in observed_paths
     )
+    assert (
+        "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/skeleton/arm_serial_dls.py"
+        in observed_paths
+    )
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
@@ -374,6 +378,8 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert "Create tasks/sources.json" not in missing
     assert "tasks/private/instances.json" not in missing
     assert "local task scenes" not in missing
+    assert "skeleton" not in missing
+    assert "reference driver" in missing
     assert "positive control" in missing
     assert "dynamic canary" in missing
 
