@@ -1,0 +1,217 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "kinova_gen3_robotiq_2f85",
+  "robot_configuration_id": "kinova_gen3_robotiq_2f85",
+  "package_version": "1.0.0",
+  "morphology_kind": "fixed_base_serial_manipulator",
+  "degrees_of_freedom": {
+    "arm": 7,
+    "gripper": 1
+  },
+  "joint_coordinate_counts": {
+    "arm": 7,
+    "gripper": 8,
+    "total": 15
+  },
+  "mjcf_entrypoint": "assets/scene.xml",
+  "model_counts": {
+    "nq": 15,
+    "nv": 15,
+    "njnt": 15,
+    "nu": 8,
+    "ngeom": 43,
+    "nsite": 2,
+    "ntendon": 1,
+    "neq": 3,
+    "nkey": 2
+  },
+  "public_control": {
+    "actuation": "joint_position",
+    "joint_type": "hinge",
+    "arm_joint_names": [
+      "joint_1",
+      "joint_2",
+      "joint_3",
+      "joint_4",
+      "joint_5",
+      "joint_6",
+      "joint_7"
+    ],
+    "gripper_joint_names": [
+      "right_driver_joint",
+      "right_coupler_joint",
+      "right_spring_link_joint",
+      "right_follower_joint",
+      "left_driver_joint",
+      "left_coupler_joint",
+      "left_spring_link_joint",
+      "left_follower_joint"
+    ],
+    "joint_names": [
+      "joint_1",
+      "joint_2",
+      "joint_3",
+      "joint_4",
+      "joint_5",
+      "joint_6",
+      "joint_7",
+      "right_driver_joint",
+      "right_coupler_joint",
+      "right_spring_link_joint",
+      "right_follower_joint",
+      "left_driver_joint",
+      "left_coupler_joint",
+      "left_spring_link_joint",
+      "left_follower_joint"
+    ],
+    "controlled_joint_names": [
+      "joint_1",
+      "joint_2",
+      "joint_3",
+      "joint_4",
+      "joint_5",
+      "joint_6",
+      "joint_7",
+      "right_driver_joint",
+      "left_driver_joint"
+    ],
+    "arm_actuator_names": [
+      "joint_1",
+      "joint_2",
+      "joint_3",
+      "joint_4",
+      "joint_5",
+      "joint_6",
+      "joint_7"
+    ],
+    "actuator_names": [
+      "joint_1",
+      "joint_2",
+      "joint_3",
+      "joint_4",
+      "joint_5",
+      "joint_6",
+      "joint_7",
+      "fingers_actuator"
+    ],
+    "actuator_joint_map": {
+      "joint_1": "joint_1",
+      "joint_2": "joint_2",
+      "joint_3": "joint_3",
+      "joint_4": "joint_4",
+      "joint_5": "joint_5",
+      "joint_6": "joint_6",
+      "joint_7": "joint_7",
+      "fingers_actuator": "tendon:split"
+    },
+    "arm_joint_limits_rad": {
+      "joint_2": [-2.24, 2.24],
+      "joint_4": [-2.57, 2.57],
+      "joint_6": [-2.09, 2.09]
+    },
+    "actuator_ctrlrange_rad": {
+      "joint_2": [-2.2497294058206907, 2.2497294058206907],
+      "joint_4": [-2.5795966344476193, 2.5795966344476193],
+      "joint_6": [-2.0996310901491784, 2.0996310901491784]
+    },
+    "gripper_ctrl_range_native": [0.0, 255.0],
+    "gripper_forcerange": [-5.0, 5.0],
+    "gripper_joint_range_rad": [0.0, 0.8],
+    "gripper_joint_ranges_rad": {
+      "right_driver_joint": [0.0, 0.8],
+      "right_coupler_joint": [-1.57, 0.0],
+      "right_spring_link_joint": [-0.29670597283, 0.8],
+      "right_follower_joint": [-0.872664, 0.872664],
+      "left_driver_joint": [0.0, 0.8],
+      "left_coupler_joint": [-1.57, 0.0],
+      "left_spring_link_joint": [-0.29670597283, 0.8],
+      "left_follower_joint": [-0.872664, 0.872664]
+    },
+    "gripper_actuated_joint_names": [
+      "right_driver_joint",
+      "left_driver_joint"
+    ],
+    "passive_joint_names": [
+      "right_coupler_joint",
+      "right_spring_link_joint",
+      "right_follower_joint",
+      "left_coupler_joint",
+      "left_spring_link_joint",
+      "left_follower_joint"
+    ],
+    "gripper_tendon": {
+      "actuator_name": "fingers_actuator",
+      "tendon_name": "split",
+      "controlled_joints": [
+        "right_driver_joint",
+        "left_driver_joint"
+      ],
+      "joint_coefficients": {
+        "right_driver_joint": 0.5,
+        "left_driver_joint": 0.5
+      },
+      "passive_coupling": "equality"
+    },
+    "gripper_direction": {
+      "closed": 255.0,
+      "open": 0.0,
+      "unit": "native_control",
+      "basis": "smaller left/right pad separation after actuator-driven settling"
+    }
+  },
+  "public_observations": {
+    "end_effector_site": "pinch_site",
+    "end_effector_body": "bracelet_link",
+    "gripper_base_body": "base",
+    "gripper_contact_geoms": [
+      "left_pad1",
+      "left_pad2",
+      "right_pad1",
+      "right_pad2"
+    ]
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control",
+      "gripper_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "end_effector_pose",
+      "named_body_pose",
+      "named_site_pose",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default": "home",
+    "neutral": "home",
+    "available_keyframes": [
+      "home",
+      "retract"
+    ]
+  },
+  "asset_provenance": {
+    "composition": "Kinova Gen3 7-DoF arm with the official Robotiq 2F-85 gripper, both at the pinned MuJoCo Menagerie revision",
+    "derived_revision": "da76818e269b82289eba39808e2fb91d679d6994",
+    "sources": [
+      {
+        "model_title": "Kinova Gen3 Description (MJCF)",
+        "upstream": "https://github.com/google-deepmind/mujoco_menagerie/tree/da76818e269b82289eba39808e2fb91d679d6994/kinova_gen3",
+        "license": "BSD-3-Clause",
+        "license_file": "assets/LICENSE",
+        "source_file": "assets/SOURCE.md"
+      },
+      {
+        "model_title": "Robotiq 2F-85 Description (MJCF)",
+        "upstream": "https://github.com/google-deepmind/mujoco_menagerie/tree/da76818e269b82289eba39808e2fb91d679d6994/robotiq_2f85",
+        "license": "BSD-2-Clause",
+        "license_file": "assets/robotiq_2f85/LICENSE",
+        "source_file": "assets/robotiq_2f85/README.md"
+      }
+    ]
+  }
+}
