@@ -292,7 +292,7 @@
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/assets/piper.xml",
           "kind": "canonical_mujoco_asset_foundation",
-          "observation": "The canonical package now contains the complete 95-file local Piper closure and uses neutral piper.xml as its entrypoint. It loads as a six-axis arm with one directly actuated, equality-mirrored two-finger gripper; retained pickbench.xml and pushbench.xml are source assets, not task evidence."
+          "observation": "The canonical package now contains the complete 110-file local Piper closure and uses neutral piper.xml as its entrypoint. It loads as a six-axis arm with one directly actuated, equality-mirrored two-finger gripper; retained pickbench.xml and pushbench.xml are source assets, not task evidence."
         },
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/morphology.json",
@@ -312,7 +312,7 @@
         {
           "path": "autoadapter/libraries/robots/piper/1.0.0/assets/reach_scene.xml",
           "kind": "provisional_task_scenes",
-          "observation": "The reach and push_to_goal scenes are exact structural transforms of the reviewed xArm7 scenes and both parse, load, and step with the canonical Piper model. They are provisional scene inputs only: Piper reachability, robot-fixture collision compatibility, contact behavior, and task success remain unverified."
+          "observation": "All 17 task scenes are exact structural transforms of the reviewed xArm7 scene set and parse, load, and step with the canonical Piper model. They are provisional scene inputs only: Piper reachability, robot-fixture collision compatibility, contact behavior, and task success remain unverified."
         },
         {
           "path": "general_demo/libraries/assets/piper/1.0.0/asset_closure.json",

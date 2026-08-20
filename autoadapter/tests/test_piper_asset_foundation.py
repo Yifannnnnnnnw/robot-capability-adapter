@@ -403,6 +403,7 @@ def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> Non
         for record in candidate["locally_observed_source_material"]
         if record["kind"] == "provisional_task_scenes"
     )
+    assert "17 task scenes" in scene_record["observation"]
     assert "collision compatibility" in scene_record["observation"]
     assert "task success remain unverified" in scene_record["observation"]
     missing = " ".join(candidate["missing_for_runnable_package"])
