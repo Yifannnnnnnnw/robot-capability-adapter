@@ -237,5 +237,13 @@ def test_kinova_public_identity_has_no_donor_remnants_and_is_non_runtime() -> No
         "skeleton",
         "tasks",
     ]
-    assert sorted(path.name for path in TASKS_ROOT.iterdir()) == ["catalog.json", "sources.json"]
-    assert not (TASKS_ROOT / "private").exists()
+    assert sorted(path.name for path in TASKS_ROOT.iterdir()) == [
+        "catalog.json",
+        "private",
+        "sources.json",
+    ]
+    assert sorted(path.name for path in (TASKS_ROOT / "private").iterdir()) == [
+        "bindings.json",
+        "guards.json",
+        "instances.json",
+    ]

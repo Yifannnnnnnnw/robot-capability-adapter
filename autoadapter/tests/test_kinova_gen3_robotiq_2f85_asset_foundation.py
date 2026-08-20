@@ -70,6 +70,23 @@ EXPECTED_FILES = (
     "gen3.xml",
     "kinova_gen3_robotiq_2f85.xml",
     "scene.xml",
+    "bin_picking_scene.xml",
+    "button_front_scene.xml",
+    "button_topdown_scene.xml",
+    "dial_scene.xml",
+    "door_scene.xml",
+    "drawer_scene.xml",
+    "faucet_scene.xml",
+    "handle_vertical_scene.xml",
+    "lever_scene.xml",
+    "peg_insertion_side_scene.xml",
+    "pick_out_of_hole_scene.xml",
+    "pick_place_scene.xml",
+    "pick_place_wall_scene.xml",
+    "push_to_goal_scene.xml",
+    "reach_scene.xml",
+    "sweep_into_goal_scene.xml",
+    "wall_scene.xml",
     "assets/base_link.stl",
     "assets/bracelet_no_vision_link.stl",
     "assets/bracelet_with_vision_link.stl",
@@ -402,12 +419,15 @@ def test_kinova_gen3_robotiq_2f85_asset_foundation_is_local_exact_and_actuator_l
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/sources.json",
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/catalog.json",
         "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/skeleton/arm_serial_dls.py",
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/assets/reach_scene.xml",
+        "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/private/instances.json",
     }.issubset(observed_paths)
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "contact-capable end-effector configuration" not in missing
     assert "20 distinct applicable source-backed tasks" not in missing
     assert "Create tasks/sources.json" not in missing
-    assert "tasks/private/instances.json" in missing
+    assert "tasks/private/instances.json" not in missing
+    assert "Materialize the canonical task scenes" not in missing
     assert "arm_serial_dls skeleton" not in missing
     assert "reference driver" in missing
     assert "dynamic canary" in missing

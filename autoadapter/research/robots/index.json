@@ -125,6 +125,16 @@
           "observation": "The capability-neutral arm_serial_dls inventory binds the exact composite configuration through the shared trusted skeleton. Its explicit continuous-joint contract leaves the four unlimited Gen3 hinges unclipped and selects nearest 2-pi-equivalent interpolation targets; the smoke check uses the canonical MuJoCo session and real actuator stepping without task or reference logic."
         },
         {
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/assets/reach_scene.xml",
+          "kind": "canonical_task_scene_set",
+          "observation": "All 17 canonical task scenes are local and load with the exact composite model in MuJoCo 3.3.6. Focused checks cover local XML closure, required task symbols, real physics liveness, 800x600 recording dimensions, and absence of robot-fixture contact at the reviewed robot-home reset. This is scene feasibility evidence, not task success."
+        },
+        {
+          "path": "autoadapter/libraries/robots/kinova_gen3_robotiq_2f85/1.0.0/tasks/private/instances.json",
+          "kind": "canonical_private_task_package",
+          "observation": "The canonical package contains 20 private instances with matching bindings and guards. Every Framework reset resolves in its local scene without robot-fixture pre-contact, complete max-step idle physics remains outside every task criterion, and all 53 declared end-effector waypoints pass position-only IK within 3 mm. This is reset and geometry evidence, not contact, grasp, task-success, positive-control, or runnable evidence."
+        },
+        {
           "path": "autoadapter/libraries/robots/kinova_gen3/1.0.0/assets/scene.xml",
           "kind": "canonical_arm_component_foundation",
           "observation": "The separately retained arm-only Kinova Gen3 package is useful component and provenance material, but it is not the contact-capable robot configuration indexed here."
@@ -161,8 +171,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Materialize the canonical task scenes and verify local asset closure, required symbols, reset liveness, and applicable contact geometry for the exact composite configuration.",
         "Provide a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
