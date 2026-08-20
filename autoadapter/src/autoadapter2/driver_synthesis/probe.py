@@ -381,6 +381,17 @@ def _stage_trusted_python_root(workspace: Path, framework_source_root: Path) -> 
     for source in sorted(trusted_source.glob("*.py")):
         if source.is_file():
             _copy_file(source, package_root / "trusted_skeletons" / source.name)
+    data_source = trusted_source / "data"
+    if data_source.is_dir():
+        for source in sorted(data_source.rglob("*")):
+            if source.is_file():
+                _copy_file(
+                    source,
+                    package_root
+                    / "trusted_skeletons"
+                    / "data"
+                    / source.relative_to(data_source),
+                )
     for forbidden in (
         package_root / "harness",
         package_root / "reference",

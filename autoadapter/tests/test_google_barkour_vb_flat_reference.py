@@ -17,6 +17,17 @@ DRIVER_PATH = REFERENCE_ROOT / "flat_joystick.py"
 ACTOR_PATH = REFERENCE_ROOT / "barkour_joystick_actor.npz"
 METADATA_PATH = REFERENCE_ROOT / "barkour_joystick_actor.json"
 SCENE_PATH = PACKAGE_ROOT / "assets" / "scene.xml"
+TRUSTED_SOURCE_PATH = (
+    ROOT / "src" / "autoadapter2" / "trusted_skeletons" / "quadruped_position_policy.py"
+)
+TRUSTED_ACTOR_PATH = (
+    ROOT
+    / "src"
+    / "autoadapter2"
+    / "trusted_skeletons"
+    / "data"
+    / "barkour_joystick_actor.npz"
+)
 
 
 def _load_module():
@@ -55,6 +66,7 @@ def _assigned_simulator_attributes(source: str) -> set[str]:
 def test_flat_reference_artifact_and_source_boundary() -> None:
     metadata = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
     assert metadata["checkpoint_step"] == "000100270080"
+    assert metadata["artifact_id"] == "barkour-joystick-v005-step-000100270080"
     assert metadata["playground_version"] == "0.0.5"
     assert metadata["playground_commit"] == (
         "81dfe512c9f2f03107fda1e31de585d04bb30bc4"
@@ -83,18 +95,21 @@ def test_flat_reference_artifact_and_source_boundary() -> None:
         assert retained["actor_0_kernel"].shape == (465, 128)
         assert retained["actor_4_kernel"].shape == (128, 24)
         assert all(np.all(np.isfinite(retained[name])) for name in retained.files)
+    assert ACTOR_PATH.read_bytes() == TRUSTED_ACTOR_PATH.read_bytes()
 
-    source = DRIVER_PATH.read_text(encoding="utf-8")
-    assert _assigned_simulator_attributes(source) == set()
-    assert "task_id" not in source
-    assert "tasks/private" not in source
-    assert "instances.json" not in source
-    assert "bindings.json" not in source
-    assert "guards.json" not in source
-    assert "MjModel.from_xml" not in source
-    assert "mj_reset" not in source
-    assert "self.data.ctrl" in source
-    assert "mujoco.mj_step" in source
+    wrapper_source = DRIVER_PATH.read_text(encoding="utf-8")
+    trusted_source = TRUSTED_SOURCE_PATH.read_text(encoding="utf-8")
+    assert _assigned_simulator_attributes(trusted_source) == set()
+    for source in (wrapper_source, trusted_source):
+        assert "task_id" not in source
+        assert "tasks/private" not in source
+        assert "instances.json" not in source
+        assert "bindings.json" not in source
+        assert "guards.json" not in source
+        assert "MjModel.from_xml" not in source
+        assert "mj_reset" not in source
+    assert "self.data.ctrl" in trusted_source
+    assert "mj_step" in trusted_source
 
     assert not (REFERENCE_ROOT / "driver.py").exists()
     runnable_index = json.loads(
@@ -108,7 +123,7 @@ def test_flat_reference_passes_canonical_stand_and_eight_direction_gate() -> Non
 
     model, data = _canonical_session()
     initial_ctrl = data.ctrl.copy()
-    stand = module.build(model=model, data=data).hold(duration_s=5.0)
+    stand = module.build(model=model, data=data).hold(duration=5.0)
     assert stand["fall_reason"] is None
     assert stand["physics_steps"] == 5000
     assert stand["steps_per_policy_action"] == 20
@@ -127,9 +142,11 @@ def test_flat_reference_passes_canonical_stand_and_eight_direction_gate() -> Non
             [0.4 * math.cos(direction), 0.4 * math.sin(direction), 0.0]
         )
         model, data = _canonical_session()
-        result = module.build(model=model, data=data).command_velocity(
-            command,
-            duration_s=5.0,
+        result = module.build(model=model, data=data).command_planar_velocity(
+            float(command[0]),
+            float(command[1]),
+            0.0,
+            duration=5.0,
         )
         assert result["fall_reason"] is None, direction_deg
         assert result["physics_steps"] == 5000

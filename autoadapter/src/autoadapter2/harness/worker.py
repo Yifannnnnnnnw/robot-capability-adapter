@@ -46,6 +46,7 @@ def _candidate_runtime_boundary() -> Any:
     import autoadapter2.trusted_skeletons
     import autoadapter2.trusted_skeletons.arm_serial_dls
     import autoadapter2.trusted_skeletons.quadruped_pd_gait
+    import autoadapter2.trusted_skeletons.quadruped_position_policy
 
     allowed_modules = {
         "autoadapter2",
@@ -54,6 +55,7 @@ def _candidate_runtime_boundary() -> Any:
         "autoadapter2.trusted_skeletons",
         "autoadapter2.trusted_skeletons.arm_serial_dls",
         "autoadapter2.trusted_skeletons.quadruped_pd_gait",
+        "autoadapter2.trusted_skeletons.quadruped_position_policy",
     }
     framework_modules = {
         name: module
