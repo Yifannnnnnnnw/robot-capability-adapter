@@ -1,112 +1,16 @@
-\chapter[Harness Control for Robot Adapter Synthesis]{Harness Control for Robot Adapter Synthesis}\label{chapter:harness}
-
-\begin{quote}\itshape
-This chapter presents Exp. 1. It tests whether a harness pipeline can
-make robot runtime adapter synthesis bounded, inspectable, and separable from
-open-ended robot code generation.
-\end{quote}
+\chapter[AutoAdapter-Bench]{AutoAdapter-Bench: Comparing LLM Backbones in Driver Synthesis and Capability-Interface Use}
+\label{chapter:autoadapter-bench}
 
 \section[Introduction]{Introduction}
-This experiment examines whether robot runtime adapter synthesis can be
-controlled as a supervised pipeline rather than as ad hoc code generation. The
-chapter asks what must be specified before an LLM coding agent writes adapter
-code, how the harness should constrain and observe the agent, what validation
-gates should be applied before the adapter is used downstream, what evidence
-should be produced after generation, and where responsibility should sit
-between the generated adapter and the surrounding harness.
 
-\section[Background Literature]{Background Literature}
-The experiment draws on literature and practice from robot software
-architectures, middleware, software contracts, generated code validation, and
-tool-using LLM systems. These areas motivate the need for a boundary between
-the generated adapter, the runtime backend, and the validation system.
+\section[Background and Research Questions]{Background and Research Questions}
 
-\subsection[Robot Runtime Interfaces]{Robot Runtime Interfaces}
-Robot runtime interfaces expose platform-specific execution routes such as
-simulator APIs, vendor SDKs, CAN bridges, DDS routes, HTTP services, camera
-drivers, and calibration files. A reusable adapter must translate stable
-primitive semantics into these concrete backend calls.
+\section[Benchmark and Experimental Setup]{Benchmark and Experimental Setup}
 
-\subsection[Contracts and Interface Specifications]{Contracts and Interface Specifications}
-Contracts define the assumptions under which generated code is allowed to
-operate. In this thesis, contracts include morphology, units, coordinate
-frames, primitive signatures, backend routes, approved SDK surfaces, safety
-limits, and expected evidence artifacts.
+\section[Driver-Synthesis Track]{Driver-Synthesis Track}
 
-\subsection[Validation and Evidence in Generated Code]{Validation and Evidence in Generated Code}
-Generated code requires validation that is independent from the model that
-authored it. This background motivates the harness design: validation should
-produce structured evidence, not only a binary success label.
-
-\section[System Inputs and Artifacts]{System Inputs and Artifacts}
-The experiment uses runtime profiles, robot descriptions, primitive contracts,
-backend constraints, generated adapter files, validation reports, logs, and
-evidence artifacts as its main materials. These artifacts define the boundary
-between what the LLM may generate and what the harness must control.
-
-\subsection[Runtime Profiles and Robot Specifications]{Runtime Profiles and Robot Specifications}
-Runtime profiles describe the robot binding, simulator or hardware route,
-available packages, backend API, action and observation surfaces, and safety
-constraints. Robot specifications provide morphology, joint limits,
-end-effector definitions, gripper semantics, and sensing assumptions.
-
-\subsection[Adapter and Evidence Artifacts]{Adapter and Evidence Artifacts}
-The generated adapter is the main output of the coding agent. Evidence
-artifacts include validation reports, source checks, primitive test results,
-transport traces, composition smoke tests, and optional qualitative evidence
-from downstream execution or diagnosis roles.
-
-\section[Aims of Study and Analysis Approach]{Aims of Study and Analysis Approach}
-The aim of this experiment is to test whether a harness architecture can make
-adapter synthesis bounded, auditable, and reusable. The analysis evaluates
-whether the pipeline separates the responsibilities of environment resolution,
-contract specification, generation, validation, evidence recording, and
-downstream use.
-
-\subsection[Architectural Criteria]{Architectural Criteria}
-The harness is analysed according to whether it separates generated code from
-validation, exposes robot-and-runtime assumptions, supports repair feedback,
-and preserves evidence for later interpretation.
-
-\subsection[Boundary Criteria]{Boundary Criteria}
-The generated adapter should remain a thin runtime-facing layer. The harness
-should own contracts, success criteria, validation gates, repair feedback, and
-evidence records. This boundary prevents the LLM-authored code from becoming
-both the implementation and the judge of its own correctness.
-
-\section[Harness Architecture Analysis]{Harness Architecture Analysis}
-The harness coordinates the lifecycle of an adapter: resolving environment
-information, presenting formal specifications, invoking generation roles,
-running validation procedures, collecting evidence, and exposing artifacts for
-downstream use or diagnosis.
-
-\subsection[Environment Resolution]{Environment Resolution}
-Environment resolution determines what the agent can rely on before generating
-code. This includes available packages, runtime paths, simulator or hardware
-availability, bridge endpoints, calibration locations, and backend
-documentation.
-
-\subsection[Robot Runtime and Transport Contracts]{Robot Runtime and Transport Contracts}
-The contract layer specifies robot morphology, primitive semantics, action and
-observation interfaces, backend route, and safety constraints. Transport
-interfaces define the communication path to the backend, while runtime backends
-name the concrete execution surface.
-
-\subsection[Validation and Evidence Framework]{Validation and Evidence Framework}
-Validation procedures produce evidence for source validity, importability,
-primitive conformance, transport behaviour, composition behaviour, and
-downstream usability. These procedures form a bounded evidence framework rather
-than a guarantee of all physical behaviours.
+\section[Capability-Interface Use Track]{Capability-Interface Use Track}
 
 \section[Results]{Results}
-The result of Exp. 1 is a harness formulation in which generated adapter
-code is only one artifact inside a larger contract-governed process. This
-structure supports clearer failure attribution, more explicit assumptions, and
-more reusable adapter outputs than a one-off task script.
 
 \section[Discussion]{Discussion}
-The harness architecture provides the methodological foundation for the
-remaining experiments. Its main limitation is that validation coverage defines
-the boundary of the claim: an adapter can be shown to satisfy available
-contracts and tests, but this does not prove unrestricted robot autonomy or
-complete physical deployment readiness.
