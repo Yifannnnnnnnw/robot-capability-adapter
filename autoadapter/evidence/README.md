@@ -425,8 +425,8 @@ AutoAdapter 2.0 benchmark success.
    geometry-specific measurements such as peg-head alignment.
 4. Add close evidence cameras and verify readable per-case videos.
 5. Complete the required human task-admission review for every robot in the
-   Authority-declared fourteen-configuration cohort.
-6. Recalibrate every package reference, then run the 28-cell initial
+   Authority-declared thirteen-configuration cohort.
+6. Recalibrate every package reference, then run the 26-cell initial
    all-robot shakedown with the manifest-pinned minimal model, per-cell
    Evolution outcomes, and post-round Experience dispositions. The historical
    four-cell diagnostic above cannot satisfy or reduce that scope.

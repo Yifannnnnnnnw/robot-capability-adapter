@@ -22,7 +22,6 @@ REQUIRED_CANDIDATE_IDS = {
     "unitree_g1",
     "hello_robot_stretch_2",
     "aloha_2",
-    "boston_dynamics_spot_with_arm",
 }
 
 
@@ -39,6 +38,7 @@ class ResearchRobotIndexTests(unittest.TestCase):
         self.assertIs(index["runtime"], False)
         self.assertEqual(len(candidate_ids), len(set(candidate_ids)))
         self.assertTrue(REQUIRED_CANDIDATE_IDS.issubset(candidate_ids))
+        self.assertNotIn("boston_dynamics_spot_with_arm", candidate_ids)
         self.assertTrue(set(candidate_ids).isdisjoint(runnable_ids))
 
         candidates_by_id = {

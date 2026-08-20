@@ -6,10 +6,10 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
 
 ## Experiment
 
-- The formal mainline cohort is the exact fourteen-configuration set in
+- The formal mainline cohort is the exact thirteen-configuration set in
   `AUTOADAPTER_2_AUTHORITY.md` Section 1.3: SO-101, Go2, Franka Panda, Kinova
   Gen3 + Robotiq 2F-85, xArm7, UR5e + Robotiq 2F-85, Piper, KUKA iiwa 14,
-  LEAP Hand, Barkour vB, Unitree G1, Stretch 2, ALOHA 2, and Spot with arm.
+  LEAP Hand, Barkour vB, Unitree G1, Stretch 2, and ALOHA 2.
 - Construction remains incremental, but a formal manifest may not omit a
   declared robot. Every package needs 20 or more sourced tasks, complete local
   assets and private bindings/guards, a skeleton, package checks, and a
@@ -25,8 +25,8 @@ It does not import or copy runtime code from `demo2/`, `demo3/`,
   into `task_demo_suite.json`; generation cannot read either suite.
 - Every selected package-local reference must pass its complete capability
   validation suite before that robot's dynamic Driver Synthesis starts.
-- The initial all-robot shakedown crosses all fourteen robots with the preserved
-  `skeleton-assisted` and `from-scratch` conditions: 28 cells per replicate,
+- The initial all-robot shakedown crosses all thirteen robots with the preserved
+  `skeleton-assisted` and `from-scratch` conditions: 26 cells per replicate,
   all using one manifest-pinned Ministral 8B configuration and empty prior
   Experience.
 - Each cell runs interactive AutoAdapter 1.0-style STUDY and GENERATE/GEN_ALGO,

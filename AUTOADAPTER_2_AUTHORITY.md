@@ -4,14 +4,25 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.20`<br>
+> **Document revision / 文档版本：** `0.19.21`<br>
 > **Effective date / 生效日期：** 2026-08-20<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
 
+Revision `0.19.21` removes `boston_dynamics_spot_with_arm` from the declared mainline cohort before
+any all-robot outcomes are inspected. The formal cohort now contains the exact thirteen
+configurations in Section 1.3, and the initial two-condition shakedown contains twenty-six cells per
+replicate. Historical Spot-with-arm material under Demo2 remains historical only and is not a
+mainline migration obligation.
+
+**中文辅助说明。** `0.19.21` 在查看任何全机器人实验结果前，将
+`boston_dynamics_spot_with_arm` 从声明的主线 cohort 中移除。正式 cohort 现为第 1.3 节列出的
+十三个精确配置，首轮两条件 shakedown 每个 replicate 共二十六个 cell。Demo2 中既有 Spot with
+arm 材料仅保留为历史资料，不再属于主线迁入义务。
+
 Revision `0.19.20` removes the superseded SO-101/Go2 fixed-pair acceptance scope. The current
-mainline experiment covers the complete fourteen-configuration robot cohort declared in Section
-1.3, and no formal all-robot round may begin until every declared configuration has a complete
-runnable package and reference positive control. The first all-robot shakedown uses one
+mainline experiment covers the complete cohort declared in Section 1.3, and no formal all-robot
+round may begin until every declared configuration has a complete runnable package and reference
+positive control. The first all-robot shakedown uses one
 manifest-pinned Ministral 8B Producer across both generation conditions for every robot, begins
 without prior Experience, executes Evolution after every terminal cell, and produces a reviewed
 Experience disposition for every cell after the round. Diagnostic per-robot canaries remain
@@ -19,7 +30,7 @@ permitted during construction, but neither they nor the former narrow-cohort evi
 shrink the all-robot experiment.
 
 **中文辅助说明。** `0.19.20` 删除已经失效的 SO-101/Go2 固定验收对范围。当前主线实验覆盖
-第 1.3 节明确声明的十四个机器人配置；只有全部配置都具有完整 runnable package 和 reference
+第 1.3 节明确声明的完整机器人 cohort；只有全部配置都具有完整 runnable package 和 reference
 positive control 后，才可启动正式全机器人轮次。首轮全机器人 shakedown 使用一套由 manifest
 固定的 Ministral 8B Producer，让每个机器人运行两种生成条件；该轮不读取既有 Experience，
 每个终态 cell 后执行 Evolution，并在整轮结束后为每个 cell 写出经审查的 Experience disposition。
@@ -652,7 +663,7 @@ cross-morphology 比较只能解释为关联。
 
 ### 1.3 Declared all-robot mainline cohort and round boundary / 声明的全机器人主线集合与轮次边界
 
-For this Authority, **all robots** means the following exact fourteen-configuration cohort. It does
+For this Authority, **all robots** means the following exact thirteen-configuration cohort. It does
 not mean every robot that exists, every asset in the repository, or a dynamically changing index.
 
 | Morphology category | Robot configuration | Required public Task Library snapshot |
@@ -670,7 +681,6 @@ not mean every robot that exists, every asset in the repository, or a dynamicall
 | Humanoid | `unitree_g1` | 20 or more distinct, applicable, source-backed tasks and pass standards |
 | Mobile manipulator | `hello_robot_stretch_2` | 20 or more distinct, applicable, source-backed tasks and pass standards |
 | Bimanual manipulator | `aloha_2` | 20 or more distinct, applicable, source-backed tasks and pass standards |
-| Legged manipulator | `boston_dynamics_spot_with_arm` | 20 or more distinct, applicable, source-backed tasks and pass standards |
 
 Every configuration uses its complete local MJCF closure with `mujoco==3.3.6`. Its exact model,
 assets, admitted task records and source standards, private instances, resets, measurement adapters
@@ -688,23 +698,23 @@ or protocol revision made before outcomes are inspected.
 Per-robot package checks, reference runs, and real-model canaries may execute as soon as that
 package is ready. They are diagnostic construction evidence and do not satisfy the all-robot round.
 Every formal Producer-backbone comparison uses the complete cohort under both generation
-conditions. The initial shakedown therefore contains fourteen robots crossed with
-`skeleton-assisted` and `from-scratch`, for twenty-eight cells per replicate.
+conditions. The initial shakedown therefore contains thirteen robots crossed with
+`skeleton-assisted` and `from-scratch`, for twenty-six cells per replicate.
 
-**中文辅助说明。** 在本 Authority 中，**全部机器人**特指上表声明的十四个精确配置，不表示
+**中文辅助说明。** 在本 Authority 中，**全部机器人**特指上表声明的十三个精确配置，不表示
 世界上所有机器人、仓库内每个 asset，也不是运行时动态变化的集合。每个配置使用自己的完整本地
 MJCF closure 和 `mujoco==3.3.6`；其精确模型、资产、已准入任务与来源标准、私有 instance、
 reset、measurement adapter、guard、可信 skeleton family、from-scratch contract 和 calibration
 reference 均归一个版本化主线 package 所有。只有 asset、只有五项任务、含预写 effect，或没有
 通过 reference positive control 的 package 都不完整。
 
-正式 Experiment 3 manifest 必须包含完整十四配置集合。首轮全机器人实验前，每个配置都必须
+正式 Experiment 3 manifest 必须包含完整十三配置集合。首轮全机器人实验前，每个配置都必须
 通过 package check 和带完整视频的聚焦 reference positive control，并进入
 `libraries/robots/index.json`。缺失或不完整配置是显式 blocker，不能静默省略、替换，也不能算作
 模型失败 cell；增删配置必须在查看结果前通过明确 Authority 或 protocol 修订。单机器人 package
 check、reference run 和真实模型 canary 可在对应 package 就绪后提前执行，但只属于建设期诊断证据，
 不能替代全机器人轮次。每个正式 Producer-backbone 比较都必须让完整 cohort 运行两种生成条件；
-因此首轮 shakedown 每个 replicate 共十四乘二，即二十八个 cell。
+因此首轮 shakedown 每个 replicate 共十三乘二，即二十六个 cell。
 
 ### 1.4 Planned RQ1 Producer LLM coverage / 规划中的 RQ1 Producer LLM 覆盖
 
@@ -721,7 +731,7 @@ The planned B1 Producer-backbone set contains seven model families (`M = 7`):
 | Qwen3 32B | Alibaba | Exact identifier pending |
 
 The initial all-robot shakedown uses `Ministral 8B`, the lowest-parameter family in this planned
-set, for every model-authored phase and every one of the twenty-eight cells. Here “simplest model”
+set, for every model-authored phase and every one of the twenty-six cells. Here “simplest model”
 means that declared family, not whichever endpoint is cheapest or most convenient at run time. The
 experiment manifest must pin its exact provider identifier, revision, endpoint, inference settings,
 context limit, and price snapshot before the first call. If that exact usable model cannot be
@@ -738,7 +748,7 @@ it may not be silently replaced after outcomes are inspected.
 
 **中文辅助说明。** B1 规划中的 Producer backbone 集合包含上述七个模型 family（`M = 7`）。
 纳入表格表示 RQ1 的规划范围，并不表示准确 provider identifier、revision、endpoint、inference
-配置、context limit 或价格已经冻结。首轮全机器人 shakedown 在全部二十八个 cell 的所有模型创作
+配置、context limit 或价格已经冻结。首轮全机器人 shakedown 在全部二十六个 cell 的所有模型创作
 阶段统一使用该集合中参数量最小的 `Ministral 8B`；“最简单模型”特指这个 family，不是运行时临时
 选择最便宜或最方便的 endpoint。首次调用前 manifest 必须固定准确 provider identifier、revision、
 endpoint、inference 设置、context limit 和价格快照；若无法固定可用的准确模型，该轮保持 blocked，
@@ -1710,7 +1720,7 @@ already been available to Repair. Evolution cannot change the current driver, su
 verdict, retry decision, or run inputs. Failure of Evolution does not turn a completed validation
 run into a driver-synthesis failure.
 
-The initial all-robot shakedown invokes Evolution after every one of its twenty-eight terminal
+The initial all-robot shakedown invokes Evolution after every one of its twenty-six terminal
 cells, including cells whose driver was not admitted and therefore did not enter Task Demo. No cell
 in that round may consume an Experience proposed by another cell in the same round. After all cells
 reach terminal verdicts, a human reviewer writes one disposition record per cell: accept the
@@ -1732,7 +1742,7 @@ execution/verdict 事实、attempt 摘要、结果计数和完整失败 trial �
 driver、suite、criterion、verdict、retry 决定或 run input。Evolution 失败不会把已经完成的
 validation run 变成 driver-synthesis failure。
 
-首轮全机器人 shakedown 的二十八个 cell 每个到达终态后都必须执行 Evolution，包括 driver 未准入
+首轮全机器人 shakedown 的二十六个 cell 每个到达终态后都必须执行 Evolution，包括 driver 未准入
 因而没有进入 Task Demo 的 cell。同一轮中，任何 cell 都不得读取其他 cell 刚产生的 Experience。
 全部 cell 到达终态后，人工 reviewer 必须为每个 cell 写一条 disposition：接受 proposal、说明理由
 后拒绝，或记录没有可复用 lesson。每条 disposition 标明来源 run、机器人、生成条件和 evidence
@@ -1894,7 +1904,7 @@ persistent state machine.
 | Single-robot condition success | Dynamic condition evidence plus every case in the complete capability validation suite passes within that condition's declared attempt budget | The generated robot-specific driver passed capability admission for that robot, condition, and run | Any Task Demo passed, or the paired condition, all-robot round, or SDK path succeeded |
 | Task Demo executed | A capability-validated fixed driver, sealed random five-task `task_demo_suite.json`, separate Harness verdict, and complete videos | The five selected tasks and all of their scoring clauses were demonstrated with that admitted driver | Every Task Library task passed, driver synthesis failed, or RQ1 capability-interface use succeeded without the declared high-level controller |
 | Per-robot two-condition experiment completed | Both generation conditions reach capability-validation terminal verdicts for one declared robot using the same sealed `capability_design.json`, `capability_validation_suite.json`, and declared experiment configuration | That robot's two-cell Direct-MuJoCo comparison executed | Either cell passed, the complete cohort ran, or either Task Demo ran |
-| Initial all-robot shakedown completed | All twenty-eight declared robot-by-generation-condition cells use the manifest-pinned Ministral 8B configuration with empty Experience input, reach terminal verdicts, retain required evidence, execute Evolution, and receive post-round Experience dispositions | The complete initial all-robot mainline and Evolution/Experience path executed | Every cell passed, the seven-family B1 comparison completed, or every Task Demo ran |
+| Initial all-robot shakedown completed | All twenty-six declared robot-by-generation-condition cells use the manifest-pinned Ministral 8B configuration with empty Experience input, reach terminal verdicts, retain required evidence, execute Evolution, and receive post-round Experience dispositions | The complete initial all-robot mainline and Evolution/Experience path executed | Every cell passed, the seven-family B1 comparison completed, or every Task Demo ran |
 | All-robot mainline success | Every declared robot-by-generation-condition cell independently satisfies single-robot condition success and the required all-round evidence and Evolution/Experience obligations | The complete declared-cohort Direct-MuJoCo mainline succeeded for the named model, replicate, and protocol | SDK fidelity, hardware validity, sim-to-real, universal applicability, or completion of other LLM families |
 | SDK-grounded extension evidence | Real SDK application logic and robot-specific Translation execute bidirectionally with MuJoCo | The named SDK-extension route executed | Hardware equivalence or mainline replacement |
 
@@ -1907,7 +1917,7 @@ persistent state machine.
 | 单机器人条件成功 | 具备动态条件证据，且完整 capability validation suite 中每个 case 均在该条件声明的 attempt 预算内通过 | 该机器人、该生成条件和该 run 生成的 robot-specific driver 通过 capability 准入 | 任何 Task Demo 已通过，或配对条件、全机器人轮次或 SDK 路径成功 |
 | Task Demo 已执行 | 固定的 capability-validated driver、封存的随机五-task `task_demo_suite.json`、独立 Harness verdict 和完整视频 | 该已准入 driver 完成了所选五项 task 及其全部 scoring clause 的演示 | Task Library 全部任务通过、driver synthesis 失败，或在没有声明 high-level controller 时 RQ1 capability-interface use 成功 |
 | 单机器人双条件实验已完成 | 某一声明机器人在相同封存 `capability_design.json`、`capability_validation_suite.json` 和实验配置下，让两种生成条件都到达 capability-validation 最终 verdict | 该机器人的两个 Direct-MuJoCo cell 已执行 | 任一 cell 已通过、完整 cohort 已运行，或任一 Task Demo 已运行 |
-| 首轮全机器人 shakedown 已完成 | 二十八个声明机器人×生成条件 cell 均使用 manifest 固定的 Ministral 8B 配置和空 Experience 输入，到达终态、保留必需证据、执行 Evolution，并得到整轮结束后的 Experience disposition | 完整首轮全机器人主线及 Evolution/Experience 路径已执行 | 每个 cell 都通过、七-family B1 比较已完成，或每个 Task Demo 都运行 |
+| 首轮全机器人 shakedown 已完成 | 二十六个声明机器人×生成条件 cell 均使用 manifest 固定的 Ministral 8B 配置和空 Experience 输入，到达终态、保留必需证据、执行 Evolution，并得到整轮结束后的 Experience disposition | 完整首轮全机器人主线及 Evolution/Experience 路径已执行 | 每个 cell 都通过、七-family B1 比较已完成，或每个 Task Demo 都运行 |
 | 全机器人主线成功 | 每个声明机器人×生成条件 cell 均独立满足单机器人条件成功，并满足整轮证据及 Evolution/Experience 义务 | 指定模型、replicate 和 protocol 下的完整声明 cohort Direct-MuJoCo 主线成功 | SDK 保真度、硬件有效性、sim-to-real、普遍适用性或其他 LLM family 已完成 |
 | 基于真实 SDK 的扩展证据 | 真实 SDK 应用逻辑和机器人专用 Translation 与 MuJoCo 双向执行 | 指定的 SDK 扩展路径已执行 | 与硬件等效，或可替代主线 |
 
@@ -1950,14 +1960,14 @@ GENERATE、Capability Validation、Repair、Task Demo 和 Evolution 结果；att
 As of this revision, tracked mainline evidence records package-level reference positive controls
 for only a subset of the declared cohort, while other packages remain under construction. Earlier
 Demo2 and narrow-cohort diagnostic runs remain historical evidence only. No retained run contains
-the required twenty-eight-cell Ministral 8B matrix with per-cell Evolution outcomes and post-round
+the required twenty-six-cell Ministral 8B matrix with per-cell Evolution outcomes and post-round
 Experience dispositions. Therefore current evidence may support only its named package calibration
 or historical diagnostic claim; it does not support “the all-robot model-generated mainline
 completed” or “the all-robot mainline succeeded.”
 
 **中文辅助说明。** 截至本版，受版本控制的主线 evidence 只记录了声明 cohort 中部分 package 的
 reference positive control，其余 package 仍在建设。更早的 Demo2 和小范围 diagnostic run 只属于
-历史证据。当前没有任何保留 run 包含必需的二十八-cell Ministral 8B matrix、逐 cell Evolution
+历史证据。当前没有任何保留 run 包含必需的二十六-cell Ministral 8B matrix、逐 cell Evolution
 outcome 和整轮结束后的 Experience disposition。因此现有证据只能支持其点名的 package calibration
 或历史诊断结论，不能支持“全机器人模型生成主线已完成”或“全机器人主线成功”。
 
@@ -2036,12 +2046,12 @@ after all of the following are true:
 
 1. the environment declared by `autoadapter/pyproject.toml` installs and the focused mainline checks
    run without importing or resolving project-authored code or assets from a sibling tree;
-2. every one of the fourteen configurations in Section 1.3 resolves from a complete versioned
+2. every one of the thirteen configurations in Section 1.3 resolves from a complete versioned
    package containing Morphology, twenty or more admitted source-backed Tasks, private
    instances/bindings/guards, a complete local asset closure, a trusted skeleton, and a calibration
    reference;
 3. every scoring clause has exact source lineage and a machine-expressible pass standard, every
-   package check passes, and all fourteen exact configuration IDs appear in
+   package check passes, and all thirteen exact configuration IDs appear in
    `libraries/robots/index.json`;
 4. each package's reference driver passes its complete package-level positive-control route under
    actuator-driven MuJoCo physics with the required guards and complete per-case videos;
@@ -2064,11 +2074,11 @@ select a convenient subset.
 
 1. `autoadapter/pyproject.toml` 声明的环境可以安装，主线聚焦检查不从同级源码树导入或解析任何
    项目自编代码和资产；
-2. 第 1.3 节十四个配置都能从完整版本化 package 解析出 Morphology、二十项以上已准入有来源
+2. 第 1.3 节十三个配置都能从完整版本化 package 解析出 Morphology、二十项以上已准入有来源
    Tasks、私有 instances/bindings/guards、完整本地 asset closure、可信 skeleton 和 calibration
    reference；
 3. 每条 scoring clause 都有精确 source lineage 和机器可表达 pass standard，每个 package check
-   都通过，且十四个精确配置 ID 全部进入 `libraries/robots/index.json`；
+   都通过，且十三个精确配置 ID 全部进入 `libraries/robots/index.json`；
 4. 每个 package 的 reference driver 都在 actuator-driven MuJoCo physics、必需 guard 和完整逐 case
    视频下通过完整 package-level positive-control route；
 5. 共享 Framework/Harness 路径的 anti-teleport、canonical-scene、candidate-process、private-suite、
@@ -2087,9 +2097,9 @@ select a convenient subset.
 
 The project may state that the required initial all-robot shakedown completed only when:
 
-1. one prospective manifest selects exactly the fourteen Section 1.3 configurations, both
+1. one prospective manifest selects exactly the thirteen Section 1.3 configurations, both
    generation conditions, and the same exact Ministral 8B provider/model configuration, producing
-   twenty-eight declared robot-by-generation-condition cells per replicate;
+   twenty-six declared robot-by-generation-condition cells per replicate;
 2. every cell starts without prior Experience and uses the same Framework version, environment,
    budgets, package snapshots, evidence rules, and condition-appropriate public inputs;
 3. each robot/model replicate uses one real-model `capability_design.json` containing five to ten
@@ -2106,14 +2116,14 @@ The project may state that the required initial all-robot shakedown completed on
    and do not exchange candidates, traces, validation results, Repair history, generated code, or
    same-round Experience;
 7. every submitted `driver.py` is generated inside its declared condition and every one of the
-   twenty-eight cells reaches a truthful terminal capability-validation verdict within its maximum
+   twenty-six cells reaches a truthful terminal capability-validation verdict within its maximum
    three submitted-driver attempts; each admitted final driver then executes the separately
    reported five-task Task Demo without that Demo changing the synthesis verdict or triggering
    Repair;
 8. actuator/physics-step, isolation, canonical-scene, from-scratch no-skeleton, and evidence-camera
    checks pass, and every required capability-validation and Task Demo trial has complete decodable
    video and a matching manifest;
-9. Evolution executes from each terminal cell report, all twenty-eight outcomes are retained, and
+9. Evolution executes from each terminal cell report, all twenty-six outcomes are retained, and
    post-round human review writes one Experience disposition per cell without feeding any proposal
    back into the same round;
 10. cell-specific `pass@0`, post-Repair, Task Demo, Evolution, model-use, token, cost, time, and video
@@ -2122,7 +2132,7 @@ The project may state that the required initial all-robot shakedown completed on
 11. the mainline has no runtime import or dependency on the SDK extension or any repository sibling,
     and no formal evaluation step downloads code, data, standards, or robot assets.
 
-Completion and success are distinct. Once all twenty-eight cells have terminal verdicts and all
+Completion and success are distinct. Once all twenty-six cells have terminal verdicts and all
 required Evolution/Experience records, the shakedown completed even if one or more generated
 drivers failed. The all-robot mainline succeeded only if every cell independently satisfies
 single-robot condition success and all evidence obligations above. If any generated cell fails,
@@ -2137,8 +2147,8 @@ protocol revision explicitly changes it.
 
 **中文辅助说明。** 只有满足以下全部条件，项目才可以声明必需的首轮全机器人 shakedown 已完成：
 
-1. 一份事先确定的 manifest 精确选择第 1.3 节十四个配置、两种生成条件和同一套准确的
-   Ministral 8B provider/model 配置，每个 replicate 声明二十八个机器人×生成条件 cell；
+1. 一份事先确定的 manifest 精确选择第 1.3 节十三个配置、两种生成条件和同一套准确的
+   Ministral 8B provider/model 配置，每个 replicate 声明二十六个机器人×生成条件 cell；
 2. 每个 cell 都以空 Experience 输入开始，并使用相同 Framework 版本、环境、budget、package
    snapshot、证据规则和符合条件的公开输入；
 3. 每个 robot/model replicate 使用一份真实模型设计的 `capability_design.json`，其中包含五至
@@ -2152,19 +2162,19 @@ protocol revision explicitly changes it.
    blocker，不是模型 cell 失败；
 6. 两种条件使用隔离 workspace，分别执行自己的真实 STUDY 与 GENERATE 或 GEN_ALGO 调用，且
    不能交换 candidate、trace、validation result、Repair 历史、生成代码或同轮 Experience；
-7. 每个提交的 `driver.py` 都在所声明条件内生成；二十八个 cell 每个都在最多三次 submitted-driver
+7. 每个提交的 `driver.py` 都在所声明条件内生成；二十六个 cell 每个都在最多三次 submitted-driver
    attempt 内到达真实 terminal capability-validation verdict；每个已准入最终 driver 随后执行单独
    报告的五-task Task Demo，该 Demo 不改变 synthesis verdict，也不触发 Repair；
 8. actuator/physics-step、isolation、canonical-scene、from-scratch no-skeleton 和 evidence-camera
    检查通过，每个必需 capability-validation 和 Task Demo trial 都有完整可解码视频及匹配 manifest；
-9. 每个 terminal cell report 都执行 Evolution，保留全部二十八个 outcome；整轮结束后人工审查为
+9. 每个 terminal cell report 都执行 Evolution，保留全部二十六个 outcome；整轮结束后人工审查为
    每个 cell 写一条 Experience disposition，且任何 proposal 都不回传本轮；
 10. 分开报告每个 cell 的 `pass@0`、Repair 后、Task Demo、Evolution、model use、token、cost、
     time 和视频结果；逐机器人及 cohort aggregate 不能隐藏任何失败或 blocked cell；
 11. 主线在 runtime 不导入或依赖 SDK 扩展或任何仓库同级目录，正式 evaluation 的任何步骤都不
     下载代码、数据、标准或机器人资产。
 
-“完成”和“成功”必须区分。二十八个 cell 全部到达终态且具备必需 Evolution/Experience 记录时，
+“完成”和“成功”必须区分。二十六个 cell 全部到达终态且具备必需 Evolution/Experience 记录时，
 即使有生成 driver 失败，也可以说 shakedown 已完成；只有每个 cell 都独立满足单机器人条件成功和
 上述全部证据义务，才可说全机器人主线成功。生成 cell 失败时必须点名失败 cell；reference 或
 infrastructure 前置项失败时，该轮仍不完整，受影响 dynamic cell 不能算模型失败。仅 reference

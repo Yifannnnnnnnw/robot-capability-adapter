@@ -13,8 +13,7 @@
     "google_barkour_vb",
     "unitree_g1",
     "hello_robot_stretch_2",
-    "aloha_2",
-    "boston_dynamics_spot_with_arm"
+    "aloha_2"
   ],
   "generation_conditions": [
     "skeleton-assisted",

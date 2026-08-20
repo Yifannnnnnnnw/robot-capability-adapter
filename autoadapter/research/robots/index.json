@@ -9,7 +9,7 @@
   "build_order_basis": [
     "Wave 1 starts with fixed serial arms that can plausibly reuse the existing arm_serial_dls family, beginning with Franka Panda, then Kinova Gen3 and xArm7, followed by the other fixed arms.",
     "Wave 2 covers the articulated hand, quadruped, and humanoid morphologies after the fixed-arm package pattern is understood.",
-    "Wave 3 covers the mobile manipulator, bimanual, and legged-arm morphologies, which require broader coordination or locomotion interfaces."
+    "Wave 3 covers the mobile and bimanual manipulators, which require broader coordination interfaces."
   ],
   "candidates": [
     {
@@ -886,52 +886,6 @@
       "missing_for_runnable_package": [
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
         "Perform final human package and admission review, then add ALOHA 2 to the runnable index only if the dynamic canary passes; prior reference evidence alone does not admit it."
-      ]
-    },
-    {
-      "robot_configuration_id": "boston_dynamics_spot_with_arm",
-      "morphology_family": "quadruped_arm",
-      "morphology_category": "legged_arm",
-      "proposed_sequence": 12,
-      "proposed_wave": 3,
-      "observed_task_count": 5,
-      "locally_observed_source_material": [
-        {
-          "path": "demo2/legacy_assets/menagerie/boston_dynamics_spot/spot_arm.xml",
-          "kind": "legacy_mujoco_asset",
-          "observation": "A locally vendored historical Spot-with-arm model and meshes are available for migration inspection."
-        },
-        {
-          "path": "demo2/legacy_assets/menagerie/boston_dynamics_spot/scene_arm.xml",
-          "kind": "legacy_mujoco_scene",
-          "observation": "A historical Spot arm scene is available locally, outside the canonical package."
-        },
-        {
-          "path": "demo2/libraries/tasks/boston_dynamics_spot_with_arm/1.0.0/catalog.json",
-          "kind": "legacy_task_catalog",
-          "observation": "The legacy catalog contains five task records, below the required twenty distinct applicable source-backed tasks."
-        },
-        {
-          "path": "demo2/runs/new-robots-wave2-wave3-strict-video-20260813/boston_dynamics_spot_with_arm/summary.json",
-          "kind": "historical_strict_run_summary",
-          "observation": "A historical strict reference-task run is migration input only and not current mainline evidence."
-        },
-        {
-          "path": "demo2/runs/new-robots-wave2-wave3-strict-video-20260813/boston_dynamics_spot_with_arm/validate_report.json",
-          "kind": "historical_strict_validate_report",
-          "observation": "The historical report provides migration diagnostics only and does not establish a current canonical package."
-        }
-      ],
-      "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under a canonical Spot-with-arm package; legacy Menagerie files are migration inputs only.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable legged-arm skeleton and a calibration-only reference driver for this configuration.",
-        "Add the package check for the complete canonical package.",
-        "Run a focused Direct-MuJoCo positive control against the canonical package.",
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
       ]
     }
   ]
