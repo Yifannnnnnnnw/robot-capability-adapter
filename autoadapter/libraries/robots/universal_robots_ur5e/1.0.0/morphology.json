@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "universal_robots_ur5e",
+  "robot_configuration_id": "universal_robots_ur5e",
+  "package_version": "1.0.0",
+  "morphology_kind": "fixed_base_serial_manipulator",
+  "base_type": "fixed",
+  "degrees_of_freedom": {
+    "arm": 6
+  },
+  "model_dimensions": {
+    "nq": 6,
+    "nv": 6,
+    "nu": 6
+  },
+  "mjcf_entrypoint": "assets/scene.xml",
+  "public_control": {
+    "actuation": "joint_position",
+    "transmission": "direct_joint",
+    "actuator_type": "general",
+    "bias_type": "affine",
+    "joint_type": "hinge",
+    "joint_names": [
+      "shoulder_pan_joint",
+      "shoulder_lift_joint",
+      "elbow_joint",
+      "wrist_1_joint",
+      "wrist_2_joint",
+      "wrist_3_joint"
+    ],
+    "actuator_names": [
+      "shoulder_pan",
+      "shoulder_lift",
+      "elbow",
+      "wrist_1",
+      "wrist_2",
+      "wrist_3"
+    ],
+    "actuator_joint_map": {
+      "shoulder_pan": "shoulder_pan_joint",
+      "shoulder_lift": "shoulder_lift_joint",
+      "elbow": "elbow_joint",
+      "wrist_1": "wrist_1_joint",
+      "wrist_2": "wrist_2_joint",
+      "wrist_3": "wrist_3_joint"
+    },
+    "arm_joint_limits_rad": {
+      "shoulder_pan_joint": [-6.28319, 6.28319],
+      "shoulder_lift_joint": [-6.28319, 6.28319],
+      "elbow_joint": [-3.1415, 3.1415],
+      "wrist_1_joint": [-6.28319, 6.28319],
+      "wrist_2_joint": [-6.28319, 6.28319],
+      "wrist_3_joint": [-6.28319, 6.28319]
+    },
+    "actuator_ctrlrange_rad": {
+      "shoulder_pan": [-6.2831, 6.2831],
+      "shoulder_lift": [-6.2831, 6.2831],
+      "elbow": [-3.1415, 3.1415],
+      "wrist_1": [-6.2831, 6.2831],
+      "wrist_2": [-6.2831, 6.2831],
+      "wrist_3": [-6.2831, 6.2831]
+    },
+    "position_actuator_defaults": {
+      "large_actuator": {
+        "actuator_names": [
+          "shoulder_pan",
+          "shoulder_lift",
+          "elbow"
+        ],
+        "kp": 2000.0,
+        "kv": 400.0,
+        "forcerange": [-150.0, 150.0]
+      },
+      "small_actuator": {
+        "actuator_names": [
+          "wrist_1",
+          "wrist_2",
+          "wrist_3"
+        ],
+        "kp": 500.0,
+        "kv": 100.0,
+        "forcerange": [-28.0, 28.0]
+      }
+    }
+  },
+  "public_observations": {
+    "end_effector_site": "attachment_site",
+    "end_effector_body": "wrist_3_link",
+    "sensor_names": []
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "end_effector_pose",
+      "named_body_pose",
+      "named_site_pose",
+      "simulation_time"
+    ]
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default": "model_qpos0",
+    "available_keyframe": "home",
+    "home_qpos": [-1.5708, -1.5708, 1.5708, -1.5708, -1.5708, 0.0],
+    "home_ctrl": [-1.5708, -1.5708, 1.5708, -1.5708, -1.5708, 0.0]
+  },
+  "asset_provenance": {
+    "model_title": "Universal Robots UR5e Description (MJCF)",
+    "upstream": "https://github.com/981526092/auto-adapter",
+    "derived_revision": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "source_path": "assets/mjcf/universal_robots_ur5e/",
+    "license": "BSD-3-Clause",
+    "license_file": "assets/LICENSE",
+    "source_file": "assets/SOURCE.md"
+  }
+}
