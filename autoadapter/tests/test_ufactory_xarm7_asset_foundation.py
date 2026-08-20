@@ -117,8 +117,8 @@ TASK_SCENE_FILES = (
     "sweep_into_goal_scene.xml",
     "wall_scene.xml",
 )
-HOME_QPOS = [0.0, -0.247, 0.0, 0.909, 0.0, 1.15644, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-HOME_CTRL = [0.0, -0.247, 0.0, 0.909, 0.0, 1.15644, 0.0, 0.0]
+HOME_QPOS = [0.0, -0.5, 0.0, 1.4, 0.0, 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+HOME_CTRL = [0.0, -0.5, 0.0, 1.4, 0.0, 0.8, 0.0, 0.0]
 
 
 def _names(model: mujoco.MjModel, obj: mujoco.mjtObj, count: int) -> list[str]:

@@ -11,6 +11,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 FRANKA_ASSETS_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "assets"
+PRIVATE_INSTANCES_PATH = FRANKA_ASSETS_ROOT.parent / "tasks" / "private" / "instances.json"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
@@ -135,6 +136,28 @@ def _has_name(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> b
     return mujoco.mj_name2id(model, object_type, name) >= 0
 
 
+def _static_scene_geom_names(scene_path: Path) -> tuple[str, ...]:
+    worldbody = ET.parse(scene_path).getroot().find("worldbody")
+    assert worldbody is not None
+    result = []
+
+    def visit(element: ET.Element, articulated: bool) -> None:
+        if element.tag == "body":
+            articulated = articulated or any(
+                child.tag in {"joint", "freejoint"} for child in element
+            )
+        for child in element:
+            if child.tag == "geom" and not articulated:
+                name = child.get("name")
+                assert name is not None
+                result.append(name)
+            elif child.tag == "body":
+                visit(child, articulated)
+
+    visit(worldbody, False)
+    return tuple(result)
+
+
 class FrankaTaskSceneTests(unittest.TestCase):
     def _load(self, scene_name: str) -> mujoco.MjModel:
         return mujoco.MjModel.from_xml_path(str(FRANKA_ASSETS_ROOT / scene_name))
@@ -199,6 +222,32 @@ class FrankaTaskSceneTests(unittest.TestCase):
                 self.assertGreater(data.time, start_time)
                 self.assertTrue(np.isfinite(data.qpos).all())
                 self.assertTrue(np.isfinite(data.qvel).all())
+
+    def test_private_scene_static_geometry_uses_robot_collision_layer(self) -> None:
+        instances = json.loads(PRIVATE_INSTANCES_PATH.read_text(encoding="utf-8"))[
+            "instances"
+        ]
+        self.assertEqual(len(instances), 20)
+        self.assertEqual(
+            {Path(instance["scene_entrypoint"]).name for instance in instances},
+            set(SCENE_NAMES),
+        )
+
+        for instance in instances:
+            scene_path = FRANKA_ASSETS_ROOT.parent / instance["scene_entrypoint"]
+            model = mujoco.MjModel.from_xml_path(str(scene_path))
+            for geom_name in _static_scene_geom_names(scene_path):
+                with self.subTest(task_id=instance["task_id"], geom_name=geom_name):
+                    geom_id = mujoco.mj_name2id(
+                        model, mujoco.mjtObj.mjOBJ_GEOM, geom_name
+                    )
+                    self.assertGreaterEqual(geom_id, 0)
+                    if geom_name.endswith("_marker"):
+                        self.assertEqual(int(model.geom_contype[geom_id]), 0)
+                        self.assertEqual(int(model.geom_conaffinity[geom_id]), 0)
+                    else:
+                        self.assertEqual(int(model.geom_contype[geom_id]) & 1, 1)
+                        self.assertEqual(int(model.geom_conaffinity[geom_id]) & 1, 1)
 
     def test_transformed_world_coordinates_are_present_after_forward(self) -> None:
         reach_model = self._load("reach_scene.xml")

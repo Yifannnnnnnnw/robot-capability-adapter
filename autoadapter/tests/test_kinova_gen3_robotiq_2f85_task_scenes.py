@@ -11,6 +11,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "kinova_gen3_robotiq_2f85" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
+PRIVATE_INSTANCES_PATH = PACKAGE_ROOT / "tasks" / "private" / "instances.json"
 
 SCENE_NAMES = (
     "reach_scene.xml",
@@ -140,6 +141,49 @@ ACTUATORS = ARM_JOINTS + ("fingers_actuator",)
 
 def _has_name(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> bool:
     return mujoco.mj_name2id(model, object_type, name) >= 0
+
+
+def _static_scene_geom_names(scene_path: Path) -> tuple[str, ...]:
+    worldbody = ET.parse(scene_path).getroot().find("worldbody")
+    assert worldbody is not None
+    result = []
+
+    def visit(element: ET.Element, articulated: bool) -> None:
+        if element.tag == "body":
+            articulated = articulated or any(
+                child.tag in {"joint", "freejoint"} for child in element
+            )
+        for child in element:
+            if child.tag == "geom" and not articulated:
+                name = child.get("name")
+                assert name is not None
+                result.append(name)
+            elif child.tag == "body":
+                visit(child, articulated)
+
+    visit(worldbody, False)
+    return tuple(result)
+
+
+def test_private_scene_static_geometry_uses_robot_collision_layer() -> None:
+    instances = json.loads(PRIVATE_INSTANCES_PATH.read_text(encoding="utf-8"))["instances"]
+    assert len(instances) == 20
+    assert {Path(instance["scene_entrypoint"]).name for instance in instances} == set(
+        SCENE_NAMES
+    )
+
+    for instance in instances:
+        scene_path = PACKAGE_ROOT / instance["scene_entrypoint"]
+        model = mujoco.MjModel.from_xml_path(str(scene_path))
+        for geom_name in _static_scene_geom_names(scene_path):
+            geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, geom_name)
+            assert geom_id >= 0, f"{instance['task_id']}:{geom_name}"
+            if geom_name.endswith("_marker"):
+                assert int(model.geom_contype[geom_id]) == 0
+                assert int(model.geom_conaffinity[geom_id]) == 0
+            else:
+                assert int(model.geom_contype[geom_id]) & 1
+                assert int(model.geom_conaffinity[geom_id]) & 1
 
 
 def _expected_dims(scene_name: str) -> tuple[int, int, int]:

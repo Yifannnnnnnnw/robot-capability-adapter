@@ -50,6 +50,7 @@ FIXTURE_RESET_JOINT_POSITIONS = {
     "mw_handle_pull": {"vertical_handle_slide": -0.055},
     "mw_door_close": {"door_hinge": 1.2},
 }
+MIN_RESET_CONTACT_DISTANCE = -0.005
 
 
 def _read(path: Path) -> dict:
@@ -323,6 +324,35 @@ def test_franka_private_resets_preserve_panda_home_and_scene_qpos0() -> None:
                 atol=0.0,
                 err_msg=f"fixture reset was not effective for {instance['task_id']}:{name}",
             )
+
+
+def test_franka_private_resets_do_not_start_in_deep_contact() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = _read(package.private_dir / "instances.json")["instances"]
+    assert len(instances) == 20
+
+    for instance in instances:
+        model = mujoco.MjModel.from_xml_path(
+            str(package.root / instance["scene_entrypoint"])
+        )
+        data = mujoco.MjData(model)
+        apply_framework_reset(mujoco, model, data, instance["reset"])
+        mujoco.mj_forward(model, data)
+        if data.ncon == 0:
+            continue
+        contact = min(
+            (data.contact[index] for index in range(data.ncon)),
+            key=lambda item: float(item.dist),
+        )
+        geom_names = tuple(
+            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, int(geom_id))
+            or f"geom:{geom_id}"
+            for geom_id in (contact.geom1, contact.geom2)
+        )
+        assert float(contact.dist) >= MIN_RESET_CONTACT_DISTANCE, (
+            f"{instance['task_id']} starts at {float(contact.dist):.9f} m "
+            f"between {geom_names}"
+        )
 
 
 def test_franka_scenes_support_private_video_dimensions() -> None:
