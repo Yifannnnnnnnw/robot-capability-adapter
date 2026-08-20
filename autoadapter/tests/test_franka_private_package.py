@@ -11,6 +11,7 @@ import numpy as np
 
 from autoadapter2.driver_synthesis import audit_driver_source
 from autoadapter2.harness import run_private_suite
+from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.libraries import load_robot_package
 from autoadapter2.trusted_skeletons import ArmSerialDLSSkeleton, ArmSpec, IKUnreachableError
 
@@ -23,6 +24,32 @@ RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 SNAPSHOT_ID = "franka-panda-metaworld-source-protocols-2026-08-19-v1"
 ARM_JOINTS = tuple(f"joint{index}" for index in range(1, 8))
 ARM_ACTUATORS = tuple(f"actuator{index}" for index in range(1, 8))
+PANDA_HOME_JOINT_POSITIONS = {
+    "joint1": 0.0,
+    "joint2": 0.0,
+    "joint3": 0.0,
+    "joint4": -1.57079,
+    "joint5": 0.0,
+    "joint6": 1.57079,
+    "joint7": -0.7853,
+    "finger_joint1": 0.04,
+    "finger_joint2": 0.04,
+}
+PANDA_HOME_ACTUATOR_CONTROLS = {
+    "actuator1": 0.0,
+    "actuator2": 0.0,
+    "actuator3": 0.0,
+    "actuator4": -1.57079,
+    "actuator5": 0.0,
+    "actuator6": 1.57079,
+    "actuator7": -0.7853,
+    "actuator8": 255.0,
+}
+FIXTURE_RESET_JOINT_POSITIONS = {
+    "mw_drawer_close": {"drawer_slide": -0.08},
+    "mw_handle_pull": {"vertical_handle_slide": -0.05},
+    "mw_door_close": {"door_hinge": 1.2},
+}
 
 
 def _read(path: Path) -> dict:
@@ -168,11 +195,7 @@ def test_franka_private_package_loads_and_preserves_boundary() -> None:
         (PACKAGE_ROOT / instance["scene_entrypoint"]).is_file()
         for instance in instances["instances"]
     )
-    assert all(
-        instance["reset"]["kind"] == "keyframe"
-        and instance["reset"]["name"] == "home"
-        for instance in instances["instances"]
-    )
+    assert all(instance["reset"]["kind"] == "default" for instance in instances["instances"])
     assert all(instance["max_steps"] == 10000 for instance in instances["instances"])
     assert all(instance["timeout_sim_s"] == 20.0 for instance in instances["instances"])
 
@@ -192,9 +215,14 @@ def test_franka_private_records_are_the_mechanical_so101_transform() -> None:
         assert observed["task_id"] == expected["task_id"]
         assert observed["instance_id"] == expected["instance_id"].replace("so101-", "franka-")
         assert observed["scene_entrypoint"] == expected["scene_entrypoint"]
-        expected_reset = copy.deepcopy(expected["reset"])
-        expected_reset["kind"] = "keyframe"
-        expected_reset["name"] = "home"
+        expected_reset = {
+            "kind": "default",
+            "joint_positions": {
+                **PANDA_HOME_JOINT_POSITIONS,
+                **expected["reset"].get("joint_positions", {}),
+            },
+            "actuator_controls": PANDA_HOME_ACTUATOR_CONTROLS,
+        }
         assert observed["reset"] == expected_reset
         assert observed["max_steps"] == 10000
         assert observed["timeout_sim_s"] == expected["timeout_sim_s"] == 20.0
@@ -228,6 +256,69 @@ def test_franka_private_records_are_the_mechanical_so101_transform() -> None:
         expected["parameters"].pop("site_name")
         expected["parameters"]["body_name"] = "hand"
         assert observed == expected
+
+
+def test_franka_private_resets_preserve_panda_home_and_scene_qpos0() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = _read(package.private_dir / "instances.json")["instances"]
+
+    for instance in instances:
+        scene = (package.root / instance["scene_entrypoint"]).resolve()
+        model = mujoco.MjModel.from_xml_path(str(scene))
+        data = mujoco.MjData(model)
+        model_qpos0 = np.array(model.qpos0, dtype=float, copy=True)
+
+        apply_framework_reset(mujoco, model, data, instance["reset"])
+
+        for name, expected_value in PANDA_HOME_JOINT_POSITIONS.items():
+            joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+            assert joint_id >= 0
+            qpos_address = int(model.jnt_qposadr[joint_id])
+            np.testing.assert_allclose(
+                data.qpos[qpos_address],
+                expected_value,
+                rtol=0.0,
+                atol=0.0,
+                err_msg=f"unexpected Panda qpos for {instance['task_id']}:{name}",
+            )
+
+        for name, expected_value in PANDA_HOME_ACTUATOR_CONTROLS.items():
+            actuator_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
+            assert actuator_id >= 0
+            np.testing.assert_allclose(
+                data.ctrl[actuator_id],
+                expected_value,
+                rtol=0.0,
+                atol=0.0,
+                err_msg=f"unexpected Panda ctrl for {instance['task_id']}:{name}",
+            )
+
+        for joint_id in range(int(model.njnt)):
+            if int(model.jnt_type[joint_id]) != int(mujoco.mjtJoint.mjJNT_FREE):
+                continue
+            qpos_address = int(model.jnt_qposadr[joint_id])
+            np.testing.assert_array_equal(
+                data.qpos[qpos_address : qpos_address + 7],
+                model_qpos0[qpos_address : qpos_address + 7],
+                err_msg=(
+                    f"free-joint qpos changed for {instance['task_id']} "
+                    f"at qpos address {qpos_address}"
+                ),
+            )
+
+        fixture_positions = FIXTURE_RESET_JOINT_POSITIONS.get(instance["task_id"], {})
+        for name, expected_value in fixture_positions.items():
+            assert instance["reset"]["joint_positions"][name] == expected_value
+            joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+            assert joint_id >= 0
+            qpos_address = int(model.jnt_qposadr[joint_id])
+            np.testing.assert_allclose(
+                data.qpos[qpos_address],
+                expected_value,
+                rtol=0.0,
+                atol=0.0,
+                err_msg=f"fixture reset was not effective for {instance['task_id']}:{name}",
+            )
 
 
 def test_franka_driver_source_and_skeleton_contract() -> None:

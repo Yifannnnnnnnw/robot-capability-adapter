@@ -20,8 +20,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "terminal_endpoint": "binding-mw_reach_target"
@@ -67,8 +87,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "object_goal_distance": "binding-mw_push_to_goal"
@@ -126,8 +166,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "placed_object_distance": "binding-mw_pick_place"
@@ -190,8 +250,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "placed_object_distance": "binding-mw_pick_place_wall"
@@ -242,8 +322,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "object_goal_distance": "binding-mw_push_wall"
@@ -289,8 +389,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "swept_object_distance": "binding-mw_sweep_into_goal"
@@ -336,8 +456,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "open_handle_error": "binding-mw_drawer_open"
@@ -383,11 +523,29 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
+        "kind": "default",
         "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04,
           "drawer_slide": -0.08
         },
-        "name": "home"
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "closed_drawer_distance": "binding-mw_drawer_close"
@@ -433,8 +591,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "pressed_button_distance": "binding-mw_button_press"
@@ -480,8 +658,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "topdown_button_distance": "binding-mw_button_press_topdown"
@@ -527,8 +725,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "handle_target_distance": "binding-mw_handle_press"
@@ -574,11 +792,29 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
+        "kind": "default",
         "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04,
           "vertical_handle_slide": -0.05
         },
-        "name": "home"
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "pulled_handle_distance": "binding-mw_handle_pull"
@@ -629,8 +865,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "door_open_axis_error": "binding-mw_door_open"
@@ -681,11 +937,29 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
+        "kind": "default",
         "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04,
           "door_hinge": 1.2
         },
-        "name": "home"
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "closed_door_distance": "binding-mw_door_close"
@@ -736,8 +1010,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "faucet_target_distance": "binding-mw_faucet_open"
@@ -788,8 +1082,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "dial_target_distance": "binding-mw_dial_turn"
@@ -841,8 +1155,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "lever_angle_error": "binding-mw_lever_pull"
@@ -898,8 +1232,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "peg_target_distance": "binding-mw_peg_insertion_side"
@@ -962,8 +1316,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "binned_object_distance": "binding-mw_bin_picking"
@@ -1026,8 +1400,28 @@
         }
       },
       "reset": {
-        "kind": "keyframe",
-        "name": "home"
+        "kind": "default",
+        "joint_positions": {
+          "joint1": 0.0,
+          "joint2": 0.0,
+          "joint3": 0.0,
+          "joint4": -1.57079,
+          "joint5": 0.0,
+          "joint6": 1.57079,
+          "joint7": -0.7853,
+          "finger_joint1": 0.04,
+          "finger_joint2": 0.04
+        },
+        "actuator_controls": {
+          "actuator1": 0.0,
+          "actuator2": 0.0,
+          "actuator3": 0.0,
+          "actuator4": -1.57079,
+          "actuator5": 0.0,
+          "actuator6": 1.57079,
+          "actuator7": -0.7853,
+          "actuator8": 255.0
+        }
       },
       "clause_bindings": {
         "extracted_object_distance": "binding-mw_pick_out_of_hole"
