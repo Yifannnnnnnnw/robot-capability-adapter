@@ -240,15 +240,6 @@ def test_piper_private_scenes_and_resets_resolve_in_mujoco() -> None:
         apply_framework_reset(mujoco, model, data, instance["reset"])
         mujoco.mj_forward(model, data)
 
-        minimum_distance = min(
-            (float(data.contact[index].dist) for index in range(data.ncon)),
-            default=float("inf"),
-        )
-        assert minimum_distance >= -0.005, (
-            f"{instance['task_id']}: minimum reset contact distance "
-            f"{minimum_distance}"
-        )
-
         for name, expected in instance["reset"]["joint_positions"].items():
             joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
             assert joint_id >= 0, f"{instance['task_id']}: {name}"
@@ -258,6 +249,24 @@ def test_piper_private_scenes_and_resets_resolve_in_mujoco() -> None:
             actuator_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
             assert actuator_id >= 0, f"{instance['task_id']}: {name}"
             assert data.ctrl[actuator_id] == expected
+
+        reset_controls = np.asarray(data.ctrl).copy()
+        minimum_distance = min(
+            (float(data.contact[index].dist) for index in range(data.ncon)),
+            default=float("inf"),
+        )
+        for _ in range(100):
+            mujoco.mj_step(model, data)
+            step_minimum = min(
+                (float(data.contact[index].dist) for index in range(data.ncon)),
+                default=float("inf"),
+            )
+            minimum_distance = min(minimum_distance, step_minimum)
+        np.testing.assert_array_equal(data.ctrl, reset_controls)
+        assert minimum_distance >= -0.005, (
+            f"{instance['task_id']}: minimum reset/settling contact distance "
+            f"{minimum_distance}"
+        )
 
 
 def test_piper_private_video_and_camera_settings_remain_canonical() -> None:
