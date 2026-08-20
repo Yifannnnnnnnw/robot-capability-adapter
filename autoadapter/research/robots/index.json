@@ -667,7 +667,17 @@
         {
           "path": "autoadapter/libraries/robots/aloha_2/1.0.0/morphology.json",
           "kind": "canonical_morphology_foundation",
-          "observation": "The canonical morphology records the fixed-base bimanual joint-position controls, mirrored finger equalities, public joint/gripper actions, and state/site/contact observations from the selected ALOHA scene; it does not add tasks, a skeleton, a reference driver, or runnable status."
+          "observation": "The canonical morphology records the fixed-base bimanual joint-position controls, mirrored finger equalities, public joint/gripper actions, and state/site/contact observations from the selected ALOHA scene; it does not itself establish private task bindings, a skeleton, a reference driver, or runnable status."
+        },
+        {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The provisional ALOHA 2 public snapshot records the pinned Meta-World scoring source and the pinned MuJoCo Menagerie ALOHA configuration source. Every scoring clause uses only the Meta-World source; Menagerie supports configuration applicability only."
+        },
+        {
+          "path": "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The provisional ALOHA 2 public snapshot contains 20 distinct selected-arm task contracts with unchanged source scoring obligations. task_arm selects left or right while the other arm remains neutral; the catalog makes no genuine-bimanual, private-scene, controller, task-success, or runnable claim, and observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
           "path": "demo2/legacy_assets/menagerie/aloha/aloha.xml",
@@ -696,10 +706,8 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable bimanual-control skeleton and a calibration-only reference driver for this configuration.",
+        "Provide an applicable selected-arm ALOHA skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."

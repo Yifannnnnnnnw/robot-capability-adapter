@@ -572,9 +572,11 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "tasks",
     ]
-    for forbidden in ("tasks", "skeleton", "reference"):
+    for forbidden in ("skeleton", "reference"):
         assert not (PACKAGE_ROOT / forbidden).exists()
+    assert not (PACKAGE_ROOT / "tasks" / "private").exists()
 
     research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
     candidate = next(
@@ -591,12 +593,16 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
     assert {item["kind"] for item in canonical_observations} == {
         "canonical_mujoco_asset_foundation",
         "canonical_morphology_foundation",
+        "canonical_task_sources",
+        "canonical_task_catalog",
     }
     assert {
         item["path"] for item in canonical_observations
     } == {
         "autoadapter/libraries/robots/aloha_2/1.0.0/assets/scene.xml",
         "autoadapter/libraries/robots/aloha_2/1.0.0/morphology.json",
+        "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/sources.json",
+        "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/catalog.json",
     }
     assert all(
         phrase not in item["observation"].lower()
@@ -604,10 +610,8 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         for phrase in ("task success", "task passed", "positive control", "admitted")
     )
     assert candidate["missing_for_runnable_package"] == [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable bimanual-control skeleton and a calibration-only reference driver for this configuration.",
+        "Provide an applicable selected-arm ALOHA skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
