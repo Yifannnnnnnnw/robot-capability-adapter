@@ -229,40 +229,52 @@
       "binding_id": "go2-go2-t12-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_directional_displacement",
+      "kind": "body_directional_progress_until_corridor_exit",
       "parameters": {
         "body_name": "base_link",
-        "direction_argument": "request.task_parameters.direction_rad"
+        "direction_argument": "request.task_parameters.direction_rad",
+        "limit_argument": "request.task_parameters.map_limit_m",
+        "maximum_cross_track_m": 0.55,
+        "minimum_height_m": 0.2
       }
     },
     {
       "binding_id": "go2-go2-t13-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_directional_displacement",
+      "kind": "body_directional_progress_until_corridor_exit",
       "parameters": {
         "body_name": "base_link",
-        "direction_argument": "request.task_parameters.direction_rad"
+        "direction_argument": "request.task_parameters.direction_rad",
+        "limit_argument": "request.task_parameters.map_limit_m",
+        "maximum_cross_track_m": 0.55,
+        "minimum_height_m": 0.2
       }
     },
     {
       "binding_id": "go2-go2-t14-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_directional_displacement",
+      "kind": "body_directional_progress_until_corridor_exit",
       "parameters": {
         "body_name": "base_link",
-        "direction_argument": "request.task_parameters.direction_rad"
+        "direction_argument": "request.task_parameters.direction_rad",
+        "limit_argument": "request.task_parameters.map_limit_m",
+        "maximum_cross_track_m": 0.55,
+        "minimum_height_m": 0.2
       }
     },
     {
       "binding_id": "go2-go2-t15-distance",
       "metric": "maximum_travel_distance",
       "unit": "m",
-      "kind": "body_directional_displacement",
+      "kind": "body_directional_progress_until_corridor_exit",
       "parameters": {
         "body_name": "base_link",
-        "direction_argument": "request.task_parameters.direction_rad"
+        "direction_argument": "request.task_parameters.direction_rad",
+        "limit_argument": "request.task_parameters.map_limit_m",
+        "maximum_cross_track_m": 0.55,
+        "minimum_height_m": 0.2
       }
     },
     {

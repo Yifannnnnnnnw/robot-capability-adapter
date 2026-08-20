@@ -28,6 +28,7 @@ _SUPPORTED_BINDING_KINDS = {
     "body_planar_displacement",
     "body_axis_displacement",
     "body_directional_displacement",
+    "body_directional_progress_until_corridor_exit",
     "mean_body_planar_speed",
     "body_yaw_change_deg",
     "mean_body_heading_error_deg",

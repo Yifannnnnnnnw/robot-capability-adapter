@@ -181,6 +181,44 @@ def measure(
         return (end[0] - start[0]) * math.cos(direction) + (
             end[1] - start[1]
         ) * math.sin(direction)
+    if kind == "body_directional_progress_until_corridor_exit":
+        body_name = str(parameters["body_name"])
+        start = _body_position(first, body_name)
+        direction = float(
+            _argument(public_arguments, str(parameters["direction_argument"]))
+        )
+        distance_limit = float(
+            _argument(public_arguments, str(parameters["limit_argument"]))
+        )
+        cross_track_limit = float(parameters["maximum_cross_track_m"])
+        minimum_height = float(parameters["minimum_height_m"])
+        if not all(
+            math.isfinite(value)
+            for value in (
+                direction,
+                distance_limit,
+                cross_track_limit,
+                minimum_height,
+            )
+        ):
+            raise MeasurementError("bounded directional progress parameters must be finite")
+        if distance_limit <= 0.0 or cross_track_limit <= 0.0:
+            raise MeasurementError(
+                "bounded directional progress limits must be positive"
+            )
+
+        forward = (math.cos(direction), math.sin(direction))
+        lateral = (-forward[1], forward[0])
+        maximum_progress = 0.0
+        for sample in samples:
+            position = _body_position(sample, body_name)
+            displacement = (position[0] - start[0], position[1] - start[1])
+            cross_track = displacement[0] * lateral[0] + displacement[1] * lateral[1]
+            if abs(cross_track) > cross_track_limit or position[2] < minimum_height:
+                break
+            progress = displacement[0] * forward[0] + displacement[1] * forward[1]
+            maximum_progress = max(maximum_progress, progress)
+        return min(maximum_progress, distance_limit)
     if kind == "mean_body_planar_speed":
         start = _body_position(first, str(parameters["body_name"]))
         end = _body_position(final, str(parameters["body_name"]))

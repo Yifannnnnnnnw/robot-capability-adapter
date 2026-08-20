@@ -203,6 +203,10 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
         (package.private_dir / "instances.json").read_text(encoding="utf-8")
     )["instances"]
     instance_by_task = {instance["task_id"]: instance for instance in instances}
+    bindings = json.loads(
+        (package.private_dir / "bindings.json").read_text(encoding="utf-8")
+    )["bindings"]
+    binding_by_id = {binding["binding_id"]: binding for binding in bindings}
 
     assert {source["source_id"] for source in package.sources} >= {
         "SRC-LEE-2020",
@@ -251,6 +255,15 @@ def test_go2_source_protocol_scenes_compile_and_reset() -> None:
     }
     for task_id in shi_task_ids:
         instance = instance_by_task[task_id]
+        binding = binding_by_id[instance["clause_bindings"]["travel_distance"]]
+        assert binding["kind"] == "body_directional_progress_until_corridor_exit"
+        assert binding["parameters"] == {
+            "body_name": "base_link",
+            "direction_argument": "request.task_parameters.direction_rad",
+            "limit_argument": "request.task_parameters.map_limit_m",
+            "maximum_cross_track_m": 0.55,
+            "minimum_height_m": 0.2,
+        }
         assert instance["repetitions"] == 18
         directions = [
             round(

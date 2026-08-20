@@ -148,6 +148,50 @@ def test_directional_displacement_projects_onto_each_command() -> None:
     assert lateral == pytest.approx(4.0)
 
 
+def test_directional_progress_rejects_corridor_and_lower_floor_bypasses() -> None:
+    binding = {
+        "kind": "body_directional_progress_until_corridor_exit",
+        "parameters": {
+            "body_name": "base_link",
+            "direction_argument": "request.task_parameters.direction_rad",
+            "limit_argument": "request.task_parameters.map_limit_m",
+            "maximum_cross_track_m": 0.55,
+            "minimum_height_m": 0.2,
+        },
+    }
+    arguments = {
+        "request": {
+            "task_parameters": {"direction_rad": 0.0, "map_limit_m": 5.0}
+        }
+    }
+    side_bypass = {
+        "samples": [
+            _body_sample(0.0, [0.0, 0.0, 0.3]),
+            _body_sample(1.0, [2.0, 0.2, 0.3]),
+            _body_sample(2.0, [3.0, 0.6, 0.3]),
+            _body_sample(3.0, [6.0, 0.0, 0.3]),
+        ]
+    }
+    lower_floor_bypass = {
+        "samples": [
+            _body_sample(0.0, [0.0, 0.0, 0.3]),
+            _body_sample(1.0, [1.0, 0.0, 0.3]),
+            _body_sample(2.0, [2.0, 0.0, 0.19]),
+            _body_sample(3.0, [6.0, 0.0, 0.3]),
+        ]
+    }
+    valid_but_over_limit = {
+        "samples": [
+            _body_sample(0.0, [0.0, 0.0, 0.3]),
+            _body_sample(1.0, [6.0, 0.1, 0.3]),
+        ]
+    }
+
+    assert measure(binding, evidence=side_bypass, public_arguments=arguments) == 2.0
+    assert measure(binding, evidence=lower_floor_bypass, public_arguments=arguments) == 1.0
+    assert measure(binding, evidence=valid_but_over_limit, public_arguments=arguments) == 5.0
+
+
 def test_step_completion_requires_all_four_feet_past_finish() -> None:
     binding = {
         "kind": "named_bodies_axis_completion",
