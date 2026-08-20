@@ -97,6 +97,21 @@ def _read(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _static_task_geom_names(node: ET.Element, *, moving: bool = False) -> tuple[str, ...]:
+    names: list[str] = []
+    for child in node:
+        if child.tag == "geom" and not moving:
+            name = child.get("name")
+            if name:
+                names.append(name)
+        elif child.tag == "body":
+            child_moving = moving or any(
+                item.tag in {"joint", "freejoint"} for item in child
+            )
+            names.extend(_static_task_geom_names(child, moving=child_moving))
+    return tuple(names)
+
+
 def _validated_public_tasks() -> tuple[dict, ...]:
     sources_path = TASKS_ROOT / "sources.json"
     catalog_path = TASKS_ROOT / "catalog.json"
@@ -174,8 +189,20 @@ def test_task_scenes_are_local_canonical_and_reset_finite() -> None:
         include_files = [element.attrib["file"] for element in xml_root.findall("include")]
         assert include_files == ["universal_robots_ur5e_robotiq_2f85.xml"]
         assert not Path(include_files[0]).is_absolute()
+        worldbody = xml_root.find("worldbody")
+        assert worldbody is not None
 
         model = mujoco.MjModel.from_xml_path(str(scene_path))
+        for name in _static_task_geom_names(worldbody):
+            geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, name)
+            assert geom_id >= 0, f"{instance['task_id']}: {name}"
+            contype = int(model.geom_contype[geom_id])
+            conaffinity = int(model.geom_conaffinity[geom_id])
+            if name.endswith("_goal_marker"):
+                assert (contype, conaffinity) == (0, 0)
+            else:
+                assert contype & 1, f"{instance['task_id']}: {name} contype"
+                assert conaffinity & 1, f"{instance['task_id']}: {name} conaffinity"
         data = mujoco.MjData(model)
         task_start_id = mujoco.mj_name2id(
             model, mujoco.mjtObj.mjOBJ_KEY, "task_start"
@@ -188,6 +215,7 @@ def test_task_scenes_are_local_canonical_and_reset_finite() -> None:
         assert int(model.cam_targetbodyid[evidence_camera_id]) >= 0
 
         apply_framework_reset(mujoco, model, data, instance["reset"])
+        mujoco.mj_forward(model, data)
         np.testing.assert_allclose(data.qpos[:14], HOME_QPOS, rtol=0.0, atol=1e-12)
         np.testing.assert_allclose(data.ctrl, HOME_CTRL, rtol=0.0, atol=1e-12)
         task_parameters = instance["public_arguments"]["request"]["task_parameters"]
@@ -207,7 +235,14 @@ def test_task_scenes_are_local_canonical_and_reset_finite() -> None:
         assert np.isfinite(data.ctrl).all()
         assert np.isfinite(data.xpos).all()
         assert np.isfinite(data.site_xpos).all()
-        assert data.ncon == 0
+        minimum_distance = min(
+            (float(data.contact[index].dist) for index in range(data.ncon)),
+            default=float("inf"),
+        )
+        assert minimum_distance >= -0.005, (
+            f"{instance['task_id']}: minimum reset contact distance "
+            f"{minimum_distance}"
+        )
         assert model.vis.global_.offwidth >= instance["video_width"]
         assert model.vis.global_.offheight >= instance["video_height"]
 
