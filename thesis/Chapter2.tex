@@ -34,6 +34,57 @@ LLM-based robot programming, software synthesis, and behavioural validation.
 \subsection{Embodiment and Action}
 \label{sec:embodiment-action}
 
+Embodiment is used in the literature to describe several relationships between
+an agent, its body, and its environment, rather than the mere possession of a
+physical or simulated body \citep{ziemke2003embodiment}.
+\citet{brooks1991intelligence} challenged architectures that treated
+intelligence primarily as centralised symbolic representation and instead
+located autonomous behaviour in situated perception and action. Later reviews
+describe embodied cognition as activity shaped by an agent's bodily capacities
+and practical interaction with its surroundings
+\citep{anderson2003fieldguide}. This thesis therefore uses embodiment in an
+engineering sense: intelligent behaviour depends on the coupling among a
+robot's body, sensorimotor apparatus, controller, and environment.
+
+The central mechanism is sensorimotor coupling. When a robot acts, it changes
+its own state or the surrounding environment, which in turn changes the sensory
+information available for the next decision. Dynamical accounts accordingly
+analyse behaviour as a trajectory of the coupled agent--environment system
+rather than as the output of an isolated controller
+\citep{beer1995dynamical}. Robotics studies likewise show that active movement
+can organise sensory information and simplify the problem presented to the
+controller \citep{pfeifer1997sensorymotor}. More recent reviews preserve this
+controller--body--environment perspective while distinguishing interactions
+that occur across different physical and computational timescales
+\citep{iida2023timescales}. This thesis adopts that mechanism without taking a
+position on whether internal representations are necessary for intelligence.
+
+Action must nevertheless be specified at an abstraction level before it can be
+executed. In robotics, an action may refer to a desired effect, an end-effector
+reference, a joint-space target, an actuator command, or a temporally extended
+movement representation; these objects are related but not interchangeable
+\citep{zech2019action}. Operational-space control, for example, formulates
+end-effector motion and force separately from the underlying joint dynamics
+\citep{khatib1987unified}, whereas dynamical movement primitives encode
+adaptable goal-directed trajectories \citep{ijspeert2013dmp}. Learning-based
+approaches often express a policy as a mapping from observed state to action,
+but the meaning of the action remains determined by the selected representation
+and robot context \citep{argall2009survey,kober2013reinforcement}.
+
+This range of meanings makes it necessary to distinguish an intended action,
+an issued command, actuator-driven execution, and the resulting effect.
+\citet{zech2019action} treat anticipated effects and mechanical effectiveness
+as central elements of robotic action, while also noting that no single
+definition is accepted across the field. This thesis does not impose such a
+definition universally; instead, it uses the narrower empirical distinction
+that a command is not evidence of its intended outcome until the relevant
+post-action state is observed on the declared execution route. Because command
+semantics depend on a robot configuration---including its joint ordering,
+coordinate conventions, actuation, limits, and feedback signals---the same
+task-level intention may require different executable mappings across robots.
+The next subsection examines how control hierarchies organise these mappings
+across planning, motion generation, and feedback control.
+
 \subsection{Control Hierarchies}
 \label{sec:control-hierarchies}
 
