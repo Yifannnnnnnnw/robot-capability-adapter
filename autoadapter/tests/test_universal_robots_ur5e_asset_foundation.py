@@ -14,6 +14,7 @@ ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
+RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 JOINT_NAMES = [
     "shoulder_pan_joint",
@@ -305,6 +306,22 @@ def test_universal_robots_ur5e_asset_foundation_is_local_and_live() -> None:
 
     runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
     assert "universal_robots_ur5e" not in runnable_index["robots"]
-    assert not (PACKAGE_ROOT / "tasks").exists()
-    assert not (PACKAGE_ROOT / "skeleton").exists()
-    assert not (PACKAGE_ROOT / "reference").exists()
+
+    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
+    candidate = next(
+        item
+        for item in research_index["candidates"]
+        if item["robot_configuration_id"] == "universal_robots_ur5e"
+    )
+    observed_paths = {
+        item["path"] for item in candidate["locally_observed_source_material"]
+    }
+    assert {
+        "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
+        "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/morphology.json",
+    }.issubset(observed_paths)
+    missing = " ".join(candidate["missing_for_runnable_package"])
+    assert "Materialize and verify a complete local MuJoCo asset closure" not in missing
+    assert "Create the current mainline morphology.json" not in missing
+    assert "20 distinct applicable source-backed tasks" in missing
+    assert "dynamic canary" in missing

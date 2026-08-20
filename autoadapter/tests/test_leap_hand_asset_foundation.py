@@ -14,6 +14,7 @@ ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene_right.xml"
 RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
+RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 FINGER_ORDER = ["index", "middle", "ring", "thumb"]
 JOINT_NAMES = [
@@ -333,3 +334,22 @@ def test_leap_hand_asset_foundation_is_local_and_live() -> None:
 
     runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
     assert "leap_hand" not in runnable_index["robots"]
+
+    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
+    candidate = next(
+        item
+        for item in research_index["candidates"]
+        if item["robot_configuration_id"] == "leap_hand"
+    )
+    observed_paths = {
+        item["path"] for item in candidate["locally_observed_source_material"]
+    }
+    assert {
+        "autoadapter/libraries/robots/leap_hand/1.0.0/assets/scene_right.xml",
+        "autoadapter/libraries/robots/leap_hand/1.0.0/morphology.json",
+    }.issubset(observed_paths)
+    missing = " ".join(candidate["missing_for_runnable_package"])
+    assert "Materialize and verify a complete local MuJoCo asset closure" not in missing
+    assert "Create the current mainline morphology.json" not in missing
+    assert "20 distinct applicable source-backed tasks" in missing
+    assert "dynamic canary" in missing

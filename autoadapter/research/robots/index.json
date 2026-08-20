@@ -273,6 +273,16 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical package contains the complete 27-file local UR5e closure, including all 20 meshes. It loads in MuJoCo 3.3.6 as a fixed six-joint position-controlled arm ending at attachment_site, and real actuator stepping is live. This bare-arm foundation has no gripper and is asset/control evidence only, not task-success or runnable evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical morphology records the exact six hinge joints, affine position servos, limits, home keyframe, attachment site, public observations, and pinned BSD-3-Clause source lineage without claiming grasp capability, task success, or runnable status."
+        },
+        {
           "path": "general_demo/libraries/assets/universal_robots_ur5e/1.0.0/asset_closure.json",
           "kind": "asset_closure_record",
           "observation": "The recorded closure marks UPSTREAM_CACHE_REQUIRED; its 22 entries include 20 mesh entries without a local vendored path."
@@ -309,8 +319,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under the canonical package; the observed General Demo closure explicitly leaves mesh materialization dependent on an upstream cache.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
         "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
@@ -516,6 +524,16 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/assets/scene_right.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical package contains the complete 23-file local MuJoCo Menagerie LEAP Hand closure. The right-hand scene loads in MuJoCo 3.3.6 with sixteen live joint-position actuators and four contact-enabled fingertip geoms. This is asset/control evidence only, not dexterous task success, policy, or runnable evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/leap_hand/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical right-hand morphology records sixteen named hinge joints and position actuators, exact limits and mappings, four fingertip contact geoms, joint-position sensors, reset ownership, and pinned MIT source lineage without claiming object manipulation or runnable status."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/leap_hand/left_hand.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical LEAP Hand model and meshes are available for migration inspection."
@@ -542,8 +560,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under a canonical LEAP Hand package; legacy Menagerie files are migration inputs only.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
         "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
         "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
