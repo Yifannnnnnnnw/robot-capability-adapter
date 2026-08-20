@@ -88,6 +88,38 @@ across planning, motion generation, and feedback control.
 \subsection{Control Hierarchies}
 \label{sec:control-hierarchies}
 
+A control hierarchy is defined here as a functional organisation of robot
+decision-making and execution across levels of abstraction and update rate.
+Task-level planning selects and sequences operations towards an objective,
+whereas motion planning determines whether they admit feasible continuous
+realisations \citep{kaelbling2011hierarchical}. Trajectory generation supplies
+a time-parameterised reference, while feedback control compares that reference
+with observed state and updates actuator commands during execution
+\citep{lynch2017modern}. These functions may be implemented separately or
+combined within one controller; the hierarchy is therefore an analytical
+decomposition rather than a required software stack.
+
+The flow need not form a one-way sense--plan--act pipeline. Brooks's subsumption
+architecture instead used asynchronous competence layers in which higher layers
+could suppress lower-level outputs while lower layers continued to operate
+\citep{brooks1986layered}. Contemporary reviews similarly describe
+hierarchical control through information factorisation, partial autonomy, and
+temporal abstraction rather than a single prescribed arrangement
+\citep{merel2019hierarchical}. Across these designs, hierarchy separates
+longer-horizon decisions from faster sensorimotor regulation, while allowing
+motion constraints or execution feedback to revise higher-level choices.
+
+This distinction locates the software boundary studied in this thesis. The
+high-level controller selects and sequences robot capabilities, whereas the
+robot capability interface defines how those operations are requested. A
+robot-specific driver must realise each request through the representations
+and lower-level controls available for one robot configuration, and provide
+the observations required by the execution loop. Selecting an operation or
+transmitting its command therefore does not establish the intended movement.
+The next subsection asks whether generalist robot intelligence can reuse
+task-level knowledge across robots despite these embodiment-specific execution
+requirements.
+
 \subsection{Generalist Robot Intelligence}
 \label{sec:generalist-robot-intelligence}
 
