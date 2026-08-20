@@ -664,6 +664,47 @@ def evaluate_guards(
             outcomes[guard_id] = bool(worker_result.get("canonical_model_data"))
         elif kind == "complete_video":
             outcomes[guard_id] = bool(video.get("complete"))
+        elif kind == "named_geom_contact_pair_required":
+            robot_geom_name = guard.get("robot_geom_name")
+            task_geom_names = guard.get("task_geom_names")
+            minimum_steps = guard.get("minimum_steps")
+            records = evidence.get("contact_pair_step_counts")
+            outcome = False
+            if (
+                isinstance(robot_geom_name, str)
+                and isinstance(task_geom_names, list)
+                and task_geom_names
+                and all(isinstance(name, str) for name in task_geom_names)
+                and isinstance(minimum_steps, int)
+                and not isinstance(minimum_steps, bool)
+                and minimum_steps > 0
+                and isinstance(records, list)
+            ):
+                task_names = set(task_geom_names)
+                contact_steps = 0
+                valid_records = True
+                for record in records:
+                    if not isinstance(record, Mapping):
+                        valid_records = False
+                        break
+                    geom1 = record.get("geom1")
+                    geom2 = record.get("geom2")
+                    step_count = record.get("step_count")
+                    if (
+                        not isinstance(geom1, str)
+                        or not isinstance(geom2, str)
+                        or isinstance(step_count, bool)
+                        or not isinstance(step_count, int)
+                        or step_count < 0
+                    ):
+                        valid_records = False
+                        break
+                    if (geom1 == robot_geom_name and geom2 in task_names) or (
+                        geom2 == robot_geom_name and geom1 in task_names
+                    ):
+                        contact_steps += step_count
+                outcome = valid_records and contact_steps >= minimum_steps
+            outcomes[guard_id] = outcome
         elif kind == "terminal_body_stability":
             samples = evidence.get("samples")
             body_name = guard.get("body_name")

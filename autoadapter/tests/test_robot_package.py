@@ -260,6 +260,33 @@ class RobotPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(RobotPackageError, "required capability interface"):
             load_robot_package(self.root)
 
+    def test_named_contact_pair_guard_requires_valid_pair_parameters(self) -> None:
+        guards_path = self.root / "tasks" / "private" / "guards.json"
+        guards = json.loads(guards_path.read_text(encoding="utf-8"))
+        guards["guards"].append(
+            {
+                "guard_id": "robot-task-contact",
+                "kind": "named_geom_contact_pair_required",
+                "robot_geom_name": "link7_contact_geom",
+                "task_geom_names": ["button_geom", "button_cap_geom"],
+                "minimum_steps": 2,
+            }
+        )
+        _write_json(guards_path, guards)
+        self.assertEqual(load_robot_package(self.root).robot_configuration_id, "example-arm")
+
+        invalid_variants = (
+            ("task_geom_names", [], "task_geom_names must be a non-empty list"),
+            ("minimum_steps", 0, "minimum_steps must be a positive integer"),
+        )
+        for field, value, message in invalid_variants:
+            with self.subTest(field=field):
+                invalid = json.loads(json.dumps(guards))
+                invalid["guards"][-1][field] = value
+                _write_json(guards_path, invalid)
+                with self.assertRaisesRegex(RobotPackageError, message):
+                    load_robot_package(self.root)
+
     def test_mjcf_include_cannot_escape_assets(self) -> None:
         (self.root / "outside.xml").write_text(
             '<mujoco model="outside"/>', encoding="utf-8"

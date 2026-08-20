@@ -48,6 +48,7 @@ _REQUIRED_GUARD_KINDS = {
 }
 _SUPPORTED_GUARD_KINDS = _REQUIRED_GUARD_KINDS | {
     "complete_video",
+    "named_geom_contact_pair_required",
     "terminal_body_stability",
 }
 
@@ -521,7 +522,27 @@ def _validate_private_inputs(
             raise RobotPackageError(f"duplicate guard_id {guard_id!r}")
         if kind not in _SUPPORTED_GUARD_KINDS:
             raise RobotPackageError(f"{where}.kind is not implemented by the trusted Harness")
-        if kind == "terminal_body_stability":
+        if kind == "named_geom_contact_pair_required":
+            robot_geom_name = _required_text(guard, "robot_geom_name", where=where)
+            task_geom_names = guard.get("task_geom_names")
+            if (
+                not isinstance(task_geom_names, list)
+                or not task_geom_names
+                or any(not isinstance(name, str) or not name.strip() for name in task_geom_names)
+            ):
+                raise RobotPackageError(f"{where}.task_geom_names must be a non-empty list of names")
+            if robot_geom_name in task_geom_names:
+                raise RobotPackageError(
+                    f"{where}.task_geom_names must not contain robot_geom_name"
+                )
+            minimum_steps = guard.get("minimum_steps")
+            if (
+                isinstance(minimum_steps, bool)
+                or not isinstance(minimum_steps, int)
+                or minimum_steps <= 0
+            ):
+                raise RobotPackageError(f"{where}.minimum_steps must be a positive integer")
+        elif kind == "terminal_body_stability":
             _required_text(guard, "body_name", where=where)
             for field in ("minimum_height_m", "minimum_upright_cosine"):
                 value = guard.get(field)

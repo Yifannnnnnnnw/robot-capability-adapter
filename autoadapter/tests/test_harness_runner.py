@@ -462,6 +462,33 @@ class HarnessRunnerTests(unittest.TestCase):
         self.assertEqual(evaluate_guards([guard], worker_result=upright), {"stable": True})
         self.assertEqual(evaluate_guards([guard], worker_result=fallen), {"stable": False})
 
+    def test_named_contact_pair_guard_rejects_disjoint_contacts(self) -> None:
+        guard = {
+            "guard_id": "robot-task-contact",
+            "kind": "named_geom_contact_pair_required",
+            "robot_geom_name": "link7_contact_geom",
+            "task_geom_names": ["button_geom", "button_cap_geom"],
+            "minimum_steps": 2,
+        }
+        disjoint = self._worker_result([])
+        disjoint["physical_evidence"]["contact_pair_step_counts"] = [
+            {"geom1": "floor", "geom2": "link7_contact_geom", "step_count": 5},
+            {"geom1": "button_geom", "geom2": "button_housing", "step_count": 5},
+        ]
+        exact_pair = self._worker_result([])
+        exact_pair["physical_evidence"]["contact_pair_step_counts"] = [
+            {"geom1": "button_cap_geom", "geom2": "link7_contact_geom", "step_count": 2},
+        ]
+
+        self.assertEqual(
+            evaluate_guards([guard], worker_result=disjoint),
+            {"robot-task-contact": False},
+        )
+        self.assertEqual(
+            evaluate_guards([guard], worker_result=exact_pair),
+            {"robot-task-contact": True},
+        )
+
     def test_physical_execution_requires_clean_canonical_stepped_trials(self) -> None:
         base_samples = [{"time": 0.0, "joint_positions": {"shoulder_pan": 0.2}}]
         variants = (
