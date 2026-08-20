@@ -382,6 +382,14 @@ def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> Non
     assert "autoadapter/libraries/robots/piper/1.0.0/morphology.json" in observed_paths
     assert "autoadapter/libraries/robots/piper/1.0.0/tasks/sources.json" in observed_paths
     assert "autoadapter/libraries/robots/piper/1.0.0/tasks/catalog.json" in observed_paths
+    assert "autoadapter/libraries/robots/piper/1.0.0/assets/reach_scene.xml" in observed_paths
+    scene_record = next(
+        record
+        for record in candidate["locally_observed_source_material"]
+        if record["kind"] == "provisional_task_scenes"
+    )
+    assert "collision compatibility" in scene_record["observation"]
+    assert "task success remain unverified" in scene_record["observation"]
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
