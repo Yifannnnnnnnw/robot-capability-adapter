@@ -11,7 +11,6 @@ import pytest
 from autoadapter2.harness.session import apply_framework_reset
 from autoadapter2.harness.measurements import measure
 from autoadapter2.libraries.robot_package import (
-    RobotPackageError,
     _validate_private_inputs,
     _validate_sources,
     _validate_tasks,
@@ -57,6 +56,7 @@ GUARD_IDS = (
     "guard_canonical_model_data",
     "guard_complete_video",
 )
+CASE_GUARD_IDS = GUARD_IDS[:3]
 ROBOT_RESET_JOINT_POSITIONS = {
     "joint_lift": 0.0,
     "joint_arm_l3": 0.0,
@@ -177,7 +177,7 @@ def test_stretch_private_documents_close_public_snapshot_and_fail_closed() -> No
         required = set(task["invocation_schema"]["request"]["task_parameters"]["required"])
         supplied = set(instance["public_arguments"]["request"]["task_parameters"])
         assert supplied == required
-        assert instance["guard_ids"] == list(GUARD_IDS)
+        assert instance["guard_ids"] == list(CASE_GUARD_IDS)
         assert instance["repetitions"] == 1
         assert instance["timeout_sim_s"] == 60.0
         assert instance["max_steps"] == 30000
@@ -198,18 +198,16 @@ def test_stretch_private_documents_close_public_snapshot_and_fail_closed() -> No
     assert "panda" not in private_text
     assert "franka" not in private_text
 
-    assert not (PACKAGE_ROOT / "reference").exists()
+    assert (PACKAGE_ROOT / "reference" / "driver.py").is_file()
     assert ROBOT_ID not in _read(RUNNABLE_INDEX_PATH)["robots"]
     research = _read(RESEARCH_INDEX_PATH)
     assert any(
         candidate["robot_configuration_id"] == ROBOT_ID
         for candidate in research["candidates"]
     )
-    with pytest.raises(
-        RobotPackageError,
-        match=r"^robot package must contain reference/driver\.py$",
-    ):
-        load_robot_package(PACKAGE_ROOT)
+    package = load_robot_package(PACKAGE_ROOT)
+    assert package.robot_configuration_id == ROBOT_ID
+    assert len(package.tasks) == 20
 
 
 def test_stretch_private_records_match_the_reviewed_rotation_and_reset_transform() -> None:

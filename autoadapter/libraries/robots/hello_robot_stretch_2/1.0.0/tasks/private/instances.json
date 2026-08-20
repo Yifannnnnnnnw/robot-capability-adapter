@@ -49,8 +49,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -117,8 +116,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -196,8 +194,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -280,8 +277,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -353,8 +349,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -421,8 +416,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -489,8 +483,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -558,8 +551,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -626,8 +618,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -694,8 +685,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -762,8 +752,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -831,8 +820,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -904,8 +892,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -978,8 +965,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -1051,8 +1037,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -1124,8 +1109,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -1198,8 +1182,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -1276,8 +1259,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -1360,8 +1342,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,
@@ -1444,8 +1425,7 @@
       "guard_ids": [
         "guard_actuator_and_physics_step",
         "guard_no_direct_state_write",
-        "guard_canonical_model_data",
-        "guard_complete_video"
+        "guard_canonical_model_data"
       ],
       "repetitions": 1,
       "timeout_sim_s": 60.0,

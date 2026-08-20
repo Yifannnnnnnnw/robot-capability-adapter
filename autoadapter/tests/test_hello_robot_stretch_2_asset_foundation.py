@@ -7,10 +7,8 @@ from pathlib import Path
 
 import mujoco
 import numpy as np
-import pytest
 
 from autoadapter2.libraries.robot_package import (
-    RobotPackageError,
     _validate_asset_closure,
     _validate_sources,
     _validate_tasks,
@@ -114,11 +112,12 @@ def test_stretch_public_task_candidate_is_closed_but_not_admitted() -> None:
         for reference in clause["source_refs"]
     )
 
-    assert not (PACKAGE_ROOT / "reference").exists()
+    assert (PACKAGE_ROOT / "reference" / "driver.py").is_file()
     runnable = _read(ROOT / "libraries" / "robots" / "index.json")["robots"]
     assert ROBOT_ID not in runnable
-    with pytest.raises(RobotPackageError):
-        load_robot_package(PACKAGE_ROOT)
+    package = load_robot_package(PACKAGE_ROOT)
+    assert package.robot_configuration_id == ROBOT_ID
+    assert len(package.tasks) == 20
 
 
 def test_stretch_skeleton_is_task_neutral_and_steps_real_mujoco() -> None:
