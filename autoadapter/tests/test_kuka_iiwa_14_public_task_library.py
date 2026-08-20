@@ -16,7 +16,7 @@ FRANKA_CATALOG_PATH = (
 )
 
 PINNED_COMMIT = "7ea2b501c4a698c8533cdc55a396fe2734e2649d"
-SNAPSHOT_ID = "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v1"
+SNAPSHOT_ID = "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2"
 P = (
     "The canonical KUKA iiwa 14 is a fixed-base 7-DoF serial arm with "
     "attachment_site on link7, one contact-enabled link7 sphere of radius "
@@ -121,9 +121,8 @@ COMMON_PROPERTIES = {
         "feature; it is not an end-effector waypoint."
     ),
     "contact_position": _array_property(
-        "World-frame attachment_site contact waypoint on the task entity or "
-        "fixture. Establish link7 sphere contact here before any route_position "
-        "or tool_target_position."
+        "Initial intended world-frame center position of the named "
+        "link7_contact_geom sphere when physical task contact is established."
     ),
     "target_position": _array_property(
         "Desired terminal world-frame position of the affected task entity or "
@@ -140,13 +139,12 @@ COMMON_PROPERTIES = {
         ),
     },
     "tool_target_position": _array_property(
-        "Final world-frame attachment_site waypoint that drives the contacted "
-        "task entity or fixture feature toward target_position or target_angle."
+        "Final commanded world-frame center position of link7_contact_geom used "
+        "to drive the contacted task entity toward its task target."
     ),
     "route_position": _array_property(
-        "Intermediate world-frame attachment_site waypoint after "
-        "contact_position and before tool_target_position, used when the "
-        "physical route requires it."
+        "Intermediate world-frame center position of link7_contact_geom used "
+        "while maintaining or renewing the required physical contact route."
     ),
 }
 
@@ -728,6 +726,19 @@ class KukaIiwa14PublicTaskLibraryTests(unittest.TestCase):
             self.assertEqual(parameters["required"], REQUIRED_PARAMETERS[task_id])
             self.assertEqual(parameters["properties"], COMMON_PROPERTIES)
             self.assertFalse(parameters["additional_properties"])
+
+        for property_name in (
+            "contact_position",
+            "route_position",
+            "tool_target_position",
+        ):
+            description = COMMON_PROPERTIES[property_name]["description"]
+            self.assertIn("link7_contact_geom", description)
+            self.assertNotIn("attachment_site", description)
+        self.assertIn(
+            "attachment_site",
+            COMMON_PROPERTIES["target_position"]["description"],
+        )
 
     def test_public_task_surface_has_no_status_or_grasp_semantics(self) -> None:
         sources_document, catalog, tasks = self._load_and_validate()

@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "kuka_iiwa_14",
   "package_version": "1.0.0",
-  "snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v1",
+  "snapshot_id": "kuka-iiwa-14-metaworld-source-protocols-2026-08-20-v2",
   "request_envelope": {
     "envelope": "request",
     "required": [
@@ -98,7 +98,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -124,7 +124,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -134,7 +134,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -224,7 +224,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -250,7 +250,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -260,7 +260,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -351,7 +351,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -377,7 +377,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -387,7 +387,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -477,7 +477,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -503,7 +503,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -513,7 +513,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -603,7 +603,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -629,7 +629,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -639,7 +639,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -735,7 +735,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -761,7 +761,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -771,7 +771,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -861,7 +861,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -887,7 +887,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -897,7 +897,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -987,7 +987,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1013,7 +1013,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1023,7 +1023,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -1113,7 +1113,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1139,7 +1139,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1149,7 +1149,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -1240,7 +1240,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1266,7 +1266,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1276,7 +1276,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -1367,7 +1367,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1393,7 +1393,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1403,7 +1403,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -1494,7 +1494,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1520,7 +1520,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1530,7 +1530,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -1621,7 +1621,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1647,7 +1647,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1657,7 +1657,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -1749,7 +1749,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1775,7 +1775,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1785,7 +1785,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -1875,7 +1875,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -1901,7 +1901,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -1911,7 +1911,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -2001,7 +2001,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -2027,7 +2027,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -2037,7 +2037,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -2128,7 +2128,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -2154,7 +2154,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -2164,7 +2164,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -2254,7 +2254,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -2280,7 +2280,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -2290,7 +2290,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -2380,7 +2380,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -2406,7 +2406,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -2416,7 +2416,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false
@@ -2506,7 +2506,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "World-frame attachment_site contact waypoint on the task entity or fixture. Establish link7 sphere contact here before any route_position or tool_target_position."
+                "description": "Initial intended world-frame center position of the named link7_contact_geom sphere when physical task contact is established."
               },
               "target_position": {
                 "type": "array",
@@ -2532,7 +2532,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Final world-frame attachment_site waypoint that drives the contacted task entity or fixture feature toward target_position or target_angle."
+                "description": "Final commanded world-frame center position of link7_contact_geom used to drive the contacted task entity toward its task target."
               },
               "route_position": {
                 "type": "array",
@@ -2542,7 +2542,7 @@
                 "length": 3,
                 "unit": "m",
                 "frame": "world",
-                "description": "Intermediate world-frame attachment_site waypoint after contact_position and before tool_target_position, used when the physical route requires it."
+                "description": "Intermediate world-frame center position of link7_contact_geom used while maintaining or renewing the required physical contact route."
               }
             },
             "additional_properties": false

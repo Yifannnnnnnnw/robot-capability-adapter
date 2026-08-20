@@ -405,7 +405,7 @@
         {
           "path": "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/catalog.json",
           "kind": "canonical_task_catalog",
-          "observation": "The provisional KUKA public snapshot contains 20 reviewed bare-flange contact task contracts with unchanged source scoring obligations and no grasp semantics. Conditional contact applicability still requires private instances, bindings, guards, calibrated waypoints, and contact positive-control evidence; observed_task_count remains 5 for the inspected legacy catalog below."
+          "observation": "The provisional KUKA public snapshot v2 contains 20 reviewed bare-flange contact task contracts with unchanged source scoring obligations and no grasp semantics. Contact, route, and tool-target waypoints now identify the world-frame center of link7_contact_geom, while the reach target remains attachment_site-based. Conditional contact applicability still requires private instances, bindings, guards, calibrated waypoints, and contact positive-control evidence; observed_task_count remains 5 for the inspected legacy catalog below."
         },
         {
           "path": "general_demo/libraries/assets/kuka_iiwa_14/1.0.0/asset_closure.json",
