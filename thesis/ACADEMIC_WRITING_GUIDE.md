@@ -261,6 +261,29 @@ Rewrite them as relationships:
 > execution evidence for test requirements derived from the runtime profile
 > and primitive contract
 
+#### Avoid inventory sentences
+
+Do not substitute a long series of short nouns or noun phrases for an
+explanation. A grammatically correct inventory can still hide the relationship
+among the items and make the prose sound formulaic. Group details by their
+function, state why they matter, and use another sentence when the relationship
+cannot be expressed clearly in one.
+
+Avoid:
+
+> Each capability is defined by its semantics, inputs and outputs, units and
+> reference frames, preconditions, and measurable acceptance obligations.
+
+Prefer:
+
+> A capability states what the operation means and when it may be requested.
+> Its contract fixes the conventions needed to interpret the request and
+> explains how the outcome will be judged.
+
+Retain an exhaustive noun-list sentence only when completeness is necessary,
+as in a formal specification. Submit every such exception to the thesis author
+for individual review before it enters the final text.
+
 ### 7.2 Paragraphs
 
 Each paragraph should perform one rhetorical function. A strong analytical
