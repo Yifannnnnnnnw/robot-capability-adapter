@@ -9,18 +9,16 @@
 
 ## 0. Executive decision
 
-The benchmark is not a flat comparison of generic Agent patterns. It contains two primary
-sub-benchmarks and one derived analysis:
+The benchmark is not a flat comparison of generic Agent patterns. It contains two separate
+sub-benchmarks:
 
 | Track | Scientific object | Manipulated factor | Fixed core |
 |---|---|---|---|
 | **B1: Driver Synthesis** | A generated robot-specific driver | Producer LLM backbone and the two Authority-defined generation conditions | Auto-Adapter workflow, robot inputs, suites, Harness, budgets |
 | **B2: Capability-Interface Use** | A high-level controller using one fixed interface and one fixed validated generated driver | Consumer LLM backbone | Controller architecture, prompt, capability exposure, driver, tasks, budgets |
-| **B3: Cross-Morphology Analysis** | Differences in B1 outcomes across the declared cohort | No new intervention | B1 data and fixed controls |
 
 No single aggregate score combines B1 and B2. A model may be good at synthesising drivers and poor
-at using capabilities, or the reverse. B3 is descriptive and associational, not a causal morphology
-claim.
+at using capabilities, or the reverse.
 
 The recommended B2 controller is a genuine robot task-level controller:
 
@@ -110,9 +108,10 @@ is an execution prerequisite, not cohort membership. Diagnostic cells may run as
 become available, but the formal benchmark is incomplete until all 14 configurations have the
 required B1 and B2 results. No ready subset becomes a replacement headline cohort.
 
-**Authority consistency note.** `AA2-AUTH` revision `0.19.18` still uses an older robot-set
-structure. The Authority must be synchronised with this fixed 14-robot cohort decision before
-formal benchmark evidence is collected; until then, the Authority remains normative.
+**Authority consistency note.** `AA2-AUTH` revision `0.19.18` still uses an older robot-set and
+research-question structure. The Authority must be synchronised with this fixed 14-robot,
+two-sub-benchmark scope before formal benchmark evidence is collected; until then, the Authority
+remains normative.
 
 ## 3. B1: Driver Synthesis
 
@@ -322,30 +321,15 @@ Secondary metrics:
 Controller self-reported success is logged only as a diagnostic. It never replaces the Harness
 verdict.
 
-## 5. B3: Cross-Morphology Analysis
+## 5. Pairing and analysis
 
-B3 reuses B1 outcomes from the fixed Experiment 3 cohort. Report:
-
-- per-configuration outcomes before any morphology aggregation;
-- morphology-category distributions of `pass@0`, final pass, failure class, attempts, model cost,
-  and MuJoCo resource use;
-- interactions between morphology category and generation condition as descriptive estimates;
-- exact robot configuration, actuation, dynamics, task applicability, and control structure beside
-  every morphology summary.
-
-Do not state that morphology caused a difference. Morphology co-varies with actuators, dynamics,
-tasks, assets, and controller structure.
-
-## 6. Pairing and analysis
-
-### 6.1 Statistical units
+### 5.1 Statistical units
 
 - B1 unit: one independently generated driver replicate.
 - B1 nested observations: capabilities, cases, clauses, attempts, and Task Demo trials.
 - B2 unit: one controller episode, blocked by robot, task template, seed, and controller replicate.
-- B3 unit: the B1 driver replicate, with robot configuration retained explicitly.
 
-### 6.2 Reporting
+### 5.2 Reporting
 
 1. Publish raw numerator/denominator counts and confidence intervals for every named cell.
 2. Pair the two B1 generation conditions within robot/model/generation replicate.
@@ -356,7 +340,7 @@ tasks, assets, and controller structure.
    cases as if they were independent drivers.
 6. Keep exploratory architecture-pilot results separate from formal backbone comparisons.
 
-## 7. Execution phases
+## 6. Execution phases
 
 | Phase | Scope | Exit evidence |
 |---|---|---|
@@ -365,13 +349,13 @@ tasks, assets, and controller structure.
 | P2: Full-cohort canary | 14 robots x two generation conditions, one real model, `R=1` | All 28 named cells reach trusted terminal verdicts; failures remain visible |
 | P3: Full-cohort synthesis pilot | All 14 robots, `M` Producer models, `R=3` | Variance/failure report; no protocol changes after formal inputs are fixed |
 | P4: High-level-controller pilot | H0, H1, and H2 on early runnable cells, then verify the selected architecture across all 14 robots | Architecture choice, observed ABI gaps, bounded controller contract |
-| P5: Formal B1/B2/B3 | Fixed 14-robot cohort, models, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, paired analysis, declared limitations |
+| P5: Formal B1/B2 | Fixed 14-robot cohort, models, suites, budgets, `R>=5` | Complete cell reports, per-trial videos, paired analysis, declared limitations |
 
 Early diagnostic cells are implementation evidence within the same cohort. Start them as soon as
 the minimum path exists, but retain the fixed 14-robot denominator for P2-P5 and do not delay real
 runs for speculative controller middleware or broad schemas.
 
-## 8. Required run artefacts
+## 7. Required run artefacts
 
 For each B1 generation replicate retain:
 
@@ -393,7 +377,7 @@ For each B2 episode retain:
 Human-readable IDs, versions, paths, and run IDs are sufficient. This protocol does not add
 cryptographic evidence chains, registries, lifecycle states, or promotion workflows.
 
-## 9. Literature basis
+## 8. Literature basis
 
 The architecture and metrics are grounded in four lines of robotics research:
 
@@ -431,7 +415,7 @@ Core references now present in the Zotero library; the 13 newly imported records
 The 2026 preprints are architecture and metric inputs, not established benchmark standards. Formal
 claims must remain bounded to this project's independent Direct-MuJoCo evidence.
 
-## 10. Decisions before formal runs
+## 9. Decisions before formal runs
 
 1. Confirm whether to revise the Authority from the current direct ReAct controller to H2, or keep
    ReAct as the formal path and treat H2 only as a separate exploratory experiment.
