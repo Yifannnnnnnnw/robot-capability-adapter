@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import tempfile
 
+import pytest
+
 from autoadapter2.driver_synthesis import audit_driver_source
 from autoadapter2.harness import run_private_suite
 from autoadapter2.libraries import load_robot_package
@@ -12,7 +14,6 @@ from autoadapter2.libraries import load_robot_package
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0"
 DRIVER_PATH = PACKAGE_ROOT / "reference" / "driver.py"
-TASK_ID = "mw_pick_place"
 
 
 def _read(path: Path) -> dict:
@@ -93,21 +94,21 @@ def _design(package: object) -> dict:
     return {"capabilities": capabilities}
 
 
-def _suite(package: object, design: dict) -> dict:
+def _suite(package: object, design: dict, task_id: str) -> dict:
     task = next(
         task
         for task in package.tasks  # type: ignore[attr-defined]
-        if task["task_id"] == TASK_ID
+        if task["task_id"] == task_id
     )
     instance = next(
         item
         for item in _read(package.private_dir / "instances.json")["instances"]  # type: ignore[attr-defined]
-        if item["task_id"] == TASK_ID
+        if item["task_id"] == task_id
     )
     capability = next(
         item
         for item in design["capabilities"]
-        if TASK_ID in item["covered_task_ids"]
+        if task_id in item["covered_task_ids"]
     )
     clause = task["scoring"][0]
     return {
@@ -119,10 +120,10 @@ def _suite(package: object, design: dict) -> dict:
         "whole_suite_aggregation": {"kind": "all_cases"},
         "cases": [
             {
-                "case_id": f"case-{TASK_ID}",
+                "case_id": f"case-{task_id}",
                 "capability_id": capability["capability_id"],
                 "method_name": capability["method_name"],
-                "task_id": TASK_ID,
+                "task_id": task_id,
                 "source_clause_id": clause["clause_id"],
                 "instance_id": instance["instance_id"],
                 "binding_id": instance["clause_bindings"][clause["clause_id"]],
@@ -146,10 +147,16 @@ def _suite(package: object, design: dict) -> dict:
     }
 
 
-def test_franka_reference_pick_place_passes_real_harness() -> None:
+@pytest.mark.parametrize(
+    ("task_id", "threshold"),
+    (("mw_pick_place", 0.07), ("mw_pick_place_wall", 0.07)),
+)
+def test_franka_reference_pick_place_passes_real_harness(
+    task_id: str, threshold: float
+) -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design = _design(package)
-    suite = _suite(package, design)
+    suite = _suite(package, design, task_id)
     source = DRIVER_PATH.read_text(encoding="utf-8")
     audit = audit_driver_source(
         source,
@@ -162,7 +169,7 @@ def test_franka_reference_pick_place_passes_real_harness() -> None:
     assert audit.physics_step_references > 0
     assert not audit.imports_trusted_skeleton
 
-    with tempfile.TemporaryDirectory(prefix="franka-pick-place-") as output_dir:
+    with tempfile.TemporaryDirectory(prefix=f"franka-{task_id}-") as output_dir:
         report = run_private_suite(
             package=package,
             design=design,
@@ -172,7 +179,7 @@ def test_franka_reference_pick_place_passes_real_harness() -> None:
             output_dir=output_dir,
             record_video=False,
             wall_timeout_s=150.0,
-            run_id="franka-reference-pick-place",
+            run_id=f"franka-reference-{task_id}",
             attempt=0,
         )
 
@@ -182,9 +189,9 @@ def test_franka_reference_pick_place_passes_real_harness() -> None:
     assert report["passed_task_count"] == 1
     assert len(report["trials"]) == 1
     trial = report["trials"][0]
-    assert trial["task_id"] == TASK_ID
+    assert trial["task_id"] == task_id
     assert trial["measurement_value"] is not None
-    assert trial["measurement_value"] <= 0.07
+    assert trial["measurement_value"] <= threshold
     assert trial["trial_passed"]
     evidence = trial["physical_evidence"]
     assert 0 < evidence["step_count"] <= 10000

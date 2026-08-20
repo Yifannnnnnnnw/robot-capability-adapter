@@ -20,6 +20,9 @@ ARM_ACTUATORS = tuple(f"actuator{index}" for index in range(1, 8))
 GRIPPER_ACTUATOR = "actuator8"
 GRIPPER_CLOSED = 0.0
 GRIPPER_OPEN = 255.0
+WORLD_Z_QUARTER_TURN = np.asarray(
+    ((0.0, -1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)), dtype=float
+)
 
 
 def _vector(value: Any, *, name: str) -> np.ndarray:
@@ -234,15 +237,20 @@ class ReferenceFrankaPandaDriver:
         self._set_arm_target(np.clip(target, self._lower, self._upper))
         self._idle(steps)
 
-    def _carry_pick_place_object(self, destination_xy: np.ndarray) -> None:
+    def _carry_pick_place_object(
+        self, destination_xy: np.ndarray, *, segments: int = 30
+    ) -> None:
         destination_xy = np.asarray(destination_xy, dtype=float)
         if destination_xy.shape != (2,) or not np.isfinite(destination_xy).all():
             raise ValueError("destination_xy must be a finite 2-vector")
+        segments = int(segments)
+        if segments <= 0:
+            raise ValueError("segments must be positive")
         start_hand = self._ee_position()
         start_object = self._body_position("workpiece")
         goal_hand = start_hand.copy()
         goal_hand[:2] += destination_xy - start_object[:2]
-        for fraction in np.linspace(1.0 / 30.0, 1.0, 30):
+        for fraction in np.linspace(1.0 / segments, 1.0, segments):
             waypoint = start_hand + fraction * (goal_hand - start_hand)
             self._pose_steps(
                 waypoint,
@@ -252,7 +260,13 @@ class ReferenceFrankaPandaDriver:
                 max_joint_delta=0.018,
             )
 
-    def _pick_place_hop(self, destination_xy: np.ndarray, *, high_lift: bool) -> None:
+    def _pick_place_hop(
+        self,
+        destination_xy: np.ndarray,
+        *,
+        high_lift: bool,
+        carry_segments: int = 30,
+    ) -> None:
         object_position = self._body_position("workpiece")
         grasp = object_position + np.asarray((0.0, 0.0, 0.111))
         normal_pregrasp = grasp + np.asarray((0.0, 0.0, 0.095))
@@ -292,7 +306,7 @@ class ReferenceFrankaPandaDriver:
         self._hold_arm_target(normal_target, steps=240)
         if high_target is not None:
             self._hold_arm_target(high_target, steps=240)
-        self._carry_pick_place_object(destination_xy)
+        self._carry_pick_place_object(destination_xy, segments=carry_segments)
         self._set_gripper(GRIPPER_OPEN)
         self._idle(250)
 
@@ -369,9 +383,17 @@ class ReferenceFrankaPandaDriver:
         task_id, parameters = _request(request)
         start = _vector(parameters["start_position"], name="start_position")
         target = self._reach_parameter(parameters)
-        if task_id == "mw_pick_place":
+        if task_id in {"mw_pick_place", "mw_pick_place_wall"}:
             self._arm_target = self._current_q()
             self._pick_rotation = self._ee_rotation()
+            if task_id == "mw_pick_place_wall":
+                self._pick_rotation = WORLD_Z_QUARTER_TURN @ self._pick_rotation
+                self._pick_place_hop(
+                    target[:2],
+                    high_lift=True,
+                    carry_segments=60,
+                )
+                return
             midpoint_xy = (start[:2] + target[:2]) / 2.0
             self._pick_place_hop(midpoint_xy, high_lift=False)
             self._pick_place_hop(target[:2], high_lift=True)
