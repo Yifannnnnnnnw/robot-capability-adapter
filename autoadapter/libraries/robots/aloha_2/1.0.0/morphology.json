@@ -163,6 +163,10 @@
     "contact_geoms": [
       "floor",
       "table",
+      "left/left_finger_collision",
+      "left/right_finger_collision",
+      "right/left_finger_collision",
+      "right/right_finger_collision",
       "left/left_g0",
       "left/left_g1",
       "left/left_g2",
@@ -240,6 +244,12 @@
     ]
   },
   "contact_facts": {
+    "named_active_finger_collision_meshes": [
+      "left/left_finger_collision",
+      "left/right_finger_collision",
+      "right/left_finger_collision",
+      "right/right_finger_collision"
+    ],
     "named_active_finger_spheres": [
       "left/left_g0",
       "left/left_g1",

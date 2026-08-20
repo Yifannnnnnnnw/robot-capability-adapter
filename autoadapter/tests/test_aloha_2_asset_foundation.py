@@ -209,6 +209,12 @@ FINGER_CONTACT_SPHERE_NAMES = [
     "right/right_g1",
     "right/right_g2",
 ]
+FINGER_COLLISION_MESH_NAMES = [
+    "left/left_finger_collision",
+    "left/right_finger_collision",
+    "right/left_finger_collision",
+    "right/right_finger_collision",
+]
 SITE_NAMES = [
     "worldref",
     "left/gripper",
@@ -377,6 +383,12 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
 
     observations = morphology["public_observations"]
     assert observations["site_names"] == SITE_NAMES
+    assert observations["contact_geoms"] == [
+        "floor",
+        "table",
+        *FINGER_COLLISION_MESH_NAMES,
+        *FINGER_CONTACT_SPHERE_NAMES,
+    ]
     assert observations["sensors"] == []
     assert observations["cameras"] == CAMERA_NAMES
     assert morphology["public_affordances"] == {
@@ -528,6 +540,17 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         assert float(model.geom_size[geom_id, 0]) == 0.0006
         assert int(model.geom_contype[geom_id]) == 1
         assert int(model.geom_conaffinity[geom_id]) == 1
+    for mesh_name in FINGER_COLLISION_MESH_NAMES:
+        geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, mesh_name)
+        assert geom_id >= 0
+        assert int(model.geom_type[geom_id]) == int(mujoco.mjtGeom.mjGEOM_MESH)
+        assert int(model.geom_contype[geom_id]) == 1
+        assert int(model.geom_conaffinity[geom_id]) == 1
+    assert morphology["contact_facts"] == {
+        "named_active_finger_collision_meshes": FINGER_COLLISION_MESH_NAMES,
+        "named_active_finger_spheres": FINGER_CONTACT_SPHERE_NAMES,
+        "table_and_floor": ["table", "floor"],
+    }
     for geom_name in ("table", "floor"):
         geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, geom_name)
         assert geom_id >= 0
@@ -588,12 +611,15 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "reference",
         "skeleton",
         "tasks",
     ]
     assert (PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
-    assert not (PACKAGE_ROOT / "reference").exists()
-    assert not (PACKAGE_ROOT / "tasks" / "private").exists()
+    assert (PACKAGE_ROOT / "reference" / "driver.py").is_file()
+    assert {
+        path.name for path in (PACKAGE_ROOT / "tasks" / "private").iterdir()
+    } == {"bindings.json", "guards.json", "instances.json"}
 
     research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
     candidate = next(
