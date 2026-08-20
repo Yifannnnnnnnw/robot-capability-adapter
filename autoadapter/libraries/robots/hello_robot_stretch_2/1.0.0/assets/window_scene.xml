@@ -22,6 +22,6 @@
       </body>
     </body>
     <body name="evidence_target" pos="0.13 -0.50 0.52" quat="0.7071067811865476 0 0 -0.7071067811865475" />
-    <camera name="evidence" mode="targetbody" target="evidence_target" pos="-0.42 -0.86 0.72" fovy="40" />
+    <camera name="evidence" mode="targetbody" target="evidence_target" pos="0.55 -0.85 0.78" fovy="40" />
   </worldbody>
 </mujoco>

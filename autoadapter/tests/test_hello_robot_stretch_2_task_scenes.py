@@ -331,11 +331,17 @@ def test_stretch_fixture_world_transform_is_representative() -> None:
 
     window_model = _load("window_scene.xml")
     window_data = mujoco.MjData(window_model)
+    window_camera_id = _id(
+        window_model, mujoco.mjtObj.mjOBJ_CAMERA, "evidence"
+    )
     window_joint_id = _id(window_model, mujoco.mjtObj.mjOBJ_JOINT, "window_slide")
     window_site_id = _id(
         window_model, mujoco.mjtObj.mjOBJ_SITE, "window_handle_site"
     )
     np.testing.assert_allclose(window_model.jnt_axis[window_joint_id], (0.0, 1.0, 0.0))
+    np.testing.assert_allclose(
+        window_model.cam_pos[window_camera_id], (0.55, -0.85, 0.78), atol=0.0
+    )
     mujoco.mj_forward(window_model, window_data)
     np.testing.assert_allclose(
         window_data.site_xpos[window_site_id], (0.08, -0.55, 0.52), atol=1e-9
