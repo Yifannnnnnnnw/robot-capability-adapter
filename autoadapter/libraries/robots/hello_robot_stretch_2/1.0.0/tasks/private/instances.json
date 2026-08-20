@@ -442,19 +442,19 @@
           "task_id": "mw_drawer_open",
           "task_parameters": {
             "contact_position": [
-              0.075,
-              -0.472,
-              0.53
+              0.005,
+              -0.48,
+              0.55
             ],
             "target_position": [
-              -0.005,
+              -0.075,
               -0.48,
-              0.45
+              0.55
             ],
             "tool_target_position": [
-              -0.005,
-              -0.472,
-              0.53
+              -0.075,
+              -0.48,
+              0.55
             ]
           }
         }
@@ -510,19 +510,19 @@
           "task_id": "mw_drawer_close",
           "task_parameters": {
             "contact_position": [
-              -0.005,
-              -0.472,
-              0.53
+              -0.075,
+              -0.48,
+              0.55
             ],
             "target_position": [
-              0.075,
+              0.005,
               -0.48,
-              0.45
+              0.55
             ],
             "tool_target_position": [
-              0.075,
-              -0.472,
-              0.53
+              0.005,
+              -0.48,
+              0.55
             ]
           }
         }

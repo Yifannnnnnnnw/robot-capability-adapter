@@ -8,8 +8,8 @@
     <light pos="-0.2 -0.35 1.45" dir="0.1 -0.2 -1" directional="true" />
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1" />
     <geom name="work_surface" type="box" pos="0.06 -0.48 0.33" size="0.18 0.22 0.08" mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01" rgba="0.50 0.52 0.55 1" />
-    <geom name="drawer_housing" type="box" pos="0.15 -0.48 0.45" size="0.075 0.115 0.045" mass="0" contype="0" conaffinity="0" rgba="0.20 0.24 0.28 1" />
-    <body name="drawer" pos="0.11 -0.48 0.45" quat="0.7071067811865476 0 0 -0.7071067811865475">
+    <geom name="drawer_housing" type="box" pos="0.08 -0.48 0.55" size="0.075 0.115 0.045" mass="0" contype="0" conaffinity="0" rgba="0.20 0.24 0.28 1" />
+    <body name="drawer" pos="0.04 -0.48 0.55" quat="0.7071067811865476 0 0 -0.7071067811865475">
       <joint name="drawer_slide" type="slide" axis="0 1 0" range="-0.08 0" damping="0.25" frictionloss="0.02" />
       <geom name="drawer_front" type="box" size="0.09 0.018 0.035" mass="0.06" conaffinity="2" friction="0.8 0.08 0.008" rgba="0.72 0.36 0.14 1" />
       <body name="drawer_handle" pos="0 -0.035 0">
@@ -17,7 +17,7 @@
         <site name="drawer_handle_site" size="0.004" rgba="1 1 1 0" />
       </body>
     </body>
-    <body name="evidence_target" pos="0.04 -0.48 0.45" quat="0.7071067811865476 0 0 -0.7071067811865475" />
+    <body name="evidence_target" pos="-0.03 -0.48 0.55" quat="0.7071067811865476 0 0 -0.7071067811865475" />
     <camera name="evidence" mode="targetbody" target="evidence_target" pos="-0.55 -0.84 0.71" fovy="38" />
   </worldbody>
 </mujoco>

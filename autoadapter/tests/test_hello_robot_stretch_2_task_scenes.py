@@ -289,7 +289,7 @@ def test_stretch_fixture_world_transform_is_representative() -> None:
     checks = {
         "reach_scene.xml": (("reach_goal", (0.10, -0.55, 0.43)),),
         "pick_place_scene.xml": (("workpiece", (0.08, -0.48, 0.43)),),
-        "drawer_scene.xml": (("drawer", (0.11, -0.48, 0.45)),),
+        "drawer_scene.xml": (("drawer", (0.04, -0.48, 0.55)),),
         "door_scene.xml": (("door", (0.08, -0.30, 0.47)),),
         "peg_insertion_side_scene.xml": (("peg_goal", (-0.092, -0.48, 0.48)),),
         "bin_picking_scene.xml": (("bin_goal", (-0.11, -0.48, 0.421)),),
@@ -314,6 +314,23 @@ def test_stretch_fixture_world_transform_is_representative() -> None:
     drawer_model = _load("drawer_scene.xml")
     drawer_joint_id = _id(drawer_model, mujoco.mjtObj.mjOBJ_JOINT, "drawer_slide")
     np.testing.assert_allclose(drawer_model.jnt_axis[drawer_joint_id], (0.0, 1.0, 0.0))
+    drawer_data = mujoco.MjData(drawer_model)
+    drawer_site_id = _id(
+        drawer_model, mujoco.mjtObj.mjOBJ_SITE, "drawer_handle_site"
+    )
+    mujoco.mj_forward(drawer_model, drawer_data)
+    np.testing.assert_allclose(
+        drawer_data.site_xpos[drawer_site_id], (0.005, -0.48, 0.55), atol=1e-9
+    )
+    apply_framework_reset(
+        mujoco,
+        drawer_model,
+        drawer_data,
+        {"kind": "default", "joint_positions": {"drawer_slide": -0.08}},
+    )
+    np.testing.assert_allclose(
+        drawer_data.site_xpos[drawer_site_id], (-0.075, -0.48, 0.55), atol=1e-9
+    )
 
     handle_model = _load("handle_vertical_scene.xml")
     handle_data = mujoco.MjData(handle_model)

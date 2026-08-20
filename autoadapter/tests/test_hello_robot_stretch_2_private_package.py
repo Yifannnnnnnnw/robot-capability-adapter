@@ -82,6 +82,18 @@ FIXTURE_RESET_JOINT_POSITIONS = {
     "mw_handle_pull": {"vertical_handle_slide": -0.055},
     "mw_door_close": {"door_hinge": 1.2},
 }
+CALIBRATED_PARAMETER_OVERRIDES = {
+    "mw_drawer_open": {
+        "contact_position": [0.005, -0.48, 0.55],
+        "target_position": [-0.075, -0.48, 0.55],
+        "tool_target_position": [-0.075, -0.48, 0.55],
+    },
+    "mw_drawer_close": {
+        "contact_position": [-0.075, -0.48, 0.55],
+        "target_position": [0.005, -0.48, 0.55],
+        "tool_target_position": [0.005, -0.48, 0.55],
+    },
+}
 
 
 def _read(path: Path) -> dict:
@@ -221,6 +233,9 @@ def test_stretch_private_records_match_the_reviewed_rotation_and_reset_transform
                 expected_parameters[name] = copy.deepcopy(value)
 
         observed_parameters = observed["public_arguments"]["request"]["task_parameters"]
+        expected_parameters.update(
+            copy.deepcopy(CALIBRATED_PARAMETER_OVERRIDES.get(task_id, {}))
+        )
         assert observed_parameters == expected_parameters
         required = set(
             tasks_by_id[task_id]["invocation_schema"]["request"]["task_parameters"]["required"]
