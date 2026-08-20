@@ -298,6 +298,16 @@
           "observation": "The exact composite package now exposes the existing capability-neutral ArmSerialDLSSkeleton family. A focused canonical-session check resolves the six reviewed arm joints and actuators, pinch site, and native 0-open/255-closed tendon actuator, then advances real MuJoCo through bounded arm and gripper controls. This is skeleton availability and control-liveness evidence only, not task or runnable evidence."
         },
         {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/assets/reach_scene.xml",
+          "kind": "canonical_task_scene_set",
+          "observation": "All 17 exact-composite task scenes are local and compile in MuJoCo 3.3.6 with the canonical UR5e and Robotiq model, a task_start keyframe, and an 800x600 evidence camera. All 20 private resets are finite and contact-free, and representative reach, open-door, side-insertion, and bin scenes were rendered for visual review. This is scene and reset evidence only, not reachability or task-success evidence."
+        },
+        {
+          "path": "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/private/instances.json",
+          "kind": "canonical_private_task_package",
+          "observation": "The exact composite package contains 20 private instances covering the public snapshot, matching metric bindings, core authenticity guards, 19 task-specific Robotiq pad-contact guards, one reach gripper-neutral guard, and three applicable terminal object-stability guards. Focused checks prove that no reset already satisfies its complete public criterion and that private task scenes are excluded from the model-visible canonical MJCF closure. This is private evaluation-structure evidence only, not contact execution, task success, positive control, or runnable evidence."
+        },
+        {
           "path": "autoadapter/libraries/robots/universal_robots_ur5e/1.0.0/assets/scene.xml",
           "kind": "canonical_arm_component_foundation",
           "observation": "The separately retained bare-arm package contains the complete 27-file local UR5e closure, including all 20 meshes. It loads in MuJoCo 3.3.6 as a fixed six-joint position-controlled arm ending at attachment_site, but it has no gripper and is component material rather than the contact-capable configuration indexed here."
@@ -344,7 +354,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide a calibration-only reference driver for the exact composite configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
@@ -701,6 +710,16 @@
           "observation": "The canonical morphology records the standard G1 29-DoF model identity, exact joint and actuator maps, limits, gains, joint-level force limits, free-base observations, foot and IMU sites, reset facts, and pinned source lineage without claiming runnable status."
         },
         {
+          "path": "autoadapter/libraries/robots/unitree_g1/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources",
+          "observation": "The canonical G1 public snapshot records four pinned primary sources: the exact Menagerie morphology, HumanoidBench code and paper, RoboCup Humanoid League 2025 rules, and Safety Gym implementation. These records support the 20 public contracts without claiming controller or task success."
+        },
+        {
+          "path": "autoadapter/libraries/robots/unitree_g1/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog",
+          "observation": "The canonical G1 public snapshot contains 20 distinct source-backed task contracts and 20 machine-expressible scoring clauses: thirteen HumanoidBench tasks, five RoboCup challenges, and two Safety Gym tasks. Each records its canonical 29-actuator morphology adaptation, and focused validation loads the exact MuJoCo scene. This is public contract evidence only, not private evaluation, humanoid control, task success, or runnable evidence; observed_task_count remains 5 for the inspected legacy catalog below."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/unitree_g1/g1.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Unitree G1 model and meshes are available for migration inspection."
@@ -727,8 +746,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
         "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
         "Provide an applicable humanoid-control skeleton and a calibration-only reference driver for this configuration.",
         "Add the package check for the complete canonical package.",

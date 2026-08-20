@@ -74,9 +74,23 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/skeleton/arm_serial_dls.py",
             ur5e_paths,
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/assets/reach_scene.xml",
+            ur5e_paths,
+        )
+        self.assertIn(
+            "autoadapter/libraries/robots/universal_robots_ur5e_robotiq_2f85/1.0.0/tasks/private/instances.json",
+            ur5e_paths,
+        )
         self.assertFalse(
             any(
                 "arm_serial_dls skeleton" in item
+                for item in ur5e["missing_for_runnable_package"]
+            )
+        )
+        self.assertFalse(
+            any(
+                "Create Framework-private tasks/private" in item
                 for item in ur5e["missing_for_runnable_package"]
             )
         )
@@ -112,11 +126,25 @@ class ResearchRobotIndexTests(unittest.TestCase):
             "autoadapter/libraries/robots/unitree_g1/1.0.0/morphology.json",
             g1_paths,
         )
+        self.assertIn(
+            "autoadapter/libraries/robots/unitree_g1/1.0.0/tasks/sources.json",
+            g1_paths,
+        )
+        self.assertIn(
+            "autoadapter/libraries/robots/unitree_g1/1.0.0/tasks/catalog.json",
+            g1_paths,
+        )
         self.assertFalse(
             any("asset closure" in item for item in g1["missing_for_runnable_package"])
         )
         self.assertFalse(
             any("morphology.json" in item for item in g1["missing_for_runnable_package"])
+        )
+        self.assertFalse(
+            any("20 distinct" in item for item in g1["missing_for_runnable_package"])
+        )
+        self.assertFalse(
+            any("tasks/sources.json" in item for item in g1["missing_for_runnable_package"])
         )
 
         barkour = candidates_by_id["google_barkour_vb"]
