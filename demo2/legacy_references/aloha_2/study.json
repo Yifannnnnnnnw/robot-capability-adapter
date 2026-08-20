@@ -1,7 +1,0 @@
-{
-  "robot_id": "aloha_2", "estimated_class": "bimanual_arm", "joint_dof": 16, "actuated_dof": 14, "nq": 16, "nv": 16, "nu": 14,
-  "arm_joint_names": {"left": ["left/waist", "left/shoulder", "left/elbow", "left/forearm_roll", "left/wrist_angle", "left/wrist_rotate"], "right": ["right/waist", "right/shoulder", "right/elbow", "right/forearm_roll", "right/wrist_angle", "right/wrist_rotate"]},
-  "arm_actuator_names": {"left": ["left/waist", "left/shoulder", "left/elbow", "left/forearm_roll", "left/wrist_angle", "left/wrist_rotate"], "right": ["right/waist", "right/shoulder", "right/elbow", "right/forearm_roll", "right/wrist_angle", "right/wrist_rotate"]},
-  "joint_limits_per_arm": {"waist": [-3.14158, 3.14158], "shoulder": [-1.85005, 1.25664], "elbow": [-1.76278, 1.6057], "forearm_roll": [-3.14158, 3.14158], "wrist_angle": [-1.8675, 2.23402], "wrist_rotate": [-3.14158, 3.14158], "left_finger": [0.0, 0.041], "right_finger": [0.0, 0.041]},
-  "ee_sites": {"left": "left/gripper", "right": "right/gripper"}, "base_bodies": {"left": "left/base_link", "right": "right/base_link"}, "gripper_actuators": ["left/gripper", "right/gripper"], "gripper_ctrlrange_m": [0.002, 0.037], "keyframes": ["neutral_pose"], "neutral_arm_qpos": [0.0, -0.96, 1.16, 0.0, -0.3, 0.0], "actuator_type_hint": "position", "source_commit": "da76818e269b82289eba39808e2fb91d679d6994"
-}

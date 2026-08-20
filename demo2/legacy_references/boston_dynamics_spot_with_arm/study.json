@@ -1,5 +1,0 @@
-{
-  "robot_id":"boston_dynamics_spot_with_arm","estimated_class":"quadruped_with_arm","nq":26,"nv":25,"nu":19,"base_body":"body","free_joint":"freejoint",
-  "leg_joint_groups":{"FL":["fl_hx","fl_hy","fl_kn"],"FR":["fr_hx","fr_hy","fr_kn"],"HL":["hl_hx","hl_hy","hl_kn"],"HR":["hr_hx","hr_hy","hr_kn"]},
-  "arm_joint_names":["arm_sh0","arm_sh1","arm_el0","arm_el1","arm_wr0","arm_wr1","arm_f1x"],"actuator_mapping":"each actuated joint has an identically named position actuator","home_leg_positions":[0,1.04,-1.8],"keyframes":["home"],"source_commit":"da76818e269b82289eba39808e2fb91d679d6994","notes":"Capability methods command only the 19 position actuators and step physics."
-}
