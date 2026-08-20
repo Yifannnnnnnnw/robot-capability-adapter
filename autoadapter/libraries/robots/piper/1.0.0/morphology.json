@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "piper",
+  "robot_configuration_id": "piper",
+  "package_version": "1.0.0",
+  "morphology_kind": "fixed_base_serial_manipulator",
+  "base_type": "fixed",
+  "degrees_of_freedom": {
+    "arm": 6,
+    "actuated_gripper": 1,
+    "passive_mirrored_finger": 1
+  },
+  "mjcf_entrypoint": "assets/piper.xml",
+  "public_control": {
+    "actuation": "joint_position",
+    "transmission": "direct_joint",
+    "joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6",
+      "joint7"
+    ],
+    "arm_joint_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6"
+    ],
+    "arm_actuator_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6"
+    ],
+    "actuator_names": [
+      "joint1",
+      "joint2",
+      "joint3",
+      "joint4",
+      "joint5",
+      "joint6",
+      "gripper"
+    ],
+    "actuator_joint_map": {
+      "joint1": "joint1",
+      "joint2": "joint2",
+      "joint3": "joint3",
+      "joint4": "joint4",
+      "joint5": "joint5",
+      "joint6": "joint6",
+      "gripper": "joint7"
+    },
+    "joint_types": {
+      "joint1": "hinge",
+      "joint2": "hinge",
+      "joint3": "hinge",
+      "joint4": "hinge",
+      "joint5": "hinge",
+      "joint6": "hinge",
+      "joint7": "slide",
+      "joint8": "slide"
+    },
+    "arm_joint_limits_rad": {
+      "joint1": [-2.618, 2.618],
+      "joint2": [0.0, 3.14],
+      "joint3": [-2.697, 0.0],
+      "joint4": [-1.832, 1.832],
+      "joint5": [-1.22, 1.22],
+      "joint6": [-3.14, 3.14]
+    },
+    "actuator_ctrlrange_rad": {
+      "joint1": [-2.618, 2.618],
+      "joint2": [0.0, 3.14],
+      "joint3": [-2.697, 0.0],
+      "joint4": [-1.832, 1.832],
+      "joint5": [-1.22, 1.22],
+      "joint6": [-3.14, 3.14]
+    },
+    "arm_actuator_forcerange": {
+      "joint1": [-100.0, 100.0],
+      "joint2": [-100.0, 100.0],
+      "joint3": [-100.0, 100.0],
+      "joint4": [-100.0, 100.0],
+      "joint5": [-100.0, 100.0],
+      "joint6": [-100.0, 100.0]
+    },
+    "gripper_joint_name": "joint7",
+    "gripper_joint_range_m": [0.0, 0.035],
+    "gripper_ctrl_range_m": [0.0, 0.035],
+    "gripper_forcerange": [-10.0, 10.0],
+    "passive_joint_names": ["joint8"],
+    "passive_joint_range_m": [-0.035, 0.0],
+    "gripper_coupling": {
+      "actuator_name": "gripper",
+      "controlled_joint": "joint7",
+      "passive_joint": "joint8",
+      "relation": "joint8 = -joint7",
+      "polycoef": [0.0, -1.0, 0.0, 0.0, 0.0]
+    },
+    "gripper_direction": {
+      "closed": 0.0,
+      "open": 0.035,
+      "unit": "m"
+    }
+  },
+  "public_observations": {
+    "end_effector_site": "ee_site",
+    "end_effector_body": "link6",
+    "contact_geoms": {
+      "count": 4,
+      "type": "box",
+      "named": false,
+      "contype": 1,
+      "conaffinity": 1,
+      "bodies": {
+        "link7": 2,
+        "link8": 2
+      }
+    }
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control",
+      "gripper_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "end_effector_pose",
+      "named_body_pose",
+      "named_site_pose",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default": "model_qpos0",
+    "available_keyframe": "home",
+    "home_qpos": [0.0, 1.57, -1.3485, 0.0, 0.0, 0.0, 0.0, 0.0],
+    "home_ctrl": [0.0, 1.57, -1.3485, 0.0, 0.0, 0.0, 0.0]
+  },
+  "asset_provenance": {
+    "model_title": "Piper MJCF model closure",
+    "upstream": "https://github.com/981526092/auto-adapter/tree/585eb1f1fde33f17f5f9a1e169a18dd41f97b586/assets/mjcf/piper",
+    "derived_revision": "585eb1f1fde33f17f5f9a1e169a18dd41f97b586",
+    "license": "MIT",
+    "license_file": "assets/LICENSE",
+    "source_file": "assets/SOURCE.md"
+  }
+}
