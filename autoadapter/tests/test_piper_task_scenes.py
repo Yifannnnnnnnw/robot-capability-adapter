@@ -237,6 +237,6 @@ def test_piper_scenes_load_step_and_expose_structural_contract() -> None:
 def test_piper_task_scene_package_remains_non_runtime() -> None:
     runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
     assert "piper" not in runnable_index["robots"]
-    assert not (PIPER_PACKAGE_ROOT / "tasks" / "private").exists()
+    assert (PIPER_PACKAGE_ROOT / "tasks" / "private").is_dir()
     assert not (PIPER_PACKAGE_ROOT / "skeleton").exists()
     assert not (PIPER_PACKAGE_ROOT / "reference").exists()
