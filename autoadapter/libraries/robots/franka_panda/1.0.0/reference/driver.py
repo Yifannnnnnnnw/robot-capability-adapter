@@ -85,6 +85,10 @@ class ReferenceFrankaPandaDriver:
             [self.data.qpos[address] for address in self._qpos_addresses], dtype=float
         )
 
+    def _body_position(self, name: str) -> np.ndarray:
+        body_id = self._id(mujoco.mjtObj.mjOBJ_BODY, name)
+        return np.asarray(self.data.xpos[body_id], dtype=float).copy()
+
     def _set_arm_target(self, target: np.ndarray) -> None:
         self._arm_target = np.asarray(target, dtype=float).copy()
         for actuator_id, value in zip(self._actuator_ids, target):
@@ -157,6 +161,140 @@ class ReferenceFrankaPandaDriver:
         for _ in range(int(steps)):
             self._hold_arm()
             mujoco.mj_step(self.model, self.data)
+
+    def _pose_steps(
+        self,
+        position: np.ndarray,
+        rotation: np.ndarray,
+        *,
+        steps: int,
+        gain: float = 1.5,
+        max_joint_delta: float = 0.05,
+    ) -> None:
+        position = _vector(position, name="target_position")
+        rotation = np.asarray(rotation, dtype=float)
+        if rotation.shape != (3, 3) or not np.isfinite(rotation).all():
+            raise ValueError("target_rotation must be a finite 3x3 matrix")
+        if int(steps) <= 0:
+            raise ValueError("steps must be positive")
+        if not math.isfinite(gain) or gain <= 0.0:
+            raise ValueError("gain must be a positive finite number")
+        if not math.isfinite(max_joint_delta) or max_joint_delta <= 0.0:
+            raise ValueError("max_joint_delta must be a positive finite number")
+
+        orientation_weight = 0.35
+        damping = 0.03
+        for _ in range(int(steps)):
+            current_rotation = self._ee_rotation()
+            rotation_error = 0.5 * sum(
+                np.cross(current_rotation[:, axis], rotation[:, axis])
+                for axis in range(3)
+            )
+            error = np.concatenate(
+                (
+                    position - self._ee_position(),
+                    orientation_weight * rotation_error,
+                )
+            )
+            position_jacobian = np.zeros((3, int(self.model.nv)), dtype=float)
+            rotation_jacobian = np.zeros((3, int(self.model.nv)), dtype=float)
+            mujoco.mj_jacBody(
+                self.model,
+                self.data,
+                position_jacobian,
+                rotation_jacobian,
+                self._hand,
+            )
+            arm_jacobian = np.vstack(
+                (
+                    position_jacobian[:, self._qvel_addresses],
+                    orientation_weight
+                    * rotation_jacobian[:, self._qvel_addresses],
+                )
+            )
+            system = arm_jacobian @ arm_jacobian.T + (damping * damping) * np.eye(6)
+            delta = arm_jacobian.T @ np.linalg.solve(system, error)
+            delta_norm = float(np.linalg.norm(delta))
+            if delta_norm > max_joint_delta:
+                delta *= max_joint_delta / delta_norm
+            desired = np.clip(
+                self._current_q() + gain * delta,
+                self._lower,
+                self._upper,
+            )
+            self._set_arm_target(desired)
+            mujoco.mj_step(self.model, self.data)
+
+    def _hold_arm_target(self, target: np.ndarray, *, steps: int) -> None:
+        target = np.asarray(target, dtype=float)
+        if target.shape != (len(self._actuator_ids),) or not np.isfinite(target).all():
+            raise ValueError("arm target must contain one finite value per arm actuator")
+        if int(steps) <= 0:
+            raise ValueError("steps must be positive")
+        self._set_arm_target(np.clip(target, self._lower, self._upper))
+        self._idle(steps)
+
+    def _carry_pick_place_object(self, destination_xy: np.ndarray) -> None:
+        destination_xy = np.asarray(destination_xy, dtype=float)
+        if destination_xy.shape != (2,) or not np.isfinite(destination_xy).all():
+            raise ValueError("destination_xy must be a finite 2-vector")
+        start_hand = self._ee_position()
+        start_object = self._body_position("workpiece")
+        goal_hand = start_hand.copy()
+        goal_hand[:2] += destination_xy - start_object[:2]
+        for fraction in np.linspace(1.0 / 30.0, 1.0, 30):
+            waypoint = start_hand + fraction * (goal_hand - start_hand)
+            self._pose_steps(
+                waypoint,
+                self._pick_rotation,
+                steps=15,
+                gain=1.8,
+                max_joint_delta=0.018,
+            )
+
+    def _pick_place_hop(self, destination_xy: np.ndarray, *, high_lift: bool) -> None:
+        object_position = self._body_position("workpiece")
+        grasp = object_position + np.asarray((0.0, 0.0, 0.111))
+        normal_pregrasp = grasp + np.asarray((0.0, 0.0, 0.095))
+        high_pregrasp = grasp + np.asarray((0.0, 0.0, 0.13))
+
+        self._set_gripper(GRIPPER_OPEN)
+        self._idle(30)
+        high_target = None
+        if high_lift:
+            self._pose_steps(
+                high_pregrasp,
+                self._pick_rotation,
+                steps=1200,
+            )
+            high_target = self._current_q()
+        self._pose_steps(
+            normal_pregrasp,
+            self._pick_rotation,
+            steps=1200,
+        )
+        normal_target = self._current_q()
+        self._pose_steps(
+            grasp,
+            self._pick_rotation,
+            steps=1200,
+            gain=1.2,
+            max_joint_delta=0.04,
+        )
+        self._set_gripper(GRIPPER_CLOSED)
+        self._pose_steps(
+            grasp,
+            self._pick_rotation,
+            steps=250,
+            gain=1.0,
+            max_joint_delta=0.02,
+        )
+        self._hold_arm_target(normal_target, steps=240)
+        if high_target is not None:
+            self._hold_arm_target(high_target, steps=240)
+        self._carry_pick_place_object(destination_xy)
+        self._set_gripper(GRIPPER_OPEN)
+        self._idle(250)
 
     def _reach_parameter(
         self, task_parameters: Mapping[str, Any], key: str = "target_position"
@@ -231,6 +369,13 @@ class ReferenceFrankaPandaDriver:
         task_id, parameters = _request(request)
         start = _vector(parameters["start_position"], name="start_position")
         target = self._reach_parameter(parameters)
+        if task_id == "mw_pick_place":
+            self._arm_target = self._current_q()
+            self._pick_rotation = self._ee_rotation()
+            midpoint_xy = (start[:2] + target[:2]) / 2.0
+            self._pick_place_hop(midpoint_xy, high_lift=False)
+            self._pick_place_hop(target[:2], high_lift=True)
+            return
         grasp = _vector(
             parameters.get("grasp_position", start + np.asarray((0.0, 0.0, 0.005))),
             name="grasp_position",
