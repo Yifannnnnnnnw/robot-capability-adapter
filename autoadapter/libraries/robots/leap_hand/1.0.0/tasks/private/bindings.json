@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+  "bindings": [
+    {
+      "binding_id": "binding-ec_pinch",
+      "metric": "ec_pinch_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_dynamic_tripod",
+      "metric": "ec_dynamic_tripod_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_squeeze",
+      "metric": "ec_squeeze_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_twiddle",
+      "metric": "ec_twiddle_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_rock",
+      "metric": "ec_rock_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_rock_ii",
+      "metric": "ec_rock_ii_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_radial_roll",
+      "metric": "ec_radial_roll_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_index_roll",
+      "metric": "ec_index_roll_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_full_roll",
+      "metric": "ec_full_roll_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_rotary_step",
+      "metric": "ec_rotary_step_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_interdigital_step",
+      "metric": "ec_interdigital_step_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_linear_step",
+      "metric": "ec_linear_step_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-ec_palmar_slide",
+      "metric": "ec_palmar_slide_successful_trial_count",
+      "unit": "trial",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["dexterity_object_geom"]}
+    },
+    {
+      "binding_id": "binding-gym_hand_reach_all_fingertips",
+      "metric": "concatenated_fingertip_cartesian_l2_error",
+      "unit": "m",
+      "kind": "final_joint_position_error",
+      "parameters": {"joint_name": "if_mcp", "target_argument": "request.task_parameters.max_control_steps"}
+    },
+    {
+      "binding_id": "binding-gym_hand_manipulate_block_full_pose-position",
+      "metric": "block_target_euclidean_position_error",
+      "unit": "m",
+      "kind": "final_body_position_error",
+      "parameters": {"body_name": "block_object", "target_argument": "request.task_parameters.target_position_offset_m"}
+    },
+    {
+      "binding_id": "binding-gym_hand_manipulate_block_full_pose-orientation",
+      "metric": "block_target_shortest_quaternion_angle_error",
+      "unit": "rad",
+      "kind": "body_yaw_change_deg",
+      "parameters": {"body_name": "block_object"}
+    },
+    {
+      "binding_id": "binding-robel_dclaw_pose_fixed",
+      "metric": "maximum_absolute_joint_position_error",
+      "unit": "rad",
+      "kind": "final_joint_position_error",
+      "parameters": {"joint_name": "if_mcp", "target_argument": "request.task_parameters.max_control_steps"}
+    },
+    {
+      "binding_id": "binding-robel_dclaw_turn_fixed",
+      "metric": "absolute_wrapped_fixture_target_angle_error",
+      "unit": "rad",
+      "kind": "final_joint_position_error",
+      "parameters": {"joint_name": "fixture_hinge", "target_argument": "request.task_parameters.target_fixture_angle_rad"}
+    },
+    {
+      "binding_id": "binding-robel_dclaw_screw_fixed",
+      "metric": "maximum_absolute_unbounded_fixture_target_angle_error",
+      "unit": "rad",
+      "kind": "final_joint_position_error",
+      "parameters": {"joint_name": "fixture_hinge", "target_argument": "request.task_parameters.target_fixture_velocity_rad_s"}
+    },
+    {
+      "binding_id": "binding-myosuite_object_hold_fixed-solved",
+      "metric": "object_hold_solved_control_step_count",
+      "unit": "control_step",
+      "kind": "physics_step_count",
+      "parameters": {}
+    },
+    {
+      "binding_id": "binding-myosuite_object_hold_fixed-no-drop",
+      "metric": "object_hold_drop_event_count",
+      "unit": "event",
+      "kind": "contact_sample_count",
+      "parameters": {}
+    },
+    {
+      "binding_id": "binding-myosuite_baoding_p1",
+      "metric": "mean_two_ball_solved_fraction",
+      "unit": "ratio",
+      "kind": "named_geom_contact_step_count",
+      "parameters": {"geom_names": ["baoding_ball_a_geom", "baoding_ball_b_geom"]}
+    }
+  ]
+}

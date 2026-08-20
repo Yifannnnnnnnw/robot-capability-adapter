@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+  "guards": [
+    {"guard_id": "guard_actuator_and_physics_step", "kind": "actuator_and_physics_step_required"},
+    {"guard_id": "guard_no_direct_state_write", "kind": "no_direct_state_write"},
+    {"guard_id": "guard_canonical_model_data", "kind": "canonical_model_data"},
+    {"guard_id": "guard_complete_video", "kind": "complete_video"},
+    {
+      "guard_id": "guard-contact-dexterity",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": ["if_tip", "mf_tip", "rf_tip", "th_tip"],
+      "task_geom_names": ["dexterity_object_geom"],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-block",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": ["if_tip", "mf_tip", "rf_tip", "th_tip"],
+      "task_geom_names": ["block_object_geom"],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-fixture",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": ["if_tip", "mf_tip", "rf_tip", "th_tip"],
+      "task_geom_names": ["fixture_handle_geom"],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-hold-object",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": ["if_tip", "mf_tip", "rf_tip", "th_tip"],
+      "task_geom_names": ["hold_object_geom"],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "guard-contact-baoding-balls",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": ["if_tip", "mf_tip", "rf_tip", "th_tip"],
+      "task_geom_names": ["baoding_ball_a_geom", "baoding_ball_b_geom"],
+      "minimum_steps": 1
+    }
+  ]
+}
