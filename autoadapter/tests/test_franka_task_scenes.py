@@ -251,14 +251,18 @@ class FrankaTaskSceneTests(unittest.TestCase):
                 for item in scene_observations
             )
         )
+        evidence_observation = next(
+            item
+            for item in scene_observations
+            if item["kind"] == "tracked_reference_positive_control_record"
+        )
+        self.assertEqual(evidence_observation["path"], "autoadapter/evidence/README.md")
+        self.assertIn("20/20", evidence_observation["observation"])
+        self.assertIn("videos", evidence_observation["observation"])
         missing = candidate["missing_for_runnable_package"]
         self.assertFalse(any("task-specific MuJoCo scenes" in item for item in missing))
-        for phrase in (
-            "full 20-task Direct-MuJoCo positive control",
-            "positive control",
-            "dynamic canary",
-            "runnable index",
-        ):
+        self.assertFalse(any("positive control" in item for item in missing))
+        for phrase in ("dynamic canary", "runnable index"):
             self.assertTrue(any(phrase in item for item in missing), phrase)
 
 

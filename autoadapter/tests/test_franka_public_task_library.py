@@ -192,21 +192,26 @@ class FrankaPublicTaskLibraryTests(unittest.TestCase):
         self.assertIn("17", scene_observation["observation"])
         self.assertIn("local", scene_observation["observation"].lower())
         self.assertIn("tested", scene_observation["observation"].lower())
-        for phrase in (
-            "full 20-task Direct-MuJoCo positive control",
-            "positive control",
-            "dynamic canary",
-            "runnable index",
-        ):
+        evidence_observation = next(
+            item
+            for item in candidate["locally_observed_source_material"]
+            if item["kind"] == "tracked_reference_positive_control_record"
+        )
+        self.assertEqual(evidence_observation["path"], "autoadapter/evidence/README.md")
+        self.assertIn("20/20", evidence_observation["observation"])
+        self.assertIn("videos", evidence_observation["observation"])
+        missing = candidate["missing_for_runnable_package"]
+        self.assertFalse(any("positive control" in item for item in missing))
+        for phrase in ("dynamic canary", "runnable index"):
             self.assertTrue(
-                any(phrase in item for item in candidate["missing_for_runnable_package"]),
+                any(phrase in item for item in missing),
                 phrase,
             )
         self.assertFalse(
-            any("20 distinct applicable source-backed tasks" in item for item in candidate["missing_for_runnable_package"])
+            any("20 distinct applicable source-backed tasks" in item for item in missing)
         )
         self.assertFalse(
-            any("Create tasks/sources.json" in item for item in candidate["missing_for_runnable_package"])
+            any("Create tasks/sources.json" in item for item in missing)
         )
 
 

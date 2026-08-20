@@ -88,7 +88,7 @@
       ],
       "missing_for_runnable_package": [
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
-        "Perform final human package and admission review, then add Franka Panda to the runnable index only if the dynamic canary passes; the reference positive control alone does not admit it."
+        "Perform final human package and admission review, then add Franka Panda to the runnable index only if the dynamic canary passes; prior reference evidence alone does not admit it."
       ]
     },
     {
