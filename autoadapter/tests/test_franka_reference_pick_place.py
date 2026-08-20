@@ -153,6 +153,7 @@ def _suite(package: object, design: dict, task_id: str) -> dict:
         ("mw_pick_place", 0.07),
         ("mw_pick_place_wall", 0.07),
         ("mw_peg_insertion_side", 0.07),
+        ("mw_bin_picking", 0.05),
     ),
 )
 def test_franka_reference_object_case_passes_real_harness(

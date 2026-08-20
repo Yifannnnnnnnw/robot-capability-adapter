@@ -422,12 +422,20 @@ class ReferenceFrankaPandaDriver:
         start = _vector(parameters["start_position"], name="start_position")
         target = self._reach_parameter(parameters)
         if task_id in {
+            "mw_bin_picking",
             "mw_pick_place",
             "mw_pick_place_wall",
             "mw_peg_insertion_side",
         }:
             self._arm_target = self._current_q()
             self._pick_rotation = self._ee_rotation()
+            if task_id == "mw_bin_picking":
+                self._pick_place_hop(
+                    target[:2],
+                    high_lift=True,
+                    carry_segments=90,
+                )
+                return
             if task_id == "mw_peg_insertion_side":
                 self._insert_peg(target)
                 return
