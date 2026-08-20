@@ -389,7 +389,13 @@ def test_piper_is_non_runtime_and_package_has_no_runnable_support_files() -> Non
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
+        "tasks",
     ]
-    assert not (PACKAGE_ROOT / "tasks").exists()
+    tasks_root = PACKAGE_ROOT / "tasks"
+    assert sorted(path.name for path in tasks_root.iterdir()) == [
+        "catalog.json",
+        "sources.json",
+    ]
+    assert not (tasks_root / "private").exists()
     assert not (PACKAGE_ROOT / "skeleton").exists()
     assert not (PACKAGE_ROOT / "reference").exists()
