@@ -302,8 +302,11 @@ def test_stretch_private_records_match_reviewed_transform_and_replacements() -> 
                 **ROBOT_RESET_JOINT_POSITIONS,
                 **FIXTURE_RESET_JOINT_POSITIONS.get(task_id, {}),
             },
-            "actuator_controls": ROBOT_RESET_ACTUATOR_CONTROLS,
+            "actuator_controls": copy.deepcopy(ROBOT_RESET_ACTUATOR_CONTROLS),
         }
+        if task_id == "mw_peg_insertion_side":
+            expected_reset["joint_positions"]["joint_wrist_yaw"] = 0.3
+            expected_reset["actuator_controls"]["wrist_yaw"] = 0.3
         assert observed["reset"] == expected_reset
         if task_id in shared_task_ids:
             assert observed["clause_bindings"] == template_by_task[task_id][
@@ -373,6 +376,11 @@ def test_stretch_framework_resets_load_and_step_every_referenced_scene() -> None
         mujoco.mj_forward(model, data)
 
         for name, expected in ROBOT_RESET_JOINT_POSITIONS.items():
+            if (
+                instance["task_id"] == "mw_peg_insertion_side"
+                and name == "joint_wrist_yaw"
+            ):
+                expected = 0.3
             joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
             assert joint_id >= 0, f"{instance['task_id']}: {name}"
             address = int(model.jnt_qposadr[joint_id])
@@ -385,6 +393,11 @@ def test_stretch_framework_resets_load_and_step_every_referenced_scene() -> None
             address = int(model.jnt_qposadr[joint_id])
             assert data.qpos[address] == expected
         for name, expected in ROBOT_RESET_ACTUATOR_CONTROLS.items():
+            if (
+                instance["task_id"] == "mw_peg_insertion_side"
+                and name == "wrist_yaw"
+            ):
+                expected = 0.3
             actuator_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
             assert actuator_id >= 0, f"{instance['task_id']}: {name}"
             assert data.ctrl[actuator_id] == expected

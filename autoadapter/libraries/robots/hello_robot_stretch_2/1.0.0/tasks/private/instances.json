@@ -1221,7 +1221,7 @@
           "joint_arm_l2": 0.0,
           "joint_arm_l1": 0.0,
           "joint_arm_l0": 0.0,
-          "joint_wrist_yaw": 0.0,
+          "joint_wrist_yaw": 0.3,
           "joint_gripper_slide": 0.04,
           "joint_head_pan": 0.0,
           "joint_head_tilt": 0.0
@@ -1231,7 +1231,7 @@
           "turn": 0.0,
           "lift": 0.0,
           "arm_extend": 0.0,
-          "wrist_yaw": 0.0,
+          "wrist_yaw": 0.3,
           "grip": 0.04,
           "head_pan": 0.0,
           "head_tilt": 0.0

@@ -282,7 +282,7 @@ def test_stretch_static_fixtures_accept_robot_collision_layer() -> None:
             )
 
 
-def test_stretch_private_resets_have_no_deep_initial_penetration() -> None:
+def test_stretch_private_resets_and_idle_settling_have_no_deep_penetration() -> None:
     instances = json.loads(
         (PACKAGE_ROOT / "tasks/private/instances.json").read_text(encoding="utf-8")
     )["instances"]
@@ -295,23 +295,26 @@ def test_stretch_private_resets_have_no_deep_initial_penetration() -> None:
             data,
             instance.get("reset"),
         )
-        contacts = [
-            (
-                float(contact.dist),
-                mujoco.mj_id2name(
-                    model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom1)
-                ),
-                mujoco.mj_id2name(
-                    model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom2)
-                ),
+        for idle_step in range(101):
+            if idle_step:
+                mujoco.mj_step(model, data)
+            contacts = [
+                (
+                    float(contact.dist),
+                    mujoco.mj_id2name(
+                        model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom1)
+                    ),
+                    mujoco.mj_id2name(
+                        model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom2)
+                    ),
+                )
+                for contact in data.contact[: data.ncon]
+            ]
+            deepest = min(contacts, default=(0.0, None, None))
+            assert deepest[0] >= -0.005, (
+                f"{instance['task_id']}: idle-step {idle_step} contact "
+                f"{deepest[1:]} penetrates {-deepest[0]:.6f} m"
             )
-            for contact in data.contact[: data.ncon]
-        ]
-        deepest = min(contacts, default=(0.0, None, None))
-        assert deepest[0] >= -0.005, (
-            f"{instance['task_id']}: initial contact {deepest[1:]} penetrates "
-            f"{-deepest[0]:.6f} m"
-        )
 
 
 def test_stretch_fixture_world_transform_is_representative() -> None:
