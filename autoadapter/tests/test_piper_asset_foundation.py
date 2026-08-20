@@ -427,6 +427,7 @@ def test_piper_is_non_runtime_and_package_has_no_reference() -> None:
     assert "tasks/private/instances.json" not in missing
     assert "arm_serial_dls skeleton" not in missing
     assert "calibration-only reference driver" not in missing
+    assert "package check" not in missing
     assert "positive control" not in missing
     assert "dynamic canary" in missing
 

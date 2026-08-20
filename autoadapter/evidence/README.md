@@ -33,6 +33,8 @@ Run `franka-reference-positive-control-20260820T034710Z`, on mainline commit
 Framework-owned reference driver and real MuJoCo 3.3.6 physics:
 
 - pipeline, physical execution, and structured Harness validation: passed;
+- the complete canonical package loader check passed for the fixed package
+  identity, 20 tasks, one source record, snapshot, and local MJCF closure;
 - tasks, source clauses, and private cases: `20/20` each;
 - actuator control observed before physics stepping and changed from reset in
   every trial;

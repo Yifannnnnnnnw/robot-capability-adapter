@@ -371,7 +371,6 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Add the package check for the complete canonical package.",
         "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
       ]
     },
