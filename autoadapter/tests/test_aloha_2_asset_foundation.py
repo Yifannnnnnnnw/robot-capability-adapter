@@ -53,15 +53,30 @@ EXPECTED_INVENTORY = (
     "assets/vx300s_8_custom_finger_left.stl",
     "assets/vx300s_8_custom_finger_right.stl",
     "assets/wormseye_mount.stl",
+    "button_front_scene.xml",
+    "button_topdown_scene.xml",
+    "dial_scene.xml",
+    "door_scene.xml",
+    "drawer_scene.xml",
+    "faucet_scene.xml",
     "filtered_cartesian_actuators.xml",
+    "handle_vertical_scene.xml",
     "joint_position_actuators.xml",
     "keyframe_ctrl.xml",
     "keyframe_no_act.xml",
+    "lever_scene.xml",
     "mjx_aloha.patch",
     "mjx_filtered_cartesian_actuators.patch",
     "mjx_scene.patch",
+    "pick_place_scene.xml",
+    "pick_place_wall_scene.xml",
+    "push_to_goal_scene.xml",
     "reach_scene.xml",
     "scene.xml",
+    "soccer_scene.xml",
+    "sweep_into_goal_scene.xml",
+    "wall_scene.xml",
+    "window_scene.xml",
 )
 
 EXPECTED_RUNTIME_CLOSURE = (
@@ -394,7 +409,7 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
         if path.is_file()
     )
     assert canonical_inventory == list(EXPECTED_INVENTORY)
-    assert len(canonical_inventory) == 45
+    assert len(canonical_inventory) == 60
     assert not any(path.is_symlink() for path in ASSETS_ROOT.rglob("*"))
 
     for xml_path in sorted(ASSETS_ROOT.glob("*.xml")):

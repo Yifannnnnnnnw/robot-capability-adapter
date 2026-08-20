@@ -1,0 +1,12 @@
+<mujoco model="aloha_2_button_topdown">
+  <include file="scene.xml" />
+  <worldbody>
+    <geom name="top_button_housing" type="cylinder" pos="0.22 0.10 0.03" size="0.045 0.01" mass="0" contype="0" conaffinity="0" rgba="0.20 0.24 0.28 1" />
+    <body name="top_button" pos="0.22 0.10 0.065">
+      <joint name="top_button_slide" type="slide" axis="0 0 1" range="-0.05 0" damping="0.35" frictionloss="0.02" />
+      <geom name="top_button_geom" type="cylinder" size="0.028 0.012" mass="0.02" conaffinity="2" friction="0.8 0.08 0.008" rgba="0.12 0.58 0.92 1" />
+      <site name="top_button_site" size="0.004" rgba="1 1 1 0" />
+    </body>
+    <camera name="evidence" pos="0 -1.1 0.60" xyaxes="1 0 0 0 0.2 0.8" />
+  </worldbody>
+</mujoco>

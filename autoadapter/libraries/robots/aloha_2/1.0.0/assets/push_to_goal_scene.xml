@@ -1,0 +1,13 @@
+<mujoco model="aloha_2_push_to_goal">
+  <include file="scene.xml" />
+  <worldbody>
+    <body name="workpiece" pos="0.2 0.10 0.006">
+      <freejoint />
+      <geom name="workpiece_geom" type="cylinder" size="0.032 0.006" mass="0.025" conaffinity="2" friction="0.8 0.08 0.008" condim="4" rgba="0.10 0.55 0.92 1" />
+    </body>
+    <body name="push_goal" pos="0.2 0.18 0.002">
+      <geom name="push_goal_marker" type="cylinder" size="0.04 0.002" contype="0" conaffinity="0" rgba="0.12 0.72 0.38 0.55" />
+    </body>
+    <camera name="evidence" pos="0 -1.1 0.60" xyaxes="1 0 0 0 0.2 0.8" />
+  </worldbody>
+</mujoco>

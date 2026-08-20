@@ -1,0 +1,15 @@
+<mujoco model="aloha_2_faucet">
+  <include file="scene.xml" />
+  <worldbody>
+    <geom name="faucet_base" type="cylinder" pos="0.17 0.12 0.03" size="0.035 0.03" mass="0" contype="0" conaffinity="0" rgba="0.18 0.30 0.40 1" />
+    <body name="faucet_handle" pos="0.17 0.12 0.06">
+      <joint name="faucet_hinge" type="hinge" axis="0 0 1" range="0 1.2" limited="true" damping="0.10" frictionloss="0.008" />
+      <geom name="faucet_arm" type="capsule" fromto="0 0 0 0.08 0 0" size="0.009" mass="0.025" conaffinity="2" friction="0.9 0.08 0.008" rgba="0.12 0.58 0.86 1" />
+      <body name="faucet_tip" pos="0.08 0 0">
+        <geom name="faucet_tip_geom" type="sphere" size="0.014" mass="0.008" conaffinity="2" friction="1.0 0.08 0.008" rgba="0.10 0.74 0.92 1" />
+        <site name="faucet_tip_site" size="0.004" rgba="1 1 1 0" />
+      </body>
+    </body>
+    <camera name="evidence" pos="0 -1.1 0.60" xyaxes="1 0 0 0 0.2 0.8" />
+  </worldbody>
+</mujoco>
