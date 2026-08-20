@@ -851,7 +851,7 @@
           "right_driver_joint": 0.0,
           "right_finger_joint": 0.0,
           "right_inner_knuckle_joint": 0.0,
-          "vertical_handle_slide": -0.05
+          "vertical_handle_slide": -0.055
         },
         "actuator_controls": {
           "act1": 0.0,

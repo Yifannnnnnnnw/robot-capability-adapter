@@ -47,7 +47,7 @@ PANDA_HOME_ACTUATOR_CONTROLS = {
 }
 FIXTURE_RESET_JOINT_POSITIONS = {
     "mw_drawer_close": {"drawer_slide": -0.08},
-    "mw_handle_pull": {"vertical_handle_slide": -0.05},
+    "mw_handle_pull": {"vertical_handle_slide": -0.055},
     "mw_door_close": {"door_hinge": 1.2},
 }
 
@@ -200,7 +200,7 @@ def test_franka_private_package_loads_and_preserves_boundary() -> None:
     assert all(instance["timeout_sim_s"] == 20.0 for instance in instances["instances"])
 
 
-def test_franka_private_records_are_the_mechanical_so101_transform() -> None:
+def test_franka_private_records_are_the_reviewed_so101_transform() -> None:
     template = _read(SO101_ROOT / "tasks/private/instances.json")["instances"]
     actual = _read(PACKAGE_ROOT / "tasks/private/instances.json")["instances"]
     assert len(actual) == len(template) == 20
@@ -215,11 +215,15 @@ def test_franka_private_records_are_the_mechanical_so101_transform() -> None:
         assert observed["task_id"] == expected["task_id"]
         assert observed["instance_id"] == expected["instance_id"].replace("so101-", "franka-")
         assert observed["scene_entrypoint"] == expected["scene_entrypoint"]
+        fixture_positions = {
+            **expected["reset"].get("joint_positions", {}),
+            **FIXTURE_RESET_JOINT_POSITIONS.get(expected["task_id"], {}),
+        }
         expected_reset = {
             "kind": "default",
             "joint_positions": {
                 **PANDA_HOME_JOINT_POSITIONS,
-                **expected["reset"].get("joint_positions", {}),
+                **fixture_positions,
             },
             "actuator_controls": PANDA_HOME_ACTUATOR_CONTROLS,
         }

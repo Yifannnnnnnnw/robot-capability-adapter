@@ -534,7 +534,7 @@ class ReferenceFrankaPandaDriver:
         if task_id in {"mw_drawer_open", "mw_drawer_close", "mw_handle_pull"}:
             contact = _vector(parameters["contact_position"], name="contact_position")
             if task_id == "mw_handle_pull":
-                contact = contact + np.asarray((0.0, 0.0, -0.08))
+                contact = contact + np.asarray((0.0, 0.0, -0.085))
             approach = _vector(
                 parameters.get("approach_position", contact + np.asarray((0.0, -0.07, 0.0))),
                 name="approach_position",
