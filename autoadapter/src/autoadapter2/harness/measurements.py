@@ -795,6 +795,9 @@ def measure(
             _argument(public_arguments, str(parameters["period_argument"])),
             "orbit period",
         )
+        initial_phase = float(parameters["initial_phase_rad"])
+        if not math.isfinite(initial_phase):
+            raise MeasurementError("initial_phase_rad must be finite")
         maximum_error = _positive_number(
             parameters.get("maximum_tracking_error_m"),
             "maximum_tracking_error_m",
@@ -806,7 +809,10 @@ def measure(
         start_time = float(_samples(evidence)[0]["time"])
         successful = 0
         for sample in selected:
-            phase = 2.0 * math.pi * (float(sample["time"]) - start_time) / period
+            phase = (
+                initial_phase
+                + 2.0 * math.pi * (float(sample["time"]) - start_time) / period
+            )
             targets = (
                 (
                     center[0] + radii[0] * math.cos(phase),

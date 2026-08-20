@@ -157,6 +157,7 @@ _LEAP_BINDING_REQUIRED_PARAMETERS = {
         "orbit_center",
         "radii_argument",
         "period_argument",
+        "initial_phase_rad",
         "maximum_tracking_error_m",
         "minimum_source_height",
         "source_height_offset_m",
@@ -763,7 +764,11 @@ def _validate_leap_binding_parameters(
             raise RobotPackageError(
                 f"{where}.parameters.orbit_center must contain three finite numbers"
             )
-        for field in ("minimum_source_height", "source_height_offset_m"):
+        for field in (
+            "initial_phase_rad",
+            "minimum_source_height",
+            "source_height_offset_m",
+        ):
             value = parameters[field]
             if (
                 isinstance(value, bool)

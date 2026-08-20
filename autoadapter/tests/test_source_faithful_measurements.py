@@ -704,12 +704,13 @@ def test_leap_hold_metrics_enforce_the_same_complete_horizon() -> None:
     ) == 1.0
 
 
-def test_leap_baoding_ratio_uses_both_actual_ball_trajectories() -> None:
+def test_leap_baoding_ratio_uses_source_phase_and_both_ball_trajectories() -> None:
     period = 0.4
     radii = [0.025, 0.028]
+    initial_phase = math.pi / 4.0
 
     def positions(time: float) -> dict[str, list[float]]:
-        phase = 2.0 * math.pi * time / period
+        phase = initial_phase + 2.0 * math.pi * time / period
         return {
             "palm": [0.0, 0.0, 0.0],
             "ball_1": [radii[0] * math.cos(phase), radii[1] * math.sin(phase), 1.3],
@@ -740,6 +741,7 @@ def test_leap_baoding_ratio_uses_both_actual_ball_trajectories() -> None:
             "orbit_center": [0.0, 0.0, 1.3],
             "radii_argument": "request.task_parameters.radii",
             "period_argument": "request.task_parameters.period",
+            "initial_phase_rad": initial_phase,
             "maximum_tracking_error_m": 0.015,
             "minimum_source_height": 1.25,
             "source_height_offset_m": 0.0,
