@@ -27,12 +27,12 @@ RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 ROBOT_ID = "hello_robot_stretch_2"
 PACKAGE_VERSION = "1.0.0"
-SNAPSHOT_ID = "hello-robot-stretch-2-metaworld-source-protocols-2026-08-20-v1"
+SNAPSHOT_ID = "hello-robot-stretch-2-metaworld-source-protocols-2026-08-20-v2"
 TASK_IDS = (
     "mw_reach_target",
     "mw_push_to_goal",
     "mw_pick_place",
-    "mw_pick_place_wall",
+    "mw_window_open",
     "mw_push_wall",
     "mw_sweep_into_goal",
     "mw_drawer_open",
@@ -47,8 +47,8 @@ TASK_IDS = (
     "mw_dial_turn",
     "mw_lever_pull",
     "mw_peg_insertion_side",
-    "mw_bin_picking",
-    "mw_pick_out_of_hole",
+    "mw_window_close",
+    "mw_faucet_close",
 )
 GUARD_IDS = (
     "guard_actuator_and_physics_step",
@@ -82,6 +82,8 @@ FIXTURE_RESET_JOINT_POSITIONS = {
     "mw_drawer_close": {"drawer_slide": -0.08},
     "mw_handle_pull": {"vertical_handle_slide": -0.055},
     "mw_door_close": {"door_hinge": 1.2},
+    "mw_window_close": {"window_slide": 0.1},
+    "mw_faucet_close": {"faucet_hinge": 1.2},
 }
 CALIBRATED_PARAMETER_OVERRIDES = {
     "mw_drawer_open": {
@@ -104,6 +106,29 @@ CALIBRATED_PARAMETER_OVERRIDES = {
         "target_position": [0.1, -0.48, 0.56],
         "tool_target_position": [0.1, -0.472, 0.64],
     },
+}
+REPLACEMENT_PARAMETERS = {
+    "mw_window_open": {
+        "contact_position": [0.07, -0.55, 0.544],
+        "target_position": [0.18, -0.55, 0.52],
+        "tool_target_position": [0.19, -0.55, 0.544],
+    },
+    "mw_window_close": {
+        "contact_position": [0.19, -0.55, 0.544],
+        "target_position": [0.08, -0.55, 0.52],
+        "tool_target_position": [0.07, -0.55, 0.544],
+    },
+    "mw_faucet_close": {
+        "contact_position": [0.195, -0.479, 0.57],
+        "route_position": [0.165, -0.513, 0.57],
+        "target_position": [0.12, -0.53, 0.47],
+        "tool_target_position": [0.12, -0.527, 0.57],
+    },
+}
+REPLACEMENT_SCENES = {
+    "mw_window_open": "assets/window_scene.xml",
+    "mw_window_close": "assets/window_scene.xml",
+    "mw_faucet_close": "assets/faucet_scene.xml",
 }
 
 
@@ -210,42 +235,54 @@ def test_stretch_private_documents_close_public_snapshot_and_fail_closed() -> No
     assert len(package.tasks) == 20
 
 
-def test_stretch_private_records_match_the_reviewed_rotation_and_reset_transform() -> None:
+def test_stretch_private_records_match_reviewed_transform_and_replacements() -> None:
     tasks = _validated_public_tasks()
     tasks_by_id = {task["task_id"]: task for task in tasks}
     template = _read(FRANKA_PRIVATE_ROOT / "instances.json")["instances"]
     actual = _read(PRIVATE_ROOT / "instances.json")["instances"]
     assert len(template) == len(actual) == 20
+    template_by_task = {instance["task_id"]: instance for instance in template}
+    actual_by_task = {instance["task_id"]: instance for instance in actual}
+    shared_task_ids = set(template_by_task) & set(actual_by_task)
+    assert set(actual_by_task) - shared_task_ids == set(REPLACEMENT_PARAMETERS)
+    assert set(template_by_task) - shared_task_ids == {
+        "mw_pick_place_wall",
+        "mw_bin_picking",
+        "mw_pick_out_of_hole",
+    }
 
-    for expected, observed in zip(template, actual):
-        task_id = expected["task_id"]
-        assert observed["task_id"] == task_id
-        assert observed["instance_id"] == expected["instance_id"].replace(
-            "franka-", "stretch-", 1
-        )
-        assert observed["scene_entrypoint"] == expected["scene_entrypoint"]
-
-        expected_parameters = {}
-        for name, value in expected["public_arguments"]["request"]["task_parameters"].items():
-            if name == "grasp_wrist_roll":
-                continue
-            if name == "grasp_gripper":
-                expected_parameters[name] = -0.005
-            elif name.endswith("_position"):
-                schema = tasks_by_id[task_id]["invocation_schema"]["request"][
-                    "task_parameters"
-                ]["properties"][name]
-                assert schema["frame"] == "world"
-                assert len(value) == 3
-                expected_parameters[name] = [value[1], -value[0], value[2]]
-            else:
-                expected_parameters[name] = copy.deepcopy(value)
-
+    for task_id in TASK_IDS:
+        observed = actual_by_task[task_id]
+        assert observed["instance_id"] == f"stretch-{task_id}"
         observed_parameters = observed["public_arguments"]["request"]["task_parameters"]
-        expected_parameters.update(
-            copy.deepcopy(CALIBRATED_PARAMETER_OVERRIDES.get(task_id, {}))
-        )
-        assert observed_parameters == expected_parameters
+        if task_id in REPLACEMENT_PARAMETERS:
+            assert observed["scene_entrypoint"] == REPLACEMENT_SCENES[task_id]
+            assert observed_parameters == REPLACEMENT_PARAMETERS[task_id]
+        else:
+            expected = template_by_task[task_id]
+            assert observed["scene_entrypoint"] == expected["scene_entrypoint"]
+            expected_parameters = {}
+            for name, value in expected["public_arguments"]["request"][
+                "task_parameters"
+            ].items():
+                if name == "grasp_wrist_roll":
+                    continue
+                if name == "grasp_gripper":
+                    expected_parameters[name] = -0.005
+                elif name.endswith("_position"):
+                    schema = tasks_by_id[task_id]["invocation_schema"]["request"][
+                        "task_parameters"
+                    ]["properties"][name]
+                    assert schema["frame"] == "world"
+                    assert len(value) == 3
+                    expected_parameters[name] = [value[1], -value[0], value[2]]
+                else:
+                    expected_parameters[name] = copy.deepcopy(value)
+            expected_parameters.update(
+                copy.deepcopy(CALIBRATED_PARAMETER_OVERRIDES.get(task_id, {}))
+            )
+            assert observed_parameters == expected_parameters
+
         required = set(
             tasks_by_id[task_id]["invocation_schema"]["request"]["task_parameters"]["required"]
         )
@@ -263,28 +300,53 @@ def test_stretch_private_records_match_the_reviewed_rotation_and_reset_transform
             "actuator_controls": ROBOT_RESET_ACTUATOR_CONTROLS,
         }
         assert observed["reset"] == expected_reset
-        assert observed["clause_bindings"] == expected["clause_bindings"]
+        if task_id in shared_task_ids:
+            assert observed["clause_bindings"] == template_by_task[task_id][
+                "clause_bindings"
+            ]
 
-    expected_bindings = copy.deepcopy(
-        _read(FRANKA_PRIVATE_ROOT / "bindings.json")
-    )
-    expected_bindings["robot_configuration_id"] = ROBOT_ID
-    expected_bindings["package_version"] = PACKAGE_VERSION
-    expected_bindings["task_snapshot_id"] = SNAPSHOT_ID
-    reach_binding = next(
-        binding
-        for binding in expected_bindings["bindings"]
-        if binding["binding_id"] == "binding-mw_reach_target"
-    )
-    reach_binding["kind"] = "final_body_position_error"
-    reach_binding["parameters"]["body_name"] = "link_gripper_slider"
-    front_button_binding = next(
-        binding
-        for binding in expected_bindings["bindings"]
-        if binding["binding_id"] == "binding-mw_button_press"
-    )
-    front_button_binding["parameters"]["axis"] = 0
-    assert _read(PRIVATE_ROOT / "bindings.json") == expected_bindings
+    expected_bindings = {
+        binding["binding_id"]: binding
+        for binding in _read(FRANKA_PRIVATE_ROOT / "bindings.json")["bindings"]
+    }
+    actual_bindings = {
+        binding["binding_id"]: binding
+        for binding in _read(PRIVATE_ROOT / "bindings.json")["bindings"]
+    }
+    for task_id in shared_task_ids:
+        binding_id = f"binding-{task_id}"
+        expected = copy.deepcopy(expected_bindings[binding_id])
+        if task_id == "mw_reach_target":
+            expected["kind"] = "final_body_position_error"
+            expected["parameters"]["body_name"] = "link_gripper_slider"
+        elif task_id == "mw_button_press":
+            expected["parameters"]["axis"] = 0
+        assert actual_bindings[binding_id] == expected
+    assert actual_bindings["binding-mw_window_open"] == {
+        "binding_id": "binding-mw_window_open",
+        "metric": "window_handle_x_axis_error",
+        "unit": "m",
+        "kind": "final_site_axis_error",
+        "parameters": {
+            "site_name": "window_handle_site",
+            "target_argument": "request.task_parameters.target_position",
+            "axis": 0,
+        },
+    }
+    assert actual_bindings["binding-mw_window_close"] == {
+        **actual_bindings["binding-mw_window_open"],
+        "binding_id": "binding-mw_window_close",
+    }
+    assert actual_bindings["binding-mw_faucet_close"] == {
+        "binding_id": "binding-mw_faucet_close",
+        "metric": "faucet_target_distance",
+        "unit": "m",
+        "kind": "final_site_position_error",
+        "parameters": {
+            "site_name": "faucet_tip_site",
+            "target_argument": "request.task_parameters.target_position",
+        },
+    }
 
     expected_guards = copy.deepcopy(_read(FRANKA_PRIVATE_ROOT / "guards.json"))
     expected_guards["robot_configuration_id"] = ROBOT_ID
@@ -295,7 +357,7 @@ def test_stretch_private_records_match_the_reviewed_rotation_and_reset_transform
 
 def test_stretch_framework_resets_load_and_step_every_referenced_scene() -> None:
     instances = _read(PRIVATE_ROOT / "instances.json")["instances"]
-    assert len({instance["scene_entrypoint"] for instance in instances}) == 17
+    assert len({instance["scene_entrypoint"] for instance in instances}) == 15
     assert mujoco.__version__ == "3.3.6"
 
     for instance in instances:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -10,15 +11,13 @@ from autoadapter2.harness.session import apply_framework_reset
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS_ROOT = (
-    ROOT / "libraries" / "robots" / "hello_robot_stretch_2" / "1.0.0" / "assets"
-)
+PACKAGE_ROOT = ROOT / "libraries" / "robots" / "hello_robot_stretch_2" / "1.0.0"
+ASSETS_ROOT = PACKAGE_ROOT / "assets"
 
 SCENE_NAMES = (
     "reach_scene.xml",
     "push_to_goal_scene.xml",
     "pick_place_scene.xml",
-    "pick_place_wall_scene.xml",
     "wall_scene.xml",
     "sweep_into_goal_scene.xml",
     "drawer_scene.xml",
@@ -30,8 +29,7 @@ SCENE_NAMES = (
     "dial_scene.xml",
     "lever_scene.xml",
     "peg_insertion_side_scene.xml",
-    "bin_picking_scene.xml",
-    "pick_out_of_hole_scene.xml",
+    "window_scene.xml",
 )
 
 ACTUATOR_NAMES = (
@@ -62,17 +60,6 @@ TASK_SYMBOLS = {
     "pick_place_scene.xml": {
         "bodies": ("workpiece", "pick_place_goal", "evidence_target"),
         "geoms": ("work_surface", "workpiece_geom", "goal_pedestal", "pick_place_goal_marker"),
-        "sites": ("workpiece_center",),
-    },
-    "pick_place_wall_scene.xml": {
-        "bodies": ("workpiece", "wall_pick_goal", "evidence_target"),
-        "geoms": (
-            "work_surface",
-            "wall",
-            "workpiece_geom",
-            "wall_pick_goal_pedestal",
-            "wall_pick_goal_marker",
-        ),
         "sites": ("workpiece_center",),
     },
     "wall_scene.xml": {
@@ -145,38 +132,19 @@ TASK_SYMBOLS = {
         "geoms": ("work_surface", "hole_left", "hole_right", "hole_bottom", "hole_top", "peg_grasp_geom", "peg_shaft_geom", "peg_goal_marker"),
         "sites": ("peg_head_site",),
     },
-    "bin_picking_scene.xml": {
-        "bodies": ("workpiece", "bin_goal", "evidence_target"),
+    "window_scene.xml": {
+        "bodies": ("window", "window_handle", "evidence_target"),
+        "joints": ("window_slide",),
         "geoms": (
             "work_surface",
-            "bin_bottom",
-            "bin_left",
-            "bin_right",
-            "bin_front",
-            "bin_back",
-            "workpiece_geom",
-            "goal_bin_bottom",
-            "goal_bin_left",
-            "goal_bin_right",
-            "goal_bin_front",
-            "goal_bin_back",
-            "bin_goal_marker",
+            "window_frame_left",
+            "window_frame_right",
+            "window_frame_top",
+            "window_frame_bottom",
+            "window_panel",
+            "window_handle_geom",
         ),
-        "sites": ("workpiece_center",),
-    },
-    "pick_out_of_hole_scene.xml": {
-        "bodies": ("workpiece", "extraction_goal", "evidence_target"),
-        "geoms": (
-            "work_surface",
-            "hole_platform_left",
-            "hole_platform_right",
-            "hole_platform_front",
-            "hole_platform_back",
-            "workpiece_geom",
-            "extraction_goal_pedestal",
-            "extraction_goal_marker",
-        ),
-        "sites": ("workpiece_center",),
+        "sites": ("window_handle_site",),
     },
 }
 
@@ -195,9 +163,15 @@ def _load(scene_name: str) -> mujoco.MjModel:
     return mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / scene_name))
 
 
-def test_stretch_task_scene_set_is_exactly_local_and_closed() -> None:
-    assert len(SCENE_NAMES) == 17
-    assert sorted(path.name for path in ASSETS_ROOT.glob("*_scene.xml")) == sorted(SCENE_NAMES)
+def test_stretch_active_task_scene_set_is_local_and_closed() -> None:
+    instances = json.loads(
+        (PACKAGE_ROOT / "tasks/private/instances.json").read_text(encoding="utf-8")
+    )["instances"]
+    referenced = {
+        Path(instance["scene_entrypoint"]).name for instance in instances
+    }
+    assert len(SCENE_NAMES) == 15
+    assert referenced == set(SCENE_NAMES)
     assert set(TASK_SYMBOLS) == set(SCENE_NAMES)
 
     for scene_name in SCENE_NAMES:
@@ -292,7 +266,7 @@ def test_stretch_fixture_world_transform_is_representative() -> None:
         "drawer_scene.xml": (("drawer", (0.04, -0.48, 0.55)),),
         "door_scene.xml": (("door", (0.08, -0.30, 0.47)),),
         "peg_insertion_side_scene.xml": (("peg_goal", (-0.092, -0.48, 0.48)),),
-        "bin_picking_scene.xml": (("bin_goal", (-0.11, -0.48, 0.421)),),
+        "window_scene.xml": (("window", (0.08, -0.48, 0.52)),),
     }
     for scene_name, body_checks in checks.items():
         model = _load(scene_name)
@@ -349,10 +323,26 @@ def test_stretch_fixture_world_transform_is_representative() -> None:
     np.testing.assert_allclose(peg_model.geom_pos[hole_left_id], (-0.08, -0.415, 0.48))
     np.testing.assert_allclose(peg_model.geom_size[hole_left_id], (0.008, 0.035, 0.07))
 
-    bin_model = _load("bin_picking_scene.xml")
-    bin_left_id = _id(bin_model, mujoco.mjtObj.mjOBJ_GEOM, "bin_left")
-    np.testing.assert_allclose(bin_model.geom_pos[bin_left_id], (0.11, -0.385, 0.44))
-    np.testing.assert_allclose(bin_model.geom_size[bin_left_id], (0.09, 0.005, 0.03))
+    window_model = _load("window_scene.xml")
+    window_data = mujoco.MjData(window_model)
+    window_joint_id = _id(window_model, mujoco.mjtObj.mjOBJ_JOINT, "window_slide")
+    window_site_id = _id(
+        window_model, mujoco.mjtObj.mjOBJ_SITE, "window_handle_site"
+    )
+    np.testing.assert_allclose(window_model.jnt_axis[window_joint_id], (0.0, 1.0, 0.0))
+    mujoco.mj_forward(window_model, window_data)
+    np.testing.assert_allclose(
+        window_data.site_xpos[window_site_id], (0.08, -0.55, 0.52), atol=1e-9
+    )
+    apply_framework_reset(
+        mujoco,
+        window_model,
+        window_data,
+        {"kind": "default", "joint_positions": {"window_slide": 0.1}},
+    )
+    np.testing.assert_allclose(
+        window_data.site_xpos[window_site_id], (0.18, -0.55, 0.52), atol=1e-9
+    )
 
 
 def test_stretch_fixtures_do_not_self_complete_without_robot_contact() -> None:
@@ -362,6 +352,9 @@ def test_stretch_fixtures_do_not_self_complete_without_robot_contact() -> None:
         ("button_topdown_scene.xml", "top_button_slide", 0.0),
         ("handle_vertical_scene.xml", "vertical_handle_slide", 0.0),
         ("handle_vertical_scene.xml", "vertical_handle_slide", -0.055),
+        ("window_scene.xml", "window_slide", 0.0),
+        ("window_scene.xml", "window_slide", 0.1),
+        ("faucet_scene.xml", "faucet_hinge", 1.2),
     )
     for scene_name, joint_name, reset_position in cases:
         model = _load(scene_name)

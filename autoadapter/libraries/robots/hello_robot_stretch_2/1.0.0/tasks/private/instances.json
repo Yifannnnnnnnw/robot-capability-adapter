@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "hello_robot_stretch_2",
   "package_version": "1.0.0",
-  "task_snapshot_id": "hello-robot-stretch-2-metaworld-source-protocols-2026-08-20-v1",
+  "task_snapshot_id": "hello-robot-stretch-2-metaworld-source-protocols-2026-08-20-v2",
   "instances": [
     {
       "instance_id": "stretch-mw_reach_target",
@@ -206,43 +206,27 @@
       "camera": "evidence"
     },
     {
-      "instance_id": "stretch-mw_pick_place_wall",
-      "task_id": "mw_pick_place_wall",
-      "scene_entrypoint": "assets/pick_place_wall_scene.xml",
+      "instance_id": "stretch-mw_window_open",
+      "task_id": "mw_window_open",
+      "scene_entrypoint": "assets/window_scene.xml",
       "public_arguments": {
         "request": {
-          "task_id": "mw_pick_place_wall",
+          "task_id": "mw_window_open",
           "task_parameters": {
-            "start_position": [
-              0.08,
-              -0.48,
-              0.43
-            ],
-            "grasp_position": [
+            "contact_position": [
               0.07,
-              -0.48,
-              0.525
+              -0.55,
+              0.544
             ],
-            "grasp_gripper": -0.005,
             "target_position": [
-              0.08,
-              -0.6,
-              0.51
-            ],
-            "release_position": [
-              0.082,
-              -0.591,
-              0.6020000000000001
+              0.18,
+              -0.55,
+              0.52
             ],
             "tool_target_position": [
-              0.082,
-              -0.591,
-              0.6020000000000001
-            ],
-            "route_position": [
-              0.08,
-              -0.54,
-              0.63
+              0.19,
+              -0.55,
+              0.544
             ]
           }
         }
@@ -272,7 +256,7 @@
         }
       },
       "clause_bindings": {
-        "placed_object_distance": "binding-mw_pick_place_wall"
+        "window_open_axis_error": "binding-mw_window_open"
       },
       "guard_ids": [
         "guard_actuator_and_physics_step",
@@ -1271,43 +1255,27 @@
       "camera": "evidence"
     },
     {
-      "instance_id": "stretch-mw_bin_picking",
-      "task_id": "mw_bin_picking",
-      "scene_entrypoint": "assets/bin_picking_scene.xml",
+      "instance_id": "stretch-mw_window_close",
+      "task_id": "mw_window_close",
+      "scene_entrypoint": "assets/window_scene.xml",
       "public_arguments": {
         "request": {
-          "task_id": "mw_bin_picking",
+          "task_id": "mw_window_close",
           "task_parameters": {
-            "start_position": [
-              0.11,
-              -0.48,
-              0.44
+            "contact_position": [
+              0.19,
+              -0.55,
+              0.544
             ],
-            "grasp_position": [
-              0.105,
-              -0.48,
+            "target_position": [
+              0.08,
+              -0.55,
               0.52
             ],
-            "grasp_gripper": -0.005,
-            "target_position": [
-              -0.11,
-              -0.48,
-              0.44
-            ],
-            "release_position": [
-              -0.108,
-              -0.471,
-              0.5800000000000001
-            ],
             "tool_target_position": [
-              -0.108,
-              -0.471,
-              0.5800000000000001
-            ],
-            "route_position": [
-              0.0,
-              -0.48,
-              0.63
+              0.07,
+              -0.55,
+              0.544
             ]
           }
         }
@@ -1323,7 +1291,8 @@
           "joint_wrist_yaw": 0.0,
           "joint_gripper_slide": 0.04,
           "joint_head_pan": 0.0,
-          "joint_head_tilt": 0.0
+          "joint_head_tilt": 0.0,
+          "window_slide": 0.1
         },
         "actuator_controls": {
           "forward": 0.0,
@@ -1337,7 +1306,7 @@
         }
       },
       "clause_bindings": {
-        "binned_object_distance": "binding-mw_bin_picking"
+        "window_close_axis_error": "binding-mw_window_close"
       },
       "guard_ids": [
         "guard_actuator_and_physics_step",
@@ -1354,43 +1323,32 @@
       "camera": "evidence"
     },
     {
-      "instance_id": "stretch-mw_pick_out_of_hole",
-      "task_id": "mw_pick_out_of_hole",
-      "scene_entrypoint": "assets/pick_out_of_hole_scene.xml",
+      "instance_id": "stretch-mw_faucet_close",
+      "task_id": "mw_faucet_close",
+      "scene_entrypoint": "assets/faucet_scene.xml",
       "public_arguments": {
         "request": {
-          "task_id": "mw_pick_out_of_hole",
+          "task_id": "mw_faucet_close",
           "task_parameters": {
-            "start_position": [
-              0.08,
-              -0.48,
-              0.43
+            "contact_position": [
+              0.195,
+              -0.479,
+              0.57
             ],
-            "grasp_position": [
-              0.105,
-              -0.48,
-              0.52
-            ],
-            "grasp_gripper": -0.005,
             "route_position": [
-              0.0,
-              -0.45999999999999996,
-              0.65
+              0.165,
+              -0.513,
+              0.57
             ],
             "target_position": [
-              -0.08,
-              -0.44000000000000006,
-              0.55
-            ],
-            "release_position": [
-              -0.078,
-              -0.43100000000000005,
-              0.642
+              0.12,
+              -0.53,
+              0.47
             ],
             "tool_target_position": [
-              -0.078,
-              -0.43100000000000005,
-              0.642
+              0.12,
+              -0.527,
+              0.57
             ]
           }
         }
@@ -1406,7 +1364,8 @@
           "joint_wrist_yaw": 0.0,
           "joint_gripper_slide": 0.04,
           "joint_head_pan": 0.0,
-          "joint_head_tilt": 0.0
+          "joint_head_tilt": 0.0,
+          "faucet_hinge": 1.2
         },
         "actuator_controls": {
           "forward": 0.0,
@@ -1420,7 +1379,7 @@
         }
       },
       "clause_bindings": {
-        "extracted_object_distance": "binding-mw_pick_out_of_hole"
+        "faucet_close_target_distance": "binding-mw_faucet_close"
       },
       "guard_ids": [
         "guard_actuator_and_physics_step",
