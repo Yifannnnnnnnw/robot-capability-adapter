@@ -147,6 +147,25 @@ class ResearchRobotIndexTests(unittest.TestCase):
             any("tasks/sources.json" in item for item in g1["missing_for_runnable_package"])
         )
 
+        stretch = candidates_by_id["hello_robot_stretch_2"]
+        stretch_paths = {
+            material["path"] for material in stretch["locally_observed_source_material"]
+        }
+        for path in (
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/assets/scene.xml",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/morphology.json",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/sources.json",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/catalog.json",
+            "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/skeleton/stretch_control.py",
+        ):
+            self.assertIn(path, stretch_paths)
+        self.assertFalse(
+            any("Materialize and verify" in item for item in stretch["missing_for_runnable_package"])
+        )
+        self.assertTrue(
+            any("research candidate only" in item for item in stretch["missing_for_runnable_package"])
+        )
+
         barkour = candidates_by_id["google_barkour_vb"]
         self.assertEqual(barkour["mainline_disposition"], "optional_backup_only")
         barkour_paths = {

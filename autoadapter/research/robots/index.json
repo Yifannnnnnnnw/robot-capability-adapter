@@ -768,6 +768,31 @@
       "observed_task_count": 5,
       "locally_observed_source_material": [
         {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/assets/scene.xml",
+          "kind": "canonical_mujoco_asset_foundation",
+          "observation": "The canonical research package contains the byte-for-byte local MuJoCo Menagerie Stretch 2 closure at pinned commit da76818e269b82289eba39808e2fb91d679d6994. The unmodified upstream scene loads in MuJoCo 3.3.6 with nq=31, nv=29, nu=8, and no external runtime asset dependency; this is asset liveness only."
+        },
+        {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/morphology.json",
+          "kind": "canonical_morphology_foundation",
+          "observation": "The canonical morphology records the free mobile base, lift, coupled telescoping arm, wrist yaw, gripper, head controls, exact actuator ranges, and model counts without claiming task success or runnable admission."
+        },
+        {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/sources.json",
+          "kind": "canonical_task_sources_candidate",
+          "observation": "The research-only public snapshot pins MuJoCo Menagerie for configuration facts and Meta-World for the source success obligations used by the candidate task adaptations."
+        },
+        {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/tasks/catalog.json",
+          "kind": "canonical_task_catalog_candidate",
+          "observation": "The research-only catalog contains 20 structurally closed Meta-World task adaptations. Sol has not yet accepted their task-specific scene feasibility, private metrics, or positive controls, so this catalog is not runnable evidence and observed_task_count remains 5 for the legacy catalog below."
+        },
+        {
+          "path": "autoadapter/libraries/robots/hello_robot_stretch_2/1.0.0/skeleton/stretch_control.py",
+          "kind": "canonical_skeleton_inventory",
+          "observation": "The task-neutral Stretch control skeleton exposes bounded named actuator controls, public observations, and real MuJoCo stepping without direct generalized-state writes. It contains no task dispatch, planning, or reference policy."
+        },
+        {
           "path": "demo2/legacy_assets/menagerie/hello_robot_stretch/stretch.xml",
           "kind": "legacy_mujoco_asset",
           "observation": "A locally vendored historical Hello Robot Stretch model and meshes are available for migration inspection."
@@ -794,15 +819,13 @@
         }
       ],
       "missing_for_runnable_package": [
-        "Materialize and verify a complete local MuJoCo asset closure under a canonical Stretch 2 package; legacy Menagerie files are migration inputs only.",
-        "Create the current mainline morphology.json with public affordances and exact control facts.",
-        "Expand the five observed task records to at least 20 distinct applicable source-backed tasks with machine-expressible pass standards.",
-        "Create tasks/sources.json with exact lineage for every task scoring clause.",
-        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json.",
-        "Provide an applicable mobile-manipulator skeleton and a calibration-only reference driver for this configuration.",
+        "Complete Sol review of the 20 public task adaptations and materialize collision-checked task-specific scenes; the current catalog is a research candidate only.",
+        "Create Framework-private tasks/private/instances.json, bindings.json, and guards.json with source-equivalent physical metrics and false-success guards.",
+        "Provide a calibration-only mobile-manipulator reference driver for this configuration.",
         "Add the package check for the complete canonical package.",
         "Run a focused Direct-MuJoCo positive control against the canonical package.",
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence."
+        "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
+        "Perform final human package and admission review, then add Stretch 2 to the runnable index only if the dynamic canary passes."
       ]
     },
     {

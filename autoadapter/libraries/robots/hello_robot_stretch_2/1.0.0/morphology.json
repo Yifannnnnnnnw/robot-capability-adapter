@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "hello_robot_stretch_2",
+  "robot_configuration_id": "hello_robot_stretch_2",
+  "package_version": "1.0.0",
+  "morphology_kind": "free_base_mobile_manipulator",
+  "degrees_of_freedom": {
+    "floating_base": 6,
+    "wheel_hinges": 2,
+    "lift": 1,
+    "telescoping_arm": 4,
+    "wrist_yaw": 1,
+    "gripper_slide": 1,
+    "head_pan_tilt": 2
+  },
+  "joint_coordinate_counts": {
+    "robot_nq": 24,
+    "robot_nv": 23,
+    "canonical_scene_nq": 31,
+    "canonical_scene_nv": 29
+  },
+  "mjcf_entrypoint": "assets/scene.xml",
+  "model_counts": {
+    "nq": 31,
+    "nv": 29,
+    "njnt": 19,
+    "nu": 8,
+    "ngeom": 113,
+    "nsite": 0,
+    "ntendon": 3,
+    "neq": 5,
+    "nkey": 0
+  },
+  "public_control": {
+    "actuation": "tendon_and_joint_position",
+    "base_type": "free_mobile_base",
+    "actuator_names": [
+      "forward",
+      "turn",
+      "lift",
+      "arm_extend",
+      "wrist_yaw",
+      "grip",
+      "head_pan",
+      "head_tilt"
+    ],
+    "actuator_ctrlrange": {
+      "forward": [-1.0, 1.0],
+      "turn": [-1.0, 1.0],
+      "lift": [-0.5, 0.6],
+      "arm_extend": [0.0, 0.52],
+      "wrist_yaw": [-1.75, 4.0],
+      "grip": [-0.005, 0.04],
+      "head_pan": [-3.9, 1.5],
+      "head_tilt": [-1.53, 0.79]
+    },
+    "actuator_joint_map": {
+      "forward": "tendon:forward",
+      "turn": "tendon:turn",
+      "lift": "joint_lift",
+      "arm_extend": "tendon:extend",
+      "wrist_yaw": "joint_wrist_yaw",
+      "grip": "joint_gripper_slide",
+      "head_pan": "joint_head_pan",
+      "head_tilt": "joint_head_tilt"
+    },
+    "robot_joint_names": [
+      "joint_right_wheel",
+      "joint_left_wheel",
+      "joint_lift",
+      "joint_arm_l3",
+      "joint_arm_l2",
+      "joint_arm_l1",
+      "joint_arm_l0",
+      "joint_wrist_yaw",
+      "joint_gripper_slide",
+      "joint_gripper_finger_left_open",
+      "rubber_left_x",
+      "rubber_left_y",
+      "joint_gripper_finger_right_open",
+      "rubber_right_x",
+      "rubber_right_y",
+      "joint_head_pan",
+      "joint_head_tilt"
+    ],
+    "robot_joint_limits": {
+      "joint_lift": [-0.5, 0.6],
+      "joint_arm_l3": [0.0, 0.13],
+      "joint_arm_l2": [0.0, 0.13],
+      "joint_arm_l1": [0.0, 0.13],
+      "joint_arm_l0": [0.0, 0.13],
+      "joint_wrist_yaw": [-1.75, 4.0],
+      "joint_gripper_slide": [-0.005, 0.04],
+      "joint_head_pan": [-3.9, 1.5],
+      "joint_head_tilt": [-1.53, 0.79]
+    }
+  },
+  "public_observations": {
+    "base_body": "base_link",
+    "lift_body": "link_lift",
+    "end_effector_body": "link_gripper_slider",
+    "wrist_body": "link_wrist_yaw",
+    "head_bodies": ["link_head_pan", "link_head_tilt"],
+    "frames": ["world", "base_link", "initial_base_yaw", "arm_axis", "wrist", "none"]
+  },
+  "public_affordances": {
+    "actions": [
+      "base_tendon_control",
+      "lift_position_control",
+      "telescoping_arm_control",
+      "wrist_yaw_control",
+      "gripper_slide_control",
+      "head_pan_tilt_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "base_pose",
+      "base_velocity",
+      "named_body_pose",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default": "model_default",
+    "neutral": "model_default",
+    "available_keyframes": []
+  },
+  "asset_provenance": {
+    "composition": "Byte-for-byte local MuJoCo Menagerie Hello Robot Stretch 2 MJCF closure",
+    "derived_revision": "da76818e269b82289eba39808e2fb91d679d6994",
+    "sources": [
+      {
+        "model_title": "Hello Robot Stretch 2 Description (MJCF)",
+        "upstream": "https://github.com/google-deepmind/mujoco_menagerie/tree/da76818e269b82289eba39808e2fb91d679d6994/hello_robot_stretch",
+        "source_path": "assets/stretch.xml",
+        "license": "Clear BSD License",
+        "license_file": "assets/LICENSE",
+        "source_file": "assets/SOURCE.md"
+      }
+    ]
+  }
+}
