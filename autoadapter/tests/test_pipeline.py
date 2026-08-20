@@ -571,7 +571,9 @@ def _fake_hooks(
     }
 
 
-def test_pipeline_orders_ivc_and_reference_gate_before_dynamic_cells(tmp_path: Path) -> None:
+def test_pipeline_orders_ivc_and_reference_diagnostics_before_dynamic_cells(
+    tmp_path: Path,
+) -> None:
     events: list[tuple[Any, ...]] = []
     hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
     result = run_experiment(
@@ -1017,9 +1019,14 @@ def test_failed_study_still_records_that_the_dynamic_model_was_called(tmp_path: 
     assert all(cell["driver_generated_in_run"] is False for cell in result["cells"])
 
 
-def test_failed_reference_gate_starts_no_dynamic_cell(tmp_path: Path) -> None:
+def test_failed_reference_diagnostic_does_not_block_dynamic_cells(tmp_path: Path) -> None:
     events: list[tuple[Any, ...]] = []
-    hooks, state = _fake_hooks(tmp_path, events, reference_pass=False)
+    hooks, state = _fake_hooks(
+        tmp_path,
+        events,
+        reference_pass=False,
+        validation_pass_at=1,
+    )
     result = run_experiment(
         tmp_path,
         config=_config(),
@@ -1031,11 +1038,17 @@ def test_failed_reference_gate_starts_no_dynamic_cell(tmp_path: Path) -> None:
     )
 
     assert result["reference_calibration_passed"] is False
-    assert result["cells"] == []
-    assert not any(item[0] == "study" for item in events)
+    assert len(result["cells"]) == 4
+    assert len([item for item in events if item[0] == "study"]) == 4
+    assert all(
+        reference["evaluation_role"] == "diagnostic_reference"
+        for reference in result["references"].values()
+    )
+    assert result["success"] is True
+    assert success_claim(result) is True
 
 
-def test_explicit_reference_skip_runs_dynamic_cells_but_never_claims_success(
+def test_explicit_reference_skip_runs_formal_dynamic_cells(
     tmp_path: Path,
 ) -> None:
     events: list[tuple[Any, ...]] = []
@@ -1058,10 +1071,10 @@ def test_explicit_reference_skip_runs_dynamic_cells_but_never_claims_success(
     assert result["reference_calibration_passed"] is False
     assert result["final_capability_validation_passed"] is True
     assert result["task_demo_executed"] is True
-    assert result["success"] is False
-    assert success_claim(result) is False
+    assert result["success"] is True
+    assert success_claim(result) is True
     assert result["claim"] == (
-        "dynamic cells completed without reference calibration; formal mainline claim unavailable"
+        "driver-synthesis mainline succeeded; Task Demo results reported separately"
     )
 
 
@@ -1085,8 +1098,7 @@ def test_reference_skip_does_not_call_incomplete_cells_completed(
     assert result["pipeline_completed"] is False
     assert result["success"] is False
     assert result["claim"] == (
-        "dynamic-only experiment ended before all cells completed; "
-        "formal mainline claim unavailable"
+        "configured experiment ended before all cells completed; named cell failures remain"
     )
 
 

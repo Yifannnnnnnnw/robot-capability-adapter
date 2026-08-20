@@ -38,7 +38,7 @@ def _parser() -> argparse.ArgumentParser:
             command.add_argument(
                 "--skip-reference-calibration",
                 action="store_true",
-                help="run dynamic cells diagnostically without the formal reference gate",
+                help="skip the optional hidden reference diagnostics",
             )
             command.add_argument(
                 "--reuse-sealed-inputs-from",

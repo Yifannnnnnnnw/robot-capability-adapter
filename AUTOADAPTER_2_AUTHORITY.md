@@ -4,9 +4,29 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.23`<br>
-> **Effective date / 生效日期：** 2026-08-20<br>
+> **Document revision / 文档版本：** `0.19.24`<br>
+> **Effective date / 生效日期：** 2026-08-21<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.24` closes the simulator-construction boundary for the declared eleven-robot
+cohort and supersedes the reference-positive-control admission requirement stated in revision
+`0.19.20`. A package is ready for the initial shakedown when its complete canonical package and
+source-backed Task Library load, physical task geometry uses real robot-compatible collision
+layers, every private reset avoids contact deeper than 5 mm, position-held environments also stay
+within that bound during a focused 100-step passive-settling check, and the shared Harness reports
+task-metric success separately from physical integrity. Any observed contact deeper than 5 mm makes
+physical integrity and the trial fail even if the task metric passes. A hidden handwritten
+reference driver remains useful diagnostic calibration material, but planner failure alone is not
+an admission blocker when the simulator, interfaces, metrics, and Harness satisfy these checks.
+
+**中文辅助说明。** `0.19.24` 完成声明的十一机器人 cohort 的仿真器搭建边界，并取代
+`0.19.20` 中 reference positive control 作为准入门槛的要求。首轮 shakedown 前，每个机器人
+必须具有可加载的完整 canonical package 和有来源 Task Library；实物 task geometry 必须使用可与
+机器人碰撞的真实 collision layer；每个 private reset 的穿透不得深于 5 mm；由 position control
+保持的环境还必须在聚焦的 100-step 被动沉降检查中维持该边界。共享 Harness 必须把 task metric
+success 与 physical integrity 分开报告；任何深于 5 mm 的接触穿透都会使 physical integrity 和
+trial 失败，即使 task metric 已通过。隐藏的手写 reference driver 仍可用于诊断校准，但当仿真器、
+接口、metric 和 Harness 均满足上述检查时，reference planner 自身失败不再阻塞准入。
 
 Revision `0.19.23` removes `unitree_g1` from the declared mainline cohort before any all-robot
 outcomes are inspected. The formal cohort now contains the exact eleven configurations in Section
@@ -708,19 +728,25 @@ Every configuration uses its complete local MJCF closure with `mujoco==3.3.6`. I
 assets, admitted task records and source standards, private instances, resets, measurement adapters
 and guards, trusted skeleton family, from-scratch contract, and calibration reference are owned by
 one versioned mainline package. An asset-only package, a five-task package, a package with
-pre-authored effects, or a package without a passing reference positive control is incomplete.
+pre-authored effects, non-colliding physical task fixtures, a reset deeper than the 5 mm penetration
+limit, or a Harness path that cannot reject dynamic penetration is incomplete. For environments
+whose reset actuator controls hold position, the focused 100-step passive-settling check must also
+remain within the same limit. Torque-driven robots need not remain standing without an active
+policy, but their initial reset must be valid and any later fall or penetration remains a physical
+failure under the shared Harness.
 
 The formal Experiment 3 manifest must contain this complete cohort. Before the first all-robot
-round, every listed configuration must pass its package checks and focused reference positive
-control with complete videos and must appear in `libraries/robots/index.json`. A missing or
-incomplete configuration remains a visible blocker; it may not be silently omitted, replaced, or
-treated as a failed model cell. Adding or removing a configuration requires an explicit Authority
-or protocol revision made before outcomes are inspected.
+round, every listed configuration must pass its package and simulator-integrity checks and must
+appear in `libraries/robots/index.json`. A missing or incomplete configuration remains a visible
+blocker; it may not be silently omitted, replaced, or treated as a failed model cell. Adding or
+removing a configuration requires an explicit Authority or protocol revision made before outcomes
+are inspected.
 
-Per-robot package checks, reference runs, and real-model canaries may execute as soon as that
-package is ready. They are diagnostic construction evidence and do not satisfy the all-robot round.
-Every formal Producer-backbone comparison uses the complete cohort under both generation
-conditions. The initial shakedown therefore contains eleven robots crossed with
+Per-robot package checks, hidden reference diagnostics, and real-model canaries may execute as soon
+as that package is ready. They are diagnostic construction evidence and do not satisfy the
+all-robot round. Reference source or derived logic is never model input. Every formal
+Producer-backbone comparison uses the complete cohort under both generation conditions. The
+initial shakedown therefore contains eleven robots crossed with
 `skeleton-assisted` and `from-scratch`, for twenty-two cells per replicate.
 
 **中文辅助说明。** 在本 Authority 中，**全部机器人**特指上表声明的十一个精确配置，不表示
@@ -728,17 +754,21 @@ conditions. The initial shakedown therefore contains eleven robots crossed with
 MJCF closure 和 `mujoco==3.3.6`；其精确模型、资产、已准入任务与来源标准、私有 instance、
 reset、measurement adapter、guard、可信 skeleton family、from-scratch contract 和 calibration
 reference 均归一个版本化主线 package 所有。只有 asset、只有五项任务、含预写 effect，或没有
-通过 reference positive control 的 package 都不完整。
+真实碰撞 fixture、reset 穿透深于 5 mm，或 Harness 无法拒绝运行中穿透的 package 都不完整。
+由 position control 保持 reset 的环境还必须在聚焦的 100-step 被动沉降检查中维持同一边界。
+torque-driven 机器人无需在缺少主动 policy 时保持站立，但其初始 reset 必须有效；之后的倒地或
+穿透仍由共享 Harness 判为 physical failure。
 
 `unitree_g1` 与 `google_barkour_vb` 作为可选研究备份保留，不属于上述正式 cohort；它们不阻塞
 正式轮次，其资产、task、skeleton、policy 或校准结果也不计作正式轮次证据。
 
 正式 Experiment 3 manifest 必须包含完整十一配置集合。首轮全机器人实验前，每个配置都必须
-通过 package check 和带完整视频的聚焦 reference positive control，并进入
+通过 package check 和 simulator-integrity check，并进入
 `libraries/robots/index.json`。缺失或不完整配置是显式 blocker，不能静默省略、替换，也不能算作
 模型失败 cell；增删配置必须在查看结果前通过明确 Authority 或 protocol 修订。单机器人 package
-check、reference run 和真实模型 canary 可在对应 package 就绪后提前执行，但只属于建设期诊断证据，
-不能替代全机器人轮次。每个正式 Producer-backbone 比较都必须让完整 cohort 运行两种生成条件；
+check、隐藏 reference 诊断和真实模型 canary 可在对应 package 就绪后提前执行，但只属于建设期
+诊断证据，不能替代全机器人轮次；reference 源码或衍生逻辑绝不成为模型输入。每个正式
+Producer-backbone 比较都必须让完整 cohort 运行两种生成条件；
 因此首轮 shakedown 每个 replicate 共十一乘二，即二十二个 cell。
 
 ### 1.4 Planned RQ1 Producer LLM coverage / 规划中的 RQ1 Producer LLM 覆盖
@@ -1982,19 +2012,21 @@ GENERATE、Capability Validation、Repair、Task Demo 和 Evolution 结果；att
 
 ### 5.1 Current evidence boundary / 当前证据边界
 
-As of this revision, tracked mainline evidence records package-level reference positive controls
-for only a subset of the declared cohort, while other packages remain under construction. Earlier
-Demo2 and narrow-cohort diagnostic runs remain historical evidence only. No retained run contains
-the required twenty-two-cell Ministral 8B matrix with per-cell Evolution outcomes and post-round
-Experience dispositions. Therefore current evidence may support only its named package calibration
-or historical diagnostic claim; it does not support “the all-robot model-generated mainline
-completed” or “the all-robot mainline succeeded.”
+As of this revision, tracked mainline evidence includes historical package-level reference runs and
+current focused simulator-integrity checks. A historical reference report predating the per-step
+penetration verdict supports only the diagnostic claim recorded at that time; it is not current
+physical-success evidence by itself. Earlier Demo2 and narrow-cohort diagnostic runs also remain
+historical evidence only. No retained run contains the required twenty-two-cell Ministral 8B matrix
+with per-cell Evolution outcomes and post-round Experience dispositions. Therefore current evidence
+does not support “the all-robot model-generated mainline completed” or “the all-robot mainline
+succeeded.”
 
-**中文辅助说明。** 截至本版，受版本控制的主线 evidence 只记录了声明 cohort 中部分 package 的
-reference positive control，其余 package 仍在建设。更早的 Demo2 和小范围 diagnostic run 只属于
-历史证据。当前没有任何保留 run 包含必需的二十二-cell Ministral 8B matrix、逐 cell Evolution
-outcome 和整轮结束后的 Experience disposition。因此现有证据只能支持其点名的 package calibration
-或历史诊断结论，不能支持“全机器人模型生成主线已完成”或“全机器人主线成功”。
+**中文辅助说明。** 截至本版，受版本控制的主线 evidence 包括历史 package-level reference run
+以及当前聚焦的 simulator-integrity check。早于逐 step 穿透判定的历史 reference report 只能支持
+当时记录的诊断结论，不能单独作为当前 physical-success 证据。更早的 Demo2 和小范围 diagnostic
+run 也只属于历史证据。当前没有任何保留 run 包含必需的二十二-cell Ministral 8B matrix、逐 cell
+Evolution outcome 和整轮结束后的 Experience disposition，因此不能支持“全机器人模型生成主线
+已完成”或“全机器人主线成功”。
 
 ---
 
@@ -2013,19 +2045,22 @@ implementation work must satisfy each obligation when the affected component or 
    same sealed per-robot Capability Design and complete capability validation suite, then run the
    same sealed random five-task Task Demo only for each capability-validated final driver;
 5. build private-suite isolation, candidate-process isolation, canonical-session enforcement,
-   anti-teleport checks, and actuator-plus-physics-step evidence into the Harness path itself;
+   anti-teleport checks, actuator-plus-physics-step evidence, and per-step contact-penetration
+   evidence into the Harness path itself; report task-metric success and physical integrity
+   independently, with either failure making the trial fail;
 6. expose to Repair the complete candidate-facing attempt report and media while redacting only the
    private validation definitions, enforce three total driver attempts per condition, preserve the
    full budget-bounded local Python/MuJoCo development probe, keep the capability suite unchanged,
    and never feed the same-run Task Demo report back into Repair;
 7. record one complete Framework-controlled video and manifest entry for every required capability-validation or Task Demo case
    repetition, with incomplete media invalidating that trial's evidence;
-8. report pipeline execution, model calls, in-run generation, capability validation, initial and final
-   capability verdicts, Task Demo execution/verdict, clause/case counts, attempts, and video completeness separately, and make success-oriented
-   commands fail when required physical evidence fails;
-9. calibrate every selected robot's reference driver against its resulting complete capability
-   suite before making dynamic claims, then retain truthful terminal evidence for every declared
-   robot-by-generation-condition cell; and
+8. report pipeline execution, model calls, in-run generation, capability validation, initial and
+   final capability verdicts, Task Demo execution/verdict, task-metric verdict, physical-integrity
+   verdict, clause/case counts, attempts, and video completeness separately, and make
+   success-oriented commands fail when either required metric or physical evidence fails;
+9. keep every selected robot's handwritten reference driver hidden and diagnostic-only rather than
+   making planner success an admission gate, then retain truthful terminal evidence for every
+   declared robot-by-generation-condition cell; and
 10. keep Evolution terminal and non-blocking so that it cannot alter the current candidate, either
     suite, retry decision, verdict, or run inputs, while retaining one Evolution outcome and one
     post-round Experience disposition for every terminal cell in the initial shakedown.
@@ -2046,17 +2081,18 @@ construction boundary while implementing an earlier component.
    封存 Capability Design 和同一套完整 capability validation suite；仅当最终 driver 通过准入后，
    才使用同一套封存的随机五-task Task Demo；
 5. 在 Harness 路径内直接实现私有 suite 隔离、candidate 进程隔离、canonical session、
-   anti-teleport 检查以及 actuator 加 physics-step 证据；
+   anti-teleport、actuator 加 physics-step 证据和逐 step 接触穿透证据；task metric success 与
+   physical integrity 必须独立报告，任一失败都会使 trial 失败；
 6. Repair 可以接收完整的 candidate-facing attempt 报告和媒体，只删除私有 validation 定义；
    每种条件最多三个 driver attempt，保留完整但有预算上限的本地 Python/MuJoCo 开发 probe，且
    capability suite 始终不变，且本轮 Task Demo 报告绝不回传给 Repair；
 7. 每个必需 capability-validation 或 Task Demo case repetition 都有独立、完整、Framework 控制的视频和 manifest 记录；
    媒体不完整时该 trial 的证据无效；
 8. 分开报告 pipeline 执行、模型调用、本次生成、capability validation、首次/最终 capability
-   verdict、Task Demo 执行/verdict、clause/case 数、
-   attempt 和视频完整性；用于证明成功的命令在必需物理证据失败时必须失败；
-9. 每个被选机器人的 reference driver 都必须先通过该轮最终封存的完整 capability suite 校准，
-   再提出动态结论，并为每个声明的机器人×生成条件 cell 保留真实终态证据；
+   verdict、Task Demo 执行/verdict、task-metric verdict、physical-integrity verdict、clause/case 数、
+   attempt 和视频完整性；用于证明成功的命令在任一必需 metric 或物理证据失败时必须失败；
+9. 每个被选机器人的手写 reference driver 都保持隐藏且只作诊断，不把 planner 成功当作准入
+   门槛；每个声明的机器人×生成条件 cell 都必须保留真实终态证据；
 10. Evolution 必须位于 terminal verdict 之后且不阻塞当前判定，不能改变当前 candidate、任一
     suite、retry 决定、verdict 或 run input；首轮每个终态 cell 还必须保留一份 Evolution outcome
     和一份整轮结束后的 Experience disposition。
@@ -2078,21 +2114,26 @@ after all of the following are true:
 3. every scoring clause has exact source lineage and a machine-expressible pass standard, every
    package check passes, and all eleven exact configuration IDs appear in
    `libraries/robots/index.json`;
-4. each package's reference driver passes its complete package-level positive-control route under
-   actuator-driven MuJoCo physics with the required guards and complete per-case videos;
-5. anti-teleport, canonical-scene, candidate-process, private-suite, from-scratch no-skeleton, and
-   recorder checks pass on the shared Framework/Harness path;
+4. every package's physical task fixtures collide with the robot layer, visual-only markers remain
+   non-colliding, every private reset stays within the 5 mm penetration limit, and every
+   position-held environment also stays within that limit for the focused 100-step passive-settling
+   check; torque-driven robots instead require a valid initial reset and the same dynamic Harness
+   penetration verdict;
+5. anti-teleport, per-step penetration, independent task-metric/physical-integrity,
+   canonical-scene, candidate-process, private-suite, from-scratch no-skeleton, and recorder checks
+   pass on the shared Framework/Harness path;
 6. the formal manifest selects exactly the Section 1.3 cohort, both generation conditions, empty
    Experience input, the exact pinned Ministral 8B model configuration, attempt and development
    budgets, seeds, video settings, and the required Evolution/Experience outputs; and
-7. any diagnostic canary failure caused by package, Framework, Harness, model transport, or video
-   infrastructure has been resolved or remains an explicit blocker rather than being relabelled as
-   a model-synthesis result.
+7. any diagnostic canary failure caused by package, simulator, Framework, Harness, model transport,
+   or video infrastructure has been resolved or remains an explicit blocker rather than being
+   relabelled as a model-synthesis result. A hidden reference planner failure is not a blocker unless
+   it exposes one of those underlying defects.
 
-Incomplete packages may remain in `research/robots/index.json` while construction continues, and
-focused package checks or canaries may run independently. Those diagnostics do not waive any item
-above. The shakedown starts only once the complete cohort is ready; the formal manifest cannot
-select a convenient subset.
+Optional backup robots may remain in `research/robots/index.json`, and focused package checks,
+hidden reference diagnostics, or canaries may run independently. Those diagnostics do not waive
+any item above. The shakedown starts only once the complete cohort is ready; the formal manifest
+cannot select a convenient subset.
 
 **中文辅助说明。** `autoadapter/` 已经是 canonical 主线。只有同时满足以下全部条件，才能启动
 首轮全机器人 shakedown：
@@ -2104,19 +2145,22 @@ select a convenient subset.
    reference；
 3. 每条 scoring clause 都有精确 source lineage 和机器可表达 pass standard，每个 package check
    都通过，且十一个精确配置 ID 全部进入 `libraries/robots/index.json`；
-4. 每个 package 的 reference driver 都在 actuator-driven MuJoCo physics、必需 guard 和完整逐 case
-   视频下通过完整 package-level positive-control route；
-5. 共享 Framework/Harness 路径的 anti-teleport、canonical-scene、candidate-process、private-suite、
-   from-scratch no-skeleton 和 recorder 检查通过；
+4. 每个 package 的实物 task fixture 都与机器人 collision layer 真实碰撞，纯视觉 marker 保持
+   non-colliding，每个 private reset 都在 5 mm 穿透上限内；由 position control 保持的环境还要在
+   聚焦 100-step 被动沉降中维持该上限；torque-driven 机器人改为要求有效初始 reset，并在动态
+   Harness 中使用同一穿透判定；
+5. 共享 Framework/Harness 路径的 anti-teleport、逐 step 穿透、独立 task-metric/physical-integrity、
+   canonical-scene、candidate-process、private-suite、from-scratch no-skeleton 和 recorder 检查通过；
 6. 正式 manifest 精确选择第 1.3 节完整 cohort、两种生成条件、空 Experience 输入、准确固定的
    Ministral 8B 模型配置、attempt/development budget、seed、视频设置和必需的
    Evolution/Experience 输出；
-7. 诊断 canary 中由 package、Framework、Harness、model transport 或视频基础设施造成的失败已
-   修复，或保持为显式 blocker，不能改写成 model-synthesis 结果。
+7. 诊断 canary 中由 package、simulator、Framework、Harness、model transport 或视频基础设施
+   造成的失败已修复，或保持为显式 blocker，不能改写成 model-synthesis 结果。隐藏 reference
+   planner 失败本身不阻塞，除非它暴露了上述底层缺陷。
 
-建设期间，不完整 package 可以留在 `research/robots/index.json`，各 package check 或 canary 也可
-独立运行；这些诊断不能免除上述任何一项。只有完整 cohort 就绪后才启动 shakedown，正式 manifest
-不能选择一个方便的子集。
+可选备份机器人可以留在 `research/robots/index.json`；各 package check、隐藏 reference 诊断或
+canary 也可独立运行。这些诊断不能免除上述任何一项。只有完整 cohort 就绪后才启动 shakedown，
+正式 manifest 不能选择一个方便的子集。
 
 ### 6.2 Initial all-robot shakedown completion and success / 首轮全机器人 shakedown 完成与成功
 
@@ -2132,11 +2176,14 @@ The project may state that the required initial all-robot shakedown completed on
    pre-authored effect catalog or task-to-effect allowlist;
 4. one real-model complete `capability_validation_suite.json` produced by IVC passes the
    no-weaker-selected-standard and per-capability primary/robustness audit and remains unchanged
-   across that robot's reference calibration, both generation conditions, and all Repair attempts;
-   the Framework separately seals one recorded random five-task `task_demo_suite.json`;
-5. that robot's reference driver passes the sealed capability suite under the same Harness rules
-   before either dynamic condition begins, with complete required videos; a reference failure is an
-   input, package, or infrastructure blocker, not a failed model cell;
+   across both generation conditions and all Repair attempts; any diagnostic reference run uses the
+   same sealed suite without becoming a dynamic input; the Framework separately seals one recorded
+   random five-task `task_demo_suite.json`;
+5. before either dynamic condition begins, that robot satisfies the package and simulator-integrity
+   gate in Section 6.1. A hidden reference driver may run against the sealed suite for diagnostics,
+   but its source and derived logic remain unavailable to the model and its planner success is not
+   required. A reference failure blocks only when it reveals an input, package, simulator, Harness,
+   or infrastructure defect;
 6. both conditions use isolated workspaces, run their own real STUDY and GENERATE or GEN_ALGO calls,
    and do not exchange candidates, traces, validation results, Repair history, generated code, or
    same-round Experience;
@@ -2145,9 +2192,10 @@ The project may state that the required initial all-robot shakedown completed on
    three submitted-driver attempts; each admitted final driver then executes the separately
    reported five-task Task Demo without that Demo changing the synthesis verdict or triggering
    Repair;
-8. actuator/physics-step, isolation, canonical-scene, from-scratch no-skeleton, and evidence-camera
-   checks pass, and every required capability-validation and Task Demo trial has complete decodable
-   video and a matching manifest;
+8. actuator/physics-step, per-step penetration, independent task-metric/physical-integrity,
+   isolation, canonical-scene, from-scratch no-skeleton, and evidence-camera checks pass, and every
+   required capability-validation and Task Demo trial has complete decodable video and a matching
+   manifest;
 9. Evolution executes from each terminal cell report, all twenty-two outcomes are retained, and
    post-round human review writes one Experience disposition per cell without feeding any proposal
    back into the same round;
@@ -2161,9 +2209,10 @@ Completion and success are distinct. Once all twenty-two cells have terminal ver
 required Evolution/Experience records, the shakedown completed even if one or more generated
 drivers failed. The all-robot mainline succeeded only if every cell independently satisfies
 single-robot condition success and all evidence obligations above. If any generated cell fails,
-the correct claim names the failed cells; if a reference or infrastructure prerequisite fails, the
-round is incomplete and the affected dynamic cells are not model failures. A passing reference
-alone supports only reference calibration.
+the correct claim names the failed cells; if a package, simulator, Harness, or infrastructure
+prerequisite fails, the round is incomplete and the affected dynamic cells are not model failures.
+A passing reference alone supports only diagnostic reference calibration, while a reference
+planner failure alone does not make the round incomplete.
 
 The Ministral 8B shakedown may count as that family's B1 replicate only if the manifest declared
 the formal protocol prospectively and every applicable evidence requirement was met. Subsequent B1
@@ -2180,18 +2229,21 @@ protocol revision explicitly changes it.
    十项真正设计的 capability/interface 及可追溯来源 validation contract，不存在预写 effect
    catalog 或 task→effect allowlist；
 4. IVC 生成的一套完整 `capability_validation_suite.json` 通过“不弱化所选来源标准”和逐
-   capability primary/robustness 审计，并在该机器人 reference 校准、两种生成条件和所有 Repair
-   attempt 间保持不变；Framework 另行封存一套有记录的随机五-task `task_demo_suite.json`；
-5. 在任一 dynamic condition 开始前，该机器人的 reference driver 已按相同 Harness 规则通过封存
-   capability suite 且具有完整必需视频；reference 失败属于 input、package 或 infrastructure
-   blocker，不是模型 cell 失败；
+   capability primary/robustness 审计，并在两种生成条件和所有 Repair attempt 间保持不变；任何
+   诊断 reference run 使用同一封存 suite，但不成为 dynamic input；Framework 另行封存一套有记录
+   的随机五-task `task_demo_suite.json`；
+5. 在任一 dynamic condition 开始前，该机器人满足第 6.1 节 package 和 simulator-integrity 门槛。
+   隐藏 reference driver 可以对封存 suite 运行诊断，但源码和衍生逻辑始终对模型不可见，且 planner
+   成功不是必需条件。只有 reference 失败暴露 input、package、simulator、Harness 或 infrastructure
+   缺陷时，才构成 blocker；
 6. 两种条件使用隔离 workspace，分别执行自己的真实 STUDY 与 GENERATE 或 GEN_ALGO 调用，且
    不能交换 candidate、trace、validation result、Repair 历史、生成代码或同轮 Experience；
 7. 每个提交的 `driver.py` 都在所声明条件内生成；二十二个 cell 每个都在最多三次 submitted-driver
    attempt 内到达真实 terminal capability-validation verdict；每个已准入最终 driver 随后执行单独
    报告的五-task Task Demo，该 Demo 不改变 synthesis verdict，也不触发 Repair；
-8. actuator/physics-step、isolation、canonical-scene、from-scratch no-skeleton 和 evidence-camera
-   检查通过，每个必需 capability-validation 和 Task Demo trial 都有完整可解码视频及匹配 manifest；
+8. actuator/physics-step、逐 step 穿透、独立 task-metric/physical-integrity、isolation、
+   canonical-scene、from-scratch no-skeleton 和 evidence-camera 检查通过，每个必需
+   capability-validation 和 Task Demo trial 都有完整可解码视频及匹配 manifest；
 9. 每个 terminal cell report 都执行 Evolution，保留全部二十二个 outcome；整轮结束后人工审查为
    每个 cell 写一条 Experience disposition，且任何 proposal 都不回传本轮；
 10. 分开报告每个 cell 的 `pass@0`、Repair 后、Task Demo、Evolution、model use、token、cost、
@@ -2201,9 +2253,10 @@ protocol revision explicitly changes it.
 
 “完成”和“成功”必须区分。二十二个 cell 全部到达终态且具备必需 Evolution/Experience 记录时，
 即使有生成 driver 失败，也可以说 shakedown 已完成；只有每个 cell 都独立满足单机器人条件成功和
-上述全部证据义务，才可说全机器人主线成功。生成 cell 失败时必须点名失败 cell；reference 或
-infrastructure 前置项失败时，该轮仍不完整，受影响 dynamic cell 不能算模型失败。仅 reference
-通过只能支持“reference calibration passed”。
+上述全部证据义务，才可说全机器人主线成功。生成 cell 失败时必须点名失败 cell；package、
+simulator、Harness 或 infrastructure 前置项失败时，该轮仍不完整，受影响 dynamic cell 不能算
+模型失败。单纯 reference planner 失败不会使轮次不完整；仅 reference 通过只能支持
+“diagnostic reference calibration passed”。
 
 只有当 manifest 事先声明正式 protocol 且全部适用证据要求满足时，Ministral 8B shakedown 才可
 计为该 family 的一个 B1 replicate。后续 B1 backbone 和 replicate 必须使用同一完整机器人 cohort，
@@ -2287,9 +2340,9 @@ The current project must not add or expand:
 - video or model self-report as a substitute for the Harness verdict; or
 - hardware, perception, SDK-fidelity, or sim-to-real claims from Direct-MuJoCo evidence.
 
-The minimum focused checks and one reference positive control for every declared cohort robot take
-priority over broader cleanup. Per-robot diagnostic canaries should run as packages become ready,
-but the formal initial shakedown waits for the complete cohort.
+The minimum focused package, simulator-integrity, and shared-Harness checks for every declared
+cohort robot take priority over broader cleanup. Hidden reference diagnostics and per-robot canaries
+may run as packages become ready, but the formal initial shakedown waits for the complete cohort.
 
 **中文辅助说明。** 当前项目不得新增或扩展：
 
@@ -2305,5 +2358,6 @@ but the formal initial shakedown waits for the complete cohort.
 - 用视频或模型自述替代 Harness verdict；
 - 根据 Direct-MuJoCo 证据声称 hardware、perception、SDK fidelity 或 sim-to-real 成果。
 
-最低限度的聚焦检查和每个声明 cohort 机器人一次 reference positive control 优先于更广泛的整理。
-各 package 就绪后应尽早运行逐机器人诊断 canary，但正式首轮 shakedown 必须等待完整 cohort。
+每个声明 cohort 机器人的最低限度 package、simulator-integrity 和共享 Harness 聚焦检查优先于
+更广泛的整理。各 package 就绪后可运行隐藏 reference 诊断和逐机器人 canary，但正式首轮
+shakedown 必须等待完整 cohort。

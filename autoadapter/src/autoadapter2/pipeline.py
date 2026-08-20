@@ -1752,7 +1752,7 @@ def run_experiment(
     skip_reference_calibration: bool = False,
     sealed_inputs_from: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run TGCD/IVC and the configured cells, with the reference gate by default."""
+    """Run TGCD/IVC, optional hidden reference diagnostics, and dynamic cells."""
 
     root = Path(mainline_root).resolve()
     if config is None:
@@ -1943,8 +1943,8 @@ def run_experiment(
                 "robot_configuration_id": robot,
                 "reference_driver": None,
                 "skipped": True,
-                "skip_reason": "explicit diagnostic dynamic-only run",
-                "evaluation_role": "capability_validation",
+                "skip_reason": "optional hidden reference diagnostics were skipped",
+                "evaluation_role": "diagnostic_reference",
                 "pipeline_completed": False,
                 "physical_validation_executed": False,
                 "validation_passed": False,
@@ -1954,7 +1954,7 @@ def run_experiment(
             references[robot] = reference
             _write(destination / "references" / robot / "reference_report.json", reference)
     else:
-        # The reference gate completes for every configured robot before any STUDY call.
+        # Optional hidden diagnostics complete before STUDY and never gate dynamic cells.
         for robot in config.robots:
             package = packages[robot]
             reference_dir = destination / "references" / robot
@@ -1988,7 +1988,7 @@ def run_experiment(
                         attempt=0,
                     )
                 reference = _copy(dict(reference))
-                reference["evaluation_role"] = "capability_validation"
+                reference["evaluation_role"] = "diagnostic_reference"
                 reference["robot_configuration_id"] = robot
                 reference["reference_driver"] = str(driver_path)
                 reference["passed"] = _reference_passed(
@@ -1999,7 +1999,7 @@ def run_experiment(
                 reference = {
                     "robot_configuration_id": robot,
                     "reference_driver": None,
-                    "evaluation_role": "capability_validation",
+                    "evaluation_role": "diagnostic_reference",
                     "pipeline_completed": False,
                     "physical_validation_executed": False,
                     "validation_passed": False,
@@ -2011,60 +2011,6 @@ def run_experiment(
             _write(reference_dir / "reference_report.json", reference)
 
     references_passed = all(bool(references[robot].get("passed")) for robot in config.robots)
-    if not references_passed and not skip_reference_calibration:
-        review_queue = build_experience_review_queue(
-            run_id=selected_run_id,
-            experiment_id=config.experiment_id,
-            expected_robots=config.robots,
-            expected_conditions=config.generation_conditions,
-            cells=(),
-        )
-        _write(destination / config.experience_review_queue_output, review_queue)
-        result = {
-            "experiment_id": config.experiment_id,
-            "code_version": __version__,
-            "run_id": selected_run_id,
-            "configuration": config.as_dict(),
-            "package_check": package_check,
-            "references": references,
-            "sealed_input_provenance": sealed_input_provenance,
-            "reference_calibration_passed": False,
-            "cells": [],
-            "paired_report": build_paired_report(
-                [],
-                expected_robots=config.robots,
-                expected_conditions=config.generation_conditions,
-                run_id=selected_run_id,
-            ),
-            "pipeline_completed": False,
-            "cell_pipeline_completed": review_queue["cell_pipeline_completed"],
-            "expected_evolution_outcome_count": review_queue[
-                "expected_evolution_outcome_count"
-            ],
-            "retained_evolution_outcome_count": review_queue[
-                "retained_evolution_outcome_count"
-            ],
-            "all_evolution_outcomes_retained": review_queue[
-                "all_evolution_outcomes_retained"
-            ],
-            "reviewed_disposition_count": review_queue["reviewed_disposition_count"],
-            "dispositions_complete": review_queue["dispositions_complete"],
-            "dynamic_model_called": True,
-            "driver_generated_in_run": False,
-            "capability_validation_executed": False,
-            "initial_capability_validation_passed": False,
-            "final_capability_validation_passed": False,
-            "task_demo_executed": False,
-            "task_demo_passed": False,
-            "physical_validation_executed": False,
-            "initial_validation_passed": False,
-            "final_validation_passed": False,
-            "success": False,
-            "claim": "reference calibration failed; dynamic cells were not started",
-            "stage_evidence": stage_log,
-        }
-        _write(destination / "experiment_report.json", result)
-        return result
 
     cell_reports: list[dict[str, Any]] = []
     for robot in config.robots:
@@ -2159,26 +2105,14 @@ def run_experiment(
             for cell in cell_reports
         ),
         "final_validation_passed": all_cells_passed,
-        "success": references_passed and all_cells_passed and all_cells_completed,
+        "success": all_cells_passed and all_cells_completed,
         "claim": (
-            (
-                "dynamic cells completed without reference calibration; "
-                "formal mainline claim unavailable"
-                if all_cells_completed
-                else (
-                    "dynamic-only experiment ended before all cells completed; "
-                    "formal mainline claim unavailable"
-                )
-            )
-            if skip_reference_calibration
+            "configured experiment ended before all cells completed; named cell failures remain"
+            if not all_cells_completed
             else (
                 "driver-synthesis mainline succeeded; Task Demo results reported separately"
-                if references_passed and all_cells_passed and all_cells_completed
-                else (
-                    "driver synthesis passed; one or more Task Demo pipelines were incomplete"
-                    if references_passed and all_cells_passed
-                    else "configured experiment completed; named cell synthesis failures remain"
-                )
+                if all_cells_passed
+                else "configured experiment completed; named cell synthesis failures remain"
             )
         ),
         "stage_evidence": stage_log,
@@ -2192,7 +2126,6 @@ def success_claim(result: Mapping[str, Any]) -> bool:
 
     return (
         bool(result.get("success"))
-        and bool(result.get("reference_calibration_passed"))
         and bool(result.get("final_capability_validation_passed"))
         and bool(result.get("pipeline_completed"))
     )
