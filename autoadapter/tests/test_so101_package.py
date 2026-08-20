@@ -5,6 +5,7 @@ import importlib.util
 import math
 import tempfile
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 import mujoco
 import numpy as np
@@ -19,6 +20,33 @@ from autoadapter2.validation_compiler import validate_capability_validation_suit
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "robotstudio_so101" / "1.0.0"
+PARKED_SHOULDER_PAN = -1.9
+
+
+def _expected_reset(**fixture_positions: float) -> dict:
+    return {
+        "kind": "default",
+        "joint_positions": {
+            "shoulder_pan": PARKED_SHOULDER_PAN,
+            **fixture_positions,
+        },
+        "actuator_controls": {"shoulder_pan": PARKED_SHOULDER_PAN},
+    }
+
+
+def _static_task_geom_names(node: ET.Element, *, moving: bool = False) -> tuple[str, ...]:
+    names: list[str] = []
+    for child in node:
+        if child.tag == "geom" and not moving:
+            name = child.get("name")
+            if name:
+                names.append(name)
+        elif child.tag == "body":
+            child_moving = moving or any(
+                item.tag in {"joint", "freejoint"} for item in child
+            )
+            names.extend(_static_task_geom_names(child, moving=child_moving))
+    return tuple(names)
 
 
 def _design(package):
@@ -412,7 +440,7 @@ def test_so101_peg_bin_and_hole_fixtures_match_source_metrics() -> None:
         if item["task_id"] in task_ids
     }
     assert len({item["scene_entrypoint"] for item in instances.values()}) == 3
-    assert instances["mw_pick_out_of_hole"]["reset"] == {"kind": "default"}
+    assert instances["mw_pick_out_of_hole"]["reset"] == _expected_reset()
 
     binding_by_id = {
         item["binding_id"]: item
@@ -595,13 +623,13 @@ def test_so101_drawer_button_and_handle_fixtures_match_source_axes() -> None:
     assert instances["mw_drawer_open"]["scene_entrypoint"] == instances[
         "mw_drawer_close"
     ]["scene_entrypoint"]
-    assert instances["mw_drawer_open"]["reset"] == {"kind": "default"}
-    assert instances["mw_drawer_close"]["reset"]["joint_positions"] == {
-        "drawer_slide": -0.08
-    }
-    assert instances["mw_handle_pull"]["reset"]["joint_positions"] == {
-        "vertical_handle_slide": -0.05
-    }
+    assert instances["mw_drawer_open"]["reset"] == _expected_reset()
+    assert instances["mw_drawer_close"]["reset"] == _expected_reset(
+        drawer_slide=-0.08
+    )
+    assert instances["mw_handle_pull"]["reset"] == _expected_reset(
+        vertical_handle_slide=-0.05
+    )
 
     binding_by_id = {
         item["binding_id"]: item
@@ -666,10 +694,8 @@ def test_so101_door_and_rotary_fixtures_match_source_formulas() -> None:
     assert instances["mw_door_open"]["scene_entrypoint"] == instances[
         "mw_door_close"
     ]["scene_entrypoint"]
-    assert instances["mw_door_open"]["reset"] == {"kind": "default"}
-    assert instances["mw_door_close"]["reset"]["joint_positions"] == {
-        "door_hinge": 1.2
-    }
+    assert instances["mw_door_open"]["reset"] == _expected_reset()
+    assert instances["mw_door_close"]["reset"] == _expected_reset(door_hinge=1.2)
     assert len({item["scene_entrypoint"] for item in instances.values()}) == 4
 
     binding_by_id = {
@@ -739,12 +765,35 @@ def test_so101_private_reset_fails_every_task_criterion() -> None:
     )["bindings"]
     binding_by_id = {binding["binding_id"]: binding for binding in bindings}
     task_by_id = {task["task_id"]: task for task in package.tasks}
+    assert len({instance["scene_entrypoint"] for instance in instances}) == 17
 
     for instance in instances:
         scene = (package.root / instance["scene_entrypoint"]).resolve()
+        worldbody = ET.parse(scene).getroot().find("worldbody")
+        assert worldbody is not None
         model = mujoco.MjModel.from_xml_path(str(scene))
+        for name in _static_task_geom_names(worldbody):
+            geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, name)
+            assert geom_id >= 0, f"{instance['task_id']}: {name}"
+            contype = int(model.geom_contype[geom_id])
+            conaffinity = int(model.geom_conaffinity[geom_id])
+            if name.endswith("_goal_marker"):
+                assert (contype, conaffinity) == (0, 0)
+            else:
+                assert contype & 1, f"{instance['task_id']}: {name} contype"
+                assert conaffinity & 1, f"{instance['task_id']}: {name} conaffinity"
         data = mujoco.MjData(model)
         apply_framework_reset(mujoco, model, data, instance["reset"])
+        mujoco.mj_forward(model, data)
+        shoulder_joint = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_JOINT, "shoulder_pan"
+        )
+        shoulder_qpos = int(model.jnt_qposadr[shoulder_joint])
+        shoulder_actuator = mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_ACTUATOR, "shoulder_pan"
+        )
+        assert data.qpos[shoulder_qpos] == PARKED_SHOULDER_PAN
+        assert data.ctrl[shoulder_actuator] == PARKED_SHOULDER_PAN
         tracker = TrackedMuJoCoSession(
             mujoco=mujoco,
             model=model,
@@ -770,6 +819,24 @@ def test_so101_private_reset_fails_every_task_criterion() -> None:
             comparator=criterion["comparator"],
             threshold=criterion["threshold"],
         ), f"reset already passes {instance['task_id']}: value={value}"
+
+        reset_controls = np.asarray(data.ctrl).copy()
+        minimum_distance = min(
+            (float(data.contact[index].dist) for index in range(data.ncon)),
+            default=float("inf"),
+        )
+        for _ in range(100):
+            mujoco.mj_step(model, data)
+            step_minimum = min(
+                (float(data.contact[index].dist) for index in range(data.ncon)),
+                default=float("inf"),
+            )
+            minimum_distance = min(minimum_distance, step_minimum)
+        np.testing.assert_array_equal(data.ctrl, reset_controls)
+        assert minimum_distance >= -0.005, (
+            f"{instance['task_id']}: minimum reset/settling contact distance "
+            f"{minimum_distance}"
+        )
 
 
 def test_so101_reference_private_suite_and_renderer() -> None:

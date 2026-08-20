@@ -7,10 +7,10 @@
     <light pos="0.25 -0.2 1.2" dir="0.2 0.1 -1" directional="true"/>
     <geom name="floor" type="plane" size="0 0 0.05" rgba="0.24 0.26 0.29 1"/>
     <geom name="work_surface" type="box" pos="0.37 0.12 0.08" size="0.22 0.16 0.08"
-          mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01"
+          mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01"
           rgba="0.50 0.52 0.55 1"/>
     <geom name="wall" type="box" pos="0.425 0.12 0.20" size="0.045 0.012 0.04"
-          mass="0" contype="2" conaffinity="2" friction="1 0.1 0.01"
+          mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01"
           rgba="0.76 0.34 0.14 1"/>
     <body name="workpiece" pos="0.36 0.08 0.18">
       <freejoint/>
