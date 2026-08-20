@@ -236,6 +236,43 @@ evidence, does not establish Task Demo or driver-synthesis success, and does
 not admit this configuration to the runnable index. A real-model dynamic
 canary and final admission review remain required.
 
+## UR5e + Robotiq 2F-85 Package-Wide Reference Positive Control
+
+Run `ur5e-robotiq-reference-positive-control-20260820T150621Z`, on mainline
+commit `4b08753`, passed all 20 fixed UR5e plus Robotiq 2F-85 Task Library cases
+with the reviewed skeleton-assisted calibration driver and real MuJoCo 3.3.6
+physics:
+
+- pipeline, physical execution, and structured Harness validation: passed;
+- the focused package and reference checks passed for the exact robot identity,
+  public snapshot, 20 tasks, private package, local asset closure, and reference
+  driver;
+- tasks, source clauses, and private cases: `20/20` each;
+- actuator control was observed before physics stepping and changed from reset
+  in every trial;
+- all core guards, all 19 task-contact guards, all three applicable object
+  stability guards, and the reach gripper-neutral guard passed, with no direct
+  `qpos` or `qvel` write detected;
+- maximum trial length: 6,980 physics steps, below the 10,000-step case limit;
+- videos: `20/20` complete H.264, independently decoded at `800x600` and 10
+  fps, with 25 to 141 frames per case; and
+- push-to-goal, drawer-open, door-close, side peg insertion, pick-place, and
+  faucet-open terminal frames were visually checked for nonblank, task-readable
+  framing and visible terminal task state.
+
+The ignored raw run is retained locally at
+`autoadapter/runs/ur5e-robotiq-reference-positive-control-20260820T150621Z/`.
+Its `reference_report.json`, complete 20-case suite, capability design, and
+per-case videos remain together.
+
+This result establishes package-wide reference feasibility for the canonical
+UR5e plus Robotiq 2F-85 assets, pose-DLS actuator trajectory baseline, trusted
+measurements, guards, Harness, package loader, and video path. It is calibration
+evidence only: it is not model-generated or dynamic evidence, does not
+establish Task Demo or driver-synthesis success, and does not admit this
+configuration to the runnable index. A real-model dynamic canary and final
+admission review remain required.
+
 ## Barkour Flat-Controller Calibration Gate
 
 Run `barkour-flat-bridge-20260820T125848Z` retained a locally trained official
