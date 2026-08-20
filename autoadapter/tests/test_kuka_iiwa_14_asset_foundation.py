@@ -292,6 +292,10 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/morphology.json" in observed_paths
     assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/sources.json" in observed_paths
     assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/catalog.json" in observed_paths
+    assert (
+        "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/"
+        "skeleton/arm_serial_dls.py"
+    ) in observed_paths
     missing = " ".join(candidate["missing_for_runnable_package"])
     assert "complete local MuJoCo asset closure" not in missing
     assert "current mainline morphology.json" not in missing
@@ -302,5 +306,5 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
         "sources.json",
     ]
     assert not (PACKAGE_ROOT / "tasks" / "private").exists()
-    assert not (PACKAGE_ROOT / "skeleton").exists()
+    assert (PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
     assert not (PACKAGE_ROOT / "reference").exists()

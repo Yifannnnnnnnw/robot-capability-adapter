@@ -775,7 +775,6 @@ class KukaIiwa14PublicTaskLibraryTests(unittest.TestCase):
 
         forbidden_paths = (
             TASKS_ROOT / "private",
-            PACKAGE_ROOT / "skeleton",
             PACKAGE_ROOT / "reference",
             PACKAGE_ROOT / "controller",
             PACKAGE_ROOT / "IK",
