@@ -189,8 +189,78 @@ class ReferenceStretch2Driver:
         self._control.move_tool_to_position(target, tolerance_m=0.02)
 
     def contact_task(self, request: Any) -> None:
-        task_id, _ = _request(request)
-        raise ValueError(f"unsupported Stretch contact calibration task {task_id!r}")
+        task_id, parameters = _request(request)
+        thresholds = {
+            "mw_push_to_goal": 0.05,
+            "mw_push_wall": 0.07,
+            "mw_sweep_into_goal": 0.05,
+        }
+        threshold = thresholds.get(task_id)
+        if threshold is None:
+            raise ValueError(
+                f"unsupported Stretch contact calibration task {task_id!r}"
+            )
+
+        target = _vector(parameters["target_position"], name="target_position")
+        self._control.set_wrist_yaw(0.0)
+        self._control.set_gripper(-0.005)
+        # Center the angled finger boxes low enough to engage the workpiece.
+        contact_height = float(self._body_position("workpiece")[2]) + 0.024
+
+        current = _vector(
+            parameters["contact_position"], name="contact_position"
+        )
+        current[2] = contact_height
+        self._move_contact(
+            current,
+            selector="midpoint",
+            accepted_error_m=0.10,
+            attempts=5,
+        )
+
+        route_keys = (
+            ("route_position", "tool_target_position")
+            if task_id == "mw_push_wall"
+            else ("tool_target_position",)
+        )
+        for key in route_keys:
+            destination = _vector(parameters[key], name=key)
+            destination[2] = contact_height
+            waypoint_count = max(
+                2,
+                int(np.ceil(float(np.linalg.norm(destination - current)) / 0.01)),
+            )
+            for waypoint in np.linspace(
+                current, destination, waypoint_count + 1
+            )[1:]:
+                self._move_contact(
+                    waypoint,
+                    selector="midpoint",
+                    accepted_error_m=0.10,
+                    attempts=3,
+                )
+                error = float(
+                    np.linalg.norm(self._body_position("workpiece") - target)
+                )
+                if error <= 0.6 * threshold:
+                    self._idle(200)
+                    if (
+                        float(
+                            np.linalg.norm(
+                                self._body_position("workpiece") - target
+                            )
+                        )
+                        <= threshold
+                    ):
+                        return
+            current = destination
+
+        self._idle(300)
+        error = float(np.linalg.norm(self._body_position("workpiece") - target))
+        if error > threshold:
+            raise RuntimeError(
+                f"Stretch contact task did not converge; residual={error:.5f}"
+            )
 
     def object_task(self, request: Any) -> None:
         task_id, parameters = _request(request)

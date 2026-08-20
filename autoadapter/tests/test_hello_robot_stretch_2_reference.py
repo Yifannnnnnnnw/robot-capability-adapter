@@ -18,7 +18,10 @@ DRIVER_PATH = PACKAGE_ROOT / "reference" / "driver.py"
 REFERENCE_CONDITION = "skeleton-assisted"
 SUPPORTED_TASK_IDS = (
     "mw_reach_target",
+    "mw_push_to_goal",
     "mw_pick_place",
+    "mw_push_wall",
+    "mw_sweep_into_goal",
     "mw_drawer_open",
     "mw_drawer_close",
     "mw_button_press",
