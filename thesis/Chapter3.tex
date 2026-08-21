@@ -1,11 +1,200 @@
-\chapter[AutoAdapter-Bench]{AutoAdapter-Bench: Comparing LLM Backbones in Driver Synthesis and Capability-Interface Use}
+\chapter[AutoAdapter-Bench]{AutoAdapter-Bench: LLMs for Robot Drivers}
 \label{chapter:autoadapter-bench}
+
+\begin{quote}\itshape
+This chapter presents AutoAdapter-Bench, a benchmark for comparing how
+different LLM backbones perform in robot-driver tasks. The benchmark separates
+two abilities that are often conflated: synthesising robot-specific drivers and
+using robot capability interfaces to complete tasks.
+\end{quote}
 
 \section[Introduction]{Introduction}
 
+This chapter develops AutoAdapter-Bench to examine how LLM backbone choice
+affects two roles in robot-driver systems: synthesising robot-specific drivers
+and supporting high-level control through robot capability interfaces. In both
+tracks, the surrounding architecture provides a common experimental setting,
+while the LLM backbone remains the object of comparison. The chapter therefore
+does not investigate how specific design choices in Auto-Adapter or other
+driver-synthesis frameworks affect synthesis performance, nor does it compare
+alternative high-level-control architectures.
+
+The first track compares seven LLM backbones within the same Auto-Adapter
+generation framework across 14 robot configurations. Generated drivers are
+assessed against common executable validation criteria. The comparison considers
+the proportion of drivers that pass validation, the cost of generation, and the
+repair effort required to produce a valid submission. Together, these measures
+show whether backbone choice changes the reliability and efficiency of driver
+synthesis under a shared generation design.
+
+The second track compares the same seven backbones within a Code-BT high-level
+controller. For each robot, the driver, capability interface, controller
+structure, and task conditions remain common across backbones. Performance is
+measured primarily by complete-task success, while capability-selection and
+execution failures help explain differences between models. This track therefore
+evaluates how effectively each backbone operates through an existing robot
+interface within the same control architecture.
+
+Because the two tracks examine different model roles, their outcomes are
+analysed separately rather than combined into a single backbone ranking. The
+remainder of the chapter defines the benchmark and research questions, describes
+the experimental setup, presents the results from both tracks, and discusses
+their implications for LLM backbone selection.
+
 \section[Background and Research Questions]{Background and Research Questions}
 
+Code-generation benchmarks commonly evaluate whether model-produced programs
+pass executable tests, whereas many LLM-based robot controllers assume that
+actions or tools are already available and assess planning or task completion
+\citep{chen2021codex,jimenez2024swebench,ahn2022saycan,
+singh2023progprompt}. Neither setting alone reveals how the same LLM performs
+when constructing a robot-specific driver and when operating through an existing
+capability interface.
+
+AutoAdapter-Bench therefore defines backbone capability as observed performance
+under shared system conditions, rather than as an intrinsic property of a model.
+B1 compares backbones within Auto-Adapter, while B2 compares them within Code-BT.
+The chapter addresses two corresponding questions:
+
+\paragraph{\textit{RQ1a---Driver synthesis.}}
+Under a common Auto-Adapter generation framework and executable validation
+standard, to what extent do LLM backbones differ in synthesising robot-specific
+drivers that pass validation under the skeleton-assisted condition and the
+prespecified from-scratch ablation?
+
+\paragraph{\textit{RQ1b---Capability-interface use.}}
+Under a common Code-BT architecture, with the validated driver, capability
+interface, and matched tasks held constant, to what extent do LLM backbones
+differ in complete-task success?
+
+The findings are conditional on these benchmark settings. They do not compare
+alternative synthesis frameworks or controller architectures, and do not
+estimate morphology effects.
+
 \section[Benchmark and Experimental Setup]{Benchmark and Experimental Setup}
+
+\subsection{Benchmark Design}
+
+B1 compares LLM backbones for driver synthesis while holding the Auto-Adapter
+framework and evaluation protocol constant. B2 compares the same backbones for
+capability-interface use while holding Code-BT, the validated driver, and the
+robot capability interface constant \citep{zhang2025codebt}. Because the tracks
+use different experimental units and define success at different levels, their
+results are reported separately and are not combined into an aggregate score.
+
+\subsection{Experimental Matrix}
+
+Tables~\ref{tab:chapter3-b1-matrix} and~\ref{tab:chapter3-b2-matrix} summarise
+the experimental units and declared sample sizes for B1 and B2.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{B1 driver-synthesis experimental matrix.}
+  \label{tab:chapter3-b1-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{B1 design element} & \textbf{Setting} \\
+    \midrule
+    Backbones & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; Qwen3 32B \\
+    Skeleton-assisted condition & 14 robot configurations $\times$ 7 backbones $\times$ 5 replicates = 490 replicates \\
+    From-scratch condition & SO-101, Franka Panda, Unitree Go2, Stretch 2 and Unitree G1 $\times$ 7 backbones $\times$ 5 replicates = 175 replicates \\
+    Experimental unit & One generation-condition replicate \\
+    Attempt budget & One initial submission and at most two Repair attempts \\
+    Total & 665 replicates \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{B2 capability-interface-use experimental matrix.}
+  \label{tab:chapter3-b2-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{B2 design element} & \textbf{Setting} \\
+    \midrule
+    Backbones & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; Qwen3 32B \\
+    Robots & SO-101 and Unitree Go2 \\
+    Controller & Code-BT \\
+    Fixed software & One validated driver and capability interface per robot \\
+    Task repetitions & Five tasks $\times$ 2 private seeds $\times$ 2 episodes \\
+    Experimental unit & One controller episode \\
+    Total & 280 episodes \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+\subsection{Backbone and Robot Cohorts}
+
+The seven backbones form a purposive comparison cohort rather than a
+representative sample of available LLMs. The selection extends the cross-model
+design of AutoAdapter 1.0 \citep{wang2026autoadapter}. Three Anthropic models
+provide a within-provider comparison across model tiers, while the remaining
+models extend the study across four additional providers. Smaller open-weight
+model families are included to examine whether successful driver synthesis and
+interface use are confined to proprietary systems. The resulting comparisons
+are conditional on these seven models and the benchmark conditions.
+
+The B1 cohort contains 14 exact robot configurations spanning manipulation,
+dexterous-hand, legged, humanoid, mobile, and bimanual platforms. The
+skeleton-assisted condition covers the complete cohort. The five-robot
+from-scratch subset was selected before outcomes were inspected to bound the
+additional experiment while retaining contrasting integration settings. B2
+uses SO-101 and Unitree Go2 to provide one manipulation and one locomotion
+setting. Robot configuration is treated as a blocking factor rather than as
+evidence of a morphology effect. Canonical configuration identifiers and
+package versions are reported in
+Appendix~\ref{tab:appendix-benchmark-scope}.
+
+\subsection{Success Criteria and Validation}
+
+In B1, each robot's public Task Library provides source-backed task standards
+from which a backbone formulates capability-level criteria. For that robot, the
+source task standards, private task instances, measurement semantics, and
+Harness verdict rules are held constant across backbones. Before driver
+generation, the implementation-blind Independent Validation Compiler audits
+each criterion against its supporting task clauses. It rejects any criterion
+that omits an obligation, lacks source support, or weakens the source rule, and
+compiles the accepted criteria into a sealed private validation suite.
+
+The trusted Harness imports each submitted driver in isolation, resets the
+MuJoCo environment, invokes the required operations, advances the physics
+simulation, and measures the resulting simulator state
+\citep{todorov2012mujoco}. A driver passes B1 only if every compiled validation
+case passes. Successful import, public smoke-test results, method return values,
+and model self-reports are diagnostic evidence only and cannot determine the
+verdict. When Repair is used, each revised submission is evaluated against the
+same sealed suite.
+
+B2 task criteria are drawn from fixed versions of primary benchmark
+implementations or industrial standards. Each scoring clause specifies its
+metric, comparator, threshold, temporal requirement, and aggregation rule. For
+example, the SO-101 reach clause adapts Meta-World's
+\texttt{sawyer\_reach\_v3}: a single trial passes when the terminal Euclidean
+distance between the end effector and target is at most \(0.05\,\mathrm{m}\).
+It therefore measures terminal positioning accuracy. The robot and scene are
+adapted, while the source metric, unit, comparator, and threshold are retained.
+Because the source implementation defines \(0.05\,\mathrm{m}\) without giving
+a separate rationale for that value, the threshold is reported as Meta-World's
+operational definition; where a source does explain its threshold, that
+rationale is reported. Any robot-specific adaptation is stated explicitly and
+may not weaken the source obligation. The complete task criteria, sources, and
+adaptations are reported in Appendix~[X].
+
+For B2, the Harness executes each episode through the fixed driver and declares
+complete-task success only when every required clause passes. A controller
+self-report or a valid behaviour tree cannot substitute for this
+simulator-based verdict, which is not evidence of hardware performance.
 
 \section[Driver-Synthesis Track]{Driver-Synthesis Track}
 
