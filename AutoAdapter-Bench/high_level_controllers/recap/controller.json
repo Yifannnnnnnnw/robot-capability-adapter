@@ -3,7 +3,7 @@
   "controller_id": "recap",
   "display_name": "ReCAP",
   "audit_status": "source-audited",
-  "adapter_status": "typed-core-implemented-worker-integration-pending",
+  "adapter_status": "typed-core-and-worker-integration-implemented-validation-pending",
   "backbone_mode": "replaceable-single-backbone-plan-and-refine",
   "model_backed_roles": [
     "recursive_decomposition",
@@ -25,6 +25,7 @@
   "source_revision": "2fb112ffad685c7c6f7de86d5487ecca6f566fcc",
   "prompt_revision": "autoadapter-recap-typed-capability-v1",
   "public_observation_envelope_revision": "b2-operation-observation-v1",
+  "public_state_profile_revision": "b2-public-state-v1",
   "native_budgets": {
     "max_model_calls": 24,
     "max_capability_calls": 16,
@@ -49,8 +50,6 @@
     "checked_at": "2026-08-21"
   },
   "formal_run_blockers": [
-    "persistent credential-free worker integration",
-    "robot-specific bounded public observation projector",
     "frozen B2 compositional task and Harness suite",
     "exact driver and validation-evidence pin",
     "complete interface-bound capability validation"

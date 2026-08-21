@@ -1,4 +1,4 @@
-"""Persistent candidate worker used by one ReAct-controlled Task Demo trial."""
+"""Persistent candidate worker used by one capability-controlled trial."""
 
 from __future__ import annotations
 
@@ -13,9 +13,10 @@ from typing import Any, Mapping, TextIO
 
 import mujoco
 
+from autoadapter2.b2.public_observation import project_public_state
 from autoadapter2.driver_synthesis import validate_explicit_capability_methods
 
-from .session import TrackedMuJoCoSession, apply_framework_reset
+from .session import StepBudgetExceeded, TrackedMuJoCoSession, apply_framework_reset
 from .worker import _bounded_log, _candidate_runtime_boundary, _load_candidate
 
 
@@ -86,7 +87,20 @@ def execute_react_session(
     capability_errors: list[dict[str, Any]] = []
     fatal_exception = None
     protocol_completed = False
+    session_aborted = False
     capability_methods = tuple(str(item) for item in payload["capability_methods"])
+    public_observation_robot_id = payload.get("public_observation_robot_id")
+
+    def add_public_state(message: Mapping[str, Any]) -> dict[str, Any]:
+        result = dict(message)
+        if public_observation_robot_id is not None:
+            result["public_state"] = project_public_state(
+                robot_configuration_id=str(public_observation_robot_id),
+                mujoco=mujoco,
+                model=model,
+                data=data,
+            )
+        return result
 
     try:
         with tracker, contextlib.redirect_stdout(logs), contextlib.redirect_stderr(logs):
@@ -100,7 +114,7 @@ def execute_react_session(
                 apply_framework_reset(mujoco, model, data, payload.get("reset"))
                 tracker.reset_evidence()
                 capture_frame()
-                _send(protocol_stream, {"type": "ready"})
+                _send(protocol_stream, add_public_state({"type": "ready"}))
 
                 while True:
                     command = _read_command(command_stream)
@@ -115,21 +129,34 @@ def execute_react_session(
                     if method_name not in capability_methods:
                         _send(
                             protocol_stream,
-                            {
+                            add_public_state({
                                 "type": "observation",
                                 "ok": False,
                                 "error": {"code": "UNAUTHORIZED_CAPABILITY"},
-                            },
+                                "sim_step_count": tracker.step_count,
+                            }),
                         )
                         continue
                     if not isinstance(arguments, Mapping):
                         _send(
                             protocol_stream,
-                            {
+                            add_public_state({
                                 "type": "observation",
                                 "ok": False,
                                 "error": {"code": "INVALID_ARGUMENTS"},
-                            },
+                                "sim_step_count": tracker.step_count,
+                            }),
+                        )
+                        continue
+                    if session_aborted:
+                        _send(
+                            protocol_stream,
+                            add_public_state({
+                                "type": "observation",
+                                "ok": False,
+                                "error": {"code": "SESSION_BUDGET_EXCEEDED"},
+                                "sim_step_count": tracker.step_count,
+                            }),
                         )
                         continue
 
@@ -138,6 +165,26 @@ def execute_react_session(
                     try:
                         method = getattr(driver, str(method_name))
                         method(**dict(arguments))
+                    except StepBudgetExceeded as exc:
+                        session_aborted = True
+                        capability_errors.append(
+                            {
+                                "method_name": method_name,
+                                "type": type(exc).__name__,
+                                "message": str(exc)[:1000],
+                                "traceback": traceback.format_exc(limit=8)[-6000:],
+                            }
+                        )
+                        _send(
+                            protocol_stream,
+                            add_public_state({
+                                "type": "observation",
+                                "ok": False,
+                                "error": {"code": "SESSION_BUDGET_EXCEEDED"},
+                                "sim_step_count": tracker.step_count,
+                            }),
+                        )
+                        continue
                     except Exception as exc:
                         capability_errors.append(
                             {
@@ -149,24 +196,24 @@ def execute_react_session(
                         )
                         _send(
                             protocol_stream,
-                            {
+                            add_public_state({
                                 "type": "observation",
                                 "ok": False,
                                 "error": {"code": "CAPABILITY_EXCEPTION"},
                                 "sim_step_count": tracker.step_count,
-                            },
+                            }),
                         )
                         continue
 
                     successful_method_invocations += 1
                     _send(
                         protocol_stream,
-                        {
+                        add_public_state({
                             "type": "observation",
                             "ok": True,
                             "sim_step_count": tracker.step_count,
                             "steps_added": tracker.step_count - start_steps,
-                        },
+                        }),
                     )
                 tracker.finish()
     except Exception as exc:

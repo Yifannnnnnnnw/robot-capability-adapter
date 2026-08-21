@@ -152,6 +152,7 @@ def run_recap(
     adapter: CapabilityAdapter,
     model: RecapModelClient,
     budgets: RecapBudgets | None = None,
+    initial_public_state: Mapping[str, Any] | None = None,
 ) -> RecapControllerResult:
     """Run the fixed recursive controller against one public capability adapter.
 
@@ -163,6 +164,13 @@ def run_recap(
     fixed_budgets = budgets or RecapBudgets()
     task = _finite_json_object(public_task, label="public_task")
     _assert_public_payload(task, path="public_task")
+    initial_state = (
+        None
+        if initial_public_state is None
+        else _finite_json_object(initial_public_state, label="initial_public_state")
+    )
+    if initial_state is not None:
+        _assert_public_payload(initial_state, path="initial_public_state")
     catalog = adapter.public_catalog()
     _assert_public_payload(catalog, path="capability_catalog")
 
@@ -191,6 +199,7 @@ def run_recap(
             "robot_configuration_id": adapter.robot_configuration_id,
             "capability_design_id": adapter.capability_design_id,
             "capability_catalog": catalog,
+            "initial_public_state": initial_state,
         }
     )
     rolling_history: list[dict[str, str]] = []
