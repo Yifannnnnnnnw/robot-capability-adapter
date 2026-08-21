@@ -50,11 +50,33 @@ validation.
 
 \section{Background}
 
-\subsection{Task-Specific Code and Reusable Drivers}
-
 \subsection{Physics-Grounded Feedback}
 
+LLM coding agents use compiler and test failures as development feedback.
+\citet{tripathi2026testdriven} return structured \texttt{pytest} diagnostics
+that may include aggregate simulator measurements, while
+\citet{kim2026physicalcorrection} use physical simulation to correct
+LLM-generated tool-using primitives. The Auto-Adapter experiment asks whether
+a bounded, candidate-visible projection of MuJoCo state adds information beyond
+structured diagnostics. This public feedback remains distinct from the sealed
+validation cases and final \emph{Harness} verdict, and simulator state does not
+establish hardware behaviour.
+
 \subsection{Capability Design}
+
+Task-conditioned robot programming commonly generates the code or operation
+needed for one instruction, potentially leaving other reusable operations
+unexplored \citep{liang2023codeaspolicies,mu2024robocodex}. Task-Grounded
+Capability Design instead supplies at least twenty source-backed tasks, without
+a capability catalogue or task-to-capability mapping, and asks the model to
+propose five to ten capabilities intended to cover the library. From the
+associated task-level standards, the model also forms capability-level pass
+criteria. An implementation-blind IVC audits whether those criteria preserve
+source obligations, binds them to private MuJoCo task instances and trusted
+measurement definitions, and compiles an executable validation suite; the
+\emph{Harness} retains final verdict authority. This design is intended to give
+the high-level controller a broader set of independently testable operations
+to select and compose.
 
 \section{Auto-Adapter Overview}
 
