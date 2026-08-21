@@ -30,6 +30,95 @@ DEFAULT_RUNNER = EXPERIMENT_ROOT / "run_b1.py"
 MAX_WORKERS = 8
 
 
+def _runtime_environment(
+    resolved: Mapping[str, Any],
+    *,
+    backbone_id: str,
+    parent_environment: Mapping[str, str],
+) -> tuple[dict[str, str], dict[str, Any], Path]:
+    """Build one secret-safe subprocess environment from a pinned runtime config."""
+
+    runtime_paths = resolved.get("backbone_runtime_config_paths")
+    path_value = (
+        runtime_paths.get(backbone_id)
+        if isinstance(runtime_paths, Mapping)
+        else None
+    )
+    if not isinstance(path_value, str) or not path_value:
+        raise B1RunError(f"no pinned runtime config for backbone {backbone_id}")
+    config_path = Path(path_value).resolve()
+    config = _read_json(config_path, label=f"{backbone_id} runtime config")
+    if config.get("backbone_id") != backbone_id:
+        raise B1RunError(f"{config_path}: backbone_id does not match {backbone_id}")
+    if config.get("transport") != "openai-compatible":
+        raise B1RunError(
+            f"{config_path}: transport must be openai-compatible for company API"
+        )
+    model_id = config.get("exact_model_id")
+    base_url = config.get("endpoint_base_url")
+    endpoint_path = config.get("endpoint_path")
+    if not isinstance(model_id, str) or not model_id.strip():
+        raise B1RunError(f"{config_path}: exact_model_id must be non-empty")
+    if not isinstance(base_url, str) or not base_url.strip():
+        raise B1RunError(f"{config_path}: endpoint_base_url must be non-empty")
+    if endpoint_path != "/chat/completions":
+        raise B1RunError(
+            f"{config_path}: endpoint_path must be /chat/completions"
+        )
+    settings = config.get("inference_settings")
+    if not isinstance(settings, Mapping):
+        raise B1RunError(f"{config_path}: inference_settings must be an object")
+    required_settings = (
+        "temperature",
+        "thinking",
+        "max_tokens",
+        "tool_history_mode",
+        "history_char_budget",
+        "timeout_s",
+    )
+    missing = [name for name in required_settings if name not in settings]
+    if missing:
+        raise B1RunError(
+            f"{config_path}: missing inference setting(s): {', '.join(missing)}"
+        )
+    if settings["temperature"] != 0.0:
+        raise B1RunError(
+            f"{config_path}: current model client requires temperature 0.0"
+        )
+    thinking = settings["thinking"]
+    if thinking is not None and not isinstance(thinking, str):
+        raise B1RunError(f"{config_path}: thinking must be a string or null")
+    company_key = parent_environment.get("AUTOADAPTER_COMPANY_API_KEY", "").strip()
+    if not company_key:
+        raise B1RunError("AUTOADAPTER_COMPANY_API_KEY is required")
+
+    environment = dict(parent_environment)
+    environment.update(
+        {
+            "AUTOADAPTER_MODEL_PROVIDER": "openai-compatible",
+            "AUTOADAPTER_MODEL_ID": model_id.strip(),
+            "AUTOADAPTER_MODEL_API_BASE_URL": base_url.rstrip("/"),
+            "AUTOADAPTER_MODEL_API_AUTH_HEADER": "X-Api-Key",
+            "AUTOADAPTER_MODEL_API_AUTH_PREFIX": "",
+            "AUTOADAPTER_MODEL_API_KEY": company_key,
+            "AUTOADAPTER_MODEL_THINKING": thinking or "",
+            "AUTOADAPTER_MODEL_MAX_TOKENS": str(settings["max_tokens"]),
+            "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE": str(
+                settings["tool_history_mode"]
+            ),
+            "AUTOADAPTER_MODEL_HISTORY_CHARS": str(
+                settings["history_char_budget"]
+            ),
+            "AUTOADAPTER_MODEL_TIMEOUT_S": str(settings["timeout_s"]),
+            "AUTOADAPTER_MODEL_VENDOR": str(config.get("vendor") or "company"),
+        }
+    )
+    # The child needs only the model client's canonical key variable. Keeping the
+    # company alias out of the child also prevents accidental duplicate capture.
+    environment.pop("AUTOADAPTER_COMPANY_API_KEY", None)
+    return environment, config, config_path
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -201,6 +290,19 @@ def launch_parallel(
         ramp_canary=ramp_canary,
         limit=limit,
     )
+    selected_backbones = {
+        str(unit["backbone_id"])
+        for phase in phases
+        for unit in phase["units"]
+    }
+    runtime_environment_by_backbone: dict[str, dict[str, str]] = {}
+    for backbone_id in selected_backbones:
+        environment, _config, _config_path = _runtime_environment(
+            resolved,
+            backbone_id=backbone_id,
+            parent_environment=os.environ,
+        )
+        runtime_environment_by_backbone[backbone_id] = environment
     output.mkdir(parents=True, exist_ok=True)
     logs = output / "logs"
     logs.mkdir()
@@ -293,8 +395,9 @@ def launch_parallel(
             item["queue_elapsed_s"] = max(0.0, started - scheduler_started)
             item["command"] = command
             _write_json(record_path, record)
-        environment = os.environ.copy()
-        environment["AUTOADAPTER_EXPERIMENT1_BACKBONE_ID"] = str(unit["backbone_id"])
+        backbone_id = str(unit["backbone_id"])
+        environment = runtime_environment_by_backbone[backbone_id].copy()
+        environment["AUTOADAPTER_EXPERIMENT1_BACKBONE_ID"] = backbone_id
         with open(item["stdout_path"], "w", encoding="utf-8") as stdout, open(
             item["stderr_path"], "w", encoding="utf-8"
         ) as stderr:

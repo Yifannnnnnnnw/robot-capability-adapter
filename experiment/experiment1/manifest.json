@@ -8,7 +8,12 @@
   "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
   "backbone_set": "../../AutoAdapter-Bench/components/backbone_sets/declared-seven.json",
   "backbone_runtime_configs": {
-    "M5": "providers/M5-deepseek-v4-pro.json"
+    "M1": "providers/M1-company-api-sonnet-4-6.json",
+    "M2": "providers/M2-company-api-opus-5.json",
+    "M3": "providers/M3-company-api-haiku-4-5.json",
+    "M4": "providers/M4-company-api-nova-pro.json",
+    "M6": "providers/M6-company-api-ministral-3-8b.json",
+    "M7": "providers/M7-company-api-qwen3-32b.json"
   },
   "model_execution_policy": "company-hosted-api-only",
   "replicate_set": "components/replicates-core-r3.json",

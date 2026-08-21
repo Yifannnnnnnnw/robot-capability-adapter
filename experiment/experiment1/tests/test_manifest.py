@@ -105,21 +105,28 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertEqual(backbones, ["M1", "M2", "M3", "M4", "M5", "M6", "M7"])
         self.assertEqual(
             recipe["backbone_runtime_configs"],
-            {"M5": "providers/M5-deepseek-v4-pro.json"},
+            {
+                "M1": "providers/M1-company-api-sonnet-4-6.json",
+                "M2": "providers/M2-company-api-opus-5.json",
+                "M3": "providers/M3-company-api-haiku-4-5.json",
+                "M4": "providers/M4-company-api-nova-pro.json",
+                "M6": "providers/M6-company-api-ministral-3-8b.json",
+                "M7": "providers/M7-company-api-qwen3-32b.json",
+            },
         )
         self.assertEqual(recipe["model_execution_policy"], "company-hosted-api-only")
-        m5 = json.loads(
-            (EXPERIMENT_ROOT / "providers" / "M5-deepseek-v4-pro.json").read_text(
+        m1 = json.loads(
+            (EXPERIMENT_ROOT / "providers" / "M1-company-api-sonnet-4-6.json").read_text(
                 encoding="utf-8"
             )
         )
-        self.assertEqual(m5["backbone_id"], "M5")
-        self.assertEqual(m5["deployment_mode"], "company-hosted-api")
-        self.assertEqual(m5["exact_model_id"], "deepseek-v4-pro")
-        self.assertEqual(m5["transport"], "openai-compatible")
-        self.assertEqual(m5["inference_settings"]["thinking"], "disabled")
-        self.assertEqual(m5["inference_settings"]["temperature"], 0.0)
-        self.assertEqual(m5["price_snapshot"]["snapshot_date"], "2026-08-21")
+        self.assertEqual(m1["backbone_id"], "M1")
+        self.assertEqual(m1["deployment_mode"], "company-hosted-api")
+        self.assertEqual(m1["exact_model_id"], "eu.anthropic.claude-sonnet-4-6")
+        self.assertEqual(m1["transport"], "openai-compatible")
+        self.assertEqual(m1["auth_header"], "X-Api-Key")
+        self.assertEqual(m1["inference_settings"]["temperature"], 0.0)
+        self.assertEqual(m1["price_snapshot"]["snapshot_date"], "2026-08-21")
         self.assertEqual(replicates, ["r01", "r02", "r03"])
         self.assertEqual(recipe["extension_replicate_ids"], ["r04", "r05"])
         self.assertEqual(recipe["maximum_cumulative_generation_condition_replicates"], 350)
