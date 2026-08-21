@@ -3,6 +3,51 @@
 
 \section{Introduction}
 
+Chapter~\ref{chapter:autoadapter-bench} evaluates how LLM backbone choice
+affects driver synthesis and capability-interface use while holding the
+surrounding framework fixed. This chapter changes the object of analysis from
+the model to selected design choices and control boundaries in Auto-Adapter.
+The system designs a reusable robot capability interface and generates a
+robot-specific Python driver that implements its declared operations; the
+driver is not itself a task-specific policy. This distinction separates three
+kinds of evidence: producing source code, passing independent capability-level
+validation, and completing a downstream task through the interface. The three
+evidence blocks examine these stages without treating them as a single measure
+of success.
+
+The first study isolates the information available during driver development.
+Test-driven controller synthesis can return structured \texttt{pytest}
+failures, including aggregate quantities derived from simulator execution, to
+guide code correction \citep{tripathi2026testdriven}. Auto-Adapter additionally
+exposes a bounded, candidate-visible projection of MuJoCo state from public
+development cases, such as actuator controls, joint states, and compact
+trajectory summaries. The comparison holds the generation protocol and
+revision opportunity fixed so that the feedback representation, rather than
+additional model interaction, is the object of analysis. It asks whether
+state-rich MuJoCo feedback changes synthesis outcomes beyond structured test
+diagnostics; both conditions may contain simulator-derived quantities. This
+public development signal remains separate from the private validation
+definitions and final verdict owned by the \emph{Harness}. Related work on
+simulation-based correction motivates testing simulator feedback, but does not
+establish its effect in this driver-synthesis setting
+\citep{kim2026physicalcorrection}.
+
+The remaining two studies move upstream from code generation to interface and
+acceptance-condition design. Task-Grounded Capability Design receives at least
+twenty source-backed tasks for each robot, but no pre-authored capability
+catalogue or task-to-capability mapping, and must propose five to ten capability
+contracts intended for reuse across tasks. The analysis assesses whether the
+resulting set remains traceable to sources, covers the source-backed task
+library, and expresses semantically coherent operations; it does not treat
+capability design as driver generation. The pass-criteria study examines
+whether a model can select and form capability-level criteria from existing
+task-level standards without weakening their source obligations. An
+implementation-blind Independent Validation Compiler (IVC) audits those
+criteria, binds them to private MuJoCo task instances and trusted measurement
+definitions, and compiles an executable validation suite. The \emph{Harness}
+retains verdict authority, so successful compilation is not itself behavioural
+validation.
+
 \section{Background}
 
 \subsection{Task-Specific Code and Reusable Drivers}
@@ -15,11 +60,7 @@
 
 \section{Experiments and Results}
 
-\subsection{Reusable Drivers versus Task-Specific Code}
-
 \subsection{MuJoCo versus \texttt{pytest} Feedback}
-
-\subsection{Repair versus No Repair}
 
 \subsection{Task-Grounded Capability Design}
 
