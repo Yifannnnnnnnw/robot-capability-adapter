@@ -39,7 +39,6 @@
     "five fixed per-robot validation bundles and reference calibrations are not frozen",
     "exact seven-backbone provider configurations and prices are not frozen",
     "not all seven provider transports have passed real tool-calling canaries",
-    "replicate seeds and randomized block order are not frozen",
     "the synthesis-only B1 runner and stopping boundary are not implemented",
     "all-five package, isolation, private-suite, physical-integrity, recorder, and reference-calibration checks are not complete"
   ]

@@ -8,5 +8,37 @@
     "r02",
     "r03"
   ],
-  "random_state_policy": "blocked-pending-formal-freeze"
+  "extension_replicate_ids": [
+    "r04",
+    "r05"
+  ],
+  "seed_map": [
+    {
+      "replicate_id": "r01",
+      "role": "core",
+      "seed": 583329363
+    },
+    {
+      "replicate_id": "r02",
+      "role": "core",
+      "seed": 114217382
+    },
+    {
+      "replicate_id": "r03",
+      "role": "core",
+      "seed": 545636081
+    },
+    {
+      "replicate_id": "r04",
+      "role": "extension-only",
+      "seed": 366765176
+    },
+    {
+      "replicate_id": "r05",
+      "role": "extension-only",
+      "seed": 1379476005
+    }
+  ],
+  "seed_application": "Use the mapped seed for both isolated conditions in the same robot-backbone-replicate block when the exact provider transport supports a sampling seed; otherwise record the applied provider seed as null without substituting another model or seed.",
+  "execution_order": "execution-order-r1-r5.json"
 }
