@@ -62,8 +62,14 @@ safe_environment = {
         output = root / "scheduler"
 
         company_key = "test-company-secret-not-for-records"
+        deepseek_key = "test-deepseek-secret-not-for-records"
         with patch.dict(
-            os.environ, {"AUTOADAPTER_COMPANY_API_KEY": company_key}, clear=False
+            os.environ,
+            {
+                "AUTOADAPTER_COMPANY_API_KEY": company_key,
+                "AUTOADAPTER_MODEL_API_KEY": deepseek_key,
+            },
+            clear=False,
         ):
             record = launch_parallel(
                 manifest_path=EXPERIMENT_ROOT / "manifest.json",
@@ -71,7 +77,7 @@ safe_environment = {
                 / "components"
                 / "execution-order-r1-r5.json",
                 output_dir=output,
-                backbone_ids=["M1", "M2", "M3", "M4", "M6", "M7"],
+                backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6", "M7"],
                 robot_ids=["robotstudio_so101", "unitree-go2-stock-12dof"],
                 max_workers=8,
                 limit=8,
@@ -109,8 +115,8 @@ safe_environment = {
             self.assertEqual(safe["provider"], "openai-compatible")
             self.assertEqual(safe["model_id"], config["exact_model_id"])
             self.assertEqual(safe["base_url"], config["endpoint_base_url"])
-            self.assertEqual(safe["auth_header"], "X-Api-Key")
-            self.assertEqual(safe["auth_prefix"], "")
+            self.assertEqual(safe["auth_header"], config["auth_header"])
+            self.assertEqual(safe["auth_prefix"], config["auth_prefix"])
             self.assertEqual(safe["thinking"], settings["thinking"] or "")
             self.assertEqual(safe["max_tokens"], str(settings["max_tokens"]))
             self.assertEqual(
@@ -128,6 +134,10 @@ safe_environment = {
         self.assertEqual(persisted["exit_summary"], record["exit_summary"])
         self.assertNotIn(
             company_key,
+            (output / "scheduler_record.json").read_text(encoding="utf-8"),
+        )
+        self.assertNotIn(
+            deepseek_key,
             (output / "scheduler_record.json").read_text(encoding="utf-8"),
         )
 

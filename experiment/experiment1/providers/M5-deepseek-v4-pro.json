@@ -12,6 +12,9 @@
   "transport": "openai-compatible",
   "endpoint_base_url": "https://api.deepseek.com",
   "endpoint_path": "/chat/completions",
+  "credential_env": "AUTOADAPTER_MODEL_API_KEY",
+  "auth_header": "Authorization",
+  "auth_prefix": "Bearer ",
   "inference_settings": {
     "temperature": 0.0,
     "thinking": "disabled",

@@ -88,9 +88,19 @@ def _runtime_environment(
     thinking = settings["thinking"]
     if thinking is not None and not isinstance(thinking, str):
         raise B1RunError(f"{config_path}: thinking must be a string or null")
-    company_key = parent_environment.get("AUTOADAPTER_COMPANY_API_KEY", "").strip()
-    if not company_key:
-        raise B1RunError("AUTOADAPTER_COMPANY_API_KEY is required")
+    credential_env = config.get("credential_env")
+    if not isinstance(credential_env, str) or not credential_env.strip():
+        raise B1RunError(f"{config_path}: credential_env must be non-empty")
+    credential_env = credential_env.strip()
+    model_key = parent_environment.get(credential_env, "").strip()
+    if not model_key:
+        raise B1RunError(f"{credential_env} is required for backbone {backbone_id}")
+    auth_header = config.get("auth_header")
+    auth_prefix = config.get("auth_prefix")
+    if not isinstance(auth_header, str) or not auth_header.strip():
+        raise B1RunError(f"{config_path}: auth_header must be non-empty")
+    if not isinstance(auth_prefix, str):
+        raise B1RunError(f"{config_path}: auth_prefix must be a string")
 
     environment = dict(parent_environment)
     environment.update(
@@ -98,9 +108,9 @@ def _runtime_environment(
             "AUTOADAPTER_MODEL_PROVIDER": "openai-compatible",
             "AUTOADAPTER_MODEL_ID": model_id.strip(),
             "AUTOADAPTER_MODEL_API_BASE_URL": base_url.rstrip("/"),
-            "AUTOADAPTER_MODEL_API_AUTH_HEADER": "X-Api-Key",
-            "AUTOADAPTER_MODEL_API_AUTH_PREFIX": "",
-            "AUTOADAPTER_MODEL_API_KEY": company_key,
+            "AUTOADAPTER_MODEL_API_AUTH_HEADER": auth_header.strip(),
+            "AUTOADAPTER_MODEL_API_AUTH_PREFIX": auth_prefix,
+            "AUTOADAPTER_MODEL_API_KEY": model_key,
             "AUTOADAPTER_MODEL_THINKING": thinking or "",
             "AUTOADAPTER_MODEL_MAX_TOKENS": str(settings["max_tokens"]),
             "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE": str(
@@ -113,9 +123,11 @@ def _runtime_environment(
             "AUTOADAPTER_MODEL_VENDOR": str(config.get("vendor") or "company"),
         }
     )
-    # The child needs only the model client's canonical key variable. Keeping the
-    # company alias out of the child also prevents accidental duplicate capture.
+    # The child needs only the model client's canonical key variable. Keeping
+    # provider-specific aliases out of the child prevents duplicate capture.
     environment.pop("AUTOADAPTER_COMPANY_API_KEY", None)
+    if credential_env != "AUTOADAPTER_MODEL_API_KEY":
+        environment.pop(credential_env, None)
     return environment, config, config_path
 
 

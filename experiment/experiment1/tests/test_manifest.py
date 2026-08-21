@@ -113,6 +113,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                 "M2": "providers/M2-company-api-opus-5.json",
                 "M3": "providers/M3-company-api-haiku-4-5.json",
                 "M4": "providers/M4-company-api-nova-pro.json",
+                "M5": "providers/M5-deepseek-v4-pro.json",
                 "M6": "providers/M6-company-api-ministral-3-8b.json",
                 "M7": "providers/M7-company-api-qwen3-32b.json",
             },
