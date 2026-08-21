@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="250" viewBox="0 0 780 250">
+  <defs>
+    <style>
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; fill: #111827; }
+      .head { font-family: Arial, Helvetica, sans-serif; font-size: 17px; font-weight: 700; fill: #1e293b; }
+      .text { font-family: Arial, Helvetica, sans-serif; font-size: 16px; fill: #334155; }
+      .mono { font-family: Menlo, Consolas, "Courier New", monospace; font-size: 15px; fill: #475569; }
+      .ok { fill: #16a34a; font-weight: 700; }
+      .pass { font-family: Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 700; fill: #166534; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="778" height="248" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+  <rect x="1" y="1" width="778" height="48" rx="12" fill="#f8fafc"/>
+  <path d="M 1 32 L 1 49 L 779 49 L 779 32" fill="#f8fafc"/>
+  <text x="390" y="31" text-anchor="middle" class="title">Harness Validation Checklist</text>
+
+  <rect x="24" y="70" width="732" height="152" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="24" y="70" width="732" height="38" fill="#e2e8f0"/>
+
+  <line x1="268" y1="70" x2="268" y2="222" stroke="#cbd5e1" stroke-width="2"/>
+  <line x1="512" y1="70" x2="512" y2="222" stroke="#cbd5e1" stroke-width="2"/>
+  <line x1="24" y1="108" x2="756" y2="108" stroke="#cbd5e1" stroke-width="2"/>
+  <line x1="24" y1="146" x2="756" y2="146" stroke="#e2e8f0" stroke-width="1.5"/>
+  <line x1="24" y1="184" x2="756" y2="184" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="146" y="95" text-anchor="middle" class="head">Source Check</text>
+  <text x="390" y="95" text-anchor="middle" class="head">MuJoCo Trials</text>
+  <text x="634" y="95" text-anchor="middle" class="head">Verdict</text>
+
+  <text x="48" y="133" class="text"><tspan class="ok">✓</tspan> no private leak</text>
+  <text x="48" y="171" class="text"><tspan class="ok">✓</tspan> import ok</text>
+  <text x="48" y="209" class="text"><tspan class="ok">✓</tspan> build() found</text>
+
+  <text x="292" y="133" class="text"><tspan class="ok">✓</tspan> rollout video</text>
+  <text x="292" y="171" class="text"><tspan class="ok">✓</tspan> endpoint measured</text>
+  <text x="292" y="209" class="mono">distance = 0.002 m</text>
+
+  <text x="536" y="133" class="mono">task: reach_target</text>
+  <text x="536" y="171" class="mono">threshold: 0.020 m</text>
+  <rect x="536" y="193" width="92" height="24" rx="12" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
+  <text x="582" y="211" text-anchor="middle" class="pass">PASS</text>
+</svg>
