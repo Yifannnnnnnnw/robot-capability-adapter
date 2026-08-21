@@ -2,8 +2,8 @@
 
 > **Status:** approved design draft; formal evidence remains blocked until the
 > applicable manifests and mainline admission gates are frozen<br>
-> **Authority baseline:** `AA2-AUTH` revision `0.19.20`<br>
-> **Prepared:** 2026-08-20<br>
+> **Authority baseline:** `AA2-AUTH` revision `0.19.21`<br>
+> **Prepared:** 2026-08-21<br>
 > **Runtime boundary:** canonical `autoadapter/` Direct-MuJoCo mainline
 
 ## 1. Research design
@@ -25,22 +25,26 @@ morphology effects.
 
 ## 2. Complete benchmark scope
 
-### 2.1 Target robot cohort
+### 2.1 Robot inventory and Chapter 3 cohort
 
-The benchmark target cohort contains 14 exact configurations:
+The reusable full-benchmark inventory contains 14 exact configurations. Chapter
+3 selects ten of them before outcomes are inspected:
 
-| Category | Robot configurations |
-|---|---|
-| Fixed serial manipulator | `robotstudio_so101`, `franka_panda`, `kinova_gen3_robotiq_2f85`, `ufactory_xarm7`, `universal_robots_ur5e_robotiq_2f85`, `piper`, `kuka_iiwa_14` |
-| Hand | `leap_hand` |
-| Quadruped | `unitree-go2-stock-12dof`, `google_barkour_vb` |
-| Humanoid | `unitree_g1` |
-| Mobile manipulator | `hello_robot_stretch_2` |
-| Bimanual | `aloha_2` |
-| Legged arm | `boston_dynamics_spot_with_arm` |
+| Category | Chapter 3 B1 configurations | Expansion-only configurations |
+|---|---|---|
+| Fixed serial manipulator | `robotstudio_so101`, `franka_panda`, `universal_robots_ur5e_robotiq_2f85` | `kinova_gen3_robotiq_2f85`, `ufactory_xarm7`, `piper`, `kuka_iiwa_14` |
+| Hand | `leap_hand` | None |
+| Quadruped | `unitree-go2-stock-12dof`, `google_barkour_vb` | None |
+| Humanoid | `unitree_g1` | None |
+| Mobile manipulator | `hello_robot_stretch_2` | None |
+| Bimanual | `aloha_2` | None |
+| Legged arm | `boston_dynamics_spot_with_arm` | None |
 
-Membership, package availability, and runnable admission are separate facts.
-Every target member remains visible. As of this protocol revision,
+The ten-case selection retains every non-fixed-arm form factor while reducing
+the seven closely related fixed serial-manipulator configurations to three
+representatives. Inventory membership, Chapter 3 selection, package
+availability, and runnable admission are separate facts. As of this protocol
+revision,
 `boston_dynamics_spot_with_arm` has research records but no canonical package
 under `autoadapter/libraries/robots/`; only `robotstudio_so101` and
 `unitree-go2-stock-12dof` are currently in the mainline runnable index. These
@@ -70,11 +74,12 @@ environment-only. Formal runs require fixed identifiers rather than movable
 
 ### 3.1 Condition coverage
 
-The primary condition is `skeleton-assisted` across all 14 target robots:
+The primary condition is `skeleton-assisted` across the ten selected Chapter 3
+robots:
 
 ```text
-14 robots x 7 backbones x 1 condition x 5 replicates
-= 490 generation-condition replicates
+10 robots x 7 backbones x 1 condition x 5 replicates
+= 350 generation-condition replicates
 ```
 
 The `from-scratch` condition is a prespecified scaffolding ablation on five
@@ -87,14 +92,14 @@ contrasting cases:
 
 The selected cases are `robotstudio_so101`, `franka_panda`,
 `unitree-go2-stock-12dof`, `hello_robot_stretch_2`, and `unitree_g1`.
-The complete B1 design therefore contains 665 generation-condition replicates.
-At no more than three submitted attempts per condition, the maximum is 1,995
+The complete B1 design therefore contains 525 generation-condition replicates.
+At no more than three submitted attempts per condition, the maximum is 1,575
 driver submissions.
 
 For every selected five-robot `robot x backbone x replicate` block, the two
 conditions reuse one sealed capability design and one sealed complete
 validation suite. Their model sessions, workspaces, candidate drivers,
-validation feedback, and Repair histories remain isolated. The other nine
+validation feedback, and Repair histories remain isolated. The other five
 robots enter only the primary condition.
 
 ### 3.2 B1 execution boundary
@@ -126,8 +131,11 @@ outcomes are secondary diagnostics.
 ## 4. B2: Capability-interface use
 
 B2 fixes one validated driver and capability interface per robot before
-controller outcomes are inspected. It does not choose a B1-generated driver
-after observing which backbone performed best.
+controller outcomes are inspected. Chapter 3 preselects the two package
+reference drivers, avoiding any post-outcome choice among B1-generated drivers.
+They are not formally admitted until each driver is bound to the selected
+interface through the audited adapter and passes the complete interface-bound
+validation suite.
 
 Code-BT is the first planned Chapter 3 architecture. LLM-as-BT-Planner may be
 added after a separate audit. Inner Monologue, SayCan, ReAct, Code as Policies,

@@ -14,9 +14,25 @@
   ],
   "episodes_per_task_seed": 2,
   "expected_controller_episodes_if_admitted": 280,
-  "fixed_driver_selection": null,
+  "fixed_driver_selection": {
+    "robotstudio_so101": {
+      "driver_id": "robotstudio-so101-reference-1.0.0",
+      "driver_path": "../../../autoadapter/libraries/robots/robotstudio_so101/1.0.0/reference/driver.py",
+      "entrypoint": "build",
+      "available_calibration_evidence": "../../../autoadapter/runs/reference/soarm101-reference-positive-control-20260818T144502Z/reference_report.json",
+      "admission_status": "pending-interface-bound-validation"
+    },
+    "unitree-go2-stock-12dof": {
+      "driver_id": "unitree-go2-stock-12dof-reference-1.0.0",
+      "driver_path": "../../../autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.0/reference/driver.py",
+      "entrypoint": "build",
+      "available_calibration_evidence": "../../../autoadapter/runs/reference/go2-reference-positive-control-20260818T144502Z/reference_report.json",
+      "admission_status": "pending-interface-bound-validation"
+    }
+  },
   "fixed_interface_selection": null,
   "blocked_reasons": [
-    "Formal B2 freeze gates are incomplete"
+    "Formal B2 freeze gates are incomplete",
+    "Selected reference drivers require complete validation against the frozen B2 capability interfaces"
   ]
 }

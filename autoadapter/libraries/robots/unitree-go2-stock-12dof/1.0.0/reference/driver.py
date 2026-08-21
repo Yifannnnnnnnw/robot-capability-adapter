@@ -1,11 +1,11 @@
-"""Calibration-only Go2 controller for the package's canonical MuJoCo model.
+"""Trusted Go2 reference controller for the package's canonical MuJoCo model.
 
-The Framework supplies ``model`` and ``data``.  This reference is deliberately
-ordinary Python rather than a TGCD effect table: each public method accepts the
-same task request envelope that a generated driver receives, while the small
-controller below is only a positive physical-control check.  It writes
-actuator commands to ``data.ctrl`` and advances the supplied session with
-``mujoco.mj_step``; it never loads a model or writes simulator state.
+The Framework supplies ``model`` and ``data``. This reference supports
+calibration and may be selected as a fixed B2 benchmark driver behind an
+audited capability-interface adapter; it is never a B1 model input. It remains
+ordinary Python rather than a TGCD effect table, writes actuator commands to
+``data.ctrl``, and advances the supplied session with ``mujoco.mj_step``. It
+never loads a model or writes simulator state.
 """
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ def _number(parameters: Mapping[str, Any], name: str, default: float) -> float:
 
 
 class ReferenceGo2Driver:
-    """A fixed, source-informed calibration controller for the stock Go2 MJCF."""
+    """A fixed, source-informed reference controller for the stock Go2 MJCF."""
 
     def __init__(self, *, model: Any, data: Any) -> None:
         self.model = model

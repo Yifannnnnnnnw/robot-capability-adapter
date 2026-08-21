@@ -4,9 +4,25 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.20`<br>
-> **Effective date / 生效日期：** 2026-08-20<br>
+> **Document revision / 文档版本：** `0.19.21`<br>
+> **Effective date / 生效日期：** 2026-08-21<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.21` permits a reviewed package reference driver to be preselected as the fixed
+benchmark driver for a separately declared B2 capability-interface-use comparison. Before formal
+B2 execution, the exact reference driver, frozen capability interface, and audited adapter must be
+fixed together, and that combination must pass the complete interface-bound capability validation
+suite. The reference source remains unavailable to the compared controller backbones and to every
+B1 generation condition. Reference-driver selection does not constitute B1 synthesis evidence, and
+reference calibration without the declared high-level controller does not constitute B2 use
+evidence.
+
+**中文辅助说明。** `0.19.21` 允许在单独声明的 B2 capability-interface-use 比较中，预先选择
+经审查的 package reference driver 作为固定 benchmark driver。正式执行 B2 前，必须共同固定准确的
+reference driver、封存的 capability interface 与已审计 adapter，并让该组合通过完整的 interface-bound
+capability validation suite。参与比较的 controller backbone 和全部 B1 生成条件仍不得读取 reference
+源码。选择 reference driver 不构成 B1 synthesis 证据；未包含已声明 high-level controller 的 reference
+校准也不构成 B2 use 证据。
 
 Revision `0.19.20` updates three planned RQ1 Producer model families to their current declared
 versions: Opus 4.8 becomes Opus 5, DeepSeek V3.2 becomes DeepSeek V4 Pro, and Ministral 8B becomes
@@ -775,9 +791,11 @@ are recorded once per `robot x Producer backbone x replicate` and are not duplic
 generation conditions. Task Demo resources remain separate from B1 driver-synthesis resources.
 
 Reference drivers are positive controls for the Framework and Direct-MuJoCo execution route. They
-are not model conditions and cannot be counted as evidence of model-based robot-specific driver
-synthesis or capability-interface use. RQ3 is descriptive and associational: the declared design does
-not identify a causal morphology effect.
+are not B1 model conditions and cannot be counted as evidence of model-based robot-specific driver
+synthesis. A reviewed reference driver may be fixed as the common B2 benchmark driver only under
+the interface-binding, validation, isolation, and controller-execution requirements in Section 3.6;
+its calibration result alone is not capability-interface-use evidence. RQ3 is descriptive and
+associational: the declared design does not identify a causal morphology effect.
 
 **中文辅助说明。** 项目评估三个受控研究问题：
 
@@ -815,10 +833,11 @@ not identify a causal morphology effect.
 verdict 的 wall time，并在可测量时分别报告 model service、development/probe 和 MuJoCo validation
 时间。TGCD 与 model-backed IVC 的共享资源每个 `robot x Producer backbone x replicate` 只记录
 一次，不得在两个生成条件中重复计费；Task Demo 资源与 B1 driver synthesis 分开报告。
-Reference driver 是 Framework 和
-Direct-MuJoCo 执行路径的正向对照，不是模型条件，不能计为 model-based robot-specific driver
-synthesis 或 capability-interface use 的证据。RQ3 只能进行描述性和关联性解释；当前设计不能识别
-morphology 的因果效应。
+Reference driver 是 Framework 和 Direct-MuJoCo 执行路径的正向对照，不是 B1 模型条件，不能
+计为 model-based robot-specific driver synthesis 的证据。经审查的 reference driver 只有在满足
+第 3.6 节的 interface 绑定、validation、隔离和 controller 执行要求后，才可作为所有比较条件共同
+固定的 B2 benchmark driver；单独的 reference calibration 结果不是 capability-interface-use 证据。
+RQ3 只能进行描述性和关联性解释；当前设计不能识别 morphology 的因果效应。
 
 ---
 
@@ -945,7 +964,8 @@ One robot run resolves a coherent package containing:
 - a trusted skeleton family for the skeleton-assisted condition;
 - the preserved from-scratch generation contract and permitted MuJoCo/NumPy/Python primitives;
 - optional reviewed Experience; and
-- a reference driver used only for calibration.
+- a reference driver used for calibration and, only when a B2 experiment manifest explicitly
+  selects it under Section 3.6, as the fixed B2 benchmark driver.
 
 The package must resolve without an SDK Entry, no-SDK placeholder, Translation Layer, integration
 manifest, or SDK Readiness gate. Missing or inconsistent required files stop the run as an input or
@@ -956,7 +976,8 @@ infrastructure failure, not a model failure.
 包含二十项适用来源任务的 Task Library 快照；每项任务公开的来源 lineage 和机器可表达通过
 标准；Framework 私有的具体实例、reset、执行与测量 binding 和 guard；供 skeleton-assisted
 条件使用的可信 skeleton family；保留的 from-scratch 生成合同及获准的 MuJoCo/NumPy/Python
-primitives；可选且经过审阅的 Experience；以及仅用于校准的 reference driver。
+primitives；可选且经过审阅的 Experience；以及用于校准、并且只有在 B2 experiment manifest 按
+第 3.6 节明确选择时才可作为固定 B2 benchmark driver 的 reference driver。
 
 该软件包必须在没有 SDK Entry、no-SDK placeholder、Translation Layer、integration manifest
 或 SDK Readiness gate 的情况下完成解析。缺失或不一致的必需文件应使运行以输入错误或基础设施
@@ -1018,7 +1039,7 @@ autoadapter/libraries/robots/<robot_configuration_id>/<package_version>/
       guards.json
   assets/                    # complete local MJCF closure
   skeleton/                  # skeleton-assisted condition only
-  reference/                 # calibration only
+  reference/                 # calibration; optional manifest-selected fixed B2 driver
 ```
 
 `sources.json` and the public scoring clauses are TGCD-visible. Files under `tasks/private/` remain
@@ -1631,6 +1652,16 @@ remain fixed across matched LLM backbones. A controller finish action or self-re
 Harness verdict, and private criteria, bindings, guards, reference inputs, and model credentials are
 never sent to the candidate worker.
 
+For a separately declared B2 comparison, the versioned experiment manifest may preselect a reviewed
+package reference driver instead of a B1-generated driver. The manifest must pin the exact driver
+identity and validation evidence before outcomes are inspected. Formal B2 execution remains blocked
+until one capability interface and its adapter are frozen for that driver, the complete
+interface-bound capability validation suite passes, and the same fixed driver-interface-adapter
+combination is used for every compared backbone. The controller receives only the public task and
+interface-derived tools; it never receives the reference source or reference-only calibration data.
+This B2 allowance does not expose reference material to B1 or convert the fixed driver into a model
+condition.
+
 **中文辅助说明。** 只有某一条件的最终生成 driver 通过完整 capability validation suite 后，
 Task Demo 才开始。Framework 固定该已准入 driver，通过同一可信 Direct-MuJoCo Harness 运行一次
 已封存的五-task `task_demo_suite.json`，并单独记录 verdict 和逐 trial 视频。Task Demo 不会重开
@@ -1649,6 +1680,14 @@ tool schema。Capability 调用在单个 trial 内通过同一个无 credential 
 LLM backbone 比较中，controller 架构、system prompt、tool 派生规则和 turn/call budget 均保持不变。
 Controller 的 finish action 或自述绝不构成 Harness verdict；私有 criterion、binding、guard、reference
 输入和模型 credential 也绝不发送给 candidate worker。
+
+对于单独声明的 B2 比较，版本化 experiment manifest 可以预先选择经审查的 package reference driver，
+而不必选择 B1 生成的 driver。Manifest 必须在查看 outcome 前固定准确 driver identity 和 validation
+evidence。只有当该 driver 对应的一套 capability interface 及其 adapter 已封存、完整的 interface-bound
+capability validation suite 已通过，并且全部被比较 backbone 使用同一套固定
+driver-interface-adapter 组合时，B2 才可正式执行。Controller 只接收公开 task 与从 interface 派生的
+tools，绝不接收 reference 源码或 reference-only calibration data。这项 B2 许可不会向 B1 暴露
+reference material，也不会把固定 driver 变成模型条件。
 
 ### 3.7 Evolution / 经验演化
 

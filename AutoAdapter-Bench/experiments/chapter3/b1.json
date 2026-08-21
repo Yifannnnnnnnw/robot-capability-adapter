@@ -10,14 +10,14 @@
   "condition_coverage": [
     {
       "condition": "skeleton-assisted",
-      "robot_set": "../../components/robot_sets/all-14.json"
+      "robot_set": "../../components/robot_sets/chapter3-ten.json"
     },
     {
       "condition": "from-scratch",
       "robot_set": "../../components/robot_sets/chapter3-five.json"
     }
   ],
-  "expected_generation_condition_replicates": 665,
-  "maximum_submitted_driver_attempts": 1995,
+  "expected_generation_condition_replicates": 525,
+  "maximum_submitted_driver_attempts": 1575,
   "run_task_demo": false
 }

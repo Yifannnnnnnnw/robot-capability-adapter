@@ -40,10 +40,12 @@ runs/                          ignored local outputs
   runs compositional tasks under a selected high-level controller, and uses the
   trusted Harness for physical task verdicts.
 
-The approved Chapter 3 B1 recipe contains 490 full-cohort
+The approved Chapter 3 B1 recipe contains 350 ten-robot
 `skeleton-assisted` replicates and 175 selected-case `from-scratch` replicates,
-for 665 generation-condition replicates in total. B2 contributes 280 controller
-episodes per admitted architecture in the two-robot Chapter 3 recipe.
+for 525 generation-condition replicates in total. B2 contributes 280 controller
+episodes per admitted architecture in the two-robot Chapter 3 recipe; its two
+package reference drivers are selected but still require interface-bound
+validation.
 
 Run `python runners/manifest.py validate` from this directory to resolve the
 recipes, report missing mainline inputs, and verify the declared matrix sizes.
