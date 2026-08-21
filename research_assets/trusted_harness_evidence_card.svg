@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360">
+  <defs>
+    <style>
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 24px; font-weight: 700; fill: #111827; }
+      .section { font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 700; fill: #334155; }
+      .text { font-family: Arial, Helvetica, sans-serif; font-size: 15px; fill: #1f2937; }
+      .mono { font-family: Menlo, Consolas, "Courier New", monospace; font-size: 15px; fill: #334155; }
+      .small { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #64748b; }
+      .ok { fill: #15803d; font-weight: 700; }
+      .pass { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; fill: #166534; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="720" height="360" fill="#ffffff"/>
+  <rect x="20" y="18" width="680" height="324" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6"/>
+
+  <text x="44" y="56" class="title">Trusted Harness Evidence</text>
+  <rect x="536" y="34" width="122" height="30" rx="15" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="597" y="54" text-anchor="middle" class="mono">driver.py</text>
+
+  <line x1="44" y1="80" x2="676" y2="80" stroke="#e2e8f0" stroke-width="1.4"/>
+
+  <text x="44" y="110" class="section">Task</text>
+  <text x="94" y="110" class="mono">reach_target</text>
+  <text x="284" y="110" class="section">Driver</text>
+  <text x="344" y="110" class="mono">driver.py</text>
+
+  <rect x="44" y="136" width="285" height="134" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="66" y="166" class="section">Source checks</text>
+  <text x="66" y="198" class="text"><tspan class="ok">✓</tspan> no private leak</text>
+  <text x="66" y="226" class="text"><tspan class="ok">✓</tspan> import ok</text>
+  <text x="66" y="254" class="text"><tspan class="ok">✓</tspan> build() found</text>
+
+  <rect x="361" y="136" width="315" height="134" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="383" y="166" class="section">MuJoCo evidence</text>
+  <text x="383" y="198" class="text"><tspan class="ok">✓</tspan> rollout video saved</text>
+  <text x="383" y="226" class="text"><tspan class="ok">✓</tspan> endpoint error = <tspan class="mono">0.002 m</tspan></text>
+  <text x="383" y="254" class="text"><tspan class="ok">✓</tspan> pass threshold = <tspan class="mono">0.020 m</tspan></text>
+
+  <line x1="44" y1="294" x2="676" y2="294" stroke="#e2e8f0" stroke-width="1.4"/>
+  <text x="44" y="324" class="section">Verdict</text>
+  <rect x="118" y="302" width="104" height="34" rx="17" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
+  <circle cx="140" cy="319" r="7" fill="#16a34a"/>
+  <text x="178" y="327" text-anchor="middle" class="pass">PASS</text>
+  <text x="250" y="324" class="small">endpoint error is below the declared pass threshold</text>
+</svg>
