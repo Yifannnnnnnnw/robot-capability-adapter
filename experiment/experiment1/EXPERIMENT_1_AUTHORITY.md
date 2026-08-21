@@ -5,9 +5,15 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.26`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.0`<br>
+> **Revision:** `0.1.1`<br>
 > **Effective date:** 2026-08-21<br>
 > **Design status:** active and prospectively fixed; formal execution blocked
+
+Revision `0.1.1` organizes Experiment 1 around the experimental object,
+required preparation, and required records, and prospectively fixes the
+timing, submitted-attempt, physical provider-request, and observable action
+trace for every cell. It does not change the cohort, factors, replicate plan,
+or attempt budget.
 
 ## 0. Authority, scope, and precedence
 
@@ -32,6 +38,20 @@ of them conflicts with this file, this file governs.
 This revision supersedes every earlier 10-plus-5, 11-robot, 14-robot, R=5-only,
 525-cell, 665-cell, or 770-cell Chapter 3/Experiment 1 matrix. Those designs may
 remain in Git history but are not active Experiment 1 requirements.
+
+### 0.1 Three-part experiment contract
+
+Every concrete experiment authority fixes exactly three classes of information:
+
+| Part | Experiment 1 content | Governing sections |
+|---|---|---|
+| Experimental object | Research claim, five robots, seven backbones, two conditions, statistical unit, and replicate plan | Sections 1–3 |
+| Required preparation | Fixed validation inputs, executable route, isolation, provider configuration, seeds, runner, and readiness gates | Sections 4, 5, 7, and 8 |
+| Required records | Outcomes, evidence, timings, submitted attempts, model/provider calls, tokens, costs, errors, and observable action trace | Section 6 |
+
+No subordinate manifest, benchmark file, implementation, or report may add or
+change an Experiment 1-specific object, preparation requirement, or recording
+requirement. It may only implement this three-part contract.
 
 ## 1. Research object and claim boundary
 
@@ -232,6 +252,50 @@ manifest-price-estimated cost, wall time to attempt-0 verdict, wall time to
 terminal verdict, and separable model-service, probe, and MuJoCo-validation
 time where measurable.
 
+### 6.1 Mandatory timing, attempt, and call trace
+
+For recording and reporting, one Experiment 1 run or "round" means exactly one
+`robot × backbone × condition × replicate` cell. Every record retains those
+four identities and the cell ID; a scheduler batch is operational metadata and
+must not replace the cell as the experimental unit.
+
+Each cell records UTC start/end and monotonic total wall time from STUDY entry
+to terminal verdict, time to the attempt-0 verdict, queue and active time when
+concurrent, and separate STUDY, GENERATE/GEN_ALGO, Repair, tool/probe, and
+validation times where measurable.
+
+STUDY is not a submitted-driver attempt. Each bounded generation or Repair
+slot records its target `attempt_index` (0, 1, or 2), start/end and monotonic
+wall time, model/tool/validation time, whether `submit_driver` was accepted,
+the validation verdict when submitted, and its transition or stop reason. The
+cell's actual submitted-attempt count is the number of accepted submission
+events and may be zero through three; failed development that never submits a
+driver does not inflate that count.
+
+Every physical provider request is a separate ordered call record, including
+successes, failures, timeouts, 429/503 responses, and retries. Each record
+contains call and model-turn indices, stage, nullable target attempt, retry
+relationship, provider request ID when available, UTC start/end, monotonic
+elapsed time, requested and returned model identity, status/error,
+provider-reported input/output/cache/reasoning/other token categories with
+unavailable values stored as null, and per-call cost under the frozen price
+snapshot. A retry is another provider call but is not another plotted iteration
+unless it returns a completed observable model turn.
+
+Every completed observable model turn records its ordered iteration, stage,
+target attempt, elapsed time, tool name/outcome, submission event, and
+stage/attempt transition. Its raw action type is one of `observe_or_plan`,
+`execute_clean`, `execute_error`, or `submit`, classified only from observable
+tool behaviour. For the reference visualization, `observe_or_plan` is the grey
+read/plan segment, `execute_clean` and successful `submit` are green,
+`execute_error` is red, and each stage transition supplies the black boundary.
+
+Iteration count, execution-error count, provider-error count, retry count,
+action stacks, token totals, and STUDY/GENERATE/REPAIR boundary positions must
+be derived from the ordered raw records rather than entered manually. Numeric
+provider-reported reasoning-token usage may be retained; hidden chain-of-thought
+or hidden reasoning content must never be requested or stored.
+
 Primary summaries report counts/rates and equal-robot macro-averages by
 backbone and condition, plus matched within-block condition differences.
 Per-robot, per-capability, failure-class, Repair, cost, and time breakdowns are
@@ -279,10 +343,11 @@ reusable benchmark dependency and must not restate this experiment's cohort,
 R, matrix count, stopping decision, or results.
 
 Any change to the five robots, seven backbone families, two conditions, R=3
-primary design, attempt budget, fixed-input boundary, primary outcomes, or
-extension rule requires a new revision of this file made before affected
-outcomes are inspected. Post-outcome changes define a new experiment
-configuration and cannot silently overwrite or relabel retained evidence.
+primary design, attempt budget, fixed-input boundary, primary outcomes,
+mandatory recording hierarchy/action classification, or extension rule
+requires a new revision of this file made before affected outcomes are
+inspected. Post-outcome changes define a new experiment configuration and
+cannot silently overwrite or relabel retained evidence.
 
 ## 中文决策摘要（辅助）
 
@@ -292,4 +357,7 @@ cell，最多 630 次 driver submission；`r04`、`r05` 只能各自作为完整
 结束；不运行 TGCD、IVC、Task Demo、high-level controller 或 Evolution。R=3 始终是 primary，后续
 完整 R=4/R=5 只作精度与稳健性扩展。八路并发目前只是待 canary 与 quota 验证的调度目标，不是已
 准入能力。当前 fixed bundle、七模型配置、seed、B1 runner 与正式并发路径均未冻结，因此正式运行
-保持 blocked。
+保持 blocked。每个 cell、attempt slot、stage、模型 iteration、物理 provider request 与 tool event 都
+必须记录可审计用时；每个 cell 记录实际 submission 次数，每个可观察 iteration 固定分类为
+`observe_or_plan`、`execute_clean`、`execute_error` 或 `submit`，并保留错误、token、成本和 stage 边界。
+失败与 retry call 不能丢弃；隐藏思维内容不得记录。
