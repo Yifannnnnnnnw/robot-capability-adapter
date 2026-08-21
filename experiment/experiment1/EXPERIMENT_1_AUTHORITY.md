@@ -2,14 +2,18 @@
 
 > **Document ID:** `AA2-EXP1`<br>
 > **Document role:** sole normative document for Experiment 1<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.26`<br>
+> **Parent authority:** `AA2-AUTH` revision `0.19.27`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.1`<br>
+> **Revision:** `0.1.2`<br>
 > **Effective date:** 2026-08-21<br>
-> **Design status:** active and prospectively fixed; formal execution blocked
+> **Design status:** active and prospectively fixed; pre-run preparation active
 
-Revision `0.1.1` organizes Experiment 1 around the experimental object,
+Revision `0.1.2` fixes the sole start prerequisite: all five public Driver
+contracts and their Harness-evaluable validation criteria must be clear, and
+the isolated STUDY-to-generation/Repair/validation route must be usable while
+recording the required evidence. Task-blind reference calibration is not a
+prerequisite or an Experiment 1 input. Revision `0.1.1` organized Experiment 1 around the experimental object,
 required preparation, and required records, and prospectively fixes the
 timing, submitted-attempt, physical provider-request, and observable action
 trace for every cell. It does not change the cohort, factors, replicate plan,
@@ -46,7 +50,7 @@ Every concrete experiment authority fixes exactly three classes of information:
 | Part | Experiment 1 content | Governing sections |
 |---|---|---|
 | Experimental object | Research claim, five robots, seven backbones, two conditions, statistical unit, and replicate plan | Sections 1–3 |
-| Required preparation | Fixed validation inputs, executable route, isolation, provider configuration, seeds, runner, and readiness gates | Sections 4, 5, 7, and 8 |
+| Required preparation | Clear Driver contracts and criteria plus a usable, isolated, recorded STUDY-to-terminal-validation route | Sections 4, 5, 7, and 8 |
 | Required records | Outcomes, evidence, timings, submitted attempts, model/provider calls, tokens, costs, errors, and observable action trace | Section 6 |
 
 No subordinate manifest, benchmark file, implementation, or report may add or
@@ -56,8 +60,8 @@ requirement. It may only implement this three-part contract.
 ## 1. Research object and claim boundary
 
 Experiment 1 is the fixed-input B1 driver-synthesis comparison. For each
-selected robot, one prior-designed and reference-calibrated capability bundle
-is held fixed while seven Producer backbone families synthesize a
+selected robot, one prior-designed Driver contract and its validation criteria
+are held fixed while seven Producer backbone families synthesize a
 robot-specific `driver.py` under `skeleton-assisted` and `from-scratch`.
 
 The experiment measures driver-validation success, Repair behaviour, failures,
@@ -82,7 +86,7 @@ Experiment 1 contains exactly these five configurations:
 | Bimanual manipulator | `aloha_2` |
 
 All five currently have a canonical trusted-skeleton source and therefore run
-both generation conditions. A missing, invalid, or uncalibrated skeleton is an
+both generation conditions. A missing, invalid, or unusable skeleton is an
 infrastructure blocker; it does not convert that robot into a scratch-only row
 and is not scored as a model failure.
 
@@ -100,11 +104,12 @@ The fixed family set contains exactly seven entries:
 | `M6` | Ministral 3 8B | Mistral |
 | `M7` | Qwen3 32B | Alibaba |
 
-Before the first formal call, the manifest must pin each exact provider model
-identifier and revision, endpoint/region, transport, inference settings,
-context/output limits, timeout, and dated price snapshot. A family that cannot
-be pinned remains blocked until a prospective authority revision; it is never
-silently replaced.
+Before cells for one backbone are dispatched, the manifest must pin that
+backbone's exact provider model identifier and revision, endpoint/region,
+transport, inference settings, context/output limits, timeout, and dated price
+snapshot. An unpinned family blocks only its affected cells and is never
+silently replaced; it does not prevent an unrelated ready backbone from
+starting.
 
 ### 2.3 Generation conditions
 
@@ -174,15 +179,22 @@ The independent seed map and randomized execution order for `r01` through
 
 ## 4. Fixed input and execution path
 
-Before any cell starts, every selected robot must have one versioned bundle
-containing:
+Before the first cell starts, every selected robot must have one fixed
+Driver-and-criteria definition containing:
 
 1. the fixed public capability interface;
 2. the fixed capability-level pass standards;
 3. the complete private `capability_validation_suite.json` with measurement
-   bindings, guards, resets, and verdict rules; and
-4. reference-calibration evidence showing that the exact suite and execution
-   route are feasible.
+   bindings, guards, resets, and verdict rules.
+
+The public method names, request schemas, units, frames, bounds, and pass
+standards are recorded in `B1_DRIVER_VALIDATION_CRITERIA.md`. The private suite
+supplies only the hidden concrete targets, resets, bindings, and guard data
+needed for the trusted Harness to execute those declared criteria. A bundle or
+directory is merely an implementation container for these fixed inputs; it is
+not a separate admission workflow. No task-blind reference driver or reference
+calibration is required. Any such run is optional diagnostic evidence and does
+not enter the Experiment 1 denominator or determine whether B1 may start.
 
 That bundle is identical across every backbone, condition, replicate, and
 attempt for the robot. A bundle change after outcomes are inspected creates a
@@ -317,23 +329,28 @@ workspace, and evidence destination per cell with recorded queue time,
 429/503 handling, retries, and active wall time. A lower admitted concurrency
 does not change the matrix or statistical unit.
 
-## 8. Formal execution blockers
+## 8. Sole start prerequisite
 
-Formal Experiment 1 remains blocked until all of the following are true:
+Experiment 1 may start as soon as both parts below are true:
 
-1. all five fixed validation bundles are versioned and reference-calibrated;
-2. exact configurations for all seven backbone families are frozen and their
-   transports pass real tool-calling canaries;
-3. `r01` through `r05` seeds and randomized block order are frozen;
-4. the canonical mainline exposes the B1 STUDY-to-terminal-validation boundary
-   without TGCD, IVC, Task Demo, controller, or Evolution stages;
-5. the synthesis-only B1 runner records the required identities, resources,
-   traces, verdicts, and videos; and
-6. focused package, isolation, private-suite, physical-integrity, recorder, and
-   reference-calibration checks pass for all five robots.
+1. all five selected robots have clear fixed Driver interfaces and clear
+   Harness-evaluable validation criteria, including the private values needed
+   to execute each criterion; and
+2. both isolated generation routes are usable from STUDY through
+   `GENERATE`/`GEN_ALGO`, conditional bounded Repair, complete validation, and
+   terminal verdict, while retaining the records required by Section 6.
 
-Directory presence, a structurally valid manifest, or a diagnostic canary does
-not clear these blockers or constitute formal evidence.
+There is no task-blind reference-calibration gate and no additional global
+admission workflow. Exact provider/model settings must still be fixed and
+recorded for each affected backbone before its cells are dispatched; a
+transport or account problem blocks those affected cells, not the start of
+unrelated ready cells. The already frozen seed/order component determines
+dispatch order. Eight-way concurrency is optional and may remain disabled;
+serial execution is valid.
+
+A readable criterion with no working Harness binding, or a route that omits
+the mandatory records, does not satisfy these two parts. Directory presence or
+a structurally valid manifest alone is not execution evidence.
 
 ## 9. Ownership and change control
 
@@ -355,9 +372,10 @@ Experiment 1 固定为五台机器人、七个 backbone、两种生成条件。�
 cell，最多 630 次 driver submission；`r04`、`r05` 只能各自作为完整 70-cell block 追加，全部完成
 后为 350 cell、最多 1,050 次 submission。B1 从 STUDY 开始，在最终 capability validation verdict
 结束；不运行 TGCD、IVC、Task Demo、high-level controller 或 Evolution。R=3 始终是 primary，后续
-完整 R=4/R=5 只作精度与稳健性扩展。八路并发目前只是待 canary 与 quota 验证的调度目标，不是已
-准入能力。当前 fixed bundle、七模型配置、seed、B1 runner 与正式并发路径均未冻结，因此正式运行
-保持 blocked。每个 cell、attempt slot、stage、模型 iteration、物理 provider request 与 tool event 都
+完整 R=4/R=5 只作精度与稳健性扩展。开跑的唯一前置条件是：五台机器人的 Driver 接口与 Harness
+可判定 criteria 全部清晰，以及两条 STUDY-to-generation/Repair/validation 路线可用并能写出第 6 节
+要求的记录。不要求 task-blind reference calibration，也不要求先启用八路并发；可从串行 ready cell
+开始。每个 cell、attempt slot、stage、模型 iteration、物理 provider request 与 tool event 都
 必须记录可审计用时；每个 cell 记录实际 submission 次数，每个可观察 iteration 固定分类为
 `observe_or_plan`、`execute_clean`、`execute_error` 或 `submit`，并保留错误、token、成本和 stage 边界。
 失败与 retry call 不能丢弃；隐藏思维内容不得记录。

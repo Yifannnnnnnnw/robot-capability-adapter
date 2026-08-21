@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.1",
+  "authority_revision": "0.1.2",
   "experiment_id": "experiment1-b1-core-r3",
   "track": "B1",
   "status": "blocked",
@@ -36,10 +36,7 @@
     "status": "not-admitted"
   },
   "blocked_reasons": [
-    "five fixed per-robot validation bundles and reference calibrations are not frozen",
-    "exact seven-backbone provider configurations and prices are not frozen",
-    "not all seven provider transports have passed real tool-calling canaries",
-    "the synthesis-only B1 runner and stopping boundary are not implemented",
-    "all-five package, isolation, private-suite, physical-integrity, recorder, and reference-calibration checks are not complete"
+    "the five fixed Driver contracts and Harness-evaluable validation criteria are not yet connected to the execution route",
+    "the recorded synthesis-only B1 route has not yet passed focused STUDY-to-terminal-validation checks"
   ]
 }

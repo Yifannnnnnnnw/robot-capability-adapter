@@ -102,6 +102,10 @@ def resolve_b1(recipe_path: Path) -> dict[str, Any]:
         raise ManifestError(
             f"{recipe_path}: B1 recipe must not run a high-level controller"
         )
+    if protocol.get("run_evolution") is not False:
+        raise ManifestError(f"{protocol_path}: B1 must not run Evolution")
+    if recipe.get("run_evolution") is not False:
+        raise ManifestError(f"{recipe_path}: B1 recipe must not run Evolution")
 
     _, _, backbone_ids = _component_ids(
         recipe_path, recipe, "backbone_set", "backbone_ids"
@@ -186,7 +190,7 @@ def resolve_b1(recipe_path: Path) -> dict[str, Any]:
     fixed_bundle_value = recipe.get("fixed_validation_bundle_set")
     fixed_bundle_path: str | None = None
     if not fixed_bundle_value:
-        blockers.append("fixed per-robot B1 validation bundle set is missing")
+        blockers.append("fixed per-robot B1 Driver-and-criteria input path is missing")
     else:
         bundle_path, _ = _reference(
             recipe_path,

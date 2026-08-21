@@ -5,6 +5,6 @@
   "source": "versioned-prior-experiment-per-robot-validation-bundle",
   "selection": "fixed-interface-pass-standards-and-complete-private-suite",
   "shared_across_all_b1_units_for_robot": true,
-  "reference_calibration_required": true,
+  "reference_calibration_required": false,
   "copied_into_benchmark": false
 }

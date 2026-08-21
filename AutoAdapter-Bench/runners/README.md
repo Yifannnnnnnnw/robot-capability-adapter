@@ -17,7 +17,7 @@ python3 AutoAdapter-Bench/runners/manifest.py b1-matrix \
   --output /tmp/experiment1-b1-units.json
 ```
 
-`run_b1.py` is intentionally absent until the canonical mainline exposes the
-approved STUDY-to-terminal-validation boundary and the selected fixed bundles
-are versioned and reference-calibrated. A structurally valid manifest is not
-formal readiness.
+The experiment-owned B1 runner lives with the concrete experiment rather than
+in this reusable benchmark directory. A structurally valid manifest is not
+execution evidence; the selected Driver criteria and recorded
+STUDY-to-terminal-validation route must work.

@@ -1,10 +1,10 @@
 # B1 Generated-Driver Validation Criteria
 
-> **Document role:** non-normative, human-readable Experiment 1 criteria<br>
+> **Document role:** public Experiment 1 Driver-contract and validation-criteria register<br>
 > **Source rendering:** `appendix_b1_driver_validation_table.tex`<br>
 > **Experiment 1 authority:** `EXPERIMENT_1_AUTHORITY.md`<br>
-> **Execution status:** criteria recorded; executable fixed validation bundles
-> are not yet frozen
+> **Execution status:** methods and public thresholds recorded; exact request
+> schemas and trusted-Harness bindings are being connected
 
 This document projects the generated-driver methods, numerical validation
 criteria, and conjunctive acceptance rule in the LaTeX appendix onto the five
@@ -12,9 +12,9 @@ robot configurations selected for Experiment 1. The LaTeX source also contains
 rows for configurations outside Experiment 1; those rows are intentionally not
 reproduced here.
 
-This is a readable criteria register, not an executable
-`capability_validation_suite.json`, a reference-calibration record, or an
-independent source of Experiment 1 scope. If it conflicts with
+This is the readable public criteria register required by the Authority, not
+an independent source of Experiment 1 scope or a disclosure of hidden private
+targets/resets. If it conflicts with
 `EXPERIMENT_1_AUTHORITY.md`, the Authority governs.
 
 ## Experiment 1 applicability
@@ -48,22 +48,24 @@ Every trial must also satisfy the common:
 - maximum-penetration check; and
 - complete-video check.
 
-## What remains before formal execution
+## What remains before Experiment 1 starts
 
-The criteria above fix the human-readable capability-level targets, but formal
-validation also requires each active robot's versioned executable suite to pin:
+The sole remaining criteria-side preparation is to connect each declared
+Driver contract to the trusted Harness. For each active robot this requires:
 
 - the three hidden target, initial-state, and parameter combinations per
   capability;
 - request schema, units, coordinate frames, safe domains, and time budgets;
 - reset state, measurement bindings, guards, contact groups, and exact verdict
   implementation;
-- one continuous Framework-controlled video per trial; and
-- reference-driver calibration against that exact suite.
+- one continuous Framework-controlled video per trial.
 
-The Experiment 1 manifest must then pin the resulting five-robot fixed bundle.
-Until that is done, this document supports suite implementation and review but
-does not by itself make a cell formally runnable.
+The Experiment 1 manifest points to the resulting five-robot Driver-and-criteria
+definitions. The directory containing them is only an implementation
+container, not a separate admission workflow. No task-blind reference driver
+or reference calibration is required. Until the request schemas and Harness
+bindings work, this register supports implementation and review but does not
+by itself make a cell runnable.
 
 ## SO-101
 

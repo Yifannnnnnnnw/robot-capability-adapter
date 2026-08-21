@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "protocol_id": "b1-driver-synthesis",
-  "protocol_version": "0.3.0",
+  "protocol_version": "0.3.1",
   "track": "B1",
   "statistical_unit": "independent-generation-condition-replicate",
   "allowed_generation_conditions": [
@@ -11,13 +11,13 @@
   "max_driver_attempts_per_condition": 3,
   "run_task_demo": false,
   "run_high_level_controller": false,
+  "run_evolution": false,
   "fixed_input_policy": {
     "scope": "one-versioned-bundle-per-robot-before-b1",
     "inputs": [
       "robot-capability-interface",
       "capability-level-pass-standards",
-      "complete-private-validation-suite",
-      "reference-calibration-evidence"
+      "complete-private-validation-suite"
     ],
     "shared_across": [
       "backbone",
@@ -120,7 +120,6 @@
       "fixed_capability_interface_id",
       "fixed_capability_pass_standard_id",
       "validation_suite_id",
-      "reference_calibration_evidence_id",
       "attempt_index",
       "source_audit_outcome",
       "public_smoke_outcome",

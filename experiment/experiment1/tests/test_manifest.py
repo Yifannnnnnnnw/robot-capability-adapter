@@ -145,6 +145,38 @@ class Experiment1ManifestTests(unittest.TestCase):
             with self.assertRaises(manifest.ManifestError):
                 manifest.resolve_b1(path)
 
+    def test_resolver_rejects_b1_evolution(self) -> None:
+        recipe = json.loads(
+            (EXPERIMENT_ROOT / "manifest.json").read_text(encoding="utf-8")
+        )
+        recipe["protocol"] = str(
+            REPOSITORY_ROOT
+            / "AutoAdapter-Bench"
+            / "protocols"
+            / "b1-driver-synthesis.json"
+        )
+        recipe["backbone_set"] = str(
+            REPOSITORY_ROOT
+            / "AutoAdapter-Bench"
+            / "components"
+            / "backbone_sets"
+            / "declared-seven.json"
+        )
+        recipe["replicate_set"] = str(
+            EXPERIMENT_ROOT / "components" / "replicates-core-r3.json"
+        )
+        for assignment in recipe["condition_coverage"]:
+            assignment["robot_set"] = str(
+                EXPERIMENT_ROOT / "components" / "robot-set.json"
+            )
+        recipe["run_evolution"] = True
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid-b1-evolution.json"
+            path.write_text(json.dumps(recipe), encoding="utf-8")
+            with self.assertRaises(manifest.ManifestError):
+                manifest.resolve_b1(path)
+
 
 if __name__ == "__main__":
     unittest.main()

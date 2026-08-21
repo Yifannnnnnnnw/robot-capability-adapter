@@ -1,7 +1,7 @@
 # AutoAdapter-Bench Protocol
 
 > **Status:** reusable benchmark definition; not an experiment authority<br>
-> **Authority baseline:** `AA2-AUTH` revision `0.19.26`<br>
+> **Authority baseline:** `AA2-AUTH` revision `0.19.27`<br>
 > **Prepared:** 2026-08-21<br>
 > **Runtime boundary:** canonical `autoadapter/` Direct-MuJoCo mainline
 
@@ -45,10 +45,10 @@ must not replace a missing or unavailable item after outcomes are inspected.
 
 ### 3.1 Fixed-input boundary
 
-B1 consumes one versioned, prior-designed, reference-calibrated bundle per
-selected robot. The bundle contains the public capability interface,
-capability-level pass standards, complete private validation suite, and
-reference-calibration evidence. It remains identical across every selected
+B1 consumes one versioned, prior-designed fixed Driver-and-criteria definition
+per selected robot. It contains the public capability interface,
+capability-level pass standards, and complete private validation suite. It
+remains identical across every selected
 backbone, generation condition, replicate, and Repair attempt for that robot.
 
 The two supported conditions are `skeleton-assisted` and `from-scratch`. A
@@ -148,8 +148,9 @@ failed/blocked-unit treatment, extension/stopping rule, and inferential scope
 before inspecting outcomes. Experiment-specific raw data and analysis stay
 with that experiment, not in this benchmark directory.
 
-Formal readiness requires the experiment's selected packages and fixed bundles,
-provider transports and exact configurations, stage boundary, runner,
-isolation, trusted validation, recording, and evidence requirements to pass.
-The presence of benchmark files or a structurally valid manifest is never
-formal evidence by itself.
+A concrete experiment authority defines its own sole start prerequisite. The
+reusable benchmark requires clear Harness-evaluable Driver criteria and a
+working isolated, recorded stage boundary; it does not impose a task-blind
+reference-calibration gate. Provider settings are fixed before dispatching the
+affected cells. The presence of benchmark files or a structurally valid
+manifest is never execution evidence by itself.
