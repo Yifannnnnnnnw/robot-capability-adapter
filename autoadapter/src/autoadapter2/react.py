@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -138,6 +139,55 @@ def _append_user_instruction(
     messages.append({"role": "user", "content": instruction})
 
 
+def _reported_execution_error(result: Any, *, terminal: bool) -> str | None:
+    """Project explicit, observable tool failures into the ReAct envelope."""
+
+    if not isinstance(result, Mapping):
+        return None
+    if result.get("successful") is False:
+        return "tool reported successful=false"
+    if result.get("timed_out") is True:
+        return "tool reported timed_out=true"
+    spawn_error = result.get("spawn_error")
+    if spawn_error is not None and spawn_error != "":
+        return "tool reported a spawn error"
+    exit_code = result.get("exit_code")
+    if (
+        exit_code is not None
+        and not isinstance(exit_code, bool)
+        and isinstance(exit_code, int)
+        and exit_code != 0
+    ):
+        return f"tool reported non-zero exit_code={exit_code}"
+    if terminal and (
+        result.get("accepted") is False or result.get("rejected") is True
+    ):
+        return "submission was rejected"
+    status = result.get("status")
+    if isinstance(status, str) and status.upper() in {
+        "ERROR",
+        "FAILED",
+        "REJECTED",
+        "TIMEOUT",
+        "TIMED_OUT",
+        "SPAWN_ERROR",
+    }:
+        return f"tool reported status={status}"
+    return None
+
+
+def _observable_action_type(
+    *, tool_name: str, terminal: bool, execution_error: str | None
+) -> str:
+    if execution_error is not None:
+        return "execute_error"
+    if terminal:
+        return "submit"
+    if tool_name in {"list_public_files", "read_public_file"}:
+        return "observe_or_plan"
+    return "execute_clean"
+
+
 def run_react(
     *,
     client: ToolModelClient,
@@ -196,12 +246,14 @@ def run_react(
         )
         submission_turns = submission_turns + 1 if submission_only else 0
         tools_for_turn = [tool.model_definition() for tool in active_tools]
+        model_started = time.monotonic()
         turn = client.generate_tool_turn(
             stage=stage,
             system_prompt=system_prompt,
             messages=messages,
             tools=tools_for_turn,
         )
+        model_elapsed_s = max(0.0, time.monotonic() - model_started)
         messages.append(_assistant_message(turn))
         if not turn.tool_calls:
             remaining_turns = max_turns - turn_number
@@ -211,6 +263,8 @@ def run_react(
                     "assistant": turn.content or "",
                     "finish_reason": turn.finish_reason,
                     "event": "submission_required",
+                    "action_type": "observe_or_plan",
+                    "elapsed_s": model_elapsed_s,
                 }
             )
             _append_user_instruction(
@@ -242,6 +296,7 @@ def run_react(
             tool = tool_map.get(call.name)
             result: Any = None
             error: str | None = call.argument_error
+            tool_started = time.monotonic()
             if tool is None:
                 error = f"unknown tool: {call.name}"
             elif not tool.is_available():
@@ -259,17 +314,31 @@ def run_react(
                 except Exception as exc:  # Tool failures are observations for the model.
                     error = f"{type(exc).__name__}: {exc}"
 
+            reported_error = (
+                _reported_execution_error(result, terminal=bool(tool and tool.terminal))
+                if error is None
+                else None
+            )
+            execution_error = error or reported_error
+            tool_elapsed_s = max(0.0, time.monotonic() - tool_started)
+
             budget_status = {
                 "model_turn": turn_number,
                 "model_turns_remaining": max_turns - turn_number,
                 "tool_calls_used": call_count,
                 "tool_calls_remaining": max_tool_calls - call_count,
             }
-            envelope = (
-                {"ok": False, "error": error, "budget": budget_status}
-                if error is not None
-                else {"ok": True, "result": result, "budget": budget_status}
-            )
+            if error is not None:
+                envelope = {"ok": False, "error": error, "budget": budget_status}
+            elif reported_error is not None:
+                envelope = {
+                    "ok": False,
+                    "error": reported_error,
+                    "result": result,
+                    "budget": budget_status,
+                }
+            else:
+                envelope = {"ok": True, "result": result, "budget": budget_status}
             observation = _bounded_text(envelope, tool_output_chars)
             messages.append(
                 {
@@ -284,11 +353,26 @@ def run_react(
                     "tool_call_id": call.id,
                     "tool": call.name,
                     "arguments": _bounded_text(call.raw_arguments, 4000),
-                    "ok": error is None,
+                    "ok": execution_error is None,
+                    "tool_outcome": (
+                        "clean" if execution_error is None else "error"
+                    ),
+                    "action_type": _observable_action_type(
+                        tool_name=call.name,
+                        terminal=bool(tool is not None and tool.terminal),
+                        execution_error=execution_error,
+                    ),
+                    "elapsed_s": tool_elapsed_s,
+                    "model_elapsed_s": model_elapsed_s,
+                    "submission_event": bool(
+                        tool is not None
+                        and tool.terminal
+                        and execution_error is None
+                    ),
                     "observation": observation,
                 }
             )
-            if tool is not None and tool.terminal and error is None:
+            if tool is not None and tool.terminal and execution_error is None:
                 return ReactResult(
                     submission=result,
                     trace=tuple(trace),

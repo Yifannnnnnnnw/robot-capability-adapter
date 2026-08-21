@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 from .agent_context import AgentContextManager
@@ -202,10 +203,38 @@ class JsonModelClient:
     def __init__(self, config: ModelConfig) -> None:
         self.config = config
         self.calls: list[dict[str, Any]] = []
+        self._calls_lock = threading.Lock()
+        self._call_state = threading.local()
         self._context_manager = AgentContextManager(
             history_char_budget=config.history_char_budget,
             recent_groups=3,
         )
+
+    def set_call_context(
+        self,
+        *,
+        cell_id: str | None = None,
+        target_attempt: int | None = None,
+    ) -> None:
+        """Associate subsequent calls in this thread with one experiment cell."""
+
+        if cell_id is not None and (not isinstance(cell_id, str) or not cell_id):
+            raise ValueError("cell_id must be a non-empty string or None")
+        if target_attempt is not None and (
+            isinstance(target_attempt, bool)
+            or not isinstance(target_attempt, int)
+            or target_attempt < 0
+        ):
+            raise ValueError("target_attempt must be a non-negative integer or None")
+        self._call_state.context = {
+            "cell_id": cell_id,
+            "target_attempt": target_attempt,
+        }
+
+    def clear_call_context(self) -> None:
+        """Remove the current thread's experiment-cell association."""
+
+        self._call_state.context = {"cell_id": None, "target_attempt": None}
 
     def _project_tool_history(
         self, messages: Sequence[Mapping[str, Any]]
@@ -215,6 +244,191 @@ class JsonModelClient:
         else:
             projection = self._context_manager.project_text_observation(messages)
         return [dict(message) for message in projection.messages], dict(projection.stats)
+
+    @staticmethod
+    def _utc_now() -> str:
+        return datetime.now(timezone.utc).isoformat()
+
+    @staticmethod
+    def _http_status(response: Any) -> int | None:
+        value = getattr(response, "status", None)
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+        getcode = getattr(response, "getcode", None)
+        if callable(getcode):
+            value = getcode()
+            if isinstance(value, int) and not isinstance(value, bool):
+                return value
+        return None
+
+    @staticmethod
+    def _provider_request_id(
+        payload: Mapping[str, Any] | None,
+        headers: Any,
+    ) -> str | None:
+        if payload is not None:
+            for key in ("id", "request_id", "requestId"):
+                value = payload.get(key)
+                if isinstance(value, str) and value:
+                    return value
+        getter = getattr(headers, "get", None)
+        if callable(getter):
+            for key in (
+                "x-request-id",
+                "request-id",
+                "x-amzn-requestid",
+                "x-amz-request-id",
+            ):
+                value = getter(key)
+                if isinstance(value, str) and value:
+                    return value
+        return None
+
+    @staticmethod
+    def _token_count(value: Any) -> int | None:
+        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+            return value
+        return None
+
+    @classmethod
+    def _normalised_usage(cls, usage: Any) -> dict[str, Any]:
+        if not isinstance(usage, Mapping):
+            return {
+                "input_tokens": None,
+                "output_tokens": None,
+                "cache_read_tokens": None,
+                "cache_write_tokens": None,
+                "reasoning_tokens": None,
+                "total_tokens": None,
+                "other_provider_token_categories": None,
+            }
+
+        prompt_details = usage.get("prompt_tokens_details")
+        if not isinstance(prompt_details, Mapping):
+            prompt_details = {}
+        completion_details = usage.get("completion_tokens_details")
+        if not isinstance(completion_details, Mapping):
+            completion_details = {}
+        output_details = usage.get("output_tokens_details")
+        if not isinstance(output_details, Mapping):
+            output_details = {}
+
+        def first_count(*values: Any) -> int | None:
+            for value in values:
+                count = cls._token_count(value)
+                if count is not None:
+                    return count
+            return None
+
+        known_top_level = {
+            "input_tokens",
+            "prompt_tokens",
+            "output_tokens",
+            "completion_tokens",
+            "cache_read_tokens",
+            "cache_read_input_tokens",
+            "cached_input_tokens",
+            "cache_write_tokens",
+            "cache_creation_input_tokens",
+            "reasoning_tokens",
+            "total_tokens",
+            "prompt_tokens_details",
+            "completion_tokens_details",
+            "output_tokens_details",
+        }
+        other = {
+            str(key): value
+            for key, value in usage.items()
+            if key not in known_top_level
+        }
+        return {
+            "input_tokens": first_count(
+                usage.get("input_tokens"), usage.get("prompt_tokens")
+            ),
+            "output_tokens": first_count(
+                usage.get("output_tokens"), usage.get("completion_tokens")
+            ),
+            "cache_read_tokens": first_count(
+                usage.get("cache_read_tokens"),
+                usage.get("cache_read_input_tokens"),
+                usage.get("cached_input_tokens"),
+                prompt_details.get("cached_tokens"),
+            ),
+            "cache_write_tokens": first_count(
+                usage.get("cache_write_tokens"),
+                usage.get("cache_creation_input_tokens"),
+            ),
+            "reasoning_tokens": first_count(
+                usage.get("reasoning_tokens"),
+                completion_details.get("reasoning_tokens"),
+                output_details.get("reasoning_tokens"),
+            ),
+            "total_tokens": first_count(usage.get("total_tokens")),
+            "other_provider_token_categories": other or None,
+        }
+
+    @staticmethod
+    def _response_semantics(payload: Mapping[str, Any]) -> tuple[Any, list[str]]:
+        choices = payload.get("choices")
+        if not isinstance(choices, list) or not choices:
+            return None, []
+        choice = choices[0]
+        if not isinstance(choice, Mapping):
+            return None, []
+        tool_names: list[str] = []
+        message = choice.get("message")
+        raw_calls = message.get("tool_calls") if isinstance(message, Mapping) else None
+        if isinstance(raw_calls, list):
+            for raw_call in raw_calls:
+                function = raw_call.get("function") if isinstance(raw_call, Mapping) else None
+                name = function.get("name") if isinstance(function, Mapping) else None
+                if isinstance(name, str) and name:
+                    tool_names.append(name)
+        return choice.get("finish_reason"), tool_names
+
+    def _new_call_record(self, *, stage: str) -> tuple[int, dict[str, Any]]:
+        context = getattr(self._call_state, "context", {})
+        record: dict[str, Any] = {
+            "call_index": -1,
+            "cell_id": context.get("cell_id"),
+            "stage": stage,
+            "target_attempt": context.get("target_attempt"),
+            "retry_of_call_index": None,
+            "retry_index": 0,
+            "started_at_utc": self._utc_now(),
+            "ended_at_utc": None,
+            "elapsed_s": None,
+            "status": "in_progress",
+            "http_status": None,
+            "error": None,
+            "provider_request_id": None,
+            "mode": getattr(self._call_state, "mode", "unknown"),
+            "provider": self.config.provider,
+            "api_protocol": self.config.api_protocol,
+            "requested_model": self.config.model,
+            "returned_model": None,
+            "finish_reason": None,
+            "tool_names": [],
+            "tool_history_mode": self.config.tool_history_mode,
+            "context_projection": dict(
+                getattr(self._call_state, "context_projection", {})
+            ),
+            "input_tokens": None,
+            "output_tokens": None,
+            "cache_read_tokens": None,
+            "cache_write_tokens": None,
+            "reasoning_tokens": None,
+            "total_tokens": None,
+            "other_provider_token_categories": None,
+            "raw_usage": None,
+            # Historical consumers read ``usage`` directly.
+            "usage": {},
+        }
+        with self._calls_lock:
+            record["call_index"] = len(self.calls)
+            self.calls.append(record)
+        self._call_state.last_call_index = record["call_index"]
+        return int(record["call_index"]), record
 
     def _post(self, *, stage: str, body: Mapping[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(
@@ -226,6 +440,10 @@ class JsonModelClient:
             },
             method="POST",
         )
+        _call_index, record = self._new_call_record(stage=stage)
+        started_monotonic = time.monotonic()
+        payload: dict[str, Any] | None = None
+        response_headers: Any = None
         try:
             with _model_call_deadline(self.config.timeout_s):
                 with urllib.request.urlopen(
@@ -233,22 +451,100 @@ class JsonModelClient:
                     timeout=self.config.timeout_s,
                     context=ssl.create_default_context(),
                 ) as response:
-                    payload = json.loads(response.read().decode("utf-8"))
+                    record["http_status"] = self._http_status(response)
+                    response_headers = getattr(response, "headers", None)
+                    decoded = json.loads(response.read().decode("utf-8"))
+                    if not isinstance(decoded, dict):
+                        raise ModelInvocationError(
+                            "model API response must be a JSON object"
+                        )
+                    payload = decoded
+                    record["status"] = "success"
         except _ModelCallDeadline as exc:
+            record["status"] = "timeout"
+            record["error"] = {
+                "type": "timeout",
+                "message": "total wall deadline exceeded",
+            }
             raise ModelInvocationError(
                 f"{stage} model call exceeded {self.config.timeout_s:g}s total wall "
                 f"deadline for {self.config.model}"
             ) from exc
         except urllib.error.HTTPError as exc:
+            record["status"] = "http_error"
+            record["http_status"] = int(exc.code)
+            response_headers = exc.headers
+            record["error"] = {
+                "type": "http_error",
+                "message": f"HTTP {exc.code}",
+            }
             raise ModelInvocationError(
                 f"{stage} model call returned HTTP {exc.code} for {self.config.model}"
             ) from exc
-        except (OSError, urllib.error.URLError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        except urllib.error.URLError as exc:
+            timed_out = isinstance(exc.reason, TimeoutError)
+            record["status"] = "timeout" if timed_out else "transport_error"
+            record["error"] = {
+                "type": "timeout" if timed_out else "transport_error",
+                "message": type(exc.reason).__name__,
+            }
             raise ModelInvocationError(
                 f"{stage} model call failed for {self.config.model}: {type(exc).__name__}"
             ) from exc
-        if not isinstance(payload, dict):
-            raise ModelInvocationError("model API response must be a JSON object")
+        except TimeoutError as exc:
+            record["status"] = "timeout"
+            record["error"] = {"type": "timeout", "message": type(exc).__name__}
+            raise ModelInvocationError(
+                f"{stage} model call failed for {self.config.model}: {type(exc).__name__}"
+            ) from exc
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            record["status"] = "response_error"
+            record["error"] = {
+                "type": "response_error",
+                "message": type(exc).__name__,
+            }
+            raise ModelInvocationError(
+                f"{stage} model call failed for {self.config.model}: {type(exc).__name__}"
+            ) from exc
+        except ModelInvocationError as exc:
+            record["status"] = "response_error"
+            record["error"] = {
+                "type": "response_error",
+                "message": "response was not a JSON object",
+            }
+            raise
+        except OSError as exc:
+            record["status"] = "transport_error"
+            record["error"] = {
+                "type": "transport_error",
+                "message": type(exc).__name__,
+            }
+            raise ModelInvocationError(
+                f"{stage} model call failed for {self.config.model}: {type(exc).__name__}"
+            ) from exc
+        finally:
+            record["ended_at_utc"] = self._utc_now()
+            record["elapsed_s"] = max(0.0, time.monotonic() - started_monotonic)
+            record["provider_request_id"] = self._provider_request_id(
+                payload, response_headers
+            )
+            if payload is not None:
+                returned_model = payload.get("model")
+                record["returned_model"] = (
+                    returned_model
+                    if isinstance(returned_model, str) and returned_model
+                    else None
+                )
+                finish_reason, tool_names = self._response_semantics(payload)
+                record["finish_reason"] = finish_reason
+                record["tool_names"] = tool_names
+                usage = payload.get("usage")
+                raw_usage = dict(usage) if isinstance(usage, Mapping) else None
+                record["raw_usage"] = raw_usage
+                record["usage"] = raw_usage or {}
+                record.update(self._normalised_usage(usage))
+        if payload is None:  # All failure paths above raise before reaching this guard.
+            raise ModelInvocationError("model API response is unavailable")
         return payload
 
     @staticmethod
@@ -268,19 +564,38 @@ class JsonModelClient:
         tool_names: Sequence[str] = (),
         context_projection: Mapping[str, Any] | None = None,
     ) -> None:
-        self.calls.append(
+        call_index = getattr(self._call_state, "last_call_index", None)
+        record: dict[str, Any] | None = None
+        if isinstance(call_index, int):
+            with self._calls_lock:
+                if 0 <= call_index < len(self.calls):
+                    candidate = self.calls[call_index]
+                    if candidate.get("stage") == stage:
+                        record = candidate
+        if record is None:
+            # Keep compatibility with tests or adapters that replace the private HTTP
+            # method. Real HTTP calls are always recorded by ``_post`` above.
+            _call_index, record = self._new_call_record(stage=stage)
+            record["status"] = "success"
+            record["ended_at_utc"] = self._utc_now()
+            record["elapsed_s"] = 0.0
+            usage = payload.get("usage")
+            raw_usage = dict(usage) if isinstance(usage, Mapping) else None
+            record["raw_usage"] = raw_usage
+            record["usage"] = raw_usage or {}
+            record.update(self._normalised_usage(usage))
+        returned_model = payload.get("model")
+        record.update(
             {
-                "stage": stage,
                 "mode": mode,
-                "provider": self.config.provider,
-                "api_protocol": self.config.api_protocol,
-                "requested_model": self.config.model,
-                "returned_model": payload.get("model"),
+                "returned_model": (
+                    returned_model
+                    if isinstance(returned_model, str) and returned_model
+                    else None
+                ),
                 "finish_reason": finish_reason,
                 "tool_names": list(tool_names),
-                "tool_history_mode": self.config.tool_history_mode,
                 "context_projection": dict(context_projection or {}),
-                "usage": payload.get("usage", {}),
             }
         )
 
@@ -315,6 +630,9 @@ class JsonModelClient:
             "response_format": {"type": "json_object"},
         }
         self._add_thinking_control(body)
+        self._call_state.last_call_index = None
+        self._call_state.mode = "json"
+        self._call_state.context_projection = {}
         payload = self._post(stage=stage, body=body)
         choice = self._first_choice(payload)
         message = choice.get("message")
@@ -365,6 +683,9 @@ class JsonModelClient:
             "tool_choice": "auto",
         }
         self._add_thinking_control(body)
+        self._call_state.last_call_index = None
+        self._call_state.mode = "react"
+        self._call_state.context_projection = context_projection
         payload = self._post(stage=stage, body=body)
         choice = self._first_choice(payload)
         message = choice.get("message")

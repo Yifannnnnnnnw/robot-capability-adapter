@@ -212,6 +212,88 @@ class ReactLoopTests(unittest.TestCase):
         self.assertFalse(failed["ok"])
         self.assertIn("probe did not import", failed["error"])
 
+    def test_returned_unsuccessful_result_is_an_execution_error(self) -> None:
+        client = ScriptedClient(
+            [
+                ToolTurn(content=None, tool_calls=(call("one", "check", {}),)),
+                ToolTurn(content=None, tool_calls=(call("two", "submit", {}),)),
+            ]
+        )
+        result = run_react(
+            client=client,
+            stage="GENERATE",
+            system_prompt="Check then submit.",
+            user_prompt="Build.",
+            tools=(
+                ToolSpec(
+                    "check",
+                    "Check.",
+                    {"type": "object"},
+                    lambda _arguments: {
+                        "successful": False,
+                        "timed_out": True,
+                        "exit_code": 9,
+                    },
+                ),
+                ToolSpec(
+                    "submit",
+                    "Submit.",
+                    {"type": "object"},
+                    lambda arguments: dict(arguments),
+                    terminal=True,
+                ),
+            ),
+        )
+
+        failed_observation = json.loads(client.seen_messages[1][-1]["content"])
+        self.assertFalse(failed_observation["ok"])
+        self.assertEqual(failed_observation["result"]["successful"], False)
+        first_call = next(item for item in result.trace if item.get("tool") == "check")
+        self.assertFalse(first_call["ok"])
+        self.assertEqual(first_call["tool_outcome"], "error")
+        self.assertEqual(first_call["action_type"], "execute_error")
+        self.assertGreaterEqual(first_call["elapsed_s"], 0.0)
+        submitted = next(item for item in result.trace if item.get("tool") == "submit")
+        self.assertEqual(submitted["action_type"], "submit")
+        self.assertTrue(submitted["submission_event"])
+
+    def test_public_read_is_observe_or_plan(self) -> None:
+        client = ScriptedClient(
+            [
+                ToolTurn(
+                    content=None,
+                    tool_calls=(call("one", "read_public_file", {"path": "x"}),),
+                ),
+                ToolTurn(content=None, tool_calls=(call("two", "submit", {}),)),
+            ]
+        )
+        result = run_react(
+            client=client,
+            stage="STUDY",
+            system_prompt="Read then submit.",
+            user_prompt="Study.",
+            tools=(
+                ToolSpec(
+                    "read_public_file",
+                    "Read.",
+                    {"type": "object"},
+                    lambda _arguments: {"content": "public"},
+                ),
+                ToolSpec(
+                    "submit",
+                    "Submit.",
+                    {"type": "object"},
+                    lambda arguments: dict(arguments),
+                    terminal=True,
+                ),
+            ),
+        )
+
+        read_event = next(
+            item for item in result.trace if item.get("tool") == "read_public_file"
+        )
+        self.assertEqual(read_event["action_type"], "observe_or_plan")
+
     def test_malformed_arguments_are_returned_as_a_tool_error(self) -> None:
         called = False
 
