@@ -36,14 +36,14 @@
   <text x="46" y="191" class="text"><tspan class="ok">✓</tspan> build() found</text>
 
   <text x="316" y="137" class="text"><tspan class="ok">✓</tspan> rollout video</text>
-  <text x="316" y="164" class="text"><tspan class="ok">✓</tspan> endpoint measured</text>
+  <text x="316" y="164" class="text"><tspan class="ok">✓</tspan> endpoint error measured</text>
 
   <rect x="316" y="174" width="178" height="34" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
   <text x="330" y="196" class="metric">0.002 m</text>
-  <text x="430" y="196" class="metricLabel">distance</text>
+  <text x="430" y="196" class="metricLabel">endpoint error</text>
 
-  <rect x="570" y="122" width="170" height="42" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="586" y="148" class="mono">threshold: 0.020 m</text>
+  <rect x="570" y="122" width="184" height="42" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="586" y="148" class="mono">pass threshold: 0.020 m</text>
 
   <rect x="570" y="174" width="112" height="34" rx="17" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
   <circle cx="592" cy="191" r="7" fill="#16a34a"/>
