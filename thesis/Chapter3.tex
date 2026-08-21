@@ -73,6 +73,89 @@ estimate morphology effects.
 
 \section[Benchmark and Experimental Setup]{Benchmark and Experimental Setup}
 
+\subsection{Benchmark Design}
+
+B1 compares LLM backbones for driver synthesis while holding the Auto-Adapter
+framework and evaluation protocol constant. B2 compares the same backbones for
+capability-interface use while holding Code-BT, the validated driver, and the
+robot capability interface constant \citep{zhang2025codebt}. Because the tracks
+use different experimental units and define success at different levels, their
+results are reported separately and are not combined into an aggregate score.
+
+\subsection{Experimental Matrix}
+
+Tables~\ref{tab:chapter3-b1-matrix} and~\ref{tab:chapter3-b2-matrix} summarise
+the experimental units and declared sample sizes for B1 and B2.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{B1 driver-synthesis experimental matrix.}
+  \label{tab:chapter3-b1-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{B1 design element} & \textbf{Setting} \\
+    \midrule
+    Backbones & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; Qwen3 32B \\
+    Skeleton-assisted condition & 14 robot configurations $\times$ 7 backbones $\times$ 5 replicates = 490 replicates \\
+    From-scratch condition & SO-101, Franka Panda, Unitree Go2, Stretch 2 and Unitree G1 $\times$ 7 backbones $\times$ 5 replicates = 175 replicates \\
+    Experimental unit & One generation-condition replicate \\
+    Attempt budget & One initial submission and at most two Repair attempts \\
+    Total & 665 replicates \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{B2 capability-interface-use experimental matrix.}
+  \label{tab:chapter3-b2-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{B2 design element} & \textbf{Setting} \\
+    \midrule
+    Backbones & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; Qwen3 32B \\
+    Robots & SO-101 and Unitree Go2 \\
+    Controller & Code-BT \\
+    Fixed software & One validated driver and capability interface per robot \\
+    Task repetitions & Five tasks $\times$ 2 private seeds $\times$ 2 episodes \\
+    Experimental unit & One controller episode \\
+    Total & 280 episodes \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+\subsection{Backbone and Robot Cohorts}
+
+The seven backbones form a purposive comparison cohort rather than a
+representative sample of available LLMs. The selection extends the cross-model
+design of AutoAdapter 1.0 \citep{wang2026autoadapter}. Three Anthropic models
+provide a within-provider comparison across model tiers, while the remaining
+models extend the study across four additional providers. Smaller open-weight
+model families are included to examine whether successful driver synthesis and
+interface use are confined to proprietary systems. The resulting comparisons
+are conditional on these seven models and the benchmark conditions.
+
+The B1 cohort contains 14 exact robot configurations spanning manipulation,
+dexterous-hand, legged, humanoid, mobile, and bimanual platforms. The
+skeleton-assisted condition covers the complete cohort. The five-robot
+from-scratch subset was selected before outcomes were inspected to bound the
+additional experiment while retaining contrasting integration settings. B2
+uses SO-101 and Unitree Go2 to provide one manipulation and one locomotion
+setting. Robot configuration is treated as a blocking factor rather than as
+evidence of a morphology effect. Canonical configuration identifiers and
+package versions are reported in
+Appendix~\ref{tab:appendix-benchmark-scope}.
+
 \subsection{Success Criteria and Validation}
 
 In B1, each robot's public Task Library provides source-backed task standards
