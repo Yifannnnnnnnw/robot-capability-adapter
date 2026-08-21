@@ -1,20 +1,23 @@
-# Benchmark Runners
+# Benchmark Manifest Resolver
 
-`manifest.py` resolves component references, verifies declared counts, checks
-canonical package and runnable-index availability, and emits deterministic B1
-unit IDs. It does not invoke a model or MuJoCo.
+`manifest.py` is generic benchmark code. It resolves an explicitly supplied
+external B1 or B2 manifest, verifies referenced benchmark contracts and counts,
+checks canonical package/index availability, and emits deterministic unit IDs.
+It does not own an experiment default, invoke a model, or run MuJoCo.
 
-`run_b1.py` is intentionally not present until all fixed per-robot B1
-validation bundles are versioned and the canonical mainline exposes the
-approved STUDY-to-final-validation stopping boundary without rerunning TGCD or
-IVC. `run_b2.py` is
-intentionally not present until at least one high-level-controller adapter and
-the B2 task set pass audit. This avoids a runner that silently executes Task
-Demo in B1 or a placeholder B2 implementation.
-
-From this directory:
+From the repository root, the current Experiment 1 core manifest can be checked
+with:
 
 ```bash
-python runners/manifest.py validate
-python runners/manifest.py b1-matrix --output /tmp/chapter3-b1-units.json
+python3 AutoAdapter-Bench/runners/manifest.py validate \
+  --b1-recipe experiment/experiment1/manifest.json
+
+python3 AutoAdapter-Bench/runners/manifest.py b1-matrix \
+  --recipe experiment/experiment1/manifest.json \
+  --output /tmp/experiment1-b1-units.json
 ```
+
+`run_b1.py` is intentionally absent until the canonical mainline exposes the
+approved STUDY-to-terminal-validation boundary and the selected fixed bundles
+are versioned and reference-calibrated. A structurally valid manifest is not
+formal readiness.

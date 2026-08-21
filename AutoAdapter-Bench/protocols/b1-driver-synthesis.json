@@ -1,14 +1,13 @@
 {
   "schema_version": 1,
   "protocol_id": "b1-driver-synthesis",
-  "protocol_version": "0.2.0",
+  "protocol_version": "0.3.0",
   "track": "B1",
   "statistical_unit": "independent-generation-condition-replicate",
   "allowed_generation_conditions": [
     "skeleton-assisted",
     "from-scratch"
   ],
-  "primary_generation_condition": "skeleton-assisted",
   "max_driver_attempts_per_condition": 3,
   "run_task_demo": false,
   "run_high_level_controller": false,

@@ -1,4 +1,4 @@
-"""Resolve and validate composable AutoAdapter-Bench experiment recipes."""
+"""Resolve external experiment manifests against AutoAdapter-Bench contracts."""
 
 from __future__ import annotations
 
@@ -12,12 +12,18 @@ from typing import Any
 BENCHMARK_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = BENCHMARK_ROOT.parent
 AUTOADAPTER_ROOT = REPOSITORY_ROOT / "autoadapter"
-DEFAULT_B1_RECIPE = BENCHMARK_ROOT / "experiments" / "chapter3" / "b1.json"
-DEFAULT_B2_RECIPE = BENCHMARK_ROOT / "experiments" / "chapter3" / "b2.json"
 
 
 class ManifestError(RuntimeError):
     """Raised when a benchmark recipe is structurally inconsistent."""
+
+
+def _display_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(REPOSITORY_ROOT))
+    except ValueError:
+        return str(resolved)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -75,7 +81,7 @@ def _backbone_registry() -> dict[str, dict[str, Any]]:
     return result
 
 
-def resolve_b1(recipe_path: Path = DEFAULT_B1_RECIPE) -> dict[str, Any]:
+def resolve_b1(recipe_path: Path) -> dict[str, Any]:
     recipe_path = recipe_path.resolve()
     recipe = _load(recipe_path)
     if recipe.get("track") != "B1":
@@ -90,6 +96,12 @@ def resolve_b1(recipe_path: Path = DEFAULT_B1_RECIPE) -> dict[str, Any]:
         raise ManifestError(f"{protocol_path}: B1 must not run Task Demo")
     if recipe.get("run_task_demo") is not False:
         raise ManifestError(f"{recipe_path}: B1 recipe must not run Task Demo")
+    if protocol.get("run_high_level_controller") is not False:
+        raise ManifestError(f"{protocol_path}: B1 must not run a high-level controller")
+    if recipe.get("run_high_level_controller") is not False:
+        raise ManifestError(
+            f"{recipe_path}: B1 recipe must not run a high-level controller"
+        )
 
     _, _, backbone_ids = _component_ids(
         recipe_path, recipe, "backbone_set", "backbone_ids"
@@ -181,14 +193,14 @@ def resolve_b1(recipe_path: Path = DEFAULT_B1_RECIPE) -> dict[str, Any]:
             fixed_bundle_value,
             "fixed_validation_bundle_set",
         )
-        fixed_bundle_path = str(bundle_path.relative_to(BENCHMARK_ROOT))
+        fixed_bundle_path = _display_path(bundle_path)
     blockers = list(dict.fromkeys(str(item) for item in blockers))
 
     package_state = package_inventory(robot_ids)
     return {
         "experiment_id": recipe.get("experiment_id"),
-        "recipe": str(recipe_path.relative_to(BENCHMARK_ROOT)),
-        "protocol": str(protocol_path.relative_to(BENCHMARK_ROOT)),
+        "recipe": _display_path(recipe_path),
+        "protocol": _display_path(protocol_path),
         "structurally_valid": True,
         "unit_count": len(units),
         "condition_counts": dict(sorted(condition_counts.items())),
@@ -239,7 +251,7 @@ def package_inventory(robot_ids: list[str]) -> dict[str, Any]:
     }
 
 
-def resolve_b2(recipe_path: Path = DEFAULT_B2_RECIPE) -> dict[str, Any]:
+def resolve_b2(recipe_path: Path) -> dict[str, Any]:
     recipe_path = recipe_path.resolve()
     recipe = _load(recipe_path)
     if recipe.get("track") != "B2":
@@ -293,9 +305,9 @@ def resolve_b2(recipe_path: Path = DEFAULT_B2_RECIPE) -> dict[str, Any]:
 
     return {
         "experiment_id": recipe.get("experiment_id"),
-        "recipe": str(recipe_path.relative_to(BENCHMARK_ROOT)),
-        "protocol": str(protocol_path.relative_to(BENCHMARK_ROOT)),
-        "controller": str(controller_path.relative_to(BENCHMARK_ROOT)),
+        "recipe": _display_path(recipe_path),
+        "protocol": _display_path(protocol_path),
+        "controller": _display_path(controller_path),
         "structurally_valid": True,
         "planned_episode_count_if_admitted": planned,
         "robot_count": len(robot_ids),
@@ -310,19 +322,26 @@ def resolve_b2(recipe_path: Path = DEFAULT_B2_RECIPE) -> dict[str, Any]:
 
 
 def validation_summary(
-    b1_recipe: Path = DEFAULT_B1_RECIPE,
-    b2_recipe: Path = DEFAULT_B2_RECIPE,
+    b1_recipe: Path | None = None,
+    b2_recipe: Path | None = None,
 ) -> dict[str, Any]:
-    b1 = resolve_b1(b1_recipe)
-    b2 = resolve_b2(b2_recipe)
-    b1_summary = {key: value for key, value in b1.items() if key != "units"}
-    return {
+    if b1_recipe is None and b2_recipe is None:
+        raise ManifestError("provide at least one external B1 or B2 manifest")
+    result: dict[str, Any] = {
         "benchmark_root": str(BENCHMARK_ROOT),
-        "b1": b1_summary,
-        "b2": b2,
         "structurally_valid": True,
-        "ready_for_formal_execution": b1["ready_to_expand"] and b2["ready_to_expand"],
     }
+    readiness: list[bool] = []
+    if b1_recipe is not None:
+        b1 = resolve_b1(b1_recipe)
+        result["b1"] = {key: value for key, value in b1.items() if key != "units"}
+        readiness.append(bool(b1["ready_to_expand"]))
+    if b2_recipe is not None:
+        b2 = resolve_b2(b2_recipe)
+        result["b2"] = b2
+        readiness.append(bool(b2["ready_to_expand"]))
+    result["ready_for_formal_execution"] = all(readiness)
+    return result
 
 
 def _write_json(value: Any, output: Path | None) -> None:
@@ -338,13 +357,13 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    validate = subparsers.add_parser("validate", help="validate Chapter 3 recipes")
-    validate.add_argument("--b1-recipe", type=Path, default=DEFAULT_B1_RECIPE)
-    validate.add_argument("--b2-recipe", type=Path, default=DEFAULT_B2_RECIPE)
+    validate = subparsers.add_parser("validate", help="validate external manifests")
+    validate.add_argument("--b1-recipe", type=Path)
+    validate.add_argument("--b2-recipe", type=Path)
     validate.add_argument("--require-ready", action="store_true")
 
     matrix = subparsers.add_parser("b1-matrix", help="emit resolved B1 units")
-    matrix.add_argument("--recipe", type=Path, default=DEFAULT_B1_RECIPE)
+    matrix.add_argument("--recipe", type=Path, required=True)
     matrix.add_argument("--output", type=Path, default=None)
     return parser
 

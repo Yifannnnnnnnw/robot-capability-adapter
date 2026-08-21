@@ -4,50 +4,42 @@
     {
       "id": "code_bt",
       "display_name": "Code-BT",
-      "directory": "code_bt",
-      "chapter3_role": "primary-candidate"
+      "directory": "code_bt"
     },
     {
       "id": "llm_bt_planner",
       "display_name": "LLM-as-BT-Planner",
-      "directory": "llm_bt_planner",
-      "chapter3_role": "conditional-second-candidate"
+      "directory": "llm_bt_planner"
     },
     {
       "id": "inner_monologue",
       "display_name": "Inner Monologue",
-      "directory": "inner_monologue",
-      "chapter3_role": "catalogued-extension"
+      "directory": "inner_monologue"
     },
     {
       "id": "saycan",
       "display_name": "SayCan",
-      "directory": "saycan",
-      "chapter3_role": "catalogued-extension"
+      "directory": "saycan"
     },
     {
       "id": "react",
       "display_name": "ReAct",
-      "directory": "react",
-      "chapter3_role": "historical-anchor"
+      "directory": "react"
     },
     {
       "id": "code_as_policies",
       "display_name": "Code as Policies",
-      "directory": "code_as_policies",
-      "chapter3_role": "catalogued-extension"
+      "directory": "code_as_policies"
     },
     {
       "id": "uhbtp",
       "display_name": "UHBTP",
-      "directory": "uhbtp",
-      "chapter3_role": "catalogued-extension"
+      "directory": "uhbtp"
     },
     {
       "id": "hbtp",
       "display_name": "HBTP",
-      "directory": "hbtp",
-      "chapter3_role": "catalogued-extension"
+      "directory": "hbtp"
     }
   ]
 }

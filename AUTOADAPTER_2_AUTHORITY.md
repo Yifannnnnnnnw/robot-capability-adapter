@@ -1,12 +1,26 @@
 # Auto-Adapter 2.0 Direct-MuJoCo Mainline Authority / Direct-MuJoCo 主线权威文档
 
 > **Document ID / 文档编号：** `AA2-AUTH`<br>
-> **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
+> **Document role / 文档角色：** sole project-wide normative document; bounded experiment authorities require explicit delegation in Section 0.1 / 项目范围唯一规范性文档；限定实验权威必须由第 0.1 节明确委派<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.25`<br>
+> **Document revision / 文档版本：** `0.19.26`<br>
 > **Effective date / 生效日期：** 2026-08-21<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.26` separates reusable benchmark definitions from concrete experiment ownership.
+`AutoAdapter-Bench/` owns reusable protocols, registries, catalogues, and manifest-resolution
+contracts; it does not own a current experiment cohort, replicate count, run directory, or analysis
+denominator. The sole delegated authority for the fixed-input B1 backbone comparison called
+Experiment 1 is `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`. The eleven-configuration cohort
+in Section 1.3 remains the required all-robot mainline construction and shakedown cohort, but it is
+not the automatic denominator for every downstream experiment.
+
+**中文辅助说明。** `0.19.26` 将可复用 benchmark 定义与具体实验归属分开。
+`AutoAdapter-Bench/` 只拥有可复用 protocol、registry、catalogue 与 manifest 解析合同，不拥有当前
+实验 cohort、replicate 数、run 目录或分析 denominator。固定输入 B1 backbone 比较（Experiment 1）
+唯一被委派的实验权威是 `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`。第 1.3 节的十一配置
+仍是全机器人主线建设与 shakedown 的必需 cohort，但不再自动成为每个后续实验的 denominator。
 
 Revision `0.19.25` reconciles the all-robot construction work with the fixed-input Chapter 3
 protocol. The declared mainline cohort is the exact eleven configurations in Section 1.3;
@@ -524,7 +538,7 @@ Task Demo。
 
 ## 0. Authority and precedence / 权威性与优先级
 
-### 0.1 Sole authority / 唯一权威
+### 0.1 Project authority and scoped experiment delegation / 项目权威与限定实验委派
 
 This file is the only normative source for the current project objective, architecture boundary,
 research questions, mainline acceptance, and SDK-extension relationship. README files, project
@@ -532,20 +546,33 @@ plans, prompts, schemas, source code, Library records, and historical runs may i
 provide evidence for this Authority, but their existence does not create requirements or override
 it. When they conflict, this file governs and the conflicting material must be corrected.
 
+One experiment may have one active experiment-specific authority only when this section names its
+exact path and bounded scope. The current and only delegation is
+`experiment/experiment1/EXPERIMENT_1_AUTHORITY.md` (`AA2-EXP1`), which governs Experiment 1's exact
+robot selection, Producer-backbone families, generation conditions, replicate plan, attempt budget,
+analysis boundary, extension rule, and execution blockers. It implements, and may not weaken or
+override, this project's architecture, isolation, Harness, physical-integrity, evidence, or
+authenticity requirements. Within that delegated scope, manifests, run records, analysis code,
+thesis prose, and benchmark documents remain subordinate to `AA2-EXP1`. Any actual conflict between
+`AA2-EXP1` and this project-wide Authority blocks the affected experiment until one of the two is
+prospectively corrected.
+
 English clauses are normative. Chinese headings, tables, and paragraphs are faithful reading aids
 and must not add, remove, weaken, or strengthen a requirement. If the two languages diverge, the
 English text governs and the Chinese text must be corrected.
 
-Git history preserves superseded designs. The repository must not create a second active authority
-file or retain an obsolete design as a parallel normative source.
+Git history preserves superseded designs. The repository must not create an undelegated parallel
+authority, a second active authority for the same experiment, or retain an obsolete design as a
+parallel normative source.
 
 **中文辅助说明。** 本文件是当前项目目标、架构边界、研究问题、主线验收标准以及 SDK 扩展
-关系的唯一规范来源。README、项目计划、prompt、schema、源代码、Library 记录和历史运行可以
-实现本文件或提供证据，但它们自身不会产生新要求，也不能覆盖本文件。发生冲突时，以本文件为准，
-并必须修正冲突材料。英文条款具有规范效力；中文标题、表格和段落只提供忠实的辅助阅读，不得
-增加、删除、削弱或强化要求。如果两种语言出现偏差，以英文为准，并必须修正中文。Git 历史用于
-保留已被取代的设计；仓库不得创建第二份仍然有效的权威文件，也不得将过时设计保留为并行规范
-来源。
+关系的唯一项目范围规范来源。只有本节点名路径和限定范围后，一个实验才可以拥有一份有效的实验
+专属权威。当前唯一委派是 `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`（`AA2-EXP1`），
+负责 Experiment 1 的精确机器人选择、Producer backbone family、生成条件、replicate 计划、attempt
+budget、分析边界、扩展规则和执行 blocker；它不能削弱或覆盖本文件的架构、隔离、Harness、物理
+完整性、证据或真实性要求。README、manifest、run record、分析代码、论文文本和 benchmark 文档
+都不能覆盖相应权威。英文条款具有规范效力；中文文本只作辅助阅读。Git 历史保留被取代设计；
+仓库不得创建未经委派的并行权威、同一实验的第二份有效权威，或把旧设计保留为并行规范来源。
 
 ### 0.2 Experiment-grade governance / 实验级治理
 
@@ -709,7 +736,7 @@ Experience-enabled run 与匹配的 no-Experience control
 由于 morphology 与 actuation、dynamics、任务适用性和 MuJoCo 控制结构共同变化，
 cross-morphology 比较只能解释为关联。
 
-### 1.3 Declared all-robot mainline cohort and round boundary / 声明的全机器人主线集合与轮次边界
+### 1.3 Declared all-robot mainline cohort and shakedown boundary / 声明的全机器人主线集合与 shakedown 边界
 
 For this Authority, **all robots** means the following exact eleven-configuration cohort. It does
 not mean every robot that exists, every asset in the repository, or a dynamically changing index.
@@ -743,18 +770,19 @@ remain within the same limit. Torque-driven robots need not remain standing with
 policy, but their initial reset must be valid and any later fall or penetration remains a physical
 failure under the shared Harness.
 
-The formal Experiment 3 manifest must contain this complete cohort. Before the first all-robot
+The initial all-robot mainline shakedown manifest must contain this complete cohort. Before that
 round, every listed configuration must pass its package and simulator-integrity checks and must
 appear in `libraries/robots/index.json`. A missing or incomplete configuration remains a visible
 blocker; it may not be silently omitted, replaced, or treated as a failed model cell. Adding or
-removing a configuration requires an explicit Authority or protocol revision made before outcomes
-are inspected.
+removing a configuration from that shakedown requires an explicit project-Authority revision made
+before outcomes are inspected.
 
 Per-robot package checks, hidden reference diagnostics, and real-model canaries may execute as soon
 as that package is ready. They are diagnostic construction evidence and do not satisfy the
-all-robot round. Reference source or derived logic is never model input. Every formal
-Producer-backbone comparison uses the complete cohort under both generation conditions. The
-initial shakedown therefore contains eleven robots crossed with
+all-robot round. Reference source or derived logic is never model input. This complete cohort
+governs the initial construction shakedown, not every downstream experiment. A delegated
+experiment authority may prospectively select a fixed subset without changing the mainline package
+inventory or claiming an all-robot result. The initial shakedown contains eleven robots crossed with
 `skeleton-assisted` and `from-scratch`, for twenty-two cells per replicate.
 
 **中文辅助说明。** 在本 Authority 中，**全部机器人**特指上表声明的十一个精确配置，不表示
@@ -770,14 +798,15 @@ torque-driven 机器人无需在缺少主动 policy 时保持站立，但其初�
 `unitree_g1` 与 `google_barkour_vb` 作为可选研究备份保留，不属于上述正式 cohort；它们不阻塞
 正式轮次，其资产、task、skeleton、policy 或校准结果也不计作正式轮次证据。
 
-正式 Experiment 3 manifest 必须包含完整十一配置集合。首轮全机器人实验前，每个配置都必须
+首轮全机器人主线 shakedown manifest 必须包含完整十一配置集合。该轮开始前，每个配置都必须
 通过 package check 和 simulator-integrity check，并进入
 `libraries/robots/index.json`。缺失或不完整配置是显式 blocker，不能静默省略、替换，也不能算作
-模型失败 cell；增删配置必须在查看结果前通过明确 Authority 或 protocol 修订。单机器人 package
+模型失败 cell；从该 shakedown 增删配置必须在查看结果前通过项目 Authority 修订。单机器人 package
 check、隐藏 reference 诊断和真实模型 canary 可在对应 package 就绪后提前执行，但只属于建设期
-诊断证据，不能替代全机器人轮次；reference 源码或衍生逻辑绝不成为模型输入。每个正式
-Producer-backbone 比较都必须让完整 cohort 运行两种生成条件；
-因此首轮 shakedown 每个 replicate 共十一乘二，即二十二个 cell。
+诊断证据，不能替代全机器人轮次；reference 源码或衍生逻辑绝不成为模型输入。完整十一配置只约束
+首轮建设 shakedown，不自动约束每个后续实验。经第 0.1 节委派的实验权威可以在查看结果前固定一个
+子集，但不能借此改变主线 package inventory 或声称全机器人结果。首轮 shakedown 每个 replicate
+共十一乘二，即二十二个 cell。
 
 ### 1.4 Planned RQ1 Producer LLM coverage / 规划中的 RQ1 Producer LLM 覆盖
 
@@ -1460,7 +1489,7 @@ Repair 阶段都不执行。可执行 suite、具体 case、binding 和 guard
 中公开的 capability 接口及 validation-contract 语义，但不能看到这些标准的私有实现。最终
 pass/fail verdict 只属于可信 Harness，不能来自 TGCD 或 IVC 模型自述。
 
-For Chapter 3 B1, Sections 3.1 and 3.2 are upstream input-production stages rather than B1 stages.
+For the fixed-input Experiment 1 B1 comparison, Sections 3.1 and 3.2 are upstream input-production stages rather than B1 stages.
 Before B1 begins, one reviewed `capability_design.json` and one complete
 `capability_validation_suite.json` per robot must be copied into a versioned fixed-input bundle and
 the package reference driver must pass that exact suite with complete evidence. The B1 manifest
@@ -1468,7 +1497,7 @@ must pin the bundle identity. No B1 backbone reruns TGCD or IVC, and no B1 outco
 fixed interface, criteria, private cases, bindings, guards, or verdict rules. A changed bundle
 defines a new experiment configuration and requires all affected B1 units to be rerun.
 
-对于 Chapter 3 B1，第 3.1 与 3.2 节属于上游输入生产阶段，不属于 B1 stage。B1 开始前，每台
+对于固定输入 Experiment 1 B1 比较，第 3.1 与 3.2 节属于上游输入生产阶段，不属于 B1 stage。B1 开始前，每台
 机器人必须把一份经过审查的 `capability_design.json` 和一份完整
 `capability_validation_suite.json` 固定进版本化 input bundle，并由 package reference driver 对该
 准确 suite 完成具有完整证据的校准。B1 manifest 必须固定 bundle identity。任何 B1 backbone 都不
@@ -1477,7 +1506,7 @@ guard 或 verdict rule。修改 bundle 将构成新的实验配置，并要求�
 
 ### 3.3 Driver Synthesis / Driver 合成
 
-A dynamic mainline run uses the configured real model for every model-authored stage. In Chapter 3
+A dynamic mainline run uses the configured real model for every model-authored stage. In Experiment 1
 B1 those stages begin at STUDY; the run loads the manifest-pinned fixed interface and validation
 bundle without invoking TGCD or IVC. Both preserved AutoAdapter 1.0 generation conditions may
 inspect all run-relevant public inputs: the complete public robot package, including public
@@ -1587,7 +1616,7 @@ provide supervisory targets, but one-read-many-write, pure polling, sleep-only b
 open-loop trajectories, and self-reported completion do not satisfy this runtime contract.
 
 **中文辅助说明。** 动态主线运行中，每个由模型创作的阶段都必须调用已配置的真实模型。在
-Chapter 3 B1 中，这些阶段从 STUDY 开始；run 直接加载 manifest 固定的 interface 与 validation
+Experiment 1 B1 中，这些阶段从 STUDY 开始；run 直接加载 manifest 固定的 interface 与 validation
 bundle，不调用 TGCD 或 IVC。两种保留的 AutoAdapter 1.0 生成条件都可以检查与本次 run 相关的
 全部公开输入，包括完整公开机器人 package 中的 Morphology、Task Library catalog 与 source
 record、符合条件的 Experience、所选 MJCF 完整闭包、STUDY 输出和同一份固定且已封存的
@@ -2271,10 +2300,11 @@ prerequisite fails, the round is incomplete and the affected dynamic cells are n
 A passing reference alone supports only diagnostic reference calibration, while a reference
 planner failure alone does not make the round incomplete.
 
-The Ministral 8B shakedown may count as that family's B1 replicate only if the manifest declared
-the formal protocol prospectively and every applicable evidence requirement was met. Subsequent B1
-backbones and replicates must use the same complete robot cohort unless a pre-outcome Authority or
-protocol revision explicitly changes it.
+The Ministral 8B shakedown remains construction evidence. It counts as a downstream experiment
+replicate only when that experiment's delegated authority and prospective manifest explicitly admit
+the exact run and every applicable stage, input, isolation, and evidence requirement matches. The
+current Experiment 1 authority does not automatically admit the all-robot shakedown as one of its
+replicates.
 
 **中文辅助说明。** 只有满足以下全部条件，项目才可以声明必需的首轮全机器人 shakedown 已完成：
 
@@ -2315,9 +2345,9 @@ simulator、Harness 或 infrastructure 前置项失败时，该轮仍不完整�
 模型失败。单纯 reference planner 失败不会使轮次不完整；仅 reference 通过只能支持
 “diagnostic reference calibration passed”。
 
-只有当 manifest 事先声明正式 protocol 且全部适用证据要求满足时，Ministral 8B shakedown 才可
-计为该 family 的一个 B1 replicate。后续 B1 backbone 和 replicate 必须使用同一完整机器人 cohort，
-除非在查看结果前通过明确 Authority 或 protocol 修订改变。
+Ministral 8B shakedown 保持为建设证据。只有下游实验被委派的权威和事先确定的 manifest 明确接纳
+该精确 run，且所有 stage、input、隔离和证据要求完全匹配时，它才可以计入该实验 replicate。当前
+Experiment 1 权威不会自动把全机器人 shakedown 接纳为其 replicate。
 
 ---
 

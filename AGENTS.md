@@ -4,7 +4,7 @@
 
 Build the simplest experiment-grade AutoAdapter 2.0 Direct-MuJoCo mainline for the complete robot cohort declared by `AUTOADAPTER_2_AUTHORITY.md`. Configure and calibrate every declared robot before the formal initial all-robot shakedown; then run every robot under both generation conditions with the manifest-pinned minimal Producer model, execute Evolution for every terminal cell, and review the resulting Experience records. Real-SDK and Translation work is an independent extension.
 
-`AUTOADAPTER_2_AUTHORITY.md` is the sole design authority. Do not add production-grade, enterprise-scale, speculative, or future-oriented machinery. When several implementations satisfy the Authority, choose the smallest direct implementation.
+`AUTOADAPTER_2_AUTHORITY.md` is the sole project-wide design authority. It explicitly delegates the bounded Experiment 1 design to `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`, which is the only authority for that experiment's cohort, factors, replicate plan, attempt budget, extension rule, and analysis boundary. No README, manifest, benchmark document, thesis draft, or run record overrides either authority. Do not add production-grade, enterprise-scale, speculative, or future-oriented machinery. When several implementations satisfy the applicable Authority, choose the smallest direct implementation.
 
 ## Roles
 

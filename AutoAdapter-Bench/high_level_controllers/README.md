@@ -1,9 +1,9 @@
 # High-Level Controllers
 
-This catalogue records B2 controller architectures independently of whether
-they enter the Chapter 3 experiment. Directory presence means that the
-architecture is in the audit pool; it does not mean that a reproduction or
-adapter is complete.
+This benchmark catalogue records reusable B2 controller architectures.
+Directory presence means that the architecture is in the audit pool; it does
+not select the architecture for an experiment and does not mean that a
+reproduction or adapter is complete.
 
 Each controller owns:
 

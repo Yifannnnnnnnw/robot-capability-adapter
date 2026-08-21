@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "authority": "../EXPERIMENT_1_AUTHORITY.md",
+  "authority_revision": "0.1.0",
+  "replicate_set_id": "experiment1-core-r3",
+  "replicate_ids": [
+    "r01",
+    "r02",
+    "r03"
+  ],
+  "random_state_policy": "blocked-pending-formal-freeze"
+}

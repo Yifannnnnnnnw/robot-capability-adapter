@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "authority": "EXPERIMENT_1_AUTHORITY.md",
+  "authority_revision": "0.1.0",
+  "experiment_id": "experiment1-b1-core-r3",
+  "track": "B1",
+  "status": "blocked",
+  "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
+  "backbone_set": "../../AutoAdapter-Bench/components/backbone_sets/declared-seven.json",
+  "replicate_set": "components/replicates-core-r3.json",
+  "fixed_validation_bundle_set": null,
+  "condition_coverage": [
+    {
+      "condition": "skeleton-assisted",
+      "robot_set": "components/robot-set.json"
+    },
+    {
+      "condition": "from-scratch",
+      "robot_set": "components/robot-set.json"
+    }
+  ],
+  "run_task_demo": false,
+  "run_high_level_controller": false,
+  "run_evolution": false,
+  "experience_input": "empty",
+  "expected_generation_condition_replicates": 210,
+  "maximum_submitted_driver_attempts": 630,
+  "extension_replicate_ids": [
+    "r04",
+    "r05"
+  ],
+  "maximum_cumulative_generation_condition_replicates": 350,
+  "maximum_cumulative_submitted_driver_attempts": 1050,
+  "execution_concurrency": {
+    "target_maximum": 8,
+    "status": "not-admitted"
+  },
+  "blocked_reasons": [
+    "five fixed per-robot validation bundles and reference calibrations are not frozen",
+    "exact seven-backbone provider configurations and prices are not frozen",
+    "not all seven provider transports have passed real tool-calling canaries",
+    "replicate seeds and randomized block order are not frozen",
+    "the synthesis-only B1 runner and stopping boundary are not implemented",
+    "all-five package, isolation, private-suite, physical-integrity, recorder, and reference-calibration checks are not complete"
+  ]
+}

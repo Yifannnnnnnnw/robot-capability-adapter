@@ -1,0 +1,150 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+
+EXPERIMENT_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = EXPERIMENT_ROOT.parents[1]
+RESOLVER_PATH = REPOSITORY_ROOT / "AutoAdapter-Bench" / "runners" / "manifest.py"
+
+
+def _load_resolver():
+    spec = importlib.util.spec_from_file_location("autoadapter_bench_manifest", RESOLVER_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load manifest resolver: {RESOLVER_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+manifest = _load_resolver()
+
+
+class Experiment1ManifestTests(unittest.TestCase):
+    def test_core_manifest_matches_the_authority_matrix(self) -> None:
+        resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
+
+        self.assertEqual(resolved["robot_count"], 5)
+        self.assertEqual(resolved["backbone_count"], 7)
+        self.assertEqual(resolved["replicate_count"], 3)
+        self.assertEqual(
+            resolved["condition_counts"],
+            {"from-scratch": 105, "skeleton-assisted": 105},
+        )
+        self.assertEqual(resolved["unit_count"], 210)
+        self.assertEqual(resolved["maximum_submitted_driver_attempts"], 630)
+
+    def test_every_block_contains_both_isolated_conditions(self) -> None:
+        resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
+        conditions_by_pair: dict[str, set[str]] = {}
+        for unit in resolved["units"]:
+            conditions_by_pair.setdefault(unit["condition_pair_id"], set()).add(
+                unit["generation_condition"]
+            )
+
+        self.assertEqual(len(conditions_by_pair), 5 * 7 * 3)
+        self.assertTrue(
+            all(
+                conditions == {"skeleton-assisted", "from-scratch"}
+                for conditions in conditions_by_pair.values()
+            )
+        )
+
+    def test_manifest_remains_visibly_blocked(self) -> None:
+        recipe = json.loads(
+            (EXPERIMENT_ROOT / "manifest.json").read_text(encoding="utf-8")
+        )
+        resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
+
+        self.assertEqual(recipe["status"], "blocked")
+        self.assertEqual(recipe["execution_concurrency"]["status"], "not-admitted")
+        self.assertFalse(resolved["ready_to_expand"])
+        self.assertIsNone(resolved["fixed_validation_bundle_set"])
+        self.assertTrue(resolved["blockers"])
+
+    def test_derived_files_lock_the_authority_selection(self) -> None:
+        recipe = json.loads(
+            (EXPERIMENT_ROOT / "manifest.json").read_text(encoding="utf-8")
+        )
+        robots = json.loads(
+            (EXPERIMENT_ROOT / "components" / "robot-set.json").read_text(
+                encoding="utf-8"
+            )
+        )["robot_configuration_ids"]
+        replicates = json.loads(
+            (
+                EXPERIMENT_ROOT
+                / "components"
+                / "replicates-core-r3.json"
+            ).read_text(encoding="utf-8")
+        )["replicate_ids"]
+        backbones = json.loads(
+            (
+                REPOSITORY_ROOT
+                / "AutoAdapter-Bench"
+                / "components"
+                / "backbone_sets"
+                / "declared-seven.json"
+            ).read_text(encoding="utf-8")
+        )["backbone_ids"]
+
+        self.assertEqual(
+            robots,
+            [
+                "robotstudio_so101",
+                "unitree-go2-stock-12dof",
+                "leap_hand",
+                "hello_robot_stretch_2",
+                "aloha_2",
+            ],
+        )
+        self.assertEqual(backbones, ["M1", "M2", "M3", "M4", "M5", "M6", "M7"])
+        self.assertEqual(replicates, ["r01", "r02", "r03"])
+        self.assertEqual(recipe["extension_replicate_ids"], ["r04", "r05"])
+        self.assertEqual(recipe["maximum_cumulative_generation_condition_replicates"], 350)
+        self.assertEqual(recipe["maximum_cumulative_submitted_driver_attempts"], 1050)
+        self.assertFalse(recipe["run_task_demo"])
+        self.assertFalse(recipe["run_high_level_controller"])
+        self.assertFalse(recipe["run_evolution"])
+        self.assertEqual(recipe["experience_input"], "empty")
+        self.assertEqual(recipe["execution_concurrency"]["status"], "not-admitted")
+
+    def test_resolver_rejects_a_b1_high_level_controller(self) -> None:
+        recipe = json.loads(
+            (EXPERIMENT_ROOT / "manifest.json").read_text(encoding="utf-8")
+        )
+        recipe["protocol"] = str(
+            REPOSITORY_ROOT
+            / "AutoAdapter-Bench"
+            / "protocols"
+            / "b1-driver-synthesis.json"
+        )
+        recipe["backbone_set"] = str(
+            REPOSITORY_ROOT
+            / "AutoAdapter-Bench"
+            / "components"
+            / "backbone_sets"
+            / "declared-seven.json"
+        )
+        recipe["replicate_set"] = str(
+            EXPERIMENT_ROOT / "components" / "replicates-core-r3.json"
+        )
+        for assignment in recipe["condition_coverage"]:
+            assignment["robot_set"] = str(
+                EXPERIMENT_ROOT / "components" / "robot-set.json"
+            )
+        recipe["run_high_level_controller"] = True
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid-b1.json"
+            path.write_text(json.dumps(recipe), encoding="utf-8")
+            with self.assertRaises(manifest.ManifestError):
+                manifest.resolve_b1(path)
+
+
+if __name__ == "__main__":
+    unittest.main()

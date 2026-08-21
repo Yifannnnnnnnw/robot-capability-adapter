@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "robot_set_id": "chapter3-b2-two",
-  "purpose": "Chapter 3 capability-interface-use cases",
-  "robot_configuration_ids": [
-    "robotstudio_so101",
-    "unitree-go2-stock-12dof"
-  ]
-}
