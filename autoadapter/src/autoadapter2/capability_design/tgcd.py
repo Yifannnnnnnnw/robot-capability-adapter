@@ -524,12 +524,12 @@ def run_tgcd(
     package: RobotPackage,
     *,
     experience: Sequence[Mapping[str, Any]] = (),
-    max_model_attempts: int = 2,
+    max_model_attempts: int = 3,
 ) -> dict[str, Any]:
     """Invoke the configured model with only TGCD-visible public inputs."""
 
-    if not 1 <= max_model_attempts <= 2:
-        raise CapabilityDesignError("max_model_attempts must be one or two")
+    if not 1 <= max_model_attempts <= 3:
+        raise CapabilityDesignError("max_model_attempts must be between one and three")
 
     inputs = {
         "morphology": package.morphology,
@@ -544,8 +544,13 @@ def run_tgcd(
     }
     prompt = TGCD_SYSTEM_PROMPT
     for attempt in range(max_model_attempts):
+        stage = "tgcd"
+        if attempt == 1:
+            stage = "tgcd-structure-correction"
+        elif attempt == 2:
+            stage = "tgcd-structure-correction-2"
         design = client.generate_json(
-            stage="tgcd" if attempt == 0 else "tgcd-structure-correction",
+            stage=stage,
             prompt=prompt,
             inputs=inputs,
         )
@@ -554,12 +559,18 @@ def run_tgcd(
         except CapabilityDesignError as exc:
             if attempt + 1 >= max_model_attempts:
                 raise
-            inputs = {**inputs, "deterministic_audit_error": str(exc)}
+            inputs = {
+                **inputs,
+                "previous_invalid_design": design,
+                "deterministic_audit_error": str(exc),
+            }
             prompt = (
                 TGCD_SYSTEM_PROMPT
-                + "\nRegenerate the complete JSON object from the supplied public inputs while "
-                "correcting this deterministic audit error. Do not change or weaken any source "
-                "standard."
+                + "\nThe prior rejected public JSON object and deterministic audit error are "
+                "included. Edit that object into one complete replacement instead of starting "
+                "over. If the capability count is outside 5 to 10, merge the physically closest "
+                "groups while preserving exact one-time task coverage. Never return fewer than 5 "
+                "or more than 10 capabilities. Do not change or weaken any source standard."
             )
     raise AssertionError("unreachable")
 

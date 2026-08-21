@@ -358,8 +358,48 @@ class TGCDTests(unittest.TestCase):
             "tgcd",
             "tgcd-structure-correction",
         ])
-        self.assertNotIn("previous_invalid_design", model.calls[1]["inputs"])
+        self.assertEqual(
+            model.calls[1]["inputs"]["previous_invalid_design"], invalid
+        )
         self.assertIn("deterministic_audit_error", model.calls[1]["inputs"])
+        self.assertNotIn("private", repr(model.calls).lower())
+
+    def test_second_structural_correction_recovers_repeated_count_error(self) -> None:
+        invalid = _design(self.package)
+        invalid["capabilities"].extend(
+            dict(invalid["capabilities"][0]) for _ in range(6)
+        )
+        invalid_again = _design(self.package)
+        invalid_again["capabilities"].extend(
+            dict(invalid_again["capabilities"][0]) for _ in range(6)
+        )
+        model = _SequenceModel(
+            [invalid, invalid_again, _design(self.package)]
+        )
+
+        result = run_tgcd(model, self.package)
+
+        self.assertEqual(len(result["capabilities"]), 5)
+        self.assertEqual(
+            [call["stage"] for call in model.calls],
+            [
+                "tgcd",
+                "tgcd-structure-correction",
+                "tgcd-structure-correction-2",
+            ],
+        )
+        self.assertEqual(
+            model.calls[1]["inputs"]["previous_invalid_design"], invalid
+        )
+        self.assertEqual(
+            model.calls[2]["inputs"]["previous_invalid_design"], invalid_again
+        )
+        self.assertTrue(
+            all(
+                "between 5 and 10" in call["inputs"]["deterministic_audit_error"]
+                for call in model.calls[1:]
+            )
+        )
         self.assertNotIn("private", repr(model.calls).lower())
 
 
