@@ -4,11 +4,24 @@
   "display_name": "Code-BT",
   "audit_status": "pending",
   "adapter_status": "absent",
-  "backbone_mode": "pending-replacement-audit",
-  "model_backed_roles": [],
+  "backbone_mode": "candidate-replaceable-inference-roles-reproduction-not-frozen",
+  "model_backed_roles": [
+    "api_selection",
+    "rule_constrained_multi_round_code_generation"
+  ],
   "eligible_robot_ids": [],
   "eligible_backbone_ids": [],
   "source_revision": null,
   "prompt_revision": null,
-  "native_budgets": null
+  "native_budgets": null,
+  "paper_source": {
+    "doi": "10.24963/ijcai.2025/980",
+    "venue": "IJCAI 2025 Main Track",
+    "pages": "8814-8822",
+    "final_paper": "https://www.ijcai.org/proceedings/2025/0980.pdf"
+  },
+  "public_source_code": {
+    "status": "not-located",
+    "checked_at": "2026-08-21"
+  }
 }
