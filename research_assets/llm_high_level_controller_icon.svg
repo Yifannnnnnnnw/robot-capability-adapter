@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="220" viewBox="0 0 420 220">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+    <style>
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #475569; }
+      .mono { font-family: Menlo, Consolas, "Courier New", monospace; font-size: 13px; fill: #334155; }
+      .nodeText { font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; fill: #1e3a8a; }
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="418" height="218" rx="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="210" y="34" text-anchor="middle" class="title">LLM High-Level Controller</text>
+
+  <g transform="translate(42 58)">
+    <circle cx="55" cy="55" r="48" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+    <path d="M 42 84
+             C 25 78 20 64 28 52
+             C 19 39 27 24 42 27
+             C 47 14 67 14 73 27
+             C 88 24 96 39 87 52
+             C 95 64 90 78 73 84
+             C 66 89 49 89 42 84 Z"
+          fill="#ffffff" stroke="#2563eb" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 43 31 C 51 38 51 46 43 53
+             M 72 31 C 64 38 64 46 72 53
+             M 36 57 C 48 55 57 60 59 72
+             M 80 57 C 68 55 59 60 57 72
+             M 57 28 L 57 82"
+          fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="55" y="124" text-anchor="middle" class="label">reason + plan</text>
+  </g>
+
+  <g transform="translate(172 70)">
+    <rect x="0" y="0" width="96" height="58" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <path d="M 24 58 L 17 74 L 41 58" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="48" y="26" text-anchor="middle" class="mono">"pick and</text>
+    <text x="48" y="45" text-anchor="middle" class="mono">place"</text>
+  </g>
+
+  <line x1="145" y1="112" x2="169" y2="100" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="270" y1="100" x2="302" y2="100" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g transform="translate(304 58)">
+    <rect x="0" y="0" width="86" height="28" rx="14" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+    <text x="43" y="19" text-anchor="middle" class="nodeText">reach()</text>
+    <rect x="0" y="40" width="86" height="28" rx="14" fill="#ecfdf5" stroke="#86efac" stroke-width="1.5"/>
+    <text x="43" y="59" text-anchor="middle" class="nodeText">grasp()</text>
+    <rect x="0" y="80" width="86" height="28" rx="14" fill="#fefce8" stroke="#fde68a" stroke-width="1.5"/>
+    <text x="43" y="99" text-anchor="middle" class="nodeText">release()</text>
+  </g>
+
+  <text x="210" y="190" text-anchor="middle" class="mono">driver.reach() → driver.grasp() → driver.release()</text>
+</svg>
