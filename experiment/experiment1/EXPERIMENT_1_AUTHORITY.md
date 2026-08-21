@@ -5,11 +5,18 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.27`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.3`<br>
+> **Revision:** `0.1.4`<br>
 > **Effective date:** 2026-08-21<br>
-> **Design status:** active and prospectively fixed; pre-run preparation active
+> **Design status:** active and prospectively fixed; formal execution active
 
-Revision `0.1.3` fixes every Producer deployment to a remotely hosted API and
+Revision `0.1.4` admits up to eight concurrently executing isolated cell
+workers by explicit project-owner approval. This operational approval applies
+only to cells started under this revision or later; it does not retrospectively
+admit, validate, or relabel a run started under revision `0.1.3` or earlier, or
+alter its recorded evidence, failure classification, or verdict. It does not
+change the cohort, factors, replicate plan, attempt budget, or analysis
+boundary. Revision `0.1.3` fixes
+every Producer deployment to a remotely hosted API and
 prohibits local-weight or local-inference substitutions. M1--M4, M6, and M7
 use the organization company gateway; M5 uses the official DeepSeek API with
 the project owner's account. Revision `0.1.2`
@@ -333,14 +340,13 @@ be fixed before outcomes are inspected.
 
 ## 7. Scheduling and concurrency
 
-Concurrency is an execution setting, not an experimental factor. The planning
-target is at most eight isolated cell workers. Eight-way execution is not
-currently admitted. It may be enabled only after realistic 1-to-2-to-4-to-8
-provider canaries and account-quota checks establish a safe global cap and
-per-provider caps, and after the runner provides one process, client, unique
-workspace, and evidence destination per cell with recorded queue time,
-429/503 handling, retries, and active wall time. A lower admitted concurrency
-does not change the matrix or statistical unit.
+Concurrency is an execution setting, not an experimental factor. From revision
+`0.1.4`, the planning target and admitted maximum are eight isolated cell
+workers. Each worker must have its own process, client, workspace, and evidence
+destination, with recorded queue time, 429/503 handling, retries, and active
+wall time. An observed provider, account-quota, or host-capacity problem lowers
+the affected dispatch cap until it is resolved. Using a lower concurrency does
+not change the matrix or statistical unit.
 
 ## 8. Sole start prerequisite
 
@@ -358,8 +364,8 @@ admission workflow. Exact provider/model settings must still be fixed and
 recorded for each affected backbone before its cells are dispatched; a
 transport or account problem blocks those affected cells, not the start of
 unrelated ready cells. The already frozen seed/order component determines
-dispatch order. Eight-way concurrency is optional and may remain disabled;
-serial execution is valid.
+dispatch order. Eight-way concurrency is admitted but optional; serial
+execution remains valid.
 
 A readable criterion with no working Harness binding, or a route that omits
 the mandatory records, does not satisfy these two parts. Directory presence or
@@ -388,8 +394,10 @@ cell，最多 630 次 driver submission；`r04`、`r05` 只能各自作为完整
 结束；不运行 TGCD、IVC、Task Demo、high-level controller 或 Evolution。R=3 始终是 primary，后续
 完整 R=4/R=5 只作精度与稳健性扩展。开跑的唯一前置条件是：五台机器人的 Driver 接口与 Harness
 可判定 criteria 全部清晰，以及两条 STUDY-to-generation/Repair/validation 路线可用并能写出第 6 节
-要求的记录。不要求 task-blind reference calibration，也不要求先启用八路并发；可从串行 ready cell
-开始。每个 cell、attempt slot、stage、模型 iteration、物理 provider request 与 tool event 都
+要求的记录。不要求 task-blind reference calibration。`0.1.4` 已明确批准最多八个隔离 cell 并发，
+但该批准只向前适用于按本 revision 派发的 cell，不追溯改变旧 cell 的 Authority revision、证据、
+失败分类或 verdict；八路并发并非必须，串行仍然有效。每个 cell、attempt slot、stage、模型
+iteration、物理 provider request 与 tool event 都
 必须记录可审计用时；每个 cell 记录实际 submission 次数，每个可观察 iteration 固定分类为
 `observe_or_plan`、`execute_clean`、`execute_error` 或 `submit`，并保留错误、token、成本和 stage 边界。
 失败与 retry call 不能丢弃；隐藏思维内容不得记录。
