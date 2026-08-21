@@ -2,14 +2,17 @@
 
 > **Document ID:** `AA2-EXP1`<br>
 > **Document role:** sole normative document for Experiment 1<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.27`<br>
+> **Parent authority:** `AA2-AUTH` revision `0.19.28`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.4`<br>
+> **Revision:** `0.1.5`<br>
 > **Effective date:** 2026-08-21<br>
 > **Design status:** active and prospectively fixed; formal execution active
 
-Revision `0.1.4` admits up to eight concurrently executing isolated cell
+Revision `0.1.5` updates only the parent-Authority reference after `AA2-AUTH` revision `0.19.28`
+made the existing fixed-input B1 design the sole current Experiment 1. It does not change the
+cohort, factors, replicate plan, attempt budget, provider settings, analysis boundary, or execution
+status. Revision `0.1.4` admits up to eight concurrently executing isolated cell
 workers by explicit project-owner approval. This operational approval applies
 only to cells started under this revision or later; it does not retrospectively
 admit, validate, or relabel a run started under revision `0.1.3` or earlier, or
