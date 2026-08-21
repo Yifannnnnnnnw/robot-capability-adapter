@@ -434,16 +434,47 @@ def _repair_focus_summary(report: Mapping[str, Any]) -> dict[str, Any]:
     return summary
 
 
-def _assert_public_context(value: Any, *, where: str = "public_context") -> None:
-    if isinstance(value, Mapping):
-        for key, child in value.items():
-            normal = _normal_key(key)
-            if normal in _PRIVATE_CONTEXT_KEYS:
-                raise RepairError(f"{where} contains private field {key!r}")
-            _assert_public_context(child, where=f"{where}.{key}")
-    elif isinstance(value, (list, tuple)):
-        for index, child in enumerate(value):
-            _assert_public_context(child, where=f"{where}[{index}]")
+def _assert_public_context(
+    value: Any,
+    *,
+    where: str = "public_context",
+    allow_public_study_criterion: bool = False,
+) -> None:
+    public_study_roots = (
+        ("study", "findings"),
+        ("study", "implementation_plan"),
+        ("public_context", "study", "findings"),
+        ("public_context", "study", "implementation_plan"),
+    )
+
+    def visit(node: Any, *, display_path: str, key_path: tuple[str, ...]) -> None:
+        if isinstance(node, Mapping):
+            for key, child in node.items():
+                normal = _normal_key(key)
+                criterion_is_public_study_output = (
+                    allow_public_study_criterion
+                    and normal == "criterion"
+                    and any(
+                        key_path[: len(root)] == root
+                        for root in public_study_roots
+                    )
+                )
+                if normal in _PRIVATE_CONTEXT_KEYS and not criterion_is_public_study_output:
+                    raise RepairError(f"{display_path} contains private field {key!r}")
+                visit(
+                    child,
+                    display_path=f"{display_path}.{key}",
+                    key_path=(*key_path, normal),
+                )
+        elif isinstance(node, (list, tuple)):
+            for index, child in enumerate(node):
+                visit(
+                    child,
+                    display_path=f"{display_path}[{index}]",
+                    key_path=key_path,
+                )
+
+    visit(value, display_path=where, key_path=())
 
 
 def build_repair_inputs(
@@ -462,7 +493,7 @@ def build_repair_inputs(
         raise RepairError(f"unknown generation condition {condition!r}")
     if not isinstance(previous_driver_source, str) or not previous_driver_source.strip():
         raise RepairError("previous_driver_source must be non-empty")
-    _assert_public_context(public_inputs)
+    _assert_public_context(public_inputs, allow_public_study_criterion=True)
     compact_report = _compact_candidate_report(
         redact_candidate_report(candidate_report)
     )
@@ -829,7 +860,7 @@ def finalize_repair(
     final_inputs = copy.deepcopy(dict(preparation.repair_inputs))
     final_inputs["repair_prepare"] = copy.deepcopy(preparation.output)
     final_inputs["probe_results"] = copy.deepcopy(list(probe_results))
-    _assert_public_context(final_inputs)
+    _assert_public_context(final_inputs, allow_public_study_criterion=True)
     return _finalize_driver(
         client,
         repair_inputs=final_inputs,

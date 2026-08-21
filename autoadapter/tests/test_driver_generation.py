@@ -30,6 +30,7 @@ from autoadapter2.driver_synthesis.probe import (
 from autoadapter2.driver_synthesis.repair import (
     REPAIR_PROMPT,
     REPAIR_REACT_SYSTEM,
+    RepairError,
     RepairLimitError,
     build_repair_inputs,
     redact_candidate_report,
@@ -514,6 +515,19 @@ def build(model, data):
             self.design,
             condition="from-scratch",
             runtime_contract={"primitives": ["mujoco.mj_step", "data.ctrl"]},
+            study_output={
+                "findings": [
+                    {"criterion": "model-authored public success wording"}
+                ],
+                "implementation_plan": [
+                    {
+                        "step": "implement public behavior",
+                        "details": {
+                            "criterion": "model-authored public implementation check"
+                        },
+                    }
+                ],
+            },
         )
         report = {
             "private_case_id": "opaque-case-7",
@@ -577,6 +591,16 @@ print("probe-time=" + str(data.time))
         self.assertNotIn("private_suite", candidate_report)
         self.assertNotIn("private_path", candidate_report)
         self.assertEqual(final_inputs["media_manifest"]["frame_count"], 4)
+        self.assertEqual(
+            final_inputs["public_context"]["study"]["findings"][0]["criterion"],
+            "model-authored public success wording",
+        )
+        self.assertEqual(
+            final_inputs["public_context"]["study"]["implementation_plan"][0][
+                "details"
+            ]["criterion"],
+            "model-authored public implementation check",
+        )
         self.assertEqual(result.probe_results[0]["exit_code"], 0)
         self.assertEqual(result.probe_results[0]["physics_steps"], 1)
         self.assertIn("probe_results", final_inputs)
@@ -595,6 +619,37 @@ print("probe-time=" + str(data.time))
                 workspace=Path(self.temporary.name) / "repair-limit",
             )
         self.assertEqual(len(client.calls), 2)
+
+    def test_repair_rejects_private_definitions_despite_public_study_criterion(self) -> None:
+        unsafe_public_inputs = (
+            {
+                "study": {
+                    "findings": [
+                        {"criterion_definition": {"threshold": 0.01}}
+                    ]
+                }
+            },
+            {
+                "study": {
+                    "implementation_plan": [
+                        {"private_suite": {"case": "hidden"}}
+                    ]
+                }
+            },
+            {"study": {"probe_requests": [{"criterion": "not a finding"}]}},
+        )
+
+        for public_inputs in unsafe_public_inputs:
+            with self.subTest(public_inputs=public_inputs):
+                with self.assertRaisesRegex(RepairError, "contains private field"):
+                    build_repair_inputs(
+                        previous_driver_source=FROM_SCRATCH_DRIVER,
+                        candidate_report={"validation_passed": False},
+                        media_manifest=[],
+                        public_inputs=public_inputs,
+                        condition="from-scratch",
+                        previous_attempt=0,
+                    )
 
     def test_repair_rejects_unsafe_probe_but_still_requests_repaired_source(self) -> None:
         public_inputs = build_public_generation_inputs(
