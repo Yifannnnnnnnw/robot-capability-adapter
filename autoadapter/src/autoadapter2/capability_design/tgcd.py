@@ -62,15 +62,16 @@ argument names. required_affordances actions and observations must be selected o
 vocabularies in morphology.public_affordances.
 
 validation_contract must contain exactly one primary item and may contain at most one robustness
-item. Each item contains case_role ('primary' or 'robustness'), selection_rationale,
-source_task_id, source_clause_id, metric, unit, comparator, threshold, temporal, aggregation, and
-source_refs. Copy the selected source clause without weakening it. The primary item must represent
-the capability's shared physical effect. Add a robustness item only when a different covered task
-has a materially different scene, metric, or temporal obligation that the primary item cannot
-exercise; explain that difference in selection_rationale. Do not mechanically copy every task or
-scoring clause into validation_contract. Unselected task clauses remain in the Task Library for
-the separate Task Demo. Do not return implementation code, simulator bindings, private cases,
-reset values, guards, expected trajectories, or a success verdict."""
+item. Each model-authored item contains only case_role ('primary' or 'robustness'),
+selection_rationale, source_task_id, and source_clause_id. The Framework mechanically carries the
+selected public clause's metric, unit, comparator, threshold, temporal, aggregation, and source_refs
+into the audited artifact, so do not repeat those fields. The primary item must represent the
+capability's shared physical effect. Add a robustness item only when a different covered task has a
+materially different scene, metric, or temporal obligation that the primary item cannot exercise;
+explain that difference in selection_rationale. Do not mechanically select every task or scoring
+clause for validation_contract. Unselected task clauses remain in the Task Library for the separate
+Task Demo. Do not return implementation code, simulator bindings, private cases, reset values,
+guards, expected trajectories, or a success verdict."""
 
 
 class CapabilityDesignError(ValueError):
@@ -321,6 +322,40 @@ def _canonicalize_parameter_task_coverage(
     return design
 
 
+def _canonicalize_validation_contracts(
+    design: dict[str, Any], package: RobotPackage
+) -> dict[str, Any]:
+    capabilities = design.get("capabilities")
+    if not isinstance(capabilities, list):
+        return design
+    source_clauses = _source_clauses(package.tasks)
+    standard_fields = (
+        "metric",
+        "unit",
+        "comparator",
+        "threshold",
+        "temporal",
+        "aggregation",
+        "source_refs",
+    )
+    for capability in capabilities:
+        if not isinstance(capability, dict):
+            continue
+        contracts = capability.get("validation_contract")
+        if not isinstance(contracts, list):
+            continue
+        for contract in contracts:
+            if not isinstance(contract, dict):
+                continue
+            key = (contract.get("source_task_id"), contract.get("source_clause_id"))
+            source = source_clauses.get(key)
+            if source is None:
+                continue
+            for field in standard_fields:
+                contract[field] = copy.deepcopy(source[field])
+    return design
+
+
 def _source_clauses(tasks: Sequence[Mapping[str, Any]]) -> dict[tuple[str, str], Mapping[str, Any]]:
     clauses: dict[tuple[str, str], Mapping[str, Any]] = {}
     for task in tasks:
@@ -379,10 +414,13 @@ def validate_capability_design(
     design: Mapping[str, Any],
     package: RobotPackage,
 ) -> dict[str, Any]:
-    """Reject missing coverage, invalid names, and weakened source standards."""
+    """Validate coverage and names, carrying selected source standards exactly."""
 
-    design = _canonicalize_parameter_task_coverage(
-        _canonicalize_design(design), package
+    design = _canonicalize_validation_contracts(
+        _canonicalize_parameter_task_coverage(
+            _canonicalize_design(design), package
+        ),
+        package,
     )
     expected_root = {
         "artifact_type": "capability_design",

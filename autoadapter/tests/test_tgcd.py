@@ -296,12 +296,40 @@ class TGCDTests(unittest.TestCase):
         ):
             validate_capability_design(design, self.package)
 
-    def test_weakened_source_threshold_is_rejected(self) -> None:
+    def test_source_standard_fields_are_mechanically_canonicalized(self) -> None:
         design = _design(self.package)
-        design["capabilities"][0]["validation_contract"][0]["threshold"] = 0.2
+        contract = design["capabilities"][0]["validation_contract"][0]
+        contract["metric"] = "invented_metric"
+        contract["threshold"] = 0.2
 
-        with self.assertRaisesRegex(CapabilityDesignError, "changes a source pass standard"):
-            validate_capability_design(design, self.package)
+        validated = validate_capability_design(design, self.package)
+
+        canonical = validated["capabilities"][0]["validation_contract"][0]
+        self.assertEqual(canonical["metric"], "terminal_error")
+        self.assertEqual(canonical["threshold"], 0.02)
+
+    def test_contract_selection_without_repeated_standard_fields_is_enriched(self) -> None:
+        design = _design(self.package)
+        repeated_fields = {
+            "metric",
+            "unit",
+            "comparator",
+            "threshold",
+            "temporal",
+            "aggregation",
+            "source_refs",
+        }
+        for capability in design["capabilities"]:
+            for contract in capability["validation_contract"]:
+                for field in repeated_fields:
+                    contract.pop(field)
+
+        validated = validate_capability_design(design, self.package)
+
+        canonical = validated["capabilities"][0]["validation_contract"][0]
+        self.assertEqual(canonical["metric"], "terminal_error")
+        self.assertEqual(canonical["unit"], "m")
+        self.assertEqual(canonical["threshold"], 0.02)
 
     def test_nonstandard_invocation_abi_is_rejected(self) -> None:
         design = _design(self.package)
