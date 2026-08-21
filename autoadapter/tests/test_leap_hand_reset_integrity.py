@@ -42,6 +42,20 @@ def _passive_depths(
     return reset_controls, depths
 
 
+def _hold_current_joint_positions(
+    model: mujoco.MjModel, data: mujoco.MjData
+) -> np.ndarray:
+    assert model.nu == 16
+    for actuator_id in range(model.nu):
+        assert int(model.actuator_trntype[actuator_id]) == int(
+            mujoco.mjtTrn.mjTRN_JOINT
+        )
+        joint_id = int(model.actuator_trnid[actuator_id, 0])
+        qpos_address = int(model.jnt_qposadr[joint_id])
+        data.ctrl[actuator_id] = data.qpos[qpos_address]
+    return np.asarray(data.ctrl, dtype=float).copy()
+
+
 def test_legacy_home_reset_reproduces_passive_settling_penetration() -> None:
     model = mujoco.MjModel.from_xml_path(
         str(PACKAGE_ROOT / "assets" / "leap_reference_cube_scene.xml")
@@ -51,6 +65,39 @@ def test_legacy_home_reset_reproduces_passive_settling_penetration() -> None:
     assert _deepest_contact_m(data) >= -MAXIMUM_PENETRATION_M
     _, depths = _passive_depths(model, data, steps=PASSIVE_STEPS)
     assert min(depths) < -MAXIMUM_PENETRATION_M
+
+
+def test_each_unique_private_scene_reset_passes_qpos_hold_settling() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    instances = _read(package.private_dir / "instances.json")["instances"]
+    unique_scene_resets: dict[tuple[str, str], dict] = {}
+    for instance in instances:
+        resets = [instance["reset"]]
+        resets.extend(
+            variant["reset"]
+            for variant in instance.get("repetition_variants", [])
+        )
+        for reset in resets:
+            key = (instance["scene_entrypoint"], json.dumps(reset, sort_keys=True))
+            unique_scene_resets[key] = reset
+
+    assert len(unique_scene_resets) == 12
+    for (scene_entrypoint, _), reset in unique_scene_resets.items():
+        model = mujoco.MjModel.from_xml_path(
+            str(package.root / scene_entrypoint)
+        )
+        data = mujoco.MjData(model)
+        apply_framework_reset(mujoco, model, data, reset)
+        mujoco.mj_forward(model, data)
+        initial_depth = _deepest_contact_m(data)
+        assert initial_depth >= -MAXIMUM_PENETRATION_M, scene_entrypoint
+
+        hold_controls = _hold_current_joint_positions(model, data)
+        _, passive_depths = _passive_depths(
+            model, data, steps=PASSIVE_STEPS
+        )
+        np.testing.assert_array_equal(data.ctrl, hold_controls)
+        assert min(passive_depths) >= -MAXIMUM_PENETRATION_M, scene_entrypoint
 
 
 def test_all_48_private_executions_reset_and_settle_within_five_mm() -> None:
