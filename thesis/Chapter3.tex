@@ -73,6 +73,46 @@ estimate morphology effects.
 
 \section[Benchmark and Experimental Setup]{Benchmark and Experimental Setup}
 
+\subsection{Success Criteria and Validation}
+
+In B1, each robot's public Task Library provides source-backed task standards
+from which a backbone formulates capability-level criteria. For that robot, the
+source task standards, private task instances, measurement semantics, and
+Harness verdict rules are held constant across backbones. Before driver
+generation, the implementation-blind Independent Validation Compiler audits
+each criterion against its supporting task clauses. It rejects any criterion
+that omits an obligation, lacks source support, or weakens the source rule, and
+compiles the accepted criteria into a sealed private validation suite.
+
+The trusted Harness imports each submitted driver in isolation, resets the
+MuJoCo environment, invokes the required operations, advances the physics
+simulation, and measures the resulting simulator state
+\citep{todorov2012mujoco}. A driver passes B1 only if every compiled validation
+case passes. Successful import, public smoke-test results, method return values,
+and model self-reports are diagnostic evidence only and cannot determine the
+verdict. When Repair is used, each revised submission is evaluated against the
+same sealed suite.
+
+B2 task criteria are drawn from fixed versions of primary benchmark
+implementations or industrial standards. Each scoring clause specifies its
+metric, comparator, threshold, temporal requirement, and aggregation rule. For
+example, the SO-101 reach clause adapts Meta-World's
+\texttt{sawyer\_reach\_v3}: a single trial passes when the terminal Euclidean
+distance between the end effector and target is at most \(0.05\,\mathrm{m}\).
+It therefore measures terminal positioning accuracy. The robot and scene are
+adapted, while the source metric, unit, comparator, and threshold are retained.
+Because the source implementation defines \(0.05\,\mathrm{m}\) without giving
+a separate rationale for that value, the threshold is reported as Meta-World's
+operational definition; where a source does explain its threshold, that
+rationale is reported. Any robot-specific adaptation is stated explicitly and
+may not weaken the source obligation. The complete task criteria, sources, and
+adaptations are reported in Appendix~[X].
+
+For B2, the Harness executes each episode through the fixed driver and declares
+complete-task success only when every required clause passes. A controller
+self-report or a valid behaviour tree cannot substitute for this
+simulator-based verdict, which is not evidence of hardware performance.
+
 \section[Driver-Synthesis Track]{Driver-Synthesis Track}
 
 \section[Capability-Interface Use Track]{Capability-Interface Use Track}
