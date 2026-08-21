@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 import urllib.error
+from dataclasses import replace
 from email.message import Message
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -25,6 +26,7 @@ from experiment.experiment1.runtime.b1 import (  # noqa: E402
     FixedBundle,
     RecordingClient,
     RunnerHooks,
+    _provider_infrastructure_blocker,
     _refresh_derived,
     _validation_case_counts,
     _validated_runtime_model_config,
@@ -343,6 +345,85 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         self.assertEqual(route.generate_calls, 1)
         self.assertEqual(route.repair_calls, 2)
         self.assertEqual(route.harness_calls, 3)
+
+    def test_provider_failure_is_an_explicit_infrastructure_blocker(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        manifest = root / "manifest.json"
+        manifest.write_text("{}\n", encoding="utf-8")
+        route = ScriptedRoute(root, [])
+        client = JsonModelClient(
+            ModelConfig(
+                provider="company",
+                model="model",
+                base_url="https://model.example/v1",
+                api_key="test-only",
+            )
+        )
+        errors = [
+            urllib.error.HTTPError(
+                client.config.endpoint_url,
+                500,
+                "Internal Server Error",
+                Message(),
+                None,
+            )
+            for _ in range(2)
+        ]
+        hooks = replace(route.hooks(), client_factory=lambda _: client)
+
+        with patch.object(client, "_retry_pause"), patch(
+            "urllib.request.urlopen", side_effect=errors
+        ):
+            record = run_single_cell(
+                manifest_path=manifest,
+                unit_id=UNIT_ID,
+                output_dir=root / "run",
+                hooks=hooks,
+            )
+
+        verdict = record["terminal_verdict"]
+        self.assertIsNone(verdict["validation_passed"])
+        self.assertEqual(
+            verdict["stop_reason"], "provider_infrastructure_blocker"
+        )
+        self.assertEqual(
+            verdict["terminal_failure_class"],
+            "provider_infrastructure_blocker",
+        )
+        self.assertEqual(len(record["provider_calls"]), 2)
+        self.assertEqual(record["derived"]["provider_error_count"], 2)
+        self.assertEqual(record["derived"]["retry_count"], 1)
+        self.assertEqual(route.generate_calls, 0)
+        self.assertEqual(route.harness_calls, 0)
+
+    def test_provider_blocker_uses_only_the_final_physical_call(self) -> None:
+        for error_type in ("http_error", "timeout", "transport_error"):
+            with self.subTest(error_type=error_type):
+                self.assertTrue(
+                    _provider_infrastructure_blocker(
+                        [
+                            {
+                                "status": "failed",
+                                "error": {"type": error_type},
+                            }
+                        ]
+                    )
+                )
+        self.assertFalse(
+            _provider_infrastructure_blocker(
+                [
+                    {"status": "failed", "error": {"type": "http_error"}},
+                    {"status": "succeeded", "error": None},
+                ]
+            )
+        )
+        self.assertFalse(
+            _provider_infrastructure_blocker(
+                [{"status": "failed", "error": {"type": "response_error"}}]
+            )
+        )
 
     def test_route_contains_no_forbidden_stage_or_provider_call(self) -> None:
         record, _, _ = self._run([False, True])

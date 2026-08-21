@@ -516,6 +516,27 @@ def _native_calls(client: Any) -> list[Mapping[str, Any]]:
     return [item for item in calls if isinstance(item, Mapping)]
 
 
+_PROVIDER_INFRASTRUCTURE_ERROR_TYPES = frozenset(
+    {"http_error", "timeout", "transport_error"}
+)
+
+
+def _provider_infrastructure_blocker(
+    calls: Sequence[Mapping[str, Any]],
+) -> bool:
+    """Return whether the failed stage ended on a provider transport request."""
+
+    if not calls:
+        return False
+    final_call = calls[-1]
+    error = final_call.get("error")
+    if final_call.get("status") != "failed" or not isinstance(error, Mapping):
+        return False
+    return str(error.get("type", "")).strip().lower() in (
+        _PROVIDER_INFRASTRUCTURE_ERROR_TYPES
+    )
+
+
 def _first_number(value: Mapping[str, Any], names: Sequence[str]) -> int | None:
     for name in names:
         candidate = value.get(name)
@@ -1549,7 +1570,7 @@ def run_single_cell(
 
     def finish(
         *,
-        passed: bool,
+        passed: bool | None,
         stop_reason: str,
         attempt_index: int | None,
         failure: Mapping[str, Any] | None = None,
@@ -1587,7 +1608,7 @@ def run_single_cell(
             "submitted_attempt_count": submitted,
             "stop_reason": stop_reason,
             "no_valid_submission_reason": stop_reason if submitted == 0 else None,
-            "terminal_failure_class": None if passed else stop_reason,
+            "terminal_failure_class": None if passed is True else stop_reason,
             "failure": copy.deepcopy(dict(failure)) if failure is not None else None,
         }
         persist()
@@ -1620,6 +1641,7 @@ def run_single_cell(
         if requests and not _has_successful_physics_probe(study_probe_results):
             raise B1RunError("STUDY produced no successful real-physics probe")
 
+    calls_before_study = len(client.calls)
     try:
         study_result = execute_model_stage(
             "study",
@@ -1656,9 +1678,16 @@ def run_single_cell(
                 if isinstance(item.get("elapsed_s"), (int, float))
             )
             persist()
+        provider_blocker = _provider_infrastructure_blocker(
+            client.calls[calls_before_study:]
+        )
         return finish(
-            passed=False,
-            stop_reason="study_error",
+            passed=None if provider_blocker else False,
+            stop_reason=(
+                "provider_infrastructure_blocker"
+                if provider_blocker
+                else "study_error"
+            ),
             attempt_index=None,
             failure=_failure(exc),
         )
@@ -1741,6 +1770,9 @@ def run_single_cell(
                     transition=f"validation_{attempt_index}",
                 )
         except Exception as exc:
+            provider_blocker = _provider_infrastructure_blocker(
+                client.calls[calls_before_attempt:]
+            )
             attempt_record.update(
                 {
                     "utc_finished_at": _utc_now(),
@@ -1748,15 +1780,29 @@ def run_single_cell(
                     "model_wall_time_s": _provider_elapsed(
                         client.calls[calls_before_attempt:]
                     ),
-                    "transition_or_stop": "terminal_generation_error",
+                    "transition_or_stop": (
+                        "terminal_infrastructure_blocker"
+                        if provider_blocker
+                        else (
+                            "terminal_generation_error"
+                            if attempt_index == 0
+                            else "terminal_repair_error"
+                        )
+                    ),
                     "failure": _failure(exc),
                 }
             )
             persist()
             return finish(
-                passed=False,
+                passed=None if provider_blocker else False,
                 stop_reason=(
-                    "generation_error" if attempt_index == 0 else "repair_error"
+                    "provider_infrastructure_blocker"
+                    if provider_blocker
+                    else (
+                        "generation_error"
+                        if attempt_index == 0
+                        else "repair_error"
+                    )
                 ),
                 attempt_index=attempt_index,
                 failure=_failure(exc),
