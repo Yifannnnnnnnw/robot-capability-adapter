@@ -114,9 +114,10 @@ inspected. For from-scratch, plan a controller using only the supplied public Mu
 Python primitives; no skeleton source is available in this condition.
 
 TGCD method names are model-authored and must be copied exactly from sealed_capability_design; they
-are not selected from an effect catalog. The public invocation ABI is fixed for every method:
-driver.<method_name>(request={"task_id": "...", "task_parameters": {...}}). Study how each method
-will consume that request using the sealed design and public Morphology ABI.
+are not selected from an effect catalog. The public invocation ABI is sealed in that design. Study
+how each method consumes its request according to invocation_abi and the capability's request_schema,
+using public_smoke_request when supplied. Do not impose a task_id/task_parameters envelope on a
+capability_request design.
 
 You must request at least one bounded local development probe that loads the canonical public scene
 and advances real MuJoCo physics with mujoco.mj_step. Each probe request must contain a short probe_id
@@ -133,13 +134,14 @@ and a short generation_note.
 
 The source must define build() and every exact public capability method name from the sealed design.
 TGCD method names are arbitrary model-authored identifiers, not an effect-library selection. Preserve
-each exact sealed-design name and implement the fixed public invocation ABI: every capability method
-must accept a keyword-compatible ``request`` argument whose value is an object with string task_id
-and object task_parameters. Use the sealed design and public Morphology ABI to interpret it; do not
-invent a different public signature or task/effect allowlist. Define a driver class, make build()
+each exact sealed-design name and implement its sealed public invocation ABI. Every capability method
+must accept a keyword-compatible ``request`` object. For keyword_request, use its declared
+task_id/task_parameters envelope; for capability_request, consume the capability-native object
+declared by that capability's request_schema. Use the sealed design and public Morphology ABI to
+interpret it; do not invent a different public signature or task/effect allowlist. Define a driver class, make build()
 return an instance of it, and define every capability as an instance method with the exact signature
 ``def <method_name>(self, request)``; top-level functions do not satisfy the ABI. ``request`` is a
-plain dict, so read ``request["task_id"]`` and ``request["task_parameters"]`` rather than attributes.
+plain dict; read only the fields declared by the sealed ABI and capability request schema.
 Skeleton-assisted may import and use only the supplied trusted skeleton family. From-scratch must
 not import, copy, or call any skeleton and must implement actuator mapping, control, and physics
 stepping with the supplied runtime primitives. The Framework owns the canonical model/data session;
@@ -153,7 +155,9 @@ auditable attribute access; do not use getattr, setattr, eval, exec, or dynamic 
 STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage for one
 Direct-MuJoCo generation condition. The initial public input already contains the complete public
 robot-package projection, selected MJCF closure, sealed Capability Design, and every condition-
-eligible skeleton source. Do not spend remote turns listing or rereading those inputs. Your first
+eligible skeleton source. Ground the implementation plan in the design's invocation_abi and each
+capability's request_schema; a capability_request design does not use the legacy task envelope. Do
+not spend remote turns listing or rereading those inputs. Your first
 action must be one public-only MuJoCo probe intended to advance physics. Use no private Harness,
 reference driver, repository path, network, or other condition artifact. In every probe, load the
 only canonical scene with ``import os, mujoco`` and
@@ -172,9 +176,10 @@ Do not write the final driver in STUDY."""
 GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
 The public input contains the complete interface-only driver.py stub derived from the sealed
 Capability Design. It contains exact method names and (self, request) placeholders but no controller
-or task dispatch. Implement the complete source yourself. Use public files and at most three optional
+or request interpretation. Implement the complete source yourself and follow the invocation ABI and
+per-capability request schemas sealed in the design. Use public files and at most three optional
 MuJoCo development probes when genuinely needed. Your normal first action is one check_driver call
-containing the complete source and exactly one covered public request per sealed capability. The
+containing the complete source and exactly one ABI-conforming public request per sealed capability. The
 Framework writes the source, audits it, imports/builds it, and runs all capability physics smokes in
 that same tool execution. The returned public controls, state, and named-position observations are
 development feedback only: a successful check proves ABI/import/physics liveness, not capability
@@ -195,7 +200,7 @@ JSON answer."""
 
 GENERATE_REACT_TASK = """Develop the complete executable driver from the supplied
 driver_interface_stub. Do not spend a turn reading or separately writing driver.py. Call check_driver
-with the complete implementation source and exactly one covered public request for every sealed
+with the complete implementation source and exactly one ABI-conforming public request for every sealed
 capability. If that atomic write-and-check succeeds, call submit_driver on the next turn. If it fails,
 revise the complete source from the returned public diagnostics and call check_driver again. A changed
 source creates a new revision and invalidates the earlier check. Do not call separate
@@ -382,7 +387,52 @@ def _skeleton_sources(package: RobotPackage) -> list[dict[str, str]]:
     return sources
 
 
-def _runtime_facts(runtime_contract: Mapping[str, Any] | None) -> dict[str, Any]:
+def _sealed_invocation_abi(design: Mapping[str, Any]) -> dict[str, Any]:
+    raw = design.get("invocation_abi")
+    if raw is None:
+        # Compatibility for older focused fixtures. Audited TGCD artifacts carry
+        # this envelope explicitly.
+        return {
+            "kind": "keyword_request",
+            "method_call": "method(request=request)",
+            "request_required": ["task_id", "task_parameters"],
+        }
+    if not isinstance(raw, Mapping):
+        raise GenerationError("sealed capability design invocation_abi must be an object")
+    kind = raw.get("kind")
+    if kind not in {"keyword_request", "capability_request"}:
+        raise GenerationError(f"unsupported sealed invocation ABI kind {kind!r}")
+    return _copy(dict(raw))
+
+
+def _public_invocation_facts(invocation_abi: Mapping[str, Any]) -> dict[str, Any]:
+    facts = {
+        **_copy(dict(invocation_abi)),
+        "call_shape": "driver.<sealed_method_name>(request=request)",
+        "method_names_are_copied_from_sealed_design": True,
+        "effect_catalog_or_task_effect_allowlist": False,
+    }
+    if invocation_abi.get("kind") == "keyword_request":
+        facts["request_schema"] = {
+            "task_id": "string",
+            "task_parameters": "object",
+        }
+    else:
+        facts["request_schema_source"] = (
+            "sealed_capability_design.capabilities[].request_schema"
+        )
+        facts["smoke_request_source"] = (
+            "sealed_capability_design.capabilities[].public_smoke_request"
+        )
+    return facts
+
+
+def _runtime_facts(
+    runtime_contract: Mapping[str, Any] | None,
+    *,
+    invocation_abi: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    sealed_abi = invocation_abi or _sealed_invocation_abi({})
     base: dict[str, Any] = {
         "python": f"{sys.version_info.major}.{sys.version_info.minor}",
         "candidate_allowed_imports": [
@@ -426,15 +476,7 @@ def _runtime_facts(runtime_contract: Mapping[str, Any] | None) -> dict[str, Any]
             ),
             "relative_or_synthetic_scene_fallback_forbidden": True,
         },
-        "public_invocation_abi": {
-            "call_shape": "driver.<sealed_method_name>(request=request)",
-            "request_schema": {
-                "task_id": "string",
-                "task_parameters": "object",
-            },
-            "method_names_are_copied_from_sealed_design": True,
-            "effect_catalog_or_task_effect_allowlist": False,
-        },
+        "public_invocation_abi": _public_invocation_facts(sealed_abi),
         "morphology_abi": {
             "source": "public_robot_package.morphology",
             "robot_symbols_and_actuator_mapping_must_come_from_morphology": True,
@@ -446,7 +488,13 @@ def _runtime_facts(runtime_contract: Mapping[str, Any] | None) -> dict[str, Any]
         # artifact below is constructed separately so from-scratch never receives
         # a skeleton path or source through an opaque contract object.
         for key, value in runtime_contract.items():
-            if key not in {"skeleton", "trusted_skeleton", "skeleton_path", "skeleton_source"}:
+            if key not in {
+                "skeleton",
+                "trusted_skeleton",
+                "skeleton_path",
+                "skeleton_source",
+                "public_invocation_abi",
+            }:
                 base[str(key)] = _copy(value)
     return base
 
@@ -523,7 +571,10 @@ def build_public_generation_inputs(
         "sealed_capability_design": _copy(dict(design)),
         "driver_interface_stub": render_interface_stub(_capability_methods(design)),
         "eligible_experience": _copy(list(experience)),
-        "allowed_runtime_facts": _runtime_facts(runtime_contract),
+        "allowed_runtime_facts": _runtime_facts(
+            runtime_contract,
+            invocation_abi=_sealed_invocation_abi(design),
+        ),
         "condition_eligible_artifacts": artifacts,
     }
     if study_output is not None:
@@ -868,6 +919,7 @@ def generate(
             source_root=_source_root(source_root),
             capability_methods=capability_methods,
             capability_task_ids=capability_task_ids(design),
+            invocation_abi=_sealed_invocation_abi(design),
             seed_interface_stub=True,
         )
         calls = getattr(client, "calls", ())

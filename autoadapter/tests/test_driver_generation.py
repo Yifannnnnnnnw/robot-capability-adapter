@@ -11,6 +11,8 @@ from autoadapter2.driver_synthesis.generation import (
     GENERATE_PROMPT,
     GENERATE_REACT_SYSTEM,
     IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT,
+    STUDY_PROMPT,
+    STUDY_REACT_SYSTEM,
     GenerationError,
     build_public_generation_inputs,
     generate,
@@ -260,6 +262,40 @@ class DriverGenerationTests(unittest.TestCase):
                     self.assertNotIn(str(self.package.reference_driver), packed)
                     self.assertNotIn("calibration_reference_source", packed)
                     self.assertNotIn("reference_driver", packed)
+
+    def test_capability_request_abi_is_projected_without_task_envelope(self) -> None:
+        design = copy.deepcopy(self.design)
+        design["invocation_abi"] = {
+            "kind": "capability_request",
+            "method_call": "method(request=request)",
+        }
+        design["capabilities"][0]["request_schema"] = {
+            "type": "object",
+            "properties": {"joint_target": {"type": "number"}},
+            "required": ["joint_target"],
+        }
+        design["capabilities"][0]["public_smoke_request"] = {"joint_target": 0.1}
+
+        inputs = build_public_generation_inputs(
+            self.package,
+            design,
+            condition="from-scratch",
+            runtime_contract={
+                "primitives": ["mujoco.mj_step", "data.ctrl"],
+                "public_invocation_abi": {"kind": "keyword_request"},
+            },
+        )
+
+        abi = inputs["allowed_runtime_facts"]["public_invocation_abi"]
+        self.assertEqual(abi["kind"], "capability_request")
+        self.assertEqual(abi["method_call"], "method(request=request)")
+        self.assertNotIn("request_schema", abi)
+        self.assertEqual(
+            abi["request_schema_source"],
+            "sealed_capability_design.capabilities[].request_schema",
+        )
+        self.assertIn("Do not impose a task_id/task_parameters envelope", STUDY_PROMPT)
+        self.assertIn("capability_request design does not use", STUDY_REACT_SYSTEM)
 
     def test_study_condition_is_framework_canonicalized(self) -> None:
         output = self._study("from-scratch")

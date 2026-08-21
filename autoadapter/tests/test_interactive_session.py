@@ -6,6 +6,7 @@ import unittest
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from autoadapter2.driver_synthesis.generation import (
     build_public_generation_inputs,
@@ -334,6 +335,70 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertNotIn("audit_driver", visible_tools)
         self.assertNotIn("import_driver", visible_tools)
         self.assertNotIn("smoke_driver", visible_tools)
+
+    def test_capability_request_check_smokes_complete_native_object(self) -> None:
+        native_source = DRIVER_SOURCE.replace(
+            'request["task_parameters"].get("target", 0.0)',
+            'request.get("joint_target", 0.0)',
+        )
+        session = PublicDevelopmentSession(
+            package=self.package,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "capability-request-session",
+            budget=ProbeBudget(max_requests=2, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+            capability_methods=("drive",),
+            invocation_abi={
+                "kind": "capability_request",
+                "method_call": "method(request=request)",
+            },
+        )
+        request = {
+            "joint_target": 0.2,
+            "max_control_steps": 1,
+            "options": {"settle": True},
+        }
+
+        scripts: list[str] = []
+
+        def successful_probe(**arguments: Any) -> dict[str, Any]:
+            scripts.append(str(arguments["script"]))
+            return {
+                "probe_id": arguments["probe_id"],
+                "exit_code": 0,
+                "timed_out": False,
+                "spawn_error": None,
+                "physics_steps": 1,
+                "elapsed_wall_s": 0.01,
+                "stdout": "",
+                "stderr": "",
+            }
+
+        with patch.object(session, "_run_probe", side_effect=successful_probe):
+            checked = session.check_driver(
+                {
+                    "source": native_source,
+                    "checks": [{"method_name": "drive", "request": request}],
+                }
+            )
+
+        self.assertTrue(checked["successful"])
+        self.assertNotIn("task_id", checked["capability_checks"][0])
+        self.assertEqual(len(scripts), 2)
+        self.assertIn(json.dumps(request, ensure_ascii=True, sort_keys=True), scripts[1])
+        check_tool = next(tool for tool in session.driver_tools() if tool.name == "check_driver")
+        request_schema = check_tool.input_schema["properties"]["checks"]["items"][
+            "properties"
+        ]["request"]
+        self.assertEqual(request_schema, {"type": "object"})
+
+    def test_keyword_request_still_rejects_native_only_object(self) -> None:
+        self.session.write_driver({"source": DRIVER_SOURCE})
+
+        with self.assertRaisesRegex(DevelopmentSessionError, "requires string task_id"):
+            self.session.smoke_driver(
+                {"method_name": "drive", "request": {"target": 0.1}}
+            )
 
     def test_check_driver_requires_exactly_one_request_per_capability(self) -> None:
         request = {"task_id": "task-1", "task_parameters": {"target": 0.1}}

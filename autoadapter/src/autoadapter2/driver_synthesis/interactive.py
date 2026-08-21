@@ -145,6 +145,7 @@ class PublicDevelopmentSession:
         source_root: str | Path,
         capability_methods: Sequence[str] = (),
         capability_task_ids: Mapping[str, Sequence[str]] | None = None,
+        invocation_abi: Mapping[str, Any] | None = None,
         seed_interface_stub: bool = False,
         initial_driver_source: str | None = None,
     ) -> None:
@@ -181,6 +182,12 @@ class PublicDevelopmentSession:
             str(name): frozenset(str(task_id) for task_id in task_ids)
             for name, task_ids in (capability_task_ids or {}).items()
         }
+        invocation_kind = (invocation_abi or {}).get("kind", "keyword_request")
+        if invocation_kind not in {"keyword_request", "capability_request"}:
+            raise DevelopmentSessionError(
+                f"unsupported sealed invocation ABI kind {invocation_kind!r}"
+            )
+        self.invocation_abi_kind = str(invocation_kind)
         self.probe_requests: list[dict[str, str]] = []
         self.probe_results: list[dict[str, Any]] = []
         self._probe_calls = 0
@@ -429,17 +436,18 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("method_name must be one sealed capability method")
         if not isinstance(request, Mapping):
             raise DevelopmentSessionError("request must be one public request object")
-        task_id = request.get("task_id")
-        task_parameters = request.get("task_parameters")
-        if not isinstance(task_id, str) or not isinstance(task_parameters, Mapping):
-            raise DevelopmentSessionError(
-                "request requires string task_id and object task_parameters"
-            )
-        allowed_tasks = self.capability_task_ids.get(method_name, frozenset())
-        if allowed_tasks and task_id not in allowed_tasks:
-            raise DevelopmentSessionError(
-                f"task_id {task_id!r} is not covered by capability {method_name!r}"
-            )
+        if self.invocation_abi_kind == "keyword_request":
+            task_id = request.get("task_id")
+            task_parameters = request.get("task_parameters")
+            if not isinstance(task_id, str) or not isinstance(task_parameters, Mapping):
+                raise DevelopmentSessionError(
+                    "request requires string task_id and object task_parameters"
+                )
+            allowed_tasks = self.capability_task_ids.get(method_name, frozenset())
+            if allowed_tasks and task_id not in allowed_tasks:
+                raise DevelopmentSessionError(
+                    f"task_id {task_id!r} is not covered by capability {method_name!r}"
+                )
         self._audit_candidate()
         request_json = json.dumps(dict(request), ensure_ascii=True, sort_keys=True)
         position_specs_json = json.dumps(
@@ -518,23 +526,27 @@ class PublicDevelopmentSession:
                 )
             if not isinstance(request, Mapping):
                 raise DevelopmentSessionError(f"checks[{index}].request must be an object")
-            task_id = request.get("task_id")
-            task_parameters = request.get("task_parameters")
-            if not isinstance(task_id, str) or not isinstance(task_parameters, Mapping):
-                raise DevelopmentSessionError(
-                    f"checks[{index}].request requires string task_id and object task_parameters"
-                )
-            allowed_tasks = self.capability_task_ids.get(method_name, frozenset())
-            if allowed_tasks and task_id not in allowed_tasks:
-                raise DevelopmentSessionError(
-                    f"task_id {task_id!r} is not covered by capability {method_name!r}"
-                )
-            by_method[method_name] = {
-                "method_name": method_name,
-                "request": {
+            if self.invocation_abi_kind == "keyword_request":
+                task_id = request.get("task_id")
+                task_parameters = request.get("task_parameters")
+                if not isinstance(task_id, str) or not isinstance(task_parameters, Mapping):
+                    raise DevelopmentSessionError(
+                        f"checks[{index}].request requires string task_id and object task_parameters"
+                    )
+                allowed_tasks = self.capability_task_ids.get(method_name, frozenset())
+                if allowed_tasks and task_id not in allowed_tasks:
+                    raise DevelopmentSessionError(
+                        f"task_id {task_id!r} is not covered by capability {method_name!r}"
+                    )
+                normalized_request = {
                     "task_id": task_id,
                     "task_parameters": dict(task_parameters),
-                },
+                }
+            else:
+                normalized_request = dict(request)
+            by_method[method_name] = {
+                "method_name": method_name,
+                "request": normalized_request,
             }
         missing = [method for method in self.capability_methods if method not in by_method]
         if missing:
@@ -618,20 +630,22 @@ class PublicDevelopmentSession:
                     smoke = self.smoke_driver(by_method[method_name])
                     result = {
                         "method_name": method_name,
-                        "task_id": by_method[method_name]["request"]["task_id"],
                         "successful": smoke["successful"],
                         "probe": _probe_summary(smoke["result"]),
                     }
+                    if self.invocation_abi_kind == "keyword_request":
+                        result["task_id"] = by_method[method_name]["request"]["task_id"]
                 except Exception as exc:
                     result = {
                         "method_name": method_name,
-                        "task_id": by_method[method_name]["request"]["task_id"],
                         "successful": False,
                         "error": {
                             "type": type(exc).__name__,
                             "message": str(exc)[:2000],
                         },
                     }
+                    if self.invocation_abi_kind == "keyword_request":
+                        result["task_id"] = by_method[method_name]["request"]["task_id"]
                 results.append(result)
         status = self._development_status()
         successful = (
@@ -728,12 +742,16 @@ class PublicDevelopmentSession:
         def development_available() -> bool:
             return not self.current_revision_ready_for_submission()
 
-        request_schema = _object_schema(
-            {
-                "task_id": {"type": "string"},
-                "task_parameters": {"type": "object"},
-            },
-            required=("task_id", "task_parameters"),
+        request_schema = (
+            _object_schema(
+                {
+                    "task_id": {"type": "string"},
+                    "task_parameters": {"type": "object"},
+                },
+                required=("task_id", "task_parameters"),
+            )
+            if self.invocation_abi_kind == "keyword_request"
+            else {"type": "object"}
         )
         return (
             *(
@@ -742,7 +760,11 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "check_driver",
-                "Submit one complete driver.py revision and exactly one covered public request per sealed capability. In the same Framework execution, the source is written, audited, imported/built, and every capability is invoked through actuator-driven MuJoCo physics. Revise from returned public diagnostics when needed; on success call submit_driver next.",
+                "Submit one complete driver.py revision and exactly one ABI-conforming public "
+                "request per sealed capability. In the same Framework execution, the source is "
+                "written, audited, imported/built, and every capability is invoked through "
+                "actuator-driven MuJoCo physics. Revise from returned public diagnostics when "
+                "needed; on success call submit_driver next.",
                 _object_schema(
                     {
                         "source": {"type": "string"},
