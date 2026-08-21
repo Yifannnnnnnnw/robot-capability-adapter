@@ -48,6 +48,10 @@ The Authority `0.19.24` construction checks were rerun on 2026-08-21 after the
 - `python -m autoadapter2 check-only` passed for all 11 indexed canonical
   packages, with 20 public tasks per package and a live MuJoCo 3.3.6 physics
   smoke;
+- a fresh Python 3.11.9 virtual environment with no inherited site packages
+  completed `pip install -e '.[test]'`; from outside the repository and without
+  `PYTHONPATH`, the installed `python -m autoadapter2 check-only` entrypoint
+  again loaded all 11 packages and passed the same physics smoke;
 - 12 focused robot checks passed in 155.41 seconds, covering real fixture
   collision layers, every Framework reset, and applicable 100-step settling
   without contact penetration below `-0.005 m`;
