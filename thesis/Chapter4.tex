@@ -80,6 +80,53 @@ to select and compose.
 
 \section{Auto-Adapter Overview}
 
+Auto-Adapter separates capability design, driver implementation, and
+behavioural validation. Its operation contains \textbf{two feedback loops at
+different levels}. The outer synthesis loop moves through
+\textbf{STUDY, GENERATE, validation, and bounded Repair}; the inner runtime
+loop continuously adjusts robot control from fresh physical observations.
+
+\textbf{Task-Grounded Capability Design (TGCD)} first receives public robot
+facts and at least twenty source-backed tasks, without a capability catalogue
+or task-to-capability mapping. It produces five to ten reusable capability
+contracts specifying their effects, interfaces, task coverage, and
+source-backed pass criteria. Before implementation begins, the
+\textbf{Independent Validation Compiler (IVC)} audits these criteria, binds
+them to private MuJoCo measurements and task instances, and compiles a sealed
+executable validation suite. The IVC cannot inspect the candidate driver or
+its execution history.
+
+During \textbf{STUDY}, the coding agent examines the public robot package,
+capability design, MuJoCo model, and permitted implementation resources. A
+bounded probe in the canonical public scene allows it to inspect actuator
+behaviour, observations, coordinate conventions, and physical liveness. STUDY
+therefore produces an implementation strategy rather than executable or
+validated driver code, and it cannot access private validation cases.
+
+\textbf{GENERATE} starts from an interface-only driver stub. Through a bounded
+ReAct process, the model implements the capability methods and submits complete
+candidate revisions to \texttt{check\_driver}. The Framework checks the source,
+imports the driver, runs public physics-smoke cases, and returns structured
+diagnostics and selected MuJoCo state measurements. This forms the
+\textbf{candidate-visible development loop}: generate, execute, observe, and
+revise. Only an explicitly submitted revision becomes a formal validation
+attempt.
+
+Inside each dynamic capability, the generated driver must implement a separate
+\textbf{runtime physical-feedback loop}. It repeatedly observes the current
+MuJoCo state, computes an actuator command, advances the simulation, and
+corrects its control until the requested effect is observed or a bounded
+timeout is reached. Open-loop trajectories and self-reported completion do not
+satisfy this contract.
+
+After submission, the \textbf{trusted Harness} independently resets each
+private case, invokes the driver, advances MuJoCo physics, measures trusted
+state, and applies the sealed criteria. If validation fails, bounded Repair
+receives the previous driver and candidate-facing failure evidence, but not the
+private suite or measurement implementation. The revised driver is evaluated
+against the same suite, with one initial attempt and at most two Repair
+attempts. Only the Harness issues the final capability-admission verdict.
+
 \section{Experiments and Results}
 
 \subsection{MuJoCo versus \texttt{pytest} Feedback}
