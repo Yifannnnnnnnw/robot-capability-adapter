@@ -49,6 +49,52 @@ class ModelApiTests(unittest.TestCase):
         self.assertEqual(config.api_protocol, "openai")
         self.assertEqual(config.max_tokens, 16384)
 
+    def test_disabled_thinking_is_explicit_for_deepseek_requests(self) -> None:
+        payload = {
+            "model": "model",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": '{"ok": true}'},
+                }
+            ],
+            "usage": {},
+        }
+        for provider in ("deepseek", "mistral"):
+            for mode in ("json", "tool"):
+                with self.subTest(provider=provider, mode=mode):
+                    client = JsonModelClient(
+                        ModelConfig(
+                            provider=provider,
+                            model="model",
+                            base_url="https://model.example/v1",
+                            api_key="secret-value",
+                            thinking="disabled",
+                        )
+                    )
+                    captured: dict[str, object] = {}
+
+                    def post(*, stage: str, body: dict[str, object]) -> dict:
+                        del stage
+                        captured.update(body)
+                        return payload
+
+                    with mock.patch.object(client, "_post", side_effect=post):
+                        if mode == "json":
+                            client.generate_json(stage="STUDY", prompt="Inspect.", inputs={})
+                        else:
+                            client.generate_tool_turn(
+                                stage="STUDY",
+                                system_prompt="Inspect.",
+                                messages=[{"role": "user", "content": "Inspect."}],
+                                tools=[],
+                            )
+
+                    if provider == "deepseek":
+                        self.assertEqual(captured["thinking"], {"type": "disabled"})
+                    else:
+                        self.assertNotIn("thinking", captured)
+
     def test_model_output_budget_is_configurable_and_bounded(self) -> None:
         environment = {
             "AUTOADAPTER_MODEL_PROVIDER": "openai",

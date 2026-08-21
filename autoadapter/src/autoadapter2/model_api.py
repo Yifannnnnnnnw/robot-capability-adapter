@@ -284,6 +284,11 @@ class JsonModelClient:
             }
         )
 
+    def _add_thinking_control(self, body: dict[str, Any]) -> None:
+        thinking = self.config.thinking
+        if thinking and (thinking != "disabled" or self.config.provider == "deepseek"):
+            body["thinking"] = {"type": thinking}
+
     def generate_json(
         self,
         *,
@@ -309,8 +314,7 @@ class JsonModelClient:
             "temperature": 0.0,
             "response_format": {"type": "json_object"},
         }
-        if self.config.thinking and self.config.thinking != "disabled":
-            body["thinking"] = {"type": self.config.thinking}
+        self._add_thinking_control(body)
         payload = self._post(stage=stage, body=body)
         choice = self._first_choice(payload)
         message = choice.get("message")
@@ -354,8 +358,7 @@ class JsonModelClient:
             "tools": [dict(tool) for tool in tools],
             "tool_choice": "auto",
         }
-        if self.config.thinking and self.config.thinking != "disabled":
-            body["thinking"] = {"type": self.config.thinking}
+        self._add_thinking_control(body)
         payload = self._post(stage=stage, body=body)
         choice = self._first_choice(payload)
         message = choice.get("message")
