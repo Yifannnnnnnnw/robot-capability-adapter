@@ -50,25 +50,6 @@ class MainlineRobotIndexTests(unittest.TestCase):
                 )
                 self.assertTrue(package_root.is_dir())
 
-                leap_runtime_inputs = (
-                    package_root / "tasks" / "private" / "instances.json",
-                    package_root / "tasks" / "private" / "bindings.json",
-                    package_root / "tasks" / "private" / "guards.json",
-                    package_root / "reference" / "driver.py",
-                )
-                if robot_id == "leap_hand" and not all(
-                    path.is_file() for path in leap_runtime_inputs
-                ):
-                    for relative in (
-                        "morphology.json",
-                        "tasks/sources.json",
-                        "tasks/catalog.json",
-                    ):
-                        self.assertTrue((package_root / relative).is_file(), relative)
-                    self.assertTrue((package_root / "assets").is_dir())
-                    self.assertTrue(any((package_root / "skeleton").glob("*.py")))
-                    continue
-
                 package = load_indexed_robot_package(ROOT, robot_id)
                 self.assertEqual(package.root, package_root)
                 self.assertEqual(package.robot_configuration_id, robot_id)
