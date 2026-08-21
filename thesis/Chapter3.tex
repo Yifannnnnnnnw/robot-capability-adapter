@@ -98,6 +98,48 @@ primitive conformance, transport behaviour, composition behaviour, and
 downstream usability. These procedures form a bounded evidence framework rather
 than a guarantee of all physical behaviours.
 
+\subsubsection[Success Criteria and Validation]{Success Criteria and Validation}
+
+Industrial robot performance standards separate measurement procedures from
+application-specific acceptance limits. ISO~9283 defines performance criteria
+and related test methods for manipulating industrial robots, including pose
+accuracy, pose repeatability, path accuracy, and path repeatability
+\citep{iso9283}. It does not prescribe one numerical pass threshold for every
+robot and application. ISO~9946 instead standardises how manufacturers present
+robot characteristics \citep{iso9946}. For context, Universal Robots reports
+UR5e pose repeatability of \(\pm 0.03\,\mathrm{mm}\) under ISO~9283, whereas
+Franka Robotics reports less than \(\pm 0.1\,\mathrm{mm}\) for Franka
+Research~3 under specified workspace and pose conditions
+\citep{universalrobots2026ur5e,franka2026research3}. These figures are
+manufacturer-reported repeatability specifications, not acceptance thresholds
+adopted by this thesis. Repeatability describes the dispersion among repeated
+visits to the same commanded pose and is distinct from absolute accuracy
+\citep{messina2019target}. A single terminal endpoint error measured in
+Direct MuJoCo is therefore neither an ISO~9283 repeatability measurement nor
+evidence of industrial positioning accuracy.
+
+The reach-success criterion used in this study comes from public
+reinforcement-learning task definitions. At the pinned Meta-World commit,
+Sawyer Reach v3 uses \(0.05\,\mathrm{m}\) as the Euclidean-distance
+threshold between the tool centre point and its target
+\citep{farama2026metaworldreach}. Farama FetchReach likewise uses
+\(0.05\,\mathrm{m}\) as the Euclidean-distance threshold between the end
+effector and its goal \citep{farama2026fetchreach}. Meta-World includes the
+exact boundary, whereas the FetchReach documentation uses a strict
+inequality.
+
+This thesis therefore interprets \(0.05\,\mathrm{m}\) as a source-benchmark
+task-completion convention, not as an industrial positioning tolerance. A
+position-only binary result does not establish end-effector orientation,
+stable dwell, collision-free execution, contact validity, or physical safety;
+these properties require separate criteria and trusted guards. Reference-driver
+endpoint errors are retained only as positive-control execution results. They
+test whether the simulator, measurement binding, trusted Harness, and
+reference controller can execute the declared task under the evaluated
+conditions. They are not used to select, tune, or justify the acceptance
+threshold, because deriving a threshold from those outcomes would make the
+requirement depend on the calibration controller used to exercise it.
+
 \section[Results]{Results}
 The result of Exp. 1 is a harness formulation in which generated adapter
 code is only one artifact inside a larger contract-governed process. This
