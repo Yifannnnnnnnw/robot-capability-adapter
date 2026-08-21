@@ -10,89 +10,76 @@
 \makedeclaration
 
 \begin{abstract}
-Tool-using large language model (LLM) agents require a reusable robot capability
-interface through which a high-level controller invokes robot operations. A robot-specific driver implements that interface
-for one declared robot configuration by translating each operation into
-simulator or controller commands. Manually implementing this driver can delay
-deployment for each new robot and execution route. AutoAdapter 1.0 showed that
-an LLM could generate such a driver from machine-readable robot descriptions:
-across eight simulated robots, it produced structurally validated, smoke-tested
-drivers at US\$\(2.98 \pm 0.84\) and \(7.8 \pm 1.6\) minutes per robot. Yet all seven
-evaluated models could use the same fixed capability interface backed by the same
-fixed and validated driver, while only three generated a driver that passed
-validation.
+Large language model (LLM) agents can plan with robot tools only when a
+reusable interface and its robot-specific implementation already exist.
+Adapting a new robot therefore requires more than successful tool use: the
+system must define reusable operations, express testable acceptance
+requirements, and synthesise a driver that translates those operations into
+robot-specific control without allowing the generated candidate to judge
+itself.
 
-Auto-Adapter 2.0 asks whether an LLM can also design the reusable robot
-capability interface and its capability-level pass criteria. Given public robot
-facts and at least twenty tasks with documented pass conditions drawn from
-public sources, an LLM defines five to ten reusable capabilities and
-source-grounded capability-level pass criteria. It then generates a
-robot-specific driver under either the skeleton-assisted or from-scratch
-condition. An implementation-blind process audits and compiles the criteria
-into private executable validation cases. A separate evaluation program, the
-\emph{Harness}, owns the private cases, trusted-state measurements, and final
-verdicts; its structured failure reports support bounded \emph{Repair}.
+This thesis presents Auto-Adapter 2.0, an experiment-grade Direct-MuJoCo
+framework for studying these problems. Given public robot facts and
+source-backed tasks with reviewed task-level pass standards, Task-Grounded
+Capability Design derives five to ten reusable capabilities without a
+pre-authored catalogue or task mapping. An implementation-blind Independent
+Validation Compiler audits model-authored capability-level criteria against
+their source obligations and binds accepted criteria to private executable
+cases. A separate trusted Harness observes simulator state and issues final
+verdicts. Structured failure reports may support bounded \emph{Repair} within
+a run, whereas \emph{Continued Evolution} can expose only human-reviewed
+Experience to a later run.
 
 The evaluation comprises three experiments.
-\textbf{Experiment 1---LLM backbone comparison.} We compare LLM backbones
-when \textbf{synthesising} a robot-specific driver that implements a reusable
-robot capability interface, either with access to the trusted skeleton or from
-scratch, and when \textbf{using} the same fixed capability interface backed by the
-same fixed and validated robot-specific driver through the same
-high-level-controller implementation to complete matched robot tasks.
+\textbf{Experiment 1---Fixed-input LLM backbone comparison.} Seven LLM
+backbones are compared across five robot configurations under skeleton-assisted
+and from-scratch driver generation. One prior-designed capability interface,
+set of pass standards, and private validation suite remains fixed per robot.
 
-\textbf{Experiment 2---Auto-Adapter framework analysis.} We analyse three
-components of the framework.
-\textbf{(a) Task-grounded capability design.} We test whether an LLM can
-derive reusable capabilities from at least twenty source-backed tasks.
-\textbf{(b) Capability-level pass-criteria design.} We test whether
-source-grounded capability-level pass criteria can be generated without human
-predefinition.
-\textbf{(c) Continued Evolution.} We test whether reviewed evidence from
-completed runs improves robot-software synthesis quality in matched later runs
-relative to the same condition without that Experience.
+\textbf{Experiment 2---Component analysis of Auto-Adapter.} The experiment is
+designed to compare reusable-driver synthesis with task-specific code
+generation, physics-grounded MuJoCo feedback with \texttt{pytest} feedback, and
+bounded Repair with a no-Repair condition. It also evaluates Task-Grounded
+Capability Design and the source-preserving formulation, implementation-blind
+audit, compilation, and simulator-grounded evaluation of capability-level pass
+criteria.
 
-\textbf{Experiment 3---Cross-morphology analysis.} We hold the LLM backbone,
-high-level-controller implementation, Auto-Adapter configuration, generation
-condition, evaluation protocol, and resource budget fixed while comparing the
-synthesis of robot-specific drivers that implement low-level motion-control
-capabilities across \textbf{different robot morphologies}.
+\textbf{Experiment 3---Continued Evolution.} Matched later driver-synthesis
+runs compare access to reviewed Experience with the same condition without
+Experience.
 
-Across the declared experiment matrices and morphology cohort, [RESULT NEEDED:
-report the principal outcomes for driver synthesis, capability-interface use,
-Auto-Adapter components, and cross-morphology analysis]. [TRIANGULATION RESULT
-NEEDED: report coverage of documented source requirements, agreement between
-aggregate verdicts and per-capability video evidence, and any missing
-evidence]. The study is limited to the declared Direct-MuJoCo robot
-configurations and tasks and does not establish real-SDK fidelity, hardware
-safety, sim-to-real transfer, physical validation of unselected tasks,
-universal robot support, or a causal morphology effect. Within these bounds,
-Auto-Adapter 2.0 provides an inspectable experiment in which models design
-reusable robot capabilities and generate executable drivers while the independent
-Harness issues the final validation verdicts.
+[RESULT NEEDED: report the principal Experiment~1 synthesis and resource
+outcomes, the Experiment~2 component-analysis, capability-design, and
+validation-design outcomes, and the matched Experiment~3 Experience effect.]
+The findings apply only to the
+declared model endpoints, tasks, robot configurations, and Direct-MuJoCo
+conditions; they do not establish real-SDK fidelity, hardware safety,
+sim-to-real transfer, universal robot or model superiority, autonomous
+self-improvement, or generalisation beyond the evaluated conditions.
 
 Within the evaluated scope, the thesis makes three scientific contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item AutoAdapter-Bench separates robot-specific driver synthesis from
-  capability-interface use. It evaluates the same LLM backbones in separate tracks
-  and treats the two outcomes as different evidence categories, without
-  assuming that they are statistically independent.
+  \item AutoAdapter-Bench makes LLM backbone and trusted-skeleton access
+  explicit experimental factors while holding the capability interface,
+  capability-level pass standards, complete private validation suite, Harness
+  rules, and resource budget fixed for each robot. This isolates
+  robot-specific driver synthesis from upstream capability design and
+  downstream capability-interface use.
 
-  \item Auto-Adapter makes capability and pass-criteria design explicit
-  components of robot-software synthesis. The LLM derives capabilities from
-  source-backed tasks and pass criteria from reviewed task-level standards. An
-  implementation-blind process audits and compiles the criteria, while the
-  independent Harness issues the final verdicts; Repair remains separate from
-  later-run Evolution. A generated or successfully compiled criterion is not
-  treated as reliable without the declared validation evidence.
+  \item Auto-Adapter treats capability abstraction and capability-level
+  pass-criteria design as empirical objects rather than hidden human inputs.
+  The implementation-blind Independent Validation Compiler audits source
+  preservation and binds accepted criteria to private cases, while the trusted
+  Harness owns observations and final verdicts. Generation or compilation
+  alone is not counted as reliable validation.
 
-  \item A controlled cross-morphology analysis studies robot-specific driver
-  synthesis for low-level motion-control capabilities across the declared robot
-  cohort. It compares validation outcomes, failure patterns, and resource use
-  under matched conditions, and reports the observed differences as
-  associations rather than causal morphology effects.
+  \item A matched evaluation separates within-run Repair from later-run
+  Experience reuse. Evolution operates only on a bounded projection of a
+  terminal report, and a human disposition is required before a proposal
+  becomes Experience. Matched Experience and no-Experience runs test whether
+  reviewed evidence changes subsequent driver-synthesis outcomes.
 
 \end{enumerate}
 
@@ -101,20 +88,19 @@ industry-relevant contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item Traceability links reviewed task-level standards to
+  \item An inspectable path links reviewed task-level standards to
   model-authored capability-level pass criteria, independent compilation, and
   Harness verdicts for the declared tasks and validation cases.
 
-  \item A repeatable robot-integration package supports scoped
-  reuse. It records the robot assets, control facts, source-backed
-  tasks, validation inputs, robot capability interface, and robot-specific driver needed
-  to reproduce the declared integration.
+  \item A repeatable fixed-input robot-integration package records the
+  simulator assets, morphology and control facts, source-backed tasks,
+  capability interface, pass standards, private validation inputs, and
+  robot-specific driver used in the experiment.
 
-  \item Comparable evidence supports failure diagnosis.
-  AutoAdapter-Bench records driver synthesis and capability-interface use
-  separately, together with the LLM backbone, robot configuration, generation
-  condition, outcomes, failure patterns, resource use, and per-trial evidence
-  under matched conditions.
+  \item A review-gated pathway reuses terminal evidence only in later runs.
+  Human review, exclusion of private validation content, versioned Experience
+  snapshots, and matched no-Experience controls make that reuse inspectable
+  without changing the run that produced the evidence.
 
 \end{enumerate}
 
