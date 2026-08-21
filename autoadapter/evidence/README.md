@@ -40,6 +40,31 @@ physical success or runnable admission under Authority `0.19.24`. Hidden
 reference drivers remain useful diagnostic oracles, but their planner success
 is not a mainline gate.
 
+## Current Simulator-Integrity Verification
+
+The Authority `0.19.24` construction checks were rerun on 2026-08-21 after the
+11-robot runnable index and LEAP package were integrated:
+
+- `python -m autoadapter2 check-only` passed for all 11 indexed canonical
+  packages, with 20 public tasks per package and a live MuJoCo 3.3.6 physics
+  smoke;
+- 12 focused robot checks passed in 155.41 seconds, covering real fixture
+  collision layers, every Framework reset, and applicable 100-step settling
+  without contact penetration below `-0.005 m`;
+- LEAP separately passed all 48 private execution resets over 4,800 settling
+  steps and all 12 unique scene/reset pairs over 1,200 `ctrl=qpos` hold steps;
+  its worst initial and settling distances were `-0.004199963 m` and
+  `-0.004219817 m` respectively;
+- the shared pipeline, Harness, worker, runnable-index, and backup-index checks
+  passed with 60 tests and 15 subtests; and
+- the LEAP scenes rendered under an approved graphical context. The restricted
+  terminal cannot create a CoreGraphics connection, so the formal DGX run must
+  still produce and validate its required per-trial videos.
+
+This is simulator and package construction evidence only. It does not claim a
+model-generated driver success, Evolution success, or completed 22-cell
+shakedown.
+
 ## Historical Franka Package-Wide Reference Diagnostic
 
 Run `franka-reference-positive-control-20260820T034710Z`, on mainline commit
