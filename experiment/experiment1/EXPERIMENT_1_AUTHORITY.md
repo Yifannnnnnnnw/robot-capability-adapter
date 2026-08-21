@@ -5,10 +5,15 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.28`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.5`<br>
+> **Revision:** `0.1.6`<br>
 > **Effective date:** 2026-08-21<br>
 > **Design status:** active and prospectively fixed; formal execution active
 
+Revision `0.1.6` prospectively completes the required provider pins before any cell is
+dispatched under this revision: M1--M4 and M6 gain explicit context/output limits and dated
+standard-price snapshots, while the M4 and M6 request maxima are corrected to their provider
+limits of 5,000 and 8,000 output tokens. It does not change the cohort, model identities or
+routes, factors, replicate plan, attempt budget, analysis boundary, or execution status.
 Revision `0.1.5` updates only the parent-Authority reference after `AA2-AUTH` revision `0.19.28`
 made the existing fixed-input B1 design the sole current Experiment 1. It does not change the
 cohort, factors, replicate plan, attempt budget, provider settings, analysis boundary, or execution

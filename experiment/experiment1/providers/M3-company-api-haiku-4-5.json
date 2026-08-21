@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "../EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.5",
+  "authority_revision": "0.1.6",
   "backbone_id": "M3",
   "family": "Haiku 4.5",
   "vendor": "Anthropic",
