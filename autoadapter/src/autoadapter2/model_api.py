@@ -29,6 +29,11 @@ class _ModelCallDeadline(TimeoutError):
     pass
 
 
+_RETRYABLE_HTTP_STATUSES = frozenset({429, 500, 502, 503, 504})
+_MAX_PHYSICAL_REQUESTS = 2
+_RETRY_BACKOFF_S = 1.0
+
+
 @contextlib.contextmanager
 def _model_call_deadline(seconds: float):
     """Enforce total request wall time, not only per-socket inactivity."""
@@ -386,15 +391,21 @@ class JsonModelClient:
                     tool_names.append(name)
         return choice.get("finish_reason"), tool_names
 
-    def _new_call_record(self, *, stage: str) -> tuple[int, dict[str, Any]]:
+    def _new_call_record(
+        self,
+        *,
+        stage: str,
+        retry_of_call_index: int | None = None,
+        retry_index: int = 0,
+    ) -> tuple[int, dict[str, Any]]:
         context = getattr(self._call_state, "context", {})
         record: dict[str, Any] = {
             "call_index": -1,
             "cell_id": context.get("cell_id"),
             "stage": stage,
             "target_attempt": context.get("target_attempt"),
-            "retry_of_call_index": None,
-            "retry_index": 0,
+            "retry_of_call_index": retry_of_call_index,
+            "retry_index": retry_index,
             "started_at_utc": self._utc_now(),
             "ended_at_utc": None,
             "elapsed_s": None,
@@ -430,7 +441,24 @@ class JsonModelClient:
         self._call_state.last_call_index = record["call_index"]
         return int(record["call_index"]), record
 
-    def _post(self, *, stage: str, body: Mapping[str, Any]) -> dict[str, Any]:
+    @staticmethod
+    def _retryable_call(record: Mapping[str, Any]) -> bool:
+        return record.get("status") == "timeout" or record.get(
+            "http_status"
+        ) in _RETRYABLE_HTTP_STATUSES
+
+    @staticmethod
+    def _retry_pause() -> None:
+        time.sleep(_RETRY_BACKOFF_S)
+
+    def _post_once(
+        self,
+        *,
+        stage: str,
+        body: Mapping[str, Any],
+        retry_of_call_index: int | None,
+        retry_index: int,
+    ) -> dict[str, Any]:
         request = urllib.request.Request(
             self.config.endpoint_url,
             data=json.dumps(dict(body), ensure_ascii=True).encode("utf-8"),
@@ -440,7 +468,11 @@ class JsonModelClient:
             },
             method="POST",
         )
-        _call_index, record = self._new_call_record(stage=stage)
+        _call_index, record = self._new_call_record(
+            stage=stage,
+            retry_of_call_index=retry_of_call_index,
+            retry_index=retry_index,
+        )
         started_monotonic = time.monotonic()
         payload: dict[str, Any] | None = None
         response_headers: Any = None
@@ -546,6 +578,36 @@ class JsonModelClient:
         if payload is None:  # All failure paths above raise before reaching this guard.
             raise ModelInvocationError("model API response is unavailable")
         return payload
+
+    def _post(self, *, stage: str, body: Mapping[str, Any]) -> dict[str, Any]:
+        first_call_index: int | None = None
+        for retry_index in range(_MAX_PHYSICAL_REQUESTS):
+            try:
+                return self._post_once(
+                    stage=stage,
+                    body=body,
+                    retry_of_call_index=(
+                        first_call_index if retry_index > 0 else None
+                    ),
+                    retry_index=retry_index,
+                )
+            except ModelInvocationError:
+                call_index = getattr(self._call_state, "last_call_index", None)
+                if not isinstance(call_index, int):
+                    raise
+                with self._calls_lock:
+                    if not 0 <= call_index < len(self.calls):
+                        raise
+                    record = dict(self.calls[call_index])
+                if first_call_index is None:
+                    first_call_index = call_index
+                if (
+                    retry_index + 1 >= _MAX_PHYSICAL_REQUESTS
+                    or not self._retryable_call(record)
+                ):
+                    raise
+                self._retry_pause()
+        raise ModelInvocationError("model API retry budget exhausted")
 
     @staticmethod
     def _first_choice(payload: Mapping[str, Any]) -> Mapping[str, Any]:

@@ -4,7 +4,9 @@ import json
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+import urllib.error
+from email.message import Message
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -26,6 +28,7 @@ from experiment.experiment1.runtime.b1 import (  # noqa: E402
     _validated_runtime_model_config,
     run_single_cell,
 )
+from autoadapter2.model_api import JsonModelClient, ModelConfig  # noqa: E402
 
 
 UNIT_ID = "b1::robotstudio_so101::M5::r01::skeleton-assisted"
@@ -329,6 +332,72 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         self.assertEqual(
             recorder.calls[0]["tokens"]["input_cache_miss_tokens"], 2_000_000
         )
+
+    def test_retry_requests_remain_separate_with_one_completed_model_turn(self) -> None:
+        client = JsonModelClient(
+            ModelConfig(
+                provider="company",
+                model="model",
+                base_url="https://model.example/v1",
+                api_key="secret-value",
+            )
+        )
+        headers = Message()
+        headers["x-request-id"] = "req-429"
+        error = urllib.error.HTTPError(
+            client.config.endpoint_url,
+            429,
+            "Too Many Requests",
+            headers,
+            None,
+        )
+        payload = {
+            "id": "req-success",
+            "model": "model",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": "{}"},
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 4,
+                "completion_tokens": 1,
+                "total_tokens": 5,
+            },
+        }
+        response = MagicMock()
+        response.__enter__.return_value.status = 200
+        response.__enter__.return_value.headers = {}
+        response.__enter__.return_value.read.return_value = json.dumps(payload).encode()
+        updates: list[bool] = []
+        recorder = RecordingClient(client, lambda: updates.append(True))
+
+        with patch.object(client, "_retry_pause"), patch(
+            "urllib.request.urlopen", side_effect=[error, response]
+        ):
+            self.assertEqual(
+                recorder.generate_json(stage="study", prompt="study", inputs={}),
+                {},
+            )
+
+        self.assertEqual(len(recorder.calls), 2)
+        self.assertEqual(len(updates), 2)
+        failed, succeeded = recorder.calls
+        self.assertEqual(failed["call_index"], 1)
+        self.assertIsNone(failed["model_turn_index"])
+        self.assertEqual(failed["status"], "failed")
+        self.assertEqual(failed["http_status"], 429)
+        self.assertEqual(failed["retry_index"], 0)
+        self.assertIsNone(failed["retry_of"])
+        self.assertEqual(succeeded["call_index"], 2)
+        self.assertEqual(succeeded["model_turn_index"], 1)
+        self.assertEqual(succeeded["status"], "succeeded")
+        self.assertEqual(succeeded["http_status"], 200)
+        self.assertEqual(succeeded["retry_index"], 1)
+        self.assertEqual(succeeded["retry_of"], 1)
+        self.assertIsNone(failed["tokens"]["input_tokens"])
+        self.assertEqual(succeeded["tokens"]["input_tokens"], 4)
 
 
 if __name__ == "__main__":

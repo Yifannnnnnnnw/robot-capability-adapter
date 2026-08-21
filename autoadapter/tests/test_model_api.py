@@ -172,19 +172,87 @@ class ModelApiTests(unittest.TestCase):
         def stalled_response(*_args: object, **_kwargs: object) -> None:
             time.sleep(1.0)
 
-        with mock.patch("urllib.request.urlopen", side_effect=stalled_response):
+        with mock.patch.object(client, "_retry_pause"), mock.patch(
+            "urllib.request.urlopen", side_effect=stalled_response
+        ):
             with self.assertRaisesRegex(ModelInvocationError, "total wall deadline"):
                 client._post(stage="repair", body={})
 
-        self.assertEqual(len(client.calls), 1)
-        call_record = client.calls[0]
-        self.assertEqual(call_record["status"], "timeout")
-        self.assertEqual(call_record["stage"], "repair")
-        self.assertIsNone(call_record["http_status"])
-        self.assertEqual(call_record["error"]["type"], "timeout")
-        self.assertGreaterEqual(call_record["elapsed_s"], 0.0)
+        self.assertEqual(len(client.calls), 2)
+        for call_record in client.calls:
+            self.assertEqual(call_record["status"], "timeout")
+            self.assertEqual(call_record["stage"], "repair")
+            self.assertIsNone(call_record["http_status"])
+            self.assertEqual(call_record["error"]["type"], "timeout")
+            self.assertGreaterEqual(call_record["elapsed_s"], 0.0)
+        self.assertEqual(client.calls[1]["retry_index"], 1)
+        self.assertEqual(client.calls[1]["retry_of_call_index"], 0)
 
-    def test_http_429_is_recorded_without_request_secrets(self) -> None:
+    def test_transient_http_statuses_retry_once_and_record_each_request(self) -> None:
+        for status in (429, 500, 502, 503, 504):
+            with self.subTest(status=status):
+                client = JsonModelClient(
+                    ModelConfig(
+                        provider="company",
+                        model="model",
+                        base_url="https://model.example/v1",
+                        api_key="secret-value",
+                    )
+                )
+                client.set_call_context(cell_id="b1::cell", target_attempt=1)
+                headers = Message()
+                headers["x-request-id"] = f"req-{status}"
+                error = urllib.error.HTTPError(
+                    client.config.endpoint_url,
+                    status,
+                    "Transient provider error",
+                    headers,
+                    None,
+                )
+                payload = {
+                    "id": f"req-success-{status}",
+                    "model": "model",
+                    "choices": [],
+                    "usage": {"prompt_tokens": 2, "completion_tokens": 1},
+                }
+                response = mock.MagicMock()
+                response.__enter__.return_value.status = 200
+                response.__enter__.return_value.headers = {}
+                response.__enter__.return_value.read.return_value = json.dumps(
+                    payload
+                ).encode()
+
+                with mock.patch.object(client, "_retry_pause") as retry_pause, mock.patch(
+                    "urllib.request.urlopen", side_effect=[error, response]
+                ) as urlopen:
+                    self.assertEqual(
+                        client._post(
+                            stage="Repair1", body={"private": "do-not-record"}
+                        ),
+                        payload,
+                    )
+
+                self.assertEqual(urlopen.call_count, 2)
+                retry_pause.assert_called_once_with()
+                self.assertEqual(len(client.calls), 2)
+                failed, succeeded = client.calls
+                self.assertEqual(failed["call_index"], 0)
+                self.assertEqual(failed["cell_id"], "b1::cell")
+                self.assertEqual(failed["target_attempt"], 1)
+                self.assertEqual(failed["retry_index"], 0)
+                self.assertIsNone(failed["retry_of_call_index"])
+                self.assertEqual(failed["status"], "http_error")
+                self.assertEqual(failed["http_status"], status)
+                self.assertEqual(failed["provider_request_id"], f"req-{status}")
+                self.assertEqual(succeeded["call_index"], 1)
+                self.assertEqual(succeeded["retry_index"], 1)
+                self.assertEqual(succeeded["retry_of_call_index"], 0)
+                self.assertEqual(succeeded["status"], "success")
+                self.assertEqual(succeeded["http_status"], 200)
+                self.assertNotIn("secret-value", json.dumps(client.calls))
+                self.assertNotIn("do-not-record", json.dumps(client.calls))
+
+    def test_nontransient_http_error_is_not_retried(self) -> None:
         client = JsonModelClient(
             ModelConfig(
                 provider="company",
@@ -193,33 +261,22 @@ class ModelApiTests(unittest.TestCase):
                 api_key="secret-value",
             )
         )
-        client.set_call_context(cell_id="b1::cell", target_attempt=1)
-        headers = Message()
-        headers["x-request-id"] = "req-429"
         error = urllib.error.HTTPError(
             client.config.endpoint_url,
-            429,
-            "Too Many Requests",
-            headers,
+            400,
+            "Bad Request",
+            Message(),
             None,
         )
+        with mock.patch.object(client, "_retry_pause") as retry_pause, mock.patch(
+            "urllib.request.urlopen", side_effect=error
+        ) as urlopen:
+            with self.assertRaisesRegex(ModelInvocationError, "HTTP 400"):
+                client._post(stage="STUDY", body={})
 
-        with mock.patch("urllib.request.urlopen", side_effect=error):
-            with self.assertRaisesRegex(ModelInvocationError, "HTTP 429"):
-                client._post(stage="Repair1", body={"private": "do-not-record"})
-
+        self.assertEqual(urlopen.call_count, 1)
+        retry_pause.assert_not_called()
         self.assertEqual(len(client.calls), 1)
-        record = client.calls[0]
-        self.assertEqual(record["call_index"], 0)
-        self.assertEqual(record["cell_id"], "b1::cell")
-        self.assertEqual(record["target_attempt"], 1)
-        self.assertEqual(record["retry_index"], 0)
-        self.assertIsNone(record["retry_of_call_index"])
-        self.assertEqual(record["status"], "http_error")
-        self.assertEqual(record["http_status"], 429)
-        self.assertEqual(record["provider_request_id"], "req-429")
-        self.assertNotIn("secret-value", json.dumps(record))
-        self.assertNotIn("do-not-record", json.dumps(record))
 
     def test_transport_timeout_is_recorded(self) -> None:
         client = JsonModelClient(
@@ -231,16 +288,22 @@ class ModelApiTests(unittest.TestCase):
             )
         )
 
-        with mock.patch("urllib.request.urlopen", side_effect=TimeoutError()):
+        with mock.patch.object(client, "_retry_pause") as retry_pause, mock.patch(
+            "urllib.request.urlopen", side_effect=TimeoutError()
+        ) as urlopen:
             with self.assertRaisesRegex(ModelInvocationError, "TimeoutError"):
                 client._post(stage="STUDY", body={})
 
-        self.assertEqual(len(client.calls), 1)
-        record = client.calls[0]
-        self.assertEqual(record["status"], "timeout")
-        self.assertEqual(record["error"]["type"], "timeout")
-        self.assertIsNone(record["input_tokens"])
-        self.assertIsNone(record["raw_usage"])
+        self.assertEqual(urlopen.call_count, 2)
+        retry_pause.assert_called_once_with()
+        self.assertEqual(len(client.calls), 2)
+        for record in client.calls:
+            self.assertEqual(record["status"], "timeout")
+            self.assertEqual(record["error"]["type"], "timeout")
+            self.assertIsNone(record["input_tokens"])
+            self.assertIsNone(record["raw_usage"])
+        self.assertEqual(client.calls[1]["retry_index"], 1)
+        self.assertEqual(client.calls[1]["retry_of_call_index"], 0)
 
     def test_successful_call_records_timing_identity_and_normalised_usage(self) -> None:
         client = JsonModelClient(

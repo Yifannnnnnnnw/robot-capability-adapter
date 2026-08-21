@@ -575,6 +575,7 @@ class RecordingClient:
         self.target_attempt: int | None = None
         self._model_turns = 0
         self._price_snapshot = dict(price_snapshot or {})
+        self._native_call_indices: dict[int, int] = {}
 
     @property
     def config(self) -> Any:
@@ -590,7 +591,7 @@ class RecordingClient:
             return self._generate_tool_turn
         return getattr(self._delegate, name)
 
-    def _recorded_call(
+    def _recorded_calls(
         self,
         *,
         stage: str,
@@ -600,44 +601,85 @@ class RecordingClient:
         error: BaseException | None,
     ) -> None:
         native_after = _native_calls(self._delegate)
-        native = dict(native_after[-1]) if len(native_after) > native_before else {}
-        elapsed = max(0.0, time.monotonic() - started_monotonic)
+        native_records = [dict(item) for item in native_after[native_before:]]
+        if not native_records:
+            native_records = [{}]
+        total_elapsed = max(0.0, time.monotonic() - started_monotonic)
         if error is None:
             self._model_turns += 1
         config = self.config
         message = str(error) if error is not None else ""
         status_match = re.search(r"HTTP\s+(\d{3})", message)
-        usage = _token_record(native.get("usage"))
-        cost = _call_cost(usage, self._price_snapshot)
-        self.calls.append(
-            {
-                "call_index": len(self.calls) + 1,
-                "model_turn_index": self._model_turns if error is None else None,
-                "stage": stage,
-                "target_attempt": self.target_attempt,
-                "retry_of": None,
-                "retry_index": 0,
-                "provider_request_id": native.get("provider_request_id")
-                or native.get("request_id"),
-                "utc_started_at": started_utc,
-                "utc_finished_at": _utc_now(),
-                "elapsed_s": elapsed,
-                "requested_model": native.get("requested_model")
-                or getattr(config, "model", None),
-                "returned_model": native.get("returned_model"),
-                "provider": native.get("provider")
-                or getattr(config, "provider", None),
-                "transport": native.get("api_protocol")
-                or getattr(config, "api_protocol", None),
-                "http_status": int(status_match.group(1)) if status_match else None,
-                "status": "succeeded" if error is None else "failed",
-                "error": _failure(error) if error is not None else None,
-                "tokens": usage,
-                "per_call_cost": cost,
-                "provider_record": native,
-            }
-        )
-        self._on_update()
+        completed_offset = len(native_records) - 1 if error is None else None
+        for offset, native in enumerate(native_records):
+            outer_call_index = len(self.calls) + 1
+            native_call_index = native.get("call_index")
+            if isinstance(native_call_index, int) and not isinstance(
+                native_call_index, bool
+            ):
+                self._native_call_indices[native_call_index] = outer_call_index
+            native_retry_of = native.get("retry_of_call_index")
+            retry_of = (
+                self._native_call_indices.get(native_retry_of)
+                if isinstance(native_retry_of, int)
+                and not isinstance(native_retry_of, bool)
+                else None
+            )
+            retry_index = native.get("retry_index")
+            if not isinstance(retry_index, int) or isinstance(retry_index, bool):
+                retry_index = 0
+            elapsed = native.get("elapsed_s")
+            if not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool):
+                elapsed = total_elapsed
+            http_status = native.get("http_status")
+            if not isinstance(http_status, int) or isinstance(http_status, bool):
+                http_status = int(status_match.group(1)) if status_match else None
+            completed_turn = offset == completed_offset
+            native_error = native.get("error")
+            if completed_turn:
+                call_error = None
+            elif isinstance(native_error, Mapping):
+                call_error = copy.deepcopy(dict(native_error))
+            elif error is not None:
+                call_error = _failure(error)
+            else:
+                call_error = {
+                    "type": str(native.get("status") or "provider_error"),
+                    "message": "physical provider request did not complete a model turn",
+                }
+            usage = _token_record(native.get("usage"))
+            cost = _call_cost(usage, self._price_snapshot)
+            self.calls.append(
+                {
+                    "call_index": outer_call_index,
+                    "model_turn_index": (
+                        self._model_turns if completed_turn else None
+                    ),
+                    "stage": stage,
+                    "target_attempt": self.target_attempt,
+                    "retry_of": retry_of,
+                    "retry_index": retry_index,
+                    "provider_request_id": native.get("provider_request_id")
+                    or native.get("request_id"),
+                    "utc_started_at": native.get("started_at_utc") or started_utc,
+                    "utc_finished_at": native.get("ended_at_utc") or _utc_now(),
+                    "elapsed_s": max(0.0, float(elapsed)),
+                    "requested_model": native.get("requested_model")
+                    or getattr(config, "model", None),
+                    "returned_model": native.get("returned_model"),
+                    "provider": native.get("provider")
+                    or getattr(config, "provider", None),
+                    "transport": native.get("api_protocol")
+                    or getattr(config, "api_protocol", None),
+                    "http_status": http_status,
+                    "status": "succeeded" if completed_turn else "failed",
+                    "error": call_error,
+                    "tokens": usage,
+                    "per_call_cost": cost,
+                    "provider_record": native,
+                }
+            )
+            self._on_update()
 
     def _invoke(self, method_name: str, *, stage: str, arguments: Mapping[str, Any]) -> Any:
         started_utc = _utc_now()
@@ -647,7 +689,7 @@ class RecordingClient:
         try:
             result = method(stage=stage, **dict(arguments))
         except Exception as exc:
-            self._recorded_call(
+            self._recorded_calls(
                 stage=stage,
                 started_utc=started_utc,
                 started_monotonic=started_monotonic,
@@ -655,7 +697,7 @@ class RecordingClient:
                 error=exc,
             )
             raise
-        self._recorded_call(
+        self._recorded_calls(
             stage=stage,
             started_utc=started_utc,
             started_monotonic=started_monotonic,
