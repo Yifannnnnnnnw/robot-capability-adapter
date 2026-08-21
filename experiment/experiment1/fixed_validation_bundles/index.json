@@ -1,0 +1,42 @@
+{
+  "artifact_type": "b1_fixed_validation_bundle_set",
+  "schema_version": "1.0",
+  "bundle_set_id": "experiment1-b1-five-robot-fixed-bundles-v1",
+  "robots": {
+    "robotstudio_so101": {
+      "capability_design": "robotstudio_so101/capability_design.json",
+      "capability_validation_suite": "robotstudio_so101/capability_validation_suite.json",
+      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::robotstudio_so101::v1",
+      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+      "validation_suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v1"
+    },
+    "unitree-go2-stock-12dof": {
+      "capability_design": "unitree-go2-stock-12dof/capability_design.json",
+      "capability_validation_suite": "unitree-go2-stock-12dof/capability_validation_suite.json",
+      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v1",
+      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+      "validation_suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v1"
+    },
+    "leap_hand": {
+      "capability_design": "leap_hand/capability_design.json",
+      "capability_validation_suite": "leap_hand/capability_validation_suite.json",
+      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::leap_hand::v1",
+      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+      "validation_suite_id": "experiment1-b1-fixed-suite::leap_hand::v1"
+    },
+    "hello_robot_stretch_2": {
+      "capability_design": "hello_robot_stretch_2/capability_design.json",
+      "capability_validation_suite": "hello_robot_stretch_2/capability_validation_suite.json",
+      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::hello_robot_stretch_2::v1",
+      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+      "validation_suite_id": "experiment1-b1-fixed-suite::hello_robot_stretch_2::v1"
+    },
+    "aloha_2": {
+      "capability_design": "aloha_2/capability_design.json",
+      "capability_validation_suite": "aloha_2/capability_validation_suite.json",
+      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::aloha_2::v1",
+      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+      "validation_suite_id": "experiment1-b1-fixed-suite::aloha_2::v1"
+    }
+  }
+}

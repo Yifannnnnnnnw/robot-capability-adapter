@@ -1,0 +1,395 @@
+{
+  "artifact_type": "b1_fixed_capability_design",
+  "schema_version": "1.0",
+  "capability_design_id": "experiment1-b1-fixed-interface::aloha_2::v1",
+  "robot_configuration_id": "aloha_2",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v2",
+  "invocation_abi": {
+    "kind": "capability_request",
+    "method_call": "method(request=request)"
+  },
+  "capabilities": [
+    {
+      "capability_id": "AL1",
+      "method_name": "move_arm_to_position",
+      "description": "Move one selected ALOHA arm to a bounded world-frame position.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "arm": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Selected ALOHA arm."
+          },
+          "target_position_world_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "description": "One finite vector component.",
+              "minimum": -1.0,
+              "maximum": 1.0
+            },
+            "unit": "m",
+            "frame": "world",
+            "description": "Selected-arm world-frame target."
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "arm",
+          "target_position_world_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "AL1",
+        "criterion_text": "Selected end-effector error <= 0.015 m for 0.5 s and all unselected-side guards pass.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "AL2",
+      "method_name": "trace_arm_cartesian_path",
+      "description": "Trace selected-arm world-frame Cartesian waypoints in order.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "arm": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Selected ALOHA arm."
+          },
+          "waypoints_world_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "description": "One finite vector component.",
+                "minimum": -1.0,
+                "maximum": 1.0
+              },
+              "unit": "m",
+              "frame": "world",
+              "description": "One bounded waypoint or target vector."
+            },
+            "unit": "m",
+            "frame": "world",
+            "description": "Selected-arm ordered world-frame waypoints."
+          },
+          "max_duration_per_segment_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum duration per ordered segment or leg.",
+            "minimum": 0.25,
+            "maximum": 5.0
+          }
+        },
+        "required": [
+          "arm",
+          "waypoints_world_m",
+          "max_duration_per_segment_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "AL2",
+        "criterion_text": "Ordered waypoint/cross-track error <= 0.020 m and endpoint error <= 0.015 m for 0.5 s with unselected-side guards.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "AL3",
+      "method_name": "set_gripper_opening",
+      "description": "Set one selected ALOHA gripper by normalised opening fraction.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "arm": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Selected ALOHA arm."
+          },
+          "opening_fraction": {
+            "type": "number",
+            "unit": "ratio",
+            "frame": "none",
+            "description": "Normalised physical gripper opening; 0 closed, 1 open.",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "arm",
+          "opening_fraction",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "AL3",
+        "criterion_text": "Selected aperture error <= 0.10 for 0.25 s, mirror disagreement <= 0.05, and unselected-side guards pass.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "AL4",
+      "method_name": "move_bimanual_to_positions",
+      "description": "Move both ALOHA end effectors to bounded world-frame positions.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "left_target_position_world_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "description": "One finite vector component.",
+              "minimum": -1.0,
+              "maximum": 1.0
+            },
+            "unit": "m",
+            "frame": "world",
+            "description": "Left-arm world-frame target."
+          },
+          "right_target_position_world_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "description": "One finite vector component.",
+              "minimum": -1.0,
+              "maximum": 1.0
+            },
+            "unit": "m",
+            "frame": "world",
+            "description": "Right-arm world-frame target."
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "left_target_position_world_m",
+          "right_target_position_world_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "AL4",
+        "criterion_text": "Both end-effector errors <= 0.015 m simultaneously for 0.5 s with first-entry skew <= 0.10 s.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "AL5",
+      "method_name": "approach_until_contact",
+      "description": "Approach a reachable target with one selected ALOHA arm until contact.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "arm": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Selected ALOHA arm."
+          },
+          "precontact_position_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "world",
+              "description": "One finite vector component.",
+              "minimum": -1.0,
+              "maximum": 1.0
+            },
+            "unit": "m",
+            "frame": "world",
+            "description": "World-frame precontact tool point."
+          },
+          "approach_direction_unit": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "unit": "unitless",
+              "frame": "world",
+              "description": "One finite vector component.",
+              "minimum": -1.0,
+              "maximum": 1.0
+            },
+            "unit": "unitless",
+            "frame": "world",
+            "description": "World-frame unit approach direction."
+          },
+          "max_travel_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "none",
+            "description": "Maximum axial approach travel.",
+            "maximum": 0.08,
+            "exclusiveMinimum": 0.0
+          },
+          "max_approach_speed_m_s": {
+            "type": "number",
+            "unit": "m/s",
+            "frame": "none",
+            "description": "Maximum approach speed.",
+            "maximum": 0.05,
+            "exclusiveMinimum": 0.0
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "arm",
+          "precontact_position_m",
+          "approach_direction_unit",
+          "max_travel_m",
+          "max_approach_speed_m_s",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "AL5",
+        "criterion_text": "The full A4 gates apply to the selected arm/contact group and all unselected-side guards pass.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "AL6",
+      "method_name": "move_bimanual_offsets_and_return",
+      "description": "Move both ALOHA arms by base-frame offsets and return together.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "left_offset_arm_base_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "left_arm_base",
+              "description": "One finite vector component.",
+              "minimum": -0.06,
+              "maximum": 0.06
+            },
+            "unit": "m",
+            "frame": "left_arm_base",
+            "description": "Left arm-base-frame offset."
+          },
+          "right_offset_arm_base_m": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "right_arm_base",
+              "description": "One finite vector component.",
+              "minimum": -0.06,
+              "maximum": 0.06
+            },
+            "unit": "m",
+            "frame": "right_arm_base",
+            "description": "Right arm-base-frame offset."
+          },
+          "max_duration_per_leg_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum duration per ordered segment or leg.",
+            "minimum": 0.25,
+            "maximum": 5.0
+          }
+        },
+        "required": [
+          "left_offset_arm_base_m",
+          "right_offset_arm_base_m",
+          "max_duration_per_leg_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "AL6",
+        "criterion_text": "Both arms complete outbound and return within budget with error <= 0.015 m and outbound skew <= 0.10 s; each phase holds 0.25 s.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    }
+  ]
+}

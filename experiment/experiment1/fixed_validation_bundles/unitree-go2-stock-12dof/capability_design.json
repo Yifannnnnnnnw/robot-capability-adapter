@@ -1,0 +1,245 @@
+{
+  "artifact_type": "b1_fixed_capability_design",
+  "schema_version": "1.0",
+  "capability_design_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v1",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
+  "invocation_abi": {
+    "kind": "capability_request",
+    "method_call": "method(request=request)"
+  },
+  "capabilities": [
+    {
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "description": "Track a bounded planar body-frame twist for a fixed duration.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "linear_velocity_body_m_s": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number",
+              "unit": "m/s",
+              "frame": "body",
+              "description": "One finite vector component.",
+              "minimum": -0.4,
+              "maximum": 0.4
+            },
+            "unit": "m/s",
+            "frame": "body",
+            "description": "Instantaneous body-yaw-frame planar velocity."
+          },
+          "yaw_rate_rad_s": {
+            "type": "number",
+            "unit": "rad/s",
+            "frame": "none",
+            "description": "Requested yaw rate.",
+            "minimum": -1.0,
+            "maximum": 1.0
+          },
+          "duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Twist tracking duration.",
+            "minimum": 2.0,
+            "maximum": 4.0
+          }
+        },
+        "required": [
+          "linear_velocity_body_m_s",
+          "yaw_rate_rad_s",
+          "duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "G1",
+        "criterion_text": "Final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s; direction error <= 10 degrees when moving.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "description": "Move the Go2 base to a pose relative to its initial yaw frame.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "translation_initial_yaw_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "initial_body_yaw",
+              "description": "One finite vector component.",
+              "minimum": -0.3,
+              "maximum": 0.3
+            },
+            "unit": "m",
+            "frame": "initial_body_yaw",
+            "description": "Planar displacement in the initial yaw frame."
+          },
+          "yaw_delta_rad": {
+            "type": "number",
+            "unit": "rad",
+            "frame": "none",
+            "description": "Wrapped yaw change.",
+            "minimum": -0.6,
+            "maximum": 0.6
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "translation_initial_yaw_m",
+          "yaw_delta_rad",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "G2",
+        "criterion_text": "Terminal position error <= 0.10 m, yaw error <= 0.0873 rad, and speed <= 0.10 m/s for 0.5 s.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "description": "Trace bounded planar waypoints in the initial-yaw frame.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "waypoints_initial_yaw_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "initial_body_yaw",
+                "description": "One finite vector component.",
+                "minimum": -0.4,
+                "maximum": 0.4
+              },
+              "unit": "m",
+              "frame": "initial_body_yaw",
+              "description": "One bounded waypoint or target vector."
+            },
+            "unit": "m",
+            "frame": "initial_body_yaw",
+            "description": "Ordered planar waypoints in the initial yaw frame."
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "waypoints_initial_yaw_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "G3",
+        "criterion_text": "Ordered waypoint error <= 0.10 m, cross-track <= 0.15 m, and endpoint error/speed <= 0.10 for 0.5 s.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "description": "Set Go2 body height while retaining a stable local stance.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_height_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "world",
+            "description": "Target base-body height.",
+            "minimum": 0.22,
+            "maximum": 0.36
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "target_height_m",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "G4",
+        "criterion_text": "Height error <= 0.03 m with roll/pitch <= 0.1745 rad, displacement <= 0.05 m, and yaw drift <= 0.0873 rad for 0.5 s.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "description": "Recover from one Framework reset disturbance and hold stable stance.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Post-disturbance stance-hold duration.",
+            "minimum": 1.0,
+            "maximum": 2.0
+          }
+        },
+        "required": [
+          "duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "G5",
+        "criterion_text": "Recover roll/pitch <= 0.0524 rad within 0.5 s, then satisfy the fixed stability, drift, support, and forbidden-contact gates.",
+        "all_hidden_cases_required": true,
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    }
+  ]
+}

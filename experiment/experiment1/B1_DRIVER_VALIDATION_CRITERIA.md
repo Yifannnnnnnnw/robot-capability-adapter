@@ -3,8 +3,8 @@
 > **Document role:** public Experiment 1 Driver-contract and validation-criteria register<br>
 > **Source rendering:** `appendix_b1_driver_validation_table.tex`<br>
 > **Experiment 1 authority:** `EXPERIMENT_1_AUTHORITY.md`<br>
-> **Execution status:** methods and public thresholds recorded; exact request
-> schemas and trusted-Harness bindings are being connected
+> **Execution status:** five fixed capability designs and their H1/H2/H3
+> trusted-Harness suites are connected through `fixed_validation_bundles/`
 
 This document projects the generated-driver methods, numerical validation
 criteria, and conjunctive acceptance rule in the LaTeX appendix onto the five
@@ -74,31 +74,23 @@ Every trial must also satisfy the common:
 - maximum-penetration check; and
 - complete-video check.
 
-## What remains before Experiment 1 starts
+## Executable bundle connection
 
-The sole remaining criteria-side preparation is to connect each declared
-Driver contract to the trusted Harness. For each active robot this requires:
-
-- the three hidden target, initial-state, and parameter combinations per
-  capability;
-- request schema, units, coordinate frames, safe domains, and time budgets;
-- reset state, measurement bindings, guards, contact groups, and exact verdict
-  implementation;
-- one continuous Framework-controlled video per trial.
-
-The Experiment 1 manifest points to the resulting five-robot Driver-and-criteria
-definitions. The directory containing them is only an implementation
-container, not a separate admission workflow. No task-blind reference driver
-or reference calibration is required. Until the request schemas and Harness
-bindings work, this register supports implementation and review but does not
-by itself make a cell runnable.
+The Experiment 1 manifest points to the five fixed Driver-and-criteria
+definitions in `fixed_validation_bundles/`. Each robot bundle contains the
+closed request schemas and exactly three fixed H1/H2/H3 cases per capability,
+including scene, reset, request, measurement binding, guards, criterion, and
+execution budgets. The trusted Harness consumes those inline cases and retains
+one continuous Framework-controlled video per trial. The directory remains an
+implementation container, not a separate admission workflow; no task-blind
+reference driver or reference calibration is required.
 
 ## SO-101
 
 Experiment 1 configuration: `robotstudio_so101`. The source table shares these
 criteria with a broader fixed-arm group; only SO-101 belongs to Experiment 1.
-Robot-specific end-effector and gripper measurement bindings still have to be
-fixed in the executable suite.
+The executable suite binds the end effector to site `gripperframe` and the
+gripper to joint `gripper`.
 
 | ID | Generated-driver method | Required request fields | Validation criterion |
 |---|---|---|---|

@@ -25,6 +25,7 @@ from experiment.experiment1.runtime.b1 import (  # noqa: E402
     FixedBundle,
     RecordingClient,
     RunnerHooks,
+    _validation_case_counts,
     _validated_runtime_model_config,
     run_single_cell,
 )
@@ -160,7 +161,13 @@ class ScriptedRoute:
             "validation_passed": verdict,
             "video_complete": True,
             "video_manifest": [],
-            "trials": [{"trial_passed": verdict}],
+            "trials": [
+                {
+                    "case_id": "hidden",
+                    "worker_completed": True,
+                    "trial_passed": verdict,
+                }
+            ],
         }
 
     def hooks(self) -> RunnerHooks:
@@ -179,6 +186,29 @@ class ScriptedRoute:
 
 
 class Experiment1B1RunnerTests(unittest.TestCase):
+    def test_case_counts_mark_missing_and_unfinished_trials_incomplete(self) -> None:
+        counts = _validation_case_counts(
+            {
+                "cases": [
+                    {"case_id": "a", "repetitions": 1},
+                    {"case_id": "b", "repetitions": 1},
+                ]
+            },
+            {
+                "trials": [
+                    {
+                        "case_id": "a",
+                        "worker_completed": False,
+                        "trial_passed": False,
+                    }
+                ]
+            },
+        )
+        self.assertEqual(
+            counts,
+            {"passed": 0, "failed": 0, "incomplete": 2, "total": 2},
+        )
+
     def _run(self, verdicts: list[bool]) -> tuple[dict[str, Any], ScriptedRoute, Path]:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -210,6 +240,10 @@ class Experiment1B1RunnerTests(unittest.TestCase):
             ["study", "generate", "validation"],
         )
         self.assertEqual(len(record["provider_calls"]), 2)
+        self.assertEqual(
+            record["attempts"][0]["validation_case_counts"],
+            {"passed": 1, "failed": 0, "incomplete": 0, "total": 1},
+        )
         self.assertTrue((output / "cell_record.json").is_file())
 
     def test_failed_attempt_zero_repairs_once_then_passes(self) -> None:
@@ -226,6 +260,13 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         )
         self.assertEqual(route.repair_calls, 1)
         self.assertEqual(route.harness_calls, 2)
+        self.assertEqual(
+            [attempt["validation_case_counts"] for attempt in record["attempts"]],
+            [
+                {"passed": 0, "failed": 1, "incomplete": 0, "total": 1},
+                {"passed": 1, "failed": 0, "incomplete": 0, "total": 1},
+            ],
+        )
         self.assertEqual(record["attempts"][0]["transition_or_stop"], "repair_1")
         self.assertEqual(record["attempts"][1]["transition_or_stop"], "passed")
 

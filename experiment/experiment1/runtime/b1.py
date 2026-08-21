@@ -30,6 +30,8 @@ from autoadapter2.libraries import load_indexed_robot_package
 from autoadapter2.model_api import JsonModelClient, ModelConfig
 from autoadapter2.validation_compiler import validate_capability_validation_suite
 
+from .fixed_bundles import validate_b1_fixed_bundle
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 EXPERIMENT_ROOT = REPOSITORY_ROOT / "experiment" / "experiment1"
@@ -390,15 +392,26 @@ def load_fixed_bundle(
     container, paths, metadata = _bundle_paths(manifest_path, robot_ids)
     design_path, suite_path = paths[robot_id]
     design_raw = _read_json(design_path, label=f"{robot_id} capability design")
-    design = dict(validate_capability_design(design_raw, package))
     suite_raw = _read_json(suite_path, label=f"{robot_id} validation criteria")
-    suite = dict(
-        validate_capability_validation_suite(
+    if design_raw.get("artifact_type") == "b1_fixed_capability_design":
+        if suite_raw.get("artifact_type") != "b1_fixed_validation_suite":
+            raise B1RunError(
+                f"{suite_path}: B1 fixed design requires a B1 fixed validation suite"
+            )
+        design, suite = validate_b1_fixed_bundle(
+            design_raw,
             suite_raw,
             package=package,
-            design=design,
         )
-    )
+    else:
+        design = dict(validate_capability_design(design_raw, package))
+        suite = dict(
+            validate_capability_validation_suite(
+                suite_raw,
+                package=package,
+                design=design,
+            )
+        )
     entry = metadata[robot_id]
     interface_id = (
         entry.get("fixed_capability_interface_id")
@@ -1127,6 +1140,51 @@ def _normalise_validation(
     return result
 
 
+def _validation_case_counts(
+    suite: Mapping[str, Any], report: Mapping[str, Any]
+) -> dict[str, int]:
+    """Partition every expected suite case into pass, fail, or incomplete."""
+
+    cases = suite.get("cases")
+    if not isinstance(cases, list):
+        cases = []
+    expected: dict[str, int] = {}
+    for case in cases:
+        if not isinstance(case, Mapping) or not isinstance(case.get("case_id"), str):
+            continue
+        repetitions = case.get("repetitions", 1)
+        expected[str(case["case_id"])] = (
+            int(repetitions)
+            if isinstance(repetitions, int)
+            and not isinstance(repetitions, bool)
+            and repetitions > 0
+            else 1
+        )
+    grouped: dict[str, list[Mapping[str, Any]]] = {
+        case_id: [] for case_id in expected
+    }
+    trials = report.get("trials")
+    if isinstance(trials, list):
+        for trial in trials:
+            if not isinstance(trial, Mapping):
+                continue
+            case_id = trial.get("case_id")
+            if isinstance(case_id, str) and case_id in grouped:
+                grouped[case_id].append(trial)
+    counts = {"passed": 0, "failed": 0, "incomplete": 0, "total": len(expected)}
+    for case_id, repetitions in expected.items():
+        values = grouped[case_id]
+        if len(values) != repetitions or any(
+            trial.get("worker_completed") is not True for trial in values
+        ):
+            counts["incomplete"] += 1
+        elif all(trial.get("trial_passed") is True for trial in values):
+            counts["passed"] += 1
+        else:
+            counts["failed"] += 1
+    return counts
+
+
 def _select_unit(resolved: Mapping[str, Any], unit_id: str) -> dict[str, Any]:
     if resolved.get("unit_count") != EXPECTED_UNIT_COUNT:
         raise B1RunError(f"Experiment 1 manifest must resolve {EXPECTED_UNIT_COUNT} units")
@@ -1411,6 +1469,9 @@ def run_single_cell(
             }
         elapsed = max(0.0, time.monotonic() - stage_monotonic)
         validation = _normalise_validation(raw, unit=unit, attempt=attempt)
+        validation["validation_case_counts"] = _validation_case_counts(
+            bundle.suite, validation
+        )
         report_path = workspace / f"attempt-{attempt}" / "validation_report.json"
         _write_json(report_path, validation)
         record["evidence"]["report_paths"].append(str(report_path))
@@ -1680,6 +1741,7 @@ def run_single_cell(
                 "validation_wall_time_s": validation_elapsed,
                 "validation_verdict": passed,
                 "validation_report": validation,
+                "validation_case_counts": validation["validation_case_counts"],
                 "transition_or_stop": (
                     "passed"
                     if passed

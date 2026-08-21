@@ -1,0 +1,1845 @@
+{
+  "artifact_type": "b1_fixed_validation_suite",
+  "schema_version": "1.0",
+  "suite_id": "experiment1-b1-fixed-suite::leap_hand::v1",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+  "whole_suite_aggregation": {
+    "kind": "all_cases"
+  },
+  "cases": [
+    {
+      "case_id": "L1-H1",
+      "case_variant": "H1",
+      "capability_id": "L1",
+      "method_name": "move_hand_to_joint_pose",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "target_joint_positions_rad": [
+          0.15,
+          0.17,
+          0.19,
+          0.21,
+          0.15,
+          0.17,
+          0.19,
+          0.21,
+          0.15,
+          0.17,
+          0.19,
+          0.21,
+          0.15,
+          0.17,
+          0.19,
+          0.21
+        ],
+        "max_duration_s": 3.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.1
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.1
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L1",
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l1"
+        ]
+      }
+    },
+    {
+      "case_id": "L1-H2",
+      "case_variant": "H2",
+      "capability_id": "L1",
+      "method_name": "move_hand_to_joint_pose",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "target_joint_positions_rad": [
+          0.25,
+          0.27,
+          0.29,
+          0.31,
+          0.25,
+          0.27,
+          0.29,
+          0.31,
+          0.25,
+          0.27,
+          0.29,
+          0.31,
+          0.25,
+          0.27,
+          0.29,
+          0.31
+        ],
+        "max_duration_s": 3.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.12000000000000001
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.12000000000000001
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L1",
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l1"
+        ]
+      }
+    },
+    {
+      "case_id": "L1-H3",
+      "case_variant": "H3",
+      "capability_id": "L1",
+      "method_name": "move_hand_to_joint_pose",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "target_joint_positions_rad": [
+          0.35,
+          0.37,
+          0.39,
+          0.41,
+          0.35,
+          0.37,
+          0.39,
+          0.41,
+          0.35,
+          0.37,
+          0.39,
+          0.41,
+          0.35,
+          0.37,
+          0.39,
+          0.41
+        ],
+        "max_duration_s": 4.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.08
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.08
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L1",
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l1"
+        ]
+      }
+    },
+    {
+      "case_id": "L2-H1",
+      "case_variant": "H1",
+      "capability_id": "L2",
+      "method_name": "trace_hand_joint_path",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "joint_waypoints_rad": [
+          [
+            0.1,
+            0.12,
+            0.14,
+            0.16,
+            0.1,
+            0.12,
+            0.14,
+            0.16,
+            0.1,
+            0.12,
+            0.14,
+            0.16,
+            0.1,
+            0.12,
+            0.14,
+            0.16
+          ],
+          [
+            0.2,
+            0.22,
+            0.24,
+            0.26,
+            0.2,
+            0.22,
+            0.24,
+            0.26,
+            0.2,
+            0.22,
+            0.24,
+            0.26,
+            0.2,
+            0.22,
+            0.24,
+            0.26
+          ]
+        ],
+        "max_duration_per_segment_s": 2.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.1
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.1
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L2",
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l2"
+        ]
+      }
+    },
+    {
+      "case_id": "L2-H2",
+      "case_variant": "H2",
+      "capability_id": "L2",
+      "method_name": "trace_hand_joint_path",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "joint_waypoints_rad": [
+          [
+            0.15,
+            0.17,
+            0.19,
+            0.21,
+            0.15,
+            0.17,
+            0.19,
+            0.21,
+            0.15,
+            0.17,
+            0.19,
+            0.21,
+            0.15,
+            0.17,
+            0.19,
+            0.21
+          ],
+          [
+            0.25,
+            0.27,
+            0.29,
+            0.31,
+            0.25,
+            0.27,
+            0.29,
+            0.31,
+            0.25,
+            0.27,
+            0.29,
+            0.31,
+            0.25,
+            0.27,
+            0.29,
+            0.31
+          ],
+          [
+            0.3,
+            0.32,
+            0.34,
+            0.36,
+            0.3,
+            0.32,
+            0.34,
+            0.36,
+            0.3,
+            0.32,
+            0.34,
+            0.36,
+            0.3,
+            0.32,
+            0.34,
+            0.36
+          ]
+        ],
+        "max_duration_per_segment_s": 2.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.12000000000000001
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.12000000000000001
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L2",
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l2"
+        ]
+      }
+    },
+    {
+      "case_id": "L2-H3",
+      "case_variant": "H3",
+      "capability_id": "L2",
+      "method_name": "trace_hand_joint_path",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "joint_waypoints_rad": [
+          [
+            0.2,
+            0.22,
+            0.24,
+            0.26,
+            0.2,
+            0.22,
+            0.24,
+            0.26,
+            0.2,
+            0.22,
+            0.24,
+            0.26,
+            0.2,
+            0.22,
+            0.24,
+            0.26
+          ],
+          [
+            0.3,
+            0.32,
+            0.34,
+            0.36,
+            0.3,
+            0.32,
+            0.34,
+            0.36,
+            0.3,
+            0.32,
+            0.34,
+            0.36,
+            0.3,
+            0.32,
+            0.34,
+            0.36
+          ],
+          [
+            0.25,
+            0.27,
+            0.29,
+            0.31,
+            0.25,
+            0.27,
+            0.29,
+            0.31,
+            0.25,
+            0.27,
+            0.29,
+            0.31,
+            0.25,
+            0.27,
+            0.29,
+            0.31
+          ]
+        ],
+        "max_duration_per_segment_s": 3.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.08
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.08
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L2",
+          "joint_names": [
+            "if_mcp",
+            "if_rot",
+            "if_pip",
+            "if_dip",
+            "mf_mcp",
+            "mf_rot",
+            "mf_pip",
+            "mf_dip",
+            "rf_mcp",
+            "rf_rot",
+            "rf_pip",
+            "rf_dip",
+            "th_cmc",
+            "th_axl",
+            "th_mcp",
+            "th_ipl"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l2"
+        ]
+      }
+    },
+    {
+      "case_id": "L3-H1",
+      "case_variant": "H1",
+      "capability_id": "L3",
+      "method_name": "reach_fingertips_to_targets",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "target_fingertip_positions_palm_m": [
+          0.08,
+          0.04,
+          0.02,
+          0.09,
+          0.0,
+          0.02,
+          0.08,
+          -0.04,
+          0.02,
+          0.04,
+          0.05,
+          0.01
+        ],
+        "max_control_steps": 50
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.1
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.1
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L3",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l3"
+        ]
+      }
+    },
+    {
+      "case_id": "L3-H2",
+      "case_variant": "H2",
+      "capability_id": "L3",
+      "method_name": "reach_fingertips_to_targets",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "target_fingertip_positions_palm_m": [
+          0.07,
+          0.05,
+          0.03,
+          0.08,
+          0.01,
+          0.03,
+          0.07,
+          -0.03,
+          0.03,
+          0.05,
+          0.04,
+          0.02
+        ],
+        "max_control_steps": 50
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.12000000000000001
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.12000000000000001
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L3",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l3"
+        ]
+      }
+    },
+    {
+      "case_id": "L3-H3",
+      "case_variant": "H3",
+      "capability_id": "L3",
+      "method_name": "reach_fingertips_to_targets",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "target_fingertip_positions_palm_m": [
+          0.09,
+          0.03,
+          0.01,
+          0.1,
+          -0.01,
+          0.01,
+          0.09,
+          -0.05,
+          0.01,
+          0.03,
+          0.06,
+          0.0
+        ],
+        "max_control_steps": 50
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.08
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.08
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L3",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l3"
+        ]
+      }
+    },
+    {
+      "case_id": "L4-H1",
+      "case_variant": "H1",
+      "capability_id": "L4",
+      "method_name": "establish_fingertip_contact_pattern",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "required_fingers": [
+          "index"
+        ],
+        "contact_target_positions_palm_m": [
+          [
+            0.08,
+            0.04,
+            0.02
+          ]
+        ],
+        "approach_directions_palm_unit": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "max_travel_m": 0.02,
+        "max_approach_speed_m_s": 0.02,
+        "max_duration_s": 3.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.1
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.1
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L4",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          },
+          "fingertip_geom_names": {
+            "index": [
+              "if_tip"
+            ],
+            "middle": [
+              "mf_tip"
+            ],
+            "ring": [
+              "rf_tip"
+            ],
+            "thumb": [
+              "th_tip"
+            ]
+          },
+          "target_geom_names": {
+            "index": [
+              "kinematic_floor"
+            ],
+            "middle": [
+              "kinematic_floor"
+            ],
+            "ring": [
+              "kinematic_floor"
+            ],
+            "thumb": [
+              "kinematic_floor"
+            ]
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l4"
+        ]
+      }
+    },
+    {
+      "case_id": "L4-H2",
+      "case_variant": "H2",
+      "capability_id": "L4",
+      "method_name": "establish_fingertip_contact_pattern",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "required_fingers": [
+          "middle",
+          "thumb"
+        ],
+        "contact_target_positions_palm_m": [
+          [
+            0.09,
+            0.0,
+            0.02
+          ],
+          [
+            0.04,
+            0.05,
+            0.01
+          ]
+        ],
+        "approach_directions_palm_unit": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ]
+        ],
+        "max_travel_m": 0.025,
+        "max_approach_speed_m_s": 0.025,
+        "max_duration_s": 3.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.12000000000000001
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.12000000000000001
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L4",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          },
+          "fingertip_geom_names": {
+            "index": [
+              "if_tip"
+            ],
+            "middle": [
+              "mf_tip"
+            ],
+            "ring": [
+              "rf_tip"
+            ],
+            "thumb": [
+              "th_tip"
+            ]
+          },
+          "target_geom_names": {
+            "index": [
+              "kinematic_floor"
+            ],
+            "middle": [
+              "kinematic_floor"
+            ],
+            "ring": [
+              "kinematic_floor"
+            ],
+            "thumb": [
+              "kinematic_floor"
+            ]
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l4"
+        ]
+      }
+    },
+    {
+      "case_id": "L4-H3",
+      "case_variant": "H3",
+      "capability_id": "L4",
+      "method_name": "establish_fingertip_contact_pattern",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "required_fingers": [
+          "index",
+          "ring"
+        ],
+        "contact_target_positions_palm_m": [
+          [
+            0.08,
+            0.04,
+            0.03
+          ],
+          [
+            0.08,
+            -0.04,
+            0.03
+          ]
+        ],
+        "approach_directions_palm_unit": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "max_travel_m": 0.03,
+        "max_approach_speed_m_s": 0.03,
+        "max_duration_s": 4.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.08
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.08
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L4",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          },
+          "fingertip_geom_names": {
+            "index": [
+              "if_tip"
+            ],
+            "middle": [
+              "mf_tip"
+            ],
+            "ring": [
+              "rf_tip"
+            ],
+            "thumb": [
+              "th_tip"
+            ]
+          },
+          "target_geom_names": {
+            "index": [
+              "kinematic_floor"
+            ],
+            "middle": [
+              "kinematic_floor"
+            ],
+            "ring": [
+              "kinematic_floor"
+            ],
+            "thumb": [
+              "kinematic_floor"
+            ]
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l4"
+        ]
+      }
+    },
+    {
+      "case_id": "L5-H1",
+      "case_variant": "H1",
+      "capability_id": "L5",
+      "method_name": "hold_fingertip_contacts",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "required_fingers": [
+          "index"
+        ],
+        "separation_directions_palm_unit": [
+          [
+            -1.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "duration_s": 1.2
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.1
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.1
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L5",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          },
+          "fingertip_geom_names": {
+            "index": [
+              "if_tip"
+            ],
+            "middle": [
+              "mf_tip"
+            ],
+            "ring": [
+              "rf_tip"
+            ],
+            "thumb": [
+              "th_tip"
+            ]
+          },
+          "target_geom_names": {
+            "index": [
+              "kinematic_floor"
+            ],
+            "middle": [
+              "kinematic_floor"
+            ],
+            "ring": [
+              "kinematic_floor"
+            ],
+            "thumb": [
+              "kinematic_floor"
+            ]
+          },
+          "target_site_names": {
+            "index": "grasp_site",
+            "middle": "grasp_site",
+            "ring": "grasp_site",
+            "thumb": "grasp_site"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l5"
+        ]
+      }
+    },
+    {
+      "case_id": "L5-H2",
+      "case_variant": "H2",
+      "capability_id": "L5",
+      "method_name": "hold_fingertip_contacts",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "required_fingers": [
+          "middle",
+          "thumb"
+        ],
+        "separation_directions_palm_unit": [
+          [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        ],
+        "duration_s": 1.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.12000000000000001
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.12000000000000001
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L5",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          },
+          "fingertip_geom_names": {
+            "index": [
+              "if_tip"
+            ],
+            "middle": [
+              "mf_tip"
+            ],
+            "ring": [
+              "rf_tip"
+            ],
+            "thumb": [
+              "th_tip"
+            ]
+          },
+          "target_geom_names": {
+            "index": [
+              "kinematic_floor"
+            ],
+            "middle": [
+              "kinematic_floor"
+            ],
+            "ring": [
+              "kinematic_floor"
+            ],
+            "thumb": [
+              "kinematic_floor"
+            ]
+          },
+          "target_site_names": {
+            "index": "grasp_site",
+            "middle": "grasp_site",
+            "ring": "grasp_site",
+            "thumb": "grasp_site"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l5"
+        ]
+      }
+    },
+    {
+      "case_id": "L5-H3",
+      "case_variant": "H3",
+      "capability_id": "L5",
+      "method_name": "hold_fingertip_contacts",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "required_fingers": [
+          "index",
+          "ring"
+        ],
+        "separation_directions_palm_unit": [
+          [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          [
+            -1.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "duration_s": 1.8
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.08
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.08
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L5",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          },
+          "fingertip_geom_names": {
+            "index": [
+              "if_tip"
+            ],
+            "middle": [
+              "mf_tip"
+            ],
+            "ring": [
+              "rf_tip"
+            ],
+            "thumb": [
+              "th_tip"
+            ]
+          },
+          "target_geom_names": {
+            "index": [
+              "kinematic_floor"
+            ],
+            "middle": [
+              "kinematic_floor"
+            ],
+            "ring": [
+              "kinematic_floor"
+            ],
+            "thumb": [
+              "kinematic_floor"
+            ]
+          },
+          "target_site_names": {
+            "index": "grasp_site",
+            "middle": "grasp_site",
+            "ring": "grasp_site",
+            "thumb": "grasp_site"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l5"
+        ]
+      }
+    },
+    {
+      "case_id": "L6-H1",
+      "case_variant": "H1",
+      "capability_id": "L6",
+      "method_name": "move_fingertip_offset_and_return",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "finger_names": [
+          "index"
+        ],
+        "offsets_palm_m": [
+          [
+            0.01,
+            0.0,
+            0.0
+          ]
+        ],
+        "max_duration_per_leg_s": 2.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.1
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.1
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L6",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l6"
+        ]
+      }
+    },
+    {
+      "case_id": "L6-H2",
+      "case_variant": "H2",
+      "capability_id": "L6",
+      "method_name": "move_fingertip_offset_and_return",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "finger_names": [
+          "middle",
+          "thumb"
+        ],
+        "offsets_palm_m": [
+          [
+            0.0,
+            0.01,
+            0.0
+          ],
+          [
+            0.0,
+            -0.01,
+            0.0
+          ]
+        ],
+        "max_duration_per_leg_s": 2.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.12000000000000001
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.12000000000000001
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L6",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l6"
+        ]
+      }
+    },
+    {
+      "case_id": "L6-H3",
+      "case_variant": "H3",
+      "capability_id": "L6",
+      "method_name": "move_fingertip_offset_and_return",
+      "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
+      "request": {
+        "finger_names": [
+          "index",
+          "ring"
+        ],
+        "offsets_palm_m": [
+          [
+            0.0,
+            0.0,
+            0.01
+          ],
+          [
+            0.0,
+            0.0,
+            -0.01
+          ]
+        ],
+        "max_duration_per_leg_s": 3.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "if_mcp": 0.08
+        },
+        "actuator_controls": {
+          "if_mcp_act": 0.08
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "L6",
+          "palm_body_name": "palm",
+          "fingertip_site_names": {
+            "index": "if_tip",
+            "middle": "mf_tip",
+            "ring": "rf_tip",
+            "thumb": "th_tip"
+          }
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l6"
+        ]
+      }
+    }
+  ]
+}

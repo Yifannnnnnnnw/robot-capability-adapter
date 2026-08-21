@@ -54,17 +54,20 @@ class Experiment1ManifestTests(unittest.TestCase):
             )
         )
 
-    def test_manifest_remains_visibly_blocked(self) -> None:
+    def test_manifest_points_to_the_connected_fixed_bundle_set(self) -> None:
         recipe = json.loads(
             (EXPERIMENT_ROOT / "manifest.json").read_text(encoding="utf-8")
         )
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
 
-        self.assertEqual(recipe["status"], "blocked")
-        self.assertEqual(recipe["execution_concurrency"]["status"], "not-admitted")
-        self.assertFalse(resolved["ready_to_expand"])
-        self.assertIsNone(resolved["fixed_validation_bundle_set"])
-        self.assertTrue(resolved["blockers"])
+        self.assertNotIn("status", recipe)
+        self.assertEqual(recipe["execution_concurrency"]["status"], "operational")
+        self.assertTrue(resolved["ready_to_expand"])
+        self.assertEqual(
+            resolved["fixed_validation_bundle_set"],
+            "experiment/experiment1/fixed_validation_bundles/index.json",
+        )
+        self.assertEqual(resolved["blockers"], [])
 
     def test_derived_files_lock_the_authority_selection(self) -> None:
         recipe = json.loads(
@@ -148,7 +151,7 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertFalse(recipe["run_high_level_controller"])
         self.assertFalse(recipe["run_evolution"])
         self.assertEqual(recipe["experience_input"], "empty")
-        self.assertEqual(recipe["execution_concurrency"]["status"], "not-admitted")
+        self.assertEqual(recipe["execution_concurrency"]["status"], "operational")
 
     def test_resolver_rejects_a_b1_high_level_controller(self) -> None:
         recipe = json.loads(

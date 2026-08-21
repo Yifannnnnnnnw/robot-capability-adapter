@@ -1,0 +1,1060 @@
+{
+  "artifact_type": "b1_fixed_validation_suite",
+  "schema_version": "1.0",
+  "suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v1",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
+  "whole_suite_aggregation": {
+    "kind": "all_cases"
+  },
+  "cases": [
+    {
+      "case_id": "G1-H1",
+      "case_variant": "H1",
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "linear_velocity_body_m_s": [
+          0.2,
+          0.0
+        ],
+        "yaw_rate_rad_s": 0.0,
+        "duration_s": 2.2
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G1",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g1"
+        ]
+      }
+    },
+    {
+      "case_id": "G1-H2",
+      "case_variant": "H2",
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "linear_velocity_body_m_s": [
+          0.0,
+          0.2
+        ],
+        "yaw_rate_rad_s": 0.3,
+        "duration_s": 2.6
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G1",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g1"
+        ]
+      }
+    },
+    {
+      "case_id": "G1-H3",
+      "case_variant": "H3",
+      "capability_id": "G1",
+      "method_name": "track_planar_twist",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "linear_velocity_body_m_s": [
+          0.25,
+          0.0
+        ],
+        "yaw_rate_rad_s": -0.3,
+        "duration_s": 3.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G1",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g1"
+        ]
+      }
+    },
+    {
+      "case_id": "G2-H1",
+      "case_variant": "H1",
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "translation_initial_yaw_m": [
+          0.08,
+          0.0
+        ],
+        "yaw_delta_rad": 0.1,
+        "max_duration_s": 5.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G2",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g2"
+        ]
+      }
+    },
+    {
+      "case_id": "G2-H2",
+      "case_variant": "H2",
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "translation_initial_yaw_m": [
+          0.0,
+          0.08
+        ],
+        "yaw_delta_rad": -0.1,
+        "max_duration_s": 5.5
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G2",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g2"
+        ]
+      }
+    },
+    {
+      "case_id": "G2-H3",
+      "case_variant": "H3",
+      "capability_id": "G2",
+      "method_name": "move_body_relative_pose",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "translation_initial_yaw_m": [
+          0.06,
+          0.04
+        ],
+        "yaw_delta_rad": 0.15,
+        "max_duration_s": 6.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G2",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g2"
+        ]
+      }
+    },
+    {
+      "case_id": "G3-H1",
+      "case_variant": "H1",
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "waypoints_initial_yaw_m": [
+          [
+            0.05,
+            0.0
+          ],
+          [
+            0.1,
+            0.0
+          ]
+        ],
+        "max_duration_s": 5.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G3",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g3"
+        ]
+      }
+    },
+    {
+      "case_id": "G3-H2",
+      "case_variant": "H2",
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "waypoints_initial_yaw_m": [
+          [
+            0.04,
+            0.02
+          ],
+          [
+            0.08,
+            0.04
+          ],
+          [
+            0.12,
+            0.04
+          ]
+        ],
+        "max_duration_s": 5.5
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G3",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g3"
+        ]
+      }
+    },
+    {
+      "case_id": "G3-H3",
+      "case_variant": "H3",
+      "capability_id": "G3",
+      "method_name": "trace_planar_path",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "waypoints_initial_yaw_m": [
+          [
+            0.04,
+            -0.02
+          ],
+          [
+            0.08,
+            -0.04
+          ],
+          [
+            0.12,
+            0.0
+          ]
+        ],
+        "max_duration_s": 6.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G3",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g3"
+        ]
+      }
+    },
+    {
+      "case_id": "G4-H1",
+      "case_variant": "H1",
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "target_height_m": 0.26,
+        "max_duration_s": 3.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G4",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g4"
+        ]
+      }
+    },
+    {
+      "case_id": "G4-H2",
+      "case_variant": "H2",
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "target_height_m": 0.29,
+        "max_duration_s": 3.5
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G4",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g4"
+        ]
+      }
+    },
+    {
+      "case_id": "G4-H3",
+      "case_variant": "H3",
+      "capability_id": "G4",
+      "method_name": "set_body_height",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "target_height_m": 0.32,
+        "max_duration_s": 4.0
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G4",
+          "body_name": "base_link"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g4"
+        ]
+      }
+    },
+    {
+      "case_id": "G5-H1",
+      "case_variant": "H1",
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "duration_s": 1.2
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        },
+        "body_quaternions": {
+          "base_link": [
+            0.9987502604,
+            0.0499791693,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G5",
+          "body_name": "base_link",
+          "foot_geom_groups": [
+            [
+              "FL"
+            ],
+            [
+              "FR"
+            ],
+            [
+              "RL"
+            ],
+            [
+              "RR"
+            ]
+          ],
+          "floor_geom_names": [
+            "floor"
+          ],
+          "forbidden_floor_geom_names": [
+            "geom_1",
+            "geom_2",
+            "geom_3",
+            "geom_4",
+            "geom_5",
+            "geom_6",
+            "geom_7",
+            "geom_8",
+            "geom_9",
+            "geom_10",
+            "geom_11",
+            "geom_12",
+            "geom_13"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g5"
+        ]
+      }
+    },
+    {
+      "case_id": "G5-H2",
+      "case_variant": "H2",
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "duration_s": 1.5
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.02
+        },
+        "body_quaternions": {
+          "base_link": [
+            0.9982005399,
+            0.0,
+            0.0599640065,
+            0.0
+          ]
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G5",
+          "body_name": "base_link",
+          "foot_geom_groups": [
+            [
+              "FL"
+            ],
+            [
+              "FR"
+            ],
+            [
+              "RL"
+            ],
+            [
+              "RR"
+            ]
+          ],
+          "floor_geom_names": [
+            "floor"
+          ],
+          "forbidden_floor_geom_names": [
+            "geom_1",
+            "geom_2",
+            "geom_3",
+            "geom_4",
+            "geom_5",
+            "geom_6",
+            "geom_7",
+            "geom_8",
+            "geom_9",
+            "geom_10",
+            "geom_11",
+            "geom_12",
+            "geom_13"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g5"
+        ]
+      }
+    },
+    {
+      "case_id": "G5-H3",
+      "case_variant": "H3",
+      "capability_id": "G5",
+      "method_name": "hold_stable_stance",
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "request": {
+        "duration_s": 1.8
+      },
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        },
+        "body_quaternions": {
+          "base_link": [
+            0.9975510003,
+            -0.0699428473,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "G5",
+          "body_name": "base_link",
+          "foot_geom_groups": [
+            [
+              "FL"
+            ],
+            [
+              "FR"
+            ],
+            [
+              "RL"
+            ],
+            [
+              "RR"
+            ]
+          ],
+          "floor_geom_names": [
+            "floor"
+          ],
+          "forbidden_floor_geom_names": [
+            "geom_1",
+            "geom_2",
+            "geom_3",
+            "geom_4",
+            "geom_5",
+            "geom_6",
+            "geom_7",
+            "geom_8",
+            "geom_9",
+            "geom_10",
+            "geom_11",
+            "geom_12",
+            "geom_13"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#g5"
+        ]
+      }
+    }
+  ]
+}
