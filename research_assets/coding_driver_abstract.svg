@@ -10,27 +10,21 @@
     </style>
   </defs>
 
-  <rect x="24" y="26" width="312" height="168" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
-  <rect x="24" y="26" width="312" height="34" rx="12" fill="#f1f5f9"/>
-  <path d="M 24 48 L 24 60 L 336 60 L 336 48" fill="#f1f5f9"/>
-  <circle cx="44" cy="43" r="5" fill="#ef4444"/>
-  <circle cx="62" cy="43" r="5" fill="#f59e0b"/>
-  <circle cx="80" cy="43" r="5" fill="#22c55e"/>
-  <text x="180" y="48" text-anchor="middle" class="title">driver.py</text>
+  <text x="46" y="44" class="title">driver.py</text>
 
-  <text x="46" y="88" class="mono">
+  <text x="46" y="82" class="mono">
     <tspan class="kw">class</tspan><tspan> </tspan><tspan class="fn">PandaDriver</tspan><tspan>:</tspan>
   </text>
-  <text x="68" y="116" class="mono">
+  <text x="68" y="110" class="mono">
     <tspan class="kw">def</tspan><tspan> </tspan><tspan class="fn">reach</tspan><tspan>(self, request):</tspan>
   </text>
-  <text x="90" y="144" class="mono">
+  <text x="90" y="138" class="mono">
     <tspan>target = request[</tspan><tspan class="str">"target_pose"</tspan><tspan>]</tspan>
   </text>
-  <text x="90" y="172" class="mono">
+  <text x="90" y="166" class="mono">
     <tspan class="comment"># write control commands</tspan>
   </text>
 
-  <rect x="300" y="156" width="3" height="22" fill="#111827"/>
-  <path d="M 286 170 L 315 170" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+  <rect x="300" y="150" width="3" height="22" fill="#111827"/>
+  <path d="M 286 164 L 315 164" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
 </svg>
