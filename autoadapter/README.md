@@ -81,6 +81,13 @@ capability design, fixed `method(request=request)` transport ABI, and condition
 specific primitives. It never receives private cases, reference source, or a
 Framework-owned MuJoCo session outside the Harness.
 
+The separate fixed-interface benchmark slice and its exact per-robot methods
+and source-backed primary gates are recorded in
+[`FIXED_DRIVER_BENCHMARK.md`](FIXED_DRIVER_BENCHMARK.md) and
+[`configs/benchmarks/fixed_driver_v1.json`](configs/benchmarks/fixed_driver_v1.json).
+That slice is useful for bounded driver and high-level-controller comparisons,
+but it is not a substitute for the formal real-model TGCD path above.
+
 A driver becomes a formal attempt only after the model explicitly submits the
 current revision. Submission requires source audit and a successful public
 physics smoke for every sealed capability through the bundled public check;

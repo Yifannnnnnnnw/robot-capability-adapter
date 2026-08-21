@@ -1,0 +1,523 @@
+{
+  "artifact_type": "fixed_driver_benchmark_contract",
+  "schema_version": "1.0",
+  "benchmark_id": "autoadapter2-fixed-driver-v1",
+  "scope": {
+    "kind": "fixed_interface_benchmark_slice",
+    "replaces_formal_tgcd": false,
+    "candidate_artifact": "driver.py",
+    "factory_abi": "build(model, data)",
+    "capability_abi": "method(request=request)",
+    "reference_source_visibility": "framework_only",
+    "source_standard_policy": "copy_exact_public_task_clause",
+    "benchmark_gate_default": "primary_standard",
+    "benchmark_gate_override": "copy_primary_standard_and_replace_threshold_from_benchmark_gate",
+    "reference_measurements_define_thresholds": false
+  },
+  "acceptance": {
+    "capability": "resolved_benchmark_gate_and_all_private_physical_integrity_guards",
+    "robot": "all_selected_capabilities",
+    "cohort": "all_eleven_robots",
+    "formal_evidence": "verdict_plus_complete_framework_video",
+    "source_standard_pass": "reported_separately",
+    "candidate_self_report_is_evidence": false
+  },
+  "capability_profiles": {
+    "metaworld_operations": {
+      "capabilities": [
+        {
+          "capability_id": "reach",
+          "method_name": "reach_task",
+          "semantic": "Move the configured end effector to a requested Cartesian target.",
+          "primary_standard": {
+            "source_task_id": "mw_reach_target",
+            "source_clause_id": "terminal_endpoint",
+            "metric": "end_effector_target_distance",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.05,
+            "temporal": {
+              "kind": "terminal_state"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          },
+          "benchmark_gate": {
+            "threshold": 0.02,
+            "threshold_provenance": "pre_registered_human_approved_study_threshold"
+          }
+        },
+        {
+          "capability_id": "contact",
+          "method_name": "contact_task",
+          "semantic": "Move an ungrasped object to a goal through physical contact.",
+          "primary_standard": {
+            "source_task_id": "mw_push_to_goal",
+            "source_clause_id": "object_goal_distance",
+            "metric": "object_goal_distance",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.05,
+            "temporal": {
+              "kind": "terminal_state_after_push"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          },
+          "benchmark_gate": {
+            "threshold": 0.02,
+            "threshold_provenance": "pre_registered_human_approved_study_threshold"
+          }
+        },
+        {
+          "capability_id": "object",
+          "method_name": "object_task",
+          "semantic": "Grasp, transport, release, and place a free object.",
+          "primary_standard": {
+            "source_task_id": "mw_pick_place",
+            "source_clause_id": "placed_object_distance",
+            "metric": "object_goal_distance",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.07,
+            "temporal": {
+              "kind": "terminal_state_after_release"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          },
+          "benchmark_gate": {
+            "threshold": 0.03,
+            "threshold_provenance": "pre_registered_human_approved_study_threshold"
+          }
+        },
+        {
+          "capability_id": "fixture",
+          "method_name": "fixture_task",
+          "semantic": "Operate a constrained translational or articulated fixture through contact.",
+          "primary_standard": {
+            "source_task_id": "mw_drawer_open",
+            "source_clause_id": "open_handle_error",
+            "metric": "drawer_handle_target_distance",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.03,
+            "temporal": {
+              "kind": "terminal_state_after_pull"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          },
+          "benchmark_gate": {
+            "threshold": 0.015,
+            "threshold_provenance": "pre_registered_human_approved_study_threshold"
+          }
+        },
+        {
+          "capability_id": "rotation",
+          "method_name": "rotation_task",
+          "semantic": "Drive a constrained rotary fixture to its requested target.",
+          "primary_standard": {
+            "source_task_id": "mw_faucet_open",
+            "source_clause_id": "faucet_target_distance",
+            "metric": "faucet_target_distance",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.07,
+            "temporal": {
+              "kind": "terminal_state_after_rotation"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          },
+          "benchmark_gate": {
+            "threshold": 0.03,
+            "threshold_provenance": "pre_registered_human_approved_study_threshold"
+          }
+        }
+      ]
+    },
+    "go2_locomotion": {
+      "capabilities": [
+        {
+          "capability_id": "planar_motion",
+          "method_name": "calibrate_planar_motion",
+          "semantic": "Track a requested planar velocity on flat ground.",
+          "primary_standard": {
+            "source_task_id": "GO2-T01",
+            "source_clause_id": "tracking_speed",
+            "metric": "mean_body_planar_speed",
+            "unit": "m/s",
+            "comparator": ">=",
+            "threshold": 0.4,
+            "temporal": {
+              "kind": "terminal_state"
+            },
+            "aggregation": {
+              "kind": "per_trial"
+            }
+          }
+        },
+        {
+          "capability_id": "step_transition",
+          "method_name": "calibrate_step_transition",
+          "semantic": "Move all four feet across a discrete elevation transition.",
+          "primary_standard": {
+            "source_task_id": "GO2-T02",
+            "source_clause_id": "step_ascent_completion",
+            "metric": "all_feet_step_completion",
+            "unit": "binary",
+            "comparator": "==",
+            "threshold": 1.0,
+            "temporal": {
+              "kind": "within",
+              "duration_s": 10.0
+            },
+            "aggregation": {
+              "kind": "per_trial"
+            }
+          }
+        },
+        {
+          "capability_id": "course_navigation",
+          "method_name": "calibrate_course_navigation",
+          "semantic": "Traverse an ordered mixed-obstacle route.",
+          "primary_standard": {
+            "source_task_id": "GO2-T06",
+            "source_clause_id": "mixed_course_completion",
+            "metric": "ordered_obstacle_completion",
+            "unit": "ratio",
+            "comparator": "==",
+            "threshold": 1.0,
+            "temporal": {
+              "kind": "eventual"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          }
+        },
+        {
+          "capability_id": "rough_terrain",
+          "method_name": "calibrate_rough_terrain",
+          "semantic": "Maintain locomotion progress over a rigid rough-terrain field.",
+          "primary_standard": {
+            "source_task_id": "GO2-T12",
+            "source_clause_id": "travel_distance",
+            "metric": "maximum_travel_distance",
+            "unit": "m",
+            "comparator": ">=",
+            "threshold": 4.983,
+            "temporal": {
+              "kind": "terminal_state"
+            },
+            "aggregation": {
+              "kind": "per_trial_mean"
+            }
+          }
+        },
+        {
+          "capability_id": "parkour_obstacles",
+          "method_name": "calibrate_parkour_obstacles",
+          "semantic": "Execute one ordered parkour-style obstacle transition.",
+          "primary_standard": {
+            "source_task_id": "GO2-T16",
+            "source_clause_id": "table_step_off",
+            "metric": "start_table_center_distance",
+            "unit": "m",
+            "comparator": ">=",
+            "threshold": 0.7,
+            "temporal": {
+              "kind": "eventual"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          }
+        },
+        {
+          "capability_id": "parkour_course",
+          "method_name": "calibrate_parkour_course",
+          "semantic": "Complete the ordered obstacle sequence of the source-derived course.",
+          "primary_standard": {
+            "source_task_id": "GO2-T20",
+            "source_clause_id": "course_order",
+            "metric": "ordered_course_completion",
+            "unit": "ratio",
+            "comparator": "==",
+            "threshold": 1.0,
+            "temporal": {
+              "kind": "eventual"
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          }
+        }
+      ]
+    },
+    "leap_dexterity": {
+      "capabilities": [
+        {
+          "capability_id": "elementary_contact",
+          "method_name": "ec_task",
+          "semantic": "Execute a source-defined elementary in-hand coordination pattern.",
+          "primary_standard": {
+            "source_task_id": "ec_pinch",
+            "source_clause_id": "three_source_pattern_successes",
+            "metric": "ec_pinch_successful_trial_count",
+            "unit": "trial",
+            "comparator": "==",
+            "threshold": 3,
+            "temporal": {
+              "kind": "fixed_trials",
+              "trial_count": 3
+            },
+            "aggregation": {
+              "kind": "all_trials"
+            }
+          }
+        },
+        {
+          "capability_id": "fingertip_reach",
+          "method_name": "reach_task",
+          "semantic": "Move all four fingertips to one Cartesian goal vector.",
+          "primary_standard": {
+            "source_task_id": "gym_hand_reach_all_fingertips",
+            "source_clause_id": "all_fingertip_goal_error",
+            "metric": "concatenated_fingertip_cartesian_l2_error",
+            "unit": "m",
+            "comparator": "<",
+            "threshold": 0.00894427190999916,
+            "temporal": {
+              "kind": "terminal_step",
+              "max_control_steps": 50
+            },
+            "aggregation": {
+              "kind": "all_four_fingertips"
+            }
+          }
+        },
+        {
+          "capability_id": "block_pose",
+          "method_name": "block_task",
+          "semantic": "Manipulate a free block toward a requested full pose.",
+          "primary_standard": {
+            "source_task_id": "gym_hand_manipulate_block_full_pose",
+            "source_clause_id": "block_position_error",
+            "metric": "block_target_euclidean_position_error",
+            "unit": "m",
+            "comparator": "<",
+            "threshold": 0.01,
+            "temporal": {
+              "kind": "terminal_step",
+              "max_control_steps": 100
+            },
+            "aggregation": {
+              "kind": "same_state_conjunction"
+            }
+          }
+        },
+        {
+          "capability_id": "joint_pose",
+          "method_name": "pose_task",
+          "semantic": "Move all sixteen hand joints to a requested fixed pose.",
+          "primary_standard": {
+            "source_task_id": "robel_dclaw_pose_fixed",
+            "source_clause_id": "maximum_joint_pose_error",
+            "metric": "maximum_absolute_joint_position_error",
+            "unit": "rad",
+            "comparator": "<",
+            "threshold": 0.17453292519943295,
+            "temporal": {
+              "kind": "terminal_step",
+              "max_control_steps": 80,
+              "duration_s": 4
+            },
+            "aggregation": {
+              "kind": "maximum_over_all_16_joints"
+            }
+          }
+        },
+        {
+          "capability_id": "fixture_motion",
+          "method_name": "fixture_task",
+          "semantic": "Turn a fixed-axis palm-scale fixture through fingertip contact.",
+          "primary_standard": {
+            "source_task_id": "robel_dclaw_turn_fixed",
+            "source_clause_id": "fixture_target_angle_error",
+            "metric": "absolute_wrapped_fixture_target_angle_error",
+            "unit": "rad",
+            "comparator": "<",
+            "threshold": 0.1,
+            "temporal": {
+              "kind": "terminal_step",
+              "max_control_steps": 40,
+              "duration_s": 4
+            },
+            "aggregation": {
+              "kind": "single_trial"
+            }
+          }
+        },
+        {
+          "capability_id": "object_hold",
+          "method_name": "hold_task",
+          "semantic": "Keep a free palm-supported object at its requested target.",
+          "primary_standard": {
+            "source_task_id": "myosuite_object_hold_fixed",
+            "source_clause_id": "minimum_solved_steps",
+            "metric": "object_hold_solved_control_step_count",
+            "unit": "control_step",
+            "comparator": ">",
+            "threshold": 5,
+            "temporal": {
+              "kind": "fixed_horizon",
+              "max_control_steps": 75
+            },
+            "aggregation": {
+              "kind": "count_successful_steps"
+            }
+          }
+        },
+        {
+          "capability_id": "baoding",
+          "method_name": "baoding_task",
+          "semantic": "Track two free balls on the fixed source-derived orbit.",
+          "primary_standard": {
+            "source_task_id": "myosuite_baoding_p1",
+            "source_clause_id": "perfect_two_ball_tracking_fraction",
+            "metric": "mean_two_ball_solved_fraction",
+            "unit": "ratio",
+            "comparator": "==",
+            "threshold": 1,
+            "temporal": {
+              "kind": "fixed_horizon",
+              "max_control_steps": 200
+            },
+            "aggregation": {
+              "kind": "mean_over_control_steps"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "robots": [
+    {
+      "robot_configuration_id": "robotstudio_so101",
+      "display_name": "SO-101",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceSO101Driver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "display_name": "Unitree Go2",
+      "capability_profile_id": "go2_locomotion",
+      "capability_ids": ["planar_motion", "step_transition", "course_navigation", "rough_terrain", "parkour_obstacles", "parkour_course"],
+      "reference_control": {
+        "class_name": "ReferenceGo2Driver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "franka_panda",
+      "display_name": "Franka Panda",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceFrankaPandaDriver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "kinova_gen3_robotiq_2f85",
+      "display_name": "Kinova Gen3 + Robotiq 2F-85",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceKinovaGen3Robotiq2F85Driver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "ufactory_xarm7",
+      "display_name": "UFACTORY xArm7",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceUfactoryXarm7Driver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "universal_robots_ur5e_robotiq_2f85",
+      "display_name": "UR5e + Robotiq 2F-85",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceUR5eRobotiq2F85Driver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "piper",
+      "display_name": "Piper",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferencePiperDriver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "kuka_iiwa_14",
+      "display_name": "KUKA iiwa 14",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceKukaIiwa14Driver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "leap_hand",
+      "display_name": "LEAP Hand",
+      "capability_profile_id": "leap_dexterity",
+      "capability_ids": ["elementary_contact", "fingertip_reach", "block_pose", "joint_pose", "fixture_motion", "object_hold", "baoding"],
+      "reference_control": {
+        "class_name": "ReferenceLeapHandDriver",
+        "mode": "direct_fixed_interface"
+      }
+    },
+    {
+      "robot_configuration_id": "hello_robot_stretch_2",
+      "display_name": "Hello Robot Stretch 2",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceStretch2Driver",
+        "mode": "framework_renderer"
+      }
+    },
+    {
+      "robot_configuration_id": "aloha_2",
+      "display_name": "ALOHA 2",
+      "capability_profile_id": "metaworld_operations",
+      "capability_ids": ["reach", "contact", "object", "fixture", "rotation"],
+      "reference_control": {
+        "class_name": "ReferenceAloha2Driver",
+        "mode": "framework_renderer"
+      }
+    }
+  ]
+}
