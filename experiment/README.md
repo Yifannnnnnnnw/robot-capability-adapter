@@ -13,3 +13,6 @@ applicable authority.
 Current experiment:
 
 - `experiment1/EXPERIMENT_1_AUTHORITY.md` — the sole authority for Experiment 1.
+- `experiment1/B1_DRIVER_VALIDATION_CRITERIA.md` — non-normative, human-readable
+  criteria for the five Experiment 1 robots, derived from the matching LaTeX
+  appendix; it is not an executable validation suite.
