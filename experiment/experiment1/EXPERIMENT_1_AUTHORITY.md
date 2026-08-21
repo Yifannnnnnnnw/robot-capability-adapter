@@ -5,15 +5,17 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.27`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.2`<br>
+> **Revision:** `0.1.3`<br>
 > **Effective date:** 2026-08-21<br>
 > **Design status:** active and prospectively fixed; pre-run preparation active
 
-Revision `0.1.2` fixes the sole start prerequisite: all five public Driver
-contracts and their Harness-evaluable validation criteria must be clear, and
-the isolated STUDY-to-generation/Repair/validation route must be usable while
-recording the required evidence. Task-blind reference calibration is not a
-prerequisite or an Experiment 1 input. Revision `0.1.1` organized Experiment 1 around the experimental object,
+Revision `0.1.3` fixes every Producer deployment to a company-hosted API and
+prohibits local-weight or local-inference substitutions. Revision `0.1.2`
+fixes the sole start prerequisite: all five public Driver contracts and their
+Harness-evaluable validation criteria must be clear, and the isolated
+STUDY-to-generation/Repair/validation route must be usable while recording the
+required evidence. Task-blind reference calibration is not a prerequisite or
+an Experiment 1 input. Revision `0.1.1` organized Experiment 1 around the experimental object,
 required preparation, and required records, and prospectively fixes the
 timing, submitted-attempt, physical provider-request, and observable action
 trace for every cell. It does not change the cohort, factors, replicate plan,
@@ -103,6 +105,13 @@ The fixed family set contains exactly seven entries:
 | `M5` | DeepSeek V4 Pro | DeepSeek |
 | `M6` | Ministral 3 8B | Mistral |
 | `M7` | Qwen3 32B | Alibaba |
+
+All seven Producers are invoked through company-hosted APIs. Experiment 1 does
+not use downloaded weights, self-hosted inference, or a local model as a
+substitute. A direct vendor endpoint or an organization-approved company API
+gateway is acceptable only when its exact route and returned model identity
+are recorded and the gateway is verified to serve the declared family; the
+deployment route is fixed per backbone before its first affected cell.
 
 Before cells for one backbone are dispatched, the manifest must pin that
 backbone's exact provider model identifier and revision, endpoint/region,
@@ -359,7 +368,8 @@ run outputs, and Experiment 1-specific analysis. `AutoAdapter-Bench/` remains a
 reusable benchmark dependency and must not restate this experiment's cohort,
 R, matrix count, stopping decision, or results.
 
-Any change to the five robots, seven backbone families, two conditions, R=3
+Any change to the five robots, seven backbone families, company-hosted API
+deployment boundary, two conditions, R=3
 primary design, attempt budget, fixed-input boundary, primary outcomes,
 mandatory recording hierarchy/action classification, or extension rule
 requires a new revision of this file made before affected outcomes are

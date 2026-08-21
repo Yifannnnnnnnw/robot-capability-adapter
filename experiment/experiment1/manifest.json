@@ -1,12 +1,16 @@
 {
   "schema_version": 1,
   "authority": "EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.2",
+  "authority_revision": "0.1.3",
   "experiment_id": "experiment1-b1-core-r3",
   "track": "B1",
   "status": "blocked",
   "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
   "backbone_set": "../../AutoAdapter-Bench/components/backbone_sets/declared-seven.json",
+  "backbone_runtime_configs": {
+    "M5": "providers/M5-deepseek-v4-pro.json"
+  },
+  "model_execution_policy": "company-hosted-api-only",
   "replicate_set": "components/replicates-core-r3.json",
   "fixed_validation_bundle_set": null,
   "condition_coverage": [

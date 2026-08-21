@@ -103,6 +103,23 @@ class Experiment1ManifestTests(unittest.TestCase):
             ],
         )
         self.assertEqual(backbones, ["M1", "M2", "M3", "M4", "M5", "M6", "M7"])
+        self.assertEqual(
+            recipe["backbone_runtime_configs"],
+            {"M5": "providers/M5-deepseek-v4-pro.json"},
+        )
+        self.assertEqual(recipe["model_execution_policy"], "company-hosted-api-only")
+        m5 = json.loads(
+            (EXPERIMENT_ROOT / "providers" / "M5-deepseek-v4-pro.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(m5["backbone_id"], "M5")
+        self.assertEqual(m5["deployment_mode"], "company-hosted-api")
+        self.assertEqual(m5["exact_model_id"], "deepseek-v4-pro")
+        self.assertEqual(m5["transport"], "openai-compatible")
+        self.assertEqual(m5["inference_settings"]["thinking"], "disabled")
+        self.assertEqual(m5["inference_settings"]["temperature"], 0.0)
+        self.assertEqual(m5["price_snapshot"]["snapshot_date"], "2026-08-21")
         self.assertEqual(replicates, ["r01", "r02", "r03"])
         self.assertEqual(recipe["extension_replicate_ids"], ["r04", "r05"])
         self.assertEqual(recipe["maximum_cumulative_generation_condition_replicates"], 350)
