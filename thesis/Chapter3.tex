@@ -145,7 +145,7 @@ model families are included to examine whether successful driver synthesis and
 interface use are confined to proprietary systems. The resulting comparisons
 are conditional on these seven models and the benchmark conditions.
 
-The B1 cohort contains 14 exact robot configurations spanning manipulation,
+The B1 cohort contains 11 exact robot configurations spanning manipulation,
 dexterous-hand, legged, humanoid, mobile, and bimanual platforms. The
 skeleton-assisted condition covers the complete cohort. The five-robot
 from-scratch subset was selected before outcomes were inspected to bound the
@@ -158,48 +158,50 @@ Appendix~\ref{tab:appendix-benchmark-scope}.
 
 \subsection{Success Criteria and Validation}
 
-In B1, each robot's public Task Library provides source-backed task standards
-from which a backbone formulates capability-level criteria. For that robot, the
-source task standards, private task instances, measurement semantics, and
-Harness verdict rules are held constant across backbones. Before driver
-generation, the implementation-blind Independent Validation Compiler audits
-each criterion against its supporting task clauses. It rejects any criterion
-that omits an obligation, lacks source support, or weakens the source rule, and
-compiles the accepted criteria into a sealed private validation suite.
+Industrial robot performance standards separate measurement procedures from
+application-specific acceptance limits. ISO~9283 defines performance criteria
+and related test methods for manipulating industrial robots, including pose
+accuracy, pose repeatability, path accuracy, and path repeatability
+\citep{iso9283}. It does not prescribe one numerical pass threshold for every
+robot and application. ISO~9946 instead standardises how manufacturers present
+robot characteristics \citep{iso9946}. For context, Universal Robots reports
+UR5e pose repeatability of \(\pm 0.03\,\mathrm{mm}\) under ISO~9283, whereas
+Franka Robotics reports less than \(\pm 0.1\,\mathrm{mm}\) for Franka
+Research~3 under specified workspace and pose conditions
+\citep{universalrobots2026ur5e,franka2026research3}. These figures are
+manufacturer-reported repeatability specifications, not acceptance thresholds
+adopted by this thesis. Repeatability describes the dispersion among repeated
+visits to the same commanded pose and is distinct from absolute accuracy
+\citep{messina2019target}. A single terminal endpoint error measured in
+Direct MuJoCo is therefore neither an ISO~9283 repeatability measurement nor
+evidence of industrial positioning accuracy.
 
-The trusted Harness imports each submitted driver in isolation, resets the
-MuJoCo environment, invokes the required operations, advances the physics
-simulation, and measures the resulting simulator state
-\citep{todorov2012mujoco}. A driver passes B1 only if every compiled validation
-case passes. Successful import, public smoke-test results, method return values,
-and model self-reports are diagnostic evidence only and cannot determine the
-verdict. When Repair is used, each revised submission is evaluated against the
-same sealed suite.
+The reach-success criterion used in this study comes from public
+reinforcement-learning task definitions. At the pinned Meta-World commit,
+Sawyer Reach v3 uses \(0.05\,\mathrm{m}\) as the Euclidean-distance
+threshold between the tool centre point and its target
+\citep{farama2026metaworldreach}. Farama FetchReach likewise uses
+\(0.05\,\mathrm{m}\) as the Euclidean-distance threshold between the end
+effector and its goal \citep{farama2026fetchreach}. Meta-World includes the
+exact boundary, whereas the FetchReach documentation uses a strict
+inequality.
 
-B2 task criteria are drawn from fixed versions of primary benchmark
-implementations or industrial standards. Each scoring clause specifies its
-metric, comparator, threshold, temporal requirement, and aggregation rule. For
-example, the SO-101 reach clause adapts Meta-World's
-\texttt{sawyer\_reach\_v3}: a single trial passes when the terminal Euclidean
-distance between the end effector and target is at most \(0.05\,\mathrm{m}\).
-It therefore measures terminal positioning accuracy. The robot and scene are
-adapted, while the source metric, unit, comparator, and threshold are retained.
-Because the source implementation defines \(0.05\,\mathrm{m}\) without giving
-a separate rationale for that value, the threshold is reported as Meta-World's
-operational definition; where a source does explain its threshold, that
-rationale is reported. Any robot-specific adaptation is stated explicitly and
-may not weaken the source obligation. The complete task criteria, sources, and
-adaptations are reported in Appendix~[X].
+This thesis therefore interprets \(0.05\,\mathrm{m}\) as a source-benchmark
+task-completion convention, not as an industrial positioning tolerance. A
+position-only binary result does not establish end-effector orientation,
+stable dwell, collision-free execution, contact validity, or physical safety;
+these properties require separate criteria and trusted guards. Reference-driver
+endpoint errors are retained only as positive-control execution results. They
+test whether the simulator, measurement binding, trusted Harness, and
+reference controller can execute the declared task under the evaluated
+conditions. They are not used to select, tune, or justify the acceptance
+threshold, because deriving a threshold from those outcomes would make the
+requirement depend on the calibration controller used to exercise it.
 
-For B2, the Harness executes each episode through the fixed driver and declares
-complete-task success only when every required clause passes. A controller
-self-report or a valid behaviour tree cannot substitute for this
-simulator-based verdict, which is not evidence of hardware performance.
 
-\section[Driver-Synthesis Track]{Driver-Synthesis Track}
+\section[Driver-Synthesis Track]{Driver-Synthesis Track }
 
 \section[Capability-Interface Use Track]{Capability-Interface Use Track}
 
-\section[Results]{Results}
 
 \section[Discussion]{Discussion}
