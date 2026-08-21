@@ -1012,14 +1012,34 @@ def _append_actions(
         appended.append(
             {
                 "iteration": len(record["actions"]) + len(appended) + 1,
+                "provider_call_index": call.get("call_index"),
                 "model_turn_index": call.get("model_turn_index"),
                 "stage": outer_stage,
                 "target_attempt": target_attempt,
                 "elapsed_s": call.get("elapsed_s"),
+                "input_tokens": (
+                    call.get("tokens", {}).get("input_tokens")
+                    if isinstance(call.get("tokens"), Mapping)
+                    else None
+                ),
+                "output_tokens": (
+                    call.get("tokens", {}).get("output_tokens")
+                    if isinstance(call.get("tokens"), Mapping)
+                    else None
+                ),
                 "tool_name": tools[0] if len(tools) == 1 else None,
                 "tool_names": tools,
                 "tool_outcome": outcome,
                 "action_type": action_type,
+                "plot_action_type": (
+                    "read_or_plan"
+                    if action_type == "observe_or_plan"
+                    else (
+                        "execute_error"
+                        if action_type == "execute_error"
+                        else "execute_clean"
+                    )
+                ),
                 "submission_event": submission,
                 "stage_transition": None,
             }
@@ -1028,6 +1048,7 @@ def _append_actions(
         action["submission_event"] for action in appended
     ):
         appended[-1]["action_type"] = "submit"
+        appended[-1]["plot_action_type"] = "execute_clean"
         appended[-1]["submission_event"] = accepted_submission
     if appended:
         appended[-1]["stage_transition"] = transition
@@ -1098,14 +1119,37 @@ def _refresh_derived(record: dict[str, Any]) -> None:
             previous_stage = stage
     costs = [call.get("per_call_cost") for call in calls]
     known_costs = [float(value) for value in costs if isinstance(value, (int, float))]
+    action_type_counts = {
+        name: sum(1 for action in actions if action.get("action_type") == name)
+        for name in (
+            "observe_or_plan",
+            "execute_clean",
+            "execute_error",
+            "submit",
+        )
+    }
+    stacked_action_counts = {
+        "read_or_plan": action_type_counts["observe_or_plan"],
+        "execute_clean": (
+            action_type_counts["execute_clean"] + action_type_counts["submit"]
+        ),
+        "execute_error": action_type_counts["execute_error"],
+    }
+    known_input = token_totals.get("input_tokens")
+    known_output = token_totals.get("output_tokens")
+    total_tokens = (
+        int(known_input) + int(known_output)
+        if isinstance(known_input, int) and isinstance(known_output, int)
+        else None
+    )
+    iteration_count = len(actions)
+    execution_error_count = action_type_counts["execute_error"]
     record["derived"] = {
         "submitted_attempt_count": sum(
             1 for attempt in attempts if attempt.get("submission_accepted") is True
         ),
-        "iteration_count": len(actions),
-        "execution_error_count": sum(
-            1 for action in actions if action.get("action_type") == "execute_error"
-        ),
+        "iteration_count": iteration_count,
+        "execution_error_count": execution_error_count,
         "provider_error_count": sum(
             1 for call in calls if call.get("status") == "failed"
         ),
@@ -1114,10 +1158,20 @@ def _refresh_derived(record: dict[str, Any]) -> None:
         ),
         "token_totals": {
             **token_totals,
+            "total_tokens": total_tokens,
             "other_provider_token_categories": other_tokens,
         },
+        "action_type_counts": action_type_counts,
+        "stacked_action_counts": stacked_action_counts,
         "total_model_cost": sum(known_costs) if known_costs else None,
         "stage_boundaries": boundaries,
+        "visualization_summary": {
+            "iteration_count": iteration_count,
+            "execution_error_count": execution_error_count,
+            "total_tokens": total_tokens,
+            "stacked_action_counts": stacked_action_counts,
+            "stage_boundaries": boundaries,
+        },
     }
 
 

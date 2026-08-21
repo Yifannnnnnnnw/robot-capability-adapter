@@ -25,6 +25,7 @@ from experiment.experiment1.runtime.b1 import (  # noqa: E402
     FixedBundle,
     RecordingClient,
     RunnerHooks,
+    _refresh_derived,
     _validation_case_counts,
     _validated_runtime_model_config,
     run_single_cell,
@@ -186,6 +187,66 @@ class ScriptedRoute:
 
 
 class Experiment1B1RunnerTests(unittest.TestCase):
+    def test_plot_ready_iteration_summary_is_derived_from_raw_records(self) -> None:
+        record = {
+            "provider_calls": [
+                {
+                    "status": "succeeded",
+                    "retry_index": 0,
+                    "per_call_cost": None,
+                    "tokens": {"input_tokens": 100, "output_tokens": 20},
+                },
+                {
+                    "status": "succeeded",
+                    "retry_index": 0,
+                    "per_call_cost": None,
+                    "tokens": {"input_tokens": 50, "output_tokens": 10},
+                },
+            ],
+            "actions": [
+                {"iteration": 1, "stage": "study", "action_type": "observe_or_plan"},
+                {"iteration": 2, "stage": "generate", "action_type": "execute_clean"},
+                {"iteration": 3, "stage": "generate", "action_type": "execute_error"},
+                {"iteration": 4, "stage": "repair", "action_type": "submit"},
+            ],
+            "attempts": [{"submission_accepted": True}],
+        }
+
+        _refresh_derived(record)
+
+        self.assertEqual(
+            record["derived"]["action_type_counts"],
+            {
+                "observe_or_plan": 1,
+                "execute_clean": 1,
+                "execute_error": 1,
+                "submit": 1,
+            },
+        )
+        self.assertEqual(
+            record["derived"]["stacked_action_counts"],
+            {"read_or_plan": 1, "execute_clean": 2, "execute_error": 1},
+        )
+        self.assertEqual(record["derived"]["token_totals"]["total_tokens"], 180)
+        self.assertEqual(
+            record["derived"]["visualization_summary"],
+            {
+                "iteration_count": 4,
+                "execution_error_count": 1,
+                "total_tokens": 180,
+                "stacked_action_counts": {
+                    "read_or_plan": 1,
+                    "execute_clean": 2,
+                    "execute_error": 1,
+                },
+                "stage_boundaries": [
+                    {"stage": "study", "iteration": 1},
+                    {"stage": "generate", "iteration": 2},
+                    {"stage": "repair", "iteration": 4},
+                ],
+            },
+        )
+
     def test_case_counts_mark_missing_and_unfinished_trials_incomplete(self) -> None:
         counts = _validation_case_counts(
             {
