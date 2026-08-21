@@ -9,8 +9,10 @@
 > **Effective date:** 2026-08-21<br>
 > **Design status:** active and prospectively fixed; pre-run preparation active
 
-Revision `0.1.3` fixes every Producer deployment to a company-hosted API and
-prohibits local-weight or local-inference substitutions. Revision `0.1.2`
+Revision `0.1.3` fixes every Producer deployment to a remotely hosted API and
+prohibits local-weight or local-inference substitutions. M1--M4, M6, and M7
+use the organization company gateway; M5 uses the official DeepSeek API with
+the project owner's account. Revision `0.1.2`
 fixes the sole start prerequisite: all five public Driver contracts and their
 Harness-evaluable validation criteria must be clear, and the isolated
 STUDY-to-generation/Repair/validation route must be usable while recording the
@@ -106,12 +108,14 @@ The fixed family set contains exactly seven entries:
 | `M6` | Ministral 3 8B | Mistral |
 | `M7` | Qwen3 32B | Alibaba |
 
-All seven Producers are invoked through company-hosted APIs. Experiment 1 does
-not use downloaded weights, self-hosted inference, or a local model as a
-substitute. A direct vendor endpoint or an organization-approved company API
-gateway is acceptable only when its exact route and returned model identity
-are recorded and the gateway is verified to serve the declared family; the
-deployment route is fixed per backbone before its first affected cell.
+All seven Producers are invoked through remotely hosted APIs. M1--M4, M6, and
+M7 use the organization company gateway. M5 uses the official DeepSeek API
+through the project owner's account and must return the exact
+`deepseek-v4-pro` identity. Experiment 1 does not use downloaded weights,
+self-hosted inference, or a local model as a substitute. A direct vendor
+endpoint or an organization-approved company API gateway is acceptable only
+when its exact route and returned model identity are recorded; the deployment
+route is fixed per backbone before its first affected cell.
 
 Before cells for one backbone are dispatched, the manifest must pin that
 backbone's exact provider model identifier and revision, endpoint/region,
@@ -368,8 +372,8 @@ run outputs, and Experiment 1-specific analysis. `AutoAdapter-Bench/` remains a
 reusable benchmark dependency and must not restate this experiment's cohort,
 R, matrix count, stopping decision, or results.
 
-Any change to the five robots, seven backbone families, company-hosted API
-deployment boundary, two conditions, R=3
+Any change to the five robots, seven backbone families, remotely hosted API
+deployment boundary or fixed per-backbone route, two conditions, R=3
 primary design, attempt budget, fixed-input boundary, primary outcomes,
 mandatory recording hierarchy/action classification, or extension rule
 requires a new revision of this file made before affected outcomes are

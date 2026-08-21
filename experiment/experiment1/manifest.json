@@ -15,7 +15,7 @@
     "M6": "providers/M6-company-api-ministral-3-8b.json",
     "M7": "providers/M7-company-api-qwen3-32b.json"
   },
-  "model_execution_policy": "company-hosted-api-only",
+  "model_execution_policy": "remote-hosted-api-only",
   "replicate_set": "components/replicates-core-r3.json",
   "fixed_validation_bundle_set": "fixed_validation_bundles/index.json",
   "condition_coverage": [

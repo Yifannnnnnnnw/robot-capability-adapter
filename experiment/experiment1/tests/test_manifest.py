@@ -118,7 +118,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                 "M7": "providers/M7-company-api-qwen3-32b.json",
             },
         )
-        self.assertEqual(recipe["model_execution_policy"], "company-hosted-api-only")
+        self.assertEqual(recipe["model_execution_policy"], "remote-hosted-api-only")
         m1 = json.loads(
             (EXPERIMENT_ROOT / "providers" / "M1-company-api-sonnet-4-6.json").read_text(
                 encoding="utf-8"
