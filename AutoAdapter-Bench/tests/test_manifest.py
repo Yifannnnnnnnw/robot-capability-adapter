@@ -51,7 +51,7 @@ class ManifestContractTests(unittest.TestCase):
         self.assertEqual(resolved["unit_count"], 525)
         self.assertEqual(resolved["maximum_submitted_driver_attempts"], 1575)
 
-    def test_b1_stops_before_task_demo_and_pairs_selected_cases(self) -> None:
+    def test_b1_starts_at_study_and_pairs_selected_cases(self) -> None:
         protocol = json.loads(
             (BENCHMARK_ROOT / "protocols" / "b1-driver-synthesis.json").read_text()
         )
@@ -66,8 +66,33 @@ class ManifestContractTests(unittest.TestCase):
         primary_only = sum(conditions == {"skeleton-assisted"} for conditions in conditions_by_pair.values())
         self.assertFalse(protocol["run_task_demo"])
         self.assertFalse(protocol["run_high_level_controller"])
+        self.assertEqual(
+            protocol["stages"],
+            [
+                "study",
+                "generate",
+                "private-driver-validation",
+                "bounded-repair",
+                "final-driver-outcome",
+            ],
+        )
+        self.assertFalse(protocol["fixed_input_policy"]["b1_model_authored"])
+        self.assertEqual(
+            set(protocol["fixed_input_policy"]["shared_across"]),
+            {"backbone", "replicate", "generation-condition"},
+        )
         self.assertEqual(paired, 5 * 7 * 5)
         self.assertEqual(primary_only, 5 * 7 * 5)
+
+    def test_b1_remains_blocked_until_fixed_validation_bundles_exist(self) -> None:
+        resolved = manifest.resolve_b1()
+
+        self.assertIsNone(resolved["fixed_validation_bundle_set"])
+        self.assertFalse(resolved["ready_to_expand"])
+        self.assertIn(
+            "fixed per-robot B1 validation bundle set is missing",
+            resolved["blockers"],
+        )
 
     def test_chapter3_cohort_preserves_missing_target_without_substitution(self) -> None:
         resolved = manifest.resolve_b1()

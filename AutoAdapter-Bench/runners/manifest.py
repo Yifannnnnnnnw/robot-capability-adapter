@@ -170,6 +170,20 @@ def resolve_b1(recipe_path: Path = DEFAULT_B1_RECIPE) -> dict[str, Any]:
             f"{recipe_path}: maximum submitted attempts do not match unit count"
         )
 
+    blockers = list(recipe.get("blocked_reasons", []))
+    fixed_bundle_value = recipe.get("fixed_validation_bundle_set")
+    fixed_bundle_path: str | None = None
+    if not fixed_bundle_value:
+        blockers.append("fixed per-robot B1 validation bundle set is missing")
+    else:
+        bundle_path, _ = _reference(
+            recipe_path,
+            fixed_bundle_value,
+            "fixed_validation_bundle_set",
+        )
+        fixed_bundle_path = str(bundle_path.relative_to(BENCHMARK_ROOT))
+    blockers = list(dict.fromkeys(str(item) for item in blockers))
+
     package_state = package_inventory(robot_ids)
     return {
         "experiment_id": recipe.get("experiment_id"),
@@ -182,7 +196,10 @@ def resolve_b1(recipe_path: Path = DEFAULT_B1_RECIPE) -> dict[str, Any]:
         "robot_count": len(robot_ids),
         "backbone_count": len(backbone_ids),
         "replicate_count": len(replicate_ids),
+        "fixed_validation_bundle_set": fixed_bundle_path,
         "package_state": package_state,
+        "ready_to_expand": package_state["all_units_runnable"] and not blockers,
+        "blockers": blockers,
         "units": units,
     }
 
@@ -304,9 +321,7 @@ def validation_summary(
         "b1": b1_summary,
         "b2": b2,
         "structurally_valid": True,
-        "ready_for_formal_execution": (
-            b1["package_state"]["all_units_runnable"] and b2["ready_to_expand"]
-        ),
+        "ready_for_formal_execution": b1["ready_to_expand"] and b2["ready_to_expand"],
     }
 
 

@@ -35,7 +35,9 @@ runs/                          ignored local outputs
 ## Benchmark split
 
 - **B1 Driver Synthesis** ends after private driver validation and bounded
-  Repair. It does not run Task Demo or a high-level controller.
+  Repair. It consumes a fixed prior-experiment validation bundle per robot,
+  begins at STUDY, and does not run TGCD, IVC, Task Demo, or a high-level
+  controller.
 - **B2 Capability-Interface Use** uses one fixed validated driver and interface,
   runs compositional tasks under a selected high-level controller, and uses the
   trusted Harness for physical task verdicts.

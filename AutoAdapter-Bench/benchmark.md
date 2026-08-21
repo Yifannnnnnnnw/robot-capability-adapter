@@ -2,7 +2,7 @@
 
 > **Status:** approved design draft; formal evidence remains blocked until the
 > applicable manifests and mainline admission gates are frozen<br>
-> **Authority baseline:** `AA2-AUTH` revision `0.19.21`<br>
+> **Authority baseline:** `AA2-AUTH` revision `0.19.22`<br>
 > **Prepared:** 2026-08-21<br>
 > **Runtime boundary:** canonical `autoadapter/` Direct-MuJoCo mainline
 
@@ -96,22 +96,28 @@ The complete B1 design therefore contains 525 generation-condition replicates.
 At no more than three submitted attempts per condition, the maximum is 1,575
 driver submissions.
 
-For every selected five-robot `robot x backbone x replicate` block, the two
-conditions reuse one sealed capability design and one sealed complete
-validation suite. Their model sessions, workspaces, candidate drivers,
-validation feedback, and Repair histories remain isolated. The other five
-robots enter only the primary condition.
+Before B1 begins, each robot receives one versioned validation bundle produced
+by the preceding capability-design experiment. The bundle contains the fixed
+robot capability interface, capability-level pass standards, complete private
+validation suite, and reference-calibration evidence. It is shared across all
+seven backbones, all five replicates, and both generation conditions for that
+robot. Model sessions, workspaces, candidate drivers, validation feedback, and
+Repair histories remain isolated. The other five robots enter only the primary
+condition.
 
 ### 3.2 B1 execution boundary
 
 B1 executes:
 
 ```text
-TGCD -> IVC and sealed suite -> STUDY -> GENERATE
-     -> private driver validation -> bounded Repair -> final driver outcome
+fixed prior-experiment bundle -> STUDY -> GENERATE
+                              -> private driver validation
+                              -> bounded Repair -> final driver outcome
 ```
 
-B1 stops after final driver validation. It does not execute Task Demo, a
+B1 does not execute TGCD or IVC. Those stages belong to the preceding
+capability-design experiment and cannot vary by B1 backbone. B1 stops after
+final driver validation. It does not execute Task Demo, a
 high-level controller, compositional B2 tasks, or controller task-success
 evaluation. Reference calibration establishes suite feasibility but is not a
 model condition.
@@ -198,12 +204,13 @@ Every unit records:
 - candidate, report, event trace, video, and trusted-evidence paths relative
   to the retained run.
 
-B1 additionally records capability-design and suite identity, condition-pair
-identity, attempt index, source-audit outcome, public-smoke outcome, private
-case counts and verdicts, Repair transition, final validation verdict,
-no-valid-submission reason, and terminal failure class. TGCD and IVC shared
-resources are counted once per `robot x backbone x replicate` block and are
-not duplicated across paired conditions.
+B1 additionally records fixed interface, pass-standard, suite, and
+reference-calibration identity, condition-pair identity, attempt index,
+source-audit outcome, public-smoke outcome, private case counts and verdicts,
+Repair transition, final validation verdict, no-valid-submission reason, and
+terminal failure class. Only STUDY, GENERATE, and Repair model resources are
+charged to B1; upstream design, compilation, and reference-calibration
+resources remain with the preceding experiment.
 
 For synthesis-loop visualisation, each observable model turn is classified as
 `observe_or_plan`, `execute_clean`, `execute_error`, or `submit`. STUDY,
@@ -237,6 +244,7 @@ matched subset and does not imply a universal backbone ranking.
 
 Formal execution remains blocked until the applicable robot packages are
 admitted, all seven provider transports pass canaries, exact model and price
-settings are frozen, the B1 synthesis-only stage boundary is available, and
-the selected B2 controller adapters pass their source and capability-boundary
-audits.
+settings are frozen, all ten fixed per-robot B1 validation bundles are
+versioned and reference-calibrated, the B1 synthesis-only stage boundary is
+available, and the selected B2 controller adapters pass their source and
+capability-boundary audits.

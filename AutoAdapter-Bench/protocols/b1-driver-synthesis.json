@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "protocol_id": "b1-driver-synthesis",
-  "protocol_version": "0.1.0",
+  "protocol_version": "0.2.0",
   "track": "B1",
   "statistical_unit": "independent-generation-condition-replicate",
   "allowed_generation_conditions": [
@@ -12,9 +12,23 @@
   "max_driver_attempts_per_condition": 3,
   "run_task_demo": false,
   "run_high_level_controller": false,
+  "fixed_input_policy": {
+    "scope": "one-versioned-bundle-per-robot-before-b1",
+    "inputs": [
+      "robot-capability-interface",
+      "capability-level-pass-standards",
+      "complete-private-validation-suite",
+      "reference-calibration-evidence"
+    ],
+    "shared_across": [
+      "backbone",
+      "replicate",
+      "generation-condition"
+    ],
+    "produced_by": "prior-experiment",
+    "b1_model_authored": false
+  },
   "stages": [
-    "tgcd",
-    "ivc",
     "study",
     "generate",
     "private-driver-validation",
@@ -28,8 +42,9 @@
       "replicate"
     ],
     "shared": [
-      "capability-design",
-      "complete-validation-suite"
+      "fixed-robot-capability-interface",
+      "fixed-capability-level-pass-standards",
+      "fixed-complete-validation-suite"
     ],
     "isolated": [
       "model-session",
@@ -103,8 +118,10 @@
       "stage_transition"
     ],
     "driver_validation": [
-      "capability_design_id",
+      "fixed_capability_interface_id",
+      "fixed_capability_pass_standard_id",
       "validation_suite_id",
+      "reference_calibration_evidence_id",
       "attempt_index",
       "source_audit_outcome",
       "public_smoke_outcome",
@@ -128,16 +145,5 @@
     "execute_clean",
     "execute_error",
     "submit"
-  ],
-  "shared_resource_accounting": {
-    "count_once_per": [
-      "robot",
-      "backbone",
-      "replicate"
-    ],
-    "resources": [
-      "tgcd",
-      "ivc"
-    ]
-  }
+  ]
 }

@@ -26,12 +26,17 @@ configurations remain benchmark expansion assets rather than Chapter 3 units.
 
 The ablation cases are `robotstudio_so101`, `franka_panda`,
 `unitree-go2-stock-12dof`, `hello_robot_stretch_2`, and `unitree_g1`.
-Their matched conditions share sealed capability designs and validation suites.
 
-B1 ends after complete private driver validation and at most two bounded
-Repairs. It does not execute Task Demo. The primary outcomes are `pass@0`,
-final pass within three submissions, valid-driver rate, Repair gain, attempts
-to first pass, and resource use.
+Each robot's capability interface, capability-level pass standards, complete
+private validation suite, and reference-calibration evidence are fixed outputs
+of the preceding capability-design experiment. The same versioned bundle is
+used for every B1 backbone, replicate, and generation condition. B1 does not
+run TGCD or IVC.
+
+B1 begins at STUDY and ends after complete private driver validation and at
+most two bounded Repairs. It does not execute Task Demo. The primary outcomes
+are `pass@0`, final pass within three submissions, valid-driver rate, Repair
+gain, attempts to first pass, and resource use.
 
 ## Experiment 1.2: Capability-interface use
 
