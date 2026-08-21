@@ -72,6 +72,26 @@ def build(model, data):
 """
 
 
+NATIVE_REQUEST_DRIVER_SOURCE = """
+import mujoco
+
+
+class Driver:
+    def __init__(self, model, data):
+        self.model = model
+        self.data = data
+
+    def drive(self, request):
+        self.data.ctrl[0] = float(request["target"])
+        mujoco.mj_step(self.model, self.data)
+        return True
+
+
+def build(model, data):
+    return Driver(model, data)
+"""
+
+
 def _call(call_id: str, name: str, arguments: Mapping[str, Any]) -> ToolCall:
     raw = json.dumps(dict(arguments), sort_keys=True)
     return ToolCall(call_id, name, dict(arguments), raw)
@@ -859,6 +879,76 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertNotIn("criterion_definition", repr(repaired.repair_inputs))
         previous_observation = client.messages["repair"][0][0]["content"]
         self.assertIn("request.task_parameters.target", previous_observation)
+
+    def test_repair_inherits_capability_native_request_abi(self) -> None:
+        request = {"target": 0.2}
+        client = ScriptedToolClient(
+            {
+                "repair": (
+                    ToolTurn(
+                        None,
+                        (
+                            _call(
+                                "r1",
+                                "check_driver",
+                                {
+                                    "source": NATIVE_REQUEST_DRIVER_SOURCE,
+                                    "checks": [
+                                        {"method_name": "drive", "request": request}
+                                    ],
+                                },
+                            ),
+                        ),
+                    ),
+                    ToolTurn(None, (_call("r2", "submit_driver", {"note": "fixed"}),)),
+                )
+            }
+        )
+        native_design = {
+            "artifact_type": "b1_fixed_capability_design",
+            "invocation_abi": {
+                "kind": "capability_request",
+                "method_call": "method(request=request)",
+            },
+            "capabilities": [
+                {
+                    "capability_id": "A1",
+                    "method_name": "drive",
+                    "request_schema": {"type": "object"},
+                }
+            ],
+        }
+        public_inputs = build_public_generation_inputs(
+            self.package,
+            native_design,
+            condition="from-scratch",
+        )
+
+        repaired = repair_with_probes(
+            client,  # type: ignore[arg-type]
+            package=self.package,
+            previous_driver_source=NATIVE_REQUEST_DRIVER_SOURCE,
+            candidate_report={"validation_passed": False},
+            media_manifest=[],
+            public_inputs=public_inputs,
+            condition="from-scratch",
+            previous_attempt=0,
+            workspace=Path(self.temporary.name) / "native-repair-attempt",
+            max_total_attempts=3,
+            capability_methods=("drive",),
+            probe_budget=ProbeBudget(max_requests=3, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+        )
+
+        self.assertEqual(repaired.driver_source, NATIVE_REQUEST_DRIVER_SOURCE)
+        check_observation = json.loads(client.messages["repair"][1][-1]["content"])
+        self.assertTrue(check_observation["ok"])
+        capability_check = check_observation["result"]["capability_checks"][0]
+        self.assertNotIn("task_id", capability_check)
+        self.assertTrue(capability_check["successful"])
+        self.assertTrue(
+            any(result["physics_steps"] > 0 for result in repaired.probe_results)
+        )
 
 
 if __name__ == "__main__":

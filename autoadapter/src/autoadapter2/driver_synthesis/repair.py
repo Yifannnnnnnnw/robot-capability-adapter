@@ -744,6 +744,12 @@ def _interactive_repair(
     methods = _method_names(public_inputs, capability_methods)
     design = public_inputs.get("sealed_capability_design")
     task_map = capability_task_ids(design) if isinstance(design, Mapping) else {}
+    invocation_abi = (
+        design.get("invocation_abi")
+        if isinstance(design, Mapping)
+        and isinstance(design.get("invocation_abi"), Mapping)
+        else None
+    )
     session = PublicDevelopmentSession(
         package=package,
         condition=str(condition),
@@ -752,6 +758,7 @@ def _interactive_repair(
         source_root=_source_root(source_root),
         capability_methods=methods,
         capability_task_ids=task_map,
+        invocation_abi=invocation_abi,
         initial_driver_source=source,
     )
     calls = getattr(client, "calls", ())
