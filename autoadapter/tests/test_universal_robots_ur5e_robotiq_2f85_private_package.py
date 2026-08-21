@@ -175,7 +175,7 @@ def test_private_documents_cover_the_public_snapshot_exactly() -> None:
         tasks=tasks,
     )
     runnable = _read(ROOT / "libraries" / "robots" / "index.json")["robots"]
-    assert ROBOT_ID not in runnable
+    assert runnable[ROBOT_ID] == f"{ROBOT_ID}/{PACKAGE_VERSION}"
 
 
 def test_task_scenes_are_local_canonical_and_reset_finite() -> None:

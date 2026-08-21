@@ -4,77 +4,82 @@
 > **Document role / 文档角色：** sole normative project document / 项目唯一规范性文档<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.24`<br>
+> **Document revision / 文档版本：** `0.19.25`<br>
 > **Effective date / 生效日期：** 2026-08-21<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
 
-Revision `0.19.24` closes the simulator-construction boundary for the declared eleven-robot
-cohort and supersedes the reference-positive-control admission requirement stated in revision
-`0.19.20`. A package is ready for the initial shakedown when its complete canonical package and
-source-backed Task Library load, physical task geometry uses real robot-compatible collision
-layers, every private reset avoids contact deeper than 5 mm, position-held environments also stay
-within that bound during a focused 100-step passive-settling check, and the shared Harness reports
-task-metric success separately from physical integrity. Any observed contact deeper than 5 mm makes
-physical integrity and the trial fail even if the task metric passes. A hidden handwritten
-reference driver remains useful diagnostic calibration material, but planner failure alone is not
-an admission blocker when the simulator, interfaces, metrics, and Harness satisfy these checks.
+Revision `0.19.25` reconciles the all-robot construction work with the fixed-input Chapter 3
+protocol. The declared mainline cohort is the exact eleven configurations in Section 1.3;
+`boston_dynamics_spot_with_arm`, `google_barkour_vb`, and `unitree_g1` remain optional research
+backups. The initial two-condition shakedown therefore contains twenty-two cells per replicate and
+uses the manifest-pinned Ministral 8B configuration with empty Experience input, terminal
+Evolution, and post-round Experience disposition.
 
-**中文辅助说明。** `0.19.24` 完成声明的十一机器人 cohort 的仿真器搭建边界，并取代
-`0.19.20` 中 reference positive control 作为准入门槛的要求。首轮 shakedown 前，每个机器人
-必须具有可加载的完整 canonical package 和有来源 Task Library；实物 task geometry 必须使用可与
-机器人碰撞的真实 collision layer；每个 private reset 的穿透不得深于 5 mm；由 position control
-保持的环境还必须在聚焦的 100-step 被动沉降检查中维持该边界。共享 Harness 必须把 task metric
-success 与 physical integrity 分开报告；任何深于 5 mm 的接触穿透都会使 physical integrity 和
-trial 失败，即使 task metric 已通过。隐藏的手写 reference driver 仍可用于诊断校准，但当仿真器、
-接口、metric 和 Harness 均满足上述检查时，reference planner 自身失败不再阻塞准入。
+Each indexed package is eligible for this shakedown only when its complete canonical package and
+source-backed Task Library load, physical task geometry uses robot-compatible collision layers,
+every private reset avoids contact deeper than 5 mm, applicable position-held environments remain
+within that bound during a focused 100-step settling check, and the shared Harness reports task
+metric success separately from physical integrity. Any observed penetration deeper than 5 mm fails
+physical integrity and the trial even when the numerical task metric passes. Hidden handwritten
+reference drivers remain diagnostic calibration material; planner failure alone is not a package
+admission blocker once these simulator, interface, metric, and Harness checks pass. This shakedown
+does not by itself become a formal B1 result: Chapter 3 B1 continues to consume the prior-designed,
+reference-calibrated fixed interface and validation bundle required by Revision `0.19.22`.
 
-Revision `0.19.23` removes `unitree_g1` from the declared mainline cohort before any all-robot
-outcomes are inspected. The formal cohort now contains the exact eleven configurations in Section
-1.3, and the initial two-condition shakedown contains twenty-two cells per replicate. G1 assets,
-task contracts, and controller research remain available as optional backup material; they are not
-a mainline migration obligation or formal-round evidence.
+**中文辅助说明。** `0.19.25` 合并全机器人建设结果与 Chapter 3 固定输入实验协议。主线 cohort
+是第 1.3 节列出的十一台精确配置；`boston_dynamics_spot_with_arm`、`google_barkour_vb` 和
+`unitree_g1` 仅作为可选研究备份。首轮两条件 shakedown 因而包含二十二个 cell，统一使用 manifest
+固定的 Ministral 8B、空 Experience 输入、终态 Evolution 和整轮后的 Experience disposition。
 
-**中文辅助说明。** `0.19.23` 在查看任何全机器人实验结果前，将 `unitree_g1` 从声明的主线
-cohort 中移除。正式 cohort 现为第 1.3 节列出的十一个精确配置，首轮两条件 shakedown 每个
-replicate 共二十二个 cell。G1 的资产、task contract 和 controller 研究作为可选备份保留，
-不再属于主线迁入义务或正式轮次证据。
+进入该 shakedown 的 package 必须完整加载 canonical package 与有来源 Task Library，使用真实可碰撞
+task geometry，所有 private reset 的穿透不得深于 5 mm，适用的 position-held 环境还必须通过聚焦
+100-step 沉降检查；共享 Harness 必须分别报告 task metric 与 physical integrity。任何深于 5 mm 的
+穿透都会使 physical integrity 和 trial 失败，即使数值 metric 已通过。手写 reference driver 只保留
+为诊断校准材料；上述仿真器、interface、metric 与 Harness 检查通过后，reference planner 自身失败
+不再阻塞 package 准入。该 shakedown 本身不自动构成正式 B1 结果；Chapter 3 B1 仍按 `0.19.22`
+消费预先设计并经 reference calibration 的固定 interface 与 validation bundle。
 
-Revision `0.19.22` removed `google_barkour_vb` from the declared mainline cohort before any
-all-robot outcomes were inspected. At that revision, the formal cohort contained the exact twelve
-configurations in Section 1.3, and the initial two-condition shakedown contained twenty-four cells
-per replicate. This count is superseded by revision `0.19.23`.
-Barkour assets, calibration evidence, and unfinished package material remain available as an
-optional research backup; they are not a mainline migration obligation or formal-round evidence.
+Revision `0.19.22` separates the upstream capability-design experiment from the Chapter 3 B1
+backbone comparison. B1 consumes one versioned, reference-calibrated capability interface,
+capability-level pass standard, and complete private validation suite per robot. That fixed bundle
+is identical across every B1 backbone, replicate, and generation condition. B1 begins at STUDY and
+contains no TGCD or IVC model call; its dynamic path is STUDY, GENERATE/GEN_ALGO, private
+validation, bounded Repair, and final validation. TGCD and IVC remain framework components and
+separate RQ2 objects, but their outputs must be produced, audited, calibrated, and frozen before B1.
 
-**中文辅助说明。** `0.19.22` 在查看任何全机器人实验结果前，将 `google_barkour_vb` 从声明的
-主线 cohort 中移除。该版本当时的正式 cohort 为第 1.3 节列出的十二个精确配置，首轮两条件
-shakedown 每个 replicate 共二十四个 cell；该数量已由 `0.19.23` 取代。Barkour 的资产、校准证据
-和未完成 package 材料作为可选研究备份保留，不再属于主线迁入义务或正式轮次证据。
+**中文辅助说明。** `0.19.22` 将上游 capability-design 实验与 Chapter 3 B1 backbone 比较分开。
+B1 对每台机器人只消费一套已版本化并通过 reference calibration 的 capability interface、
+capability-level pass standard 和完整私有 validation suite；该固定 bundle 在全部 B1 backbone、
+replicate 和生成条件间完全相同。B1 从 STUDY 开始，不包含 TGCD 或 IVC 模型调用；动态链路为
+STUDY、GENERATE/GEN_ALGO、私有 validation、有界 Repair 和最终 validation。TGCD 与 IVC 仍是
+framework component 和独立 RQ2 研究对象，但其产物必须在 B1 前完成生成、审计、校准和封存。
 
-Revision `0.19.21` removes `boston_dynamics_spot_with_arm` from the declared mainline cohort before
-any all-robot outcomes are inspected. Historical Spot-with-arm material under Demo2 remains
-historical only and is not a mainline migration obligation.
+Revision `0.19.21` permits a reviewed package reference driver to be preselected as the fixed
+benchmark driver for a separately declared B2 capability-interface-use comparison. Before formal
+B2 execution, the exact reference driver, frozen capability interface, and audited adapter must be
+fixed together, and that combination must pass the complete interface-bound capability validation
+suite. The reference source remains unavailable to the compared controller backbones and to every
+B1 generation condition. Reference-driver selection does not constitute B1 synthesis evidence, and
+reference calibration without the declared high-level controller does not constitute B2 use
+evidence.
 
-**中文辅助说明。** `0.19.21` 在查看任何全机器人实验结果前，将
-`boston_dynamics_spot_with_arm` 从声明的主线 cohort 中移除。Demo2 中既有 Spot with arm 材料
-仅保留为历史资料，不再属于主线迁入义务。
+**中文辅助说明。** `0.19.21` 允许在单独声明的 B2 capability-interface-use 比较中，预先选择
+经审查的 package reference driver 作为固定 benchmark driver。正式执行 B2 前，必须共同固定准确的
+reference driver、封存的 capability interface 与已审计 adapter，并让该组合通过完整的 interface-bound
+capability validation suite。参与比较的 controller backbone 和全部 B1 生成条件仍不得读取 reference
+源码。选择 reference driver 不构成 B1 synthesis 证据；未包含已声明 high-level controller 的 reference
+校准也不构成 B2 use 证据。
 
-Revision `0.19.20` removes the superseded SO-101/Go2 fixed-pair acceptance scope. The current
-mainline experiment covers the complete cohort declared in Section 1.3, and no formal all-robot
-round may begin until every declared configuration has a complete runnable package and reference
-positive control. The first all-robot shakedown uses one
-manifest-pinned Ministral 8B Producer across both generation conditions for every robot, begins
-without prior Experience, executes Evolution after every terminal cell, and produces a reviewed
-Experience disposition for every cell after the round. Diagnostic per-robot canaries remain
-permitted during construction, but neither they nor the former narrow-cohort evidence can replace or
-shrink the all-robot experiment.
+Revision `0.19.20` updates three planned RQ1 Producer model families to their current declared
+versions: Opus 4.8 becomes Opus 5, DeepSeek V3.2 becomes DeepSeek V4 Pro, and Ministral 8B becomes
+Ministral 3 8B. The seven-family scope and all experimental factors remain unchanged; exact
+provider identifiers and inference settings are still frozen only by the versioned experiment
+manifest.
 
-**中文辅助说明。** `0.19.20` 删除已经失效的 SO-101/Go2 固定验收对范围。当前主线实验覆盖
-第 1.3 节明确声明的完整机器人 cohort；只有全部配置都具有完整 runnable package 和 reference
-positive control 后，才可启动正式全机器人轮次。首轮全机器人 shakedown 使用一套由 manifest
-固定的 Ministral 8B Producer，让每个机器人运行两种生成条件；该轮不读取既有 Experience，
-每个终态 cell 后执行 Evolution，并在整轮结束后为每个 cell 写出经审查的 Experience disposition。
-建设期间仍可逐机器人运行诊断 canary，但它们和既有小范围证据都不能替代或缩减全机器人实验。
+**中文辅助说明。** `0.19.20` 将三个规划中的 RQ1 Producer model family 更新为当前声明版本：
+Opus 4.8 更新为 Opus 5，DeepSeek V3.2 更新为 DeepSeek V4 Pro，Ministral 8B 更新为
+Ministral 3 8B。七模型范围和全部实验因素保持不变；准确 provider identifier 与 inference
+setting 仍仅由版本化 experiment manifest 固定。
 
 Revision `0.19.19` restores the seven-family planned RQ1 Producer-backbone coverage that was
 declared before the Direct-MuJoCo Authority rewrite, while leaving exact provider identifiers,
@@ -661,15 +666,16 @@ The project may claim only what the corresponding experiment evidence directly s
 
 - comparative robot-specific driver-synthesis outcomes for the declared LLM backbones under the
   skeleton-assisted and from-scratch generation conditions, with the Auto-Adapter configuration,
-  robot inputs, source-backed Task Library, source-task pass standards, evaluation protocol, and
-  resource budgets fixed within each condition;
+  robot inputs, source-backed Task Library, robot capability interface, capability-level pass
+  standards, complete private validation suite, evaluation protocol, and resource budgets fixed
+  per robot across every backbone, replicate, and condition;
 - comparative outcomes for capability-interface use by the declared LLM backbones using the same
   fixed robot capability interface, the same fixed and validated robot-specific driver that
   implements it, and the same high-level-controller implementation;
 - task-grounded model design of reusable capabilities from at least twenty source-backed tasks;
 - model-authored and source-grounded capability-level pass criteria that the implementation-blind
   IVC independently audits and compiles, and that the Harness evaluates under declared calibration
-  and false-success checks;
+  and false-success checks, as separate RQ2 evidence rather than B1-varying inputs;
 - later-run differences associated with reviewed Evolution Experience only when an
   Experience-enabled run is compared with its matched no-Experience control;
 - independent Direct-MuJoCo validation, first-attempt and post-Repair outcomes, failure patterns,
@@ -684,14 +690,16 @@ is not established as reliable merely because the model wrote it or the compiler
 syntax. A cross-morphology comparison is associational because morphology co-varies with actuation,
 dynamics, task applicability, and MuJoCo control structure.
 
-**中文辅助说明。** 项目只能提出对应实验直接证据支持的结论：在每种生成条件内固定
-Auto-Adapter 配置、机器人输入、有来源 Task Library、来源 task 通过标准、评估协议和资源预算后，
-不同 LLM backbone 在 skeleton-assisted 与 from-scratch 条件中的 robot-specific driver 合成结果；
+**中文辅助说明。** 项目只能提出对应实验直接证据支持的结论：对每台机器人，在全部 backbone、
+replicate 与生成条件间固定 Auto-Adapter 配置、机器人输入、有来源 Task Library、robot capability
+interface、capability-level pass standard、完整私有 validation suite、评估协议和资源预算后，不同
+LLM backbone 在 skeleton-assisted 与 from-scratch 条件中的 robot-specific driver 合成结果；
 不同 backbone 通过同一套固定 robot capability interface、实现它的同一套固定且已验证的
 robot-specific driver，以及相同 high-level-controller 实现所得的 capability-interface use 结果；模型根据至少
 二十项有来源任务完成的 task-grounded capability 设计；由模型设计、具有来源依据且由实现
 不可见 IVC 独立审计和编译，并由 Harness 在已声明校准和 false-success 检查下评估的
-capability-level pass criteria；只有在 Experience-enabled run 与匹配的 no-Experience control
+capability-level pass criteria，但它属于独立 RQ2 证据而不是 B1 中变化的输入；只有在
+Experience-enabled run 与匹配的 no-Experience control
 比较时，才能报告与 reviewed Evolution Experience 相关的后续运行差异；独立 Direct-MuJoCo
 验证、首次与 Repair 后结果、失败模式和资源使用；以及固定实验控制下、针对已声明机器人 cohort
 的描述性 cross-morphology 差异。这些证据不证明真实 SDK 保真度、硬件有效性、sim-to-real
@@ -778,11 +786,11 @@ The planned B1 Producer-backbone set contains seven model families (`M = 7`):
 | Model family | Vendor | Protocol status |
 |---|---|---|
 | Sonnet 4.6 | Anthropic | Exact identifier pending |
-| Opus 4.8 | Anthropic | Exact identifier pending |
+| Opus 5 | Anthropic | Exact identifier pending |
 | Haiku 4.5 | Anthropic | Exact identifier pending |
 | Nova Pro | Amazon | Exact identifier pending |
-| DeepSeek V3.2 | DeepSeek | Exact identifier pending |
-| Ministral 8B | Mistral | Exact identifier pending |
+| DeepSeek V4 Pro | DeepSeek | Exact identifier pending |
+| Ministral 3 8B | Mistral | Exact identifier pending |
 | Qwen3 32B | Alibaba | Exact identifier pending |
 
 The initial all-robot shakedown uses `Ministral 8B`, the lowest-parameter family in this planned
@@ -818,11 +826,11 @@ The project evaluates three controlled research questions:
 
 1. **RQ1---Comparison of LLM backbones in robot-specific driver synthesis and capability-interface use.**
 
-   **Driver synthesis.** With the Auto-Adapter framework, robot inputs, source-backed Task Library,
-   source-task pass standards, private-case construction policy, Harness measurement and verdict
-   rules, and resource budget held fixed, how do LLM backbones differ in synthesising a
-   robot-specific driver that implements the designed reusable robot capability interface under the
-   skeleton-assisted and from-scratch generation conditions?
+   **Driver synthesis.** With the Auto-Adapter framework, robot inputs, one prior-designed robot
+   capability interface, capability-level pass standards, complete private validation suite,
+   Harness measurement and verdict rules, and resource budget held fixed per robot, how do LLM
+   backbones differ in synthesising a robot-specific driver under the skeleton-assisted and
+   from-scratch generation conditions?
 
    **Use.** For each robot configuration, with the same fixed robot capability interface, the same fixed
    and validated robot-specific driver that implements it, high-level-controller implementation,
@@ -852,10 +860,12 @@ The project evaluates three controlled research questions:
    use when synthesising robot-specific drivers that implement low-level motion-control
    capabilities?
 
-For RQ1 driver synthesis, fixed validation criteria means fixed source-task pass standards, private
-task instances, measurement semantics, and Harness verdict rules. Model-authored capability-level
-pass criteria remain an evaluated output and may therefore differ across LLM backbones. Within each
-generation condition, all backbones receive the same public inputs; the two generation conditions
+For RQ1 driver synthesis, each robot has one prior-designed and reference-calibrated B1 bundle:
+the public capability interface and capability-level pass standards plus the complete private task
+instances, measurement bindings, guards, and Harness verdict rules. The versioned experiment
+manifest freezes that bundle before any B1 outcome is inspected. It remains identical across all
+backbones, replicates, and generation conditions for that robot. Capability design and criteria are
+therefore fixed B1 inputs, not B1 model outputs. B1 begins at STUDY; the two generation conditions
 differ only in their authorised access to the trusted skeleton.
 
 B1 primary reporting contains both driver-validation and resource outcomes:
@@ -867,23 +877,25 @@ B1 primary reporting contains both driver-validation and resource outcomes:
 | Monetary cost | Actual billed model cost when exposed by the provider; otherwise an estimate using the manifest-pinned currency, unit-price snapshot, and token categories |
 | Time | Wall time to the attempt-0 validation verdict and to the terminal capability-validation verdict, with model-service, development/probe, and MuJoCo-validation time reported separately where measurable |
 
-The resource ledger counts every applicable model call in TGCD, model-backed IVC, STUDY,
-GENERATE/GEN_ALGO, and Repair, including failed calls and failed cells. Shared TGCD/IVC resources
-are recorded once per `robot x Producer backbone x replicate` and are not duplicated into both
-generation conditions. Task Demo resources remain separate from B1 driver-synthesis resources.
+The B1 resource ledger counts every applicable model call in STUDY, GENERATE/GEN_ALGO, and Repair,
+including failed calls and failed cells. Upstream TGCD, IVC, fixed-bundle review, and reference
+calibration resources are reported with the experiment that produced the B1 inputs and are not
+charged to any B1 backbone. Task Demo resources remain separate from B1 driver-synthesis resources.
 
 Reference drivers are positive controls for the Framework and Direct-MuJoCo execution route. They
-are not model conditions and cannot be counted as evidence of model-based robot-specific driver
-synthesis or capability-interface use. RQ3 is descriptive and associational: the declared design does
-not identify a causal morphology effect.
+are not B1 model conditions and cannot be counted as evidence of model-based robot-specific driver
+synthesis. A reviewed reference driver may be fixed as the common B2 benchmark driver only under
+the interface-binding, validation, isolation, and controller-execution requirements in Section 3.6;
+its calibration result alone is not capability-interface-use evidence. RQ3 is descriptive and
+associational: the declared design does not identify a causal morphology effect.
 
 **中文辅助说明。** 项目评估三个受控研究问题：
 
 1. **RQ1——LLM backbone 在 robot-specific driver synthesis 与 capability-interface use 中的比较。**
-   **Driver synthesis：** 在固定 Auto-Adapter framework、机器人输入、有来源 Task Library、来源 task
-   通过标准、private-case 构造 policy、Harness 测量与判定规则以及资源预算时，不同 LLM backbone
-   在 skeleton-assisted 与 from-scratch 条件下合成实现已设计 robot capability interface 的
-   robot-specific driver，其能力有何差异？
+   **Driver synthesis：** 对每台机器人固定 Auto-Adapter framework、机器人输入、一套由前序实验
+   设计的 robot capability interface、capability-level pass standard、完整私有 validation suite、
+   Harness 测量与判定规则以及资源预算时，不同 LLM backbone 在 skeleton-assisted 与
+   from-scratch 条件下合成 robot-specific driver 的能力有何差异？
    **Use：** 对每个机器人配置，在固定 robot capability interface、实现它的同一套固定且已验证的
    robot-specific driver、high-level-controller 实现、匹配任务输入、评估协议和资源预算时，相同的
    一组 LLM backbone 使用该 interface 完成任务的能力有何差异？
@@ -903,20 +915,24 @@ not identify a causal morphology effect.
    robot-specific driver 合成中的 validation success、failure pattern 和 resource use 差异具有何种
    关联？
 
-在 RQ1 driver synthesis 中，固定 validation criteria 是指固定来源 task 通过标准、私有 task instance、
-测量语义和 Harness 判定规则。由模型生成的 capability-level pass criteria 仍是被评估输出，因此
-可以随 LLM backbone 不同而变化。在每种生成条件内，所有 backbone 接收相同公开输入；两种生成
+在 RQ1 driver synthesis 中，每台机器人只有一套由前序实验设计并完成 reference calibration 的
+B1 bundle：公开 capability interface 与 capability-level pass standard，以及完整私有 task instance、
+measurement binding、guard 和 Harness 判定规则。版本化 experiment manifest 必须在查看任何 B1
+outcome 前封存该 bundle，并在该机器人的全部 backbone、replicate 和生成条件间保持完全一致。
+因此 capability design 与 criteria 是固定 B1 输入，不是 B1 模型输出。B1 从 STUDY 开始；两种生成
 条件只在是否获准访问 trusted skeleton 这一点上不同。B1 主要结果同时包含 driver validation 与
 资源结果：首次 `pass@0`、三次 driver 提交预算内的最终通过、Repair gain、首次通过所需 attempt
 和 cell completion；全部适用模型调用及 provider 可提供的 input/output/cached/reasoning token；
 实际账单费用或按 manifest 固定价格快照估算的模型费用；以及到 attempt-0 verdict 和最终 terminal
 verdict 的 wall time，并在可测量时分别报告 model service、development/probe 和 MuJoCo validation
-时间。TGCD 与 model-backed IVC 的共享资源每个 `robot x Producer backbone x replicate` 只记录
-一次，不得在两个生成条件中重复计费；Task Demo 资源与 B1 driver synthesis 分开报告。
-Reference driver 是 Framework 和
-Direct-MuJoCo 执行路径的正向对照，不是模型条件，不能计为 model-based robot-specific driver
-synthesis 或 capability-interface use 的证据。RQ3 只能进行描述性和关联性解释；当前设计不能识别
-morphology 的因果效应。
+时间。B1 resource ledger 只计 STUDY、GENERATE/GEN_ALGO 和 Repair 的适用模型调用；上游 TGCD、
+IVC、fixed-bundle review 和 reference calibration 资源归产生 B1 输入的前序实验，不计入任何 B1
+backbone。Task Demo 资源与 B1 driver synthesis 分开报告。
+Reference driver 是 Framework 和 Direct-MuJoCo 执行路径的正向对照，不是 B1 模型条件，不能
+计为 model-based robot-specific driver synthesis 的证据。经审查的 reference driver 只有在满足
+第 3.6 节的 interface 绑定、validation、隔离和 controller 执行要求后，才可作为所有比较条件共同
+固定的 B2 benchmark driver；单独的 reference calibration 结果不是 capability-interface-use 证据。
+RQ3 只能进行描述性和关联性解释；当前设计不能识别 morphology 的因果效应。
 
 ---
 
@@ -1045,7 +1061,8 @@ One robot run resolves a coherent package containing:
 - a trusted skeleton family for the skeleton-assisted condition;
 - the preserved from-scratch generation contract and permitted MuJoCo/NumPy/Python primitives;
 - optional reviewed Experience; and
-- a reference driver used only for calibration.
+- a reference driver used for calibration and, only when a B2 experiment manifest explicitly
+  selects it under Section 3.6, as the fixed B2 benchmark driver.
 
 The package must resolve without an SDK Entry, no-SDK placeholder, Translation Layer, integration
 manifest, or SDK Readiness gate. Missing or inconsistent required files stop the run as an input or
@@ -1056,7 +1073,8 @@ infrastructure failure, not a model failure.
 包含二十项适用来源任务的 Task Library 快照；每项任务公开的来源 lineage 和机器可表达通过
 标准；Framework 私有的具体实例、reset、执行与测量 binding 和 guard；供 skeleton-assisted
 条件使用的可信 skeleton family；保留的 from-scratch 生成合同及获准的 MuJoCo/NumPy/Python
-primitives；可选且经过审阅的 Experience；以及仅用于校准的 reference driver。
+primitives；可选且经过审阅的 Experience；以及用于校准、并且只有在 B2 experiment manifest 按
+第 3.6 节明确选择时才可作为固定 B2 benchmark driver 的 reference driver。
 
 该软件包必须在没有 SDK Entry、no-SDK placeholder、Translation Layer、integration manifest
 或 SDK Readiness gate 的情况下完成解析。缺失或不一致的必需文件应使运行以输入错误或基础设施
@@ -1118,7 +1136,7 @@ autoadapter/libraries/robots/<robot_configuration_id>/<package_version>/
       guards.json
   assets/                    # complete local MJCF closure
   skeleton/                  # skeleton-assisted condition only
-  reference/                 # calibration only
+  reference/                 # calibration; optional manifest-selected fixed B2 driver
 ```
 
 `sources.json` and the public scoring clauses are TGCD-visible. Files under `tasks/private/` remain
@@ -1442,12 +1460,29 @@ Repair 阶段都不执行。可执行 suite、具体 case、binding 和 guard
 中公开的 capability 接口及 validation-contract 语义，但不能看到这些标准的私有实现。最终
 pass/fail verdict 只属于可信 Harness，不能来自 TGCD 或 IVC 模型自述。
 
+For Chapter 3 B1, Sections 3.1 and 3.2 are upstream input-production stages rather than B1 stages.
+Before B1 begins, one reviewed `capability_design.json` and one complete
+`capability_validation_suite.json` per robot must be copied into a versioned fixed-input bundle and
+the package reference driver must pass that exact suite with complete evidence. The B1 manifest
+must pin the bundle identity. No B1 backbone reruns TGCD or IVC, and no B1 outcome may change the
+fixed interface, criteria, private cases, bindings, guards, or verdict rules. A changed bundle
+defines a new experiment configuration and requires all affected B1 units to be rerun.
+
+对于 Chapter 3 B1，第 3.1 与 3.2 节属于上游输入生产阶段，不属于 B1 stage。B1 开始前，每台
+机器人必须把一份经过审查的 `capability_design.json` 和一份完整
+`capability_validation_suite.json` 固定进版本化 input bundle，并由 package reference driver 对该
+准确 suite 完成具有完整证据的校准。B1 manifest 必须固定 bundle identity。任何 B1 backbone 都不
+重新运行 TGCD 或 IVC，任何 B1 outcome 也不得改变固定 interface、criteria、私有 case、binding、
+guard 或 verdict rule。修改 bundle 将构成新的实验配置，并要求受影响的全部 B1 unit 重新运行。
+
 ### 3.3 Driver Synthesis / Driver 合成
 
-A dynamic mainline run uses the configured real model for every model-authored stage. Both preserved
-AutoAdapter 1.0 generation conditions may inspect all run-relevant public inputs: the complete public
-robot package, including public Morphology, Task Library catalog and source records, eligible
-Experience, the complete selected MJCF closure, STUDY output, and the same sealed Capability Design.
+A dynamic mainline run uses the configured real model for every model-authored stage. In Chapter 3
+B1 those stages begin at STUDY; the run loads the manifest-pinned fixed interface and validation
+bundle without invoking TGCD or IVC. Both preserved AutoAdapter 1.0 generation conditions may
+inspect all run-relevant public inputs: the complete public robot package, including public
+Morphology, Task Library catalog and source records, eligible Experience, the complete selected
+MJCF closure, STUDY output, and the same fixed sealed Capability Design.
 They may use a complete local Python/MuJoCo development probe within explicit call, simulated-time,
 control-step, output, and wall-time budgets, and may write and revise one executable candidate in
 their own workspace. The probe may load the canonical public scene, run model-authored scripts,
@@ -1551,10 +1586,12 @@ fresh state until observed public convergence or a bounded timeout. A fixed wayp
 provide supervisory targets, but one-read-many-write, pure polling, sleep-only behavior, fixed
 open-loop trajectories, and self-reported completion do not satisfy this runtime contract.
 
-**中文辅助说明。** 动态主线运行中，每个由模型创作的阶段都必须调用已配置的真实模型。两种
-保留的 AutoAdapter 1.0 生成条件都可以检查与本次 run 相关的全部公开输入，包括完整公开机器人
-package 中的 Morphology、Task Library catalog 与 source record、符合条件的 Experience、所选
-MJCF 完整闭包、STUDY 输出和同一份已封存 Capability Design。两者都可以使用完整的本地
+**中文辅助说明。** 动态主线运行中，每个由模型创作的阶段都必须调用已配置的真实模型。在
+Chapter 3 B1 中，这些阶段从 STUDY 开始；run 直接加载 manifest 固定的 interface 与 validation
+bundle，不调用 TGCD 或 IVC。两种保留的 AutoAdapter 1.0 生成条件都可以检查与本次 run 相关的
+全部公开输入，包括完整公开机器人 package 中的 Morphology、Task Library catalog 与 source
+record、符合条件的 Experience、所选 MJCF 完整闭包、STUDY 输出和同一份固定且已封存的
+Capability Design。两者都可以使用完整的本地
 Python/MuJoCo 开发 probe，但该 probe 受明确的调用次数、模拟时间、control step、输出和 wall-time
 预算约束。probe 可以加载 canonical 公开 scene、运行模型编写的脚本、检查 simulator state、执行
 candidate 方法并调试 actuator-driven 行为，但不能调用或检查私有 Harness suite。
@@ -1745,6 +1782,16 @@ remain fixed across matched LLM backbones. A controller finish action or self-re
 Harness verdict, and private criteria, bindings, guards, reference inputs, and model credentials are
 never sent to the candidate worker.
 
+For a separately declared B2 comparison, the versioned experiment manifest may preselect a reviewed
+package reference driver instead of a B1-generated driver. The manifest must pin the exact driver
+identity and validation evidence before outcomes are inspected. Formal B2 execution remains blocked
+until one capability interface and its adapter are frozen for that driver, the complete
+interface-bound capability validation suite passes, and the same fixed driver-interface-adapter
+combination is used for every compared backbone. The controller receives only the public task and
+interface-derived tools; it never receives the reference source or reference-only calibration data.
+This B2 allowance does not expose reference material to B1 or convert the fixed driver into a model
+condition.
+
 **中文辅助说明。** 只有某一条件的最终生成 driver 通过完整 capability validation suite 后，
 Task Demo 才开始。Framework 固定该已准入 driver，通过同一可信 Direct-MuJoCo Harness 运行一次
 已封存的五-task `task_demo_suite.json`，并单独记录 verdict 和逐 trial 视频。Task Demo 不会重开
@@ -1763,6 +1810,14 @@ tool schema。Capability 调用在单个 trial 内通过同一个无 credential 
 LLM backbone 比较中，controller 架构、system prompt、tool 派生规则和 turn/call budget 均保持不变。
 Controller 的 finish action 或自述绝不构成 Harness verdict；私有 criterion、binding、guard、reference
 输入和模型 credential 也绝不发送给 candidate worker。
+
+对于单独声明的 B2 比较，版本化 experiment manifest 可以预先选择经审查的 package reference driver，
+而不必选择 B1 生成的 driver。Manifest 必须在查看 outcome 前固定准确 driver identity 和 validation
+evidence。只有当该 driver 对应的一套 capability interface 及其 adapter 已封存、完整的 interface-bound
+capability validation suite 已通过，并且全部被比较 backbone 使用同一套固定
+driver-interface-adapter 组合时，B2 才可正式执行。Controller 只接收公开 task 与从 interface 派生的
+tools，绝不接收 reference 源码或 reference-only calibration data。这项 B2 许可不会向 B1 暴露
+reference material，也不会把固定 driver 变成模型条件。
 
 ### 3.7 Evolution / 经验演化
 
@@ -1955,7 +2010,8 @@ persistent state machine.
 | Evidence category | Required facts | Supported claim | Unsupported claim |
 |---|---|---|---|
 | Reference calibration | Reviewed reference driver, real MuJoCo, complete `capability_validation_suite.json` Harness verdicts, and complete videos | The selected assets, controller baseline, complete capability-validation route, Harness, and recording path are feasible | Any model generated the driver or any Task Demo passed |
-| Dynamic generation-condition executed | Source-backed 20+ task snapshot, real-model TGCD design of 5–10 capability contracts without a pre-authored effect policy, complete IVC-audited `capability_validation_suite.json`, named skeleton-assisted or from-scratch condition, real model identities/calls, model-generated `driver.py`, condition-appropriate STUDY/GENERATE trace, and real MuJoCo capability validation reaching a terminal verdict | That capability-design and generation condition executed end to end | The capability requirements passed, Task Demo ran, or the other condition executed |
+| Shakedown generation-condition executed | Source-backed 20+ task snapshot, real-model TGCD design of 5–10 capability contracts without a pre-authored effect policy, complete IVC-audited `capability_validation_suite.json`, named skeleton-assisted or from-scratch condition, real model identities/calls, model-generated `driver.py`, condition-appropriate STUDY/GENERATE trace, and real MuJoCo capability validation reaching a terminal verdict | That capability-design and generation condition executed end to end in the declared shakedown | The capability requirements passed, formal B1 executed, Task Demo ran, or the other condition executed |
+| B1 generation-condition executed | Manifest-pinned prior-designed capability interface and complete reference-calibrated `capability_validation_suite.json`, named skeleton-assisted or from-scratch condition, real model identities/calls beginning at STUDY, model-generated `driver.py`, condition-appropriate STUDY/GENERATE trace, and real MuJoCo capability validation reaching a terminal verdict | That fixed-input B1 generation condition executed end to end | The capability requirements passed, TGCD or IVC ran in B1, Task Demo ran, or the other condition executed |
 | Single-robot condition success | Dynamic condition evidence plus every case in the complete capability validation suite passes within that condition's declared attempt budget | The generated robot-specific driver passed capability admission for that robot, condition, and run | Any Task Demo passed, or the paired condition, all-robot round, or SDK path succeeded |
 | Task Demo executed | A capability-validated fixed driver, sealed random five-task `task_demo_suite.json`, separate Harness verdict, and complete videos | The five selected tasks and all of their scoring clauses were demonstrated with that admitted driver | Every Task Library task passed, driver synthesis failed, or RQ1 capability-interface use succeeded without the declared high-level controller |
 | Per-robot two-condition experiment completed | Both generation conditions reach capability-validation terminal verdicts for one declared robot using the same sealed `capability_design.json`, `capability_validation_suite.json`, and declared experiment configuration | That robot's two-cell Direct-MuJoCo comparison executed | Either cell passed, the complete cohort ran, or either Task Demo ran |
@@ -1968,7 +2024,8 @@ persistent state machine.
 | 证据类别 | 必须具备的事实 | 可以支持的结论 | 不能支持的结论 |
 |---|---|---|---|
 | 参考校准 | 经审查的 reference driver、真实 MuJoCo、完整 `capability_validation_suite.json` 的 Harness verdict 和完整视频 | 所选资产、controller baseline、完整 capability-validation 路径、Harness 和录像路径可行 | driver 由任何模型生成，或任何 Task Demo 已通过 |
-| 动态生成条件已执行 | 有来源的 20+ task 快照、没有预写 effect policy 的真实模型 TGCD 五至十项 capability contract 设计、IVC 完整审计的 `capability_validation_suite.json`、明确的 skeleton-assisted 或 from-scratch 条件、真实模型身份和调用、模型生成的 `driver.py`、符合该条件的 STUDY/GENERATE trace，以及到达最终 verdict 的真实 MuJoCo capability validation | capability 设计及该生成条件已完成端到端执行 | capability 要求已通过、Task Demo 已运行，或另一条件已执行 |
+| Shakedown 生成条件已执行 | 有来源的 20+ task 快照、没有预写 effect policy 的真实模型 TGCD 五至十项 capability contract 设计、IVC 完整审计的 `capability_validation_suite.json`、明确的 skeleton-assisted 或 from-scratch 条件、真实模型身份和调用、模型生成的 `driver.py`、符合该条件的 STUDY/GENERATE trace，以及到达最终 verdict 的真实 MuJoCo capability validation | capability 设计及该生成条件已在声明的 shakedown 中完成端到端执行 | capability 要求已通过、正式 B1 已执行、Task Demo 已运行，或另一条件已执行 |
+| B1 生成条件已执行 | Manifest 固定的前序实验 capability interface、已完成 reference calibration 的完整 `capability_validation_suite.json`、明确的 skeleton-assisted 或 from-scratch 条件、从 STUDY 开始的真实模型身份与调用、模型生成的 `driver.py`、符合该条件的 STUDY/GENERATE trace，以及到达最终 verdict 的真实 MuJoCo capability validation | 固定输入的 B1 生成条件已完成端到端执行 | capability 要求已通过、B1 中运行了 TGCD 或 IVC、Task Demo 已运行，或另一条件已执行 |
 | 单机器人条件成功 | 具备动态条件证据，且完整 capability validation suite 中每个 case 均在该条件声明的 attempt 预算内通过 | 该机器人、该生成条件和该 run 生成的 robot-specific driver 通过 capability 准入 | 任何 Task Demo 已通过，或配对条件、全机器人轮次或 SDK 路径成功 |
 | Task Demo 已执行 | 固定的 capability-validated driver、封存的随机五-task `task_demo_suite.json`、独立 Harness verdict 和完整视频 | 该已准入 driver 完成了所选五项 task 及其全部 scoring clause 的演示 | Task Library 全部任务通过、driver synthesis 失败，或在没有声明 high-level controller 时 RQ1 capability-interface use 成功 |
 | 单机器人双条件实验已完成 | 某一声明机器人在相同封存 `capability_design.json`、`capability_validation_suite.json` 和实验配置下，让两种生成条件都到达 capability-validation 最终 verdict | 该机器人的两个 Direct-MuJoCo cell 已执行 | 任一 cell 已通过、完整 cohort 已运行，或任一 Task Demo 已运行 |
@@ -1986,9 +2043,9 @@ the concise run summary records:
 - robot/configuration, package versions, Task Library snapshot, admitted task count, and source
   coverage;
 - model provider, exact model identifier, and generation condition;
-- TGCD designed capability count, task-to-capability coverage, source-standard coverage, and IVC
-  audit result;
-- TGCD, IVC, STUDY, GENERATE, capability validation, Repair, Task Demo, and Evolution outcomes;
+- fixed B1 interface, capability-level pass-standard, validation-suite, and reference-calibration
+  identities;
+- STUDY, GENERATE, capability validation, Repair, Task Demo, and Evolution outcomes;
 - attempt count, separate initial/final capability-validation verdicts, and the separate Task Demo verdict;
 - per-capability, source-standard-clause, and private-case results and video completeness; and
 - any infrastructure or candidate failure reason.
@@ -2001,8 +2058,8 @@ Artifact hashes, signing, and an evidence registry are not required.
 需要证明模型检查了可信 skeleton；from-scratch run 需要证明提交源码没有导入、复制或调用 skeleton
 实现。两者都必须证明尝试了真实本地 MuJoCo probe，并在本次运行中生成最终提交的 driver。简洁
 运行摘要至少记录：run ID 和代码版本；机器人/配置及 package 版本、Task Library 快照、已准入
-task 数量和来源覆盖；模型 provider、准确模型标识和 generation condition；TGCD 设计的
-capability 数量、task→capability 覆盖、来源标准覆盖及 IVC 审计结果；TGCD、IVC、STUDY、
+task 数量和来源覆盖；模型 provider、准确模型标识和 generation condition；固定 B1 interface、
+capability-level pass standard、validation suite 和 reference calibration identity；STUDY、
 GENERATE、Capability Validation、Repair、Task Demo 和 Evolution 结果；attempt 次数、分开的首次
 与最终 capability-validation verdict，以及单独的 Task Demo verdict；
 逐 capability、来源标准 clause 和私有 case 结果及视频完整性；基础设施或 candidate 失败原因。

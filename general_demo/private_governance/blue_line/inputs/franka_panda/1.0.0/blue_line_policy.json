@@ -1,7 +1,0 @@
-{
-  "policy_id": "first-g2-franka-panda-blue-line-v1",
-  "model_id": "anthropic.claude-sonnet-4-5-20250929-v1:0",
-  "prompt_id": "first-g2-blue-line-v1",
-  "max_cases_per_capability": 8,
-  "repetitions": 1
-}

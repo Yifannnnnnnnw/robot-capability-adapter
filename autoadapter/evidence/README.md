@@ -91,7 +91,7 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
   nonblank, task-readable framing.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/franka-reference-positive-control-20260820T034710Z/`.
+`autoadapter/runs/reference/franka-reference-positive-control-20260820T034710Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
 
 The earlier runs ending `013634Z` and `013256Z` were diagnostics and have been
@@ -127,7 +127,7 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
   nonblank, task-readable framing and visible terminal task state.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/xarm7-reference-positive-control-20260820T034432Z/`.
+`autoadapter/runs/reference/xarm7-reference-positive-control-20260820T034432Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
 The earlier runs ending `031649Z` and `031554Z` were diagnostics and have been
 removed from local raw evidence. The `031649Z` run's handle-pull reset already
@@ -162,7 +162,7 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
   task state.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/piper-reference-positive-control-20260820T044929Z/`.
+`autoadapter/runs/reference/piper-reference-positive-control-20260820T044929Z/`.
 Its `reference_report.json`, 20-case suite, and per-case videos remain together.
 The sandboxed run ending `044817Z` was a diagnostic and has been removed from
 local raw evidence. All 20 physical criteria passed, but macOS CoreGraphics was
@@ -193,7 +193,7 @@ Framework-owned reference driver and real MuJoCo 3.3.6 physics:
   visually checked for nonblank, task-readable framing and visible task change.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/kuka-reference-positive-control-20260820T070515Z/`.
+`autoadapter/runs/reference/kuka-reference-positive-control-20260820T070515Z/`.
 Its `reference_report.json`, complete 20-case suite, and per-case videos remain
 together. The sandboxed run ending `070441Z` was a diagnostic and has been
 removed from local raw evidence. All metrics, physical execution, and guards
@@ -228,7 +228,7 @@ reviewed Framework-owned reference driver and real MuJoCo 3.3.6 physics:
   task state.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/aloha-reference-positive-control-20260820T100317Z/`.
+`autoadapter/runs/reference/aloha-reference-positive-control-20260820T100317Z/`.
 Its `reference_report.json`, complete 20-case suite, and per-case videos remain
 together. The sandboxed run ending `100244Z` is diagnostic only: macOS
 CoreGraphics was unavailable and every requested video had zero frames.
@@ -262,7 +262,7 @@ cases with the reviewed skeleton-assisted calibration driver and real MuJoCo
   nonblank, task-readable framing and visible terminal task state.
 
 The ignored raw run is retained locally at
-`autoadapter/runs/kinova-reference-positive-control-20260820T110159Z/`.
+`autoadapter/runs/reference/kinova-reference-positive-control-20260820T110159Z/`.
 Its `reference_report.json`, complete 20-case suite, and per-case videos remain
 together.
 
@@ -420,6 +420,12 @@ Capability Validation -> Task Demo flow has executed.
   five-case suite
 - Primary report retained locally at
   `autoadapter/runs/historical-demo3/deepseek-full-convergence-20260818T144502Z/experiment_report.json`
+
+The valid reference-stage slices from that run are also extracted into the
+reference archive:
+
+- SO-101: `autoadapter/runs/reference/soarm101-reference-positive-control-20260818T144502Z/`
+- Go2: `autoadapter/runs/reference/go2-reference-positive-control-20260818T144502Z/`
 
 | Cell | Attempt trajectory | Final physical verdict |
 |---|---|---|

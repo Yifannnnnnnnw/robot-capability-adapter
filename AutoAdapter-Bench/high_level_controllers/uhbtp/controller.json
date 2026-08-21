@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "controller_id": "uhbtp",
+  "display_name": "UHBTP",
+  "audit_status": "pending",
+  "adapter_status": "absent",
+  "backbone_mode": "pending-classification",
+  "model_backed_roles": [],
+  "eligible_robot_ids": [],
+  "eligible_backbone_ids": [],
+  "source_revision": null,
+  "prompt_revision": null,
+  "native_budgets": null
+}

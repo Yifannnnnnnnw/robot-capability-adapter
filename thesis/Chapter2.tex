@@ -256,14 +256,135 @@ requirements.
 \subsection{LLM Robot Programming}
 \label{sec:llm-robot-programming}
 
+LLM robot programming refers here to using an LLM to generate a program that
+organises robot behaviour. A separate system executes the program, which
+distinguishes this approach from policies that predict continuous actions
+directly from observations. Early methods primarily used program structure to
+constrain task planning. SayCan selects among pre-trained skills, whereas
+ProgPrompt completes Python-like task functions using supplied actions and
+assertions \citep{ahn2022saycan,singh2023progprompt}. These methods move LLM
+output towards executable programs, but the robot operations themselves remain
+pre-implemented.
+
+Code as Policies extends code generation from task sequencing to policy logic.
+Its generated Python can contain branches, loops, and helper functions. The
+program can also process perceptual outputs and parameterise supplied control
+APIs. VoxPoser similarly generates code that constructs three-dimensional
+value maps, which a motion planner uses to synthesise trajectories
+\citep{liang2023codeaspolicies,huang2023voxposer}. Together, these studies show
+that code can connect language instructions to robot execution. However, both
+approaches still rely on system-provided perception and motion mechanisms.
+
+RoboCodeX broadens this approach through a tree-structured multimodal
+code-generation framework. It decomposes high-level instructions into
+object-centred manipulation units that include affordances and safety
+constraints. Its evaluation includes simulated and physical robot tasks
+\citep{mu2024robocodex}. Nevertheless, the evaluated output concerns behaviour
+for a requested task. This evidence does not by itself establish that an LLM
+can implement a fixed, reusable capability interface for a new robot. The
+distinction concerns the generated artefact, rather than a shortcoming of the
+method.
+
+This distinction defines the object studied in this thesis. Calling an
+existing \texttt{move\_to()} method is capability-interface use, whereas
+writing its implementation for a particular robot is driver synthesis.
+Combining several capabilities to complete a task is task programming. Prior
+work therefore supports executable code as a representation of robot
+behaviour, but it commonly begins from available operations. Robot-specific
+driver synthesis must additionally understand the surrounding software and
+implement the required interface. It must also correct failures found during
+execution. The next subsection examines coding agents as a method for
+performing this wider software task.
+
 \subsection{Coding Agents}
 \label{sec:coding-agents}
+
+Early LLM code generation treated programming as function completion. HumanEval
+tests functions generated from docstrings \citep{chen2021codex}. It provides
+little context about an existing software system. Success therefore does not
+demonstrate repository-level coding.
+
+SWE-bench instead evaluates codebase issues \citep{jimenez2024swebench}.
+SWE-agent exposes code and execution results through an agent--computer
+interface \citep{yang2024sweagent}. Interaction therefore becomes part of the
+coding method.
+
+ReAct alternates reasoning and action so observations can revise later steps
+\citep{yao2023react}. CodeAct makes executable code the agent's action
+\citep{wang2024codeact}. Auto-Adapter adopts a bounded version of this process.
+The agent studies public robot material before producing a driver. MuJoCo probes
+expose faults for repair. Public feedback supports development, not behavioural
+correctness.
+
+Initial structure also changes synthesis. Program sketching shows how a partial
+program expresses strategy while synthesis fills omissions
+\citep{solarlezama2013sketching}. This principle motivates comparing
+\texttt{skeleton-assisted} with \texttt{from-scratch}; it does not presume a
+benefit. Auto-Adapter fixes the task and interaction budget between conditions.
+Both receive the same public feedback.
+
+Feedback has two roles. Reflexion guides later attempts through verbal
+reflection, whereas ExpeL extracts reusable knowledge across tasks
+\citep{shinn2023reflexion,zhao2024expel}. Repair changes only the current driver.
+Evolution can inform only a later matched run. This boundary prevents
+accumulated experience from altering the current verdict. Coding-agent methods
+thus define the generation procedure; the next subsection defines its output.
 
 \subsection{Tool and Driver Synthesis}
 \label{sec:tool-driver-synthesis}
 
+This subsection reviews how LLMs synthesise tools for their own use and how
+tool synthesis has been applied to robot software. In Auto-Adapter, the
+resulting tool takes the form of a robot driver. Language to Rewards translates
+instructions into reward functions. Eureka improves reward code through
+simulation feedback. Reinforcement learning then uses the reward to obtain a
+control policy \citep{yu2023language2reward,ma2024eureka}. LLMCap2Skill moves
+closer to software implementation. It retrieves relevant ROS~2 interfaces from
+a capability description and generates an executable skill
+\citep{vieira2025cap2skill}. Its more complex cases still require manual
+correction. Code generation therefore does not remove integration risk.
+
+Research outside robotics places greater emphasis on tool reuse. LATM separates
+tool creation from tool use. It also stores generated Python functions for later
+tasks \citep{cai2023latm}. CREATOR first produces a tool description and
+implementation, then applies the tool to a target problem
+\citep{qian2023creator}. Voyager revises programs after execution failures and
+retains successful code in a reusable skill library \citep{wang2023voyager}.
+
+These studies suggest three principles for Auto-Adapter. Generated drivers
+should be reusable. Synthesis should be separated from later invocation.
+Execution feedback should guide revision. However, these systems produce
+different artefacts and use different evaluation procedures. Their reported
+success rates are therefore not directly comparable.
+
 \subsection{Oracles and Validation}
 \label{sec:oracles-validation}
+
+Validation requires an observation source and a pass rule. Earlier assurance
+work for hand-written robot software used developer-authored oracles. ROSRV
+monitored live ROS messages and blocked a command unless a declared safety
+property held. In one case, the turret angle had to exceed \(-0.45\) rad before
+firing \citep{huang2014rosrv}. The threshold came from the application
+specification, not from the monitor. HAROS extracts software models for model
+checking \citep{santos2021haros}. SOTER instead switches to a certified
+controller before a declared safety invariant can be violated
+\citep{desai2019soter}.
+
+Robot benchmarks later made these rules task-specific. RoboEval uses symbolic
+simulation. It checks generated action traces against temporal conditions across
+several initial states \citep{hu2024codebotler}. This tests action order, but not
+physical dynamics. ROBEL instead evaluates simulated or hardware trajectories.
+Its D'Claw pose task requires a mean joint error below \(10^\circ\). A safety
+pass also requires no position, velocity, or current-limit violations
+\citep{ahn2020robel}. LLMCap2Skill executes generated ROS~2 skills in Gazebo,
+then assesses behaviour against a manually written skill specification
+\citep{vieira2025cap2skill}.
+
+Auto-Adapter combines source-grounded rules with physics-grounded observations.
+The IVC audits task-derived metrics and thresholds before synthesis. A trusted
+Harness then evaluates private MuJoCo states and trajectories. Candidate reports
+cannot determine the verdict. This establishes simulated capability behaviour,
+not hardware safety.
 
 \subsection{Comparative Synthesis}
 \label{sec:comparative-synthesis}

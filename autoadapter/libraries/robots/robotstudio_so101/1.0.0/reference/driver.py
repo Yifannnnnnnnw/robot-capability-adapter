@@ -1,9 +1,10 @@
-"""SO-101 calibration controller for the private Demo3 Harness.
+"""SO-101 trusted reference controller for Framework-owned MuJoCo runs.
 
-This helper is calibration-only. It never constructs or resets MuJoCo state,
-and it never writes qpos, qvel, time, or derived pose arrays. It reads the
-Framework-owned model/data, writes actuator targets through data.ctrl, and
-advances only with mujoco.mj_step.
+This helper supports reference calibration and may be selected as a fixed B2
+benchmark driver behind an audited capability-interface adapter. It is never a
+B1 model input. It never constructs or resets MuJoCo state, writes qpos, qvel,
+time, or derived pose arrays. It reads the Framework-owned model/data, writes
+actuator targets through data.ctrl, and advances only with mujoco.mj_step.
 """
 
 from __future__ import annotations
@@ -47,7 +48,7 @@ def _request(value: Any) -> tuple[str, Mapping[str, Any]]:
 
 
 class ReferenceSO101Driver:
-    """Small actuator-only controller used to calibrate package fixtures.
+    """Small actuator-only reference controller owned by the Framework.
 
     The method names are calibration design names, not a capability or effect
     catalog. A later TGCD design may wrap these primitives under its own

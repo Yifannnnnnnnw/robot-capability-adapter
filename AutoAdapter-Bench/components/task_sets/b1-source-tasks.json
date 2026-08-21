@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "task_set_id": "b1-source-tasks",
+  "track": "B1",
+  "source": "versioned-prior-experiment-per-robot-validation-bundle",
+  "selection": "fixed-interface-pass-standards-and-complete-private-suite",
+  "shared_across_all_b1_units_for_robot": true,
+  "reference_calibration_required": true,
+  "copied_into_benchmark": false
+}

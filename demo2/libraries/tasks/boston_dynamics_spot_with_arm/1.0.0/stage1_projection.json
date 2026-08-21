@@ -1,9 +1,0 @@
-{
-  "artifact_type":"task_description_projection_template","schema_version":"1.0.0","projection_id":"boston_dynamics_spot_with_arm-demo-five-stage1","projection_version":"1.0.0","robot_configuration_id":"boston_dynamics_spot_with_arm","source_collection_id":"boston_dynamics_spot_with_arm-demo-five","source_collection_version":"1.0.0","review_status":"DRAFT","execution_route":"DIRECT_MUJOCO_EXPERIMENTAL","tasks":[
-    {"task_id":"S01","description":"Hold an upright Spot posture at the current location."},
-    {"task_id":"S02","description":"Adjust Spot to the specified body height and hold upright at the current location."},
-    {"task_id":"S03","description":"Move Spot forward in its initial body-yaw direction for a bounded distance, then stop upright."},
-    {"task_id":"S04","description":"Move Spot laterally in its initial body-yaw frame for a bounded distance, then stop upright."},
-    {"task_id":"S05","description":"Move Spot's arm to the specified joint posture and hold it."}
-  ]
-}

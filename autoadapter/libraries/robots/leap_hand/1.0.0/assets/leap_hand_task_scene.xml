@@ -1,0 +1,64 @@
+<mujoco model="leap_hand_task_scene">
+  <include file="right_hand.xml"/>
+
+  <option timestep="0.002" integrator="implicitfast" cone="elliptic" impratio="100"/>
+
+  <visual>
+    <global offwidth="800" offheight="600" azimuth="35" elevation="-35"/>
+  </visual>
+
+  <asset>
+    <material name="task_red" rgba="0.75 0.12 0.08 1"/>
+    <material name="task_blue" rgba="0.08 0.30 0.75 1"/>
+    <material name="task_green" rgba="0.10 0.60 0.25 1"/>
+    <material name="task_yellow" rgba="0.85 0.65 0.08 1"/>
+    <material name="task_floor" rgba="0.18 0.20 0.23 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="task_key" pos="0.25 -0.25 0.65" dir="-0.25 0.25 -1" directional="true"/>
+    <camera name="evidence" pos="0.32 -0.38 0.30" mode="targetbody" target="palm"/>
+    <geom name="task_floor" type="plane" size="0.6 0.6 0.05" material="task_floor"/>
+
+    <body name="reach_target" pos="0.14 -0.12 0.20">
+      <geom name="reach_target_marker" type="sphere" size="0.012" material="task_green" contype="0" conaffinity="0"/>
+      <site name="reach_target_site" pos="0 0 0" size="0.006" rgba="0.1 0.9 0.2 1"/>
+    </body>
+
+    <body name="dexterity_object" pos="0.105 0.020 0.160">
+      <freejoint name="dexterity_object_free"/>
+      <geom name="dexterity_object_geom" type="sphere" size="0.012" density="450" friction="0.9 0.1 0.05" material="task_red"/>
+      <site name="dexterity_object_site" pos="0 0 0" size="0.005" rgba="0.9 0.2 0.1 1"/>
+    </body>
+
+    <body name="block_object" pos="0.105 -0.020 0.160">
+      <geom name="block_object_geom" type="box" size="0.012 0.012 0.012" density="500" friction="0.8 0.1 0.05" material="task_blue"/>
+      <site name="block_target_site" pos="0 0 0" size="0.006" rgba="0.1 0.3 0.9 1"/>
+    </body>
+
+    <body name="rotary_fixture" pos="-0.145 -0.135 0.175">
+      <joint name="fixture_hinge" type="hinge" axis="0 0 1" limited="true" range="-1.5708 1.5708" damping="0.08"/>
+      <geom name="fixture_base_geom" type="box" size="0.020 0.020 0.010" pos="0 0 -0.025" material="task_floor"/>
+      <geom name="fixture_handle_geom" type="capsule" fromto="0 0 0 0.0 0.0 0.060" size="0.010" density="300" friction="0.8 0.1 0.05" material="task_yellow"/>
+      <site name="fixture_target_site" pos="0 0 0.060" size="0.006" rgba="0.9 0.7 0.1 1"/>
+    </body>
+
+    <body name="hold_object" pos="0.105 0.065 0.160">
+      <freejoint name="hold_object_free"/>
+      <geom name="hold_object_geom" type="sphere" size="0.010" density="450" friction="0.9 0.1 0.05" material="task_green"/>
+      <site name="hold_target_site" pos="0 0 0" size="0.005" rgba="0.1 0.8 0.2 1"/>
+    </body>
+
+    <body name="baoding_ball_a" pos="0.105 -0.070 0.160">
+      <freejoint name="baoding_ball_a_free"/>
+      <geom name="baoding_ball_a_geom" type="sphere" size="0.008" density="500" friction="0.7 0.1 0.05" material="task_red"/>
+      <site name="baoding_ball_a_site" pos="0 0 0" size="0.004" rgba="0.9 0.2 0.1 1"/>
+    </body>
+
+    <body name="baoding_ball_b" pos="0.105 0.105 0.160">
+      <freejoint name="baoding_ball_b_free"/>
+      <geom name="baoding_ball_b_geom" type="sphere" size="0.008" density="500" friction="0.7 0.1 0.05" material="task_blue"/>
+      <site name="baoding_ball_b_site" pos="0 0 0" size="0.004" rgba="0.1 0.3 0.9 1"/>
+    </body>
+  </worldbody>
+</mujoco>

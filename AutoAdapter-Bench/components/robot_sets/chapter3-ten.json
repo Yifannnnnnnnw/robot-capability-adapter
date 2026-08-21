@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "robot_set_id": "chapter3-ten",
+  "purpose": "Chapter 3 morphology-diverse B1 cohort with redundant fixed-arm variants excluded",
+  "robot_configuration_ids": [
+    "robotstudio_so101",
+    "franka_panda",
+    "universal_robots_ur5e_robotiq_2f85",
+    "leap_hand",
+    "unitree-go2-stock-12dof",
+    "google_barkour_vb",
+    "unitree_g1",
+    "hello_robot_stretch_2",
+    "aloha_2",
+    "boston_dynamics_spot_with_arm"
+  ]
+}

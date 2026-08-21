@@ -1,0 +1,446 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "unitree_g1",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-g1-public-source-contracts-2026-08-20-v1",
+  "instances": [
+    {
+      "instance_id": "g1-humanoidbench-walk",
+      "task_id": "humanoidbench_walk",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_walk",
+          "task_parameters": {
+            "travel_direction_xyz": [1, 0, 0],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_walk"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-stand",
+      "task_id": "humanoidbench_stand",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_stand",
+          "task_parameters": {"max_control_steps": 1000}
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_stand"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-run",
+      "task_id": "humanoidbench_run",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_run",
+          "task_parameters": {
+            "travel_direction_xyz": [1, 0, 0],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_run"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-reach",
+      "task_id": "humanoidbench_reach",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_reach",
+          "task_parameters": {
+            "target_position_m": [0.35, 0.22, 1.1],
+            "end_effector_body": "left_wrist_yaw_link",
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"distal_wrist_target_error": "binding-humanoidbench_reach"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-hurdle",
+      "task_id": "humanoidbench_hurdle",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_hurdle",
+          "task_parameters": {
+            "course_id": "humanoidbench_cb118903_hurdles",
+            "travel_direction_xyz": [1, 0, 0],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_hurdle"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-crawl",
+      "task_id": "humanoidbench_crawl",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_crawl",
+          "task_parameters": {
+            "tunnel_id": "humanoidbench_cb118903_crawl_tunnel",
+            "travel_direction_xyz": [1, 0, 0],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_crawl"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-maze",
+      "task_id": "humanoidbench_maze",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_maze",
+          "task_parameters": {
+            "checkpoint_positions_m": [[0, 0, 1], [3, 0, 1], [3, 6, 1], [6, 6, 1], [6, 6, 1]],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_maze"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-sit",
+      "task_id": "humanoidbench_sit",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_sit",
+          "task_parameters": {
+            "chair_id": "humanoidbench_cb118903_sit_simple_chair",
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_sit"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-balance",
+      "task_id": "humanoidbench_balance",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_balance",
+          "task_parameters": {
+            "support_board_id": "humanoidbench_cb118903_balance_simple_board",
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_balance"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-stair",
+      "task_id": "humanoidbench_stair",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_stair",
+          "task_parameters": {
+            "stair_course_id": "humanoidbench_cb118903_stairs",
+            "travel_direction_xyz": [1, 0, 0],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_stair"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-slide",
+      "task_id": "humanoidbench_slide",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_slide",
+          "task_parameters": {
+            "ramp_course_id": "humanoidbench_cb118903_slides",
+            "travel_direction_xyz": [1, 0, 0],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_slide"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-pole",
+      "task_id": "humanoidbench_pole",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_pole",
+          "task_parameters": {
+            "pole_field_id": "humanoidbench_cb118903_poles",
+            "travel_direction_xyz": [1, 0, 0],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"source_episode_return": "binding-humanoidbench_pole"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-humanoidbench-push",
+      "task_id": "humanoidbench_push",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "humanoidbench_push",
+          "task_parameters": {
+            "object_id": "tabletop_box",
+            "goal_position_m": [0.95, 0.35, 1.0],
+            "max_control_steps": 500
+          }
+        }
+      },
+      "clause_bindings": {"box_goal_error": "binding-humanoidbench_push"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 5.0,
+      "max_steps": 500,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-robocup-parkour",
+      "task_id": "robocup_parkour",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "robocup_parkour",
+          "task_parameters": {
+            "platform_height_m": 0.25,
+            "platform_top_size_m": [0.6, 0.6],
+            "post_landing_dwell_s": 5,
+            "required_consecutive_runs": 2,
+            "max_trial_duration_s": 1500
+          }
+        }
+      },
+      "clause_bindings": {"two_consecutive_full_successes": "binding-robocup_parkour"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 1500,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-robocup-dynamic-kick",
+      "task_id": "robocup_dynamic_kick",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "robocup_dynamic_kick",
+          "task_parameters": {
+            "ball_id": "rolling_soccer_ball",
+            "goal_id": "robocup_adultsize_goal",
+            "passer_start_distance_m": 1.0,
+            "counted_run_count": 3,
+            "required_success_count": 2,
+            "max_trial_duration_s": 1500
+          }
+        }
+      },
+      "clause_bindings": {"two_of_three_goals": "binding-robocup_dynamic_kick"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 1500,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-robocup-high-kick",
+      "task_id": "robocup_high_kick",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "robocup_high_kick",
+          "task_parameters": {
+            "ball_diameter_m": 0.22,
+            "declared_min_height_m": 0.15,
+            "height_increment_m": 0.01,
+            "minimum_start_distance_m": 0.3,
+            "max_trial_duration_s": 1500
+          }
+        }
+      },
+      "clause_bindings": {"declared_height_goal": "binding-robocup_high_kick"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 1500,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-robocup-obstacle-navigation",
+      "task_id": "robocup_obstacle_navigation",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "robocup_obstacle_navigation",
+          "task_parameters": {
+            "strip_width_m": 3.0,
+            "obstacle_count": 5,
+            "obstacle_height_m": 1.0,
+            "obstacle_width_m": 0.6,
+            "max_trial_duration_s": 1500
+          }
+        }
+      },
+      "clause_bindings": {"collision_free_strip_crossing": "binding-robocup_obstacle_navigation"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 1500,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-robocup-long-stride",
+      "task_id": "robocup_long_stride",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "robocup_long_stride",
+          "task_parameters": {
+            "gap_distance_m": 0.4,
+            "leg_length_m": 1.0,
+            "max_trial_duration_s": 1500
+          }
+        }
+      },
+      "clause_bindings": {"both_feet_clear_gap": "binding-robocup_long_stride"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 20.0,
+      "max_steps": 1500,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-safety-gym-goal0",
+      "task_id": "safety_gym_goal0",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "safety_gym_goal0",
+          "task_parameters": {
+            "goal_center_xy_m": [0.5, 0.5],
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"point_goal_distance": "binding-safety_gym_goal0"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    },
+    {
+      "instance_id": "g1-safety-gym-button0",
+      "task_id": "safety_gym_button0",
+      "scene_entrypoint": "assets/scene.xml",
+      "reset": {"kind": "keyframe", "name": "stand"},
+      "public_arguments": {
+        "request": {
+          "task_id": "safety_gym_button0",
+          "task_parameters": {
+            "goal_button_index": 0,
+            "max_control_steps": 1000
+          }
+        }
+      },
+      "clause_bindings": {"selected_button_contact": "binding-safety_gym_button0"},
+      "guard_ids": ["g1_physics", "g1_no_state_write", "g1_canonical", "g1_terminal_stability"],
+      "repetitions": 1,
+      "timeout_sim_s": 10.0,
+      "max_steps": 1000,
+      "sample_hz": 20
+    }
+  ]
+}

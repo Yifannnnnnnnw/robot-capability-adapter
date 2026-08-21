@@ -1,104 +1,162 @@
-\chapter[Harness Control for Robot Adapter Synthesis]{Harness Control for Robot Adapter Synthesis}\label{chapter:harness}
+\chapter[AutoAdapter-Bench]{AutoAdapter-Bench: LLMs for Robot Drivers}
+\label{chapter:autoadapter-bench}
 
 \begin{quote}\itshape
-This chapter presents Exp. 1. It tests whether a harness pipeline can
-make robot runtime adapter synthesis bounded, inspectable, and separable from
-open-ended robot code generation.
+This chapter presents AutoAdapter-Bench, a benchmark for comparing how
+different LLM backbones perform in robot-driver tasks. The benchmark separates
+two abilities that are often conflated: synthesising robot-specific drivers and
+using robot capability interfaces to complete tasks.
 \end{quote}
 
 \section[Introduction]{Introduction}
-This experiment examines whether robot runtime adapter synthesis can be
-controlled as a supervised pipeline rather than as ad hoc code generation. The
-chapter asks what must be specified before an LLM coding agent writes adapter
-code, how the harness should constrain and observe the agent, what validation
-gates should be applied before the adapter is used downstream, what evidence
-should be produced after generation, and where responsibility should sit
-between the generated adapter and the surrounding harness.
 
-\section[Background Literature]{Background Literature}
-The experiment draws on literature and practice from robot software
-architectures, middleware, software contracts, generated code validation, and
-tool-using LLM systems. These areas motivate the need for a boundary between
-the generated adapter, the runtime backend, and the validation system.
+This chapter develops AutoAdapter-Bench to examine how LLM backbone choice
+affects two roles in robot-driver systems: synthesising robot-specific drivers
+and supporting high-level control through robot capability interfaces. In both
+tracks, the surrounding architecture provides a common experimental setting,
+while the LLM backbone remains the object of comparison. The chapter therefore
+does not investigate how specific design choices in Auto-Adapter or other
+driver-synthesis frameworks affect synthesis performance, nor does it compare
+alternative high-level-control architectures.
 
-\subsection[Robot Runtime Interfaces]{Robot Runtime Interfaces}
-Robot runtime interfaces expose platform-specific execution routes such as
-simulator APIs, vendor SDKs, CAN bridges, DDS routes, HTTP services, camera
-drivers, and calibration files. A reusable adapter must translate stable
-primitive semantics into these concrete backend calls.
+The first track compares seven LLM backbones within the same Auto-Adapter
+generation framework across 14 robot configurations. Generated drivers are
+assessed against common executable validation criteria. The comparison considers
+the proportion of drivers that pass validation, the cost of generation, and the
+repair effort required to produce a valid submission. Together, these measures
+show whether backbone choice changes the reliability and efficiency of driver
+synthesis under a shared generation design.
 
-\subsection[Contracts and Interface Specifications]{Contracts and Interface Specifications}
-Contracts define the assumptions under which generated code is allowed to
-operate. In this thesis, contracts include morphology, units, coordinate
-frames, primitive signatures, backend routes, approved SDK surfaces, safety
-limits, and expected evidence artifacts.
+The second track compares the same seven backbones within a Code-BT high-level
+controller. For each robot, the driver, capability interface, controller
+structure, and task conditions remain common across backbones. Performance is
+measured primarily by complete-task success, while capability-selection and
+execution failures help explain differences between models. This track therefore
+evaluates how effectively each backbone operates through an existing robot
+interface within the same control architecture.
 
-\subsection[Validation and Evidence in Generated Code]{Validation and Evidence in Generated Code}
-Generated code requires validation that is independent from the model that
-authored it. This background motivates the harness design: validation should
-produce structured evidence, not only a binary success label.
+Because the two tracks examine different model roles, their outcomes are
+analysed separately rather than combined into a single backbone ranking. The
+remainder of the chapter defines the benchmark and research questions, describes
+the experimental setup, presents the results from both tracks, and discusses
+their implications for LLM backbone selection.
 
-\section[System Inputs and Artifacts]{System Inputs and Artifacts}
-The experiment uses runtime profiles, robot descriptions, primitive contracts,
-backend constraints, generated adapter files, validation reports, logs, and
-evidence artifacts as its main materials. These artifacts define the boundary
-between what the LLM may generate and what the harness must control.
+\section[Background and Research Questions]{Background and Research Questions}
 
-\subsection[Runtime Profiles and Robot Specifications]{Runtime Profiles and Robot Specifications}
-Runtime profiles describe the robot binding, simulator or hardware route,
-available packages, backend API, action and observation surfaces, and safety
-constraints. Robot specifications provide morphology, joint limits,
-end-effector definitions, gripper semantics, and sensing assumptions.
+Code-generation benchmarks commonly evaluate whether model-produced programs
+pass executable tests, whereas many LLM-based robot controllers assume that
+actions or tools are already available and assess planning or task completion
+\citep{chen2021codex,jimenez2024swebench,ahn2022saycan,
+singh2023progprompt}. Neither setting alone reveals how the same LLM performs
+when constructing a robot-specific driver and when operating through an existing
+capability interface.
 
-\subsection[Adapter and Evidence Artifacts]{Adapter and Evidence Artifacts}
-The generated adapter is the main output of the coding agent. Evidence
-artifacts include validation reports, source checks, primitive test results,
-transport traces, composition smoke tests, and optional qualitative evidence
-from downstream execution or diagnosis roles.
+AutoAdapter-Bench therefore defines backbone capability as observed performance
+under shared system conditions, rather than as an intrinsic property of a model.
+B1 compares backbones within Auto-Adapter, while B2 compares them within Code-BT.
+The chapter addresses two corresponding questions:
 
-\section[Aims of Study and Analysis Approach]{Aims of Study and Analysis Approach}
-The aim of this experiment is to test whether a harness architecture can make
-adapter synthesis bounded, auditable, and reusable. The analysis evaluates
-whether the pipeline separates the responsibilities of environment resolution,
-contract specification, generation, validation, evidence recording, and
-downstream use.
+\paragraph{\textit{RQ1a---Driver synthesis.}}
+Under a common Auto-Adapter generation framework and executable validation
+standard, to what extent do LLM backbones differ in synthesising robot-specific
+drivers that pass validation under the skeleton-assisted condition and the
+prespecified from-scratch ablation?
 
-\subsection[Architectural Criteria]{Architectural Criteria}
-The harness is analysed according to whether it separates generated code from
-validation, exposes robot-and-runtime assumptions, supports repair feedback,
-and preserves evidence for later interpretation.
+\paragraph{\textit{RQ1b---Capability-interface use.}}
+Under a common Code-BT architecture, with the validated driver, capability
+interface, and matched tasks held constant, to what extent do LLM backbones
+differ in complete-task success?
 
-\subsection[Boundary Criteria]{Boundary Criteria}
-The generated adapter should remain a thin runtime-facing layer. The harness
-should own contracts, success criteria, validation gates, repair feedback, and
-evidence records. This boundary prevents the LLM-authored code from becoming
-both the implementation and the judge of its own correctness.
+The findings are conditional on these benchmark settings. They do not compare
+alternative synthesis frameworks or controller architectures, and do not
+estimate morphology effects.
 
-\section[Harness Architecture Analysis]{Harness Architecture Analysis}
-The harness coordinates the lifecycle of an adapter: resolving environment
-information, presenting formal specifications, invoking generation roles,
-running validation procedures, collecting evidence, and exposing artifacts for
-downstream use or diagnosis.
+\section[Benchmark and Experimental Setup]{Benchmark and Experimental Setup}
 
-\subsection[Environment Resolution]{Environment Resolution}
-Environment resolution determines what the agent can rely on before generating
-code. This includes available packages, runtime paths, simulator or hardware
-availability, bridge endpoints, calibration locations, and backend
-documentation.
+\subsection{Benchmark Design}
 
-\subsection[Robot Runtime and Transport Contracts]{Robot Runtime and Transport Contracts}
-The contract layer specifies robot morphology, primitive semantics, action and
-observation interfaces, backend route, and safety constraints. Transport
-interfaces define the communication path to the backend, while runtime backends
-name the concrete execution surface.
+B1 compares LLM backbones for driver synthesis while holding the Auto-Adapter
+framework and evaluation protocol constant. B2 compares the same backbones for
+capability-interface use while holding Code-BT, the validated driver, and the
+robot capability interface constant \citep{zhang2025codebt}. Because the tracks
+use different experimental units and define success at different levels, their
+results are reported separately and are not combined into an aggregate score.
 
-\subsection[Validation and Evidence Framework]{Validation and Evidence Framework}
-Validation procedures produce evidence for source validity, importability,
-primitive conformance, transport behaviour, composition behaviour, and
-downstream usability. These procedures form a bounded evidence framework rather
-than a guarantee of all physical behaviours.
+\subsection{Experimental Matrix}
 
-\subsubsection[Success Criteria and Validation]{Success Criteria and Validation}
+Tables~\ref{tab:chapter3-b1-matrix} and~\ref{tab:chapter3-b2-matrix} summarise
+the experimental units and declared sample sizes for B1 and B2.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{B1 driver-synthesis experimental matrix.}
+  \label{tab:chapter3-b1-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{B1 design element} & \textbf{Setting} \\
+    \midrule
+    Backbones & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; Qwen3 32B \\
+    Skeleton-assisted condition & 14 robot configurations $\times$ 7 backbones $\times$ 5 replicates = 490 replicates \\
+    From-scratch condition & SO-101, Franka Panda, Unitree Go2, Stretch 2 and Unitree G1 $\times$ 7 backbones $\times$ 5 replicates = 175 replicates \\
+    Experimental unit & One generation-condition replicate \\
+    Attempt budget & One initial submission and at most two Repair attempts \\
+    Total & 665 replicates \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{B2 capability-interface-use experimental matrix.}
+  \label{tab:chapter3-b2-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{B2 design element} & \textbf{Setting} \\
+    \midrule
+    Backbones & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; Qwen3 32B \\
+    Robots & SO-101 and Unitree Go2 \\
+    Controller & Code-BT \\
+    Fixed software & One validated driver and capability interface per robot \\
+    Task repetitions & Five tasks $\times$ 2 private seeds $\times$ 2 episodes \\
+    Experimental unit & One controller episode \\
+    Total & 280 episodes \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+\subsection{Backbone and Robot Cohorts}
+
+The seven backbones form a purposive comparison cohort rather than a
+representative sample of available LLMs. The selection extends the cross-model
+design of AutoAdapter 1.0 \citep{wang2026autoadapter}. Three Anthropic models
+provide a within-provider comparison across model tiers, while the remaining
+models extend the study across four additional providers. Smaller open-weight
+model families are included to examine whether successful driver synthesis and
+interface use are confined to proprietary systems. The resulting comparisons
+are conditional on these seven models and the benchmark conditions.
+
+The B1 cohort contains 11 exact robot configurations spanning manipulation,
+dexterous-hand, legged, humanoid, mobile, and bimanual platforms. The
+skeleton-assisted condition covers the complete cohort. The five-robot
+from-scratch subset was selected before outcomes were inspected to bound the
+additional experiment while retaining contrasting integration settings. B2
+uses SO-101 and Unitree Go2 to provide one manipulation and one locomotion
+setting. Robot configuration is treated as a blocking factor rather than as
+evidence of a morphology effect. Canonical configuration identifiers and
+package versions are reported in
+Appendix~\ref{tab:appendix-benchmark-scope}.
+
+\subsection{Success Criteria and Validation}
 
 Industrial robot performance standards separate measurement procedures from
 application-specific acceptance limits. ISO~9283 defines performance criteria
@@ -140,15 +198,10 @@ conditions. They are not used to select, tune, or justify the acceptance
 threshold, because deriving a threshold from those outcomes would make the
 requirement depend on the calibration controller used to exercise it.
 
-\section[Results]{Results}
-The result of Exp. 1 is a harness formulation in which generated adapter
-code is only one artifact inside a larger contract-governed process. This
-structure supports clearer failure attribution, more explicit assumptions, and
-more reusable adapter outputs than a one-off task script.
+
+\section[Driver-Synthesis Track]{Driver-Synthesis Track }
+
+\section[Capability-Interface Use Track]{Capability-Interface Use Track}
+
 
 \section[Discussion]{Discussion}
-The harness architecture provides the methodological foundation for the
-remaining experiments. Its main limitation is that validation coverage defines
-the boundary of the claim: an adapter can be shown to satisfy available
-contracts and tests, but this does not prove unrestricted robot autonomy or
-complete physical deployment readiness.
