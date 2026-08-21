@@ -1,0 +1,48 @@
+<mujoco>
+  <statistic center="0.12 0 0.03" extent="0.32" meansize="0.01"/>
+
+  <visual>
+    <headlight diffuse="0.8 0.8 0.8" ambient="0.25 0.25 0.25" specular="0.3 0.3 0.3"/>
+    <global offwidth="800" offheight="600"/>
+  </visual>
+
+  <asset>
+    <material name="ec_floor" rgba="0.16 0.18 0.21 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="ec_key" pos="-0.2 -0.3 0.6" dir="0.3 0.3 -1" directional="true"/>
+    <camera name="evidence" pos="-0.22 0.39 0.27" xyaxes="-0.87 -0.49 0 0.22 -0.39 0.89"/>
+    <geom name="ec_floor" pos="0 0 -0.25" size="0 0 0.01" type="plane" material="ec_floor"
+      contype="2" conaffinity="2"/>
+    <body name="goal" pos="0.25 0.16 0" quat="1 0 0 0"/>
+    <body name="goal_z90" pos="0.25 0.16 0" quat="0.7071067812 0 0 0.7071067812"/>
+    <body name="goal_z180" pos="0.25 0.16 0" quat="0 0 0 1"/>
+    <body name="goal_z270" pos="0.25 0.16 0" quat="0.7071067812 0 0 -0.7071067812"/>
+  </worldbody>
+
+  <sensor>
+    <framepos name="palm_position" objtype="site" objname="grasp_site"/>
+    <framepos name="cube_position" objtype="body" objname="cube"/>
+    <framequat name="cube_orientation" objtype="body" objname="cube"/>
+    <framequat name="cube_goal_orientation" objtype="body" objname="goal"/>
+    <framequat name="cube_goal_z90" objtype="body" objname="goal_z90"/>
+    <framequat name="cube_goal_z180" objtype="body" objname="goal_z180"/>
+    <framequat name="cube_goal_z270" objtype="body" objname="goal_z270"/>
+  </sensor>
+
+  <keyframe>
+    <key name="home"
+      qpos="
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0.8 0.8 0
+      0.1 0 0.05 0.810967 -0.00262895 -0.585086 -0.000254303"
+      ctrl="
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0.8 0.8 0"/>
+  </keyframe>
+</mujoco>

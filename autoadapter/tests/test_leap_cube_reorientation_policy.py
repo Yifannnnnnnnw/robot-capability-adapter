@@ -37,8 +37,6 @@ POLICY_RESOURCE = (
 METADATA_PATH = (
     PACKAGE_ROOT / "reference" / "leap_cube_reorientation_policy.json"
 )
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 
 
 def _load_package_skeleton():
@@ -184,16 +182,3 @@ def test_leap_policy_artifact_scope_and_provenance_are_explicit() -> None:
         assert retained["layer_2_weight"].shape == (256, 128)
         assert retained["layer_3_weight"].shape == (128, 32)
         assert all(np.isfinite(retained[name]).all() for name in retained.files)
-
-    runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-    assert "leap_hand" not in runnable_index["robots"]
-    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
-    candidate = next(
-        item
-        for item in research_index["candidates"]
-        if item["robot_configuration_id"] == "leap_hand"
-    )
-    assert candidate["observed_task_count"] == 20
-    missing = " ".join(candidate["missing_for_runnable_package"])
-    assert "complete calibration-only reference driver" in missing
-    assert "package-wide positive control" in missing

@@ -1,0 +1,395 @@
+{
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+  "bindings": [
+    {
+      "binding_id": "binding-ec_pinch",
+      "metric": "ec_pinch_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["bolt_shaft_geom", "nut_geom"],
+        "required_robot_geom_groups": [
+          ["if_bs_collision_1", "if_px_collision", "if_md_collision_1", "if_md_collision_5", "if_ds_collision_1", "if_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "translation_return",
+        "axis": 2,
+        "minimum_translation_range_m": 0.0004,
+        "maximum_return_error_m": 0.0003
+      }
+    },
+    {
+      "binding_id": "binding-ec_dynamic_tripod",
+      "metric": "ec_dynamic_tripod_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["small_marker_geom"],
+        "required_robot_geom_groups": [
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["rf_bs_collision_1", "rf_px_collision", "rf_md_collision_1", "rf_md_collision_5", "rf_ds_collision_1", "rf_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "translation_cycle",
+        "axis": 2,
+        "minimum_translation_range_m": 0.0005,
+        "minimum_direction_changes": 1
+      }
+    },
+    {
+      "binding_id": "binding-ec_squeeze",
+      "metric": "ec_squeeze_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["syringe_barrel_geom", "syringe_plunger_geom"],
+        "required_robot_geom_groups": [
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["rf_bs_collision_1", "rf_px_collision", "rf_md_collision_1", "rf_md_collision_5", "rf_ds_collision_1", "rf_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "joint",
+        "joint_name": "syringe_plunger",
+        "minimum_joint_range_rad": 0.005
+      }
+    },
+    {
+      "binding_id": "binding-ec_twiddle",
+      "metric": "ec_twiddle_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["bolt_shaft_geom", "nut_geom"],
+        "required_robot_geom_groups": [
+          ["if_bs_collision_1", "if_px_collision", "if_md_collision_1", "if_md_collision_5", "if_ds_collision_1", "if_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation_cycle",
+        "minimum_cumulative_rotation_deg": 15.0,
+        "minimum_direction_changes": 1
+      }
+    },
+    {
+      "binding_id": "binding-ec_rock",
+      "metric": "ec_rock_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["yellow_cup_geom"],
+        "required_robot_geom_groups": [
+          ["if_bs_collision_1", "if_px_collision", "if_md_collision_1", "if_md_collision_5", "if_ds_collision_1", "if_tip"],
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["rf_bs_collision_1", "rf_px_collision", "rf_md_collision_1", "rf_md_collision_5", "rf_ds_collision_1", "rf_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation",
+        "minimum_cumulative_rotation_deg": 30.0
+      }
+    },
+    {
+      "binding_id": "binding-ec_rock_ii",
+      "metric": "ec_rock_ii_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["small_marker_geom"],
+        "required_robot_geom_groups": [
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["rf_bs_collision_1", "rf_px_collision", "rf_md_collision_1", "rf_md_collision_5", "rf_ds_collision_1", "rf_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation_cycle",
+        "minimum_cumulative_rotation_deg": 20.0,
+        "minimum_direction_changes": 1
+      }
+    },
+    {
+      "binding_id": "binding-ec_radial_roll",
+      "metric": "ec_radial_roll_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["green_marble_geom", "tracking_bolt_geom"],
+        "required_robot_geom_groups": [
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation_cycle",
+        "minimum_cumulative_rotation_deg": 30.0,
+        "minimum_direction_changes": 1
+      }
+    },
+    {
+      "binding_id": "binding-ec_index_roll",
+      "metric": "ec_index_roll_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["green_marble_geom", "tracking_bolt_geom"],
+        "required_robot_geom_groups": [
+          ["if_bs_collision_1", "if_px_collision", "if_md_collision_1", "if_md_collision_5", "if_ds_collision_1", "if_tip"],
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation_cycle",
+        "minimum_cumulative_rotation_deg": 30.0,
+        "minimum_direction_changes": 1
+      }
+    },
+    {
+      "binding_id": "binding-ec_full_roll",
+      "metric": "ec_full_roll_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["wood_block_geom"],
+        "required_robot_geom_groups": [
+          ["if_bs_collision_1", "if_px_collision", "if_md_collision_1", "if_md_collision_5", "if_ds_collision_1", "if_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation_cycle",
+        "minimum_cumulative_rotation_deg": 20.0,
+        "minimum_direction_changes": 1
+      }
+    },
+    {
+      "binding_id": "binding-ec_rotary_step",
+      "metric": "ec_rotary_step_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["yellow_cup_geom"],
+        "required_robot_geom_groups": [
+          ["if_bs_collision_1", "if_px_collision", "if_md_collision_1", "if_md_collision_5", "if_ds_collision_1", "if_tip"],
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["rf_bs_collision_1", "rf_px_collision", "rf_md_collision_1", "rf_md_collision_5", "rf_ds_collision_1", "rf_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation",
+        "minimum_cumulative_rotation_deg": 360.0
+      }
+    },
+    {
+      "binding_id": "binding-ec_interdigital_step",
+      "metric": "ec_interdigital_step_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["small_marker_geom"],
+        "required_robot_geom_groups": [
+          ["if_bs_collision_1", "if_px_collision", "if_md_collision_1", "if_md_collision_5", "if_ds_collision_1", "if_tip"],
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["rf_bs_collision_1", "rf_px_collision", "rf_md_collision_1", "rf_md_collision_5", "rf_ds_collision_1", "rf_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "rotation",
+        "minimum_cumulative_rotation_deg": 360.0
+      }
+    },
+    {
+      "binding_id": "binding-ec_linear_step",
+      "metric": "ec_linear_step_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["large_marker_geom"],
+        "required_robot_geom_groups": [
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["th_mp_collision", "th_px_collision_1", "th_ds_collision_1", "th_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "contact_slide",
+        "site_names": ["mf_tip", "th_tip"],
+        "axis": 2,
+        "minimum_site_translation_range_m": 0.0005
+      }
+    },
+    {
+      "binding_id": "binding-ec_palmar_slide",
+      "metric": "ec_palmar_slide_successful_trial_count",
+      "unit": "trial",
+      "kind": "in_hand_object_pattern_success",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "object_geom_names": ["large_marker_geom"],
+        "required_robot_geom_groups": [
+          ["mf_bs_collision_1", "mf_px_collision", "mf_md_collision_1", "mf_md_collision_5", "mf_ds_collision_1", "mf_tip"],
+          ["rf_bs_collision_1", "rf_px_collision", "rf_md_collision_1", "rf_md_collision_5", "rf_ds_collision_1", "rf_tip"]
+        ],
+        "minimum_contact_steps": 1,
+        "motion_kind": "translation",
+        "axis": 1,
+        "minimum_translation_range_m": 0.005
+      }
+    },
+    {
+      "binding_id": "binding-gym_hand_reach_all_fingertips",
+      "metric": "concatenated_fingertip_cartesian_l2_error",
+      "unit": "m",
+      "kind": "final_concatenated_site_position_error",
+      "parameters": {
+        "site_names": ["if_tip", "mf_tip", "rf_tip", "th_tip"],
+        "reference_body_name": "palm",
+        "target_argument": "request.task_parameters.target_fingertip_positions_m",
+        "physics_steps_per_control_step": 10,
+        "control_steps_argument": "request.task_parameters.max_control_steps"
+      }
+    },
+    {
+      "binding_id": "binding-gym_hand_manipulate_block-position",
+      "metric": "block_target_euclidean_position_error",
+      "unit": "m",
+      "kind": "final_body_position_offset_error",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "target_argument": "request.task_parameters.target_position_offset_m",
+        "orientation_target_argument": "request.task_parameters.target_orientation_wxyz",
+        "maximum_orientation_error_rad": 0.1,
+        "physics_steps_per_control_step": 3,
+        "control_steps_argument": "request.task_parameters.max_control_steps"
+      }
+    },
+    {
+      "binding_id": "binding-gym_hand_manipulate_block-orientation",
+      "metric": "block_target_shortest_quaternion_angle_error",
+      "unit": "rad",
+      "kind": "final_body_quaternion_error",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "target_argument": "request.task_parameters.target_orientation_wxyz",
+        "position_target_argument": "request.task_parameters.target_position_offset_m",
+        "maximum_position_error_m": 0.01,
+        "physics_steps_per_control_step": 3,
+        "control_steps_argument": "request.task_parameters.max_control_steps"
+      }
+    },
+    {
+      "binding_id": "binding-robel_dclaw_pose_fixed",
+      "metric": "maximum_absolute_joint_position_error",
+      "unit": "rad",
+      "kind": "final_maximum_joint_position_error",
+      "parameters": {
+        "joint_names": ["if_mcp", "if_rot", "if_pip", "if_dip", "mf_mcp", "mf_rot", "mf_pip", "mf_dip", "rf_mcp", "rf_rot", "rf_pip", "rf_dip", "th_cmc", "th_axl", "th_mcp", "th_ipl"],
+        "target_argument": "request.task_parameters.target_joint_positions_rad",
+        "physics_steps_per_control_step": 25,
+        "control_steps_argument": "request.task_parameters.max_control_steps"
+      }
+    },
+    {
+      "binding_id": "binding-robel_dclaw_turn_fixed",
+      "metric": "absolute_wrapped_fixture_target_angle_error",
+      "unit": "rad",
+      "kind": "final_wrapped_joint_position_error",
+      "parameters": {
+        "joint_name": "fixture_hinge",
+        "target_argument": "request.task_parameters.target_fixture_angle_rad",
+        "physics_steps_per_control_step": 50,
+        "control_steps_argument": "request.task_parameters.max_control_steps"
+      }
+    },
+    {
+      "binding_id": "binding-robel_dclaw_screw_fixed",
+      "metric": "maximum_absolute_unbounded_fixture_target_angle_error",
+      "unit": "rad",
+      "kind": "maximum_joint_linear_trajectory_error",
+      "parameters": {
+        "joint_name": "fixture_hinge",
+        "velocity_argument": "request.task_parameters.target_fixture_velocity_rad_s",
+        "control_period_s": 0.1,
+        "control_steps_argument": "request.task_parameters.max_control_steps",
+        "physics_steps_per_control_step": 50
+      }
+    },
+    {
+      "binding_id": "binding-myosuite_object_hold_fixed-solved",
+      "metric": "object_hold_solved_control_step_count",
+      "unit": "control_step",
+      "kind": "body_target_solved_sample_count",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "target_argument": "request.task_parameters.target_object_position_m",
+        "solved_distance_m": 0.01,
+        "drop_distance_m": 0.3,
+        "control_period_s": 0.02,
+        "control_steps_argument": "request.task_parameters.max_control_steps",
+        "physics_steps_per_control_step": 10
+      }
+    },
+    {
+      "binding_id": "binding-myosuite_object_hold_fixed-drop",
+      "metric": "object_hold_drop_event_count",
+      "unit": "event",
+      "kind": "body_target_drop_event_count",
+      "parameters": {
+        "body_name": "cube",
+        "reference_body_name": "palm",
+        "target_argument": "request.task_parameters.target_object_position_m",
+        "drop_distance_m": 0.3,
+        "solved_distance_m": 0.01,
+        "minimum_solved_steps": 5,
+        "control_period_s": 0.02,
+        "control_steps_argument": "request.task_parameters.max_control_steps",
+        "physics_steps_per_control_step": 10
+      }
+    },
+    {
+      "binding_id": "binding-myosuite_baoding_p1",
+      "metric": "mean_two_ball_solved_fraction",
+      "unit": "ratio",
+      "kind": "mean_two_body_orbit_tracking_fraction",
+      "parameters": {
+        "body_names": ["ball_1", "ball_2"],
+        "reference_body_name": "palm",
+        "orbit_center": [-0.02, -0.03, -0.117],
+        "radii_argument": "request.task_parameters.orbit_radii_m",
+        "period_argument": "request.task_parameters.orbit_period_s",
+        "initial_phase_rad": 0.7853981633974483,
+        "maximum_tracking_error_m": 0.015,
+        "minimum_source_height": 1.25,
+        "source_height_offset_m": 1.4,
+        "control_period_s": 0.025,
+        "control_steps_argument": "request.task_parameters.max_control_steps",
+        "physics_steps_per_control_step": 10
+      }
+    }
+  ]
+}

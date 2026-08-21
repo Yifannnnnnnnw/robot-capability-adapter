@@ -1,0 +1,50 @@
+<mujoco model="leap_dclaw_turn_fixture">
+  <include file="leap_rh_mjx.xml"/>
+
+  <statistic center="0.13 0 0.03" extent="0.30" meansize="0.01"/>
+
+  <visual>
+    <headlight diffuse="0.8 0.8 0.8" ambient="0.25 0.25 0.25" specular="0.3 0.3 0.3"/>
+    <global offwidth="800" offheight="600"/>
+  </visual>
+
+  <asset>
+    <material name="fixture_hub_material" rgba="0.16 0.48 0.76 1"/>
+    <material name="fixture_lobe_material" rgba="0.92 0.58 0.12 1"/>
+    <material name="fixture_floor_material" rgba="0.16 0.18 0.21 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="fixture_key" pos="-0.2 -0.3 0.6" dir="0.3 0.3 -1" directional="true"/>
+    <camera name="evidence" pos="-0.22 0.39 0.27" xyaxes="-0.87 -0.49 0 0.22 -0.39 0.89"/>
+    <geom name="fixture_floor" pos="0 0 -0.25" size="0 0 0.01" type="plane"
+      material="fixture_floor_material" contype="2" conaffinity="2"/>
+    <body name="fixture" pos="0.17 -0.06 0.025">
+      <joint name="fixture_hinge" type="hinge" axis="0 1 0" limited="false"
+        damping="0.00002" frictionloss="0.00001" armature="0.00001"/>
+      <geom name="fixture_hub" type="cylinder" size="0.012 0.010" quat="0.70710678 0.70710678 0 0"
+        mass="0.006" friction="1.5 0.05 0.0002" material="fixture_hub_material"/>
+      <geom name="fixture_lobe_0" type="capsule" fromto="0 0 0 0.020 0 0" size="0.005"
+        mass="0.004" friction="1.5 0.05 0.0002" material="fixture_lobe_material"/>
+      <geom name="fixture_lobe_1" type="capsule" fromto="0 0 0 -0.010 0 0.017321" size="0.005"
+        mass="0.004" friction="1.5 0.05 0.0002" material="fixture_lobe_material"/>
+      <geom name="fixture_lobe_2" type="capsule" fromto="0 0 0 -0.010 0 -0.017321" size="0.005"
+        mass="0.004" friction="1.5 0.05 0.0002" material="fixture_lobe_material"/>
+    </body>
+  </worldbody>
+
+  <keyframe>
+    <key name="home"
+      qpos="
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0.8 0.8 0
+      0"
+      ctrl="
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0.8 0.8 0"/>
+  </keyframe>
+</mujoco>

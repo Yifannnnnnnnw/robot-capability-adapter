@@ -13,8 +13,6 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "leap_hand" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene_right.xml"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 FINGER_ORDER = ["index", "middle", "ring", "thumb"]
 JOINT_NAMES = [
@@ -108,7 +106,20 @@ EXPECTED_CLOSURE_FILES = (
     "MUJOCO_PLAYGROUND_LICENSE.txt",
     "README.md",
     "SOURCE.md",
+    "leap_baoding_scene.xml",
     "leap_cube_policy_scene.xml",
+    "leap_dclaw_fixture_scene.xml",
+    "leap_dclaw_screw_scene.xml",
+    "leap_ec_bolt_scene.xml",
+    "leap_ec_cup_scene.xml",
+    "leap_ec_large_marker_scene.xml",
+    "leap_ec_marble_scene.xml",
+    "leap_ec_small_marker_scene.xml",
+    "leap_ec_syringe_scene.xml",
+    "leap_ec_wood_block_scene.xml",
+    "leap_hand_kinematic_scene.xml",
+    "leap_policy_reference_environment.xml",
+    "leap_reference_cube_scene.xml",
     "leap_rh_mjx.xml",
     "left_hand.xml",
     "reorientation_cube.xml",
@@ -349,28 +360,3 @@ def test_leap_hand_asset_foundation_is_local_and_live() -> None:
     assert np.isfinite(data.qvel).all()
     assert np.isfinite(data.qacc).all()
     assert np.isfinite(data.ctrl).all()
-
-    runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-    assert "leap_hand" not in runnable_index["robots"]
-
-    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
-    candidate = next(
-        item
-        for item in research_index["candidates"]
-        if item["robot_configuration_id"] == "leap_hand"
-    )
-    observed_paths = {
-        item["path"] for item in candidate["locally_observed_source_material"]
-    }
-    assert {
-        "autoadapter/libraries/robots/leap_hand/1.0.0/assets/scene_right.xml",
-        "autoadapter/libraries/robots/leap_hand/1.0.0/morphology.json",
-    }.issubset(observed_paths)
-    missing = " ".join(candidate["missing_for_runnable_package"])
-    assert "Materialize and verify a complete local MuJoCo asset closure" not in missing
-    assert "Create the current mainline morphology.json" not in missing
-    assert "20 distinct applicable source-backed tasks" not in missing
-    assert "tasks/private/instances.json" in missing
-    assert "hand-control skeleton" not in missing
-    assert "positive control" in missing
-    assert "dynamic canary" in missing

@@ -443,10 +443,12 @@ def test_leap_hand_public_task_library_snapshot() -> None:
         assert excluded_variant not in public_text
 
     task_entries = sorted(entry.name for entry in (PACKAGE_ROOT / "tasks").iterdir())
-    assert task_entries == ["catalog.json", "sources.json"]
-    assert not (PACKAGE_ROOT / "tasks" / "private").exists()
+    assert task_entries == ["catalog.json", "private", "sources.json"]
+    assert sorted(
+        entry.name for entry in (PACKAGE_ROOT / "tasks" / "private").iterdir()
+    ) == ["bindings.json", "guards.json", "instances.json"]
     assert (PACKAGE_ROOT / "skeleton" / "hand_joint_position.py").is_file()
     assert (
         PACKAGE_ROOT / "reference" / "leap_cube_reorientation_policy.json"
     ).is_file()
-    assert not (PACKAGE_ROOT / "reference" / "driver.py").exists()
+    assert (PACKAGE_ROOT / "reference" / "driver.py").is_file()

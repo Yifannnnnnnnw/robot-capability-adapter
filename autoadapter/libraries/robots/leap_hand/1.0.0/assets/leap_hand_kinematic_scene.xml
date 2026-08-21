@@ -1,0 +1,35 @@
+<mujoco model="leap_hand_kinematic">
+  <include file="leap_rh_mjx.xml"/>
+
+  <statistic center="0.12 0 0.03" extent="0.30" meansize="0.01"/>
+
+  <visual>
+    <headlight diffuse="0.8 0.8 0.8" ambient="0.25 0.25 0.25" specular="0.3 0.3 0.3"/>
+    <global offwidth="800" offheight="600"/>
+  </visual>
+
+  <asset>
+    <material name="kinematic_floor_material" rgba="0.16 0.18 0.21 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="kinematic_key" pos="-0.2 -0.3 0.6" dir="0.3 0.3 -1" directional="true"/>
+    <camera name="evidence" pos="-0.22 0.39 0.27" xyaxes="-0.87 -0.49 0 0.22 -0.39 0.89"/>
+    <geom name="kinematic_floor" pos="0 0 -0.25" size="0 0 0.01" type="plane"
+      material="kinematic_floor_material" contype="2" conaffinity="2"/>
+  </worldbody>
+
+  <keyframe>
+    <key name="home"
+      qpos="
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0.8 0.8 0"
+      ctrl="
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0 0.8 0.8
+      0.8 0.8 0.8 0"/>
+  </keyframe>
+</mujoco>
