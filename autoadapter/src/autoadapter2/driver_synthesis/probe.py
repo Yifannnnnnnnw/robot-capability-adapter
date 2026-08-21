@@ -349,6 +349,19 @@ def _copy_file(source: Path, destination: Path) -> None:
     if not source.is_file():
         raise ProbeError(f"public probe input is missing: {source}")
     destination.parent.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "darwin":
+        try:
+            clone = subprocess.run(
+                ["cp", "-c", "-p", os.fspath(source), os.fspath(destination)],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            pass
+        else:
+            if clone.returncode == 0:
+                return
     shutil.copy2(source, destination)
 
 

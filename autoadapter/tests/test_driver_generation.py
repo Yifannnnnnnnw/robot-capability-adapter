@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from autoadapter2.driver_synthesis.generation import (
     GENERATE_PROMPT,
@@ -18,6 +19,7 @@ from autoadapter2.driver_synthesis.generation import (
 from autoadapter2.driver_synthesis.probe import (
     ProbeSourceError,
     ProbeBudget,
+    _copy_file,
     audit_public_source,
     prepare_public_probe_workspace,
     public_asset_closure_manifest,
@@ -290,6 +292,34 @@ class DriverGenerationTests(unittest.TestCase):
         self.assertTrue(public.scene_path.is_file())
         self.assertTrue((public.root / "assets" / "models" / "tri.obj").is_file())
         self.assertFalse((public.root / "assets" / "private_scene.xml").exists())
+
+    def test_copy_file_prefers_darwin_clone_and_falls_back(self) -> None:
+        source = Path(self.temporary.name) / "clone-source.bin"
+        source.write_bytes(b"source")
+        cloned = Path(self.temporary.name) / "clone" / "destination.bin"
+
+        def clone_file(command, **_kwargs):
+            Path(command[-1]).write_bytes(Path(command[-2]).read_bytes())
+            return type("CloneResult", (), {"returncode": 0})()
+
+        with patch("autoadapter2.driver_synthesis.probe.sys.platform", "darwin"), patch(
+            "autoadapter2.driver_synthesis.probe.subprocess.run",
+            side_effect=clone_file,
+        ) as run_clone:
+            _copy_file(source, cloned)
+
+        self.assertEqual(cloned.read_bytes(), b"source")
+        cloned.write_bytes(b"changed")
+        self.assertEqual(source.read_bytes(), b"source")
+        self.assertEqual(run_clone.call_args.args[0][:3], ["cp", "-c", "-p"])
+
+        fallback = Path(self.temporary.name) / "fallback" / "destination.bin"
+        with patch("autoadapter2.driver_synthesis.probe.sys.platform", "darwin"), patch(
+            "autoadapter2.driver_synthesis.probe.subprocess.run",
+            return_value=type("CloneResult", (), {"returncode": 1})(),
+        ):
+            _copy_file(source, fallback)
+        self.assertEqual(fallback.read_bytes(), b"source")
 
     def test_probe_isolation_and_nstep_fact_use_staged_public_scene(self) -> None:
         script = """
