@@ -123,6 +123,55 @@ def _worker_environment(source_root: Path) -> dict[str, str]:
     return allowed
 
 
+def _resolve_b1_body_geom_symbols(
+    binding: Mapping[str, Any], scene_path: Path
+) -> Mapping[str, Any]:
+    """Resolve an inline body/subtree symbol to trusted MuJoCo geom names."""
+
+    parameters = binding.get("parameters")
+    if not isinstance(parameters, Mapping):
+        raise HarnessError("B1 binding parameters must be an object")
+    raw_body_names = parameters.get("tool_body_names")
+    if raw_body_names is None:
+        return binding
+    if (
+        not isinstance(raw_body_names, list)
+        or not raw_body_names
+        or not all(isinstance(name, str) and name for name in raw_body_names)
+    ):
+        raise HarnessError("B1 tool_body_names must be a non-empty string list")
+
+    import mujoco
+
+    model = mujoco.MjModel.from_xml_path(str(scene_path))
+    roots: set[int] = set()
+    for name in raw_body_names:
+        identifier = int(
+            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, str(name))
+        )
+        if identifier < 0:
+            raise HarnessError(f"B1 binding references unknown body {name!r}")
+        roots.add(identifier)
+    geom_names: list[str] = []
+    for geom_id in range(int(model.ngeom)):
+        body_id = int(model.geom_bodyid[geom_id])
+        current = body_id
+        while current > 0 and current not in roots:
+            current = int(model.body_parentid[current])
+        if current in roots:
+            geom_names.append(
+                mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_GEOM, geom_id)
+                or f"geom_{geom_id}"
+            )
+    if not geom_names:
+        raise HarnessError("B1 tool_body_names resolve to no MuJoCo geoms")
+    resolved_parameters = dict(parameters)
+    resolved_parameters["tool_geom_names"] = geom_names
+    resolved = dict(binding)
+    resolved["parameters"] = resolved_parameters
+    return resolved
+
+
 def _run_worker(
     payload: Mapping[str, Any],
     *,
@@ -465,15 +514,29 @@ def run_private_suite(
         condition=condition,  # type: ignore[arg-type]
         capability_methods=capability_methods,
     )
-    private_instances = _indexed(
-        _read_object(package.private_dir / "instances.json"), "instances", "instance_id"
-    )
-    private_bindings = _indexed(
-        _read_object(package.private_dir / "bindings.json"), "bindings", "binding_id"
-    )
-    private_guards = _indexed(
-        _read_object(package.private_dir / "guards.json"), "guards", "guard_id"
-    )
+    is_b1_suite = suite.get("artifact_type") == "b1_fixed_validation_suite"
+    if is_b1_suite:
+        # Experiment 1 cases are intentionally self-contained.  They must not
+        # inherit task/private IDs or mutable package-side validation inputs.
+        private_instances: dict[str, Mapping[str, Any]] = {}
+        private_bindings: dict[str, Mapping[str, Any]] = {}
+        private_guards: dict[str, Mapping[str, Any]] = {}
+    else:
+        private_instances = _indexed(
+            _read_object(package.private_dir / "instances.json"),
+            "instances",
+            "instance_id",
+        )
+        private_bindings = _indexed(
+            _read_object(package.private_dir / "bindings.json"),
+            "bindings",
+            "binding_id",
+        )
+        private_guards = _indexed(
+            _read_object(package.private_dir / "guards.json"),
+            "guards",
+            "guard_id",
+        )
     cases = suite.get("cases")
     if not isinstance(cases, list) or not cases:
         raise HarnessError("private suite has no cases")
@@ -490,10 +553,31 @@ def run_private_suite(
     for case in cases:
         if not isinstance(case, Mapping):
             raise HarnessError("private suite contains an invalid case")
-        instance = private_instances[str(case["instance_id"])]
-        binding = private_bindings[str(case["binding_id"])]
-        guards = [private_guards[str(guard_id)] for guard_id in case["guard_ids"]]
-        repetitions = int(case["repetitions"])
+        if is_b1_suite:
+            instance = case
+            binding_value = case.get("binding")
+            guard_values = case.get("guards")
+            request = case.get("request")
+            if (
+                not isinstance(binding_value, Mapping)
+                or binding_value.get("kind") != "b1_contract"
+            ):
+                raise HarnessError("B1 case requires an inline b1_contract binding")
+            if not isinstance(guard_values, list) or not guard_values or not all(
+                isinstance(guard, Mapping) for guard in guard_values
+            ):
+                raise HarnessError("B1 case requires non-empty inline guards")
+            if not isinstance(request, Mapping):
+                raise HarnessError("B1 case request must be an object")
+            binding = binding_value
+            guards = list(guard_values)
+        else:
+            instance = private_instances[str(case["instance_id"])]
+            binding = private_bindings[str(case["binding_id"])]
+            guards = [private_guards[str(guard_id)] for guard_id in case["guard_ids"]]
+        repetitions = int(case.get("repetitions", 1))
+        if repetitions <= 0:
+            raise HarnessError("case repetitions must be positive")
         repetition_variants = instance.get("repetition_variants")
         if repetition_variants is not None and (
             not isinstance(repetition_variants, list)
@@ -502,12 +586,18 @@ def run_private_suite(
             raise HarnessError(
                 "private repetition variants must contain one entry per repetition"
             )
-        scene_relative = str(instance.get("scene_entrypoint", package.morphology["mjcf_entrypoint"]))
+        scene_relative = str(
+            instance.get(
+                "scene_entrypoint", package.morphology["mjcf_entrypoint"]
+            )
+        )
         scene_path = (package.root / scene_relative).resolve()
         try:
             scene_path.relative_to((package.root / "assets").resolve())
         except ValueError as exc:
             raise HarnessError("private instance scene escapes package assets") from exc
+        if is_b1_suite:
+            binding = _resolve_b1_body_geom_symbols(binding, scene_path)
         for repetition in range(repetitions):
             variant = (
                 repetition_variants[repetition]
@@ -516,8 +606,12 @@ def run_private_suite(
             )
             if not isinstance(variant, Mapping):
                 raise HarnessError("private repetition variant must be an object")
-            public_arguments = variant.get(
-                "public_arguments", instance.get("public_arguments", {})
+            public_arguments = (
+                {"request": dict(case["request"])}
+                if is_b1_suite
+                else variant.get(
+                    "public_arguments", instance.get("public_arguments", {})
+                )
             )
             reset = variant.get("reset", instance.get("reset", {"kind": "default"}))
             trial_id = f"{case['case_id']}-r{repetition:02d}"
@@ -532,9 +626,13 @@ def run_private_suite(
                 "max_steps": int(instance.get("max_steps", 10000)),
                 "max_sim_time_s": float(case["timeout_sim_s"]),
                 "sample_hz": float(
-                    instance.get("video_fps", 10.0)
-                    if record_video
-                    else instance.get("sample_hz", 20.0)
+                    instance.get("sample_hz", 20.0)
+                    if is_b1_suite
+                    else (
+                        instance.get("video_fps", 10.0)
+                        if record_video
+                        else instance.get("sample_hz", 20.0)
+                    )
                 ),
                 "render": {
                     "enabled": record_video,
@@ -585,6 +683,13 @@ def run_private_suite(
             guard_outcomes: dict[str, bool] = {}
             measurement_error = None
             criterion = case.get("criterion")
+            if is_b1_suite and criterion is None:
+                criterion = {
+                    "comparator": "==",
+                    "threshold": repetitions,
+                    "temporal": {"kind": "fixed_trials"},
+                    "aggregation": {"kind": "all_trials"},
+                }
             try:
                 guard_outcomes = evaluate_guards(guards, worker_result=worker)
                 if worker.get("candidate_exception") is None and worker.get("method_invoked"):
@@ -652,9 +757,15 @@ def run_private_suite(
                 {
                     "trial_id": trial_id,
                     "case_id": case["case_id"],
-                    "capability_id": case["capability_id"],
-                    "task_id": case["task_id"],
-                    "source_clause_id": case["source_clause_id"],
+                    "capability_id": case.get(
+                        "capability_id", case.get("contract_id", case["case_id"])
+                    ),
+                    "task_id": case.get(
+                        "task_id", case.get("contract_id", case["case_id"])
+                    ),
+                    "source_clause_id": case.get(
+                        "source_clause_id", case.get("contract_id", case["case_id"])
+                    ),
                     "worker_completed": bool(worker.get("worker_completed")),
                     "method_invoked": bool(worker.get("method_invoked")),
                     "public_arguments": public_arguments,
@@ -752,14 +863,20 @@ def run_private_suite(
     passed_clauses = sum(
         1 for values in clause_trials.values() if all(value["trial_passed"] for value in values)
     )
-    designed_task_clauses = (
-        _task_library_clauses(package)
-        if suite.get("artifact_type") == "task_demo_suite"
-        else _designed_task_clauses(design)
-    )
     selected_task_clauses: dict[str, set[str]] = {}
     for task_id, clause_id in clause_trials:
         selected_task_clauses.setdefault(task_id, set()).add(clause_id)
+    if is_b1_suite:
+        designed_task_clauses = {
+            task_id: set(clauses)
+            for task_id, clauses in selected_task_clauses.items()
+        }
+    else:
+        designed_task_clauses = (
+            _task_library_clauses(package)
+            if suite.get("artifact_type") == "task_demo_suite"
+            else _designed_task_clauses(design)
+        )
     fully_evaluated_tasks = {
         task_id
         for task_id, selected_clauses in selected_task_clauses.items()

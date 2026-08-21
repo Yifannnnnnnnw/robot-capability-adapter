@@ -382,6 +382,21 @@ def measure(
     first = samples[0]
     final = samples[-1]
 
+    if kind == "b1_contract":
+        request = public_arguments.get("request")
+        if not isinstance(request, Mapping):
+            raise MeasurementError("B1 contract requires request public arguments")
+        from .b1_contracts import B1ContractError, evaluate_b1_contract
+
+        try:
+            return evaluate_b1_contract(
+                parameters,
+                evidence=evidence,
+                request=request,
+            )
+        except B1ContractError as exc:
+            raise MeasurementError(str(exc)) from exc
+
     if kind == "in_hand_object_pattern_success":
         body_name = str(parameters["body_name"])
         reference_body_name = str(parameters["reference_body_name"])
