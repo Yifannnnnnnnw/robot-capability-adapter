@@ -10,6 +10,7 @@ from autoadapter2.capability_design import (
     validate_capability_design,
 )
 from autoadapter2.libraries import RobotPackage
+from autoadapter2.model_api import ModelInvocationError
 
 
 def _task(index: int) -> dict:
@@ -167,13 +168,16 @@ class _CapturingModel:
 
 
 class _SequenceModel:
-    def __init__(self, responses: list[dict]) -> None:
+    def __init__(self, responses: list[dict | BaseException]) -> None:
         self.responses = responses
         self.calls = []
 
     def generate_json(self, *, stage, prompt, inputs):
         self.calls.append({"stage": stage, "inputs": inputs})
-        return self.responses[len(self.calls) - 1]
+        response = self.responses[len(self.calls) - 1]
+        if isinstance(response, BaseException):
+            raise response
+        return response
 
 
 class TGCDTests(unittest.TestCase):
@@ -399,6 +403,30 @@ class TGCDTests(unittest.TestCase):
                 "between 5 and 10" in call["inputs"]["deterministic_audit_error"]
                 for call in model.calls[1:]
             )
+        )
+        self.assertNotIn("private", repr(model.calls).lower())
+
+    def test_truncated_json_uses_the_bounded_public_correction(self) -> None:
+        model = _SequenceModel(
+            [
+                ModelInvocationError(
+                    "model returned malformed JSON; finish_reason='length'"
+                ),
+                _design(self.package),
+            ]
+        )
+
+        result = run_tgcd(model, self.package)
+
+        self.assertEqual(len(result["capabilities"]), 5)
+        self.assertEqual(
+            [call["stage"] for call in model.calls],
+            ["tgcd", "tgcd-structure-correction"],
+        )
+        self.assertNotIn("previous_invalid_design", model.calls[1]["inputs"])
+        self.assertIn(
+            "finish_reason='length'",
+            model.calls[1]["inputs"]["deterministic_audit_error"],
         )
         self.assertNotIn("private", repr(model.calls).lower())
 

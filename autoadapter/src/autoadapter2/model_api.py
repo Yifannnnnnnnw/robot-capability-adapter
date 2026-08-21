@@ -325,6 +325,12 @@ class JsonModelClient:
             result = parse_json_object(content)
         except ModelInvocationError as exc:
             finish_reason = choice.get("finish_reason")
+            self._record_call(
+                stage=stage,
+                payload=payload,
+                mode="json",
+                finish_reason=finish_reason,
+            )
             raise ModelInvocationError(
                 f"{exc}; finish_reason={finish_reason!r}; content_chars={len(content)}"
             ) from exc

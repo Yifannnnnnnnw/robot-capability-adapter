@@ -14,6 +14,7 @@ from autoadapter2.driver_synthesis import (
     validate_capability_names,
 )
 from autoadapter2.libraries import RobotPackage
+from autoadapter2.model_api import ModelInvocationError
 
 
 TGCD_SYSTEM_PROMPT = """You perform Task-Grounded Capability Design, not code generation.
@@ -21,6 +22,10 @@ Using only the supplied public Morphology, complete source-backed Task Library, 
 Experience, design 5 to 10 reusable robot capability contracts. Do not select from or infer a
 pre-authored effect catalog. Every task must be covered by exactly one capability, and tasks may
 be grouped only when they share a genuine reusable physical robot effect.
+
+Keep the complete JSON comfortably below 16,000 tokens. Prefer the smallest genuine grouping,
+use one concise sentence for each narrative field, and do not repeat source or task prose outside
+the fields that must copy it exactly. The 5-to-10 capability count is a hard output constraint.
 
 Return one JSON object with artifact_type='capability_design', schema_version='1.0', the supplied
 robot_configuration_id, package_version and task_snapshot_id, invocation_abi exactly equal to
@@ -549,11 +554,28 @@ def run_tgcd(
             stage = "tgcd-structure-correction"
         elif attempt == 2:
             stage = "tgcd-structure-correction-2"
-        design = client.generate_json(
-            stage=stage,
-            prompt=prompt,
-            inputs=inputs,
-        )
+        try:
+            design = client.generate_json(
+                stage=stage,
+                prompt=prompt,
+                inputs=inputs,
+            )
+        except ModelInvocationError as exc:
+            if attempt + 1 >= max_model_attempts:
+                raise CapabilityDesignError(
+                    f"model JSON generation failed after {max_model_attempts} attempts: {exc}"
+                ) from exc
+            inputs = {
+                **inputs,
+                "deterministic_audit_error": str(exc),
+            }
+            prompt = (
+                TGCD_SYSTEM_PROMPT
+                + "\nThe previous response was not a complete parseable JSON object. Return the "
+                "entire replacement object more compactly; never emit commentary, omit required "
+                "fields, or exceed 10 capabilities."
+            )
+            continue
         try:
             return validate_capability_design(design, package)
         except CapabilityDesignError as exc:

@@ -24,6 +24,35 @@ class ModelApiTests(unittest.TestCase):
         with self.assertRaises(ModelInvocationError):
             parse_json_object('{"ok": true} trailing')
 
+    def test_truncated_json_response_is_recorded_before_rejection(self) -> None:
+        client = JsonModelClient(
+            ModelConfig(
+                provider="deepseek",
+                model="deepseek-v4-pro",
+                base_url="https://model.example/v1",
+                api_key="secret-value",
+            )
+        )
+        payload = {
+            "model": "deepseek-v4-pro",
+            "choices": [
+                {
+                    "finish_reason": "length",
+                    "message": {"role": "assistant", "content": '{"partial":'},
+                }
+            ],
+            "usage": {"prompt_tokens": 20, "completion_tokens": 16},
+        }
+
+        with mock.patch.object(client, "_post", return_value=payload):
+            with self.assertRaisesRegex(ModelInvocationError, "finish_reason='length'"):
+                client.generate_json(stage="tgcd", prompt="Design.", inputs={})
+
+        self.assertEqual(len(client.calls), 1)
+        self.assertEqual(client.calls[0]["stage"], "tgcd")
+        self.assertEqual(client.calls[0]["finish_reason"], "length")
+        self.assertEqual(client.calls[0]["usage"]["completion_tokens"], 16)
+
     def test_config_repr_does_not_expose_api_key(self) -> None:
         config = ModelConfig(
             provider="openai",
