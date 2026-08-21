@@ -443,9 +443,10 @@ class JsonModelClient:
 
     @staticmethod
     def _retryable_call(record: Mapping[str, Any]) -> bool:
-        return record.get("status") == "timeout" or record.get(
-            "http_status"
-        ) in _RETRYABLE_HTTP_STATUSES
+        return (
+            record.get("status") == "http_error"
+            and record.get("http_status") in _RETRYABLE_HTTP_STATUSES
+        )
 
     @staticmethod
     def _retry_pause() -> None:

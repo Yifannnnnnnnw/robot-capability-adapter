@@ -172,21 +172,22 @@ class ModelApiTests(unittest.TestCase):
         def stalled_response(*_args: object, **_kwargs: object) -> None:
             time.sleep(1.0)
 
-        with mock.patch.object(client, "_retry_pause"), mock.patch(
+        with mock.patch.object(client, "_retry_pause") as retry_pause, mock.patch(
             "urllib.request.urlopen", side_effect=stalled_response
         ):
             with self.assertRaisesRegex(ModelInvocationError, "total wall deadline"):
                 client._post(stage="repair", body={})
 
-        self.assertEqual(len(client.calls), 2)
-        for call_record in client.calls:
-            self.assertEqual(call_record["status"], "timeout")
-            self.assertEqual(call_record["stage"], "repair")
-            self.assertIsNone(call_record["http_status"])
-            self.assertEqual(call_record["error"]["type"], "timeout")
-            self.assertGreaterEqual(call_record["elapsed_s"], 0.0)
-        self.assertEqual(client.calls[1]["retry_index"], 1)
-        self.assertEqual(client.calls[1]["retry_of_call_index"], 0)
+        retry_pause.assert_not_called()
+        self.assertEqual(len(client.calls), 1)
+        call_record = client.calls[0]
+        self.assertEqual(call_record["status"], "timeout")
+        self.assertEqual(call_record["stage"], "repair")
+        self.assertIsNone(call_record["http_status"])
+        self.assertEqual(call_record["error"]["type"], "timeout")
+        self.assertGreaterEqual(call_record["elapsed_s"], 0.0)
+        self.assertEqual(call_record["retry_index"], 0)
+        self.assertIsNone(call_record["retry_of_call_index"])
 
     def test_transient_http_statuses_retry_once_and_record_each_request(self) -> None:
         for status in (429, 500, 502, 503, 504):
@@ -294,16 +295,16 @@ class ModelApiTests(unittest.TestCase):
             with self.assertRaisesRegex(ModelInvocationError, "TimeoutError"):
                 client._post(stage="STUDY", body={})
 
-        self.assertEqual(urlopen.call_count, 2)
-        retry_pause.assert_called_once_with()
-        self.assertEqual(len(client.calls), 2)
-        for record in client.calls:
-            self.assertEqual(record["status"], "timeout")
-            self.assertEqual(record["error"]["type"], "timeout")
-            self.assertIsNone(record["input_tokens"])
-            self.assertIsNone(record["raw_usage"])
-        self.assertEqual(client.calls[1]["retry_index"], 1)
-        self.assertEqual(client.calls[1]["retry_of_call_index"], 0)
+        self.assertEqual(urlopen.call_count, 1)
+        retry_pause.assert_not_called()
+        self.assertEqual(len(client.calls), 1)
+        record = client.calls[0]
+        self.assertEqual(record["status"], "timeout")
+        self.assertEqual(record["error"]["type"], "timeout")
+        self.assertIsNone(record["input_tokens"])
+        self.assertIsNone(record["raw_usage"])
+        self.assertEqual(record["retry_index"], 0)
+        self.assertIsNone(record["retry_of_call_index"])
 
     def test_successful_call_records_timing_identity_and_normalised_usage(self) -> None:
         client = JsonModelClient(
