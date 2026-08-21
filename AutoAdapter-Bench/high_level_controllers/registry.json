@@ -27,6 +27,11 @@
       "directory": "react"
     },
     {
+      "id": "recap",
+      "display_name": "ReCAP",
+      "directory": "recap"
+    },
+    {
       "id": "code_as_policies",
       "display_name": "Code as Policies",
       "directory": "code_as_policies"
