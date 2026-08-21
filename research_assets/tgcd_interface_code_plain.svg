@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="250" viewBox="0 0 620 250">
+  <defs>
+    <style>
+      .mono { font-family: Menlo, Consolas, "Courier New", monospace; font-size: 18px; fill: #111827; }
+      .kw { fill: #2563eb; font-weight: 700; }
+      .name { fill: #7c3aed; }
+      .type { fill: #0891b2; }
+      .str { fill: #16a34a; }
+      .comment { fill: #64748b; font-style: italic; }
+    </style>
+  </defs>
+
+  <text x="20" y="32" class="mono">
+    <tspan class="comment"># TGCD capability interface contract</tspan>
+  </text>
+  <text x="20" y="66" class="mono">
+    <tspan class="kw">class</tspan><tspan> </tspan><tspan class="name">CapabilityDriver</tspan><tspan>:</tspan>
+  </text>
+  <text x="48" y="100" class="mono">
+    <tspan class="kw">def</tspan><tspan> </tspan><tspan class="name">reach</tspan><tspan>(self, request: </tspan><tspan class="type">dict</tspan><tspan>) -&gt; </tspan><tspan class="type">None</tspan><tspan>: ...</tspan>
+  </text>
+  <text x="48" y="134" class="mono">
+    <tspan class="kw">def</tspan><tspan> </tspan><tspan class="name">grasp</tspan><tspan>(self, request: </tspan><tspan class="type">dict</tspan><tspan>) -&gt; </tspan><tspan class="type">None</tspan><tspan>: ...</tspan>
+  </text>
+  <text x="48" y="168" class="mono">
+    <tspan class="kw">def</tspan><tspan> </tspan><tspan class="name">move_to_goal</tspan><tspan>(self, request: </tspan><tspan class="type">dict</tspan><tspan>) -&gt; </tspan><tspan class="type">None</tspan><tspan>: ...</tspan>
+  </text>
+  <text x="48" y="202" class="mono">
+    <tspan class="kw">def</tspan><tspan> </tspan><tspan class="name">release</tspan><tspan>(self, request: </tspan><tspan class="type">dict</tspan><tspan>) -&gt; </tspan><tspan class="type">None</tspan><tspan>: ...</tspan>
+  </text>
+  <text x="20" y="236" class="mono">
+    <tspan class="comment"># request = {</tspan><tspan class="str">"task_id"</tspan><tspan class="comment">, </tspan><tspan class="str">"task_parameters"</tspan><tspan class="comment">}</tspan>
+  </text>
+</svg>
