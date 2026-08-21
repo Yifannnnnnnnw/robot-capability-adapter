@@ -14,6 +14,6 @@
   "credential_env": "AUTOADAPTER_COMPANY_API_KEY",
   "auth_header": "X-Api-Key",
   "auth_prefix": "",
-  "inference_settings": {"temperature": 0.0, "thinking": null, "max_tokens": 8192, "tool_history_mode": "native", "history_char_budget": 80000, "timeout_s": 120},
+  "inference_settings": {"temperature": 0.0, "thinking": null, "max_tokens": 8192, "tool_history_mode": "text-observation", "history_char_budget": 80000, "timeout_s": 120},
   "price_snapshot": {"snapshot_date": "2026-08-21", "currency": "USD", "source": "company-api response usage.cost when provided"}
 }

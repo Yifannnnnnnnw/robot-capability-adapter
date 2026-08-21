@@ -127,6 +127,19 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertEqual(m1["auth_header"], "X-Api-Key")
         self.assertEqual(m1["inference_settings"]["temperature"], 0.0)
         self.assertEqual(m1["price_snapshot"]["snapshot_date"], "2026-08-21")
+        for config_name in (
+            "M6-company-api-ministral-3-8b.json",
+            "M7-company-api-qwen3-32b.json",
+        ):
+            config = json.loads(
+                (EXPERIMENT_ROOT / "providers" / config_name).read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(
+                config["inference_settings"]["tool_history_mode"],
+                "text-observation",
+            )
         self.assertEqual(replicates, ["r01", "r02", "r03"])
         self.assertEqual(recipe["extension_replicate_ids"], ["r04", "r05"])
         self.assertEqual(recipe["maximum_cumulative_generation_condition_replicates"], 350)
