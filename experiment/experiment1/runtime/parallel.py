@@ -120,7 +120,9 @@ def _runtime_environment(
                 settings["history_char_budget"]
             ),
             "AUTOADAPTER_MODEL_TIMEOUT_S": str(settings["timeout_s"]),
-            "AUTOADAPTER_MODEL_VENDOR": str(config.get("vendor") or "company"),
+            "AUTOADAPTER_MODEL_VENDOR": str(
+                config.get("vendor") or "company"
+            ).strip().lower(),
         }
     )
     # The child needs only the model client's canonical key variable. Keeping

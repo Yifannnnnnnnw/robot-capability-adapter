@@ -40,6 +40,7 @@ out.mkdir(parents=True)
 time.sleep(0.03)
 safe_environment = {
     'provider': os.environ.get('AUTOADAPTER_MODEL_PROVIDER'),
+    'vendor': os.environ.get('AUTOADAPTER_MODEL_VENDOR'),
     'model_id': os.environ.get('AUTOADAPTER_MODEL_ID'),
     'base_url': os.environ.get('AUTOADAPTER_MODEL_API_BASE_URL'),
     'auth_header': os.environ.get('AUTOADAPTER_MODEL_API_AUTH_HEADER'),
@@ -113,6 +114,7 @@ safe_environment = {
             settings = config["inference_settings"]
             safe = cell["safe_environment"]
             self.assertEqual(safe["provider"], "openai-compatible")
+            self.assertEqual(safe["vendor"], config["vendor"].lower())
             self.assertEqual(safe["model_id"], config["exact_model_id"])
             self.assertEqual(safe["base_url"], config["endpoint_base_url"])
             self.assertEqual(safe["auth_header"], config["auth_header"])
