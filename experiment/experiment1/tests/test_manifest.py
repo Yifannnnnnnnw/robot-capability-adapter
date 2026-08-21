@@ -61,7 +61,7 @@ class Experiment1ManifestTests(unittest.TestCase):
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
 
         self.assertNotIn("status", recipe)
-        self.assertEqual(recipe["authority_revision"], "0.1.4")
+        self.assertEqual(recipe["authority_revision"], "0.1.5")
         self.assertEqual(recipe["execution_concurrency"]["status"], "operational")
         self.assertTrue(resolved["ready_to_expand"])
         self.assertEqual(
@@ -132,6 +132,22 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertEqual(m1["auth_header"], "X-Api-Key")
         self.assertEqual(m1["inference_settings"]["temperature"], 0.0)
         self.assertEqual(m1["price_snapshot"]["snapshot_date"], "2026-08-21")
+        for config_path in recipe["backbone_runtime_configs"].values():
+            config = json.loads(
+                (EXPERIMENT_ROOT / config_path).read_text(encoding="utf-8")
+            )
+            if config["backbone_id"] == "M7":
+                continue
+            self.assertGreater(config["context_limit_tokens"], 0)
+            self.assertGreater(config["provider_max_output_tokens"], 0)
+            self.assertLessEqual(
+                config["inference_settings"]["max_tokens"],
+                config["provider_max_output_tokens"],
+            )
+            self.assertGreaterEqual(
+                config["price_snapshot"]["input_cache_miss"], 0
+            )
+            self.assertGreaterEqual(config["price_snapshot"]["output"], 0)
         for config_name in (
             "M6-company-api-ministral-3-8b.json",
             "M7-company-api-qwen3-32b.json",

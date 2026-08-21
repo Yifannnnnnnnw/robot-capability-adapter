@@ -516,6 +516,38 @@ class Experiment1B1RunnerTests(unittest.TestCase):
             recorder.calls[0]["tokens"]["input_cache_miss_tokens"], 2_000_000
         )
 
+    def test_uncached_provider_usage_without_cache_split_uses_miss_rate(self) -> None:
+        class UsageClient(ScriptedClient):
+            def generate_json(self, **_: Any) -> dict[str, Any]:
+                self.calls.append(
+                    {
+                        "usage": {
+                            "prompt_tokens": 2_000_000,
+                            "completion_tokens": 3_000_000,
+                        }
+                    }
+                )
+                return {}
+
+        recorder = RecordingClient(
+            UsageClient(),
+            lambda: None,
+            {
+                "input_cache_hit": 0.33,
+                "input_cache_miss": 3.30,
+                "output": 16.50,
+            },
+        )
+        recorder.generate_json(stage="study", prompt="study", inputs={})
+
+        self.assertAlmostEqual(
+            recorder.calls[0]["per_call_cost"],
+            (2 * 3.30) + (3 * 16.50),
+        )
+        self.assertIsNone(
+            recorder.calls[0]["tokens"]["input_cache_miss_tokens"]
+        )
+
     def test_retry_requests_remain_separate_with_one_completed_model_turn(self) -> None:
         client = JsonModelClient(
             ModelConfig(

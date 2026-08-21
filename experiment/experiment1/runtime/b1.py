@@ -773,19 +773,31 @@ def _call_cost(
 ) -> float | None:
     hit = tokens.get("input_cache_hit_tokens")
     miss = tokens.get("input_cache_miss_tokens")
+    input_tokens = tokens.get("input_tokens")
     output = tokens.get("output_tokens")
-    rates = (
-        price_snapshot.get("input_cache_hit"),
-        price_snapshot.get("input_cache_miss"),
-        price_snapshot.get("output"),
-    )
-    if not all(isinstance(value, (int, float)) for value in (hit, miss, output, *rates)):
-        return None
-    return (
-        float(hit) * float(rates[0])
-        + float(miss) * float(rates[1])
-        + float(output) * float(rates[2])
-    ) / 1_000_000.0
+    hit_rate = price_snapshot.get("input_cache_hit")
+    miss_rate = price_snapshot.get("input_cache_miss")
+    output_rate = price_snapshot.get("output")
+
+    def numeric(value: Any) -> bool:
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    if all(numeric(value) for value in (hit, miss, output, hit_rate, miss_rate, output_rate)):
+        return (
+            float(hit) * float(hit_rate)
+            + float(miss) * float(miss_rate)
+            + float(output) * float(output_rate)
+        ) / 1_000_000.0
+    if (
+        hit is None
+        and miss is None
+        and all(numeric(value) for value in (input_tokens, output, miss_rate, output_rate))
+    ):
+        return (
+            float(input_tokens) * float(miss_rate)
+            + float(output) * float(output_rate)
+        ) / 1_000_000.0
+    return None
 
 
 def _runtime_config_for_unit(
@@ -905,6 +917,10 @@ def _model_identity(
             "tool_history_mode": getattr(config, "tool_history_mode", None),
         },
         "token_limit": getattr(config, "max_tokens", None),
+        "context_limit_tokens": pinned.get("context_limit_tokens") if pinned else None,
+        "provider_max_output_tokens": (
+            pinned.get("provider_max_output_tokens") if pinned else None
+        ),
         "timeout_s": getattr(config, "timeout_s", None),
         "provider_seed_applied": None,
         "provider_model_revision": pinned.get("provider_model_revision") if pinned else None,

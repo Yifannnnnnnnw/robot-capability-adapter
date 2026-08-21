@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
-  "authority_revision": "0.1.3",
+  "authority": "../EXPERIMENT_1_AUTHORITY.md",
+  "authority_revision": "0.1.5",
   "backbone_id": "M1",
   "family": "Sonnet 4.6",
   "vendor": "Anthropic",
@@ -11,9 +12,21 @@
   "transport": "openai-compatible",
   "endpoint_base_url": "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1",
   "endpoint_path": "/chat/completions",
+  "endpoint_region": "eu-west-2",
   "credential_env": "AUTOADAPTER_COMPANY_API_KEY",
   "auth_header": "X-Api-Key",
   "auth_prefix": "",
   "inference_settings": {"temperature": 0.0, "thinking": null, "max_tokens": 8192, "tool_history_mode": "native", "history_char_budget": 80000, "timeout_s": 120},
-  "price_snapshot": {"snapshot_date": "2026-08-21", "currency": "USD", "source": "company-api response usage.cost when provided"}
+  "context_limit_tokens": 1000000,
+  "provider_max_output_tokens": 64000,
+  "price_snapshot": {
+    "snapshot_date": "2026-08-21",
+    "currency": "USD",
+    "unit": "per_1m_tokens",
+    "input_cache_hit": 0.33,
+    "input_cache_miss": 3.3,
+    "output": 16.5,
+    "pricing_scope": "EU Geo Cross-region from eu-west-2, standard on-demand",
+    "source": "https://aws.amazon.com/bedrock/pricing/"
+  }
 }
