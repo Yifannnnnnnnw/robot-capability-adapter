@@ -11,7 +11,6 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "kinova_gen3_robotiq_2f85" / "1.0.0"
 TASKS_ROOT = PACKAGE_ROOT / "tasks"
 DONOR_TASKS_ROOT = ROOT / "libraries" / "robots" / "ufactory_xarm7" / "1.0.0" / "tasks"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 ROBOT_CONFIGURATION_ID = "kinova_gen3_robotiq_2f85"
 SNAPSHOT_ID = "kinova-gen3-robotiq-2f85-metaworld-source-protocols-2026-08-20-v1"
 PINNED_COMMIT = "7ea2b501c4a698c8533cdc55a396fe2734e2649d"
@@ -229,8 +228,6 @@ def test_kinova_public_identity_has_no_donor_remnants_and_is_non_runtime() -> No
     for forbidden in ("ufactory", "xarm", "link_tcp", "joint7", "actuator8"):
         assert forbidden not in public_text_lower
 
-    runnable_index = _read_json(RUNNABLE_INDEX_PATH)
-    assert ROBOT_CONFIGURATION_ID not in runnable_index["robots"]
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",

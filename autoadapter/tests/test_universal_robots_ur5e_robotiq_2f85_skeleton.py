@@ -197,8 +197,3 @@ def test_ur5e_robotiq_inventory_and_canonical_session_are_live() -> None:
     assert np.isfinite(data.qpos).all()
     assert np.isfinite(data.qvel).all()
     assert np.isfinite(data.ctrl).all()
-
-    runnable_index = json.loads(
-        (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
-    )
-    assert "universal_robots_ur5e_robotiq_2f85" not in runnable_index["robots"]

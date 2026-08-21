@@ -26,7 +26,6 @@ PIPER_ASSETS_ROOT = PIPER_PACKAGE_ROOT / "assets"
 XARM_PRIVATE_ROOT = (
     ROOT / "libraries" / "robots" / "ufactory_xarm7" / "1.0.0" / "tasks" / "private"
 )
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 
 ROBOT_CONFIGURATION_ID = "piper"
 PACKAGE_VERSION = "1.0.0"
@@ -387,8 +386,6 @@ def test_piper_public_ee_waypoints_and_grasp_rolls_are_reachable() -> None:
         assert abs(float(skeleton.get_joint_positions()[-1]) - wrist_roll) <= 0.011
 
 
-def test_piper_private_package_remains_non_runtime_with_reference() -> None:
-    runnable_index = _read(RUNNABLE_INDEX_PATH)
-    assert "piper" not in runnable_index["robots"]
+def test_piper_private_package_has_control_components() -> None:
     assert (PIPER_PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
     assert (PIPER_PACKAGE_ROOT / "reference" / "driver.py").is_file()

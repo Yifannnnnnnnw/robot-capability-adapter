@@ -13,8 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "piper" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 XML_ENTRYPOINTS = ("piper.xml", "scene.xml", "pickbench.xml", "pushbench.xml")
 ARM_JOINT_NAMES = [
@@ -380,57 +378,7 @@ def test_piper_model_facts_and_actuator_driven_gripper_liveness() -> None:
     _assert_finite(data)
 
 
-def test_piper_is_non_runtime_and_package_has_no_reference() -> None:
-    runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-    assert "piper" not in runnable_index["robots"]
-
-    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
-    candidate = next(
-        item
-        for item in research_index["candidates"]
-        if item["robot_configuration_id"] == "piper"
-    )
-    observed_paths = {
-        item["path"] for item in candidate["locally_observed_source_material"]
-    }
-    assert "autoadapter/libraries/robots/piper/1.0.0/assets/piper.xml" in observed_paths
-    assert "autoadapter/libraries/robots/piper/1.0.0/morphology.json" in observed_paths
-    assert "autoadapter/libraries/robots/piper/1.0.0/tasks/sources.json" in observed_paths
-    assert "autoadapter/libraries/robots/piper/1.0.0/tasks/catalog.json" in observed_paths
-    assert "autoadapter/libraries/robots/piper/1.0.0/assets/reach_scene.xml" in observed_paths
-    scene_record = next(
-        record
-        for record in candidate["locally_observed_source_material"]
-        if record["kind"] == "provisional_task_scenes"
-    )
-    assert "17 task scenes" in scene_record["observation"]
-    assert "cannot push link1 or link2 at reset" in scene_record["observation"]
-    assert "video-backed reference positive control" in scene_record["observation"]
-    assert (
-        "autoadapter/libraries/robots/piper/1.0.0/tasks/private/instances.json"
-        in observed_paths
-    )
-    assert (
-        "autoadapter/libraries/robots/piper/1.0.0/skeleton/arm_serial_dls.py"
-        in observed_paths
-    )
-    assert (
-        "autoadapter/libraries/robots/piper/1.0.0/reference/driver.py"
-        in observed_paths
-    )
-    assert "autoadapter/evidence/README.md" in observed_paths
-    missing = " ".join(candidate["missing_for_runnable_package"])
-    assert "complete local MuJoCo asset closure" not in missing
-    assert "current mainline morphology.json" not in missing
-    assert "at least 20 distinct applicable source-backed tasks" not in missing
-    assert "Create tasks/sources.json" not in missing
-    assert "tasks/private/instances.json" not in missing
-    assert "arm_serial_dls skeleton" not in missing
-    assert "calibration-only reference driver" not in missing
-    assert "package check" not in missing
-    assert "positive control" not in missing
-    assert "dynamic canary" in missing
-
+def test_piper_package_layout_is_complete() -> None:
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",

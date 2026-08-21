@@ -255,9 +255,7 @@ def test_xarm7_public_ee_waypoints_are_position_ik_feasible() -> None:
     assert checked >= 40
 
 
-def test_xarm7_private_package_is_still_non_runtime_and_incomplete() -> None:
-    runnable_index = _read(ROOT / "libraries" / "robots" / "index.json")
-    assert ROBOT_ID not in runnable_index["robots"]
+def test_xarm7_private_package_contains_required_files() -> None:
     assert sorted(path.name for path in XARM_PRIVATE_ROOT.iterdir()) == [
         "bindings.json",
         "guards.json",

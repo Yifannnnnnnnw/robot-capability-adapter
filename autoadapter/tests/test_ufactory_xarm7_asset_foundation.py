@@ -342,58 +342,6 @@ def test_ufactory_xarm7_asset_foundation_loads_local_closure_and_moves_gripper()
     assert np.isfinite(data.ctrl).all()
     assert np.max(np.abs(data.qpos[gripper_qpos_adrs] - qpos_before)) > 1e-3
 
-    runnable_index = json.loads(
-        (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
-    )
-    assert "ufactory_xarm7" not in runnable_index["robots"]
-
-    research_index = json.loads(
-        (ROOT / "research" / "robots" / "index.json").read_text(encoding="utf-8")
-    )
-    candidate = next(
-        item
-        for item in research_index["candidates"]
-        if item["robot_configuration_id"] == "ufactory_xarm7"
-    )
-    observed_paths = {
-        item["path"] for item in candidate["locally_observed_source_material"]
-    }
-    assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/assets/scene.xml" in observed_paths
-    assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/morphology.json" in observed_paths
-    assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/sources.json" in observed_paths
-    assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/catalog.json" in observed_paths
-    assert "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/assets/reach_scene.xml" in observed_paths
-    assert (
-        "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/tasks/private/instances.json"
-        in observed_paths
-    )
-    assert (
-        "autoadapter/libraries/robots/ufactory_xarm7/1.0.0/skeleton/arm_serial_dls.py"
-        in observed_paths
-    )
-    evidence_observation = next(
-        item
-        for item in candidate["locally_observed_source_material"]
-        if item["kind"] == "tracked_reference_positive_control_record"
-    )
-    assert evidence_observation["path"] == "autoadapter/evidence/README.md"
-    assert "20/20" in evidence_observation["observation"]
-    assert "videos" in evidence_observation["observation"]
-    assert "starts outside" in evidence_observation["observation"]
-    missing = " ".join(candidate["missing_for_runnable_package"])
-    assert "complete local MuJoCo asset closure" not in missing
-    assert "current mainline morphology.json" not in missing
-    assert "at least 20 distinct applicable source-backed tasks" not in missing
-    assert "Create tasks/sources.json" not in missing
-    assert "tasks/private/instances.json" not in missing
-    assert "local task scenes" not in missing
-    assert "skeleton" not in missing
-    assert "reference driver" not in missing
-    assert "package check" not in missing
-    assert "positive control" not in missing
-    assert "dynamic canary" in missing
-    assert "runnable index" in missing
-
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",

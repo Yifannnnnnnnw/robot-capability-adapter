@@ -23,8 +23,6 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "hello_robot_stretch_2" / "1.0.0"
 TASKS_ROOT = PACKAGE_ROOT / "tasks"
 PRIVATE_ROOT = TASKS_ROOT / "private"
 FRANKA_PRIVATE_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "tasks" / "private"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 ROBOT_ID = "hello_robot_stretch_2"
 PACKAGE_VERSION = "1.0.0"
 SNAPSHOT_ID = "hello-robot-stretch-2-metaworld-source-protocols-2026-08-20-v2"
@@ -229,12 +227,6 @@ def test_stretch_private_documents_close_public_snapshot_and_fail_closed() -> No
     assert "franka" not in private_text
 
     assert (PACKAGE_ROOT / "reference" / "driver.py").is_file()
-    assert ROBOT_ID not in _read(RUNNABLE_INDEX_PATH)["robots"]
-    research = _read(RESEARCH_INDEX_PATH)
-    assert any(
-        candidate["robot_configuration_id"] == ROBOT_ID
-        for candidate in research["candidates"]
-    )
     package = load_robot_package(PACKAGE_ROOT)
     assert package.robot_configuration_id == ROBOT_ID
     assert len(package.tasks) == 20

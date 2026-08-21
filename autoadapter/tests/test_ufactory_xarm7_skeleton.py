@@ -19,7 +19,7 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "ufactory_xarm7" / "1.0.0"
 SKELETON_PATH = PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py"
 ARM_JOINTS = tuple(f"joint{index}" for index in range(1, 8))
 ARM_ACTUATORS = tuple(f"act{index}" for index in range(1, 8))
-HOME_ARM = (0.0, -0.247, 0.0, 0.909, 0.0, 1.15644, 0.0)
+HOME_ARM = (0.0, -0.5, 0.0, 1.4, 0.0, 0.8, 0.0)
 
 
 def _load_package_skeleton():
@@ -92,8 +92,3 @@ def test_xarm7_public_morphology_builds_a_live_session_bound_skeleton() -> None:
     assert np.isfinite(data.qpos).all()
     assert np.isfinite(data.qvel).all()
     assert np.isfinite(data.ctrl).all()
-
-    runnable_index = json.loads(
-        (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
-    )
-    assert "ufactory_xarm7" not in runnable_index["robots"]

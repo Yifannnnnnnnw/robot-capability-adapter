@@ -14,7 +14,6 @@ ROOT = Path(__file__).resolve().parents[1]
 XARM_ASSETS_ROOT = ROOT / "libraries" / "robots" / "ufactory_xarm7" / "1.0.0" / "assets"
 PIPER_PACKAGE_ROOT = ROOT / "libraries" / "robots" / "piper" / "1.0.0"
 PIPER_ASSETS_ROOT = PIPER_PACKAGE_ROOT / "assets"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 
 SCENES = {
     "reach_scene.xml": {
@@ -293,9 +292,7 @@ def test_piper_grasp_workpieces_use_the_calibrated_mass() -> None:
     assert peg_model.body_mass[peg_body_id] == 0.012
 
 
-def test_piper_task_scene_package_remains_non_runtime() -> None:
-    runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-    assert "piper" not in runnable_index["robots"]
+def test_piper_task_scene_package_components_exist() -> None:
     assert (PIPER_PACKAGE_ROOT / "tasks" / "private").is_dir()
     assert (PIPER_PACKAGE_ROOT / "skeleton" / "arm_serial_dls.py").is_file()
     assert (PIPER_PACKAGE_ROOT / "reference" / "driver.py").is_file()

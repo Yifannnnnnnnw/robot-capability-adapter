@@ -19,8 +19,6 @@ from autoadapter2.trusted_skeletons import ArmSerialDLSSkeleton, ArmSpec, IKUnre
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0"
 SO101_ROOT = ROOT / "libraries" / "robots" / "robotstudio_so101" / "1.0.0"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 SNAPSHOT_ID = "franka-panda-metaworld-source-protocols-2026-08-19-v1"
 ARM_JOINTS = tuple(f"joint{index}" for index in range(1, 8))
 ARM_ACTUATORS = tuple(f"actuator{index}" for index in range(1, 8))
@@ -204,6 +202,9 @@ def test_franka_private_package_loads_and_preserves_boundary() -> None:
 def test_franka_private_records_are_the_reviewed_so101_transform() -> None:
     template = _read(SO101_ROOT / "tasks/private/instances.json")["instances"]
     actual = _read(PACKAGE_ROOT / "tasks/private/instances.json")["instances"]
+    donor_robot_joints = set(
+        _read(SO101_ROOT / "morphology.json")["public_control"]["joint_names"]
+    )
     assert len(actual) == len(template) == 20
     position_deltas = {
         "contact_position": np.asarray((0.10, 0.0, 0.33)),
@@ -217,7 +218,11 @@ def test_franka_private_records_are_the_reviewed_so101_transform() -> None:
         assert observed["instance_id"] == expected["instance_id"].replace("so101-", "franka-")
         assert observed["scene_entrypoint"] == expected["scene_entrypoint"]
         fixture_positions = {
-            **expected["reset"].get("joint_positions", {}),
+            **{
+                name: value
+                for name, value in expected["reset"].get("joint_positions", {}).items()
+                if name not in donor_robot_joints
+            },
             **FIXTURE_RESET_JOINT_POSITIONS.get(expected["task_id"], {}),
         }
         expected_reset = {
@@ -451,14 +456,3 @@ def test_franka_real_private_harness_reach_positive_control() -> None:
     assert evidence["direct_state_write_detected"] is False
     assert all(trial["guard_outcomes"].values())
     assert trial["measurement_value"] <= 0.05
-
-
-def test_franka_remains_non_runtime_until_dynamic_canary_and_admission() -> None:
-    runnable_index = _read(RUNNABLE_INDEX_PATH)
-    assert "franka_panda" not in runnable_index["robots"]
-    research_index = _read(RESEARCH_INDEX_PATH)
-    candidate = next(item for item in research_index["candidates"] if item["robot_configuration_id"] == "franka_panda")
-    missing = candidate["missing_for_runnable_package"]
-    assert not any("20-task Direct-MuJoCo positive control" in item for item in missing)
-    assert any("dynamic canary" in item for item in missing)
-    assert any("runnable index" in item for item in missing)

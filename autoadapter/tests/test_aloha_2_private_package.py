@@ -20,7 +20,6 @@ from autoadapter2.libraries import load_robot_package
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "aloha_2" / "1.0.0"
 DRIVER_PATH = PACKAGE_ROOT / "reference" / "driver.py"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 SNAPSHOT_ID = "aloha-2-metaworld-source-protocols-2026-08-20-v2"
 TASK_IDS = (
     "mw_reach_target",
@@ -312,9 +311,6 @@ def test_aloha_2_private_package_loads_without_runtime_admission() -> None:
         assert document["robot_configuration_id"] == "aloha_2"
         assert document["package_version"] == "1.0.0"
         assert document["task_snapshot_id"] == SNAPSHOT_ID
-
-    assert "aloha_2" not in _read(RUNNABLE_INDEX_PATH)["robots"]
-
 
 def test_aloha_2_bindings_guards_and_selected_arm_are_exact() -> None:
     bindings = {

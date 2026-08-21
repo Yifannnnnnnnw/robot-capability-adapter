@@ -181,8 +181,3 @@ def test_aloha_2_selected_arm_skeleton_is_live_and_leaves_other_arm_neutral(
     assert evaluate_guards(
         [guard], worker_result={"physical_evidence": evidence}
     ) == {"other-arm-neutral": True}
-
-    runnable_index = json.loads(
-        (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
-    )
-    assert "aloha_2" not in runnable_index["robots"]

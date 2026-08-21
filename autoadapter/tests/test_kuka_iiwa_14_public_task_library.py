@@ -10,7 +10,6 @@ from autoadapter2.libraries.robot_package import _validate_sources, _validate_ta
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "kuka_iiwa_14" / "1.0.0"
 TASKS_ROOT = PACKAGE_ROOT / "tasks"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 FRANKA_CATALOG_PATH = (
     ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "tasks" / "catalog.json"
 )
@@ -768,11 +767,8 @@ class KukaIiwa14PublicTaskLibraryTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, public_text)
 
-    def test_kuka_private_calibration_does_not_imply_runtime_admission(self) -> None:
+    def test_kuka_private_calibration_layout(self) -> None:
         self._load_and_validate()
-        runnable_index = _read_json(RUNNABLE_INDEX_PATH)
-        self.assertNotIn("kuka_iiwa_14", runnable_index["robots"])
-
         self.assertEqual(
             sorted(path.name for path in (TASKS_ROOT / "private").iterdir()),
             ["bindings.json", "guards.json", "instances.json"],

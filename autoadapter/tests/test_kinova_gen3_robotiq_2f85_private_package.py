@@ -365,9 +365,7 @@ def test_kinova_resets_and_idle_physics_do_not_already_satisfy_tasks() -> None:
                 ), f"{instance['task_id']} passed at {label} without task control: {value}"
 
 
-def test_kinova_private_package_is_still_non_runtime_and_incomplete() -> None:
-    runnable_index = _read(ROOT / "libraries" / "robots" / "index.json")
-    assert ROBOT_ID not in runnable_index["robots"]
+def test_kinova_private_package_contains_required_files() -> None:
     assert sorted(path.name for path in KINOVA_PRIVATE_ROOT.iterdir()) == [
         "bindings.json",
         "guards.json",

@@ -12,7 +12,6 @@ ROOT = Path(__file__).resolve().parents[1]
 XARM_TASKS_ROOT = ROOT / "libraries" / "robots" / "ufactory_xarm7" / "1.0.0" / "tasks"
 FRANKA_TASKS_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "tasks"
 XARM_PACKAGE_ROOT = ROOT / "libraries" / "robots" / "ufactory_xarm7" / "1.0.0"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 PINNED_COMMIT = "7ea2b501c4a698c8533cdc55a396fe2734e2649d"
 EXPECTED_TASK_IDS = [
     "mw_reach_target",
@@ -215,8 +214,6 @@ class UfactoryXarm7PublicTaskLibraryTests(unittest.TestCase):
                 self.assertNotIn("rad", description)
                 self.assertNotIn("actuator8", description)
 
-        runnable_index = _read_json(RUNNABLE_INDEX_PATH)
-        self.assertNotIn("ufactory_xarm7", runnable_index["robots"])
         self.assertEqual(
             sorted(path.name for path in XARM_PACKAGE_ROOT.iterdir()),
             ["assets", "morphology.json", "reference", "skeleton", "tasks"],

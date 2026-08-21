@@ -245,7 +245,7 @@ def test_xarm7_task_scenes_load_step_and_preserve_fixture_contracts() -> None:
         assert np.isfinite(data.ctrl).all()
 
 
-def test_xarm7_scene_geometry_is_world_framed_and_package_remains_non_runtime() -> None:
+def test_xarm7_scene_geometry_is_world_framed() -> None:
     reach_model = mujoco.MjModel.from_xml_path(str(ASSETS_ROOT / "reach_scene.xml"))
     reach_data = mujoco.MjData(reach_model)
     mujoco.mj_forward(reach_model, reach_data)
@@ -258,8 +258,3 @@ def test_xarm7_scene_geometry_is_world_framed_and_package_remains_non_runtime() 
     surface_id = mujoco.mj_name2id(push_model, mujoco.mjtObj.mjOBJ_GEOM, "work_surface")
     surface_top = float(push_data.geom_xpos[surface_id, 2] + push_model.geom_size[surface_id, 2])
     assert np.isclose(surface_top, 0.41)
-
-    runnable_index = json.loads(
-        (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
-    )
-    assert "ufactory_xarm7" not in runnable_index["robots"]

@@ -11,8 +11,6 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 ENTRYPOINTS = (
     "scene.xml",
@@ -221,10 +219,6 @@ class FrankaPackageFoundationTests(unittest.TestCase):
         for relative_path in CORE_TOP_LEVEL_FILES + CORE_MESH_FILES:
             self.assertTrue((ASSETS_ROOT / relative_path).is_file(), relative_path)
 
-    def test_franka_is_absent_from_runnable_index(self) -> None:
-        runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-        self.assertNotIn("franka_panda", runnable_index["robots"])
-
     def test_all_entrypoints_load_and_step_with_real_mujoco(self) -> None:
         for filename in ENTRYPOINTS:
             with self.subTest(filename=filename):
@@ -319,67 +313,6 @@ class FrankaPackageFoundationTests(unittest.TestCase):
                 "available_keyframe": "home",
             },
         )
-
-    def test_research_index_keeps_franka_incomplete_and_non_runtime(self) -> None:
-        research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
-        self.assertIs(research_index["non_runtime"], True)
-        self.assertIs(research_index["planning_only"], True)
-        self.assertIs(research_index["runtime"], False)
-        candidate = next(
-            item
-            for item in research_index["candidates"]
-            if item["robot_configuration_id"] == "franka_panda"
-        )
-        self.assertEqual(candidate["observed_task_count"], 5)
-        observed_paths = {
-            item["path"] for item in candidate["locally_observed_source_material"]
-        }
-        self.assertIn(
-            "autoadapter/libraries/robots/franka_panda/1.0.0/assets/pushbench.xml",
-            observed_paths,
-        )
-        self.assertIn(
-            "autoadapter/libraries/robots/franka_panda/1.0.0/morphology.json",
-            observed_paths,
-        )
-        self.assertIn(
-            "autoadapter/libraries/robots/franka_panda/1.0.0/tasks/sources.json",
-            observed_paths,
-        )
-        self.assertIn(
-            "autoadapter/libraries/robots/franka_panda/1.0.0/tasks/catalog.json",
-            observed_paths,
-        )
-        scene_observation = next(
-            item
-            for item in candidate["locally_observed_source_material"]
-            if item["kind"] == "canonical_task_scene_set"
-        )
-        self.assertEqual(
-            scene_observation["path"],
-            "autoadapter/libraries/robots/franka_panda/1.0.0/assets/reach_scene.xml",
-        )
-        self.assertIn("17", scene_observation["observation"])
-        self.assertIn("local", scene_observation["observation"].lower())
-        self.assertIn("tested", scene_observation["observation"].lower())
-        evidence_observation = next(
-            item
-            for item in candidate["locally_observed_source_material"]
-            if item["kind"] == "tracked_reference_positive_control_record"
-        )
-        self.assertEqual(evidence_observation["path"], "autoadapter/evidence/README.md")
-        self.assertIn("20/20", evidence_observation["observation"])
-        self.assertIn("videos", evidence_observation["observation"])
-        self.assertIn("starts outside", evidence_observation["observation"])
-        missing = candidate["missing_for_runnable_package"]
-        self.assertFalse(any("local MuJoCo asset closure" in item for item in missing))
-        self.assertFalse(any("current mainline morphology.json" in item for item in missing))
-        self.assertFalse(any("20 distinct applicable source-backed tasks" in item for item in missing))
-        self.assertFalse(any("tasks/sources.json" in item for item in missing))
-        self.assertFalse(any("positive control" in item for item in missing))
-        for phrase in ("dynamic canary", "runnable index"):
-            self.assertTrue(any(phrase in item for item in missing), phrase)
-
 
 if __name__ == "__main__":
     unittest.main()

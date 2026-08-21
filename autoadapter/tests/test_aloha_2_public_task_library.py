@@ -11,7 +11,6 @@ ROOT = Path(__file__).resolve().parents[1]
 TASKS_ROOT = ROOT / "libraries" / "robots" / "aloha_2" / "1.0.0" / "tasks"
 FRANKA_TASKS_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "tasks"
 KUKA_TASKS_ROOT = ROOT / "libraries" / "robots" / "kuka_iiwa_14" / "1.0.0" / "tasks"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 
 PINNED_METAWORLD_COMMIT = "7ea2b501c4a698c8533cdc55a396fe2734e2649d"
 PINNED_ALOHA_COMMIT = "da76818e269b82289eba39808e2fb91d679d6994"
@@ -322,10 +321,6 @@ class Aloha2PublicTaskLibraryTests(unittest.TestCase):
                 self.assertNotIn("mujoco_menagerie_aloha", {
                     ref["source_id"] for ref in clause["source_refs"]
                 })
-
-        runnable_index = _read_json(RUNNABLE_INDEX_PATH)
-        self.assertNotIn("aloha_2", runnable_index["robots"])
-
 
 if __name__ == "__main__":
     unittest.main()

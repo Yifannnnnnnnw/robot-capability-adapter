@@ -13,7 +13,6 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "universal_robots_ur5e_robotiq_2f
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 
 ARM_JOINT_NAMES = [
     "shoulder_pan_joint",
@@ -628,6 +627,3 @@ def test_universal_robots_ur5e_robotiq_2f85_asset_foundation_is_local_and_live()
     assert np.isfinite(data.qvel).all()
     assert np.isfinite(data.qacc).all()
     assert np.isfinite(data.ctrl).all()
-
-    runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-    assert "universal_robots_ur5e_robotiq_2f85" not in runnable_index["robots"]

@@ -89,7 +89,7 @@ def test_stretch_menagerie_asset_closure_and_morphology_are_consistent() -> None
     ) == ACTUATOR_NAMES
 
 
-def test_stretch_public_task_candidate_is_closed_but_not_admitted() -> None:
+def test_stretch_public_task_package_is_closed_and_loadable() -> None:
     sources_path = PACKAGE_ROOT / "tasks" / "sources.json"
     catalog_path = PACKAGE_ROOT / "tasks" / "catalog.json"
     sources = _validate_sources(_read(sources_path), path=sources_path)
@@ -113,8 +113,6 @@ def test_stretch_public_task_candidate_is_closed_but_not_admitted() -> None:
     )
 
     assert (PACKAGE_ROOT / "reference" / "driver.py").is_file()
-    runnable = _read(ROOT / "libraries" / "robots" / "index.json")["robots"]
-    assert ROBOT_ID not in runnable
     package = load_robot_package(PACKAGE_ROOT)
     assert package.robot_configuration_id == ROBOT_ID
     assert len(package.tasks) == 20

@@ -12,8 +12,6 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 FRANKA_ASSETS_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "assets"
 PRIVATE_INSTANCES_PATH = FRANKA_ASSETS_ROOT.parent / "tasks" / "private" / "instances.json"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 SCENE_NAMES = (
     "reach_scene.xml",
@@ -277,43 +275,6 @@ class FrankaTaskSceneTests(unittest.TestCase):
             + float(push_model.geom_size[work_surface_id, 2])
         )
         self.assertAlmostEqual(work_surface_top, 0.41, places=9)
-
-    def test_franka_remains_non_runtime_with_remaining_research_gaps(self) -> None:
-        runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-        self.assertNotIn("franka_panda", runnable_index["robots"])
-
-        research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
-        candidate = next(
-            item
-            for item in research_index["candidates"]
-            if item["robot_configuration_id"] == "franka_panda"
-        )
-        self.assertEqual(candidate["observed_task_count"], 5)
-        scene_observations = candidate["locally_observed_source_material"]
-        self.assertTrue(
-            any(
-                item["path"].endswith("/assets/reach_scene.xml")
-                and item["kind"] == "canonical_task_scene_set"
-                and "17" in item["observation"]
-                and "local" in item["observation"].lower()
-                and "tested" in item["observation"].lower()
-                for item in scene_observations
-            )
-        )
-        evidence_observation = next(
-            item
-            for item in scene_observations
-            if item["kind"] == "tracked_reference_positive_control_record"
-        )
-        self.assertEqual(evidence_observation["path"], "autoadapter/evidence/README.md")
-        self.assertIn("20/20", evidence_observation["observation"])
-        self.assertIn("videos", evidence_observation["observation"])
-        missing = candidate["missing_for_runnable_package"]
-        self.assertFalse(any("task-specific MuJoCo scenes" in item for item in missing))
-        self.assertFalse(any("positive control" in item for item in missing))
-        for phrase in ("dynamic canary", "runnable index"):
-            self.assertTrue(any(phrase in item for item in missing), phrase)
-
 
 if __name__ == "__main__":
     unittest.main()

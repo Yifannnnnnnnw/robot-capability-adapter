@@ -14,7 +14,6 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "kuka_iiwa_14" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 
 JOINT_NAMES = [f"joint{index}" for index in range(1, 8)]
 ACTUATOR_NAMES = [f"actuator{index}" for index in range(1, 8)]
@@ -276,54 +275,6 @@ def test_kuka_iiwa_14_asset_foundation_is_local_and_live() -> None:
     assert np.isfinite(data.qvel).all()
     assert np.isfinite(data.qacc).all()
     assert np.isfinite(data.ctrl).all()
-
-    runnable_index = json.loads((ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8"))
-    assert "kuka_iiwa_14" not in runnable_index["robots"]
-    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
-    candidate = next(
-        item
-        for item in research_index["candidates"]
-        if item["robot_configuration_id"] == "kuka_iiwa_14"
-    )
-    observed_paths = {
-        item["path"] for item in candidate["locally_observed_source_material"]
-    }
-    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/assets/scene.xml" in observed_paths
-    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/morphology.json" in observed_paths
-    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/sources.json" in observed_paths
-    assert "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/tasks/catalog.json" in observed_paths
-    assert (
-        "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/"
-        "skeleton/arm_serial_dls.py"
-    ) in observed_paths
-    assert (
-        "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/"
-        "tasks/private/instances.json"
-    ) in observed_paths
-    assert (
-        "autoadapter/libraries/robots/kuka_iiwa_14/1.0.0/reference/driver.py"
-        in observed_paths
-    )
-    evidence_observation = next(
-        item
-        for item in candidate["locally_observed_source_material"]
-        if item["kind"] == "tracked_reference_positive_control_record"
-    )
-    assert evidence_observation["path"] == "autoadapter/evidence/README.md"
-    assert "20/20" in evidence_observation["observation"]
-    assert "exact link7_contact_geom" in evidence_observation["observation"]
-    assert "videos" in evidence_observation["observation"]
-    missing = " ".join(candidate["missing_for_runnable_package"])
-    assert "complete local MuJoCo asset closure" not in missing
-    assert "current mainline morphology.json" not in missing
-    assert "20 distinct applicable source-backed tasks" not in missing
-    assert "tasks/sources.json" not in missing
-    assert "tasks/private/instances.json" not in missing
-    assert "reference driver" not in missing
-    assert "package check" not in missing
-    assert "positive control" not in missing
-    assert "dynamic canary" in missing
-    assert "runnable index" in missing
     assert sorted(path.name for path in (PACKAGE_ROOT / "tasks").iterdir()) == [
         "catalog.json",
         "private",

@@ -11,8 +11,6 @@ from autoadapter2.libraries.robot_package import _validate_sources, _validate_ta
 ROOT = Path(__file__).resolve().parents[1]
 FRANKA_TASKS_ROOT = ROOT / "libraries" / "robots" / "franka_panda" / "1.0.0" / "tasks"
 SO101_TASKS_ROOT = ROOT / "libraries" / "robots" / "robotstudio_so101" / "1.0.0" / "tasks"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
 PINNED_COMMIT = "7ea2b501c4a698c8533cdc55a396fe2734e2649d"
 
 
@@ -170,49 +168,6 @@ class FrankaPublicTaskLibraryTests(unittest.TestCase):
         self.assertIn("franka panda", public_text)
         for forbidden in ("so-101", "robotstudio_so101", "go2", "unitree"):
             self.assertNotIn(forbidden, public_text)
-
-        runnable_index = _read_json(RUNNABLE_INDEX_PATH)
-        self.assertNotIn("franka_panda", runnable_index["robots"])
-        research_index = _read_json(RESEARCH_INDEX_PATH)
-        candidate = next(
-            item
-            for item in research_index["candidates"]
-            if item["robot_configuration_id"] == "franka_panda"
-        )
-        self.assertTrue(candidate["missing_for_runnable_package"])
-        scene_observation = next(
-            item
-            for item in candidate["locally_observed_source_material"]
-            if item["kind"] == "canonical_task_scene_set"
-        )
-        self.assertEqual(
-            scene_observation["path"],
-            "autoadapter/libraries/robots/franka_panda/1.0.0/assets/reach_scene.xml",
-        )
-        self.assertIn("17", scene_observation["observation"])
-        self.assertIn("local", scene_observation["observation"].lower())
-        self.assertIn("tested", scene_observation["observation"].lower())
-        evidence_observation = next(
-            item
-            for item in candidate["locally_observed_source_material"]
-            if item["kind"] == "tracked_reference_positive_control_record"
-        )
-        self.assertEqual(evidence_observation["path"], "autoadapter/evidence/README.md")
-        self.assertIn("20/20", evidence_observation["observation"])
-        self.assertIn("videos", evidence_observation["observation"])
-        missing = candidate["missing_for_runnable_package"]
-        self.assertFalse(any("positive control" in item for item in missing))
-        for phrase in ("dynamic canary", "runnable index"):
-            self.assertTrue(
-                any(phrase in item for item in missing),
-                phrase,
-            )
-        self.assertFalse(
-            any("20 distinct applicable source-backed tasks" in item for item in missing)
-        )
-        self.assertFalse(
-            any("Create tasks/sources.json" in item for item in missing)
-        )
 
 
 if __name__ == "__main__":

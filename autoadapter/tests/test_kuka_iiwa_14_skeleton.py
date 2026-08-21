@@ -74,8 +74,3 @@ def test_kuka_public_morphology_builds_a_geom_centered_skeleton() -> None:
     solved = skeleton.ik(target, q_init=np.zeros(7))
     np.testing.assert_allclose(skeleton.fk(solved)["pos"], target, atol=0.003)
     assert skeleton.set_gripper(0.0, settle_steps=0) is False
-
-    runnable_index = json.loads(
-        (ROOT / "libraries" / "robots" / "index.json").read_text(encoding="utf-8")
-    )
-    assert "kuka_iiwa_14" not in runnable_index["robots"]

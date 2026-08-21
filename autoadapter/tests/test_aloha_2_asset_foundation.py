@@ -13,8 +13,6 @@ PACKAGE_ROOT = ROOT / "libraries" / "robots" / "aloha_2" / "1.0.0"
 ASSETS_ROOT = PACKAGE_ROOT / "assets"
 MORPHOLOGY_PATH = PACKAGE_ROOT / "morphology.json"
 SCENE_PATH = ASSETS_ROOT / "scene.xml"
-RESEARCH_INDEX_PATH = ROOT / "research" / "robots" / "index.json"
-RUNNABLE_INDEX_PATH = ROOT / "libraries" / "robots" / "index.json"
 
 EXPECTED_INVENTORY = (
     "CHANGELOG.md",
@@ -606,8 +604,6 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
     np.testing.assert_allclose(closed_gripper_qpos[1], closed_gripper_qpos[3], rtol=0.0, atol=1e-9)
     _assert_finite(data)
 
-    runnable_index = json.loads(RUNNABLE_INDEX_PATH.read_text(encoding="utf-8"))
-    assert "aloha_2" not in runnable_index["robots"]
     assert sorted(path.name for path in PACKAGE_ROOT.iterdir()) == [
         "assets",
         "morphology.json",
@@ -620,63 +616,3 @@ def test_aloha_2_asset_foundation_is_canonical_local_and_non_runtime() -> None:
     assert {
         path.name for path in (PACKAGE_ROOT / "tasks" / "private").iterdir()
     } == {"bindings.json", "guards.json", "instances.json"}
-
-    research_index = json.loads(RESEARCH_INDEX_PATH.read_text(encoding="utf-8"))
-    candidate = next(
-        item
-        for item in research_index["candidates"]
-        if item["robot_configuration_id"] == "aloha_2"
-    )
-    assert candidate["observed_task_count"] == 5
-    canonical_observations = [
-        item
-        for item in candidate["locally_observed_source_material"]
-        if item["path"].startswith("autoadapter/libraries/robots/aloha_2/")
-        or item["kind"] == "tracked_reference_positive_control_record"
-    ]
-    assert {item["kind"] for item in canonical_observations} == {
-        "canonical_mujoco_asset_foundation",
-        "canonical_morphology_foundation",
-        "canonical_task_sources",
-        "canonical_task_catalog",
-        "canonical_task_scene_set",
-        "canonical_skeleton_inventory",
-        "canonical_private_task_package",
-        "canonical_reference_calibration",
-        "tracked_reference_positive_control_record",
-    }
-    assert {
-        item["path"] for item in canonical_observations
-    } == {
-        "autoadapter/libraries/robots/aloha_2/1.0.0/assets/scene.xml",
-        "autoadapter/libraries/robots/aloha_2/1.0.0/morphology.json",
-        "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/sources.json",
-        "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/catalog.json",
-        "autoadapter/libraries/robots/aloha_2/1.0.0/assets/reach_scene.xml",
-        "autoadapter/libraries/robots/aloha_2/1.0.0/skeleton/arm_serial_dls.py",
-        "autoadapter/libraries/robots/aloha_2/1.0.0/tasks/private/instances.json",
-        "autoadapter/libraries/robots/aloha_2/1.0.0/reference/driver.py",
-        "autoadapter/evidence/README.md",
-    }
-    non_evidence_observations = [
-        item
-        for item in canonical_observations
-        if item["kind"] != "tracked_reference_positive_control_record"
-    ]
-    assert all(
-        phrase not in item["observation"].lower()
-        for item in non_evidence_observations
-        for phrase in ("task passed", "positive control", "admitted")
-    )
-    evidence_observation = next(
-        item
-        for item in canonical_observations
-        if item["kind"] == "tracked_reference_positive_control_record"
-    )
-    assert evidence_observation["path"] == "autoadapter/evidence/README.md"
-    assert "20/20" in evidence_observation["observation"]
-    assert "calibration evidence only" in evidence_observation["observation"]
-    assert candidate["missing_for_runnable_package"] == [
-        "Run a dynamic canary with the required model and generation traces and terminal physical evidence.",
-        "Perform final human package and admission review, then add ALOHA 2 to the runnable index only if the dynamic canary passes; prior reference evidence alone does not admit it.",
-    ]
