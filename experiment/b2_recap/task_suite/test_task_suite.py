@@ -120,6 +120,26 @@ class B2TaskSuiteTests(unittest.TestCase):
                 )
         self.assertEqual(clause_count, 12)
 
+    def test_multistage_so101_pick_tasks_have_the_extended_physical_budget(self) -> None:
+        so101 = next(
+            robot
+            for robot in self.suite["robot_suites"]
+            if robot["robot_configuration_id"] == "robotstudio_so101"
+        )
+        budgets = {
+            task["task_id"]: task["episode_budget"] for task in so101["tasks"]
+        }
+        for task_id in ("mw_pick_place", "mw_pick_place_wall", "mw_bin_picking"):
+            self.assertEqual(
+                budgets[task_id],
+                {"timeout_sim_s": 40.0, "max_steps": 10000, "sample_hz": 20.0},
+            )
+        for task_id in ("mw_push_to_goal", "mw_sweep_into_goal"):
+            self.assertEqual(
+                budgets[task_id],
+                {"timeout_sim_s": 20.0, "max_steps": 5000, "sample_hz": 20.0},
+            )
+
     def test_go2_t02_t03_repetition_limitation_is_explicit(self) -> None:
         go2 = next(
             robot

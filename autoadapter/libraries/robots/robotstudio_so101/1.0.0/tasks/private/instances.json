@@ -153,8 +153,8 @@
         "guard_canonical_model_data"
       ],
       "repetitions": 1,
-      "timeout_sim_s": 20.0,
-      "max_steps": 5000,
+      "timeout_sim_s": 40.0,
+      "max_steps": 10000,
       "sample_hz": 20.0,
       "video_width": 800,
       "video_height": 600,
@@ -222,8 +222,8 @@
         "guard_canonical_model_data"
       ],
       "repetitions": 1,
-      "timeout_sim_s": 20.0,
-      "max_steps": 5000,
+      "timeout_sim_s": 40.0,
+      "max_steps": 10000,
       "sample_hz": 20.0,
       "video_width": 800,
       "video_height": 600,
@@ -1063,8 +1063,8 @@
         "guard_canonical_model_data"
       ],
       "repetitions": 1,
-      "timeout_sim_s": 20.0,
-      "max_steps": 5000,
+      "timeout_sim_s": 40.0,
+      "max_steps": 10000,
       "sample_hz": 20.0,
       "video_width": 800,
       "video_height": 600,

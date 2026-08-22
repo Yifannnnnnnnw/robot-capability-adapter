@@ -96,7 +96,7 @@ def _write_mock_suite(path: Path) -> None:
             {
                 "artifact_type": "b2_recap_task_suite",
                 "schema_version": "1.0",
-                "authority": {"document_id": "AA2-B2", "revision": "0.1.1"},
+                "authority": {"document_id": "AA2-B2", "revision": "0.1.2"},
                 "robot_suites": [
                     {
                         "robot_configuration_id": "unitree-go2-stock-12dof",

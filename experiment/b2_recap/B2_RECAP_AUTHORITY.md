@@ -5,9 +5,29 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.1`<br>
+> **Revision:** `0.1.2`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution paused
+
+Revision `0.1.2` prospectively raises only the fixed simulation budget for the
+three multi-stage SO-101 pick tasks `mw_pick_place`, `mw_pick_place_wall`, and
+`mw_bin_picking` from `20.0 s / 5000 steps` to `40.0 s / 10000 steps`. In the
+revision `0.1.1` real-model `mw_pick_place` diagnostic, the newly exposed A6
+correctly reached the requested wrist roll twice and the controller detected a
+failed first grasp, re-centred, restored wrist orientation, and began the
+second closure; the worker then stopped at `20.005 s` before the second grasp,
+test lift, transport, or release could complete. The retained failed run is not
+relabelled. All task semantics, scoring clauses, resets, controller/model-call
+budgets, capability interfaces, backbone levels, replicates, and the
+210-episode denominator remain unchanged. The already completed interface
+reference calibration remains applicable because this revision changes only
+task-episode budgets. Formal execution remains paused under Section 7.
+
+**中文辅助说明。** `0.1.2` 只把三项多阶段 SO-101 pick task 的仿真预算从
+`20.0 s / 5000 steps` 提高到 `40.0 s / 10000 steps`。真实模型诊断中，A6 已两次正确
+达到目标腕角，controller 也识别了首次抓取失败并开始第二次抓取，但 worker 在
+`20.005 s` 被预算终止。旧失败记录不重标；其他任务、评分、controller budget、接口、因素、
+replicate 和 210-episode denominator 均不改变。
 
 Revision `0.1.1` prospectively fixes a bounded comparison of one ReCAP high-level-controller
 architecture across seven replaceable LLM backbones. It fixes two robots, five source-backed

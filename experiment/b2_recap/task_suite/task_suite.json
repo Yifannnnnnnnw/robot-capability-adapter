@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "authority": {
     "document_id": "AA2-B2",
-    "revision": "0.1.1",
+    "revision": "0.1.2",
     "path": "experiment/b2_recap/B2_RECAP_AUTHORITY.md"
   },
   "task_count": 10,
@@ -762,8 +762,8 @@
             }
           ],
           "episode_budget": {
-            "timeout_sim_s": 20.0,
-            "max_steps": 5000,
+            "timeout_sim_s": 40.0,
+            "max_steps": 10000,
             "sample_hz": 20.0
           },
           "rendering": {
@@ -1059,8 +1059,8 @@
             }
           ],
           "episode_budget": {
-            "timeout_sim_s": 20.0,
-            "max_steps": 5000,
+            "timeout_sim_s": 40.0,
+            "max_steps": 10000,
             "sample_hz": 20.0
           },
           "rendering": {
@@ -1356,8 +1356,8 @@
             }
           ],
           "episode_budget": {
-            "timeout_sim_s": 20.0,
-            "max_steps": 5000,
+            "timeout_sim_s": 40.0,
+            "max_steps": 10000,
             "sample_hz": 20.0
           },
           "rendering": {

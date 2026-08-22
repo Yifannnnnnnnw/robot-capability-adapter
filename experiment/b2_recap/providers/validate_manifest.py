@@ -228,7 +228,7 @@ def validate_manifest_document(
     authority = document.get("authority")
     if authority != {
         "document_id": "AA2-B2",
-        "revision": "0.1.1",
+        "revision": "0.1.2",
         "sections": ["2.1", "4", "7.3"],
     }:
         raise ProviderManifestError("B2 provider authority pin is invalid")
