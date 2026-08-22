@@ -5,9 +5,37 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.16`<br>
+> **Revision:** `0.1.17`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution paused
+
+Revision `0.1.17` prospectively raises only M2's fixed per-request output
+budget from `8,192` to `32,768` tokens while retaining the revision `0.1.15`
+`600 s` total wall-clock deadline. Before the project owner paused the
+four-cell revision `0.1.15` M2 rerun, 22 of 32 successful physical provider
+calls returned exactly 8,192
+output tokens. Nine of those capped calls returned ordinary assistant text with
+no tool call, while capped `submit_study` and nine consecutive capped
+`check_driver` calls were rejected before a valid checked Driver revision was
+established. Every request recorded `budget_exceeded=false`; the largest input
+was 89,176 tokens against M2's fixed 1,000,000-token context limit. One
+independent HTTP 500 was retried successfully. The observed repeated failure is
+therefore treated as output truncation or provider finish-reason normalization,
+not accumulated-history exhaustion and not yet as a pure model-capability
+outcome.
+
+Every M2 cell started under revision `0.1.16` or earlier remains unchanged as
+historical configuration evidence and does not enter the revision `0.1.17`
+formal denominator. Before any M2 formal rerun, one non-formal M2 canary must
+exercise the real route and record accepted `submit_study`, `check_driver`, and
+`submit_driver` transitions; its validation result is diagnostic and does not
+enter the formal denominator or Experience. Compatible non-M2 records remain
+unchanged, including the revision `0.1.16` SO-101 compatibility rule. This
+correction does not change the cohort, model identity, provider route,
+conditions, replicates, fixed validation bundles, attempt budget, context or
+history budgets, retry policy, concurrency limit, or analysis boundary. Formal
+execution remains paused under revision `0.1.16`'s SO-101 gate and still
+requires prospective project-owner authorization to restart.
 
 Revision `0.1.16` prospectively adds SO-101 capability A6,
 `set_wrist_roll`, to the fixed public Driver interface and its three-case
