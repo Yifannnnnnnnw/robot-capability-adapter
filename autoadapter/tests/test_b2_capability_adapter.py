@@ -13,7 +13,11 @@ from autoadapter2.b2.capability_adapter import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DESIGN_ROOT = (
-    REPOSITORY_ROOT / "experiment" / "experiment1" / "fixed_validation_bundles"
+    REPOSITORY_ROOT
+    / "experiment"
+    / "b2_recap"
+    / "reference_validation"
+    / "resolved"
 )
 
 

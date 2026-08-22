@@ -247,8 +247,9 @@ def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> 
         (
             REPOSITORY_ROOT
             / "experiment"
-            / "experiment1"
-            / "fixed_validation_bundles"
+            / "b2_recap"
+            / "reference_validation"
+            / "resolved"
             / "robotstudio_so101"
             / "capability_design.json"
         ).read_text(encoding="utf-8")
