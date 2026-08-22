@@ -214,6 +214,7 @@ def run(
     provider_path: Path,
     output_path: Path,
     wall_timeout_s: float,
+    record_video: bool = False,
 ) -> dict[str, Any]:
     provider_path = provider_path.resolve()
     env_path = env_path.resolve()
@@ -244,7 +245,7 @@ def run(
                 driver_path=DRIVER_PATH,
                 capability_design_path=CAPABILITY_DESIGN_PATH,
                 output_dir=output_path.parent,
-                record_video=False,
+                record_video=record_video,
                 wall_timeout_s=wall_timeout_s,
             ),
             package=package,
@@ -284,17 +285,22 @@ def run(
         "video_complete": harness.get("video_complete"),
         "independent_harness_verdict": harness.get("physical_harness_verdict"),
     }
+    summary["video_requirement_satisfied"] = bool(
+        not record_video or summary["video_complete"] is True
+    )
     summary["diagnostic_chain_completed"] = bool(
         error is None
         and summary["real_model_request_succeeded"]
         and summary["returned_model_matches_pin"]
         and summary["reference_driver_was_invoked"]
         and summary["worker_completed"] is True
+        and summary["video_requirement_satisfied"]
     )
     report = {
-        "artifact_type": "b2_recap_real_model_no_video_diagnostic",
+        "artifact_type": "b2_recap_real_model_diagnostic",
         "formal_episode": False,
         "formal_denominator_entry": False,
+        "video_requested": record_video,
         "authority": {"document_id": "AA2-B2", "revision": "0.1.0"},
         "code_version": _code_version(),
         "started_at_utc": started_at_utc,
@@ -318,8 +324,8 @@ def run(
         "error": error,
         "episode": episode,
         "known_evidence_limit": (
-            "Video is disabled for this diagnostic; it cannot clear AA2-B2 "
-            "Section 7 or enter the 210-episode formal denominator."
+            "This provider canary is diagnostic and cannot enter the AA2-B2 "
+            "210-episode formal denominator while Section 7 remains uncleared."
         ),
     }
     serialized = json.dumps(report, indent=2, allow_nan=False) + "\n"
@@ -336,12 +342,14 @@ def main() -> int:
     parser.add_argument("--provider-config", type=Path, default=DEFAULT_PROVIDER_PATH)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--wall-timeout-s", type=float, default=900.0)
+    parser.add_argument("--record-video", action="store_true")
     args = parser.parse_args()
     report = run(
         env_path=args.env_file,
         provider_path=args.provider_config,
         output_path=args.output,
         wall_timeout_s=args.wall_timeout_s,
+        record_video=args.record_video,
     )
     console = {
         **report["summary"],
