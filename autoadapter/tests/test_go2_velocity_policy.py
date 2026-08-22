@@ -187,6 +187,10 @@ def test_go2_base_twist_labels_world_and_body_yaw_frames() -> None:
     data.qvel[root_qvel + 3 : root_qvel + 6] = (0.0, 0.0, 0.3)
     mujoco.mj_forward(model, data)
     twist = policy.get_base_twist()
+    np.testing.assert_allclose(twist["linear_world_m_s"], 0.0, atol=1.0e-12)
+    np.testing.assert_allclose(
+        twist["linear_body_yaw_m_s"], 0.0, atol=1.0e-12
+    )
     assert math.isclose(twist["yaw_rate_rad_s"], 0.3, abs_tol=1.0e-7)
 
 
@@ -194,16 +198,18 @@ def test_go2_velocity_feedback_uses_fresh_measurements_in_bounded_chunks() -> No
     class RecordingPolicy(Go2VelocityPolicySkeleton):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.measurements = iter((0.0, 0.1, 0.15))
+            self.measurements = iter(
+                ((0.0, 0.0, 0.0), (0.1, 0.0, 0.0), (0.15, 0.0, 0.0))
+            )
             self.commands: list[tuple[float, float, float, float]] = []
 
         def get_base_twist(self):
             measured = next(self.measurements)
             return {
                 "linear_world_m_s": np.zeros(3, dtype=float),
-                "linear_body_yaw_m_s": np.asarray((measured, 0.0), dtype=float),
+                "linear_body_yaw_m_s": np.asarray(measured[:2], dtype=float),
                 "angular_world_rad_s": np.zeros(3, dtype=float),
-                "yaw_rate_rad_s": 0.0,
+                "yaw_rate_rad_s": measured[2],
             }
 
         def command_planar_velocity(self, vx, vy, yaw_rate, duration=1.0):
@@ -226,6 +232,31 @@ def test_go2_velocity_feedback_uses_fresh_measurements_in_bounded_chunks() -> No
     assert policy.commands[0][0] > policy.commands[1][0] > 0.2
     assert all(abs(item[1]) <= 1.0e-12 for item in policy.commands)
     assert all(abs(item[2]) <= 1.0e-12 for item in policy.commands)
+
+    policy.measurements = iter(((-100.0, -100.0, -100.0), (0.0, 0.0, 0.0)))
+    policy.commands.clear()
+    policy.track_planar_velocity(0.0, 0.0, 0.0, duration=0.04)
+    correction = np.asarray(policy.commands[0][:3])
+    assert math.isclose(
+        float(np.linalg.norm(correction[:2])),
+        policy.spec.maximum_planar_correction_m_s,
+        abs_tol=1.0e-12,
+    )
+    assert math.isclose(
+        correction[2],
+        policy.spec.maximum_yaw_correction_rad_s,
+        abs_tol=1.0e-12,
+    )
+
+    policy.measurements = iter(((-100.0, -100.0, -100.0), (0.0, 0.0, 0.0)))
+    policy.commands.clear()
+    policy.track_planar_velocity(1.2, 0.0, 3.0, duration=0.04)
+    saturated = np.asarray(policy.commands[0][:3])
+    assert (
+        float(np.linalg.norm(saturated[:2]))
+        < policy.spec.maximum_planar_speed_m_s
+    )
+    assert abs(float(saturated[2])) < policy.spec.maximum_yaw_rate_rad_s
 
 
 def test_go2_stepping_stone_reference_executes_all_18_source_repetitions() -> None:

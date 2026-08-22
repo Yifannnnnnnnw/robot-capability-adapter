@@ -425,7 +425,13 @@ class Go2VelocityPolicySkeleton(SessionBoundSkeleton):
             0,
         )
         angular_world = np.asarray(spatial[:3], dtype=float)
-        linear_world = np.asarray(spatial[3:], dtype=float)
+        # MuJoCo's free-joint translational qvel is the world-frame velocity of
+        # the body origin.  mj_objectVelocity(BODY) reports at the inertial
+        # frame and would add a spurious omega-cross-offset term here.
+        qvel = self._root_qvel_address
+        linear_world = np.asarray(
+            self.data.qvel[qvel : qvel + 3], dtype=float
+        )
         rotation = np.asarray(
             self.data.xmat[self._base_body_id], dtype=float
         ).reshape(3, 3)
@@ -604,7 +610,7 @@ class Go2VelocityPolicySkeleton(SessionBoundSkeleton):
         yaw_rate: float,
         duration: float = 1.0,
     ) -> dict[str, Any]:
-        """Track one finite local velocity command through torque and physics."""
+        """Execute one raw local policy command through torque and physics."""
 
         self._resolve()
         np = self._load_numpy()
