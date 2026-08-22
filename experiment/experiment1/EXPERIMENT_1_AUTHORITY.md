@@ -5,9 +5,34 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.15`<br>
+> **Revision:** `0.1.16`<br>
 > **Effective date:** 2026-08-22<br>
-> **Design status:** active and prospectively fixed; formal execution authorized
+> **Design status:** active and prospectively fixed; formal execution paused
+
+Revision `0.1.16` prospectively adds SO-101 capability A6,
+`set_wrist_roll`, to the fixed public Driver interface and its three-case
+Harness validation suite. A real B2 pick-place diagnostic exposed a task-level
+need for wrist orientation while the prior A1--A5 position-and-gripper
+interface provided no callable wrist-rotation action. The project owner
+therefore fixed the reusable design requirement that a manipulator whose tasks
+require end-effector orientation control must expose an explicit wrist-rotation
+capability. A6 accepts a caller-supplied target roll and bounded duration; its
+trusted criterion requires timed target tracking while the other arm joints
+and gripper remain within the published unintended-motion bounds. The exact
+request schema, bounds, and H1/H2/H3 cases
+are fixed in `B1_DRIVER_VALIDATION_CRITERIA.md` and the versioned bundle.
+
+This is a new SO-101 fixed-input configuration. SO-101 cells executed against
+the earlier A1--A5 interface remain historical and do not enter the revision
+`0.1.16` denominator; the other three robots and their already compatible
+records are unchanged. Formal execution is paused until the revised SO-101
+bundle and trusted Harness binding pass their focused checks and the project
+owner prospectively authorizes a restart. A reference positive control remains
+optional diagnostic evidence under Sections 4 and 8, not a B1 start gate.
+Experiment 1 still starts every cell with empty Experience;
+the reviewed public lesson retained for a later matched run is not an input to
+this B1 comparison, and the originating B2 diagnostic is not relabelled as a
+B1 outcome.
 
 Revision `0.1.15` prospectively raises only M2's fixed per-request total
 wall-clock deadline from `120 s` to `600 s`. In the revision `0.1.14` formal

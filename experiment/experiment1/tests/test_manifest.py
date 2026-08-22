@@ -61,7 +61,7 @@ class Experiment1ManifestTests(unittest.TestCase):
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
 
         self.assertNotIn("status", recipe)
-        self.assertEqual(recipe["authority_revision"], "0.1.15")
+        self.assertEqual(recipe["authority_revision"], "0.1.16")
         self.assertEqual(recipe["execution_concurrency"]["status"], "operational")
         self.assertTrue(resolved["ready_to_expand"])
         self.assertEqual(
