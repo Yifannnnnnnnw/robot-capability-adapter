@@ -1,0 +1,1191 @@
+{
+  "artifact_type": "b1_fixed_validation_suite",
+  "schema_version": "1.0",
+  "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v1",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
+  "whole_suite_aggregation": {
+    "kind": "all_capabilities_two_of_three_cases"
+  },
+  "cases": [
+    {
+      "case_id": "A1-H1",
+      "case_variant": "H1",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "target_position_m": [
+          0.4,
+          0.1,
+          0.2
+        ],
+        "max_duration_s": 4.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A1",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a1"
+        ]
+      }
+    },
+    {
+      "case_id": "A1-H2",
+      "case_variant": "H2",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "target_position_m": [
+          0.42,
+          0.08,
+          0.21
+        ],
+        "max_duration_s": 4.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A1",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a1"
+        ]
+      }
+    },
+    {
+      "case_id": "A1-H3",
+      "case_variant": "H3",
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "target_position_m": [
+          0.38,
+          0.12,
+          0.19
+        ],
+        "max_duration_s": 5.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A1",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a1"
+        ]
+      }
+    },
+    {
+      "case_id": "A2-H1",
+      "case_variant": "H1",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "waypoints_m": [
+          [
+            0.36,
+            0.08,
+            0.2
+          ],
+          [
+            0.4,
+            0.1,
+            0.2
+          ]
+        ],
+        "max_duration_per_segment_s": 3.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A2",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a2"
+        ]
+      }
+    },
+    {
+      "case_id": "A2-H2",
+      "case_variant": "H2",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "waypoints_m": [
+          [
+            0.35,
+            0.12,
+            0.21
+          ],
+          [
+            0.39,
+            0.11,
+            0.22
+          ],
+          [
+            0.42,
+            0.09,
+            0.21
+          ]
+        ],
+        "max_duration_per_segment_s": 3.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A2",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a2"
+        ]
+      }
+    },
+    {
+      "case_id": "A2-H3",
+      "case_variant": "H3",
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "waypoints_m": [
+          [
+            0.34,
+            0.06,
+            0.19
+          ],
+          [
+            0.38,
+            0.08,
+            0.2
+          ],
+          [
+            0.4,
+            0.12,
+            0.19
+          ]
+        ],
+        "max_duration_per_segment_s": 4.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A2",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a2"
+        ]
+      }
+    },
+    {
+      "case_id": "A3-H1",
+      "case_variant": "H1",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "opening_fraction": 0.2,
+        "max_duration_s": 2.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.82,
+          "gripper": 1.5
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.82,
+          "gripper": 1.5
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A3",
+          "side_effect_guard_profile": "so101",
+          "joint_name": "gripper",
+          "closed_position": -0.17453,
+          "open_position": 1.74533
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a3"
+        ]
+      }
+    },
+    {
+      "case_id": "A3-H2",
+      "case_variant": "H2",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "opening_fraction": 0.8,
+        "max_duration_s": 2.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A3",
+          "side_effect_guard_profile": "so101",
+          "joint_name": "gripper",
+          "closed_position": -0.17453,
+          "open_position": 1.74533
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a3"
+        ]
+      }
+    },
+    {
+      "case_id": "A3-H3",
+      "case_variant": "H3",
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "opening_fraction": 0.5,
+        "max_duration_s": 3.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.84,
+          "gripper": 1.7453292
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.84,
+          "gripper": 1.7453292
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A3",
+          "side_effect_guard_profile": "so101",
+          "joint_name": "gripper",
+          "closed_position": -0.17453,
+          "open_position": 1.74533
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a3"
+        ]
+      }
+    },
+    {
+      "case_id": "A4-H1",
+      "case_variant": "H1",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "scene_entrypoint": "assets/button_front_scene.xml",
+      "request": {
+        "precontact_position_m": [
+          0.38,
+          0.07,
+          0.22
+        ],
+        "approach_direction_unit": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "max_travel_m": 0.06,
+        "max_approach_speed_m_s": 0.02,
+        "max_duration_s": 4.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A4",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe",
+          "target_geom_names": [
+            "front_button_geom"
+          ],
+          "precontact_gate": "held_window_then_ray",
+          "tool_geom_names": [
+            "fixed_jaw_sph_tip1",
+            "fixed_jaw_sph_tip2",
+            "fixed_jaw_sph_tip3",
+            "fixed_jaw_box3",
+            "fixed_jaw_box4",
+            "fixed_jaw_box5",
+            "fixed_jaw_box6",
+            "fixed_jaw_box7",
+            "geom_47",
+            "geom_48",
+            "moving_jaw_sph_tip1",
+            "moving_jaw_sph_tip2",
+            "moving_jaw_sph_tip3",
+            "moving_jaw_box2",
+            "moving_jaw_box3"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a4"
+        ]
+      }
+    },
+    {
+      "case_id": "A4-H2",
+      "case_variant": "H2",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "scene_entrypoint": "assets/button_front_scene.xml",
+      "request": {
+        "precontact_position_m": [
+          0.37,
+          0.07,
+          0.22
+        ],
+        "approach_direction_unit": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "max_travel_m": 0.065,
+        "max_approach_speed_m_s": 0.025,
+        "max_duration_s": 4.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A4",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe",
+          "target_geom_names": [
+            "front_button_geom"
+          ],
+          "precontact_gate": "held_window_then_ray",
+          "tool_geom_names": [
+            "fixed_jaw_sph_tip1",
+            "fixed_jaw_sph_tip2",
+            "fixed_jaw_sph_tip3",
+            "fixed_jaw_box3",
+            "fixed_jaw_box4",
+            "fixed_jaw_box5",
+            "fixed_jaw_box6",
+            "fixed_jaw_box7",
+            "geom_47",
+            "geom_48",
+            "moving_jaw_sph_tip1",
+            "moving_jaw_sph_tip2",
+            "moving_jaw_sph_tip3",
+            "moving_jaw_box2",
+            "moving_jaw_box3"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a4"
+        ]
+      }
+    },
+    {
+      "case_id": "A4-H3",
+      "case_variant": "H3",
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "scene_entrypoint": "assets/button_front_scene.xml",
+      "request": {
+        "precontact_position_m": [
+          0.39,
+          0.065,
+          0.22
+        ],
+        "approach_direction_unit": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "max_travel_m": 0.07,
+        "max_approach_speed_m_s": 0.03,
+        "max_duration_s": 5.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A4",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe",
+          "target_geom_names": [
+            "front_button_geom"
+          ],
+          "precontact_gate": "held_window_then_ray",
+          "tool_geom_names": [
+            "fixed_jaw_sph_tip1",
+            "fixed_jaw_sph_tip2",
+            "fixed_jaw_sph_tip3",
+            "fixed_jaw_box3",
+            "fixed_jaw_box4",
+            "fixed_jaw_box5",
+            "fixed_jaw_box6",
+            "fixed_jaw_box7",
+            "geom_47",
+            "geom_48",
+            "moving_jaw_sph_tip1",
+            "moving_jaw_sph_tip2",
+            "moving_jaw_sph_tip3",
+            "moving_jaw_box2",
+            "moving_jaw_box3"
+          ]
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a4"
+        ]
+      }
+    },
+    {
+      "case_id": "A5-H1",
+      "case_variant": "H1",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "offset_robot_base_m": [
+          0.02,
+          0.0,
+          0.0
+        ],
+        "max_duration_per_leg_s": 3.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.82,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A5",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe",
+          "base_body_name": "base"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a5"
+        ]
+      }
+    },
+    {
+      "case_id": "A5-H2",
+      "case_variant": "H2",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "offset_robot_base_m": [
+          0.0,
+          0.02,
+          0.0
+        ],
+        "max_duration_per_leg_s": 3.5
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.8,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A5",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe",
+          "base_body_name": "base"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a5"
+        ]
+      }
+    },
+    {
+      "case_id": "A5-H3",
+      "case_variant": "H3",
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "request": {
+        "offset_robot_base_m": [
+          0.0,
+          0.0,
+          0.02
+        ],
+        "max_duration_per_leg_s": 4.0
+      },
+      "reset": {
+        "kind": "default",
+        "joint_positions": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        },
+        "actuator_controls": {
+          "shoulder_pan": -1.84,
+          "gripper": 0.0
+        }
+      },
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "repetitions": 1,
+      "binding": {
+        "kind": "b1_contract",
+        "parameters": {
+          "contract_id": "A5",
+          "side_effect_guard_profile": "so101",
+          "site_name": "gripperframe",
+          "base_body_name": "base"
+        }
+      },
+      "guards": [
+        {
+          "guard_id": "control",
+          "kind": "actuator_and_physics_step_required"
+        },
+        {
+          "guard_id": "no-direct-write",
+          "kind": "no_direct_state_write"
+        },
+        {
+          "guard_id": "canonical",
+          "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
+        }
+      ],
+      "criterion": {
+        "metric": "b1_contract_binary",
+        "unit": "binary",
+        "comparator": ">=",
+        "threshold": 1,
+        "temporal": {
+          "kind": "fixed_trials"
+        },
+        "aggregation": {
+          "kind": "single_trial"
+        },
+        "source_refs": [
+          "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#a5"
+        ]
+      }
+    }
+  ]
+}

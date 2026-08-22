@@ -1,0 +1,22 @@
+{
+  "artifact_type": "b2_reference_validation_selection",
+  "schema_version": "1.0",
+  "robots": [
+    {
+      "robot_configuration_id": "robotstudio_so101",
+      "source_bundle_dir": "experiment/experiment1/fixed_validation_bundles/robotstudio_so101",
+      "resolved_bundle_dir": "experiment/b2_recap/reference_validation/resolved/robotstudio_so101",
+      "package_root": "autoadapter/libraries/robots/robotstudio_so101/1.0.0",
+      "driver_path": "autoadapter/libraries/robots/robotstudio_so101/1.0.0/reference/fixed_capability_driver.py",
+      "condition": "skeleton-assisted"
+    },
+    {
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "source_bundle_dir": "experiment/experiment1/fixed_validation_bundles/unitree-go2-stock-12dof",
+      "resolved_bundle_dir": "experiment/b2_recap/reference_validation/resolved/unitree-go2-stock-12dof",
+      "package_root": "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.0",
+      "driver_path": "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.0/reference/fixed_capability_driver.py",
+      "condition": "skeleton-assisted"
+    }
+  ]
+}
