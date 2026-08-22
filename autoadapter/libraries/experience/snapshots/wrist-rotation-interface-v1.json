@@ -1,0 +1,25 @@
+{
+  "artifact_type": "autoadapter_experience_snapshot",
+  "snapshot_id": "wrist-rotation-interface-v1",
+  "version": "1.0.0",
+  "review_status": "project_owner_reviewed",
+  "usage_scope": "later_matched_run_only",
+  "b1_input": false,
+  "benefit_claim": false,
+  "robotstudio_so101": [
+    {
+      "experience_id": "so101-explicit-wrist-rotation-interface-v1",
+      "reviewed": true,
+      "observation": "In the non-formal B2 diagnostic m2-opus5-pick-place-255761c, mw_pick_place specified grasp_wrist_roll=-1.5707963268 rad, while the position/contact-only A1, A2, and A4 interface exposed no wrist command. Contact feedback led the controller to infer a grasp posture, but the terminal physical sample retained wrist_roll=-0.001073312 rad. The 20.005 s simulation budget was exhausted and the independent Harness task verdict was FAIL; formal_episode was false.",
+      "lesson": "For a robot-arm task that requires end-effector orientation control, the public capability interface must expose an explicit wrist-rotation capability rather than assuming Cartesian position control or contact feedback also controls wrist orientation.",
+      "recommendation": "For a later matched run, provide a typed compositional leaf such as set_wrist_roll, expose observable wrist-roll feedback, and validate the leaf independently before using it in high-level control. Do not treat this recommendation as evidence that the remediation or task has passed.",
+      "scope": "Robot arms and manipulation tasks whose success depends on end-effector wrist orientation; eligible only for a prospectively declared later matched run and not for B1 input.",
+      "evidence": [
+        "experiment/b2_recap/runs/m2-opus5-pick-place-255761c/report.json: artifact_type=b2_recap_real_model_diagnostic, formal_episode=false, formal_denominator_entry=false",
+        "experiment/b2_recap/runs/m2-opus5-pick-place-255761c/report.json: task parameter grasp_wrist_roll=-1.5707963268 rad and terminal physical sample wrist_roll=-0.001073312 rad",
+        "experiment/b2_recap/runs/m2-opus5-pick-place-255761c/report.json: simulation reached 20.005 s, the final capability was stopped by SESSION_BUDGET_EXCEEDED, and the independent Harness task verdict was FAIL"
+      ],
+      "source_run_id": "m2-opus5-pick-place-255761c"
+    }
+  ]
+}
