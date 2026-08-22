@@ -287,6 +287,32 @@ class Driver:
         target = _GRIPPER_CLOSED + fraction * (_GRIPPER_OPEN - _GRIPPER_CLOSED)
         self._hold_joint_targets(arm_target, target, duration)
 
+    def set_wrist_roll(self, request: Any) -> None:
+        """Set wrist roll while holding the other call-time joint targets."""
+
+        values = _request(request, {"target_roll_rad", "max_duration_s"})
+        target = _number(values["target_roll_rad"], "target_roll_rad")
+        lower, upper = _ARM_LIMITS["wrist_roll"]
+        if target < lower or target > upper:
+            raise ValueError("target_roll_rad is outside the wrist_roll joint limits")
+        duration = _number(values["max_duration_s"], "max_duration_s", lower=0.25)
+        arm_target = self._arm.get_joint_positions()
+        arm_target[-1] = target
+        gripper_target = self._gripper_position()
+        hold_steps = self._steps(0.25)
+        settled_steps = 0
+        for _ in range(self._steps(duration)):
+            self._arm.set_arm_actuators(arm_target)
+            self.data.ctrl[self._gripper_actuator] = gripper_target
+            mujoco.mj_step(self.model, self.data)
+            actual = float(self._arm.get_joint_positions()[-1])
+            if abs(actual - target) <= 0.02:
+                settled_steps += 1
+                if settled_steps >= hold_steps:
+                    return
+            else:
+                settled_steps = 0
+
     def approach_until_contact(self, request: Any) -> None:
         """Enter a precontact point, then advance on the requested ray and stop."""
 
