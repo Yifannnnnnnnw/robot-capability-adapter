@@ -1566,6 +1566,10 @@ def evaluate_guards(
             outcomes[guard_id] = not bool(evidence.get("direct_state_write_detected"))
         elif kind == "canonical_model_data":
             outcomes[guard_id] = bool(worker_result.get("canonical_model_data"))
+        elif kind == "control_range":
+            outcomes[guard_id] = bool(
+                evidence.get("control_range_monitoring_complete")
+            ) and not bool(evidence.get("control_range_violation_detected"))
         elif kind == "complete_video":
             outcomes[guard_id] = bool(video.get("complete"))
         elif kind == "named_geom_contact_pair_required":

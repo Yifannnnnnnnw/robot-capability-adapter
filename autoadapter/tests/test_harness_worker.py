@@ -20,8 +20,9 @@ SCENE = (
 )
 
 
-def _source(*, teleport: bool = False) -> str:
+def _source(*, teleport: bool = False, terminal_out_of_range: bool = False) -> str:
     state_write = "self.data.qpos[0] = 0.8" if teleport else ""
+    terminal_write = "self.data.ctrl[0] = 999.0" if terminal_out_of_range else ""
     return textwrap.dedent(
         f"""
         import mujoco
@@ -36,6 +37,7 @@ def _source(*, teleport: bool = False) -> str:
                 {state_write}
                 self.data.ctrl[0] = float(target)
                 mujoco.mj_step(self.model, self.data)
+                {terminal_write}
                 return True
 
         def build(*, model, data):
@@ -102,7 +104,7 @@ class HarnessWorkerTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def _run(self) -> dict:
+    def _run(self, *, target: float = 0.2) -> dict:
         return execute_case(
             {
                 "driver_path": str(self.driver_path),
@@ -112,7 +114,7 @@ class HarnessWorkerTests(unittest.TestCase):
                 "public_arguments": {
                     "request": {
                         "task_id": "task-1",
-                        "task_parameters": {"target": 0.2},
+                        "task_parameters": {"target": target},
                     }
                 },
                 "reset": {"kind": "default"},
@@ -166,6 +168,27 @@ class HarnessWorkerTests(unittest.TestCase):
 
         self.assertTrue(result["physical_evidence"]["direct_state_write_detected"])
         self.assertIn("qpos", result["physical_evidence"]["direct_state_write_fields"])
+
+    def test_runtime_tracker_rejects_out_of_range_actuator_control(self) -> None:
+        self.driver_path.write_text(_source(), encoding="utf-8")
+
+        result = self._run(target=999.0)
+
+        evidence = result["physical_evidence"]
+        self.assertTrue(evidence["control_range_monitoring_complete"])
+        self.assertTrue(evidence["control_range_violation_detected"])
+        self.assertIn("shoulder_pan", evidence["control_range_violation_actuators"])
+
+    def test_runtime_tracker_checks_control_range_after_the_final_step(self) -> None:
+        self.driver_path.write_text(
+            _source(terminal_out_of_range=True), encoding="utf-8"
+        )
+
+        result = self._run()
+
+        evidence = result["physical_evidence"]
+        self.assertTrue(evidence["control_range_violation_detected"])
+        self.assertIn("shoulder_pan", evidence["control_range_violation_actuators"])
 
     def test_candidate_cannot_import_private_framework_module(self) -> None:
         source = _source().replace(

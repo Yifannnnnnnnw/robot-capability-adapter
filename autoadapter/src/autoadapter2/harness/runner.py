@@ -623,6 +623,10 @@ def run_private_suite(
                 "method_name": case["method_name"],
                 "public_arguments": public_arguments,
                 "reset": reset,
+                "preinvoke": case.get("preinvoke") if is_b1_suite else None,
+                "framework_events": (
+                    case.get("framework_events", []) if is_b1_suite else []
+                ),
                 "max_steps": int(instance.get("max_steps", 10000)),
                 "max_sim_time_s": float(case["timeout_sim_s"]),
                 "sample_hz": float(
@@ -890,13 +894,72 @@ def run_private_suite(
     physical_executed = bool(trials) and all(
         trial["physical_execution_passed"] for trial in trials
     )
-    task_metric_passed = bool(trials) and all(
-        trial["task_metric_passed"] for trial in trials
+    aggregation_kind = (
+        suite.get("whole_suite_aggregation", {}).get("kind")
+        if isinstance(suite.get("whole_suite_aggregation"), Mapping)
+        else None
     )
+    capability_two_of_three = (
+        is_b1_suite
+        and aggregation_kind == "all_capabilities_two_of_three_cases"
+    )
+    capability_cases: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for trial in trials:
+        capability_cases.setdefault(str(trial["capability_id"]), {}).setdefault(
+            str(trial["case_id"]), []
+        ).append(trial)
+    expected_capability_ids = {
+        str(capability["capability_id"])
+        for capability in design["capabilities"]
+        if isinstance(capability, Mapping)
+        and isinstance(capability.get("capability_id"), str)
+    }
+    capability_results = []
+    for capability_id in sorted(capability_cases):
+        cases_for_capability = capability_cases[capability_id]
+        passed_case_count = sum(
+            all(bool(value["trial_passed"]) for value in values)
+            for values in cases_for_capability.values()
+        )
+        task_metric_case_count = sum(
+            all(bool(value["task_metric_passed"]) for value in values)
+            for values in cases_for_capability.values()
+        )
+        case_count = len(cases_for_capability)
+        minimum_passed = 2 if capability_two_of_three else case_count
+        capability_results.append(
+            {
+                "capability_id": capability_id,
+                "passed_case_count": passed_case_count,
+                "task_metric_case_count": task_metric_case_count,
+                "case_count": case_count,
+                "passed": passed_case_count >= minimum_passed,
+                "task_metric_passed": task_metric_case_count >= minimum_passed,
+            }
+        )
+    if capability_two_of_three:
+        capability_set_complete = (
+            set(capability_cases) == expected_capability_ids
+            and bool(expected_capability_ids)
+        )
+        task_metric_passed = capability_set_complete and all(
+            item["task_metric_passed"] and item["case_count"] == 3
+            for item in capability_results
+        )
+        validation_passed = capability_set_complete and all(
+            item["passed"] and item["case_count"] == 3
+            for item in capability_results
+        )
+    else:
+        task_metric_passed = bool(trials) and all(
+            trial["task_metric_passed"] for trial in trials
+        )
+        validation_passed = bool(trials) and all(
+            trial["trial_passed"] for trial in trials
+        )
     physical_integrity_passed = bool(trials) and all(
         trial["physical_integrity_passed"] for trial in trials
     )
-    validation_passed = bool(trials) and all(trial["trial_passed"] for trial in trials)
     video_complete = bool(trials) and all(
         (not record_video) or bool(trial["video"].get("complete")) for trial in trials
     )
@@ -937,6 +1000,11 @@ def run_private_suite(
         "source_clause_count": len(clause_trials),
         "passed_private_case_count": passed_cases,
         "private_case_count": len(case_trials),
+        "passed_capability_count": sum(
+            bool(item["passed"]) for item in capability_results
+        ),
+        "capability_count": len(capability_results),
+        "capability_results": capability_results,
         "video_complete": video_complete,
         "video_manifest": [trial["video"] for trial in trials],
         "run_id": run_id,
