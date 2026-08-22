@@ -11,6 +11,8 @@ from typing import Any
 import pytest
 
 from autoadapter2.b2.public_observation import (
+    PUBLIC_STATE_PROFILE_REVISION,
+    PublicObservationError,
     _contacted_geom_ids,
     project_public_state,
 )
@@ -45,6 +47,7 @@ def _all_finite(value: Any) -> bool:
 
 def test_public_state_profiles_are_small_allowlists_on_real_models() -> None:
     mujoco = pytest.importorskip("mujoco")
+    assert PUBLIC_STATE_PROFILE_REVISION == "b2-public-state-v2"
     so_model = mujoco.MjModel.from_xml_path(str(SO101_ROOT / "assets/reach_scene.xml"))
     so_data = mujoco.MjData(so_model)
     mujoco.mj_forward(so_model, so_data)
@@ -57,9 +60,24 @@ def test_public_state_profiles_are_small_allowlists_on_real_models() -> None:
     assert set(so_state) == {
         "simulation_time_s",
         "end_effector_position_world_m",
+        "wrist_roll_rad",
         "gripper_opening_fraction",
         "end_effector_contact_detected",
     }
+    wrist_roll_joint_id = mujoco.mj_name2id(
+        so_model,
+        mujoco.mjtObj.mjOBJ_JOINT,
+        "wrist_roll",
+    )
+    wrist_roll_qpos_address = int(so_model.jnt_qposadr[wrist_roll_joint_id])
+    so_data.qpos[wrist_roll_qpos_address] = 0.37
+    observed_wrist_state = project_public_state(
+        robot_configuration_id="robotstudio_so101",
+        mujoco=mujoco,
+        model=so_model,
+        data=so_data,
+    )
+    assert observed_wrist_state["wrist_roll_rad"] == pytest.approx(0.37)
     assert 0.0 <= so_state["gripper_opening_fraction"] <= 1.0
 
     go_model = mujoco.MjModel.from_xml_path(str(GO2_ROOT / "assets/go2_scene.xml"))
@@ -95,6 +113,45 @@ def test_public_state_profiles_are_small_allowlists_on_real_models() -> None:
         "contact_pair",
     ):
         assert forbidden not in visible
+
+
+def test_so101_public_state_requires_finite_named_wrist_roll() -> None:
+    mujoco = pytest.importorskip("mujoco")
+    model = mujoco.MjModel.from_xml_path(str(SO101_ROOT / "assets/reach_scene.xml"))
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+
+    class _MissingWristRollMujoco:
+        mjtObj = mujoco.mjtObj
+
+        @staticmethod
+        def mj_name2id(candidate_model: Any, object_type: Any, name: str) -> int:
+            if name == "wrist_roll":
+                return -1
+            return int(mujoco.mj_name2id(candidate_model, object_type, name))
+
+    with pytest.raises(PublicObservationError, match="'wrist_roll' is absent"):
+        project_public_state(
+            robot_configuration_id="robotstudio_so101",
+            mujoco=_MissingWristRollMujoco,
+            model=model,
+            data=data,
+        )
+
+    wrist_roll_joint_id = mujoco.mj_name2id(
+        model,
+        mujoco.mjtObj.mjOBJ_JOINT,
+        "wrist_roll",
+    )
+    wrist_roll_qpos_address = int(model.jnt_qposadr[wrist_roll_joint_id])
+    data.qpos[wrist_roll_qpos_address] = math.nan
+    with pytest.raises(PublicObservationError, match="non-finite"):
+        project_public_state(
+            robot_configuration_id="robotstudio_so101",
+            mujoco=mujoco,
+            model=model,
+            data=data,
+        )
 
 
 def test_worker_protocol_selects_only_the_public_envelope() -> None:
@@ -278,6 +335,7 @@ def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> 
     assert set(result["initial_public_state"]) == {
         "simulation_time_s",
         "end_effector_position_world_m",
+        "wrist_roll_rad",
         "gripper_opening_fraction",
         "end_effector_contact_detected",
     }

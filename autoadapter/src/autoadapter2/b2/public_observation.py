@@ -6,7 +6,7 @@ import math
 from typing import Any
 
 
-PUBLIC_STATE_PROFILE_REVISION = "b2-public-state-v1"
+PUBLIC_STATE_PROFILE_REVISION = "b2-public-state-v2"
 
 
 class PublicObservationError(RuntimeError):
@@ -44,6 +44,12 @@ def _project_so101(*, mujoco: Any, model: Any, data: Any) -> dict[str, Any]:
         mujoco.mjtObj.mjOBJ_JOINT,
         "gripper",
     )
+    wrist_roll_joint_id = _name_id(
+        mujoco,
+        model,
+        mujoco.mjtObj.mjOBJ_JOINT,
+        "wrist_roll",
+    )
     gripper_body_id = _name_id(
         mujoco,
         model,
@@ -51,6 +57,7 @@ def _project_so101(*, mujoco: Any, model: Any, data: Any) -> dict[str, Any]:
         "gripper",
     )
     qpos_address = int(model.jnt_qposadr[gripper_joint_id])
+    wrist_roll_qpos_address = int(model.jnt_qposadr[wrist_roll_joint_id])
     lower = float(model.jnt_range[gripper_joint_id, 0])
     upper = float(model.jnt_range[gripper_joint_id, 1])
     if not upper > lower:
@@ -75,6 +82,7 @@ def _project_so101(*, mujoco: Any, model: Any, data: Any) -> dict[str, Any]:
             "end_effector_position_world_m": [
                 float(value) for value in data.site_xpos[site_id]
             ],
+            "wrist_roll_rad": float(data.qpos[wrist_roll_qpos_address]),
             "gripper_opening_fraction": opening,
             "end_effector_contact_detected": gripper_contact,
         }
