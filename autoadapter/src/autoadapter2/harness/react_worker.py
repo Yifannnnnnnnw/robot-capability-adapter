@@ -14,6 +14,9 @@ from typing import Any, Mapping, TextIO
 import mujoco
 
 from autoadapter2.b2.public_observation import project_public_state
+from autoadapter2.b2.task_public_observation import (
+    project_task_public_observation,
+)
 from autoadapter2.driver_synthesis import validate_explicit_capability_methods
 
 from .session import StepBudgetExceeded, TrackedMuJoCoSession, apply_framework_reset
@@ -85,22 +88,56 @@ def execute_react_session(
     method_invoked = False
     successful_method_invocations = 0
     capability_errors: list[dict[str, Any]] = []
+    capability_invocations: list[dict[str, Any]] = []
     fatal_exception = None
     protocol_completed = False
     session_aborted = False
     capability_methods = tuple(str(item) for item in payload["capability_methods"])
     public_observation_robot_id = payload.get("public_observation_robot_id")
+    public_task_projection = payload.get("public_task_projection")
 
     def add_public_state(message: Mapping[str, Any]) -> dict[str, Any]:
         result = dict(message)
         if public_observation_robot_id is not None:
-            result["public_state"] = project_public_state(
-                robot_configuration_id=str(public_observation_robot_id),
-                mujoco=mujoco,
-                model=model,
-                data=data,
-            )
+            if public_task_projection is None:
+                state = project_public_state(
+                    robot_configuration_id=str(public_observation_robot_id),
+                    mujoco=mujoco,
+                    model=model,
+                    data=data,
+                )
+            else:
+                if not isinstance(public_task_projection, Mapping):
+                    raise ValueError("B2 public task projection must be an object")
+                state = project_task_public_observation(
+                    public_task=public_task_projection,
+                    robot_configuration_id=str(public_observation_robot_id),
+                    mujoco=mujoco,
+                    model=model,
+                    data=data,
+                )
+            result["public_state"] = state
         return result
+
+    def record_capability_invocation(
+        *,
+        method_name: Any,
+        start_step: int,
+        start_sim_time_s: float,
+        success: bool,
+        error_code: str | None,
+    ) -> None:
+        capability_invocations.append(
+            {
+                "method_name": method_name if isinstance(method_name, str) else None,
+                "start_step": int(start_step),
+                "end_step": int(tracker.step_count),
+                "start_sim_time_s": float(start_sim_time_s),
+                "end_sim_time_s": float(data.time),
+                "success": success,
+                "error_code": error_code,
+            }
+        )
 
     try:
         with tracker, contextlib.redirect_stdout(logs), contextlib.redirect_stderr(logs):
@@ -126,7 +163,16 @@ def execute_react_session(
                         raise ValueError("unsupported controller command")
                     method_name = command.get("method_name")
                     arguments = command.get("arguments")
+                    start_steps = tracker.step_count
+                    start_sim_time_s = float(data.time)
                     if method_name not in capability_methods:
+                        record_capability_invocation(
+                            method_name=method_name,
+                            start_step=start_steps,
+                            start_sim_time_s=start_sim_time_s,
+                            success=False,
+                            error_code="UNAUTHORIZED_CAPABILITY",
+                        )
                         _send(
                             protocol_stream,
                             add_public_state({
@@ -138,6 +184,13 @@ def execute_react_session(
                         )
                         continue
                     if not isinstance(arguments, Mapping):
+                        record_capability_invocation(
+                            method_name=method_name,
+                            start_step=start_steps,
+                            start_sim_time_s=start_sim_time_s,
+                            success=False,
+                            error_code="INVALID_ARGUMENTS",
+                        )
                         _send(
                             protocol_stream,
                             add_public_state({
@@ -149,6 +202,13 @@ def execute_react_session(
                         )
                         continue
                     if session_aborted:
+                        record_capability_invocation(
+                            method_name=method_name,
+                            start_step=start_steps,
+                            start_sim_time_s=start_sim_time_s,
+                            success=False,
+                            error_code="SESSION_BUDGET_EXCEEDED",
+                        )
                         _send(
                             protocol_stream,
                             add_public_state({
@@ -161,7 +221,6 @@ def execute_react_session(
                         continue
 
                     method_invoked = True
-                    start_steps = tracker.step_count
                     try:
                         method = getattr(driver, str(method_name))
                         method(**dict(arguments))
@@ -174,6 +233,13 @@ def execute_react_session(
                                 "message": str(exc)[:1000],
                                 "traceback": traceback.format_exc(limit=8)[-6000:],
                             }
+                        )
+                        record_capability_invocation(
+                            method_name=method_name,
+                            start_step=start_steps,
+                            start_sim_time_s=start_sim_time_s,
+                            success=False,
+                            error_code="SESSION_BUDGET_EXCEEDED",
                         )
                         _send(
                             protocol_stream,
@@ -194,6 +260,13 @@ def execute_react_session(
                                 "traceback": traceback.format_exc(limit=8)[-6000:],
                             }
                         )
+                        record_capability_invocation(
+                            method_name=method_name,
+                            start_step=start_steps,
+                            start_sim_time_s=start_sim_time_s,
+                            success=False,
+                            error_code="CAPABILITY_EXCEPTION",
+                        )
                         _send(
                             protocol_stream,
                             add_public_state({
@@ -206,6 +279,13 @@ def execute_react_session(
                         continue
 
                     successful_method_invocations += 1
+                    record_capability_invocation(
+                        method_name=method_name,
+                        start_step=start_steps,
+                        start_sim_time_s=start_sim_time_s,
+                        success=True,
+                        error_code=None,
+                    )
                     _send(
                         protocol_stream,
                         add_public_state({
@@ -256,6 +336,7 @@ def execute_react_session(
         "canonical_model_data": tracker.step_count > 0,
         "candidate_exception": fatal_exception,
         "capability_errors": capability_errors,
+        "capability_invocations": capability_invocations,
         "candidate_log": _bounded_log(logs.getvalue()),
         "physical_evidence": tracker.evidence(),
         "video": video,

@@ -8,6 +8,10 @@ from typing import Any
 
 import pytest
 
+from autoadapter2.b2.session_runner import (
+    RecapWorkerSessionConfig,
+    run_recap_worker_session,
+)
 from autoadapter2.b2.task_public_observation import (
     B2_PUBLIC_TASK_PROJECTION_REVISION,
     B2_TASK_PUBLIC_OBSERVATION_REVISION,
@@ -15,6 +19,7 @@ from autoadapter2.b2.task_public_observation import (
     build_b2_public_task_projection,
     project_task_public_observation,
 )
+from autoadapter2.harness.runner import HarnessError
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -84,6 +89,29 @@ def _all_finite_json(value: Any) -> bool:
             for key, item in value.items()
         )
     return False
+
+
+class _OneLeafModel:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    def generate_recap_json(self, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append(json.loads(json.dumps(kwargs)))
+        if len(self.calls) == 1:
+            return {
+                "reasoning_summary": "Exercise one typed gripper leaf.",
+                "subtasks": [
+                    {
+                        "kind": "capability",
+                        "capability_name": "set_gripper_opening",
+                        "request": {
+                            "opening_fraction": 0.7,
+                            "max_duration_s": 1.0,
+                        },
+                    }
+                ],
+            }
+        return {"reasoning_summary": "Canary complete.", "subtasks": []}
 
 
 @pytest.mark.parametrize(
@@ -237,3 +265,94 @@ def test_projector_rejects_noncanonical_projection_and_robot_mismatch() -> None:
             model=model,
             data=data,
         )
+
+
+def test_persistent_worker_uses_task_projection_for_ready_and_leaf_feedback() -> None:
+    pytest.importorskip("mujoco")
+    robot_id = "robotstudio_so101"
+    tasks, instances, package = _records(robot_id)
+    projection = build_b2_public_task_projection(
+        task_definition=tasks["mw_push_to_goal"],
+        public_arguments=instances["mw_push_to_goal"]["public_arguments"],
+    )
+    design = _read(
+        REPOSITORY_ROOT
+        / "experiment/b2_recap/reference_validation/resolved"
+        / robot_id
+        / "capability_design.json"
+    )
+    model = _OneLeafModel()
+
+    result = run_recap_worker_session(
+        config=RecapWorkerSessionConfig(
+            driver_path=package / "reference/fixed_capability_driver.py",
+            scene_path=package / "assets/push_to_goal_scene.xml",
+            robot_configuration_id=robot_id,
+            reset=instances["mw_push_to_goal"]["reset"],
+            max_steps=1_000,
+            max_sim_time_s=3.0,
+            wall_timeout_s=30.0,
+        ),
+        capability_design=design,
+        public_task=projection,
+        model=model,
+    )
+
+    initial = result["initial_public_state"]
+    assert initial["observation_revision"] == B2_TASK_PUBLIC_OBSERVATION_REVISION
+    assert initial["task_id"] == "mw_push_to_goal"
+    assert initial["task_state"]["task_object"]["position_world_m"]
+    assert result["worker"]["successful_method_invocations"] == 1
+    assert result["controller"]["status"] == "CONTROLLER_FINISHED"
+    invocation = result["worker"]["capability_invocations"]
+    assert len(invocation) == 1
+    assert invocation[0]["method_name"] == "set_gripper_opening"
+    assert invocation[0]["start_step"] == 0
+    assert invocation[0]["end_step"] > invocation[0]["start_step"]
+    assert invocation[0]["end_sim_time_s"] > invocation[0]["start_sim_time_s"]
+    assert invocation[0]["success"] is True
+    assert invocation[0]["error_code"] is None
+
+    second_event = json.loads(model.calls[1]["messages"][-1]["content"])
+    observed = second_event["latest_public_observation"]["public_observation"][
+        "public_state"
+    ]
+    assert observed["task_id"] == "mw_push_to_goal"
+    assert observed["task_state"]["public_goal"]["task_object_distance_m"] >= 0.0
+    assert "capability_invocations" not in json.dumps(model.calls)
+
+
+def test_declared_projection_never_silently_uses_generic_fallback() -> None:
+    pytest.importorskip("mujoco")
+    robot_id = "robotstudio_so101"
+    tasks, instances, package = _records(robot_id)
+    projection = build_b2_public_task_projection(
+        task_definition=tasks["mw_push_to_goal"],
+        public_arguments=instances["mw_push_to_goal"]["public_arguments"],
+    )
+    projection["projection_revision"] = "unfixed-public-task-revision"
+    design = _read(
+        REPOSITORY_ROOT
+        / "experiment/b2_recap/reference_validation/resolved"
+        / robot_id
+        / "capability_design.json"
+    )
+    model = _OneLeafModel()
+
+    with pytest.raises(HarnessError, match="stopped before the controller"):
+        run_recap_worker_session(
+            config=RecapWorkerSessionConfig(
+                driver_path=package / "reference/fixed_capability_driver.py",
+                scene_path=package / "assets/push_to_goal_scene.xml",
+                robot_configuration_id=robot_id,
+                reset=instances["mw_push_to_goal"]["reset"],
+                max_steps=10,
+                max_sim_time_s=1.0,
+                wall_timeout_s=30.0,
+            ),
+            capability_design=design,
+            public_task=projection,
+            model=model,
+        )
+
+    assert model.calls == []

@@ -150,6 +150,8 @@ def run_recap_worker_session(
             "sample_hz": config.sample_hz,
             "render": dict(config.render),
         }
+        if "projection_revision" in public_task:
+            worker_payload["public_task_projection"] = dict(public_task)
         if video_path is not None:
             worker_payload["video_path"] = str(video_path)
         worker_payload = _json_object(worker_payload)
