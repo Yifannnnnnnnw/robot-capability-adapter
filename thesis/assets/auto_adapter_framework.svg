@@ -1,0 +1,270 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Auto-Adapter framework</title>
+  <desc id="desc">Auto-Adapter transforms public robot facts and source-backed tasks into a capability design and candidate driver. Candidate-visible MuJoCo checks support generation, while an implementation-blind Independent Validation Compiler creates a sealed private suite. The Trusted Harness alone executes private validation and issues the verdict. Failed validation permits at most two repair attempts.</desc>
+
+  <defs>
+    <marker id="arrow-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-public" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2F6FAD"/>
+    </marker>
+    <marker id="arrow-private" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6F4EA1"/>
+    </marker>
+    <marker id="arrow-repair" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#C56531"/>
+    </marker>
+    <marker id="arrow-runtime" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#278577"/>
+    </marker>
+
+    <style>
+      text {
+        font-family: Arial, Helvetica, sans-serif;
+        fill: #172033;
+      }
+      .title {
+        font-size: 34px;
+        font-weight: 700;
+      }
+      .lane-title {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+      }
+      .box-title {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .box-subtitle {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .body {
+        font-size: 20px;
+      }
+      .small {
+        font-size: 17px;
+      }
+      .edge-label {
+        font-size: 17px;
+        font-weight: 700;
+      }
+      .node {
+        fill: #FFFFFF;
+        stroke-width: 2.4;
+      }
+      .public-node {
+        stroke: #4E79A7;
+      }
+      .public-accent {
+        fill: #E6F0FC;
+        stroke: #2F6FAD;
+      }
+      .private-node {
+        stroke: #6F4EA1;
+      }
+      .private-accent {
+        fill: #EEE8FA;
+        stroke: #6F4EA1;
+      }
+      .repair-node {
+        fill: #FFF0E7;
+        stroke: #C56531;
+      }
+      .admitted-node {
+        fill: #EAF6EF;
+        stroke: #3A8F61;
+      }
+      .edge-neutral,
+      .edge-public,
+      .edge-private,
+      .edge-repair,
+      .edge-runtime {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .edge-neutral {
+        stroke: #334155;
+        stroke-width: 3;
+        marker-end: url(#arrow-neutral);
+      }
+      .edge-public {
+        stroke: #2F6FAD;
+        stroke-width: 3.2;
+        marker-end: url(#arrow-public);
+      }
+      .edge-private {
+        stroke: #6F4EA1;
+        stroke-width: 3.2;
+        marker-end: url(#arrow-private);
+      }
+      .edge-repair {
+        stroke: #C56531;
+        stroke-width: 3.2;
+        marker-end: url(#arrow-repair);
+      }
+      .edge-runtime {
+        stroke: #278577;
+        stroke-width: 2.2;
+        marker-end: url(#arrow-runtime);
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="900" fill="#FFFFFF"/>
+  <rect x="24" y="24" width="1552" height="842" rx="34" fill="#FFFFFF" stroke="#334155" stroke-width="2.5"/>
+
+  <text x="60" y="77" class="title">Auto-Adapter</text>
+
+  <g aria-label="Legend">
+    <line x1="1010" y1="67" x2="1050" y2="67" stroke="#2F6FAD" stroke-width="5" stroke-linecap="round"/>
+    <text x="1062" y="73" class="small">candidate-visible</text>
+    <line x1="1240" y1="67" x2="1280" y2="67" stroke="#6F4EA1" stroke-width="5" stroke-linecap="round"/>
+    <text x="1292" y="73" class="small">framework-private</text>
+    <line x1="1450" y1="67" x2="1490" y2="67" stroke="#C56531" stroke-width="5" stroke-linecap="round"/>
+    <text x="1502" y="73" class="small">Repair</text>
+  </g>
+
+  <rect x="50" y="108" width="1500" height="400" rx="24" fill="#F4F8FF" stroke="#9AB8DC" stroke-width="2"/>
+  <text x="76" y="145" class="lane-title" fill="#2F6FAD">PUBLIC DESIGN AND SYNTHESIS</text>
+
+  <rect x="50" y="528" width="1500" height="312" rx="24" fill="#FAF7FF" stroke="#BEADDC" stroke-width="2"/>
+  <text x="76" y="565" class="lane-title" fill="#6F4EA1">PRIVATE VALIDATION COMPILATION AND EXECUTION</text>
+
+  <!-- Public design and synthesis path -->
+  <g aria-label="Public inputs">
+    <rect x="76" y="204" width="226" height="126" rx="18" class="node public-node"/>
+    <text x="189" y="241" text-anchor="middle" class="box-title">Robot facts</text>
+    <text x="189" y="275" text-anchor="middle" class="body">+ ≥20 source-backed</text>
+    <text x="189" y="304" text-anchor="middle" class="body">tasks and standards</text>
+  </g>
+
+  <g aria-label="Task-Grounded Capability Design">
+    <rect x="347" y="211" width="190" height="112" rx="18" class="node public-accent"/>
+    <text x="442" y="249" text-anchor="middle" class="box-title">Design</text>
+    <text x="442" y="278" text-anchor="middle" class="box-title">capabilities</text>
+    <text x="442" y="306" text-anchor="middle" class="box-subtitle" fill="#2F6FAD">TGCD</text>
+  </g>
+
+  <g aria-label="Capability design">
+    <rect x="582" y="190" width="270" height="154" rx="18" class="node public-node"/>
+    <text x="717" y="230" text-anchor="middle" class="box-title">Capability design</text>
+    <text x="717" y="268" text-anchor="middle" class="body">5–10 reusable capabilities</text>
+    <text x="717" y="301" text-anchor="middle" class="body">+ proposed pass criteria</text>
+    <text x="717" y="328" text-anchor="middle" class="small" fill="#52637A">source-traceable contracts</text>
+  </g>
+
+  <g aria-label="Study stage">
+    <rect x="897" y="216" width="150" height="102" rx="18" class="node public-accent"/>
+    <text x="972" y="263" text-anchor="middle" class="box-title">STUDY</text>
+    <text x="972" y="293" text-anchor="middle" class="small">inspect and plan</text>
+  </g>
+
+  <g aria-label="Generate stage">
+    <rect x="1092" y="216" width="170" height="102" rx="18" class="node public-accent"/>
+    <text x="1177" y="263" text-anchor="middle" class="box-title">GENERATE</text>
+    <text x="1177" y="293" text-anchor="middle" class="small">implement driver</text>
+  </g>
+
+  <g aria-label="Candidate driver and runtime feedback loop">
+    <rect x="1307" y="151" width="216" height="227" rx="18" class="node public-node"/>
+    <text x="1415" y="191" text-anchor="middle" class="box-title">Candidate driver</text>
+    <line x1="1327" y1="210" x2="1503" y2="210" stroke="#B8C7D9" stroke-width="1.5"/>
+    <text x="1415" y="237" text-anchor="middle" class="small" fill="#278577">runtime physical-feedback</text>
+    <text x="1415" y="258" text-anchor="middle" class="small" fill="#278577">loop</text>
+
+    <rect x="1322" y="276" width="55" height="31" rx="9" fill="#E4F4F1" stroke="#278577" stroke-width="1.5"/>
+    <rect x="1390" y="276" width="55" height="31" rx="9" fill="#E4F4F1" stroke="#278577" stroke-width="1.5"/>
+    <rect x="1458" y="276" width="50" height="31" rx="9" fill="#E4F4F1" stroke="#278577" stroke-width="1.5"/>
+    <text x="1349" y="297" text-anchor="middle" font-size="15px">observe</text>
+    <text x="1417" y="297" text-anchor="middle" font-size="15px">control</text>
+    <text x="1483" y="297" text-anchor="middle" font-size="15px">step</text>
+    <path d="M 1377 291 L 1388 291" class="edge-runtime"/>
+    <path d="M 1445 291 L 1456 291" class="edge-runtime"/>
+    <path d="M 1483 309 C 1483 335, 1349 335, 1349 309" class="edge-runtime"/>
+    <text x="1415" y="351" text-anchor="middle" font-size="15px" fill="#52637A">fresh state until effect</text>
+    <text x="1415" y="369" text-anchor="middle" font-size="15px" fill="#52637A">or bounded timeout</text>
+  </g>
+
+  <g aria-label="Public MuJoCo development check">
+    <rect x="1025" y="399" width="315" height="86" rx="18" class="node public-accent"/>
+    <text x="1182" y="434" text-anchor="middle" class="box-title">Public MuJoCo check</text>
+    <text x="1182" y="466" text-anchor="middle" class="small">source · import · capability smokes</text>
+  </g>
+
+  <!-- Public flow arrows -->
+  <path d="M 302 267 L 345 267" class="edge-neutral"/>
+  <path d="M 537 267 L 580 267" class="edge-neutral"/>
+  <path d="M 852 267 L 895 267" class="edge-neutral"/>
+  <path d="M 1047 267 L 1090 267" class="edge-neutral"/>
+  <path d="M 1262 267 L 1305 267" class="edge-neutral"/>
+
+  <path d="M 1415 378 L 1415 390 L 1250 390 L 1250 397" class="edge-public"/>
+
+  <path d="M 1025 445 L 965 445 L 965 350 L 1177 350 L 1177 320" class="edge-public"/>
+  <text x="1068" y="342" text-anchor="middle" class="edge-label" fill="#2F6FAD">candidate-visible feedback</text>
+
+  <!-- Private compilation path -->
+  <g aria-label="Source records and private cases">
+    <rect x="76" y="631" width="226" height="108" rx="18" class="node private-node"/>
+    <text x="189" y="674" text-anchor="middle" class="box-title">Source records</text>
+    <text x="189" y="709" text-anchor="middle" class="body">+ private cases</text>
+  </g>
+
+  <g aria-label="Independent Validation Compiler">
+    <rect x="350" y="609" width="252" height="150" rx="18" class="node private-accent"/>
+    <text x="476" y="649" text-anchor="middle" class="box-title">Audit and compile</text>
+    <text x="476" y="680" text-anchor="middle" class="box-title">criteria</text>
+    <text x="476" y="712" text-anchor="middle" class="box-subtitle" fill="#6F4EA1">IVC</text>
+    <text x="476" y="741" text-anchor="middle" class="small">implementation-blind</text>
+  </g>
+
+  <g aria-label="Sealed validation suite">
+    <rect x="659" y="631" width="240" height="108" rx="18" class="node private-node"/>
+    <text x="779" y="672" text-anchor="middle" class="box-title">Sealed validation</text>
+    <text x="779" y="704" text-anchor="middle" class="box-title">suite</text>
+    <text x="779" y="729" text-anchor="middle" class="small" fill="#6F4EA1">not candidate-visible</text>
+  </g>
+
+  <g aria-label="Trusted Harness">
+    <rect x="967" y="600" width="258" height="158" rx="18" class="node private-accent" stroke-width="3.2"/>
+    <text x="1096" y="641" text-anchor="middle" class="box-title">Private validation</text>
+    <text x="1096" y="675" text-anchor="middle" class="box-subtitle" fill="#6F4EA1">Trusted Harness</text>
+    <text x="1096" y="709" text-anchor="middle" class="small">reset · execute · measure</text>
+    <text x="1096" y="740" text-anchor="middle" class="small" font-weight="700">owns the verdict</text>
+  </g>
+
+  <g aria-label="Admitted reusable driver">
+    <rect x="1310" y="607" width="214" height="116" rx="18" class="node admitted-node"/>
+    <text x="1417" y="651" text-anchor="middle" class="box-title">Admitted reusable</text>
+    <text x="1417" y="684" text-anchor="middle" class="box-title">driver</text>
+    <text x="1417" y="710" text-anchor="middle" class="small" fill="#3A8F61">Harness pass</text>
+  </g>
+
+  <g aria-label="Repair stage">
+    <rect x="1292" y="758" width="232" height="66" rx="16" class="node repair-node"/>
+    <text x="1408" y="786" text-anchor="middle" class="box-title">REPAIR</text>
+    <text x="1408" y="812" text-anchor="middle" class="small">≤2 attempts</text>
+  </g>
+
+  <!-- Private flow arrows -->
+  <path d="M 302 685 L 348 685" class="edge-private"/>
+  <path d="M 602 685 L 657 685" class="edge-private"/>
+  <path d="M 899 685 L 965 685" class="edge-private"/>
+
+  <path d="M 717 344 L 717 566 L 476 566 L 476 607" class="edge-private"/>
+
+  <path d="M 1478 378 L 1478 545 L 1135 545 L 1135 598" class="edge-neutral"/>
+  <text x="1322" y="536" text-anchor="middle" class="edge-label">submit candidate</text>
+
+  <path d="M 1225 665 L 1308 665" class="edge-neutral"/>
+  <text x="1266" y="650" text-anchor="middle" class="edge-label" fill="#3A8F61">pass</text>
+
+  <path d="M 1225 722 L 1252 722 L 1252 791 L 1290 791" class="edge-repair"/>
+
+  <path d="M 1292 813 L 930 813 L 930 735 L 965 735" class="edge-repair"/>
+  <text x="1085" y="833" text-anchor="middle" class="edge-label" fill="#C56531">revise and resubmit</text>
+</svg>
