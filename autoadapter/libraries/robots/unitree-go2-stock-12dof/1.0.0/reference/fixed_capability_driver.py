@@ -140,7 +140,11 @@ class Driver:
         return identifier
 
     def _steps(self, duration_s: float) -> int:
-        return max(1, int(math.ceil(duration_s / self._timestep)))
+        return max(1, int(math.floor(duration_s / self._timestep + 1.0e-12)))
+
+    def _bounded_duration(self, duration_s: float) -> float:
+        steps = int(math.floor(duration_s / self._timestep + 1.0e-12))
+        return max(steps, 0) * self._timestep
 
     def _pose(self) -> tuple[np.ndarray, float]:
         position = np.asarray(
@@ -188,11 +192,14 @@ class Driver:
     ) -> None:
         if self._policy is None:
             raise RuntimeError("locomotion policy was not started for this call")
+        bounded_duration = self._bounded_duration(duration_s)
+        if bounded_duration <= 0.0:
+            return
         self._policy.command_planar_velocity(
             float(linear_body[0]),
             float(linear_body[1]),
             float(yaw_rate),
-            duration=duration_s,
+            duration=bounded_duration,
         )
 
     def _start_policy(self) -> None:
@@ -238,11 +245,16 @@ class Driver:
             if speed > 1.0:
                 body_velocity *= 1.0 / speed
             yaw_rate = float(np.clip(4.25 * yaw_error, -1.0, 1.0))
-            step_duration = min(_CONTROL_PERIOD_S, max_duration_s - elapsed)
+            step_duration = self._bounded_duration(
+                min(_CONTROL_PERIOD_S, max_duration_s - elapsed)
+            )
+            if step_duration <= 0.0:
+                break
             self._policy_command(body_velocity, yaw_rate, step_duration)
             elapsed += step_duration
-        remaining = max_duration_s - elapsed
-        self._settle_policy(min(0.70, max(remaining, _POLICY_PERIOD_S)))
+        remaining = self._bounded_duration(max_duration_s - elapsed)
+        if remaining > 0.0:
+            self._settle_policy(min(0.70, remaining))
 
     def _hold_posture(
         self,

@@ -120,13 +120,13 @@ class Driver:
             body_name = mujoco.mj_id2name(
                 model, mujoco.mjtObj.mjOBJ_BODY, body_id
             )
-            collision_mesh = (
+            moving_jaw_collision_mesh = (
                 name is None
-                and body_name in {"gripper", "moving_jaw_so101_v1"}
+                and body_name == "moving_jaw_so101_v1"
                 and int(model.geom_group[geom_id]) == 4
                 and int(model.geom_contype[geom_id]) != 0
             )
-            if name in distal_names or collision_mesh:
+            if name in distal_names or moving_jaw_collision_mesh:
                 self._tool_geoms.add(geom_id)
         if not self._tool_geoms:
             raise ValueError("canonical model has no distal gripper collision geoms")
@@ -138,7 +138,11 @@ class Driver:
         return identifier
 
     def _steps(self, duration_s: float) -> int:
-        return max(1, int(math.ceil(duration_s / self._timestep)))
+        return max(1, int(math.floor(duration_s / self._timestep + 1.0e-12)))
+
+    def _bounded_duration(self, duration_s: float) -> float:
+        steps = int(math.floor(duration_s / self._timestep + 1.0e-12))
+        return max(steps, 0) * self._timestep
 
     def _gripper_position(self) -> float:
         return float(self.data.qpos[self._gripper_qpos])
@@ -314,25 +318,38 @@ class Driver:
             raise ValueError("approach travel/speed is outside the public domain")
 
         method_start_s = float(self.data.time)
+        deadline_s = method_start_s + duration
         use_camera_clear_branch = float(precontact[0]) >= 0.385
         if use_camera_clear_branch:
             camera_clear_arm = self._arm.get_joint_positions()
             camera_clear_arm[-1] = 1.50
-            self._hold_joint_targets(
-                camera_clear_arm,
-                self._gripper_position(),
-                0.30,
+            camera_duration = self._bounded_duration(
+                min(0.30, deadline_s - float(self.data.time))
             )
+            if camera_duration > 0.0:
+                self._hold_joint_targets(
+                    camera_clear_arm,
+                    self._gripper_position(),
+                    camera_duration,
+                )
+        precontact_duration = self._bounded_duration(
+            min(
+                min(1.80, max(1.40, 0.35 * duration)),
+                deadline_s - float(self.data.time),
+            )
+        )
+        if precontact_duration <= 0.0:
+            return
         self._track_segment(
             precontact,
-            duration_s=min(1.80, max(1.40, 0.35 * duration)),
+            duration_s=precontact_duration,
             final_hold_s=0.15,
             reference_speed_m_s=0.30,
         )
         gripper_target = self._gripper_position()
         approach_speed = speed
         progress = 0.0
-        while float(self.data.time) - method_start_s < duration:
+        while float(self.data.time) + self._timestep <= deadline_s + 1.0e-12:
             progress = min(
                 progress + approach_speed * self._timestep,
                 travel,
@@ -345,7 +362,8 @@ class Driver:
                 anchor = min(progress + 0.014, travel)
                 while (
                     progress + 1.0e-12 < anchor
-                    and float(self.data.time) - method_start_s < duration
+                    and float(self.data.time) + self._timestep
+                    <= deadline_s + 1.0e-12
                 ):
                     progress = min(
                         progress + 0.018 * self._timestep,
@@ -355,18 +373,15 @@ class Driver:
                         precontact + progress * direction,
                         gripper_target,
                     )
-                hold_steps = self._steps(
-                    min(
-                        0.50,
-                        max(
-                            0.0,
-                            duration
-                            - (float(self.data.time) - method_start_s),
-                        ),
-                    )
+                hold_duration = self._bounded_duration(
+                    min(0.50, max(0.0, deadline_s - float(self.data.time)))
                 )
+                hold_steps = 0 if hold_duration <= 0.0 else self._steps(hold_duration)
                 for _ in range(hold_steps):
-                    if float(self.data.time) - method_start_s >= duration:
+                    if (
+                        float(self.data.time) + self._timestep
+                        > deadline_s + 1.0e-12
+                    ):
                         break
                     self._step_cartesian(
                         precontact + anchor * direction,
