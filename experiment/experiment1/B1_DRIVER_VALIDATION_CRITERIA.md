@@ -21,14 +21,14 @@ targets/resets. If it conflicts with
 
 | Experiment 1 configuration | Criteria used | Capability count |
 |---|---:|---:|
-| `robotstudio_so101` | A1–A5 | 5 |
+| `robotstudio_so101` | A1–A6 | 6 |
 | `unitree-go2-stock-12dof` | G1–G5 | 5 |
 | `leap_hand` | L1–L6 | 6 |
 | `aloha_2` | AL1–AL6 | 6 |
-| **Total** |  | **22** |
+| **Total** |  | **23** |
 
 With three hidden cases per capability, one complete validation attempt across
-the four Experiment 1 robots contains 66 trials.
+the four Experiment 1 robots contains 69 trials.
 
 ## Common Driver ABI
 
@@ -98,11 +98,16 @@ gripper to joint `gripper`.
 | A3 | `set_gripper_opening` | `opening_fraction` in $[0,1]$, where 0 is closed and 1 is open; `max_duration_s` | Normalised physical-aperture error $\leq0.10$ for $0.25$ s; each hidden case calls both directions and measured excursion in each direction is $\geq50\%$ of declared full travel. |
 | A4 | `approach_until_contact` | `precontact_position_m: number[3]` in world frame; `approach_direction_unit: number[3]` in world frame; `max_travel_m`; `max_approach_speed_m_s` in $(0,0.05]$; `max_duration_s` | Ordered precontact, ray approach, and contact gates pass; allowed tool-target contact persists $0.1$ s; post-contact tool-point speed $\leq0.02$ m/s; penetration $\leq5$ mm; unrelated-contact count 0. |
 | A5 | `move_cartesian_offset_and_return` | `offset_robot_base_m: number[3]`; `max_duration_per_leg_s` | Outbound error $\leq15$ mm for $0.25$ s, then return error $\leq15$ mm for $0.5$ s; correct phase order; each leg within budget; maximum displacement $\geq80\%$ of requested offset. |
+| A6 | `set_wrist_roll` | `target_roll_rad` in $[-2.7438473,2.7438473]$; `max_duration_s` | Absolute non-wrapped wrist-roll error $\leq0.03$ rad continuously for $0.25$ s; shoulder pan/lift, elbow flex, wrist flex, and gripper each remain within $0.03$ rad of their call-time positions. |
 
 SO-101 binds the controlled end effector to site `gripperframe` and the
-physical aperture to joint `gripper`. A1/A2/A4/A5 hold normalised gripper
+physical aperture to joint `gripper`, and A6 to joint `wrist_roll`.
+A1/A2/A4/A5 hold normalised gripper
 aperture within `0.05` of call time. A3 holds end-effector position within
-`0.015 m` and every arm joint within `0.03 rad` of call time. For A4, the
+`0.015 m` and every arm joint within `0.03 rad` of call time. A6 holds every
+other arm joint and the gripper within `0.03 rad` of call time. Its absolute
+target uses the canonical SO-101 wrist-roll joint range and is not wrapped.
+For A4, the
 precontact point must be held within `0.015 m` for `0.10 s` without target
 contact; axial progress may range only from `-0.002 m` to
 `max_travel_m + 0.002 m`, may not backtrack more than `0.002 m`, lateral

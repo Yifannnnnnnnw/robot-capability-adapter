@@ -15,7 +15,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from build_suites import REPOSITORY_ROOT, load_selection, validate_resolved
+from build_suites import (
+    EXPECTED_CAPABILITY_COUNTS,
+    EXPECTED_CASE_COUNTS,
+    REPOSITORY_ROOT,
+    load_selection,
+    validate_resolved,
+)
 
 
 def _mainline() -> dict[str, Any]:
@@ -338,8 +344,12 @@ def _run_robot(
         capability_methods=methods,
     )
     cases = suite.get("cases")
-    if not isinstance(cases, list) or len(cases) != 15:
-        raise ValueError(f"{robot_id} suite must contain 15 cases")
+    expected_case_count = EXPECTED_CASE_COUNTS[robot_id]
+    expected_capability_count = EXPECTED_CAPABILITY_COUNTS[robot_id]
+    if not isinstance(cases, list) or len(cases) != expected_case_count:
+        raise ValueError(
+            f"{robot_id} suite must contain {expected_case_count} cases"
+        )
 
     trials = []
     pipeline_completed = True
@@ -502,10 +512,10 @@ def _run_robot(
                 "passed": len(values) == 3 and passed_count >= 2,
             }
         )
-    all_cases_passed = len(trials) == 15 and all(
+    all_cases_passed = len(trials) == expected_case_count and all(
         value["trial_passed"] for value in trials
     )
-    suite_passed = len(capability_results) == 5 and all(
+    suite_passed = len(capability_results) == expected_capability_count and all(
         value["passed"] for value in capability_results
     )
     physical_integrity = bool(trials) and all(

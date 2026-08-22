@@ -1,7 +1,7 @@
 {
   "artifact_type": "b1_fixed_capability_design",
   "schema_version": "1.0",
-  "capability_design_id": "experiment1-b1-fixed-interface::robotstudio_so101::v1",
+  "capability_design_id": "experiment1-b1-fixed-interface::robotstudio_so101::v3",
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
   "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
@@ -283,6 +283,47 @@
       "public_standard": {
         "criterion_id": "A5",
         "criterion_text": "Outbound and return errors <= 0.015 m in order, with 0.25 s/0.5 s holds and >= 80% requested displacement.",
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
+        "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "A6",
+      "method_name": "set_wrist_roll",
+      "description": "Set the SO-101 wrist-roll joint to one bounded absolute angle while holding the other joints.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_roll_rad": {
+            "type": "number",
+            "unit": "rad",
+            "frame": "joint",
+            "description": "Absolute non-wrapped SO-101 wrist-roll joint target.",
+            "minimum": -2.7438473,
+            "maximum": 2.7438473
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "target_roll_rad",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "A6",
+        "criterion_text": "Absolute non-wrapped wrist-roll error <= 0.03 rad continuously for 0.25 s while every other arm joint and the gripper remain within 0.03 rad of call time.",
         "hidden_case_pass_rule": {
           "minimum_passed": 2,
           "case_count": 3

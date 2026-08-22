@@ -1,14 +1,14 @@
 {
   "artifact_type": "b1_fixed_validation_bundle_set",
   "schema_version": "1.0",
-  "bundle_set_id": "experiment1-b1-four-robot-fixed-bundles-v4",
+  "bundle_set_id": "experiment1-b1-four-robot-fixed-bundles-v5",
   "robots": {
     "robotstudio_so101": {
       "capability_design": "robotstudio_so101/capability_design.json",
       "capability_validation_suite": "robotstudio_so101/capability_validation_suite.json",
-      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::robotstudio_so101::v2",
-      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
-      "validation_suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v3"
+      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::robotstudio_so101::v3",
+      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v3",
+      "validation_suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v4"
     },
     "unitree-go2-stock-12dof": {
       "capability_design": "unitree-go2-stock-12dof/capability_design.json",

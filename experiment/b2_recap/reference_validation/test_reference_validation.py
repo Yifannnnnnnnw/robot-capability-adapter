@@ -41,6 +41,7 @@ def test_duplicate_easy_case_cannot_replace_a_complete_suite() -> None:
         "A3": "set_gripper_opening",
         "A4": "approach_until_contact",
         "A5": "move_cartesian_offset_and_return",
+        "A6": "set_wrist_roll",
     }
     with pytest.raises(ValueError, match="duplicate case IDs"):
         build_suites._validate_case_set("robotstudio_so101", cases, methods)
@@ -81,3 +82,39 @@ def test_video_evidence_requires_both_request_and_complete() -> None:
     assert calibration._video_evidence_complete(
         {"requested": True, "complete": True}
     )
+
+
+def test_resolved_so101_inherits_the_b1_a6_contract() -> None:
+    design = json.loads(
+        (
+            HERE / "resolved/robotstudio_so101/capability_design.json"
+        ).read_text(encoding="utf-8")
+    )
+    suite = json.loads(
+        (
+            HERE / "resolved/robotstudio_so101/capability_validation_suite.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert design["capability_design_id"] == build_suites.SOURCE_DESIGN_IDS[
+        "robotstudio_so101"
+    ]
+    assert [value["capability_id"] for value in design["capabilities"]] == [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+    ]
+    a6_cases = [
+        value for value in suite["cases"] if value["capability_id"] == "A6"
+    ]
+    assert len(suite["cases"]) == 18
+    assert [value["case_id"] for value in a6_cases] == [
+        "A6-H1",
+        "A6-H2",
+        "A6-H3",
+    ]
+    assert {
+        value["request"]["target_roll_rad"] < 0.0 for value in a6_cases
+    } == {False, True}

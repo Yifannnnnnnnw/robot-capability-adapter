@@ -1,8 +1,7 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "b2-fixed-reference-suite::unitree-go2-stock-12dof::v1",
-  "source_suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v1",
+  "suite_id": "b2-fixed-reference-suite::unitree-go2-stock-12dof::v2",
   "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
@@ -1117,5 +1116,6 @@
         ]
       }
     }
-  ]
+  ],
+  "source_suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3"
 }

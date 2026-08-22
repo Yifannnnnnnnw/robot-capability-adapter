@@ -20,6 +20,7 @@ CAPABILITIES: dict[str, tuple[tuple[str, str], ...]] = {
         ("A3", "set_gripper_opening"),
         ("A4", "approach_until_contact"),
         ("A5", "move_cartesian_offset_and_return"),
+        ("A6", "set_wrist_roll"),
     ),
     "unitree-go2-stock-12dof": (
         ("G1", "track_planar_twist"),
@@ -52,6 +53,7 @@ DESCRIPTIONS = {
     "A3": "Set the SO-101 physical gripper aperture by normalised opening fraction.",
     "A4": "Approach a reachable target along a bounded ray until controlled contact.",
     "A5": "Move the SO-101 end effector by a base-frame offset and return.",
+    "A6": "Set the SO-101 wrist-roll joint to one bounded absolute angle while holding the other joints.",
     "G1": "Track a bounded planar body-frame twist for a fixed duration.",
     "G2": "Move the Go2 base to a pose relative to its initial yaw frame.",
     "G3": "Trace bounded planar waypoints in the initial-yaw frame.",
@@ -85,6 +87,7 @@ STANDARDS = {
     "A3": "Normalised aperture error <= 0.10 for 0.25 s with bidirectional excursion >= 50% full travel.",
     "A4": "Precontact/ray/contact gates pass; contact lasts 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, and no unrelated contact.",
     "A5": "Outbound and return errors <= 0.015 m in order, with 0.25 s/0.5 s holds and >= 80% requested displacement.",
+    "A6": "Absolute non-wrapped wrist-roll error <= 0.03 rad continuously for 0.25 s while every other arm joint and the gripper remain within 0.03 rad of call time.",
     "G1": "Final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s; direction error <= 10 degrees when moving.",
     "G2": "Terminal position error <= 0.10 m, yaw error <= 0.0873 rad, and speed <= 0.10 m/s for 0.5 s.",
     "G3": "Ordered waypoint error <= 0.10 m, cross-track <= 0.15 m, and endpoint error/speed <= 0.10 for 0.5 s.",
@@ -259,6 +262,7 @@ SCHEMAS = {
     "A3": closed({"opening_fraction": OPENING(), "max_duration_s": DURATION()}),
     "A4": closed(dict(CONTACT_FIELDS)),
     "A5": closed({"offset_robot_base_m": vector(3, unit="m", frame="robot_base", minimum=-0.06, maximum=0.06, description="SO-101 base-frame tool offset."), "max_duration_per_leg_s": SEGMENT_DURATION()}),
+    "A6": closed({"target_roll_rad": number(unit="rad", frame="joint", minimum=-2.7438473, maximum=2.7438473, description="Absolute non-wrapped SO-101 wrist-roll joint target."), "max_duration_s": DURATION()}),
     "G1": closed({"linear_velocity_body_m_s": vector(2, unit="m/s", frame="body", minimum=-0.4, maximum=0.4, description="Instantaneous body-yaw-frame planar velocity."), "yaw_rate_rad_s": number(unit="rad/s", minimum=-1.0, maximum=1.0, description="Requested yaw rate."), "duration_s": number(unit="s", minimum=2.0, maximum=4.0, description="Twist tracking duration.")}),
     "G2": closed({"translation_initial_yaw_m": vector(2, unit="m", frame="initial_body_yaw", minimum=-0.3, maximum=0.3, description="Planar displacement in the initial yaw frame."), "yaw_delta_rad": number(unit="rad", minimum=-0.6, maximum=0.6, description="Wrapped yaw change."), "max_duration_s": DURATION()}),
     "G3": closed({"waypoints_initial_yaw_m": vectors(2, min_items=2, max_items=8, unit="m", frame="initial_body_yaw", minimum=-0.4, maximum=0.4, description="Ordered planar waypoints in the initial yaw frame."), "max_duration_s": DURATION()}),
@@ -297,6 +301,7 @@ REQUESTS: dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = {
     "A3": ({"opening_fraction": 0.2, "max_duration_s": 2.0}, {"opening_fraction": 0.8, "max_duration_s": 2.5}, {"opening_fraction": 0.5, "max_duration_s": 3.0}),
     "A4": ({"precontact_position_m": [0.38, 0.07, 0.22], "approach_direction_unit": [0.0, 1.0, 0.0], "max_travel_m": 0.06, "max_approach_speed_m_s": 0.02, "max_duration_s": 4.0}, {"precontact_position_m": [0.37, 0.07, 0.22], "approach_direction_unit": [0.0, 1.0, 0.0], "max_travel_m": 0.065, "max_approach_speed_m_s": 0.025, "max_duration_s": 4.5}, {"precontact_position_m": [0.39, 0.065, 0.22], "approach_direction_unit": [0.0, 1.0, 0.0], "max_travel_m": 0.07, "max_approach_speed_m_s": 0.03, "max_duration_s": 5.0}),
     "A5": ({"offset_robot_base_m": [0.02, 0.0, 0.0], "max_duration_per_leg_s": 3.0}, {"offset_robot_base_m": [0.0, 0.02, 0.0], "max_duration_per_leg_s": 3.5}, {"offset_robot_base_m": [0.0, 0.0, 0.02], "max_duration_per_leg_s": 4.0}),
+    "A6": ({"target_roll_rad": 1.2, "max_duration_s": 2.0}, {"target_roll_rad": -1.2, "max_duration_s": 2.5}, {"target_roll_rad": 0.75, "max_duration_s": 3.0}),
     "G1": ({"linear_velocity_body_m_s": [0.2, 0.0], "yaw_rate_rad_s": 0.0, "duration_s": 2.2}, {"linear_velocity_body_m_s": [0.0, 0.2], "yaw_rate_rad_s": 0.3, "duration_s": 2.6}, {"linear_velocity_body_m_s": [0.25, 0.0], "yaw_rate_rad_s": -0.3, "duration_s": 3.0}),
     "G2": ({"translation_initial_yaw_m": [0.08, 0.0], "yaw_delta_rad": 0.1, "max_duration_s": 5.0}, {"translation_initial_yaw_m": [0.0, 0.08], "yaw_delta_rad": -0.1, "max_duration_s": 5.5}, {"translation_initial_yaw_m": [0.06, 0.04], "yaw_delta_rad": 0.15, "max_duration_s": 6.0}),
     "G3": ({"waypoints_initial_yaw_m": [[0.05, 0.0], [0.10, 0.0]], "max_duration_s": 5.0}, {"waypoints_initial_yaw_m": [[0.04, 0.02], [0.08, 0.04], [0.12, 0.04]], "max_duration_s": 5.5}, {"waypoints_initial_yaw_m": [[0.04, -0.02], [0.08, -0.04], [0.12, 0.0]], "max_duration_s": 6.0}),
@@ -343,7 +348,17 @@ def reset_for(
             if capability_id == "A3"
             else 0.0
         )
-        return {"kind": "default", "joint_positions": {"shoulder_pan": pan, "gripper": gripper}, "actuator_controls": {"shoulder_pan": pan, "gripper": gripper}}
+        joint_positions = {"shoulder_pan": pan, "gripper": gripper}
+        actuator_controls = {"shoulder_pan": pan, "gripper": gripper}
+        if capability_id == "A6":
+            wrist_roll = {"H1": -0.60, "H2": 0.60, "H3": -0.75}[variant]
+            joint_positions["wrist_roll"] = wrist_roll
+            actuator_controls["wrist_roll"] = wrist_roll
+        return {
+            "kind": "default",
+            "joint_positions": joint_positions,
+            "actuator_controls": actuator_controls,
+        }
     if robot_id == "unitree-go2-stock-12dof":
         reset: dict[str, Any] = {"kind": "keyframe", "name": "home", "joint_positions": {"FL_hip_joint": offset}}
         if capability_id == "G5":
@@ -434,6 +449,23 @@ def binding_for(capability_id: str) -> dict[str, Any]:
         parameters.update({"joint_name": "gripper", "closed_position": -0.17453, "open_position": 1.74533})
     elif capability_id == "A4":
         parameters.update({"site_name": "gripperframe", "tool_body_names": ["gripper"], "target_geom_names": ["front_button_geom"], "precontact_gate": "held_window_then_ray"})
+    elif capability_id == "A6":
+        parameters.update(
+            {
+                "joint_name": "wrist_roll",
+                "target_request_key": "target_roll_rad",
+                "target_tolerance_rad": 0.03,
+                "continuous_hold_s": 0.25,
+                "guarded_joint_names": [
+                    "shoulder_pan",
+                    "shoulder_lift",
+                    "elbow_flex",
+                    "wrist_flex",
+                    "gripper",
+                ],
+                "guarded_joint_tolerance_rad": 0.03,
+            }
+        )
     elif capability_id.startswith("G"):
         parameters["body_name"] = "base_link"
         if capability_id == "G5":
@@ -536,7 +568,10 @@ def design_for(robot_id: str) -> dict[str, Any]:
     return {
         "artifact_type": "b1_fixed_capability_design",
         "schema_version": "1.0",
-        "capability_design_id": f"experiment1-b1-fixed-interface::{robot_id}::v2",
+        "capability_design_id": (
+            f"experiment1-b1-fixed-interface::{robot_id}::"
+            f"{'v3' if robot_id == 'robotstudio_so101' else 'v2'}"
+        ),
         "robot_configuration_id": robot_id,
         "package_version": package_version,
         "task_snapshot_id": snapshot_id,
@@ -564,7 +599,15 @@ def design_for(robot_id: str) -> dict[str, Any]:
 
 
 def suite_version(robot_id: str) -> str:
-    return "v3"
+    return "v4" if robot_id == "robotstudio_so101" else "v3"
+
+
+def pass_standard_id(robot_id: str) -> str:
+    return (
+        "experiment1-b1-driver-validation-criteria-v3"
+        if robot_id == "robotstudio_so101"
+        else "experiment1-b1-driver-validation-criteria-v2"
+    )
 
 
 def suite_for(robot_id: str) -> dict[str, Any]:
@@ -609,7 +652,7 @@ def suite_for(robot_id: str) -> dict[str, Any]:
         "artifact_type": "b1_fixed_validation_suite",
         "schema_version": "1.0",
         "suite_id": f"experiment1-b1-fixed-suite::{robot_id}::{suite_version(robot_id)}",
-        "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
+        "pass_standard_id": pass_standard_id(robot_id),
         "robot_configuration_id": robot_id,
         "package_version": package_version,
         "task_snapshot_id": snapshot_id,
@@ -635,7 +678,7 @@ def main() -> int:
         {
             "artifact_type": "b1_fixed_validation_bundle_set",
             "schema_version": "1.0",
-            "bundle_set_id": "experiment1-b1-four-robot-fixed-bundles-v4",
+            "bundle_set_id": "experiment1-b1-four-robot-fixed-bundles-v5",
             "robots": {
                 robot_id: {
                     "capability_design": f"{robot_id}/capability_design.json",
@@ -643,10 +686,11 @@ def main() -> int:
                         f"{robot_id}/capability_validation_suite.json"
                     ),
                     "fixed_capability_interface_id": (
-                        f"experiment1-b1-fixed-interface::{robot_id}::v2"
+                        f"experiment1-b1-fixed-interface::{robot_id}::"
+                        f"{'v3' if robot_id == 'robotstudio_so101' else 'v2'}"
                     ),
                     "fixed_capability_pass_standard_id": (
-                        "experiment1-b1-driver-validation-criteria-v2"
+                        pass_standard_id(robot_id)
                     ),
                     "validation_suite_id": (
                         f"experiment1-b1-fixed-suite::{robot_id}::{suite_version(robot_id)}"

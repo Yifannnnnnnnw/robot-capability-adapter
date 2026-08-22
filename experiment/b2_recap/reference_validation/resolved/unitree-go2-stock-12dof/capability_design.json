@@ -1,7 +1,7 @@
 {
   "artifact_type": "b1_fixed_capability_design",
   "schema_version": "1.0",
-  "capability_design_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v1",
+  "capability_design_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
   "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",

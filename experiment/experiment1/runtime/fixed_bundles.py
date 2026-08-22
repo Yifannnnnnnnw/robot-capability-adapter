@@ -16,7 +16,7 @@ from typing import Any
 
 
 CAPABILITY_IDS_BY_ROBOT: dict[str, tuple[str, ...]] = {
-    "robotstudio_so101": ("A1", "A2", "A3", "A4", "A5"),
+    "robotstudio_so101": ("A1", "A2", "A3", "A4", "A5", "A6"),
     "unitree-go2-stock-12dof": ("G1", "G2", "G3", "G4", "G5"),
     "leap_hand": ("L1", "L2", "L3", "L4", "L5", "L6"),
     "aloha_2": ("AL1", "AL2", "AL3", "AL4", "AL5", "AL6"),
@@ -28,6 +28,7 @@ METHOD_BY_CAPABILITY: dict[str, str] = {
     "A3": "set_gripper_opening",
     "A4": "approach_until_contact",
     "A5": "move_cartesian_offset_and_return",
+    "A6": "set_wrist_roll",
     "G1": "track_planar_twist",
     "G2": "move_body_relative_pose",
     "G3": "trace_planar_path",

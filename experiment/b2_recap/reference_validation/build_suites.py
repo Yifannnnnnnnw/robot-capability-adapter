@@ -81,6 +81,40 @@ SO101_A3_VALIDATION_FRACTIONS = {
     "A3-H3": [0.0, 1.0, 0.5],
 }
 
+SOURCE_DESIGN_IDS = {
+    "robotstudio_so101": "experiment1-b1-fixed-interface::robotstudio_so101::v3",
+    "unitree-go2-stock-12dof": (
+        "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2"
+    ),
+}
+
+SOURCE_SUITE_IDS = {
+    "robotstudio_so101": "experiment1-b1-fixed-suite::robotstudio_so101::v4",
+    "unitree-go2-stock-12dof": (
+        "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3"
+    ),
+}
+
+PASS_STANDARD_IDS = {
+    "robotstudio_so101": "experiment1-b1-driver-validation-criteria-v3",
+    "unitree-go2-stock-12dof": "experiment1-b1-driver-validation-criteria-v2",
+}
+
+B2_SUITE_IDS = {
+    robot_id: f"b2-fixed-reference-suite::{robot_id}::v2"
+    for robot_id in EXPECTED_SELECTIONS
+}
+
+EXPECTED_CASE_COUNTS = {
+    "robotstudio_so101": 18,
+    "unitree-go2-stock-12dof": 15,
+}
+
+EXPECTED_CAPABILITY_COUNTS = {
+    "robotstudio_so101": 6,
+    "unitree-go2-stock-12dof": 5,
+}
+
 
 def _read_json(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
@@ -177,9 +211,7 @@ def source_documents(robot: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     design = _read_json(source_dir / "capability_design.json")
     source_suite = _read_json(source_dir / "capability_validation_suite.json")
     robot_id = str(robot["robot_configuration_id"])
-    expected_source_design_id = (
-        f"experiment1-b1-fixed-interface::{robot_id}::v1"
-    )
+    expected_source_design_id = SOURCE_DESIGN_IDS[robot_id]
     if design.get("capability_design_id") != expected_source_design_id:
         raise ValueError(
             f"{robot_id} source design changed; a prospective B2 snapshot "
@@ -191,15 +223,15 @@ def source_documents(robot: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
         else copy.deepcopy(source_suite)
     )
     source_suite_id = suite.get("suite_id")
-    expected_source_suite_id = f"experiment1-b1-fixed-suite::{robot_id}::v1"
+    expected_source_suite_id = SOURCE_SUITE_IDS[robot_id]
     if source_suite_id != expected_source_suite_id:
         raise ValueError(
             f"{robot_id} source suite changed; a prospective B2 snapshot "
             "revision is required before refresh"
         )
     suite["source_suite_id"] = source_suite_id
-    suite["suite_id"] = f"b2-fixed-reference-suite::{robot_id}::v1"
-    suite["pass_standard_id"] = "experiment1-b1-driver-validation-criteria-v2"
+    suite["suite_id"] = B2_SUITE_IDS[robot_id]
+    suite["pass_standard_id"] = PASS_STANDARD_IDS[robot_id]
     return {
         "capability_design.json": design,
         "capability_validation_suite.json": suite,
@@ -237,6 +269,7 @@ def validate_resolved() -> None:
             "A3": "set_gripper_opening",
             "A4": "approach_until_contact",
             "A5": "move_cartesian_offset_and_return",
+            "A6": "set_wrist_roll",
         },
         "unitree-go2-stock-12dof": {
             "G1": "track_planar_twist",
@@ -253,21 +286,15 @@ def validate_resolved() -> None:
         suite = _read_json(resolved_dir / "capability_validation_suite.json")
         if design.get("robot_configuration_id") != robot_id:
             raise ValueError(f"{robot_id} resolved design has the wrong robot identity")
-        if design.get("capability_design_id") != (
-            f"experiment1-b1-fixed-interface::{robot_id}::v1"
-        ):
+        if design.get("capability_design_id") != SOURCE_DESIGN_IDS[robot_id]:
             raise ValueError(f"{robot_id} resolved design identity changed")
         if suite.get("robot_configuration_id") != robot_id:
             raise ValueError(f"{robot_id} resolved suite has the wrong robot identity")
-        if suite.get("suite_id") != f"b2-fixed-reference-suite::{robot_id}::v1":
+        if suite.get("suite_id") != B2_SUITE_IDS[robot_id]:
             raise ValueError(f"{robot_id} resolved suite has the wrong B2 identity")
-        if suite.get("source_suite_id") != (
-            f"experiment1-b1-fixed-suite::{robot_id}::v1"
-        ):
+        if suite.get("source_suite_id") != SOURCE_SUITE_IDS[robot_id]:
             raise ValueError(f"{robot_id} resolved suite provenance changed")
-        if suite.get("pass_standard_id") != (
-            "experiment1-b1-driver-validation-criteria-v2"
-        ):
+        if suite.get("pass_standard_id") != PASS_STANDARD_IDS[robot_id]:
             raise ValueError(f"{robot_id} resolved pass standard changed")
 
         capabilities = design.get("capabilities")
@@ -282,8 +309,12 @@ def validate_resolved() -> None:
             raise ValueError(f"{robot_id} resolved capability methods changed")
 
         cases = suite.get("cases")
-        if not isinstance(cases, list) or len(cases) != 15:
-            raise ValueError(f"{robot_id} resolved suite must contain 15 cases")
+        expected_case_count = EXPECTED_CASE_COUNTS[robot_id]
+        if not isinstance(cases, list) or len(cases) != expected_case_count:
+            raise ValueError(
+                f"{robot_id} resolved suite must contain "
+                f"{expected_case_count} cases"
+            )
         _validate_case_set(robot_id, cases, expected_methods[robot_id])
 
         if robot_id == "robotstudio_so101":
@@ -365,6 +396,57 @@ def _validate_so101_corrections(cases: list[Any]) -> None:
             raise ValueError("SO-101 B2 A4 distal geom whitelist changed")
         if parameters.get("precontact_gate") != "held_window_then_ray":
             raise ValueError("SO-101 B2 A4 precontact gate changed")
+
+    a6_cases = [case for case in cases if case.get("capability_id") == "A6"]
+    if len(a6_cases) != 3:
+        raise ValueError("SO-101 resolved suite must contain three A6 cases")
+    targets: list[float] = []
+    reset_targets: list[float] = []
+    expected_binding = {
+        "contract_id": "A6",
+        "side_effect_guard_profile": "so101",
+        "joint_name": "wrist_roll",
+        "target_request_key": "target_roll_rad",
+        "target_tolerance_rad": 0.03,
+        "continuous_hold_s": 0.25,
+        "guarded_joint_names": [
+            "shoulder_pan",
+            "shoulder_lift",
+            "elbow_flex",
+            "wrist_flex",
+            "gripper",
+        ],
+        "guarded_joint_tolerance_rad": 0.03,
+    }
+    for case in a6_cases:
+        request = case.get("request")
+        reset = case.get("reset")
+        binding = case.get("binding")
+        parameters = binding.get("parameters") if isinstance(binding, Mapping) else None
+        if not isinstance(request, Mapping) or not isinstance(reset, Mapping):
+            raise ValueError("SO-101 A6 case has invalid request or reset")
+        joint_positions = reset.get("joint_positions")
+        controls = reset.get("actuator_controls")
+        if not isinstance(joint_positions, Mapping) or not isinstance(controls, Mapping):
+            raise ValueError("SO-101 A6 reset must set joints and controls")
+        target = request.get("target_roll_rad")
+        reset_target = joint_positions.get("wrist_roll")
+        if not isinstance(target, (int, float)) or isinstance(target, bool):
+            raise ValueError("SO-101 A6 target must be numeric")
+        if not isinstance(reset_target, (int, float)) or isinstance(reset_target, bool):
+            raise ValueError("SO-101 A6 reset target must be numeric")
+        if controls.get("wrist_roll") != reset_target:
+            raise ValueError("SO-101 A6 qpos/control wrist resets must match")
+        if parameters != expected_binding:
+            raise ValueError("SO-101 A6 trusted binding changed")
+        targets.append(float(target))
+        reset_targets.append(float(reset_target))
+    if not any(value < 0.0 for value in targets) or not any(
+        value > 0.0 for value in targets
+    ):
+        raise ValueError("SO-101 A6 targets must cover both signs")
+    if not all(target * reset < 0.0 for target, reset in zip(targets, reset_targets)):
+        raise ValueError("SO-101 A6 cases must cross wrist-roll zero")
 
 
 def main() -> int:

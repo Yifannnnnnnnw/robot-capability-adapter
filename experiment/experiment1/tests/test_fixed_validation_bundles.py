@@ -70,15 +70,15 @@ class Experiment1FixedBundleTests(unittest.TestCase):
             for robot_id in cls.robot_ids
         }
 
-    def test_all_four_bundles_load_with_twenty_two_capabilities_and_sixty_six_cases(self) -> None:
+    def test_all_four_bundles_load_with_twenty_three_capabilities_and_sixty_nine_cases(self) -> None:
         self.assertEqual(set(self.bundles), set(CAPABILITY_IDS_BY_ROBOT))
         self.assertEqual(
             sum(len(bundle.design["capabilities"]) for bundle in self.bundles.values()),
-            22,
+            23,
         )
         self.assertEqual(
             sum(len(bundle.suite["cases"]) for bundle in self.bundles.values()),
-            66,
+            69,
         )
         self.assertTrue(
             all(
@@ -124,17 +124,22 @@ class Experiment1FixedBundleTests(unittest.TestCase):
 
     def test_corrected_artifacts_use_new_matching_identities(self) -> None:
         for robot_id, bundle in self.bundles.items():
+            design_version = "v3" if robot_id == "robotstudio_so101" else "v2"
+            suite_version = "v4" if robot_id == "robotstudio_so101" else "v3"
+            pass_standard_version = (
+                "v3" if robot_id == "robotstudio_so101" else "v2"
+            )
             self.assertEqual(
                 bundle.design["capability_design_id"],
-                f"experiment1-b1-fixed-interface::{robot_id}::v2",
+                f"experiment1-b1-fixed-interface::{robot_id}::{design_version}",
             )
             self.assertEqual(
                 bundle.suite["suite_id"],
-                f"experiment1-b1-fixed-suite::{robot_id}::v3",
+                f"experiment1-b1-fixed-suite::{robot_id}::{suite_version}",
             )
             self.assertEqual(
                 bundle.suite["pass_standard_id"],
-                "experiment1-b1-driver-validation-criteria-v2",
+                f"experiment1-b1-driver-validation-criteria-{pass_standard_version}",
             )
             self.assertEqual(
                 bundle.fixed_capability_interface_id,
@@ -148,6 +153,80 @@ class Experiment1FixedBundleTests(unittest.TestCase):
                 bundle.validation_suite_id,
                 bundle.suite["suite_id"],
             )
+
+    def test_so101_a6_wrist_roll_contract_is_closed_and_crosses_both_signs(self) -> None:
+        bundle = self.bundles["robotstudio_so101"]
+        capability = next(
+            value
+            for value in bundle.design["capabilities"]
+            if value["capability_id"] == "A6"
+        )
+        schema = capability["request_schema"]
+        self.assertEqual(
+            schema,
+            {
+                "type": "object",
+                "properties": {
+                    "target_roll_rad": {
+                        "type": "number",
+                        "unit": "rad",
+                        "frame": "joint",
+                        "description": (
+                            "Absolute non-wrapped SO-101 wrist-roll joint target."
+                        ),
+                        "minimum": -2.7438473,
+                        "maximum": 2.7438473,
+                    },
+                    "max_duration_s": {
+                        "type": "number",
+                        "unit": "s",
+                        "frame": "none",
+                        "description": "Maximum execution duration.",
+                        "minimum": 0.25,
+                        "maximum": 8.0,
+                    },
+                },
+                "required": ["target_roll_rad", "max_duration_s"],
+                "additionalProperties": False,
+            },
+        )
+
+        cases = [
+            value
+            for value in bundle.suite["cases"]
+            if value["capability_id"] == "A6"
+        ]
+        self.assertEqual([value["case_id"] for value in cases], ["A6-H1", "A6-H2", "A6-H3"])
+        targets = [value["request"]["target_roll_rad"] for value in cases]
+        resets = [value["reset"]["joint_positions"]["wrist_roll"] for value in cases]
+        self.assertTrue(any(value < 0.0 for value in targets))
+        self.assertTrue(any(value > 0.0 for value in targets))
+        self.assertTrue(all(target * reset < 0.0 for target, reset in zip(targets, resets)))
+        self.assertTrue(
+            all(
+                value["reset"]["actuator_controls"]["wrist_roll"] == reset
+                for value, reset in zip(cases, resets)
+            )
+        )
+        expected_binding = {
+            "contract_id": "A6",
+            "side_effect_guard_profile": "so101",
+            "joint_name": "wrist_roll",
+            "target_request_key": "target_roll_rad",
+            "target_tolerance_rad": 0.03,
+            "continuous_hold_s": 0.25,
+            "guarded_joint_names": [
+                "shoulder_pan",
+                "shoulder_lift",
+                "elbow_flex",
+                "wrist_flex",
+                "gripper",
+            ],
+            "guarded_joint_tolerance_rad": 0.03,
+        }
+        self.assertTrue(
+            all(value["binding"]["parameters"] == expected_binding for value in cases)
+        )
 
     def test_every_inline_scene_exists_inside_its_package(self) -> None:
         for robot_id, bundle in self.bundles.items():
