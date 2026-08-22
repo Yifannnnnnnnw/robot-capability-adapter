@@ -5,9 +5,25 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.14`<br>
+> **Revision:** `0.1.15`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution authorized
+
+Revision `0.1.15` prospectively raises only M2's fixed per-request total
+wall-clock deadline from `120 s` to `600 s`. In the revision `0.1.14` formal
+`b1::aloha_2::M2::r01::from-scratch` cell, STUDY completed but the first
+Generate response crossed the local `120 s` deadline at `120.16 s`, before a
+completed model turn could be recorded. The longer deadline removes that
+observed client-side truncation while retaining a strict bounded call and the
+existing rule that a timeout is not retried automatically. All four M2 cells
+already dispatched under revision `0.1.14` remain unchanged as historical
+configuration records but do not enter the revision `0.1.15` formal
+denominator: both ALOHA 2 `r01` conditions and both LEAP Hand `r03` conditions
+use new workspaces under the common `600 s` M2 setting. Non-M2 revision
+`0.1.13` and `0.1.14` records remain valid. This correction does not change the
+cohort, backbones, conditions, replicates, fixed validation bundles, attempt
+budget, provider route, concurrency limit, or analysis boundary; formal
+execution remains authorized.
 
 Revision `0.1.14` prospectively normalizes one observed provider-facing native
 history edge case. In both M2 × ALOHA 2 `r01` conditions, the first Generate
