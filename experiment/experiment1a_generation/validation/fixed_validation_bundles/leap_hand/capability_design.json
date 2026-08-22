@@ -1,0 +1,433 @@
+{
+  "artifact_type": "b1_fixed_capability_design",
+  "schema_version": "1.0",
+  "capability_design_id": "experiment1-b1-fixed-interface::leap_hand::v2",
+  "robot_configuration_id": "leap_hand",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
+  "invocation_abi": {
+    "kind": "capability_request",
+    "method_call": "method(request=request)"
+  },
+  "capabilities": [
+    {
+      "capability_id": "L1",
+      "method_name": "move_hand_to_joint_pose",
+      "description": "Move all sixteen LEAP joints to a bounded joint pose.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_joint_positions_rad": {
+            "type": "array",
+            "minItems": 16,
+            "maxItems": 16,
+            "items": {
+              "type": "number",
+              "unit": "rad",
+              "frame": "joint",
+              "description": "One finite vector component.",
+              "minimum": -0.3,
+              "maximum": 1.5
+            },
+            "unit": "rad",
+            "frame": "joint",
+            "description": "LEAP joints in the package-declared order."
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Joint-pose execution duration.",
+            "minimum": 0.5,
+            "maximum": 4.0
+          }
+        },
+        "required": [
+          "target_joint_positions_rad",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "L1",
+        "criterion_text": "Maximum joint error < 0.1745329252 rad within 4 s and throughout a 0.5 s hold.",
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
+        "source": "experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "L2",
+      "method_name": "trace_hand_joint_path",
+      "description": "Trace bounded sixteen-joint LEAP waypoints in order.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "joint_waypoints_rad": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "items": {
+              "type": "array",
+              "minItems": 16,
+              "maxItems": 16,
+              "items": {
+                "type": "number",
+                "unit": "rad",
+                "frame": "joint",
+                "description": "One finite vector component.",
+                "minimum": -0.3,
+                "maximum": 1.5
+              },
+              "unit": "rad",
+              "frame": "joint",
+              "description": "One bounded waypoint or target vector."
+            },
+            "unit": "rad",
+            "frame": "joint",
+            "description": "Ordered LEAP joint waypoints."
+          },
+          "max_duration_per_segment_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum duration per ordered segment or leg.",
+            "minimum": 0.25,
+            "maximum": 5.0
+          }
+        },
+        "required": [
+          "joint_waypoints_rad",
+          "max_duration_per_segment_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "L2",
+        "criterion_text": "Every joint waypoint reaches maximum error <= 0.05 rad within budget; final hold passes for 0.5 s.",
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
+        "source": "experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "L3",
+      "method_name": "reach_fingertips_to_targets",
+      "description": "Reach four palm-frame fingertip targets in fifty control steps.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_fingertip_positions_palm_m": {
+            "type": "array",
+            "minItems": 12,
+            "maxItems": 12,
+            "items": {
+              "type": "number",
+              "unit": "m",
+              "frame": "palm",
+              "description": "One finite vector component.",
+              "minimum": -0.2,
+              "maximum": 0.2
+            },
+            "unit": "m",
+            "frame": "palm",
+            "description": "Index/middle/ring/thumb xyz targets in palm frame."
+          },
+          "max_control_steps": {
+            "type": "integer",
+            "const": 50,
+            "unit": "control_step",
+            "frame": "none",
+            "description": "Fixed public control horizon."
+          }
+        },
+        "required": [
+          "target_fingertip_positions_palm_m",
+          "max_control_steps"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "L3",
+        "criterion_text": "Concatenated four-fingertip Cartesian L2 error < 0.00894427191 m at control step 50.",
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
+        "source": "experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "L4",
+      "method_name": "establish_fingertip_contact_pattern",
+      "description": "Establish a named multi-fingertip contact pattern by bounded ray approaches.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "required_fingers": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "index",
+                "middle",
+                "ring",
+                "thumb"
+              ]
+            },
+            "description": "Unique LEAP finger names in aligned array order."
+          },
+          "contact_target_positions_palm_m": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "palm",
+                "description": "One finite vector component.",
+                "minimum": -0.2,
+                "maximum": 0.2
+              },
+              "unit": "m",
+              "frame": "palm",
+              "description": "One bounded waypoint or target vector."
+            },
+            "unit": "m",
+            "frame": "palm",
+            "description": "Aligned contact targets."
+          },
+          "approach_directions_palm_unit": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number",
+                "unit": "unitless",
+                "frame": "palm",
+                "description": "One finite vector component.",
+                "minimum": -1.0,
+                "maximum": 1.0
+              },
+              "unit": "unitless",
+              "frame": "palm",
+              "description": "One bounded waypoint or target vector."
+            },
+            "unit": "unitless",
+            "frame": "palm",
+            "description": "Aligned unit approach directions."
+          },
+          "max_travel_m": {
+            "type": "number",
+            "unit": "m",
+            "frame": "none",
+            "description": "Maximum fingertip approach travel.",
+            "maximum": 0.05,
+            "exclusiveMinimum": 0.0
+          },
+          "max_approach_speed_m_s": {
+            "type": "number",
+            "unit": "m/s",
+            "frame": "none",
+            "description": "Maximum fingertip approach speed.",
+            "maximum": 0.05,
+            "exclusiveMinimum": 0.0
+          },
+          "max_duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum execution duration.",
+            "minimum": 0.25,
+            "maximum": 8.0
+          }
+        },
+        "required": [
+          "required_fingers",
+          "contact_target_positions_palm_m",
+          "approach_directions_palm_unit",
+          "max_travel_m",
+          "max_approach_speed_m_s",
+          "max_duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "L4",
+        "criterion_text": "Every requested fingertip passes ray, target-region, 0.1 s contact, nonrequested-finger, speed, path, and penetration gates.",
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
+        "source": "experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "L5",
+      "method_name": "hold_fingertip_contacts",
+      "description": "Restore and hold named fingertip contacts after a registered separation.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "required_fingers": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "index",
+                "middle",
+                "ring",
+                "thumb"
+              ]
+            },
+            "description": "Unique LEAP finger names in aligned array order."
+          },
+          "separation_directions_palm_unit": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number",
+                "unit": "unitless",
+                "frame": "palm",
+                "description": "One finite vector component.",
+                "minimum": -1.0,
+                "maximum": 1.0
+              },
+              "unit": "unitless",
+              "frame": "palm",
+              "description": "One bounded waypoint or target vector."
+            },
+            "unit": "unitless",
+            "frame": "palm",
+            "description": "Aligned private separation directions."
+          },
+          "duration_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Contact hold duration.",
+            "minimum": 1.0,
+            "maximum": 2.0
+          }
+        },
+        "required": [
+          "required_fingers",
+          "separation_directions_palm_unit",
+          "duration_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "L5",
+        "criterion_text": "Restore relative gap <= 0.002 m within 0.20 s with >= 90% contact occupancy and no continuous loss > 0.20 s.",
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
+        "source": "experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    },
+    {
+      "capability_id": "L6",
+      "method_name": "move_fingertip_offset_and_return",
+      "description": "Move selected fingertips by palm-frame offsets and return.",
+      "covered_task_ids": [],
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "finger_names": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "index",
+                "middle",
+                "ring",
+                "thumb"
+              ]
+            },
+            "description": "Unique LEAP finger names in aligned array order."
+          },
+          "offsets_palm_m": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number",
+                "unit": "m",
+                "frame": "palm",
+                "description": "One finite vector component.",
+                "minimum": -0.03,
+                "maximum": 0.03
+              },
+              "unit": "m",
+              "frame": "palm",
+              "description": "One bounded waypoint or target vector."
+            },
+            "unit": "m",
+            "frame": "palm",
+            "description": "Aligned selected-fingertip offsets."
+          },
+          "max_duration_per_leg_s": {
+            "type": "number",
+            "unit": "s",
+            "frame": "none",
+            "description": "Maximum duration per ordered segment or leg.",
+            "minimum": 0.25,
+            "maximum": 5.0
+          }
+        },
+        "required": [
+          "finger_names",
+          "offsets_palm_m",
+          "max_duration_per_leg_s"
+        ],
+        "additionalProperties": false
+      },
+      "public_standard": {
+        "criterion_id": "L6",
+        "criterion_text": "Selected fingertip outbound/return errors <= 0.010 m in order and held for 0.25 s; unselected-finger guards pass.",
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
+        "source": "experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md"
+      }
+    }
+  ]
+}

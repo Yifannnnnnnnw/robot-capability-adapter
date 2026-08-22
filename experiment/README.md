@@ -10,9 +10,17 @@ Each experiment may have at most one authority explicitly delegated by
 outputs are non-normative implementations or evidence and cannot override the
 applicable authority.
 
-Current experiment:
+Active experiments:
 
-- `experiment1/EXPERIMENT_1_AUTHORITY.md` — the sole authority for Experiment 1.
-- `experiment1/B1_DRIVER_VALIDATION_CRITERIA.md` — the Authority-required
-  public Driver-contract and validation-criteria register for the five
-  Experiment 1 robots; hidden Harness values remain outside this public file.
+- `experiment1a_generation/` — Experiment 1a/B1 generation, with its authority,
+  manifests, validation bundles, diagnostics, runtime, tests, and active run
+  placeholder.
+- `experiment1b_use/` — Experiment 1b/B2 ReCAP use, with its authority,
+  configuration, fixed reference validation, diagnostics, runtime, tests, and
+  active run placeholder.
+
+Historical run evidence is read-only and is kept under `archive/runs/`; see
+`archive/README.md`.  The archive move preserved the raw files without
+rewriting records.  `path_layout.py` resolves an old run prefix to the archive
+only when the original path is absent; it does not create compatibility
+directories or edit historical JSON.

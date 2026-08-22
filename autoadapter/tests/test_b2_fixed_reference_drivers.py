@@ -17,7 +17,7 @@ from autoadapter2.harness.session import apply_framework_reset
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 ROBOT_ROOT = REPOSITORY_ROOT / "autoadapter/libraries/robots"
-BUNDLE_ROOT = REPOSITORY_ROOT / "experiment/b2_recap/reference_validation/resolved"
+BUNDLE_ROOT = REPOSITORY_ROOT / "experiment/experiment1b_use/validation/reference/resolved"
 
 
 def _leaf(name: str, request: dict[str, Any]) -> dict[str, Any]:

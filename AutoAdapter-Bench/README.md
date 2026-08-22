@@ -7,7 +7,7 @@ cohort, set an experiment replicate count, retain formal run outputs, or own an
 experiment-specific analysis denominator.
 
 Concrete experiments live under `../experiment/`. Experiment 1 is governed
-only by `../experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`; its JSON manifest
+only by `../experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`; its JSON manifest
 is a subordinate machine-readable implementation of that authority.
 
 ## Ownership boundary

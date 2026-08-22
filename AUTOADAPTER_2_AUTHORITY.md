@@ -8,7 +8,7 @@
 > **Effective date / 生效日期：** 2026-08-22<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
 
-Revision `0.19.30` delegates `experiment/b2_recap/B2_RECAP_AUTHORITY.md` (`AA2-B2`)
+Revision `0.19.30` delegates `experiment/experiment1b_use/B2_RECAP_AUTHORITY.md` (`AA2-B2`)
 as the sole bounded authority for the B2 ReCAP capability-interface-use extension. B2 is an
 extension identifier, not Experiment 2, and creates no Experiment 2 or RQ2 evidence. It fixes a
 two-robot, seven-backbone, five-task-per-robot, three-replicate core of 210 episodes in which the
@@ -20,7 +20,7 @@ from the controller. Formal execution is paused until `AA2-B2`'s complete video 
 calibration, task-Harness, provider-pin, and scripted-oracle-canary prerequisites are satisfied.
 
 **中文辅助说明。** `0.19.30` 将
-`experiment/b2_recap/B2_RECAP_AUTHORITY.md`（`AA2-B2`）委派为 B2 ReCAP
+`experiment/experiment1b_use/B2_RECAP_AUTHORITY.md`（`AA2-B2`）委派为 B2 ReCAP
 capability-interface-use 扩展的唯一限定权威。B2 是扩展标识，不是 Experiment 2，
 也不产生 Experiment 2 或 RQ2 证据。它固定两台机器人、七个 backbone、每台机器人
 五项 task 和三次 replicate，共 210 个 episode；唯一实验因素是 high-level-controller
@@ -91,14 +91,14 @@ Revision `0.19.26` separates reusable benchmark definitions from concrete experi
 `AutoAdapter-Bench/` owns reusable protocols, registries, catalogues, and manifest-resolution
 contracts; it does not own a current experiment cohort, replicate count, run directory, or analysis
 denominator. The sole delegated authority for the fixed-input B1 backbone comparison called
-Experiment 1 is `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`. The eleven-configuration cohort
+Experiment 1 is `experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`. The eleven-configuration cohort
 in Section 1.3 remains the required all-robot mainline construction and shakedown cohort, but it is
 not the automatic denominator for every downstream experiment.
 
 **中文辅助说明。** `0.19.26` 将可复用 benchmark 定义与具体实验归属分开。
 `AutoAdapter-Bench/` 只拥有可复用 protocol、registry、catalogue 与 manifest 解析合同，不拥有当前
 实验 cohort、replicate 数、run 目录或分析 denominator。固定输入 B1 backbone 比较（Experiment 1）
-唯一被委派的实验权威是 `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`。第 1.3 节的十一配置
+唯一被委派的实验权威是 `experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`。第 1.3 节的十一配置
 仍是全机器人主线建设与 shakedown 的必需 cohort，但不再自动成为每个后续实验的 denominator。
 
 Revision `0.19.25` reconciles the all-robot construction work with the fixed-input Chapter 3
@@ -630,10 +630,10 @@ it. When they conflict, this file governs and the conflicting material must be c
 One experiment or declared extension may have one active scoped authority only when this section
 names its exact path and bounded scope. The current delegations are:
 
-- `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md` (`AA2-EXP1`), which governs Experiment 1's
+- `experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md` (`AA2-EXP1`), which governs Experiment 1's
   exact robot selection, Producer-backbone families, generation conditions, replicate plan,
   attempt budget, analysis boundary, extension rule, and execution blockers; and
-- `experiment/b2_recap/B2_RECAP_AUTHORITY.md` (`AA2-B2`), which governs only the B2 ReCAP
+- `experiment/experiment1b_use/B2_RECAP_AUTHORITY.md` (`AA2-B2`), which governs only the B2 ReCAP
   capability-interface-use extension's exact robots, tasks, controller architecture, backbone
   factor, replicate plan, fixed-input requirements, analysis boundary, and execution blockers.
   B2 is not Experiment 2. Within B2 only, `AA2-B2` prospectively selects its fixed ReCAP
@@ -657,8 +657,8 @@ parallel normative source.
 **中文辅助说明。** 本文件是当前项目目标、架构边界、研究问题、主线验收标准以及 SDK 扩展
 关系的唯一项目范围规范来源。只有本节点名精确路径和限定范围后，一个实验或已声明扩展才可以
 拥有一份有效的限定权威。当前委派为：
-`experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`（`AA2-EXP1`）负责 Experiment 1 的限定
-实验设计；`experiment/b2_recap/B2_RECAP_AUTHORITY.md`（`AA2-B2`）仅负责 B2 ReCAP
+`experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`（`AA2-EXP1`）负责 Experiment 1 的限定
+实验设计；`experiment/experiment1b_use/B2_RECAP_AUTHORITY.md`（`AA2-B2`）仅负责 B2 ReCAP
 capability-interface-use 扩展的机器人、task、controller 架构、backbone 因素、replicate、固定输入、
 分析边界和执行 blocker。B2 不是 Experiment 2；仅在 B2 范围内，`AA2-B2` 用固定 ReCAP
 controller 取代第 3.6 节的通用 ReAct controller。任何限定权威都不能在其他方面削弱或覆盖本文件的

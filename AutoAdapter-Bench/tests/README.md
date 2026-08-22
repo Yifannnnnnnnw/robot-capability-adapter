@@ -11,4 +11,4 @@ Benchmark checks cover reusable contracts only:
 - every high-level-controller catalogue entry resolves to its audit files.
 
 Concrete matrix accounting belongs to the applicable experiment tests. For
-Experiment 1, see `../../experiment/experiment1/tests/`.
+Experiment 1, see `../../experiment/experiment1a_generation/tests/`.

@@ -10,10 +10,10 @@ with:
 
 ```bash
 python3 AutoAdapter-Bench/runners/manifest.py validate \
-  --b1-recipe experiment/experiment1/manifest.json
+  --b1-recipe experiment/experiment1a_generation/manifest.json
 
 python3 AutoAdapter-Bench/runners/manifest.py b1-matrix \
-  --recipe experiment/experiment1/manifest.json \
+  --recipe experiment/experiment1a_generation/manifest.json \
   --output /tmp/experiment1-b1-units.json
 ```
 

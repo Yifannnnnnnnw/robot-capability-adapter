@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "authority": "EXPERIMENT_1_AUTHORITY.md",
+  "authority_revision": "0.1.17",
+  "experiment_id": "experiment1-b1-core-r3",
+  "track": "B1",
+  "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
+  "backbone_set": "../../AutoAdapter-Bench/components/backbone_sets/declared-six.json",
+  "backbone_runtime_configs": {
+    "M1": "config/providers/M1-company-api-sonnet-4-6.json",
+    "M2": "config/providers/M2-company-api-opus-5.json",
+    "M3": "config/providers/M3-company-api-haiku-4-5.json",
+    "M4": "config/providers/M4-company-api-nova-pro.json",
+    "M5": "config/providers/M5-deepseek-v4-pro.json",
+    "M6": "config/providers/M6-company-api-ministral-3-8b.json"
+  },
+  "model_execution_policy": "remote-hosted-api-only",
+  "replicate_set": "config/components/replicates-core-r3.json",
+  "fixed_validation_bundle_set": "validation/fixed_validation_bundles/index.json",
+  "condition_coverage": [
+    {
+      "condition": "skeleton-assisted",
+      "robot_set": "config/components/robot-set.json"
+    },
+    {
+      "condition": "from-scratch",
+      "robot_set": "config/components/robot-set.json"
+    }
+  ],
+  "run_task_demo": false,
+  "run_high_level_controller": false,
+  "run_evolution": false,
+  "experience_input": "empty",
+  "expected_generation_condition_replicates": 144,
+  "maximum_submitted_driver_attempts": 432,
+  "extension_replicate_ids": [
+    "r04",
+    "r05"
+  ],
+  "maximum_cumulative_generation_condition_replicates": 240,
+  "maximum_cumulative_submitted_driver_attempts": 720,
+  "execution_concurrency": {
+    "target_maximum": 8,
+    "status": "operational"
+  }
+}
