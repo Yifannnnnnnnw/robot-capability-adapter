@@ -71,6 +71,22 @@ def _reference_module():
     return module
 
 
+def _policy_and_session():
+    model = mujoco.MjModel.from_xml_path(
+        str(PACKAGE_ROOT / "assets" / "lee_flat.xml")
+    )
+    data = mujoco.MjData(model)
+    key = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_KEY, "task_start")
+    assert key >= 0
+    mujoco.mj_resetDataKeyframe(model, data, key)
+    mujoco.mj_forward(model, data)
+    return (
+        Go2VelocityPolicySkeleton(model=model, data=data, spec=_policy_spec()),
+        model,
+        data,
+    )
+
+
 def test_go2_policy_is_local_licensed_numpy_and_matches_export_vectors() -> None:
     metadata = json.loads(
         (PACKAGE_ROOT / "reference" / "go2_velocity_policy.json").read_text(
@@ -140,6 +156,76 @@ def test_go2_policy_is_local_licensed_numpy_and_matches_export_vectors() -> None
         rtol=0.0,
         atol=2.0e-6,
     )
+
+
+def test_go2_base_twist_labels_world_and_body_yaw_frames() -> None:
+    policy, model, data = _policy_and_session()
+    policy._resolve()
+    root_qpos = policy._root_qpos_address
+    root_qvel = policy._root_qvel_address
+    half_sqrt = math.sqrt(0.5)
+    data.qpos[root_qpos + 3 : root_qpos + 7] = (
+        half_sqrt,
+        0.0,
+        0.0,
+        half_sqrt,
+    )
+    data.qvel[root_qvel : root_qvel + 3] = (1.0, 0.0, 0.0)
+    data.qvel[root_qvel + 3 : root_qvel + 6] = (0.0, 0.0, 0.0)
+    mujoco.mj_forward(model, data)
+
+    twist = policy.get_base_twist()
+
+    np.testing.assert_allclose(
+        twist["linear_world_m_s"][:2], (1.0, 0.0), atol=1.0e-7
+    )
+    np.testing.assert_allclose(
+        twist["linear_body_yaw_m_s"], (0.0, -1.0), atol=1.0e-7
+    )
+
+    data.qvel[root_qvel : root_qvel + 3] = (0.0, 0.0, 0.0)
+    data.qvel[root_qvel + 3 : root_qvel + 6] = (0.0, 0.0, 0.3)
+    mujoco.mj_forward(model, data)
+    twist = policy.get_base_twist()
+    assert math.isclose(twist["yaw_rate_rad_s"], 0.3, abs_tol=1.0e-7)
+
+
+def test_go2_velocity_feedback_uses_fresh_measurements_in_bounded_chunks() -> None:
+    class RecordingPolicy(Go2VelocityPolicySkeleton):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.measurements = iter((0.0, 0.1, 0.15))
+            self.commands: list[tuple[float, float, float, float]] = []
+
+        def get_base_twist(self):
+            measured = next(self.measurements)
+            return {
+                "linear_world_m_s": np.zeros(3, dtype=float),
+                "linear_body_yaw_m_s": np.asarray((measured, 0.0), dtype=float),
+                "angular_world_rad_s": np.zeros(3, dtype=float),
+                "yaw_rate_rad_s": 0.0,
+            }
+
+        def command_planar_velocity(self, vx, vy, yaw_rate, duration=1.0):
+            self.commands.append(
+                (float(vx), float(vy), float(yaw_rate), float(duration))
+            )
+            return {
+                "physics_steps": int(
+                    round(duration / float(self.model.opt.timestep))
+                )
+            }
+
+    base, model, data = _policy_and_session()
+    policy = RecordingPolicy(model=model, data=data, spec=base.spec)
+
+    result = policy.track_planar_velocity(0.2, 0.0, 0.0, duration=0.08)
+
+    assert result["feedback_cycles"] == 2
+    assert [item[3] for item in policy.commands] == [0.04, 0.04]
+    assert policy.commands[0][0] > policy.commands[1][0] > 0.2
+    assert all(abs(item[1]) <= 1.0e-12 for item in policy.commands)
+    assert all(abs(item[2]) <= 1.0e-12 for item in policy.commands)
 
 
 def test_go2_stepping_stone_reference_executes_all_18_source_repetitions() -> None:

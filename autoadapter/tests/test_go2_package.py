@@ -192,6 +192,8 @@ def test_go2_skeleton_inventory_resolves_to_the_visible_runtime_contract() -> No
     policy_runtime_source = source_files[policy_runtime_path]
     assert "class Go2VelocityPolicySkeleton" in policy_runtime_source
     assert "def command_planar_velocity(" in policy_runtime_source
+    assert "def get_base_twist(" in policy_runtime_source
+    assert "def track_planar_velocity(" in policy_runtime_source
     assert "import torch" not in policy_runtime_source
 
 

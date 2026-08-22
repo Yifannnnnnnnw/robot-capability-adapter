@@ -175,6 +175,22 @@ class QuadrupedMuJoCoSmokeTests(unittest.TestCase):
         self.skeleton.step(5)
         self.assertGreater(float(self.data.time), time_before)
 
+    def test_short_velocity_calls_continue_the_gait_phase(self) -> None:
+        phase_times: list[float] = []
+        gait_posture = self.skeleton._gait_posture
+
+        def record_phase(phase_time: float, vx: float, vy: float, yaw_rate: float):
+            phase_times.append(phase_time)
+            return gait_posture(phase_time, vx, vy, yaw_rate)
+
+        self.skeleton._gait_posture = record_phase
+        timestep = float(self.model.opt.timestep)
+
+        self.skeleton.command_planar_velocity(0.2, duration=timestep)
+        self.skeleton.command_planar_velocity(0.2, duration=timestep)
+
+        np.testing.assert_allclose(phase_times, (0.0, timestep), atol=1.0e-12)
+
 
 if __name__ == "__main__":
     unittest.main()

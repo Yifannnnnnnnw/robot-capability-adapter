@@ -218,6 +218,7 @@ class QuadrupedPDGaitSkeleton(SessionBoundSkeleton):
         self._ctrl_hi: Any = None
         self._home_q: Any = None
         self._timestep = 0.0
+        self._gait_time_s = 0.0
 
     def _load_numpy(self) -> Any:
         if self._np is None:
@@ -503,15 +504,19 @@ class QuadrupedPDGaitSkeleton(SessionBoundSkeleton):
         vy_value = self._bounded_command(vy, self.spec.vy_limit, "vy")
         yaw_value = self._bounded_command(yaw_rate, self.spec.yaw_rate_limit, "yaw_rate")
         steps = self._duration_steps(duration)
-        for index in range(steps):
+        gait_period_s = 1.0 / self.spec.gait_freq_hz
+        for _ in range(steps):
             q_target = self._gait_posture(
-                index * self._timestep,
+                self._gait_time_s,
                 vx_value,
                 vy_value,
                 yaw_value,
             )
             self.apply_pd_posture(q_target)
             self.step(1)
+            self._gait_time_s = (
+                self._gait_time_s + self._timestep
+            ) % gait_period_s
 
     def walk_forward(self, speed: float = 0.30, duration: float = 1.0) -> None:
         """Convenience primitive for a forward-only planar command."""

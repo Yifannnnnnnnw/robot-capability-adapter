@@ -1,4 +1,8 @@
-"""Public inventory for the task-neutral retained Go2 velocity policy."""
+"""Public inventory for the task-neutral retained Go2 velocity policy.
+
+Use ``track_planar_velocity`` when the requested velocity must be measured and
+corrected. ``command_planar_velocity`` remains the raw feed-forward policy call.
+"""
 
 from autoadapter2.trusted_skeletons.go2_velocity_policy import (
     Go2VelocityPolicySkeleton,
@@ -34,6 +38,13 @@ GO2_VELOCITY_POLICY_SPEC = Go2VelocityPolicySpec(
         1.0,
         -1.5,
     ),
+    feedback_period_s=0.04,
+    planar_feedback_kp=0.4,
+    planar_feedback_ki=0.3,
+    yaw_feedback_kp=0.4,
+    yaw_feedback_ki=0.3,
+    maximum_planar_correction_m_s=0.4,
+    maximum_yaw_correction_rad_s=0.8,
 )
 
 
