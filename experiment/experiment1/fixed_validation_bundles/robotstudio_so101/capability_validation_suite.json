@@ -670,9 +670,8 @@
         "parameters": {
           "contract_id": "A4",
           "site_name": "gripperframe",
-          "tool_geom_names": [
-            "fixed_jaw_box1",
-            "moving_jaw_box1"
+          "tool_body_names": [
+            "gripper"
           ],
           "target_geom_names": [
             "front_button_geom"
@@ -750,9 +749,8 @@
         "parameters": {
           "contract_id": "A4",
           "site_name": "gripperframe",
-          "tool_geom_names": [
-            "fixed_jaw_box1",
-            "moving_jaw_box1"
+          "tool_body_names": [
+            "gripper"
           ],
           "target_geom_names": [
             "front_button_geom"
@@ -830,9 +828,8 @@
         "parameters": {
           "contract_id": "A4",
           "site_name": "gripperframe",
-          "tool_geom_names": [
-            "fixed_jaw_box1",
-            "moving_jaw_box1"
+          "tool_body_names": [
+            "gripper"
           ],
           "target_geom_names": [
             "front_button_geom"
