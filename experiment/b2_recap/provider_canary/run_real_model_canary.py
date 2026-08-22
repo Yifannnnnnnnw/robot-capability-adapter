@@ -215,6 +215,7 @@ def run(
     output_path: Path,
     wall_timeout_s: float,
     record_video: bool = False,
+    task_id: str = TASK_ID,
 ) -> dict[str, Any]:
     provider_path = provider_path.resolve()
     env_path = env_path.resolve()
@@ -240,7 +241,7 @@ def run(
             config=B2DiagnosticEpisodeConfig(
                 task_suite_path=TASK_SUITE_PATH,
                 robot_configuration_id=ROBOT_ID,
-                task_id=TASK_ID,
+                task_id=task_id,
                 replicate_id="R1",
                 driver_path=DRIVER_PATH,
                 capability_design_path=CAPABILITY_DESIGN_PATH,
@@ -343,6 +344,11 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--wall-timeout-s", type=float, default=900.0)
     parser.add_argument("--record-video", action="store_true")
+    parser.add_argument(
+        "--task",
+        default=TASK_ID,
+        help="sealed SO-101 B2 task ID (default: mw_sweep_into_goal)",
+    )
     args = parser.parse_args()
     report = run(
         env_path=args.env_file,
@@ -350,6 +356,7 @@ def main() -> int:
         output_path=args.output,
         wall_timeout_s=args.wall_timeout_s,
         record_video=args.record_video,
+        task_id=args.task,
     )
     console = {
         **report["summary"],

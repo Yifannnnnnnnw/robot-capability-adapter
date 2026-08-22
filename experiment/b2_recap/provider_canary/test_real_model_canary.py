@@ -105,9 +105,11 @@ def test_video_request_reaches_episode_and_is_required_for_chain(
         output_path=tmp_path / "report.json",
         wall_timeout_s=30.0,
         record_video=True,
+        task_id="mw_pick_place",
     )
 
     assert captured["config"].record_video is True
+    assert captured["config"].task_id == "mw_pick_place"
     assert report["video_requested"] is True
     assert report["summary"]["video_requirement_satisfied"] is True
     assert report["summary"]["diagnostic_chain_completed"] is True
