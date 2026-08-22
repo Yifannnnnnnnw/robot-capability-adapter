@@ -4,9 +4,31 @@
 > **Document role / 文档角色：** sole project-wide normative document; bounded experiment authorities require explicit delegation in Section 0.1 / 项目范围唯一规范性文档；限定实验权威必须由第 0.1 节明确委派<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.29`<br>
+> **Document revision / 文档版本：** `0.19.30`<br>
 > **Effective date / 生效日期：** 2026-08-22<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.30` delegates `experiment/b2_recap/B2_RECAP_AUTHORITY.md` (`AA2-B2`)
+as the sole bounded authority for the B2 ReCAP capability-interface-use extension. B2 is an
+extension identifier, not Experiment 2, and creates no Experiment 2 or RQ2 evidence. It fixes a
+two-robot, seven-backbone, five-task-per-robot, three-replicate core of 210 episodes in which the
+only experimental factor is the high-level-controller backbone. Only within this extension, the
+fixed high-level controller is ReCAP rather than the general post-admission ReAct path described
+in Section 3.6. Every backbone must use the same fixed, validated reference
+driver–capability-interface–adapter combination for each robot, with the reference source hidden
+from the controller. Formal execution is paused until `AA2-B2`'s complete video reference
+calibration, task-Harness, provider-pin, and scripted-oracle-canary prerequisites are satisfied.
+
+**中文辅助说明。** `0.19.30` 将
+`experiment/b2_recap/B2_RECAP_AUTHORITY.md`（`AA2-B2`）委派为 B2 ReCAP
+capability-interface-use 扩展的唯一限定权威。B2 是扩展标识，不是 Experiment 2，
+也不产生 Experiment 2 或 RQ2 证据。它固定两台机器人、七个 backbone、每台机器人
+五项 task 和三次 replicate，共 210 个 episode；唯一实验因素是 high-level-controller
+backbone。仅在该扩展内，固定 high-level controller 为 ReCAP，而非第 3.6 节的通用
+ReAct 路径。每台机器人的全部 backbone 必须使用同一套已验证的固定 reference
+driver–capability-interface–adapter 组合，且 controller 不得读取 reference 源码。在
+`AA2-B2` 要求的完整视频 reference calibration、task Harness、provider pin 和 scripted
+oracle canary 全部完成前，正式执行保持暂停。
 
 Revision `0.19.29` permits the capability-neutral serial-arm trusted skeleton to provide bounded,
 actuator-only, closed-loop Cartesian path-tracking primitives in addition to point-target DLS. Such
@@ -605,16 +627,24 @@ plans, prompts, schemas, source code, Library records, and historical runs may i
 provide evidence for this Authority, but their existence does not create requirements or override
 it. When they conflict, this file governs and the conflicting material must be corrected.
 
-One experiment may have one active experiment-specific authority only when this section names its
-exact path and bounded scope. The current and only delegation is
-`experiment/experiment1/EXPERIMENT_1_AUTHORITY.md` (`AA2-EXP1`), which governs Experiment 1's exact
-robot selection, Producer-backbone families, generation conditions, replicate plan, attempt budget,
-analysis boundary, extension rule, and execution blockers. It implements, and may not weaken or
-override, this project's architecture, isolation, Harness, physical-integrity, evidence, or
-authenticity requirements. Within that delegated scope, manifests, run records, analysis code,
-thesis prose, and benchmark documents remain subordinate to `AA2-EXP1`. Any actual conflict between
-`AA2-EXP1` and this project-wide Authority blocks the affected experiment until one of the two is
-prospectively corrected.
+One experiment or declared extension may have one active scoped authority only when this section
+names its exact path and bounded scope. The current delegations are:
+
+- `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md` (`AA2-EXP1`), which governs Experiment 1's
+  exact robot selection, Producer-backbone families, generation conditions, replicate plan,
+  attempt budget, analysis boundary, extension rule, and execution blockers; and
+- `experiment/b2_recap/B2_RECAP_AUTHORITY.md` (`AA2-B2`), which governs only the B2 ReCAP
+  capability-interface-use extension's exact robots, tasks, controller architecture, backbone
+  factor, replicate plan, fixed-input requirements, analysis boundary, and execution blockers.
+  B2 is not Experiment 2. Within B2 only, `AA2-B2` prospectively selects its fixed ReCAP
+  controller in place of Section 3.6's general post-admission ReAct controller.
+
+Each delegated authority implements, and may not otherwise weaken or override, this project's
+architecture, isolation, Harness, physical-integrity, evidence, or authenticity requirements.
+Within a delegated scope, manifests, run records, analysis code, thesis prose, and benchmark
+documents remain subordinate to the applicable scoped authority. Any actual conflict between a
+scoped authority and this project-wide Authority blocks the affected execution until one of the two
+is prospectively corrected.
 
 English clauses are normative. Chinese headings, tables, and paragraphs are faithful reading aids
 and must not add, remove, weaken, or strengthen a requirement. If the two languages diverge, the
@@ -625,13 +655,16 @@ authority, a second active authority for the same experiment, or retain an obsol
 parallel normative source.
 
 **中文辅助说明。** 本文件是当前项目目标、架构边界、研究问题、主线验收标准以及 SDK 扩展
-关系的唯一项目范围规范来源。只有本节点名路径和限定范围后，一个实验才可以拥有一份有效的实验
-专属权威。当前唯一委派是 `experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`（`AA2-EXP1`），
-负责 Experiment 1 的精确机器人选择、Producer backbone family、生成条件、replicate 计划、attempt
-budget、分析边界、扩展规则和执行 blocker；它不能削弱或覆盖本文件的架构、隔离、Harness、物理
-完整性、证据或真实性要求。README、manifest、run record、分析代码、论文文本和 benchmark 文档
-都不能覆盖相应权威。英文条款具有规范效力；中文文本只作辅助阅读。Git 历史保留被取代设计；
-仓库不得创建未经委派的并行权威、同一实验的第二份有效权威，或把旧设计保留为并行规范来源。
+关系的唯一项目范围规范来源。只有本节点名精确路径和限定范围后，一个实验或已声明扩展才可以
+拥有一份有效的限定权威。当前委派为：
+`experiment/experiment1/EXPERIMENT_1_AUTHORITY.md`（`AA2-EXP1`）负责 Experiment 1 的限定
+实验设计；`experiment/b2_recap/B2_RECAP_AUTHORITY.md`（`AA2-B2`）仅负责 B2 ReCAP
+capability-interface-use 扩展的机器人、task、controller 架构、backbone 因素、replicate、固定输入、
+分析边界和执行 blocker。B2 不是 Experiment 2；仅在 B2 范围内，`AA2-B2` 用固定 ReCAP
+controller 取代第 3.6 节的通用 ReAct controller。任何限定权威都不能在其他方面削弱或覆盖本文件的
+架构、隔离、Harness、物理完整性、证据或真实性要求。README、manifest、run record、分析代码、论文文本和
+benchmark 文档都不能覆盖相应权威。英文条款具有规范效力；中文文本只作辅助阅读。Git 历史保留被取代
+设计；仓库不得创建未经委派的并行权威、同一实验或扩展的第二份有效权威，或把旧设计保留为并行规范来源。
 
 ### 0.2 Experiment-grade governance / 实验级治理
 
