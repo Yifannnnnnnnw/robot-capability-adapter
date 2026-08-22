@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 
 EXPERIMENT_ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +19,7 @@ for path in (REPOSITORY_ROOT, AUTOADAPTER_SOURCE_ROOT):
     if value not in sys.path:
         sys.path.insert(0, value)
 
+from experiment.experiment1.runtime import b1 as b1_runtime  # noqa: E402
 from experiment.experiment1.runtime.b1 import load_fixed_bundle  # noqa: E402
 from experiment.experiment1.runtime.fixed_bundles import (  # noqa: E402
     B1FixedBundleError,
@@ -68,15 +70,15 @@ class Experiment1FixedBundleTests(unittest.TestCase):
             for robot_id in cls.robot_ids
         }
 
-    def test_all_five_bundles_load_with_thirty_capabilities_and_ninety_cases(self) -> None:
+    def test_all_four_bundles_load_with_twenty_two_capabilities_and_sixty_six_cases(self) -> None:
         self.assertEqual(set(self.bundles), set(CAPABILITY_IDS_BY_ROBOT))
         self.assertEqual(
             sum(len(bundle.design["capabilities"]) for bundle in self.bundles.values()),
-            30,
+            22,
         )
         self.assertEqual(
             sum(len(bundle.suite["cases"]) for bundle in self.bundles.values()),
-            90,
+            66,
         )
         self.assertTrue(
             all(
@@ -119,6 +121,33 @@ class Experiment1FixedBundleTests(unittest.TestCase):
                 self.assertTrue(
                     all(case["method_name"] == methods[capability_id] for case in cases)
                 )
+
+    def test_corrected_artifacts_use_new_matching_identities(self) -> None:
+        for robot_id, bundle in self.bundles.items():
+            self.assertEqual(
+                bundle.design["capability_design_id"],
+                f"experiment1-b1-fixed-interface::{robot_id}::v2",
+            )
+            self.assertEqual(
+                bundle.suite["suite_id"],
+                f"experiment1-b1-fixed-suite::{robot_id}::v3",
+            )
+            self.assertEqual(
+                bundle.suite["pass_standard_id"],
+                "experiment1-b1-driver-validation-criteria-v2",
+            )
+            self.assertEqual(
+                bundle.fixed_capability_interface_id,
+                bundle.design["capability_design_id"],
+            )
+            self.assertEqual(
+                bundle.fixed_capability_pass_standard_id,
+                bundle.suite["pass_standard_id"],
+            )
+            self.assertEqual(
+                bundle.validation_suite_id,
+                bundle.suite["suite_id"],
+            )
 
     def test_every_inline_scene_exists_inside_its_package(self) -> None:
         for robot_id, bundle in self.bundles.items():
@@ -180,6 +209,37 @@ class Experiment1FixedBundleTests(unittest.TestCase):
                 package=package,
                 design=bundle.design,
             )
+
+    def test_loader_rejects_index_identity_that_disagrees_with_artifact(self) -> None:
+        robot_id = "robotstudio_so101"
+        bundle = self.bundles[robot_id]
+        metadata = {
+            robot_id: {
+                "fixed_capability_interface_id": "wrong-interface-id",
+                "fixed_capability_pass_standard_id": bundle.suite[
+                    "pass_standard_id"
+                ],
+                "validation_suite_id": bundle.suite["suite_id"],
+            }
+        }
+        with mock.patch.object(
+            b1_runtime,
+            "_bundle_paths",
+            return_value=(
+                bundle.container_path,
+                {robot_id: (bundle.design_path, bundle.suite_path)},
+                metadata,
+            ),
+        ):
+            with self.assertRaisesRegex(
+                b1_runtime.B1RunError, "disagrees with its artifact"
+            ):
+                load_fixed_bundle(
+                    self.manifest_path,
+                    [robot_id],
+                    robot_id,
+                    self.packages[robot_id],
+                )
 
 
 if __name__ == "__main__":

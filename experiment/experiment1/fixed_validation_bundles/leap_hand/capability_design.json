@@ -1,7 +1,7 @@
 {
   "artifact_type": "b1_fixed_capability_design",
   "schema_version": "1.0",
-  "capability_design_id": "experiment1-b1-fixed-interface::leap_hand::v1",
+  "capability_design_id": "experiment1-b1-fixed-interface::leap_hand::v2",
   "robot_configuration_id": "leap_hand",
   "package_version": "1.0.0",
   "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
@@ -52,7 +52,10 @@
       "public_standard": {
         "criterion_id": "L1",
         "criterion_text": "Maximum joint error < 0.1745329252 rad within 4 s and throughout a 0.5 s hold.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -106,7 +109,10 @@
       "public_standard": {
         "criterion_id": "L2",
         "criterion_text": "Every joint waypoint reaches maximum error <= 0.05 rad within budget; final hold passes for 0.5 s.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -151,7 +157,10 @@
       "public_standard": {
         "criterion_id": "L3",
         "criterion_text": "Concatenated four-fingertip Cartesian L2 error < 0.00894427191 m at control step 50.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -265,7 +274,10 @@
       "public_standard": {
         "criterion_id": "L4",
         "criterion_text": "Every requested fingertip passes ray, target-region, 0.1 s contact, nonrequested-finger, speed, path, and penetration gates.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -336,7 +348,10 @@
       "public_standard": {
         "criterion_id": "L5",
         "criterion_text": "Restore relative gap <= 0.002 m within 0.20 s with >= 90% contact occupancy and no continuous loss > 0.20 s.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -407,7 +422,10 @@
       "public_standard": {
         "criterion_id": "L6",
         "criterion_text": "Selected fingertip outbound/return errors <= 0.010 m in order and held for 0.25 s; unselected-finger guards pass.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     }

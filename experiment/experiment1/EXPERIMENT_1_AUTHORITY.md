@@ -5,9 +5,27 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.29`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.10`<br>
+> **Revision:** `0.1.11`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution paused
+
+Revision `0.1.11` prospectively adopts the minimum corrections needed for the
+fixed four-robot B1 Harness to implement revision `0.1.10` without known false
+successes or unreachable cases. The corrected bundle binds SO-101 A4 to the
+complete gripper contact subtree; replaces LEAP L3 targets and L6 offsets with
+reachable, discriminating cases; and permits fingertip-target collision while
+rejecting contact with a non-corresponding target. The trusted Harness now
+enforces request and per-leg timing, actuator control ranges, the published
+SO-101 and ALOHA unintended-motion limits, the held precontact gate, and the
+complete designed-capability set when applying the two-of-three case rule.
+The corrected artifacts use new fixed-design, pass-standard, suite, and bundle
+identities so prior outcomes are not relabelled. The earlier Repair
+wall-deadline and candidate-feedback-filter observations remain diagnostic run
+and implementation records only: consistent with Sections 4 and 8, they do not
+become Experiment 1 Experience input. This revision does not authorize a
+formal restart or change the cohort, backbones, conditions, replicate plan,
+attempt budget, provider routes, or analysis boundary. Formal execution remains
+paused.
 
 Revision `0.1.10` prospectively removes `hello_robot_stretch_2` and
 M7/Qwen3 32B from the active Experiment 1 matrix by explicit project-owner

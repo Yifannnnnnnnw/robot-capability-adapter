@@ -1,7 +1,7 @@
 {
   "artifact_type": "b1_fixed_capability_design",
   "schema_version": "1.0",
-  "capability_design_id": "experiment1-b1-fixed-interface::robotstudio_so101::v1",
+  "capability_design_id": "experiment1-b1-fixed-interface::robotstudio_so101::v2",
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
   "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
@@ -52,7 +52,10 @@
       "public_standard": {
         "criterion_id": "A1",
         "criterion_text": "Position error <= 0.015 m continuously for 0.5 s.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -106,7 +109,10 @@
       "public_standard": {
         "criterion_id": "A2",
         "criterion_text": "Ordered waypoints and cross-track error <= 0.020 m; final error <= 0.015 m for 0.5 s.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -144,7 +150,10 @@
       "public_standard": {
         "criterion_id": "A3",
         "criterion_text": "Normalised aperture error <= 0.10 for 0.25 s with bidirectional excursion >= 50% full travel.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -225,7 +234,10 @@
       "public_standard": {
         "criterion_id": "A4",
         "criterion_text": "Precontact/ray/contact gates pass; contact lasts 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, and no unrelated contact.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -271,7 +283,10 @@
       "public_standard": {
         "criterion_id": "A5",
         "criterion_text": "Outbound and return errors <= 0.015 m in order, with 0.25 s/0.5 s holds and >= 80% requested displacement.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     }

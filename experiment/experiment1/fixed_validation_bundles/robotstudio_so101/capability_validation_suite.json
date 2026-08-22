@@ -1,13 +1,13 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v1",
-  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v3",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
   "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
   "whole_suite_aggregation": {
-    "kind": "all_cases"
+    "kind": "all_capabilities_two_of_three_cases"
   },
   "cases": [
     {
@@ -43,6 +43,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A1",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe"
         }
       },
@@ -58,6 +59,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -109,6 +114,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A1",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe"
         }
       },
@@ -124,6 +130,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -175,6 +185,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A1",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe"
         }
       },
@@ -190,6 +201,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -248,6 +263,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A2",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe"
         }
       },
@@ -263,6 +279,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -326,6 +346,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A2",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe"
         }
       },
@@ -341,6 +362,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -404,6 +429,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A2",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe"
         }
       },
@@ -419,6 +445,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -466,6 +496,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A3",
+          "side_effect_guard_profile": "so101",
           "joint_name": "gripper",
           "closed_position": -0.17453,
           "open_position": 1.74533
@@ -483,6 +514,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -530,6 +565,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A3",
+          "side_effect_guard_profile": "so101",
           "joint_name": "gripper",
           "closed_position": -0.17453,
           "open_position": 1.74533
@@ -547,6 +583,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -594,6 +634,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A3",
+          "side_effect_guard_profile": "so101",
           "joint_name": "gripper",
           "closed_position": -0.17453,
           "open_position": 1.74533
@@ -611,6 +652,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -669,13 +714,15 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A4",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe",
           "tool_body_names": [
             "gripper"
           ],
           "target_geom_names": [
             "front_button_geom"
-          ]
+          ],
+          "precontact_gate": "held_window_then_ray"
         }
       },
       "guards": [
@@ -690,6 +737,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -748,13 +799,15 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A4",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe",
           "tool_body_names": [
             "gripper"
           ],
           "target_geom_names": [
             "front_button_geom"
-          ]
+          ],
+          "precontact_gate": "held_window_then_ray"
         }
       },
       "guards": [
@@ -769,6 +822,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -827,13 +884,15 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A4",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe",
           "tool_body_names": [
             "gripper"
           ],
           "target_geom_names": [
             "front_button_geom"
-          ]
+          ],
+          "precontact_gate": "held_window_then_ray"
         }
       },
       "guards": [
@@ -848,6 +907,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -899,6 +962,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A5",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe",
           "base_body_name": "base"
         }
@@ -915,6 +979,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -966,6 +1034,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A5",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe",
           "base_body_name": "base"
         }
@@ -982,6 +1051,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1033,6 +1106,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "A5",
+          "side_effect_guard_profile": "so101",
           "site_name": "gripperframe",
           "base_body_name": "base"
         }
@@ -1049,6 +1123,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {

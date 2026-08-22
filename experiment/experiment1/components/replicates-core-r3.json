@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "../EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.10",
+  "authority_revision": "0.1.11",
   "replicate_set_id": "experiment1-core-r3",
   "replicate_ids": [
     "r01",

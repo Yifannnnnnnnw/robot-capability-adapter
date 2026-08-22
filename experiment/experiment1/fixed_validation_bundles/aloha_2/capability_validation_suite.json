@@ -1,13 +1,13 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "experiment1-b1-fixed-suite::aloha_2::v1",
-  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "suite_id": "experiment1-b1-fixed-suite::aloha_2::v3",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
   "robot_configuration_id": "aloha_2",
   "package_version": "1.0.0",
   "task_snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v2",
   "whole_suite_aggregation": {
-    "kind": "all_cases"
+    "kind": "all_capabilities_two_of_three_cases"
   },
   "cases": [
     {
@@ -43,6 +43,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL1",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -61,6 +62,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -112,6 +117,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL1",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -130,6 +136,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -181,6 +191,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL1",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -199,6 +210,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -257,6 +272,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL2",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -275,6 +291,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -338,6 +358,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL2",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -356,6 +377,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -419,6 +444,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL2",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -437,6 +463,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -484,6 +514,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL3",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -514,6 +545,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -561,6 +596,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL3",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -591,6 +627,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -638,6 +678,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL3",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -668,6 +709,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -723,6 +768,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL4",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -741,6 +787,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -796,6 +846,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL4",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -814,6 +865,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -869,6 +924,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL4",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -887,6 +943,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -945,6 +1005,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL5",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -961,7 +1022,8 @@
           },
           "target_geom_names": [
             "front_button_geom"
-          ]
+          ],
+          "precontact_gate": "held_window_then_ray"
         }
       },
       "guards": [
@@ -976,6 +1038,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1034,6 +1100,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL5",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -1050,7 +1117,8 @@
           },
           "target_geom_names": [
             "front_button_geom"
-          ]
+          ],
+          "precontact_gate": "held_window_then_ray"
         }
       },
       "guards": [
@@ -1065,6 +1133,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1123,6 +1195,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL5",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -1139,7 +1212,8 @@
           },
           "target_geom_names": [
             "front_button_geom"
-          ]
+          ],
+          "precontact_gate": "held_window_then_ray"
         }
       },
       "guards": [
@@ -1154,6 +1228,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1209,6 +1287,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL6",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -1231,6 +1310,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1286,6 +1369,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL6",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -1308,6 +1392,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1363,6 +1451,7 @@
         "kind": "b1_contract",
         "parameters": {
           "contract_id": "AL6",
+          "side_effect_guard_profile": "aloha2",
           "arm_site_names": {
             "left": "left/gripper",
             "right": "right/gripper"
@@ -1385,6 +1474,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {

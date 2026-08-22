@@ -1,7 +1,7 @@
 {
   "artifact_type": "b1_fixed_capability_design",
   "schema_version": "1.0",
-  "capability_design_id": "experiment1-b1-fixed-interface::aloha_2::v1",
+  "capability_design_id": "experiment1-b1-fixed-interface::aloha_2::v2",
   "robot_configuration_id": "aloha_2",
   "package_version": "1.0.0",
   "task_snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v2",
@@ -61,7 +61,10 @@
       "public_standard": {
         "criterion_id": "AL1",
         "criterion_text": "Selected end-effector error <= 0.015 m for 0.5 s and all unselected-side guards pass.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -124,7 +127,10 @@
       "public_standard": {
         "criterion_id": "AL2",
         "criterion_text": "Ordered waypoint/cross-track error <= 0.020 m and endpoint error <= 0.015 m for 0.5 s with unselected-side guards.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -171,7 +177,10 @@
       "public_standard": {
         "criterion_id": "AL3",
         "criterion_text": "Selected aperture error <= 0.10 for 0.25 s, mirror disagreement <= 0.05, and unselected-side guards pass.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -234,7 +243,10 @@
       "public_standard": {
         "criterion_id": "AL4",
         "criterion_text": "Both end-effector errors <= 0.015 m simultaneously for 0.5 s with first-entry skew <= 0.10 s.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -324,7 +336,10 @@
       "public_standard": {
         "criterion_id": "AL5",
         "criterion_text": "The full A4 gates apply to the selected arm/contact group and all unselected-side guards pass.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     },
@@ -387,7 +402,10 @@
       "public_standard": {
         "criterion_id": "AL6",
         "criterion_text": "Both arms complete outbound and return within budget with error <= 0.015 m and outbound skew <= 0.10 s; each phase holds 0.25 s.",
-        "all_hidden_cases_required": true,
+        "hidden_case_pass_rule": {
+          "minimum_passed": 2,
+          "case_count": 3
+        },
         "source": "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md"
       }
     }

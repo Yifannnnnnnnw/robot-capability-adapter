@@ -64,6 +64,7 @@ def _contact_evidence() -> dict:
                 "site_positions": {
                     "gripperframe": [0.38, 0.07 + axial, 0.22]
                 },
+                "joint_positions": {"gripper": 0.0},
                 "contacts": contacts,
             }
         )

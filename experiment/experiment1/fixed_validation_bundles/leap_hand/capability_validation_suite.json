@@ -1,8 +1,8 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "experiment1-b1-fixed-suite::leap_hand::v2",
-  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "suite_id": "experiment1-b1-fixed-suite::leap_hand::v3",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
   "robot_configuration_id": "leap_hand",
   "package_version": "1.0.0",
   "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",

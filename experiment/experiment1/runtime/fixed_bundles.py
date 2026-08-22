@@ -19,16 +19,6 @@ CAPABILITY_IDS_BY_ROBOT: dict[str, tuple[str, ...]] = {
     "robotstudio_so101": ("A1", "A2", "A3", "A4", "A5"),
     "unitree-go2-stock-12dof": ("G1", "G2", "G3", "G4", "G5"),
     "leap_hand": ("L1", "L2", "L3", "L4", "L5", "L6"),
-    "hello_robot_stretch_2": (
-        "ST1",
-        "ST2",
-        "ST3",
-        "ST4",
-        "ST5",
-        "ST6",
-        "ST7",
-        "ST8",
-    ),
     "aloha_2": ("AL1", "AL2", "AL3", "AL4", "AL5", "AL6"),
 }
 
@@ -267,9 +257,12 @@ def validate_b1_fixed_capability_design(
                 f"{where}.public_standard must identify the capability criterion"
             )
         _text(standard, "criterion_text", where=f"{where}.public_standard")
-        if standard.get("all_hidden_cases_required") is not True:
+        if standard.get("hidden_case_pass_rule") != {
+            "minimum_passed": 2,
+            "case_count": 3,
+        }:
             raise B1FixedBundleError(
-                f"{where}.public_standard must require all hidden cases"
+                f"{where}.public_standard must require two of three hidden cases"
             )
         # Exercise the schema structure now; case values are checked below.
         _validate_schema_value(
@@ -350,6 +343,107 @@ def _validate_case_relations(capability_id: str, request: Mapping[str, Any], *, 
             )
 
 
+def _validate_leap_framework_protocol(
+    capability_id: str,
+    case: Mapping[str, Any],
+    request: Mapping[str, Any],
+    parameters: Mapping[str, Any],
+    *,
+    where: str,
+) -> None:
+    preinvoke = case.get("preinvoke")
+    events = case.get("framework_events")
+    if capability_id != "L5":
+        if preinvoke is not None or events is not None:
+            raise B1FixedBundleError(
+                f"{where} may declare preinvoke/events only for L5"
+            )
+        return
+
+    fingers = request.get("required_fingers")
+    directions = request.get("separation_directions_palm_unit")
+    target_bodies = parameters.get("target_body_names")
+    fingertip_geoms = parameters.get("fingertip_geom_names")
+    target_geoms = parameters.get("target_geom_names")
+    if (
+        not isinstance(fingers, list)
+        or not isinstance(directions, list)
+        or not isinstance(target_bodies, Mapping)
+        or not isinstance(fingertip_geoms, Mapping)
+        or not isinstance(target_geoms, Mapping)
+    ):
+        raise B1FixedBundleError(f"{where} has incomplete L5 finger bindings")
+    expected_bodies = {str(target_bodies[finger]) for finger in fingers}
+    reset = case.get("reset")
+    placements = reset.get("mocap_body_positions") if isinstance(reset, Mapping) else None
+    if not isinstance(placements, Mapping) or set(placements) != expected_bodies:
+        raise B1FixedBundleError(
+            f"{where}.reset must place every and only requested L5 target"
+        )
+
+    if not isinstance(preinvoke, Mapping) or preinvoke.get("duration_s") != 0.10:
+        raise B1FixedBundleError(f"{where}.preinvoke must last exactly 0.10 s")
+    pairs = preinvoke.get("required_contact_pairs")
+    expected_pairs = {
+        tuple(sorted((str(fingertip_geoms[finger][0]), str(target_geoms[finger][0]))))
+        for finger in fingers
+    }
+    observed_pairs = {
+        tuple(sorted((str(pair.get("geom1")), str(pair.get("geom2")))))
+        for pair in pairs
+        if isinstance(pair, Mapping)
+    } if isinstance(pairs, list) else set()
+    if observed_pairs != expected_pairs or len(observed_pairs) != len(fingers):
+        raise B1FixedBundleError(
+            f"{where}.preinvoke must hold every aligned L5 contact pair"
+        )
+
+    if not isinstance(events, list) or len(events) != len(fingers):
+        raise B1FixedBundleError(f"{where}.framework_events must align with fingers")
+    events_by_body: dict[str, Mapping[str, Any]] = {}
+    for event in events:
+        if not isinstance(event, Mapping) or event.get("kind") != "move_mocap_body":
+            raise B1FixedBundleError(f"{where}.framework_events has an invalid event")
+        body_name = event.get("body_name")
+        if not isinstance(body_name, str) or body_name in events_by_body:
+            raise B1FixedBundleError(f"{where}.framework_events has duplicate targets")
+        if (
+            event.get("frame_body_name") != "palm"
+            or event.get("start_time_s") != 0.25
+            or event.get("duration_s") != 0.05
+        ):
+            raise B1FixedBundleError(
+                f"{where}.framework_events must use the fixed L5 timing/frame"
+            )
+        events_by_body[body_name] = event
+    if set(events_by_body) != expected_bodies:
+        raise B1FixedBundleError(
+            f"{where}.framework_events must move every requested target"
+        )
+    for finger, raw_direction in zip(fingers, directions):
+        event = events_by_body[str(target_bodies[finger])]
+        displacement = event.get("displacement_m")
+        if not isinstance(displacement, list) or len(displacement) != 3:
+            raise B1FixedBundleError(
+                f"{where}.framework_events displacement must be a 3-vector"
+            )
+        magnitude = math.sqrt(sum(float(value) ** 2 for value in displacement))
+        direction_norm = math.sqrt(sum(float(value) ** 2 for value in raw_direction))
+        alignment = sum(
+            float(value) * float(axis)
+            for value, axis in zip(displacement, raw_direction)
+        )
+        if (
+            magnitude < 0.006 - 1.0e-12
+            or magnitude > 0.008 + 1.0e-12
+            or direction_norm <= 0.0
+            or alignment / (magnitude * direction_norm) < 1.0 - 1.0e-9
+        ):
+            raise B1FixedBundleError(
+                f"{where}.framework_events must move 6-8 mm along the requested direction"
+            )
+
+
 def _validate_criterion(criterion: Any, *, where: str) -> None:
     expected = {
         "metric": "b1_contract_binary",
@@ -390,8 +484,12 @@ def validate_b1_fixed_validation_suite(
     """Audit three inline H1/H2/H3 cases per fixed B1 capability."""
 
     _root_identity(suite, package, artifact_type="b1_fixed_validation_suite")
-    if suite.get("whole_suite_aggregation") != {"kind": "all_cases"}:
-        raise B1FixedBundleError("whole_suite_aggregation must require all cases")
+    if suite.get("whole_suite_aggregation") != {
+        "kind": "all_capabilities_two_of_three_cases"
+    }:
+        raise B1FixedBundleError(
+            "whole_suite_aggregation must require two of three cases for every capability"
+        )
     capabilities = design.get("capabilities")
     if not isinstance(capabilities, list):
         raise B1FixedBundleError("validated design lacks capabilities")
@@ -462,6 +560,29 @@ def validate_b1_fixed_validation_suite(
             raise B1FixedBundleError(
                 f"{where}.binding.parameters must identify {capability_id}"
             )
+        expected_profile = {
+            "robotstudio_so101": "so101",
+            "aloha_2": "aloha2",
+        }.get(package.robot_configuration_id)
+        if expected_profile is not None and parameters.get(
+            "side_effect_guard_profile"
+        ) != expected_profile:
+            raise B1FixedBundleError(
+                f"{where}.binding.parameters must select {expected_profile!r} side-effect guards"
+            )
+        if capability_id in {"A4", "AL5"} and parameters.get(
+            "precontact_gate"
+        ) != "held_window_then_ray":
+            raise B1FixedBundleError(
+                f"{where}.binding.parameters must require the held precontact gate"
+            )
+        _validate_leap_framework_protocol(
+            capability_id,
+            case,
+            request,
+            parameters,
+            where=where,
+        )
         guards = case.get("guards")
         if not isinstance(guards, list) or not guards:
             raise B1FixedBundleError(f"{where}.guards must be non-empty")
@@ -476,11 +597,23 @@ def validate_b1_fixed_validation_suite(
                 "actuator_and_physics_step_required",
                 "no_direct_state_write",
                 "canonical_model_data",
+                "control_range",
             }:
                 raise B1FixedBundleError(f"{guard_where} uses an unsupported guard")
             if guard_id in guard_ids:
                 raise B1FixedBundleError(f"{where}.guards duplicates {guard_id!r}")
             guard_ids.add(guard_id)
+        guard_kinds = {str(guard["kind"]) for guard in guards}
+        required_guard_kinds = {
+            "actuator_and_physics_step_required",
+            "no_direct_state_write",
+            "canonical_model_data",
+            "control_range",
+        }
+        if guard_kinds != required_guard_kinds:
+            raise B1FixedBundleError(
+                f"{where}.guards must contain exactly the four common B1 guards"
+            )
         _validate_criterion(case.get("criterion"), where=f"{where}.criterion")
         coverage[(capability_id, variant)] += 1
     expected = {(capability_id, variant) for capability_id in expected_ids for variant in CASE_VARIANTS}

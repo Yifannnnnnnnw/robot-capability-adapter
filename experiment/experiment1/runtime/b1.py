@@ -413,6 +413,24 @@ def load_fixed_bundle(
             )
         )
     entry = metadata[robot_id]
+    identity_pairs = (
+        (
+            "fixed_capability_interface_id",
+            design.get("capability_design_id") or design.get("design_id"),
+        ),
+        ("fixed_capability_pass_standard_id", suite.get("pass_standard_id")),
+        ("validation_suite_id", suite.get("suite_id") or suite.get("artifact_id")),
+    )
+    for field, artifact_value in identity_pairs:
+        declared_value = entry.get(field)
+        if (
+            declared_value is not None
+            and artifact_value is not None
+            and declared_value != artifact_value
+        ):
+            raise B1RunError(
+                f"{container}: {robot_id} {field} disagrees with its artifact"
+            )
     interface_id = (
         entry.get("fixed_capability_interface_id")
         or design.get("capability_design_id")

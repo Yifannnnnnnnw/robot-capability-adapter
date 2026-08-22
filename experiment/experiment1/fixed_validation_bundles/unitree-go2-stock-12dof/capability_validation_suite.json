@@ -1,13 +1,13 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v1",
-  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
   "robot_configuration_id": "unitree-go2-stock-12dof",
   "package_version": "1.0.0",
   "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
   "whole_suite_aggregation": {
-    "kind": "all_cases"
+    "kind": "all_capabilities_two_of_three_cases"
   },
   "cases": [
     {
@@ -54,6 +54,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -116,6 +120,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -178,6 +186,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -240,6 +252,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -302,6 +318,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -364,6 +384,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -431,6 +455,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -502,6 +530,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -573,6 +605,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -631,6 +667,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -689,6 +729,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -747,6 +791,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -844,6 +892,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -941,6 +993,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1038,6 +1094,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {

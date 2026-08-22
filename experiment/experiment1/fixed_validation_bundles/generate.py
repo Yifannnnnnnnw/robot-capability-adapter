@@ -36,16 +36,6 @@ CAPABILITIES: dict[str, tuple[tuple[str, str], ...]] = {
         ("L5", "hold_fingertip_contacts"),
         ("L6", "move_fingertip_offset_and_return"),
     ),
-    "hello_robot_stretch_2": (
-        ("ST1", "move_base_relative"),
-        ("ST2", "turn_base_to_heading"),
-        ("ST3", "move_tool_to_position"),
-        ("ST4", "trace_tool_cartesian_path"),
-        ("ST5", "set_gripper_opening"),
-        ("ST6", "set_wrist_yaw"),
-        ("ST7", "approach_until_contact"),
-        ("ST8", "move_tool_offset_and_return"),
-    ),
     "aloha_2": (
         ("AL1", "move_arm_to_position"),
         ("AL2", "trace_arm_cartesian_path"),
@@ -222,6 +212,30 @@ OPENING = lambda: number(  # noqa: E731
 )
 ARM = {"type": "string", "enum": ["left", "right"], "description": "Selected ALOHA arm."}
 FINGERS = ["index", "middle", "ring", "thumb"]
+LEAP_FINGERTIP_SITES = {
+    "index": "if_tip",
+    "middle": "mf_tip",
+    "ring": "rf_tip",
+    "thumb": "th_tip",
+}
+LEAP_FINGERTIP_GEOMS = {
+    finger: [site] for finger, site in LEAP_FINGERTIP_SITES.items()
+}
+LEAP_TARGET_BODIES = {
+    finger: f"b1_{finger}_target_body" for finger in FINGERS
+}
+LEAP_TARGET_GEOMS = {
+    finger: [f"b1_{finger}_target_geom"] for finger in FINGERS
+}
+LEAP_TARGET_SITES = {
+    finger: f"b1_{finger}_target_site" for finger in FINGERS
+}
+LEAP_FINGER_JOINTS = {
+    "index": ["if_mcp", "if_rot", "if_pip", "if_dip"],
+    "middle": ["mf_mcp", "mf_rot", "mf_pip", "mf_dip"],
+    "ring": ["rf_mcp", "rf_rot", "rf_pip", "rf_dip"],
+    "thumb": ["th_cmc", "th_axl", "th_mcp", "th_ipl"],
+}
 FINGER_NAMES = {
     "type": "array",
     "minItems": 1,
@@ -290,10 +304,10 @@ REQUESTS: dict[str, tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = {
     "G5": ({"duration_s": 1.2}, {"duration_s": 1.5}, {"duration_s": 1.8}),
     "L1": ({"target_joint_positions_rad": poses(0.15), "max_duration_s": 3.0}, {"target_joint_positions_rad": poses(0.25), "max_duration_s": 3.5}, {"target_joint_positions_rad": poses(0.35), "max_duration_s": 4.0}),
     "L2": ({"joint_waypoints_rad": [poses(0.10), poses(0.20)], "max_duration_per_segment_s": 2.0}, {"joint_waypoints_rad": [poses(0.15), poses(0.25), poses(0.30)], "max_duration_per_segment_s": 2.5}, {"joint_waypoints_rad": [poses(0.20), poses(0.30), poses(0.25)], "max_duration_per_segment_s": 3.0}),
-    "L3": ({"target_fingertip_positions_palm_m": [0.08, 0.04, 0.02, 0.09, 0.00, 0.02, 0.08, -0.04, 0.02, 0.04, 0.05, 0.01], "max_control_steps": 50}, {"target_fingertip_positions_palm_m": [0.07, 0.05, 0.03, 0.08, 0.01, 0.03, 0.07, -0.03, 0.03, 0.05, 0.04, 0.02], "max_control_steps": 50}, {"target_fingertip_positions_palm_m": [0.09, 0.03, 0.01, 0.10, -0.01, 0.01, 0.09, -0.05, 0.01, 0.03, 0.06, 0.00], "max_control_steps": 50}),
-    "L4": ({"required_fingers": ["index"], "contact_target_positions_palm_m": [[0.08, 0.04, 0.02]], "approach_directions_palm_unit": [[1.0, 0.0, 0.0]], "max_travel_m": 0.02, "max_approach_speed_m_s": 0.02, "max_duration_s": 3.0}, {"required_fingers": ["middle", "thumb"], "contact_target_positions_palm_m": [[0.09, 0.0, 0.02], [0.04, 0.05, 0.01]], "approach_directions_palm_unit": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], "max_travel_m": 0.025, "max_approach_speed_m_s": 0.025, "max_duration_s": 3.5}, {"required_fingers": ["index", "ring"], "contact_target_positions_palm_m": [[0.08, 0.04, 0.03], [0.08, -0.04, 0.03]], "approach_directions_palm_unit": [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]], "max_travel_m": 0.03, "max_approach_speed_m_s": 0.03, "max_duration_s": 4.0}),
-    "L5": ({"required_fingers": ["index"], "separation_directions_palm_unit": [[-1.0, 0.0, 0.0]], "duration_s": 1.2}, {"required_fingers": ["middle", "thumb"], "separation_directions_palm_unit": [[-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]], "duration_s": 1.5}, {"required_fingers": ["index", "ring"], "separation_directions_palm_unit": [[-1.0, 0.0, 0.0], [-1.0, 0.0, 0.0]], "duration_s": 1.8}),
-    "L6": ({"finger_names": ["index"], "offsets_palm_m": [[0.01, 0.0, 0.0]], "max_duration_per_leg_s": 2.0}, {"finger_names": ["middle", "thumb"], "offsets_palm_m": [[0.0, 0.01, 0.0], [0.0, -0.01, 0.0]], "max_duration_per_leg_s": 2.5}, {"finger_names": ["index", "ring"], "offsets_palm_m": [[0.0, 0.0, 0.01], [0.0, 0.0, -0.01]], "max_duration_per_leg_s": 3.0}),
+    "L3": ({"target_fingertip_positions_palm_m": [0.128775611, 0.006391345, -0.048752213, 0.130839233, -0.036590229, -0.036725889, 0.130511063, -0.084105402, -0.038716047, -0.074933026, 0.136039464, -0.032154495], "max_control_steps": 50}, {"target_fingertip_positions_palm_m": [0.128014637, 0.008857801, -0.052027841, 0.130659492, -0.039310226, -0.037709774, 0.130489767, -0.08219295, -0.0390014, -0.075466139, 0.136042797, -0.032556929], "max_control_steps": 50}, {"target_fingertip_positions_palm_m": [0.129565291, 0.00477925, -0.044799256, 0.130035869, -0.034984134, -0.041463969, 0.130193737, -0.085662757, -0.040249204, -0.072123118, 0.13574216, -0.032895757], "max_control_steps": 50}),
+    "L4": ({"required_fingers": ["index"], "contact_target_positions_palm_m": [[0.001682462, 0.00760039, -0.138217348]], "approach_directions_palm_unit": [[0.679068929, 0.0, -0.734074512]], "max_travel_m": 0.02, "max_approach_speed_m_s": 0.02, "max_duration_s": 3.0}, {"required_fingers": ["middle", "thumb"], "contact_target_positions_palm_m": [[0.001583204, -0.03779962, -0.138217358], [-0.036555221, 0.045714849, -0.13812421]], "approach_directions_palm_unit": [[0.679068929, 0.0, -0.734074512], [-0.487865368, 0.85776329, -0.161955307]], "max_travel_m": 0.025, "max_approach_speed_m_s": 0.025, "max_duration_s": 3.5}, {"required_fingers": ["index", "ring"], "contact_target_positions_palm_m": [[0.003852744, 0.00760039, -0.138225718], [0.001593494, -0.08319962, -0.138207358]], "approach_directions_palm_unit": [[0.679068929, 0.0, -0.734074512], [0.679068929, 0.0, -0.734074512]], "max_travel_m": 0.03, "max_approach_speed_m_s": 0.03, "max_duration_s": 4.0}),
+    "L5": ({"required_fingers": ["index"], "separation_directions_palm_unit": [[0.679068929, 0.0, -0.734074512]], "duration_s": 1.2}, {"required_fingers": ["middle", "thumb"], "separation_directions_palm_unit": [[0.679068929, 0.0, -0.734074512], [-0.487865368, 0.85776329, -0.161955307]], "duration_s": 1.5}, {"required_fingers": ["index", "ring"], "separation_directions_palm_unit": [[0.679068929, 0.0, -0.734074512], [0.679068929, 0.0, -0.734074512]], "duration_s": 1.8}),
+    "L6": ({"finger_names": ["index"], "offsets_palm_m": [[-0.005203845, -0.001771343, -0.02438816]], "max_duration_per_leg_s": 2.0}, {"finger_names": ["middle", "thumb"], "offsets_palm_m": [[-0.002649684, 0.002876563, -0.024692196], [0.017369178, -0.002662201, -0.017782698]], "max_duration_per_leg_s": 2.5}, {"finger_names": ["index", "ring"], "offsets_palm_m": [[-0.004738515, 0.002530162, -0.024416076], [-0.002697652, -0.002086947, -0.024766254]], "max_duration_per_leg_s": 3.0}),
     "ST1": ({"translation_initial_yaw_m": [0.05, 0.0], "max_duration_s": 4.0}, {"translation_initial_yaw_m": [0.0, 0.05], "max_duration_s": 4.5}, {"translation_initial_yaw_m": [-0.04, 0.02], "max_duration_s": 5.0}),
     "ST2": ({"target_yaw_world_rad": 0.05, "max_duration_s": 4.0}, {"target_yaw_world_rad": -0.08, "max_duration_s": 4.5}, {"target_yaw_world_rad": 0.12, "max_duration_s": 5.0}),
     "ST3": ({"target_position_world_m": [0.10, -0.55, 0.51], "max_duration_s": 4.0}, {"target_position_world_m": [0.12, -0.53, 0.53], "max_duration_s": 4.5}, {"target_position_world_m": [0.08, -0.57, 0.55], "max_duration_s": 5.0}),
@@ -314,6 +328,7 @@ COMMON_GUARDS = [
     {"guard_id": "control", "kind": "actuator_and_physics_step_required"},
     {"guard_id": "no-direct-write", "kind": "no_direct_state_write"},
     {"guard_id": "canonical", "kind": "canonical_model_data"},
+    {"guard_id": "control-range", "kind": "control_range"},
 ]
 
 
@@ -341,8 +356,54 @@ def reset_for(
             }
         return reset
     if robot_id == "leap_hand":
-        value = 0.10 + offset
-        return {"kind": "default", "joint_positions": {"if_mcp": value}, "actuator_controls": {"if_mcp_act": value}}
+        contact_capability = capability_id in {"L4", "L5"}
+        value = (0.80 if contact_capability else 0.10) + offset
+        reset: dict[str, Any] = {
+            "kind": "keyframe" if contact_capability else "default",
+            "joint_positions": {"if_mcp": value},
+            "actuator_controls": {"if_mcp_act": value},
+        }
+        if contact_capability:
+            reset["name"] = "home"
+        request_index = {"H1": 0, "H2": 1, "H3": 2}[variant]
+        if capability_id == "L4":
+            request = REQUESTS["L4"][request_index]
+            reset["mocap_body_positions"] = {
+                LEAP_TARGET_BODIES[finger]: {
+                    "frame_body_name": "palm",
+                    "position_m": target,
+                }
+                for finger, target in zip(
+                    request["required_fingers"],
+                    request["contact_target_positions_palm_m"],
+                )
+            }
+        elif capability_id == "L5":
+            request = REQUESTS["L5"][request_index]
+            reset["mocap_body_positions"] = {
+                LEAP_TARGET_BODIES[finger]: {
+                    "site_name": LEAP_FINGERTIP_SITES[finger],
+                    "frame_body_name": "palm",
+                    "offset_m": [
+                        round(
+                            ({
+            "index": 0.008,
+            "middle": 0.008,
+            "ring": 0.008,
+            "thumb": 0.008,
+                            }[finger])
+                            * direction_axis,
+                            9,
+                        )
+                        for direction_axis in direction
+                    ],
+                }
+                for finger, direction in zip(
+                    request["required_fingers"],
+                    request["separation_directions_palm_unit"],
+                )
+            }
+        return reset
     if robot_id == "hello_robot_stretch_2":
         lift = max(-0.5, offset)
         gripper = (
@@ -360,8 +421,11 @@ def reset_for(
 
 
 def binding_for(capability_id: str) -> dict[str, Any]:
-    leap_sites = {"index": "if_tip", "middle": "mf_tip", "ring": "rf_tip", "thumb": "th_tip"}
     parameters: dict[str, Any] = {"contract_id": capability_id}
+    if capability_id.startswith("A") and not capability_id.startswith("AL"):
+        parameters["side_effect_guard_profile"] = "so101"
+    elif capability_id.startswith("AL"):
+        parameters["side_effect_guard_profile"] = "aloha2"
     if capability_id in {"A1", "A2", "A5"}:
         parameters["site_name"] = "gripperframe"
         if capability_id == "A5":
@@ -369,7 +433,7 @@ def binding_for(capability_id: str) -> dict[str, Any]:
     elif capability_id == "A3":
         parameters.update({"joint_name": "gripper", "closed_position": -0.17453, "open_position": 1.74533})
     elif capability_id == "A4":
-        parameters.update({"site_name": "gripperframe", "tool_geom_names": ["fixed_jaw_box1", "moving_jaw_box1"], "target_geom_names": ["front_button_geom"]})
+        parameters.update({"site_name": "gripperframe", "tool_body_names": ["gripper"], "target_geom_names": ["front_button_geom"], "precontact_gate": "held_window_then_ray"})
     elif capability_id.startswith("G"):
         parameters["body_name"] = "base_link"
         if capability_id == "G5":
@@ -377,13 +441,13 @@ def binding_for(capability_id: str) -> dict[str, Any]:
     elif capability_id in {"L1", "L2"}:
         parameters["joint_names"] = ["if_mcp", "if_rot", "if_pip", "if_dip", "mf_mcp", "mf_rot", "mf_pip", "mf_dip", "rf_mcp", "rf_rot", "rf_pip", "rf_dip", "th_cmc", "th_axl", "th_mcp", "th_ipl"]
     elif capability_id == "L3":
-        parameters.update({"palm_body_name": "palm", "fingertip_site_names": leap_sites})
+        parameters.update({"palm_body_name": "palm", "fingertip_site_names": LEAP_FINGERTIP_SITES, "physics_steps_per_control_step": 10})
     elif capability_id == "L4":
-        parameters.update({"palm_body_name": "palm", "fingertip_site_names": leap_sites, "fingertip_geom_names": {"index": ["if_tip"], "middle": ["mf_tip"], "ring": ["rf_tip"], "thumb": ["th_tip"]}, "target_geom_names": {name: ["kinematic_floor"] for name in FINGERS}})
+        parameters.update({"palm_body_name": "palm", "fingertip_site_names": LEAP_FINGERTIP_SITES, "fingertip_geom_names": LEAP_FINGERTIP_GEOMS, "target_geom_names": LEAP_TARGET_GEOMS, "target_body_names": LEAP_TARGET_BODIES, "finger_joint_names": LEAP_FINGER_JOINTS})
     elif capability_id == "L5":
-        parameters.update({"palm_body_name": "palm", "fingertip_site_names": leap_sites, "fingertip_geom_names": {"index": ["if_tip"], "middle": ["mf_tip"], "ring": ["rf_tip"], "thumb": ["th_tip"]}, "target_geom_names": {name: ["kinematic_floor"] for name in FINGERS}, "target_site_names": {name: "grasp_site" for name in FINGERS}})
+        parameters.update({"palm_body_name": "palm", "fingertip_site_names": LEAP_FINGERTIP_SITES, "fingertip_geom_names": LEAP_FINGERTIP_GEOMS, "target_geom_names": LEAP_TARGET_GEOMS, "target_site_names": LEAP_TARGET_SITES, "target_body_names": LEAP_TARGET_BODIES, "finger_joint_names": LEAP_FINGER_JOINTS})
     elif capability_id == "L6":
-        parameters.update({"palm_body_name": "palm", "fingertip_site_names": leap_sites})
+        parameters.update({"palm_body_name": "palm", "fingertip_site_names": LEAP_FINGERTIP_SITES, "finger_joint_names": LEAP_FINGER_JOINTS})
     elif capability_id in {"ST1", "ST2"}:
         parameters["body_name"] = "base_link"
     elif capability_id in {"ST3", "ST4", "ST8"}:
@@ -401,8 +465,51 @@ def binding_for(capability_id: str) -> dict[str, Any]:
     elif capability_id == "AL3":
         parameters.update({"arm_site_names": {"left": "left/gripper", "right": "right/gripper"}, "arm_gripper_joint_names": {"left": ["left/left_finger", "left/right_finger"], "right": ["right/left_finger", "right/right_finger"]}, "closed_position": 0.002, "open_position": 0.037})
     elif capability_id == "AL5":
-        parameters.update({"arm_site_names": {"left": "left/gripper", "right": "right/gripper"}, "arm_tool_geom_names": {"left": ["left/left_g0", "left/right_g0"], "right": ["right/left_g0", "right/right_g0"]}, "target_geom_names": ["front_button_geom"]})
+        parameters.update({"arm_site_names": {"left": "left/gripper", "right": "right/gripper"}, "arm_tool_geom_names": {"left": ["left/left_g0", "left/right_g0"], "right": ["right/left_g0", "right/right_g0"]}, "target_geom_names": ["front_button_geom"], "precontact_gate": "held_window_then_ray"})
     return {"kind": "b1_contract", "parameters": parameters}
+
+
+def framework_events_for(
+    robot_id: str, capability_id: str, variant: str
+) -> list[dict[str, Any]]:
+    if robot_id != "leap_hand" or capability_id != "L5":
+        return []
+    request = REQUESTS["L5"][{"H1": 0, "H2": 1, "H3": 2}[variant]]
+    distance_m = {"H1": 0.0065, "H2": 0.0070, "H3": 0.0075}[variant]
+    return [
+        {
+            "kind": "move_mocap_body",
+            "body_name": LEAP_TARGET_BODIES[finger],
+            "frame_body_name": "palm",
+            "start_time_s": 0.25,
+            "duration_s": 0.05,
+            "displacement_m": [
+                round(distance_m * axis, 9) for axis in direction
+            ],
+        }
+        for finger, direction in zip(
+            request["required_fingers"],
+            request["separation_directions_palm_unit"],
+        )
+    ]
+
+
+def preinvoke_for(
+    robot_id: str, capability_id: str, variant: str
+) -> dict[str, Any] | None:
+    if robot_id != "leap_hand" or capability_id != "L5":
+        return None
+    request = REQUESTS["L5"][{"H1": 0, "H2": 1, "H3": 2}[variant]]
+    return {
+        "duration_s": 0.10,
+        "required_contact_pairs": [
+            {
+                "geom1": LEAP_FINGERTIP_GEOMS[finger][0],
+                "geom2": LEAP_TARGET_GEOMS[finger][0],
+            }
+            for finger in request["required_fingers"]
+        ],
+    }
 
 
 def scene_for(robot_id: str, capability_id: str) -> str:
@@ -429,7 +536,7 @@ def design_for(robot_id: str) -> dict[str, Any]:
     return {
         "artifact_type": "b1_fixed_capability_design",
         "schema_version": "1.0",
-        "capability_design_id": f"experiment1-b1-fixed-interface::{robot_id}::v1",
+        "capability_design_id": f"experiment1-b1-fixed-interface::{robot_id}::v2",
         "robot_configuration_id": robot_id,
         "package_version": package_version,
         "task_snapshot_id": snapshot_id,
@@ -444,7 +551,10 @@ def design_for(robot_id: str) -> dict[str, Any]:
                 "public_standard": {
                     "criterion_id": capability_id,
                     "criterion_text": STANDARDS[capability_id],
-                    "all_hidden_cases_required": True,
+                    "hidden_case_pass_rule": {
+                        "minimum_passed": 2,
+                        "case_count": 3,
+                    },
                     "source": CRITERIA_SOURCE,
                 },
             }
@@ -453,46 +563,59 @@ def design_for(robot_id: str) -> dict[str, Any]:
     }
 
 
+def suite_version(robot_id: str) -> str:
+    return "v3"
+
+
 def suite_for(robot_id: str) -> dict[str, Any]:
     package_version, snapshot_id = package_identity(robot_id)
     cases: list[dict[str, Any]] = []
     for capability_id, method_name in CAPABILITIES[robot_id]:
         for index, variant in enumerate(("H1", "H2", "H3")):
-            cases.append(
-                {
-                    "case_id": f"{capability_id}-{variant}",
-                    "case_variant": variant,
-                    "capability_id": capability_id,
-                    "method_name": method_name,
-                    "scene_entrypoint": scene_for(robot_id, capability_id),
-                    "request": REQUESTS[capability_id][index],
-                    "reset": reset_for(robot_id, capability_id, variant),
-                    "max_steps": 5000,
-                    "sample_hz": 20.0,
-                    "timeout_sim_s": 8.0,
-                    "repetitions": 1,
-                    "binding": binding_for(capability_id),
-                    "guards": COMMON_GUARDS,
-                    "criterion": {
-                        "metric": "b1_contract_binary",
-                        "unit": "binary",
-                        "comparator": ">=",
-                        "threshold": 1,
-                        "temporal": {"kind": "fixed_trials"},
-                        "aggregation": {"kind": "single_trial"},
-                        "source_refs": [f"{CRITERIA_SOURCE}#{capability_id.lower()}"],
-                    },
-                }
+            case = {
+                "case_id": f"{capability_id}-{variant}",
+                "case_variant": variant,
+                "capability_id": capability_id,
+                "method_name": method_name,
+                "scene_entrypoint": scene_for(robot_id, capability_id),
+                "request": REQUESTS[capability_id][index],
+                "reset": reset_for(robot_id, capability_id, variant),
+                "max_steps": 5000,
+                "sample_hz": 20.0,
+                "timeout_sim_s": 8.0,
+                "repetitions": 1,
+                "binding": binding_for(capability_id),
+                "guards": COMMON_GUARDS,
+                "criterion": {
+                    "metric": "b1_contract_binary",
+                    "unit": "binary",
+                    "comparator": ">=",
+                    "threshold": 1,
+                    "temporal": {"kind": "fixed_trials"},
+                    "aggregation": {"kind": "single_trial"},
+                    "source_refs": [f"{CRITERIA_SOURCE}#{capability_id.lower()}"],
+                },
+            }
+            framework_events = framework_events_for(
+                robot_id, capability_id, variant
             )
+            if framework_events:
+                case["framework_events"] = framework_events
+            preinvoke = preinvoke_for(robot_id, capability_id, variant)
+            if preinvoke is not None:
+                case["preinvoke"] = preinvoke
+            cases.append(case)
     return {
         "artifact_type": "b1_fixed_validation_suite",
         "schema_version": "1.0",
-        "suite_id": f"experiment1-b1-fixed-suite::{robot_id}::v1",
-        "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+        "suite_id": f"experiment1-b1-fixed-suite::{robot_id}::{suite_version(robot_id)}",
+        "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
         "robot_configuration_id": robot_id,
         "package_version": package_version,
         "task_snapshot_id": snapshot_id,
-        "whole_suite_aggregation": {"kind": "all_cases"},
+        "whole_suite_aggregation": {
+            "kind": "all_capabilities_two_of_three_cases"
+        },
         "cases": cases,
     }
 
@@ -512,7 +635,7 @@ def main() -> int:
         {
             "artifact_type": "b1_fixed_validation_bundle_set",
             "schema_version": "1.0",
-            "bundle_set_id": "experiment1-b1-five-robot-fixed-bundles-v1",
+            "bundle_set_id": "experiment1-b1-four-robot-fixed-bundles-v4",
             "robots": {
                 robot_id: {
                     "capability_design": f"{robot_id}/capability_design.json",
@@ -520,13 +643,13 @@ def main() -> int:
                         f"{robot_id}/capability_validation_suite.json"
                     ),
                     "fixed_capability_interface_id": (
-                        f"experiment1-b1-fixed-interface::{robot_id}::v1"
+                        f"experiment1-b1-fixed-interface::{robot_id}::v2"
                     ),
                     "fixed_capability_pass_standard_id": (
-                        "experiment1-b1-driver-validation-criteria-v1"
+                        "experiment1-b1-driver-validation-criteria-v2"
                     ),
                     "validation_suite_id": (
-                        f"experiment1-b1-fixed-suite::{robot_id}::v1"
+                        f"experiment1-b1-fixed-suite::{robot_id}::{suite_version(robot_id)}"
                     ),
                 }
                 for robot_id in CAPABILITIES
