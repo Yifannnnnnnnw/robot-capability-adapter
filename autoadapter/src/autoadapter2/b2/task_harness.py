@@ -203,7 +203,7 @@ def _sealed_task_definition(
         or suite.get("schema_version") != "1.0"
         or not isinstance(authority, Mapping)
         or authority.get("document_id") != "AA2-B2"
-        or authority.get("revision") != "0.1.0"
+        or authority.get("revision") != "0.1.1"
     ):
         raise HarnessError("B2 task suite has an incompatible identity")
 

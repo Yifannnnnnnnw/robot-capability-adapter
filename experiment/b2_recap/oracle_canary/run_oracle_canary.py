@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Run the hidden scripted oracle through the fixed B2 diagnostic episode path.
 
-Oracle canaries remain diagnostic and never enter the formal 210-episode
-denominator.  A complete ten-task run can clear only the AA2-B2 Section 7
-scripted-oracle prerequisite.
+This legacy optional diagnostic never enters the formal 210-episode
+denominator and is not an AA2-B2 formal-execution prerequisite.
 """
 
 from __future__ import annotations
@@ -217,7 +216,7 @@ def run(
     selected_canaries_passed = bool(results) and all(
         result.get("oracle_canary_passed") is True for result in results
     )
-    prerequisite_cleared = bool(
+    diagnostic_cohort_passed = bool(
         record_video and complete_task_cohort and selected_canaries_passed
     )
     index = {
@@ -231,7 +230,7 @@ def run(
         "required_task_count": len(oracle["plans"]),
         "complete_task_cohort": complete_task_cohort,
         "selected_canaries_passed": selected_canaries_passed,
-        "formal_oracle_prerequisite_cleared": prerequisite_cleared,
+        "diagnostic_cohort_passed": diagnostic_cohort_passed,
         "results": results,
     }
     _write_json(output_root / "oracle_canary_index.json", index)
@@ -250,7 +249,7 @@ def main() -> int:
     parser.add_argument(
         "--no-video",
         action="store_true",
-        help="diagnostic only; cannot clear the scripted-oracle prerequisite",
+        help="legacy diagnostic only; video is required for a complete diagnostic",
     )
     args = parser.parse_args()
     report = run(
@@ -260,7 +259,7 @@ def main() -> int:
         record_video=not args.no_video,
     )
     print(json.dumps(report, indent=2, allow_nan=False))
-    return 0 if report["formal_oracle_prerequisite_cleared"] else 1
+    return 0 if report["diagnostic_cohort_passed"] else 1
 
 
 if __name__ == "__main__":

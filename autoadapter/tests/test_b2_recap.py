@@ -421,4 +421,4 @@ def test_catalogue_metadata_matches_the_implemented_fixed_core() -> None:
     assert metadata["public_observation_envelope_revision"] == (
         "b2-operation-observation-v1"
     )
-    assert metadata["public_state_profile_revision"] == "b2-public-state-v1"
+    assert metadata["public_state_profile_revision"] == "b2-public-state-v2"

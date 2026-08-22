@@ -3,6 +3,7 @@
   "schema_version": "1.0",
   "diagnostic_mode": "no_video",
   "formal_episode": false,
+  "authority_status": "legacy_optional_not_a_formal_prerequisite_under_aa2_b2_0.1.1",
   "static_asset_validation": {
     "status": "PASS",
     "task_count": 10,
@@ -25,7 +26,5 @@
       {"robot_configuration_id": "unitree-go2-stock-12dof", "task_id": "GO2-T16", "status": "NOT_EXECUTED"},
       {"robot_configuration_id": "unitree-go2-stock-12dof", "task_id": "GO2-T17", "status": "NOT_EXECUTED"}
     ]
-  },
-  "formal_oracle_prerequisite_cleared": false,
-  "remaining_requirement": "Run every task through the real persistent MuJoCo path, independent task Harness, and complete continuous video; tune any physically failing scripted plan without changing the sealed task or interface."
+  }
 }

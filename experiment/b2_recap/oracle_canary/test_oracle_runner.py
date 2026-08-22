@@ -86,7 +86,7 @@ def _install_fakes(
     return calls
 
 
-def test_complete_passing_video_cohort_clears_and_retains_reports(
+def test_complete_passing_video_cohort_passes_optional_diagnostic_and_retains_reports(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -104,7 +104,7 @@ def test_complete_passing_video_cohort_clears_and_retains_reports(
     assert report["formal_denominator_entry"] is False
     assert report["complete_task_cohort"] is True
     assert report["selected_canaries_passed"] is True
-    assert report["formal_oracle_prerequisite_cleared"] is True
+    assert report["diagnostic_cohort_passed"] is True
     assert len(calls) == 10
     assert all(call.record_video is True for call in calls)
     assert all(call.task_suite_path == runner.TASK_SUITE_PATH for call in calls)
@@ -132,7 +132,7 @@ def test_complete_passing_video_cohort_clears_and_retains_reports(
         (None, True, None, None, "GO2-T06"),
     ],
 )
-def test_subset_no_video_failed_verdict_or_missing_video_cannot_clear(
+def test_subset_no_video_failed_verdict_or_missing_video_cannot_pass_cohort(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     only_task: str | None,
@@ -157,4 +157,4 @@ def test_subset_no_video_failed_verdict_or_missing_video_cannot_clear(
         record_video=record_video,
     )
 
-    assert report["formal_oracle_prerequisite_cleared"] is False
+    assert report["diagnostic_cohort_passed"] is False

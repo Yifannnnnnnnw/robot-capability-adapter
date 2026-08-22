@@ -294,6 +294,9 @@ def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> 
                 def move_cartesian_offset_and_return(self, request):
                     del request
 
+                def set_wrist_roll(self, request):
+                    del request
+
             def build(*, model, data):
                 return Driver(model, data)
             """

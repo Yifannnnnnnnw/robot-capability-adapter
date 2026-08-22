@@ -26,7 +26,7 @@ python experiment/b2_recap/provider_canary/run_real_model_canary.py \
 ```
 
 For example, to let the pinned M2 Opus 5 backbone plan and execute the harder
-pick-and-place task without a scripted oracle:
+pick-and-place task without a prewritten capability sequence:
 
 ```bash
 PYTHONPATH=autoadapter/src \

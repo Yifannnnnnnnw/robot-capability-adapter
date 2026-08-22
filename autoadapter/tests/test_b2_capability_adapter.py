@@ -35,10 +35,10 @@ def test_so101_and_go2_catalogues_are_native_b1_capabilities_only() -> None:
     go_adapter = CapabilityAdapter(_design("unitree-go2-stock-12dof"), sink)
 
     assert so_adapter.capability_design_id == (
-        "experiment1-b1-fixed-interface::robotstudio_so101::v1"
+        "experiment1-b1-fixed-interface::robotstudio_so101::v3"
     )
     assert go_adapter.capability_design_id == (
-        "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v1"
+        "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2"
     )
     assert [contract.capability_id for contract in so_adapter.contracts] == [
         "A1",
@@ -46,6 +46,7 @@ def test_so101_and_go2_catalogues_are_native_b1_capabilities_only() -> None:
         "A3",
         "A4",
         "A5",
+        "A6",
     ]
     assert [contract.capability_id for contract in go_adapter.contracts] == [
         "G1",
@@ -60,6 +61,7 @@ def test_so101_and_go2_catalogues_are_native_b1_capabilities_only() -> None:
         "set_gripper_opening",
         "approach_until_contact",
         "move_cartesian_offset_and_return",
+        "set_wrist_roll",
     ]
     assert [item["capability_name"] for item in go_adapter.public_catalog()] == [
         "track_planar_twist",
@@ -104,6 +106,7 @@ def test_so101_and_go2_catalogues_are_native_b1_capabilities_only() -> None:
             "offset_robot_base_m",
             "max_duration_per_leg_s",
         },
+        "set_wrist_roll": {"target_roll_rad", "max_duration_s"},
         "track_planar_twist": {
             "linear_velocity_body_m_s",
             "yaw_rate_rad_s",

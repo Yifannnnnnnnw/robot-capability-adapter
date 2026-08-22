@@ -302,7 +302,7 @@ def run(
         "formal_episode": False,
         "formal_denominator_entry": False,
         "video_requested": record_video,
-        "authority": {"document_id": "AA2-B2", "revision": "0.1.0"},
+        "authority": {"document_id": "AA2-B2", "revision": "0.1.1"},
         "code_version": _code_version(),
         "started_at_utc": started_at_utc,
         "ended_at_utc": _utc_now(),

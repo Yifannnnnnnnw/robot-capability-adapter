@@ -5,23 +5,28 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.0`<br>
+> **Revision:** `0.1.1`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution paused
 
-Revision `0.1.0` prospectively fixes a bounded comparison of one ReCAP high-level-controller
+Revision `0.1.1` prospectively fixes a bounded comparison of one ReCAP high-level-controller
 architecture across seven replaceable LLM backbones. It fixes two robots, five source-backed
 compositional tasks per robot, three core replicates, and 210 formal episodes. The same validated
 reference driver, capability interface, typed adapter, controller logic, public-observation
 projection, task Harness, and episode budgets are held fixed within each robot; only the controller
-backbone varies. Diagnostic calibration and oracle canaries are not formal episodes. Formal
-execution remains paused under Section 7.
+backbone varies. Diagnostic calibration and real-model canaries are not formal episodes. Revision
+`0.1.1` removes scripted-oracle canaries from the formal-execution prerequisites and consumes the
+new B1 SO-101 A6 wrist-roll leaf capability required by the fixed pick tasks. It does not change
+the task block, backbone factor, replicate plan, or 210-episode denominator. Formal execution
+remains paused under Section 7.
 
-**中文辅助说明。** `0.1.0` 事先固定一项有界 ReCAP 高层控制比较：同一架构替换七个
+**中文辅助说明。** `0.1.1` 事先固定一项有界 ReCAP 高层控制比较：同一架构替换七个
 LLM backbone，使用两台机器人、每台五项有来源的组合 task 和三次正式 replicate，共 210 个
 episode。每台机器人的 reference driver、capability interface、typed adapter、controller 逻辑、公开观测投影、
 task Harness 和 episode budget 在所有 backbone 间保持一致；只有 controller backbone 变化。诊断校准和
-oracle canary 不计入正式 episode。第 7 节的 blocker 解除前，正式执行暂停。
+真实模型 canary 不计入正式 episode。`0.1.1` 删除 scripted-oracle canary 的正式执行前置门槛，并增加 pick task
+所需、已纳入 B1 的 SO-101 A6 转腕 leaf capability；task、backbone、replicate 和 210-episode denominator 均不改变。
+第 7 节的 blocker 解除前，正式执行暂停。
 
 ## 0. Authority, identity, and precedence
 
@@ -128,7 +133,7 @@ B2 contains exactly two canonical package configurations:
 
 | Robot block | Canonical configuration ID | Fixed public capability family |
 |---|---|---|
-| Serial manipulator | `robotstudio_so101` | A1–A5 from the fixed B1 SO-101 capability design |
+| Serial manipulator | `robotstudio_so101` | A1–A6 from the fixed B1 SO-101 capability design |
 | Quadruped | `unitree-go2-stock-12dof` | G1–G5 from the fixed B1 Go2 capability design |
 
 For each robot, the B2 manifest must jointly pin one reviewed
@@ -163,7 +168,7 @@ The Go2 task block contains exactly:
 These ten IDs must resolve to the source-backed Task Library records in their canonical package
 snapshots. Before formal dispatch, one sealed B2 task suite must pin each public task projection,
 scene, private reset/seed, complete source-lineaged scoring clauses, measurement bindings, guards,
-budgets, and rendering configuration. No task may be substituted because its oracle or controller
+budgets, and rendering configuration. No task may be substituted because its controller
 run is difficult.
 
 ### 3.3 Source and private-state isolation
@@ -171,7 +176,7 @@ run is difficult.
 ReCAP receives only the fixed public task projection, mechanically derived public capability names,
 descriptions and request schemas, the initial allowlisted public state, and bounded public operation
 observations. The controller and every provider request are denied the reference-driver source,
-reference-only calibration traces, scripted oracle plan or output, private reset and seed,
+reference-only calibration plans and traces, private reset and seed,
 criterion thresholds or expressions, measurement bindings, guards, hidden expected trajectory,
 raw MuJoCo state, Harness source/configuration, and final verdict.
 
@@ -181,10 +186,10 @@ or observations. The Framework and trusted Harness may load private material out
 credential-free candidate worker as required to execute and score the episode.
 
 **中文辅助说明。** B2 只包含 `robotstudio_so101` 和 `unitree-go2-stock-12dof`。SO-101 固定使用
-A1–A5，Go2 固定使用 G1–G5。每台机器人的 reference driver、capability design、完整 validation suite、typed
+B1 A1–A6（含 `set_wrist_roll`），Go2 固定使用 G1–G5。每台机器人的 reference driver、capability design、完整 validation suite、typed
 adapter、公开观测 profile 和完整视频校准记录必须共同固定，并在所有 backbone、task 和 replicate 中一致。
 上表十个 task ID 必须解析到 canonical package 中有来源的 Task Library 记录。Controller 仅可看到固定公开 task、
-interface-derived tool 和有界公开反馈；不得看到 reference 源码、oracle、私有 reset/criterion/binding/guard、raw state、
+interface-derived tool 和有界公开反馈；不得看到 reference 源码、校准计划或轨迹、私有 reset/criterion/binding/guard、raw state、
 Harness 或最终 verdict。
 
 ## 4. Backbone factor
@@ -230,7 +235,7 @@ to replicate IDs before any formal episode. Scheduling may interleave cells for 
 reasons, but cannot change inputs, reuse MuJoCo state, condition retries on outcomes, or add an
 episode to compensate for controller failure.
 
-Reference calibration, Harness development runs, provider connectivity checks, scripted oracle
+Reference calibration, Harness development runs, provider connectivity checks, real-model
 canaries, prompt dry runs, and any run made while Section 7 remains unsatisfied are diagnostic and
 excluded from the 210. A formal episode is not rerun for controller or model failure. A confirmed
 infrastructure failure is recorded separately and may be rerun once with the same frozen inputs;
@@ -243,7 +248,7 @@ block; otherwise the core denominator remains 210.
 
 **中文辅助说明。** 正式 core 为 `2 × 5 × 7 × 3 = 210` 个 episode。`R1`、`R2`、`R3` 各自使用在首次正式执行
 前封存的 reset seed，每个 episode 都是新 worker 和新 MuJoCo session。reference calibration、Harness 开发运行、provider
-连通性检查、scripted oracle canary、prompt dry run 及 blocker 未解除时的运行都是诊断运行，不计入 210。Controller 或
+连通性检查、真实模型 canary、prompt dry run 及 blocker 未解除时的运行都是诊断运行，不计入 210。Controller 或
 模型失败不自动重跑；经确认的 infrastructure failure 只可在相同封存输入下重跑一次，并同时保留原事件与替代运行。
 
 ## 6. Analysis and required records
@@ -274,11 +279,11 @@ model/capability trace、独立 Harness verdict、物理完整性、资源使用
 
 ## 7. Formal-execution blockers
 
-Formal B2 execution is paused. No run may enter the 210-episode denominator until all four
+Formal B2 execution is paused. No run may enter the 210-episode denominator until all three
 prerequisites below are complete and fixed together in one versioned B2 manifest:
 
 1. **Complete video reference calibration.** For both robots, the exact reviewed reference driver,
-   fixed A1–A5 or G1–G5 interface, complete interface-bound capability-validation suite, typed
+   fixed SO-101 A1–A6 or Go2 G1–G5 interface, complete interface-bound capability-validation suite, typed
    adapter, canonical scenes, and public-observation profile are pinned. The complete suite passes
    through that adapter on the real Direct-MuJoCo path, with every required case video retained and
    physical integrity passing. Calibration remains diagnostic and is not B2 task-use evidence.
@@ -291,21 +296,15 @@ prerequisites below are complete and fixed together in one versioned B2 manifest
    inference settings, limits, timeout/retry behavior, structured-output transport, and dated
    pricing required by Section 4. The fixed common ReCAP prompt, response schema, context rules,
    budgets, and model-client behavior are pinned at the same time.
-4. **Scripted oracle canaries.** A task-specific scripted oracle, kept hidden from ReCAP, exercises
-   the same fixed driver–interface–adapter and persistent-session path for every one of the ten task
-   Harness entries. Every canary produces a physically successful independent Harness verdict and
-   complete video. Oracle runs are diagnostic, excluded from 210, and never become model prompts,
-   examples, tools, feedback, or retry input.
-
 A prerequisite failure remains a visible construction blocker. It is not a failed backbone
-episode, and the corresponding robot, task, or model may not be silently removed. Once all four
+episode, and the corresponding robot, task, or model may not be silently removed. Once all three
 are satisfied, the manifest and a prospective authority revision must record their exact identities
 before the first formal model request; only then may formal execution start.
 
 **中文辅助说明。** B2 正式执行当前暂停。两台机器人的完整视频 reference calibration、十项 task 的完整独立
-Harness、`M1`–`M7` 的准确 provider pin，以及十项 task 的 scripted oracle canary 全部通过并在同一份版本化
-manifest 中固定之前，任何 run 都不得进入 210 个 episode 的正式 denominator。Oracle 和 calibration 仅是诊断证据，
-必须对 ReCAP 隔离，不得进入 prompt、example、tool、feedback 或 retry input。
+Harness 和 `M1`–`M7` 的准确 provider pin 全部通过并在同一份版本化 manifest 中固定之前，任何 run 都不得进入
+210 个 episode 的正式 denominator。Calibration 仅是诊断证据，必须对 ReCAP 隔离，不得进入 prompt、example、
+tool、feedback 或 retry input。
 
 ## 8. Acceptance and non-claims
 
