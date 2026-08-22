@@ -10,13 +10,46 @@
 
   <asset>
     <material name="kinematic_floor_material" rgba="0.16 0.18 0.21 1"/>
+    <material name="b1_contact_target_material" rgba="0.95 0.35 0.12 0.85"/>
   </asset>
+
+  <contact>
+    <pair geom1="if_tip" geom2="b1_index_target_geom"/>
+    <pair geom1="mf_tip" geom2="b1_middle_target_geom"/>
+    <pair geom1="rf_tip" geom2="b1_ring_target_geom"/>
+    <pair geom1="th_tip" geom2="b1_thumb_target_geom"/>
+  </contact>
 
   <worldbody>
     <light name="kinematic_key" pos="-0.2 -0.3 0.6" dir="0.3 0.3 -1" directional="true"/>
     <camera name="evidence" pos="-0.22 0.39 0.27" xyaxes="-0.87 -0.49 0 0.22 -0.39 0.89"/>
     <geom name="kinematic_floor" pos="0 0 -0.25" size="0 0 0.01" type="plane"
       material="kinematic_floor_material" contype="2" conaffinity="2"/>
+    <body name="b1_index_target_body" mocap="true" pos="2.00 0 0" quat="0 1 0 -0.175">
+      <geom name="b1_index_target_geom" type="box" size="0.012 0.012 0.003"
+        pos="0.002037207 0 -0.002202224" quat="0.36464057 0 0.93114835 0"
+        material="b1_contact_target_material" contype="2" conaffinity="1"/>
+      <site name="b1_index_target_site" size="0.002" rgba="1 0.8 0.1 1"/>
+    </body>
+    <body name="b1_middle_target_body" mocap="true" pos="2.05 0 0" quat="0 1 0 -0.175">
+      <geom name="b1_middle_target_geom" type="box" size="0.012 0.012 0.003"
+        pos="0.002037207 0 -0.002202224" quat="0.36464057 0 0.93114835 0"
+        material="b1_contact_target_material" contype="2" conaffinity="1"/>
+      <site name="b1_middle_target_site" size="0.002" rgba="1 0.8 0.1 1"/>
+    </body>
+    <body name="b1_ring_target_body" mocap="true" pos="2.10 0 0" quat="0 1 0 -0.175">
+      <geom name="b1_ring_target_geom" type="box" size="0.012 0.012 0.003"
+        pos="0.002037207 0 -0.002202224" quat="0.36464057 0 0.93114835 0"
+        material="b1_contact_target_material" contype="2" conaffinity="1"/>
+      <site name="b1_ring_target_site" size="0.002" rgba="1 0.8 0.1 1"/>
+    </body>
+    <body name="b1_thumb_target_body" mocap="true" pos="2.15 0 0" quat="0 1 0 -0.175">
+      <geom name="b1_thumb_target_geom" type="box" size="0.012 0.012 0.003"
+        pos="-0.001463596 0.002573290 -0.000485866"
+        quat="0.64731935 -0.66255032 -0.37683515 0"
+        material="b1_contact_target_material" contype="2" conaffinity="1"/>
+      <site name="b1_thumb_target_site" size="0.002" rgba="1 0.8 0.1 1"/>
+    </body>
   </worldbody>
 
   <keyframe>

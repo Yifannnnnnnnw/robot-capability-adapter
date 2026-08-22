@@ -1,13 +1,13 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "experiment1-b1-fixed-suite::leap_hand::v1",
+  "suite_id": "experiment1-b1-fixed-suite::leap_hand::v2",
   "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
   "robot_configuration_id": "leap_hand",
   "package_version": "1.0.0",
   "task_snapshot_id": "leap-hand-public-source-contracts-2026-08-20-v1",
   "whole_suite_aggregation": {
-    "kind": "all_cases"
+    "kind": "all_capabilities_two_of_three_cases"
   },
   "cases": [
     {
@@ -86,6 +86,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -180,6 +184,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -274,6 +282,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -388,6 +400,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -520,6 +536,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -652,6 +672,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -678,18 +702,18 @@
       "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
       "request": {
         "target_fingertip_positions_palm_m": [
-          0.08,
-          0.04,
-          0.02,
-          0.09,
-          0.0,
-          0.02,
-          0.08,
-          -0.04,
-          0.02,
-          0.04,
-          0.05,
-          0.01
+          0.128775611,
+          0.006391345,
+          -0.048752213,
+          0.130839233,
+          -0.036590229,
+          -0.036725889,
+          0.130511063,
+          -0.084105402,
+          -0.038716047,
+          -0.074933026,
+          0.136039464,
+          -0.032154495
         ],
         "max_control_steps": 50
       },
@@ -716,7 +740,8 @@
             "middle": "mf_tip",
             "ring": "rf_tip",
             "thumb": "th_tip"
-          }
+          },
+          "physics_steps_per_control_step": 10
         }
       },
       "guards": [
@@ -731,6 +756,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -757,18 +786,18 @@
       "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
       "request": {
         "target_fingertip_positions_palm_m": [
-          0.07,
-          0.05,
-          0.03,
-          0.08,
-          0.01,
-          0.03,
-          0.07,
-          -0.03,
-          0.03,
-          0.05,
-          0.04,
-          0.02
+          0.128014637,
+          0.008857801,
+          -0.052027841,
+          0.130659492,
+          -0.039310226,
+          -0.037709774,
+          0.130489767,
+          -0.08219295,
+          -0.0390014,
+          -0.075466139,
+          0.136042797,
+          -0.032556929
         ],
         "max_control_steps": 50
       },
@@ -795,7 +824,8 @@
             "middle": "mf_tip",
             "ring": "rf_tip",
             "thumb": "th_tip"
-          }
+          },
+          "physics_steps_per_control_step": 10
         }
       },
       "guards": [
@@ -810,6 +840,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -836,18 +870,18 @@
       "scene_entrypoint": "assets/leap_hand_kinematic_scene.xml",
       "request": {
         "target_fingertip_positions_palm_m": [
-          0.09,
-          0.03,
-          0.01,
-          0.1,
-          -0.01,
-          0.01,
-          0.09,
-          -0.05,
-          0.01,
-          0.03,
-          0.06,
-          0.0
+          0.129565291,
+          0.00477925,
+          -0.044799256,
+          0.130035869,
+          -0.034984134,
+          -0.041463969,
+          0.130193737,
+          -0.085662757,
+          -0.040249204,
+          -0.072123118,
+          0.13574216,
+          -0.032895757
         ],
         "max_control_steps": 50
       },
@@ -874,7 +908,8 @@
             "middle": "mf_tip",
             "ring": "rf_tip",
             "thumb": "th_tip"
-          }
+          },
+          "physics_steps_per_control_step": 10
         }
       },
       "guards": [
@@ -889,6 +924,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -919,16 +958,16 @@
         ],
         "contact_target_positions_palm_m": [
           [
-            0.08,
-            0.04,
-            0.02
+            0.001682462,
+            0.00760039,
+            -0.138217348
           ]
         ],
         "approach_directions_palm_unit": [
           [
-            1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ]
         ],
         "max_travel_m": 0.02,
@@ -936,12 +975,23 @@
         "max_duration_s": 3.0
       },
       "reset": {
-        "kind": "default",
+        "kind": "keyframe",
         "joint_positions": {
-          "if_mcp": 0.1
+          "if_mcp": 0.8
         },
         "actuator_controls": {
-          "if_mcp_act": 0.1
+          "if_mcp_act": 0.8
+        },
+        "name": "home",
+        "mocap_body_positions": {
+          "b1_index_target_body": {
+            "frame_body_name": "palm",
+            "position_m": [
+              0.001682462,
+              0.00760039,
+              -0.138217348
+            ]
+          }
         }
       },
       "max_steps": 5000,
@@ -975,16 +1025,48 @@
           },
           "target_geom_names": {
             "index": [
-              "kinematic_floor"
+              "b1_index_target_geom"
             ],
             "middle": [
-              "kinematic_floor"
+              "b1_middle_target_geom"
             ],
             "ring": [
-              "kinematic_floor"
+              "b1_ring_target_geom"
             ],
             "thumb": [
-              "kinematic_floor"
+              "b1_thumb_target_geom"
+            ]
+          },
+          "target_body_names": {
+            "index": "b1_index_target_body",
+            "middle": "b1_middle_target_body",
+            "ring": "b1_ring_target_body",
+            "thumb": "b1_thumb_target_body"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
             ]
           }
         }
@@ -1001,6 +1083,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1032,26 +1118,26 @@
         ],
         "contact_target_positions_palm_m": [
           [
-            0.09,
-            0.0,
-            0.02
+            0.001583204,
+            -0.03779962,
+            -0.138217358
           ],
           [
-            0.04,
-            0.05,
-            0.01
+            -0.036555221,
+            0.045714849,
+            -0.13812421
           ]
         ],
         "approach_directions_palm_unit": [
           [
-            1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ],
           [
-            0.0,
-            1.0,
-            0.0
+            -0.487865368,
+            0.85776329,
+            -0.161955307
           ]
         ],
         "max_travel_m": 0.025,
@@ -1059,12 +1145,31 @@
         "max_duration_s": 3.5
       },
       "reset": {
-        "kind": "default",
+        "kind": "keyframe",
         "joint_positions": {
-          "if_mcp": 0.12000000000000001
+          "if_mcp": 0.8200000000000001
         },
         "actuator_controls": {
-          "if_mcp_act": 0.12000000000000001
+          "if_mcp_act": 0.8200000000000001
+        },
+        "name": "home",
+        "mocap_body_positions": {
+          "b1_middle_target_body": {
+            "frame_body_name": "palm",
+            "position_m": [
+              0.001583204,
+              -0.03779962,
+              -0.138217358
+            ]
+          },
+          "b1_thumb_target_body": {
+            "frame_body_name": "palm",
+            "position_m": [
+              -0.036555221,
+              0.045714849,
+              -0.13812421
+            ]
+          }
         }
       },
       "max_steps": 5000,
@@ -1098,16 +1203,48 @@
           },
           "target_geom_names": {
             "index": [
-              "kinematic_floor"
+              "b1_index_target_geom"
             ],
             "middle": [
-              "kinematic_floor"
+              "b1_middle_target_geom"
             ],
             "ring": [
-              "kinematic_floor"
+              "b1_ring_target_geom"
             ],
             "thumb": [
-              "kinematic_floor"
+              "b1_thumb_target_geom"
+            ]
+          },
+          "target_body_names": {
+            "index": "b1_index_target_body",
+            "middle": "b1_middle_target_body",
+            "ring": "b1_ring_target_body",
+            "thumb": "b1_thumb_target_body"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
             ]
           }
         }
@@ -1124,6 +1261,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1155,26 +1296,26 @@
         ],
         "contact_target_positions_palm_m": [
           [
-            0.08,
-            0.04,
-            0.03
+            0.003852744,
+            0.00760039,
+            -0.138225718
           ],
           [
-            0.08,
-            -0.04,
-            0.03
+            0.001593494,
+            -0.08319962,
+            -0.138207358
           ]
         ],
         "approach_directions_palm_unit": [
           [
-            1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ],
           [
-            1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ]
         ],
         "max_travel_m": 0.03,
@@ -1182,12 +1323,31 @@
         "max_duration_s": 4.0
       },
       "reset": {
-        "kind": "default",
+        "kind": "keyframe",
         "joint_positions": {
-          "if_mcp": 0.08
+          "if_mcp": 0.78
         },
         "actuator_controls": {
-          "if_mcp_act": 0.08
+          "if_mcp_act": 0.78
+        },
+        "name": "home",
+        "mocap_body_positions": {
+          "b1_index_target_body": {
+            "frame_body_name": "palm",
+            "position_m": [
+              0.003852744,
+              0.00760039,
+              -0.138225718
+            ]
+          },
+          "b1_ring_target_body": {
+            "frame_body_name": "palm",
+            "position_m": [
+              0.001593494,
+              -0.08319962,
+              -0.138207358
+            ]
+          }
         }
       },
       "max_steps": 5000,
@@ -1221,16 +1381,48 @@
           },
           "target_geom_names": {
             "index": [
-              "kinematic_floor"
+              "b1_index_target_geom"
             ],
             "middle": [
-              "kinematic_floor"
+              "b1_middle_target_geom"
             ],
             "ring": [
-              "kinematic_floor"
+              "b1_ring_target_geom"
             ],
             "thumb": [
-              "kinematic_floor"
+              "b1_thumb_target_geom"
+            ]
+          },
+          "target_body_names": {
+            "index": "b1_index_target_body",
+            "middle": "b1_middle_target_body",
+            "ring": "b1_ring_target_body",
+            "thumb": "b1_thumb_target_body"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
             ]
           }
         }
@@ -1247,6 +1439,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1277,20 +1473,32 @@
         ],
         "separation_directions_palm_unit": [
           [
-            -1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ]
         ],
         "duration_s": 1.2
       },
       "reset": {
-        "kind": "default",
+        "kind": "keyframe",
         "joint_positions": {
-          "if_mcp": 0.1
+          "if_mcp": 0.8
         },
         "actuator_controls": {
-          "if_mcp_act": 0.1
+          "if_mcp_act": 0.8
+        },
+        "name": "home",
+        "mocap_body_positions": {
+          "b1_index_target_body": {
+            "site_name": "if_tip",
+            "frame_body_name": "palm",
+            "offset_m": [
+              0.005432551,
+              0.0,
+              -0.005872596
+            ]
+          }
         }
       },
       "max_steps": 5000,
@@ -1324,23 +1532,55 @@
           },
           "target_geom_names": {
             "index": [
-              "kinematic_floor"
+              "b1_index_target_geom"
             ],
             "middle": [
-              "kinematic_floor"
+              "b1_middle_target_geom"
             ],
             "ring": [
-              "kinematic_floor"
+              "b1_ring_target_geom"
             ],
             "thumb": [
-              "kinematic_floor"
+              "b1_thumb_target_geom"
             ]
           },
           "target_site_names": {
-            "index": "grasp_site",
-            "middle": "grasp_site",
-            "ring": "grasp_site",
-            "thumb": "grasp_site"
+            "index": "b1_index_target_site",
+            "middle": "b1_middle_target_site",
+            "ring": "b1_ring_target_site",
+            "thumb": "b1_thumb_target_site"
+          },
+          "target_body_names": {
+            "index": "b1_index_target_body",
+            "middle": "b1_middle_target_body",
+            "ring": "b1_ring_target_body",
+            "thumb": "b1_thumb_target_body"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
+            ]
           }
         }
       },
@@ -1356,6 +1596,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1371,6 +1615,29 @@
         },
         "source_refs": [
           "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l5"
+        ]
+      },
+      "framework_events": [
+        {
+          "kind": "move_mocap_body",
+          "body_name": "b1_index_target_body",
+          "frame_body_name": "palm",
+          "start_time_s": 0.25,
+          "duration_s": 0.05,
+          "displacement_m": [
+            0.004413948,
+            0.0,
+            -0.004771484
+          ]
+        }
+      ],
+      "preinvoke": {
+        "duration_s": 0.1,
+        "required_contact_pairs": [
+          {
+            "geom1": "if_tip",
+            "geom2": "b1_index_target_geom"
+          }
         ]
       }
     },
@@ -1387,25 +1654,46 @@
         ],
         "separation_directions_palm_unit": [
           [
-            -1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ],
           [
-            0.0,
-            -1.0,
-            0.0
+            -0.487865368,
+            0.85776329,
+            -0.161955307
           ]
         ],
         "duration_s": 1.5
       },
       "reset": {
-        "kind": "default",
+        "kind": "keyframe",
         "joint_positions": {
-          "if_mcp": 0.12000000000000001
+          "if_mcp": 0.8200000000000001
         },
         "actuator_controls": {
-          "if_mcp_act": 0.12000000000000001
+          "if_mcp_act": 0.8200000000000001
+        },
+        "name": "home",
+        "mocap_body_positions": {
+          "b1_middle_target_body": {
+            "site_name": "mf_tip",
+            "frame_body_name": "palm",
+            "offset_m": [
+              0.005432551,
+              0.0,
+              -0.005872596
+            ]
+          },
+          "b1_thumb_target_body": {
+            "site_name": "th_tip",
+            "frame_body_name": "palm",
+            "offset_m": [
+              -0.003902923,
+              0.006862106,
+              -0.001295642
+            ]
+          }
         }
       },
       "max_steps": 5000,
@@ -1439,23 +1727,55 @@
           },
           "target_geom_names": {
             "index": [
-              "kinematic_floor"
+              "b1_index_target_geom"
             ],
             "middle": [
-              "kinematic_floor"
+              "b1_middle_target_geom"
             ],
             "ring": [
-              "kinematic_floor"
+              "b1_ring_target_geom"
             ],
             "thumb": [
-              "kinematic_floor"
+              "b1_thumb_target_geom"
             ]
           },
           "target_site_names": {
-            "index": "grasp_site",
-            "middle": "grasp_site",
-            "ring": "grasp_site",
-            "thumb": "grasp_site"
+            "index": "b1_index_target_site",
+            "middle": "b1_middle_target_site",
+            "ring": "b1_ring_target_site",
+            "thumb": "b1_thumb_target_site"
+          },
+          "target_body_names": {
+            "index": "b1_index_target_body",
+            "middle": "b1_middle_target_body",
+            "ring": "b1_ring_target_body",
+            "thumb": "b1_thumb_target_body"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
+            ]
           }
         }
       },
@@ -1471,6 +1791,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1486,6 +1810,45 @@
         },
         "source_refs": [
           "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l5"
+        ]
+      },
+      "framework_events": [
+        {
+          "kind": "move_mocap_body",
+          "body_name": "b1_middle_target_body",
+          "frame_body_name": "palm",
+          "start_time_s": 0.25,
+          "duration_s": 0.05,
+          "displacement_m": [
+            0.004753483,
+            0.0,
+            -0.005138522
+          ]
+        },
+        {
+          "kind": "move_mocap_body",
+          "body_name": "b1_thumb_target_body",
+          "frame_body_name": "palm",
+          "start_time_s": 0.25,
+          "duration_s": 0.05,
+          "displacement_m": [
+            -0.003415058,
+            0.006004343,
+            -0.001133687
+          ]
+        }
+      ],
+      "preinvoke": {
+        "duration_s": 0.1,
+        "required_contact_pairs": [
+          {
+            "geom1": "mf_tip",
+            "geom2": "b1_middle_target_geom"
+          },
+          {
+            "geom1": "th_tip",
+            "geom2": "b1_thumb_target_geom"
+          }
         ]
       }
     },
@@ -1502,25 +1865,46 @@
         ],
         "separation_directions_palm_unit": [
           [
-            -1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ],
           [
-            -1.0,
+            0.679068929,
             0.0,
-            0.0
+            -0.734074512
           ]
         ],
         "duration_s": 1.8
       },
       "reset": {
-        "kind": "default",
+        "kind": "keyframe",
         "joint_positions": {
-          "if_mcp": 0.08
+          "if_mcp": 0.78
         },
         "actuator_controls": {
-          "if_mcp_act": 0.08
+          "if_mcp_act": 0.78
+        },
+        "name": "home",
+        "mocap_body_positions": {
+          "b1_index_target_body": {
+            "site_name": "if_tip",
+            "frame_body_name": "palm",
+            "offset_m": [
+              0.005432551,
+              0.0,
+              -0.005872596
+            ]
+          },
+          "b1_ring_target_body": {
+            "site_name": "rf_tip",
+            "frame_body_name": "palm",
+            "offset_m": [
+              0.005432551,
+              0.0,
+              -0.005872596
+            ]
+          }
         }
       },
       "max_steps": 5000,
@@ -1554,23 +1938,55 @@
           },
           "target_geom_names": {
             "index": [
-              "kinematic_floor"
+              "b1_index_target_geom"
             ],
             "middle": [
-              "kinematic_floor"
+              "b1_middle_target_geom"
             ],
             "ring": [
-              "kinematic_floor"
+              "b1_ring_target_geom"
             ],
             "thumb": [
-              "kinematic_floor"
+              "b1_thumb_target_geom"
             ]
           },
           "target_site_names": {
-            "index": "grasp_site",
-            "middle": "grasp_site",
-            "ring": "grasp_site",
-            "thumb": "grasp_site"
+            "index": "b1_index_target_site",
+            "middle": "b1_middle_target_site",
+            "ring": "b1_ring_target_site",
+            "thumb": "b1_thumb_target_site"
+          },
+          "target_body_names": {
+            "index": "b1_index_target_body",
+            "middle": "b1_middle_target_body",
+            "ring": "b1_ring_target_body",
+            "thumb": "b1_thumb_target_body"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
+            ]
           }
         }
       },
@@ -1586,6 +2002,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1602,6 +2022,45 @@
         "source_refs": [
           "experiment/experiment1/B1_DRIVER_VALIDATION_CRITERIA.md#l5"
         ]
+      },
+      "framework_events": [
+        {
+          "kind": "move_mocap_body",
+          "body_name": "b1_index_target_body",
+          "frame_body_name": "palm",
+          "start_time_s": 0.25,
+          "duration_s": 0.05,
+          "displacement_m": [
+            0.005093017,
+            0.0,
+            -0.005505559
+          ]
+        },
+        {
+          "kind": "move_mocap_body",
+          "body_name": "b1_ring_target_body",
+          "frame_body_name": "palm",
+          "start_time_s": 0.25,
+          "duration_s": 0.05,
+          "displacement_m": [
+            0.005093017,
+            0.0,
+            -0.005505559
+          ]
+        }
+      ],
+      "preinvoke": {
+        "duration_s": 0.1,
+        "required_contact_pairs": [
+          {
+            "geom1": "if_tip",
+            "geom2": "b1_index_target_geom"
+          },
+          {
+            "geom1": "rf_tip",
+            "geom2": "b1_ring_target_geom"
+          }
+        ]
       }
     },
     {
@@ -1616,9 +2075,9 @@
         ],
         "offsets_palm_m": [
           [
-            0.01,
-            0.0,
-            0.0
+            -0.005203845,
+            -0.001771343,
+            -0.02438816
           ]
         ],
         "max_duration_per_leg_s": 2.0
@@ -1646,6 +2105,32 @@
             "middle": "mf_tip",
             "ring": "rf_tip",
             "thumb": "th_tip"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
+            ]
           }
         }
       },
@@ -1661,6 +2146,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1692,14 +2181,14 @@
         ],
         "offsets_palm_m": [
           [
-            0.0,
-            0.01,
-            0.0
+            -0.002649684,
+            0.002876563,
+            -0.024692196
           ],
           [
-            0.0,
-            -0.01,
-            0.0
+            0.017369178,
+            -0.002662201,
+            -0.017782698
           ]
         ],
         "max_duration_per_leg_s": 2.5
@@ -1727,6 +2216,32 @@
             "middle": "mf_tip",
             "ring": "rf_tip",
             "thumb": "th_tip"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
+            ]
           }
         }
       },
@@ -1742,6 +2257,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
@@ -1773,14 +2292,14 @@
         ],
         "offsets_palm_m": [
           [
-            0.0,
-            0.0,
-            0.01
+            -0.004738515,
+            0.002530162,
+            -0.024416076
           ],
           [
-            0.0,
-            0.0,
-            -0.01
+            -0.002697652,
+            -0.002086947,
+            -0.024766254
           ]
         ],
         "max_duration_per_leg_s": 3.0
@@ -1808,6 +2327,32 @@
             "middle": "mf_tip",
             "ring": "rf_tip",
             "thumb": "th_tip"
+          },
+          "finger_joint_names": {
+            "index": [
+              "if_mcp",
+              "if_rot",
+              "if_pip",
+              "if_dip"
+            ],
+            "middle": [
+              "mf_mcp",
+              "mf_rot",
+              "mf_pip",
+              "mf_dip"
+            ],
+            "ring": [
+              "rf_mcp",
+              "rf_rot",
+              "rf_pip",
+              "rf_dip"
+            ],
+            "thumb": [
+              "th_cmc",
+              "th_axl",
+              "th_mcp",
+              "th_ipl"
+            ]
           }
         }
       },
@@ -1823,6 +2368,10 @@
         {
           "guard_id": "canonical",
           "kind": "canonical_model_data"
+        },
+        {
+          "guard_id": "control-range",
+          "kind": "control_range"
         }
       ],
       "criterion": {
