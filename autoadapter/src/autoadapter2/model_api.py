@@ -723,6 +723,70 @@ class JsonModelClient:
         )
         return result
 
+    def generate_message_json(
+        self,
+        *,
+        stage: str,
+        system_prompt: str,
+        messages: Sequence[Mapping[str, Any]],
+    ) -> dict[str, Any]:
+        """Return one JSON object while preserving supplied chat-message roles."""
+
+        if not isinstance(system_prompt, str) or not system_prompt:
+            raise ValueError("system_prompt must be a non-empty string")
+        history: list[dict[str, Any]] = []
+        for index, message in enumerate(messages):
+            if not isinstance(message, Mapping):
+                raise ValueError(f"messages[{index}] must be an object")
+            role = message.get("role")
+            content = message.get("content")
+            if role not in {"user", "assistant"} or not isinstance(content, str):
+                raise ValueError(
+                    f"messages[{index}] must contain a user/assistant role and text"
+                )
+            history.append(dict(message))
+
+        body: dict[str, Any] = {
+            "model": self.config.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                *history,
+            ],
+            "max_tokens": self.config.max_tokens,
+            "temperature": 0.0,
+            "response_format": {"type": "json_object"},
+        }
+        self._add_thinking_control(body)
+        self._call_state.last_call_index = None
+        self._call_state.mode = "json"
+        self._call_state.context_projection = {}
+        payload = self._post(stage=stage, body=body)
+        choice = self._first_choice(payload)
+        message = choice.get("message")
+        content = message.get("content") if isinstance(message, Mapping) else None
+        if not isinstance(content, str):
+            raise ModelInvocationError("model API response lacks text content")
+        try:
+            result = parse_json_object(content)
+        except ModelInvocationError as exc:
+            finish_reason = choice.get("finish_reason")
+            self._record_call(
+                stage=stage,
+                payload=payload,
+                mode="json",
+                finish_reason=finish_reason,
+            )
+            raise ModelInvocationError(
+                f"{exc}; finish_reason={finish_reason!r}; content_chars={len(content)}"
+            ) from exc
+        self._record_call(
+            stage=stage,
+            payload=payload,
+            mode="json",
+            finish_reason=choice.get("finish_reason"),
+        )
+        return result
+
     def generate_tool_turn(
         self,
         *,

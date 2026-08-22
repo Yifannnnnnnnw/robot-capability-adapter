@@ -16,6 +16,13 @@ from typing import Any
 from autoadapter2.model_api import JsonModelClient, ModelConfig
 
 
+_SCHEMA_INSTRUCTION = (
+    "Return exactly one JSON object that conforms to this fixed response schema. "
+    "Do not add Markdown or fields outside the schema.\n\n"
+    "FIXED_RESPONSE_SCHEMA_JSON:\n"
+)
+
+
 @dataclass(frozen=True)
 class B2ModelProviderConfig:
     """Credential-free provider settings supplied by the B2 caller."""
@@ -84,13 +91,20 @@ class ReCAPJsonModelClient:
             raise ValueError("system_prompt must be a non-empty string")
         history = _finite_json_array(messages, label="ReCAP messages")
         schema = _finite_json_object(response_schema, label="ReCAP response schema")
-        return self._client.generate_json(
+        schema_message = {
+            "role": "user",
+            "content": _SCHEMA_INSTRUCTION
+            + json.dumps(
+                schema,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ),
+        }
+        return self._client.generate_message_json(
             stage=stage,
-            prompt=system_prompt,
-            inputs={
-                "messages": history,
-                "response_schema": schema,
-            },
+            system_prompt=system_prompt,
+            messages=[*history, schema_message],
         )
 
 

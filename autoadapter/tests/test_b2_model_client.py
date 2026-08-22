@@ -19,7 +19,7 @@ from autoadapter2.model_api import ModelInvocationError
 SYSTEM_PROMPT = "Fixed ReCAP system prompt."
 MESSAGES = (
     {"role": "user", "content": '{"event":"controller_start"}'},
-    {"role": "user", "content": '{"event":"plan_or_refine"}'},
+    {"role": "assistant", "content": '{"event":"previous_plan"}'},
 )
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -68,7 +68,7 @@ def _provider_response(content: dict[str, Any]) -> mock.MagicMock:
     return response
 
 
-def test_recap_parameters_are_forwarded_through_existing_generate_json() -> None:
+def test_recap_prompt_and_history_roles_reach_existing_json_client() -> None:
     credential = "credential-must-stay-parent-side"
     expected = {"reasoning_summary": "Use one leaf.", "subtasks": []}
     adapter = ReCAPJsonModelClient(
@@ -96,17 +96,20 @@ def test_recap_parameters_are_forwarded_through_existing_generate_json() -> None
     request = urlopen.call_args.args[0]
     request_body = json.loads(request.data)
     assert request_body["response_format"] == {"type": "json_object"}
-    assert request_body["messages"][1]["content"].startswith(SYSTEM_PROMPT)
-    public_inputs = json.loads(
-        request_body["messages"][1]["content"].split(
-            "\n\nPUBLIC_INPUT_JSON:\n",
+    assert request_body["messages"][0] == {
+        "role": "system",
+        "content": SYSTEM_PROMPT,
+    }
+    assert request_body["messages"][1:3] == list(MESSAGES)
+    schema_instruction = request_body["messages"][3]
+    assert schema_instruction["role"] == "user"
+    transported_schema = json.loads(
+        schema_instruction["content"].split(
+            "FIXED_RESPONSE_SCHEMA_JSON:\n",
             maxsplit=1,
         )[1]
     )
-    assert public_inputs == {
-        "messages": list(MESSAGES),
-        "response_schema": RESPONSE_SCHEMA,
-    }
+    assert transported_schema == RESPONSE_SCHEMA
     assert request.get_header("Authorization") == f"Bearer {credential}"
     assert credential not in request.data.decode("utf-8")
     assert "environment-key-must-not-be-read" not in str(request.header_items())
@@ -121,7 +124,7 @@ def test_provider_exception_propagates_without_adapter_retry_or_rewrite() -> Non
 
     with mock.patch.object(
         adapter._client,
-        "generate_json",
+        "generate_message_json",
         side_effect=failure,
     ) as generate:
         with pytest.raises(ModelInvocationError) as raised:
@@ -135,11 +138,22 @@ def test_provider_exception_propagates_without_adapter_retry_or_rewrite() -> Non
     assert raised.value is failure
     generate.assert_called_once_with(
         stage="recursive_plan_or_refine",
-        prompt=SYSTEM_PROMPT,
-        inputs={
-            "messages": list(MESSAGES),
-            "response_schema": RESPONSE_SCHEMA,
-        },
+        system_prompt=SYSTEM_PROMPT,
+        messages=[
+            *MESSAGES,
+            {
+                "role": "user",
+                "content": (
+                    "Return exactly one JSON object that conforms to this fixed "
+                    "response schema. Do not add Markdown or fields outside the "
+                    "schema.\n\nFIXED_RESPONSE_SCHEMA_JSON:\n"
+                    '{"additionalProperties":false,"properties":'
+                    '{"reasoning_summary":{"type":"string"},"subtasks":'
+                    '{"type":"array"}},"required":["reasoning_summary",'
+                    '"subtasks"],"type":"object"}'
+                ),
+            },
+        ],
     )
 
 
@@ -180,7 +194,7 @@ def test_nonfinite_schema_is_rejected_before_provider_call() -> None:
         provider_config=_provider_config(),
         credential="parent-secret",
     )
-    with mock.patch.object(adapter._client, "generate_json") as generate:
+    with mock.patch.object(adapter._client, "generate_message_json") as generate:
         with pytest.raises(ValueError, match="finite JSON"):
             adapter.generate_recap_json(
                 stage="recursive_plan_or_refine",
