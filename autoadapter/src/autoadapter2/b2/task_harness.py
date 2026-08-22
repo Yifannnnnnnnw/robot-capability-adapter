@@ -9,6 +9,7 @@ guards, temporal reducers, and aggregators used by the main Harness.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from autoadapter2.harness.measurements import (
@@ -29,30 +30,28 @@ from autoadapter2.libraries import RobotPackage
 def evaluate_b2_task_harness(
     *,
     package: RobotPackage,
+    task_suite_path: str | Path,
     instance_id: str,
+    replicate_id: str,
     session_result: Mapping[str, Any],
-    repetition_index: int = 0,
 ) -> dict[str, Any]:
     """Issue the physical task verdict for one B2 controller episode.
 
     ``session_result`` is the object returned by
     :func:`autoadapter2.b2.session_runner.run_recap_worker_session`.  The task
-    criterion and public measurement arguments are loaded from the original
-    package task and private instance, rather than from controller output.
+    criterion and public measurement arguments are loaded from the sealed B2
+    task-suite snapshot, rather than from controller output or mutable package
+    task records.  The caller supplies the versioned snapshot path so the
+    canonical mainline module does not resolve an experiment sibling itself.
 
-    One invocation evaluates one physical episode.  ``repetition_index``
-    selects the matching private repetition variant when the source protocol
-    defines more than one independently reset trial.
+    One invocation evaluates one fresh, single-reset physical episode for the
+    selected B2 replicate.
     """
 
     if not isinstance(instance_id, str) or not instance_id.strip():
         raise HarnessError("B2 instance_id must be a non-empty string")
-    if (
-        not isinstance(repetition_index, int)
-        or isinstance(repetition_index, bool)
-        or repetition_index < 0
-    ):
-        raise HarnessError("B2 repetition_index must be a non-negative integer")
+    if not isinstance(replicate_id, str) or not replicate_id.strip():
+        raise HarnessError("B2 replicate_id must be a non-empty string")
     if not isinstance(session_result, Mapping):
         raise HarnessError("B2 session result must be an object")
 
@@ -60,70 +59,18 @@ def evaluate_b2_task_harness(
     if not isinstance(worker, Mapping):
         raise HarnessError("B2 session result has no worker evidence")
 
-    instances = _indexed(
-        _read_object(package.private_dir / "instances.json"),
-        "instances",
-        "instance_id",
+    sealed = _sealed_task_definition(
+        package=package,
+        task_suite_path=task_suite_path,
+        instance_id=instance_id,
+        replicate_id=replicate_id,
     )
-    bindings = _indexed(
-        _read_object(package.private_dir / "bindings.json"),
-        "bindings",
-        "binding_id",
-    )
-    guards = _indexed(
-        _read_object(package.private_dir / "guards.json"),
-        "guards",
-        "guard_id",
-    )
-    try:
-        instance = instances[instance_id]
-    except KeyError as exc:
-        raise HarnessError(f"unknown B2 private instance {instance_id!r}") from exc
-
-    task_id = instance.get("task_id")
-    if not isinstance(task_id, str) or not task_id:
-        raise HarnessError("B2 private instance has no task_id")
-    matching_tasks = [task for task in package.tasks if task.get("task_id") == task_id]
-    if len(matching_tasks) != 1:
-        raise HarnessError(
-            f"B2 package must contain exactly one task definition for {task_id!r}"
-        )
-    task = matching_tasks[0]
-
-    repetitions = instance.get("repetitions", 1)
-    if (
-        not isinstance(repetitions, int)
-        or isinstance(repetitions, bool)
-        or repetitions <= 0
-        or repetition_index >= repetitions
-    ):
-        raise HarnessError("B2 repetition_index is outside the private instance")
-    variants = instance.get("repetition_variants")
-    if variants is None:
-        variant: Mapping[str, Any] = {}
-    elif (
-        not isinstance(variants, list)
-        or len(variants) != repetitions
-        or not all(isinstance(item, Mapping) for item in variants)
-    ):
-        raise HarnessError(
-            "B2 private repetition variants must cover every repetition"
-        )
-    else:
-        variant = variants[repetition_index]
-
-    public_arguments = variant.get(
-        "public_arguments", instance.get("public_arguments", {})
-    )
-    if not isinstance(public_arguments, Mapping):
-        raise HarnessError("B2 private public_arguments must be an object")
-
-    clause_bindings = instance.get("clause_bindings")
-    if not isinstance(clause_bindings, Mapping):
-        raise HarnessError("B2 private instance has no clause_bindings")
-    scoring = task.get("scoring")
-    if not isinstance(scoring, list) or not scoring:
-        raise HarnessError(f"B2 task {task_id!r} has no scoring clauses")
+    task_id = sealed["task_id"]
+    scoring = sealed["scoring"]
+    clause_bindings = sealed["clause_bindings"]
+    bindings = sealed["bindings"]
+    guard_definitions = sealed["guards"]
+    public_arguments = sealed["public_arguments"]
 
     evidence = worker.get("physical_evidence")
     if not isinstance(evidence, Mapping):
@@ -190,18 +137,6 @@ def evaluate_b2_task_harness(
             }
         )
 
-    guard_ids = instance.get("guard_ids")
-    if (
-        not isinstance(guard_ids, list)
-        or not guard_ids
-        or not all(isinstance(guard_id, str) for guard_id in guard_ids)
-    ):
-        raise HarnessError("B2 private instance has no valid guard_ids")
-    try:
-        guard_definitions = [guards[guard_id] for guard_id in guard_ids]
-    except KeyError as exc:
-        raise HarnessError(f"B2 private instance references unknown guard {exc.args[0]!r}") from exc
-
     guard_error: str | None = None
     try:
         guard_outcomes = evaluate_guards(guard_definitions, worker_result=worker)
@@ -236,7 +171,11 @@ def evaluate_b2_task_harness(
         "robot_configuration_id": package.robot_configuration_id,
         "task_id": task_id,
         "instance_id": instance_id,
-        "repetition_index": repetition_index,
+        "replicate_id": replicate_id,
+        "task_snapshot_id": sealed["task_snapshot_id"],
+        "scene_entrypoint": sealed["scene_entrypoint"],
+        "reset_seed": sealed["reset_seed"],
+        "reset_seed_applied": sealed["reset_seed_applied"],
         "task_clause_results": clause_results,
         "task_metric_passed": task_metric_passed,
         "physical_execution_passed": physical_execution_passed,
@@ -247,6 +186,130 @@ def evaluate_b2_task_harness(
         "video_complete": video_complete,
         "video": video_manifest,
         "physical_harness_verdict": "PASS" if physical_harness_passed else "FAIL",
+    }
+
+
+def _sealed_task_definition(
+    *,
+    package: RobotPackage,
+    task_suite_path: str | Path,
+    instance_id: str,
+    replicate_id: str,
+) -> dict[str, Any]:
+    suite = _read_object(Path(task_suite_path).resolve())
+    authority = suite.get("authority")
+    if (
+        suite.get("artifact_type") != "b2_recap_task_suite"
+        or suite.get("schema_version") != "1.0"
+        or not isinstance(authority, Mapping)
+        or authority.get("document_id") != "AA2-B2"
+        or authority.get("revision") != "0.1.0"
+    ):
+        raise HarnessError("B2 task suite has an incompatible identity")
+
+    robot_suites = suite.get("robot_suites")
+    if not isinstance(robot_suites, list):
+        raise HarnessError("B2 task suite has no robot_suites")
+    matching_robots = [
+        robot
+        for robot in robot_suites
+        if isinstance(robot, Mapping)
+        and robot.get("robot_configuration_id") == package.robot_configuration_id
+    ]
+    if len(matching_robots) != 1:
+        raise HarnessError(
+            f"B2 task suite must contain robot {package.robot_configuration_id!r} exactly once"
+        )
+    robot = matching_robots[0]
+    if (
+        robot.get("package_version") != package.package_version
+        or robot.get("task_snapshot_id") != package.snapshot_id
+    ):
+        raise HarnessError("B2 task suite does not match the selected package identity")
+
+    tasks = robot.get("tasks")
+    if not isinstance(tasks, list):
+        raise HarnessError("B2 robot suite has no tasks")
+    matching_tasks = [
+        task
+        for task in tasks
+        if isinstance(task, Mapping)
+        and task.get("private_instance_id") == instance_id
+    ]
+    if len(matching_tasks) != 1:
+        raise HarnessError(
+            f"unknown or duplicate sealed B2 private instance {instance_id!r}"
+        )
+    task = matching_tasks[0]
+    task_id = task.get("task_id")
+    if not isinstance(task_id, str) or not task_id:
+        raise HarnessError("sealed B2 task has no task_id")
+
+    replicate_inputs = task.get("replicate_inputs")
+    if not isinstance(replicate_inputs, list):
+        raise HarnessError(f"sealed B2 task {task_id!r} has no replicate inputs")
+    matching_replicates = [
+        replicate
+        for replicate in replicate_inputs
+        if isinstance(replicate, Mapping)
+        and replicate.get("replicate_id") == replicate_id
+    ]
+    if len(matching_replicates) != 1:
+        raise HarnessError(
+            f"sealed B2 task {task_id!r} has no unique replicate {replicate_id!r}"
+        )
+    replicate = matching_replicates[0]
+
+    public_projection = task.get("public_projection")
+    scoring = task.get("private_scoring_clauses")
+    clause_bindings = task.get("private_clause_bindings")
+    raw_bindings = task.get("private_measurement_bindings")
+    raw_guards = task.get("private_guards")
+    if (
+        not isinstance(public_projection, Mapping)
+        or public_projection.get("task_id") != task_id
+        or not isinstance(public_projection.get("request"), Mapping)
+        or not isinstance(scoring, list)
+        or not scoring
+        or not isinstance(clause_bindings, Mapping)
+        or not isinstance(raw_bindings, list)
+        or not isinstance(raw_guards, list)
+        or not raw_guards
+    ):
+        raise HarnessError(f"sealed B2 task {task_id!r} is incomplete")
+    bindings = _indexed(
+        {"bindings": raw_bindings},
+        "bindings",
+        "binding_id",
+    )
+    guard_index = _indexed(
+        {"guards": raw_guards},
+        "guards",
+        "guard_id",
+    )
+    guard_definitions = list(guard_index.values())
+
+    scene_entrypoint = replicate.get("scene_entrypoint")
+    reset_seed_applied = replicate.get("reset_seed_applied")
+    if (
+        not isinstance(scene_entrypoint, str)
+        or not scene_entrypoint
+        or replicate.get("reset_seed") is not None
+        or reset_seed_applied is not False
+    ):
+        raise HarnessError(f"sealed B2 replicate {replicate_id!r} is incomplete")
+
+    return {
+        "task_id": task_id,
+        "task_snapshot_id": robot["task_snapshot_id"],
+        "scene_entrypoint": scene_entrypoint,
+        "reset_seed": None,
+        "reset_seed_applied": False,
+        "public_arguments": {"request": dict(public_projection["request"])},
+        "scoring": scoring,
+        "clause_bindings": clause_bindings,
+        "bindings": bindings,
+        "guards": guard_definitions,
     }
 
 

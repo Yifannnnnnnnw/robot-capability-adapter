@@ -8,102 +8,63 @@ from typing import Any
 from autoadapter2.b2.task_harness import evaluate_b2_task_harness
 
 
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+TASK_SUITE_PATH = (
+    REPOSITORY_ROOT / "experiment" / "b2_recap" / "task_suite" / "task_suite.json"
+)
+INSTANCE_ID = "go2-go2-t16"
+
+
 def _package(tmp_path: Path) -> SimpleNamespace:
+    """Return matching identity with deliberately untrusted live task records."""
+
     private = tmp_path / "tasks" / "private"
     private.mkdir(parents=True)
-    task = {
-        "task_id": "two-clause-task",
-        "scoring": [
-            {
-                "clause_id": "object_at_goal",
-                "metric": "object_goal_distance",
-                "unit": "m",
-                "comparator": "<=",
-                "threshold": 0.05,
-                "temporal": {"kind": "terminal_state"},
-                "aggregation": {"kind": "single_trial"},
-            },
-            {
-                "clause_id": "tool_at_goal",
-                "metric": "tool_goal_distance",
-                "unit": "m",
-                "comparator": "<=",
-                "threshold": 0.05,
-                "temporal": {"kind": "terminal_state_after_release"},
-                "aggregation": {"kind": "single_trial"},
-            },
-        ],
-    }
-    documents = {
-        "instances.json": {
-            "instances": [
-                {
-                    "instance_id": "private-two-clause-task",
-                    "task_id": "two-clause-task",
-                    "public_arguments": {
-                        "request": {
-                            "task_parameters": {
-                                "object_goal": [1.0, 2.0, 3.0],
-                                "tool_goal": [4.0, 5.0, 6.0],
-                            }
-                        }
-                    },
-                    "clause_bindings": {
-                        "object_at_goal": "object-binding",
-                        "tool_at_goal": "tool-binding",
-                    },
-                    "guard_ids": ["physics", "no-state-write", "canonical"],
-                    "repetitions": 1,
-                }
-            ]
-        },
-        "bindings.json": {
-            "bindings": [
-                {
-                    "binding_id": "object-binding",
-                    "kind": "final_body_position_error",
-                    "parameters": {
-                        "body_name": "object",
-                        "target_argument": "request.task_parameters.object_goal",
-                    },
-                },
-                {
-                    "binding_id": "tool-binding",
-                    "kind": "final_site_position_error",
-                    "parameters": {
-                        "site_name": "tool",
-                        "target_argument": "request.task_parameters.tool_goal",
-                    },
-                },
-            ]
-        },
-        "guards.json": {
-            "guards": [
-                {
-                    "guard_id": "physics",
-                    "kind": "actuator_and_physics_step_required",
-                },
-                {"guard_id": "no-state-write", "kind": "no_direct_state_write"},
-                {"guard_id": "canonical", "kind": "canonical_model_data"},
-            ]
-        },
-    }
-    for name, document in documents.items():
-        (private / name).write_text(json.dumps(document), encoding="utf-8")
+    for name in ("instances.json", "bindings.json", "guards.json"):
+        (private / name).write_text("not sealed JSON", encoding="utf-8")
     return SimpleNamespace(
+        robot_configuration_id="unitree-go2-stock-12dof",
+        package_version="1.0.0",
+        snapshot_id="unitree-go2-source-protocols-2026-08-18-v4",
         private_dir=private,
-        tasks=(task,),
-        robot_configuration_id="test-robot",
+        tasks=(
+            {
+                "task_id": "GO2-T16",
+                "scoring": [
+                    {
+                        "clause_id": "live-package-false-success",
+                        "comparator": ">=",
+                        "threshold": -1.0,
+                    }
+                ],
+            },
+        ),
     )
 
 
 def _session_result(
     *,
-    object_position: list[float] | None = None,
+    end_position: list[float] | None = None,
     direct_state_write: bool = False,
     video_complete: bool = True,
     controller_status: str = "CONTROLLER_FINISHED",
 ) -> dict[str, Any]:
+    target = end_position or [1.8, 0.0, 0.37]
+    samples = [
+        {
+            "time": 0.0,
+            "body_positions": {"base_link": [0.0, 0.0, 0.37]},
+            "body_quaternions": {"base_link": [1.0, 0.0, 0.0, 0.0]},
+        }
+    ]
+    for second in range(1, 7):
+        samples.append(
+            {
+                "time": float(second),
+                "body_positions": {"base_link": list(target)},
+                "body_quaternions": {"base_link": [1.0, 0.0, 0.0, 0.0]},
+            }
+        )
     return {
         "controller": {"status": controller_status, "completed": False},
         "worker": {
@@ -112,27 +73,14 @@ def _session_result(
             "canonical_model_data": True,
             "candidate_exception": None,
             "physical_evidence": {
-                "step_count": 10,
+                "step_count": 600,
                 "ctrl_observed_before_step": True,
                 "ctrl_changed_from_reset": True,
                 "direct_state_write_detected": direct_state_write,
                 "contact_monitoring_complete": True,
                 "minimum_contact_distance_m": None,
                 "contact_pair_min_distances": [],
-                "samples": [
-                    {
-                        "time": 0.0,
-                        "body_positions": {"object": [0.0, 0.0, 0.0]},
-                        "site_positions": {"tool": [0.0, 0.0, 0.0]},
-                    },
-                    {
-                        "time": 1.0,
-                        "body_positions": {
-                            "object": object_position or [1.0, 2.0, 3.0]
-                        },
-                        "site_positions": {"tool": [4.0, 5.0, 6.0]},
-                    },
-                ],
+                "samples": samples,
             },
             "video": {
                 "requested": True,
@@ -143,64 +91,103 @@ def _session_result(
     }
 
 
-def test_all_original_clauses_pass_even_when_controller_reports_failure(
+def _evaluate(
+    tmp_path: Path,
+    *,
+    session_result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return evaluate_b2_task_harness(
+        package=_package(tmp_path),
+        task_suite_path=TASK_SUITE_PATH,
+        instance_id=INSTANCE_ID,
+        replicate_id="R2",
+        session_result=session_result or _session_result(),
+    )
+
+
+def test_sealed_original_clauses_pass_even_when_controller_reports_failure(
     tmp_path: Path,
 ) -> None:
-    report = evaluate_b2_task_harness(
-        package=_package(tmp_path),
-        instance_id="private-two-clause-task",
+    report = _evaluate(
+        tmp_path,
         session_result=_session_result(controller_status="MODEL_ERROR"),
     )
 
     assert [item["clause_id"] for item in report["task_clause_results"]] == [
-        "object_at_goal",
-        "tool_at_goal",
+        "table_step_off",
+        "end_table_hold",
     ]
     assert all(item["task_metric_passed"] for item in report["task_clause_results"])
+    assert report["replicate_id"] == "R2"
     assert report["task_metric_passed"] is True
     assert report["physical_integrity_passed"] is True
     assert report["video_complete"] is True
     assert report["physical_harness_verdict"] == "PASS"
 
 
-def test_one_failed_clause_fails_only_the_task_metric(tmp_path: Path) -> None:
+def test_mutating_live_package_definitions_cannot_change_sealed_verdict(
+    tmp_path: Path,
+) -> None:
+    package = _package(tmp_path)
+    package.tasks[0]["scoring"][0]["threshold"] = 1_000_000.0
+    (package.private_dir / "instances.json").write_text(
+        json.dumps({"instances": []}), encoding="utf-8"
+    )
+
     report = evaluate_b2_task_harness(
-        package=_package(tmp_path),
-        instance_id="private-two-clause-task",
-        session_result=_session_result(object_position=[1.2, 2.0, 3.0]),
+        package=package,
+        task_suite_path=TASK_SUITE_PATH,
+        instance_id=INSTANCE_ID,
+        replicate_id="R1",
+        session_result=_session_result(),
+    )
+
+    assert [item["clause_id"] for item in report["task_clause_results"]] == [
+        "table_step_off",
+        "end_table_hold",
+    ]
+    assert report["task_metric_passed"] is True
+    assert report["physical_harness_verdict"] == "PASS"
+
+
+def test_one_failed_sealed_clause_fails_only_the_task_metric(tmp_path: Path) -> None:
+    report = _evaluate(
+        tmp_path,
+        session_result=_session_result(end_position=[1.8, 0.6, 0.37]),
     )
 
     assert [
         item["task_metric_passed"] for item in report["task_clause_results"]
-    ] == [False, True]
+    ] == [True, False]
     assert report["task_metric_passed"] is False
     assert report["physical_integrity_passed"] is True
     assert report["video_complete"] is True
     assert report["physical_harness_verdict"] == "FAIL"
 
 
-def test_original_guard_failure_is_independent_of_task_metric(tmp_path: Path) -> None:
-    report = evaluate_b2_task_harness(
-        package=_package(tmp_path),
-        instance_id="private-two-clause-task",
+def test_sealed_guard_failure_is_independent_of_task_metric(tmp_path: Path) -> None:
+    report = _evaluate(
+        tmp_path,
         session_result=_session_result(direct_state_write=True),
     )
 
     assert report["task_metric_passed"] is True
-    assert report["guard_outcomes"]["no-state-write"] is False
+    assert report["guard_outcomes"]["go2_no_state_write"] is False
     assert report["physical_integrity_passed"] is False
     assert report["video_complete"] is True
     assert report["physical_harness_verdict"] == "FAIL"
 
 
-def test_incomplete_video_is_independent_of_physical_task_success(tmp_path: Path) -> None:
-    report = evaluate_b2_task_harness(
-        package=_package(tmp_path),
-        instance_id="private-two-clause-task",
+def test_incomplete_video_fails_the_sealed_evidence_requirements(
+    tmp_path: Path,
+) -> None:
+    report = _evaluate(
+        tmp_path,
         session_result=_session_result(video_complete=False),
     )
 
     assert report["task_metric_passed"] is True
-    assert report["physical_integrity_passed"] is True
+    assert report["physical_integrity_passed"] is False
+    assert report["guard_outcomes"]["go2_video"] is False
     assert report["video_complete"] is False
     assert report["physical_harness_verdict"] == "FAIL"
