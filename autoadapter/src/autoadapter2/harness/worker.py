@@ -6,7 +6,6 @@ import contextlib
 import importlib.util
 import io
 import json
-import math
 import os
 import sys
 import traceback
@@ -18,11 +17,7 @@ import mujoco
 
 from autoadapter2.driver_synthesis import validate_explicit_capability_methods
 
-from .session import (
-    TrackedMuJoCoSession,
-    apply_framework_reset,
-    build_framework_step_callback,
-)
+from .session import TrackedMuJoCoSession, apply_framework_reset
 
 
 _CANDIDATE_ENV_ALLOWLIST = {
@@ -144,73 +139,6 @@ def _bounded_log(value: str, limit: int = 12000) -> str:
     return value[:limit] + "\n<truncated>"
 
 
-def _run_framework_preinvoke(
-    *,
-    model: Any,
-    data: Any,
-    tracker: TrackedMuJoCoSession,
-    definition: Any,
-) -> dict[str, Any] | None:
-    if definition is None:
-        return None
-    if not isinstance(definition, Mapping):
-        raise ValueError("preinvoke must be an object")
-    duration_s = float(definition.get("duration_s"))
-    timestep = float(model.opt.timestep)
-    steps = round(duration_s / timestep)
-    if (
-        not math.isfinite(duration_s)
-        or duration_s <= 0.0
-        or steps <= 0
-        or not math.isclose(steps * timestep, duration_s, abs_tol=1.0e-12)
-    ):
-        raise ValueError("preinvoke duration must contain an exact positive step count")
-    raw_pairs = definition.get("required_contact_pairs")
-    if not isinstance(raw_pairs, list) or not raw_pairs:
-        raise ValueError("preinvoke requires contact pairs")
-    required_pairs: set[tuple[str, str]] = set()
-    for raw_pair in raw_pairs:
-        if not isinstance(raw_pair, Mapping):
-            raise ValueError("preinvoke contact pair must be an object")
-        geom1 = raw_pair.get("geom1")
-        geom2 = raw_pair.get("geom2")
-        if not isinstance(geom1, str) or not geom1 or not isinstance(geom2, str) or not geom2:
-            raise ValueError("preinvoke contact pair requires two geom names")
-        required_pairs.add(tuple(sorted((geom1, geom2))))
-    if len(required_pairs) != len(raw_pairs):
-        raise ValueError("preinvoke contact pairs must be unique")
-
-    tracker.reset_evidence()
-    for _ in range(steps):
-        tracker.mujoco.mj_step(model, data)
-    evidence = tracker.evidence()
-    counts = {
-        tuple(sorted((str(item["geom1"]), str(item["geom2"])))): int(
-            item["step_count"]
-        )
-        for item in evidence["contact_pair_step_counts"]
-    }
-    missing = sorted(pair for pair in required_pairs if counts.get(pair) != steps)
-    if missing:
-        raise RuntimeError(
-            f"Framework preinvoke failed to hold required contacts for {steps} steps: {missing}"
-        )
-    minimum_distance = evidence.get("minimum_contact_distance_m")
-    if (
-        isinstance(minimum_distance, (int, float))
-        and not isinstance(minimum_distance, bool)
-        and float(minimum_distance) < -0.005
-    ):
-        raise RuntimeError("Framework preinvoke exceeded the 0.005 m penetration limit")
-    return {
-        "duration_s": duration_s,
-        "step_count": steps,
-        "required_contact_pairs": [list(pair) for pair in sorted(required_pairs)],
-        "all_required_contacts_held": True,
-        "minimum_contact_distance_m": minimum_distance,
-    }
-
-
 def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Execute one method and return trusted observations, not a verdict."""
 
@@ -256,7 +184,6 @@ def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
     candidate_exception = None
     return_value_type = None
     canonical_objects = False
-    preinvoke_evidence = None
     try:
         with tracker, contextlib.redirect_stdout(logs), contextlib.redirect_stderr(logs):
             with _candidate_runtime_boundary():
@@ -269,19 +196,6 @@ def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
                 validate_explicit_capability_methods(driver.__class__, capability_methods)
 
                 apply_framework_reset(mujoco, model, data, payload.get("reset"))
-                capture_frame()
-                preinvoke_evidence = _run_framework_preinvoke(
-                    model=model,
-                    data=data,
-                    tracker=tracker,
-                    definition=payload.get("preinvoke"),
-                )
-                tracker.before_physics_step = build_framework_step_callback(
-                    mujoco,
-                    model,
-                    data,
-                    payload.get("framework_events"),
-                )
                 tracker.reset_evidence()
                 capture_frame()
                 method = getattr(driver, str(payload["method_name"]))
@@ -326,8 +240,6 @@ def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
         except Exception as exc:
             video["error"] = f"video encoding failed: {type(exc).__name__}: {exc}"
 
-    physical_evidence = tracker.evidence()
-    physical_evidence["framework_preinvoke"] = preinvoke_evidence
     return {
         "worker_completed": True,
         "method_invoked": method_invoked,
@@ -335,7 +247,7 @@ def execute_case(payload: Mapping[str, Any]) -> dict[str, Any]:
         "candidate_exception": candidate_exception,
         "candidate_return_type": return_value_type,
         "candidate_log": _bounded_log(logs.getvalue()),
-        "physical_evidence": physical_evidence,
+        "physical_evidence": tracker.evidence(),
         "video": video,
     }
 
