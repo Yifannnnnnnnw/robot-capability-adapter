@@ -335,7 +335,11 @@ def test_so101_wrist_roll_requires_a_timed_target_hold_without_other_motion() ->
     def sample(time: float, wrist_roll: float) -> dict:
         return {
             "time": time,
-            "site_positions": {"gripperframe": [0.2, 0.0, 0.3]},
+            # An offset site naturally sweeps around the wrist axis during a
+            # pure roll; this is not unintended motion of the other joints.
+            "site_positions": {
+                "gripperframe": [0.2, 0.02 if wrist_roll == 1.2 else 0.0, 0.3]
+            },
             "body_positions": {},
             "body_quaternions": {},
             "joint_positions": {

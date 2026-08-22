@@ -1,4 +1,4 @@
-"""Task-blind SO-101 reference driver for the fixed A1--A5 interface.
+"""Task-blind SO-101 reference driver for the fixed A1--A6 interface.
 
 The Framework owns the canonical MuJoCo model, data, reset, and verdict.  This
 driver consumes only capability-native requests, writes actuator targets, and

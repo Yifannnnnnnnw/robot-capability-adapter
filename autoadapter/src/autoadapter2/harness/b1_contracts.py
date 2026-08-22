@@ -527,7 +527,7 @@ def _so101_side_effects(ctx: _Context, contract_id: str) -> bool:
             },
         )
     if contract_id == "A6":
-        return _point_drift_within(ctx, "gripperframe", 0.015) and _joint_drift_within(
+        return _joint_drift_within(
             ctx,
             {
                 "shoulder_pan": 0.03,
