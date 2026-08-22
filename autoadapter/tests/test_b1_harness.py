@@ -128,7 +128,7 @@ def _suite() -> dict:
 
 def test_b1_contract_register_covers_the_whole_fixed_table() -> None:
     expected = {
-        *(f"A{index}" for index in range(1, 6)),
+        *(f"A{index}" for index in range(1, 7)),
         *(f"G{index}" for index in range(1, 6)),
         *(f"L{index}" for index in range(1, 7)),
         *(f"ST{index}" for index in range(1, 9)),
@@ -328,6 +328,58 @@ def test_b1_rejects_late_target_entry_and_over_budget_offset_legs() -> None:
     request["max_duration_per_leg_s"] = 0.7
     assert evaluate_b1_contract(
         parameters, evidence={"samples": offset_samples}, request=request
+    ) == 0.0
+
+
+def test_so101_wrist_roll_requires_a_timed_target_hold_without_other_motion() -> None:
+    def sample(time: float, wrist_roll: float) -> dict:
+        return {
+            "time": time,
+            "site_positions": {"gripperframe": [0.2, 0.0, 0.3]},
+            "body_positions": {},
+            "body_quaternions": {},
+            "joint_positions": {
+                "shoulder_pan": 0.0,
+                "shoulder_lift": 0.0,
+                "elbow_flex": 0.0,
+                "wrist_flex": 0.0,
+                "wrist_roll": wrist_roll,
+                "gripper": 0.4,
+            },
+            "joint_velocities": {},
+            "contacts": [],
+        }
+
+    parameters = {
+        "contract_id": "A6",
+        "joint_name": "wrist_roll",
+        "side_effect_guard_profile": "so101",
+    }
+    request = {"target_roll_rad": 1.2, "max_duration_s": 0.3}
+    samples = [
+        sample(0.0, -0.6),
+        sample(0.2, 1.2),
+        sample(0.35, 1.2),
+        sample(0.45, 1.2),
+    ]
+    assert evaluate_b1_contract(
+        parameters, evidence={"samples": samples}, request=request
+    ) == 1.0
+
+    late_samples = [
+        sample(0.0, -0.6),
+        sample(0.35, 1.2),
+        sample(0.50, 1.2),
+        sample(0.60, 1.2),
+    ]
+    assert evaluate_b1_contract(
+        parameters, evidence={"samples": late_samples}, request=request
+    ) == 0.0
+
+    drifting_samples = copy.deepcopy(samples)
+    drifting_samples[-1]["joint_positions"]["shoulder_pan"] = 0.04
+    assert evaluate_b1_contract(
+        parameters, evidence={"samples": drifting_samples}, request=request
     ) == 0.0
 
 

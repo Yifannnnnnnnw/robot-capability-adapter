@@ -20,7 +20,7 @@ class B1ContractError(ValueError):
 
 SUPPORTED_CONTRACT_IDS = frozenset(
     {
-        *(f"A{index}" for index in range(1, 6)),
+        *(f"A{index}" for index in range(1, 7)),
         *(f"G{index}" for index in range(1, 6)),
         *(f"L{index}" for index in range(1, 7)),
         *(f"ST{index}" for index in range(1, 9)),
@@ -526,6 +526,17 @@ def _so101_side_effects(ctx: _Context, contract_id: str) -> bool:
                 "wrist_roll": 0.03,
             },
         )
+    if contract_id == "A6":
+        return _point_drift_within(ctx, "gripperframe", 0.015) and _joint_drift_within(
+            ctx,
+            {
+                "shoulder_pan": 0.03,
+                "shoulder_lift": 0.03,
+                "elbow_flex": 0.03,
+                "wrist_flex": 0.03,
+                "gripper": 0.03,
+            },
+        )
     return True
 
 
@@ -599,6 +610,19 @@ def _arm_position(ctx: _Context, contract_id: str, site_name: str, target_key: s
         ctx,
         lambda index: _distance(ctx.point(index, site_name), target) <= tolerance,
         0.5,
+    )
+    return target_window is not None and _entry_within_request_budget(
+        ctx, target_window[0], "max_duration_s"
+    )
+
+
+def _wrist_roll(ctx: _Context) -> bool:
+    joint = _name(ctx.parameters, "joint_name")
+    target = _number(_request(ctx, "target_roll_rad"), "target_roll_rad")
+    target_window = _window(
+        ctx,
+        lambda index: abs(ctx.joint(index, joint) - target) <= 0.030,
+        0.25,
     )
     return target_window is not None and _entry_within_request_budget(
         ctx, target_window[0], "max_duration_s"
@@ -1724,6 +1748,8 @@ def evaluate_b1_contract(
             return_hold_s=0.5,
             frame_quaternion=ctx.quaternion(0, str(base)) if isinstance(base, str) else None,
         )
+    elif contract_id == "A6":
+        passed = _wrist_roll(ctx)
     elif contract_id == "G1":
         passed = _go_twist(ctx)
     elif contract_id == "G2":
