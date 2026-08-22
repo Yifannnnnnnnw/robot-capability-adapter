@@ -9,7 +9,9 @@ The runner reads the credential named by the pinned provider JSON from
 `.env.company-api`. The credential stays in the Framework parent and is
 excluded from the report and candidate-worker environment. The default run
 disables video, so it is never a formal B2 episode and cannot clear AA2-B2
-Section 7.
+Section 7. The ignored diagnostic report retains the code commit, fixed ReCAP
+prompt/schema, exact secret-free provider request/response exchanges, call
+ledger, controller trace, worker record, and independent Harness result.
 
 Example:
 

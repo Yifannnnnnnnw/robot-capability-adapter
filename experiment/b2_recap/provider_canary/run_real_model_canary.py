@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 from collections.abc import Mapping
@@ -32,7 +33,11 @@ from autoadapter2.b2.model_client import (  # noqa: E402
     B2ModelProviderConfig,
     ReCAPJsonModelClient,
 )
-from autoadapter2.b2.recap import RecapBudgets  # noqa: E402
+from autoadapter2.b2.recap import (  # noqa: E402
+    RECAP_B2_SYSTEM_PROMPT,
+    RECAP_RESPONSE_SCHEMA,
+    RecapBudgets,
+)
 from autoadapter2.libraries import load_robot_package  # noqa: E402
 
 
@@ -60,6 +65,27 @@ CAPABILITY_DESIGN_PATH = (
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _code_version() -> dict[str, Any]:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPOSITORY_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    commit = result.stdout.strip() if result.returncode == 0 else None
+    return {
+        "git_commit": commit,
+        "runner_path": str(Path(__file__).resolve()),
+        "model_adapter_path": str(
+            REPOSITORY_ROOT / "autoadapter/src/autoadapter2/b2/model_client.py"
+        ),
+        "controller_path": str(
+            REPOSITORY_ROOT / "autoadapter/src/autoadapter2/b2/recap.py"
+        ),
+    }
 
 
 def _read_object(path: Path, *, label: str) -> dict[str, Any]:
@@ -154,6 +180,7 @@ def _provider_summary(
     provider_pin: Mapping[str, Any],
     provider_path: Path,
     calls: tuple[Mapping[str, Any], ...],
+    exchanges: tuple[Mapping[str, Any], ...],
 ) -> dict[str, Any]:
     requested_model = provider_pin.get("exact_model_id")
     successful = [call for call in calls if call.get("status") == "success"]
@@ -177,6 +204,7 @@ def _provider_summary(
         ),
         "price_snapshot": provider_pin.get("price_snapshot"),
         "calls": [dict(call) for call in calls],
+        "raw_secret_free_exchanges": [dict(exchange) for exchange in exchanges],
     }
 
 
@@ -230,10 +258,12 @@ def run(
         }
 
     calls = model.provider_call_records
+    exchanges = model.provider_exchange_records
     provider = _provider_summary(
         provider_pin=pin,
         provider_path=provider_path,
         calls=calls,
+        exchanges=exchanges,
     )
     controller = episode.get("controller", {}) if episode is not None else {}
     worker = episode.get("worker", {}) if episode is not None else {}
@@ -266,6 +296,7 @@ def run(
         "formal_episode": False,
         "formal_denominator_entry": False,
         "authority": {"document_id": "AA2-B2", "revision": "0.1.0"},
+        "code_version": _code_version(),
         "started_at_utc": started_at_utc,
         "ended_at_utc": _utc_now(),
         "elapsed_s": max(0.0, time.monotonic() - started),
@@ -276,6 +307,12 @@ def run(
             "candidate_worker_receives_credentials": False,
         },
         "fixed_controller_budgets": asdict(budgets),
+        "fixed_controller_contract": {
+            "system_prompt": RECAP_B2_SYSTEM_PROMPT,
+            "response_schema": RECAP_RESPONSE_SCHEMA,
+            "provider_response_format": {"type": "json_object"},
+            "strict_validation_boundary": "local_recap_parser",
+        },
         "provider": provider,
         "summary": summary,
         "error": error,
