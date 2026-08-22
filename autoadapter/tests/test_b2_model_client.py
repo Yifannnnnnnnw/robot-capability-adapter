@@ -65,6 +65,7 @@ def _provider_response(content: dict[str, Any]) -> mock.MagicMock:
     entered.status = 200
     entered.headers = Message()
     entered.read.return_value = json.dumps(payload).encode("utf-8")
+    response.raw_payload = payload
     return response
 
 
@@ -76,6 +77,7 @@ def test_recap_prompt_and_history_roles_reach_existing_json_client() -> None:
         credential=credential,
     )
 
+    provider_response = _provider_response(expected)
     with mock.patch.dict(
         os.environ,
         {"AUTOADAPTER_MODEL_API_KEY": "environment-key-must-not-be-read"},
@@ -83,7 +85,7 @@ def test_recap_prompt_and_history_roles_reach_existing_json_client() -> None:
     ), mock.patch.object(
         urllib.request,
         "urlopen",
-        return_value=_provider_response(expected),
+        return_value=provider_response,
     ) as urlopen:
         result = adapter.generate_recap_json(
             stage="recursive_plan_or_refine",
@@ -110,9 +112,25 @@ def test_recap_prompt_and_history_roles_reach_existing_json_client() -> None:
         )[1]
     )
     assert transported_schema == RESPONSE_SCHEMA
+    exchange = adapter.provider_exchange_records[0]
+    assert exchange["stage"] == "recursive_plan_or_refine"
+    assert exchange["status"] == "success"
+    assert exchange["request_body"] == request_body
+    assert exchange["request_messages"] == request_body["messages"]
+    assert exchange["response_payload"] == provider_response.raw_payload
+    assert exchange["response_message"] == provider_response.raw_payload["choices"][
+        0
+    ]["message"]
     assert request.get_header("Authorization") == f"Bearer {credential}"
     assert credential not in request.data.decode("utf-8")
     assert "environment-key-must-not-be-read" not in str(request.header_items())
+    assert credential not in json.dumps(exchange)
+
+    exchange["request_body"]["messages"][0]["content"] = "mutated"
+    exchange["response_payload"]["choices"][0]["message"]["content"] = "mutated"
+    fresh = adapter.provider_exchange_records[0]
+    assert fresh["request_body"] == request_body
+    assert fresh["response_payload"] == provider_response.raw_payload
 
 
 def test_provider_exception_propagates_without_adapter_retry_or_rewrite() -> None:
@@ -187,6 +205,34 @@ def test_parent_call_records_and_repr_do_not_expose_credential() -> None:
     assert credential not in serialized
     assert credential not in repr(adapter)
     assert credential not in repr(_provider_config())
+
+
+def test_failed_exchange_is_bounded_and_redacts_credential() -> None:
+    credential = "parent-only-secret"
+    adapter = ReCAPJsonModelClient(
+        provider_config=_provider_config(),
+        credential=credential,
+    )
+    failure = RuntimeError(credential + (" provider failure" * 200))
+    with mock.patch.object(adapter._client, "_post", side_effect=failure):
+        with pytest.raises(RuntimeError) as raised:
+            adapter.generate_recap_json(
+                stage="recursive_plan_or_refine",
+                system_prompt=SYSTEM_PROMPT,
+                messages=MESSAGES,
+                response_schema=RESPONSE_SCHEMA,
+            )
+
+    assert raised.value is failure
+    records = adapter.provider_exchange_records
+    assert len(records) == 1
+    record = records[0]
+    assert record["status"] == "error"
+    assert record["response_payload"] is None
+    assert record["response_message"] is None
+    assert record["error"]["type"] == "RuntimeError"
+    assert len(record["error"]["message"]) <= 1000
+    assert credential not in json.dumps(record)
 
 
 def test_nonfinite_schema_is_rejected_before_provider_call() -> None:

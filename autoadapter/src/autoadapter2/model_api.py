@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import json
 import os
 import signal
@@ -90,6 +91,21 @@ def parse_json_object(text: str) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         raise ModelInvocationError("model must return one JSON object")
     return parsed
+
+
+def _contains_text(value: Any, needle: str) -> bool:
+    if isinstance(value, str):
+        return needle in value
+    if isinstance(value, Mapping):
+        return any(
+            _contains_text(key, needle) or _contains_text(item, needle)
+            for key, item in value.items()
+        )
+    if isinstance(value, Sequence) and not isinstance(
+        value, (str, bytes, bytearray)
+    ):
+        return any(_contains_text(item, needle) for item in value)
+    return False
 
 
 @dataclass(frozen=True)
@@ -209,6 +225,8 @@ class JsonModelClient:
         self.config = config
         self.calls: list[dict[str, Any]] = []
         self._calls_lock = threading.Lock()
+        self._message_json_exchanges: list[dict[str, Any]] = []
+        self._message_json_exchanges_lock = threading.Lock()
         self._call_state = threading.local()
         self._context_manager = AgentContextManager(
             history_char_budget=config.history_char_budget,
@@ -757,35 +775,111 @@ class JsonModelClient:
             "response_format": {"type": "json_object"},
         }
         self._add_thinking_control(body)
+        request_body = self._secret_free_exchange_copy(
+            body,
+            label="provider request body",
+        )
         self._call_state.last_call_index = None
         self._call_state.mode = "json"
         self._call_state.context_projection = {}
-        payload = self._post(stage=stage, body=body)
-        choice = self._first_choice(payload)
-        message = choice.get("message")
-        content = message.get("content") if isinstance(message, Mapping) else None
-        if not isinstance(content, str):
-            raise ModelInvocationError("model API response lacks text content")
         try:
-            result = parse_json_object(content)
-        except ModelInvocationError as exc:
-            finish_reason = choice.get("finish_reason")
+            payload = self._post(stage=stage, body=body)
+            choice = self._first_choice(payload)
+            message = choice.get("message")
+            content = message.get("content") if isinstance(message, Mapping) else None
+            if not isinstance(content, str):
+                raise ModelInvocationError("model API response lacks text content")
+            try:
+                result = parse_json_object(content)
+            except ModelInvocationError as exc:
+                finish_reason = choice.get("finish_reason")
+                self._record_call(
+                    stage=stage,
+                    payload=payload,
+                    mode="json",
+                    finish_reason=finish_reason,
+                )
+                raise ModelInvocationError(
+                    f"{exc}; finish_reason={finish_reason!r}; "
+                    f"content_chars={len(content)}"
+                ) from exc
             self._record_call(
                 stage=stage,
                 payload=payload,
                 mode="json",
-                finish_reason=finish_reason,
+                finish_reason=choice.get("finish_reason"),
             )
-            raise ModelInvocationError(
-                f"{exc}; finish_reason={finish_reason!r}; content_chars={len(content)}"
-            ) from exc
-        self._record_call(
+            response_payload = self._secret_free_exchange_copy(
+                payload,
+                label="provider response payload",
+            )
+            response_message = self._secret_free_exchange_copy(
+                message,
+                label="provider response message",
+            )
+        except Exception as exc:
+            self._record_message_json_exchange(
+                stage=stage,
+                request_body=request_body,
+                response_payload=None,
+                response_message=None,
+                error=exc,
+            )
+            raise
+        self._record_message_json_exchange(
             stage=stage,
-            payload=payload,
-            mode="json",
-            finish_reason=choice.get("finish_reason"),
+            request_body=request_body,
+            response_payload=response_payload,
+            response_message=response_message,
+            error=None,
         )
         return result
+
+    @property
+    def message_json_exchange_records(self) -> tuple[Mapping[str, Any], ...]:
+        """Return deep-copied, secret-free raw JSON-message exchanges."""
+
+        with self._message_json_exchanges_lock:
+            return tuple(copy.deepcopy(self._message_json_exchanges))
+
+    def _record_message_json_exchange(
+        self,
+        *,
+        stage: str,
+        request_body: Mapping[str, Any],
+        response_payload: Mapping[str, Any] | None,
+        response_message: Mapping[str, Any] | None,
+        error: BaseException | None,
+    ) -> None:
+        message = None
+        if error is not None:
+            message = str(error)
+            if self.config.api_key:
+                message = message.replace(self.config.api_key, "<redacted>")
+            message = message[:1000]
+        record = {
+            "exchange_index": -1,
+            "stage": stage,
+            "status": "success" if error is None else "error",
+            "request_body": copy.deepcopy(dict(request_body)),
+            "request_messages": copy.deepcopy(request_body.get("messages")),
+            "response_payload": copy.deepcopy(response_payload),
+            "response_message": copy.deepcopy(response_message),
+            "error": (
+                None
+                if error is None
+                else {"type": type(error).__name__, "message": message}
+            ),
+        }
+        with self._message_json_exchanges_lock:
+            record["exchange_index"] = len(self._message_json_exchanges)
+            self._message_json_exchanges.append(record)
+
+    def _secret_free_exchange_copy(self, value: Any, *, label: str) -> Any:
+        copied = copy.deepcopy(value)
+        if self.config.api_key and _contains_text(copied, self.config.api_key):
+            raise ModelInvocationError(f"{label} contains the configured credential")
+        return copied
 
     def generate_tool_turn(
         self,

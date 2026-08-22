@@ -75,6 +75,12 @@ class ReCAPJsonModelClient:
 
         return tuple(dict(record) for record in self._client.calls)
 
+    @property
+    def provider_exchange_records(self) -> tuple[Mapping[str, Any], ...]:
+        """Return deep-copied raw request/response exchanges retained in parent."""
+
+        return self._client.message_json_exchange_records
+
     def generate_recap_json(
         self,
         *,
