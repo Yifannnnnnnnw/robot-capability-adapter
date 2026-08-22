@@ -5,9 +5,24 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.13`<br>
+> **Revision:** `0.1.14`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution authorized
+
+Revision `0.1.14` prospectively normalizes one observed provider-facing native
+history edge case. In both M2 × ALOHA 2 `r01` conditions, the first Generate
+turn returned HTTP 200 at the 8,192-token request limit but supplied an empty
+assistant message with no tool call; replaying that empty message on the next
+logical turn reproducibly produced HTTP 500 and its one bounded physical retry
+also failed. The transport now replaces only an empty assistant turn that has
+no tool calls with a fixed neutral observation before the next request. It does
+not alter non-empty assistant content, tool calls, tool observations, prompts,
+budgets, or retry policy. The two revision `0.1.13` infrastructure-blocker
+records remain unchanged. M2 stays paused until a non-formal canary exercises
+the corrected continuation, after which affected cells use new workspaces.
+Revision `0.1.13` records that did not exercise this empty-turn branch remain
+valid. This correction does not change the cohort, backbones, conditions,
+replicates, fixed validation bundles, attempt budget, or analysis boundary.
 
 Revision `0.1.13` records the project owner's explicit authorization on
 2026-08-22 to restart formal execution under the already fixed four-robot,
