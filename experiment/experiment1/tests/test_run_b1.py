@@ -481,13 +481,14 @@ class Experiment1B1RunnerTests(unittest.TestCase):
             "AUTOADAPTER_MODEL_API_KEY": "test-only",
             "AUTOADAPTER_MODEL_THINKING": "disabled",
             "AUTOADAPTER_MODEL_MAX_TOKENS": "16384",
-            "AUTOADAPTER_MODEL_TIMEOUT_S": "180",
+            "AUTOADAPTER_MODEL_TIMEOUT_S": "600",
             "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE": "native",
             "AUTOADAPTER_MODEL_HISTORY_CHARS": "80000",
         }
         with patch.dict("os.environ", environment, clear=True):
             config = _validated_runtime_model_config(pinned)
         self.assertEqual(config.model, "deepseek-v4-pro")
+        self.assertEqual(config.timeout_s, 600.0)
 
         class UsageClient(ScriptedClient):
             def generate_json(self, **_: Any) -> dict[str, Any]:

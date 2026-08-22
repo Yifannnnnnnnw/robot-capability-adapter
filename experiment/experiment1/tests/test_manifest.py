@@ -61,7 +61,7 @@ class Experiment1ManifestTests(unittest.TestCase):
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
 
         self.assertNotIn("status", recipe)
-        self.assertEqual(recipe["authority_revision"], "0.1.6")
+        self.assertEqual(recipe["authority_revision"], "0.1.8")
         self.assertEqual(recipe["execution_concurrency"]["status"], "operational")
         self.assertTrue(resolved["ready_to_expand"])
         self.assertEqual(
@@ -132,6 +132,13 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertEqual(m1["auth_header"], "X-Api-Key")
         self.assertEqual(m1["inference_settings"]["temperature"], 0.0)
         self.assertEqual(m1["price_snapshot"]["snapshot_date"], "2026-08-21")
+        m5 = json.loads(
+            (EXPERIMENT_ROOT / "providers" / "M5-deepseek-v4-pro.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(m5["authority_revision"], "0.1.8")
+        self.assertEqual(m5["inference_settings"]["timeout_s"], 600)
         for config_path in recipe["backbone_runtime_configs"].values():
             config = json.loads(
                 (EXPERIMENT_ROOT / config_path).read_text(encoding="utf-8")

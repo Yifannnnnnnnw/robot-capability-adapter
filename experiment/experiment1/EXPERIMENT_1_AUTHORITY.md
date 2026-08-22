@@ -5,10 +5,27 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.28`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.6`<br>
+> **Revision:** `0.1.8`<br>
 > **Effective date:** 2026-08-21<br>
-> **Design status:** active and prospectively fixed; formal execution active
+> **Design status:** active and prospectively fixed; formal execution paused
 
+Revision `0.1.8` prospectively raises only M5's fixed per-request total
+wall-clock deadline from `180 s` to `600 s`. A diagnostic M5 × SO-101 cell
+completed STUDY, generation, Driver submission, and physical validation, then
+received HTTP 200 for a Repair request whose response body crossed the local
+`180 s` deadline. The longer deadline removes that observed client-side
+truncation while retaining a strict bounded call and the existing rule that a
+timeout is not retried automatically. Outcomes recorded under earlier
+revisions remain unchanged and are not relabelled. Formal execution remains
+paused; this revision does not authorize a restart or change the cohort,
+backbones, conditions, replicate plan, attempt budget, provider route, or
+analysis boundary.
+
+Revision `0.1.7` pauses formal execution after diagnostic review identified
+defects in the retained LEAP Hand L4/L5 fixed validation path. It does not
+adopt an unreviewed replacement suite, relabel earlier outcomes, or authorize
+a restart. It does not change the cohort, backbones, conditions, replicate
+plan, attempt budget, provider routes, or analysis boundary.
 Revision `0.1.6` prospectively completes the required provider pins before any cell is
 dispatched under this revision: M1--M4 and M6 gain explicit context/output limits and dated
 standard-price snapshots, while the M4 and M6 request maxima are corrected to their provider
