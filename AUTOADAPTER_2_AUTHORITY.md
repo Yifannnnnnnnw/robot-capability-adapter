@@ -4,9 +4,31 @@
 > **Document role / 文档角色：** sole project-wide normative document; bounded experiment authorities require explicit delegation in Section 0.1 / 项目范围唯一规范性文档；限定实验权威必须由第 0.1 节明确委派<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.28`<br>
-> **Effective date / 生效日期：** 2026-08-21<br>
+> **Document revision / 文档版本：** `0.19.29`<br>
+> **Effective date / 生效日期：** 2026-08-22<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.29` permits the capability-neutral serial-arm trusted skeleton to provide bounded,
+actuator-only, closed-loop Cartesian path-tracking primitives in addition to point-target DLS. Such
+a primitive may interpolate caller-supplied finite segments or polylines, apply bounded Cartesian
+reference progression, and correct cross-track error from fresh canonical MuJoCo state. It must not
+embed a task identifier, capability dispatch, a fixed task trajectory or target, private criterion,
+scene construction, reset, or reference-driver logic. The model-authored Driver remains responsible
+for translating the public request into path geometry, timing, controller parameters, and capability
+composition. This assistance remains exclusive to the skeleton-assisted condition; from-scratch
+must implement the same behavior from the permitted primitives. Existing retained outcomes are not
+retroactively relabelled, and a changed supplied skeleton after outcomes have been inspected creates
+a new Experiment 1 configuration under `AA2-EXP1`.
+
+**中文辅助说明。** `0.19.29` 允许 capability-neutral 串联机械臂 trusted skeleton 在单目标
+DLS 之外提供有界、仅经 actuator 的闭环 Cartesian 路径跟踪 primitive。该 primitive 可对调用方
+传入的有限 segment 或 polyline 进行插值，使用有界 Cartesian reference progression，并根据
+最新 canonical MuJoCo state 修正 cross-track error。它不得内置 task id、capability dispatch、固定
+任务轨迹或目标、私有 criterion、scene/reset 或 reference-driver 逻辑。模型创作的 Driver 仍负责
+将公开 request 转换为路径几何、时间、控制参数和 capability 组合。该辅助仍仅属于
+skeleton-assisted 条件；from-scratch 必须用允许的 primitive 自行实现同等行为。已保留的
+结果不得追溯重标；在结果已被检查后修改输入的 skeleton，将按 `AA2-EXP1` 构成新的
+Experiment 1 配置。
 
 Revision `0.19.28` aligns the three research questions with the approved thesis experiment
 structure. RQ1 and Experiment 1 are the delegated fixed-input B1 comparison of robot-specific
@@ -276,13 +298,15 @@ probe，且只有首次失败时才允许第二次，随后保留最终提交回
 Revision `0.19.8` strengthens only the capability-neutral serial-arm skeleton primitive surface
 observed to be missing in the dynamic run. It provides actuator-only closed-loop Cartesian DLS with
 optional wrist-roll pinning, arbitrary finite gripper targets, and a physics hold operation. It
-contains no task identifier, dispatch, trajectory, target, scene construction, reset, criterion, or
-reference-driver logic; the model remains the sole author of capability composition and policy.
+contained no task identifier, dispatch, trajectory, target, scene construction, reset, criterion,
+or reference-driver logic; the model remained the sole author of capability composition and policy.
+Revision `0.19.29` supersedes only that historical trajectory exclusion as specified above.
 
 **中文辅助说明。** `0.19.8` 仅补齐真实动态运行中确认缺失的 capability-neutral 串联机械臂
 skeleton primitive：actuator-only 闭环 Cartesian DLS、可选 wrist-roll 固定、任意有限夹爪目标和
-physics hold。它不包含 task id、dispatch、trajectory、target、scene/reset、criterion 或 reference
-driver 逻辑；capability 组合与策略仍完全由模型创作。
+physics hold。该版本当时不包含 task id、dispatch、trajectory、target、scene/reset、criterion 或
+reference driver 逻辑；capability 组合与策略当时仍完全由模型创作。`0.19.29` 只按上述
+新条款取代这一历史 trajectory 禁止。
 
 Revision `0.19.7` restores the bounded public observation role of the AutoAdapter 1.0 development
 sandbox. Each `check_driver` capability smoke now returns terminal actuator controls, generalized
@@ -1608,6 +1632,15 @@ The conditions differ only in implementation assistance:
    MuJoCo, NumPy, and Python-standard-library primitives. It may not inspect, import, copy, or call
    the trusted skeleton implementation.
 
+For serial arms, the trusted skeleton family may expose a task-neutral Cartesian path-tracking
+primitive. It may accept caller-supplied finite segments or polylines and public control parameters,
+interpolate the Cartesian reference, and use fresh-state DLS feedback to limit cross-track error
+while advancing the canonical physics session through `data.ctrl`. It must remain independent of
+capability names and task identities and must not contain a fixed task path, target, private
+acceptance threshold, scene/reset behavior, success verdict, or reference-driver policy. The
+model-authored Driver selects the primitive, constructs its path and parameters from the public
+request, and composes it with the other capability behavior.
+
 The implementation model may read the sealed public capability interfaces and validation contracts,
 including every source-derived threshold already public in the Capability Design. The hidden boundary
 is limited to the private IVC/Harness validation definition: private suite files, unreleased case and
@@ -1685,6 +1718,13 @@ actuator mapping、状态目标、控制值、physics step、选定 skeleton 或
 2. **From-scratch。** 模型必须只使用获准的 MuJoCo、NumPy 和 Python 标准库 primitives，自行
    编写机器人 controller、kinematics 或 locomotion algorithm、actuator mapping、observation、
    stepping 和 lifecycle；不得检查、导入、复制或调用可信 skeleton 实现。
+
+对串联机械臂，可信 skeleton family 可以暴露 task-neutral Cartesian 路径跟踪 primitive。它可以
+接收调用方传入的有限 segment 或 polyline 及公开控制参数，插值 Cartesian reference，并通过
+基于最新状态的 DLS feedback 限制 cross-track error，只经 `data.ctrl` 推进 canonical physics
+session。它必须与 capability name 和 task id 无关，不得包含固定任务路径或目标、私有验收
+threshold、scene/reset 行为、success verdict 或 reference-driver policy。模型创作的 Driver 仍负责
+选择该 primitive，从公开 request 构造路径和参数，并将其与其他 capability 行为组合。
 
 实现模型可以读取封存的公开 capability 接口和 validation contract，包括 Capability Design 中
 原本公开的全部来源 threshold。不可见边界只覆盖 IVC/Harness 私有 validation 定义：私有 suite

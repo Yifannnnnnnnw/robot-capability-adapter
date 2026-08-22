@@ -2,12 +2,21 @@
 
 > **Document ID:** `AA2-EXP1`<br>
 > **Document role:** sole normative document for Experiment 1<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.28`<br>
+> **Parent authority:** `AA2-AUTH` revision `0.19.29`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.8`<br>
-> **Effective date:** 2026-08-21<br>
+> **Revision:** `0.1.9`<br>
+> **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution paused
+
+Revision `0.1.9` updates the parent-Authority reference after `AA2-AUTH`
+revision `0.19.29` permitted task-neutral closed-loop Cartesian path tracking in
+the serial-arm trusted skeleton. This permission does not change the currently
+supplied skeleton, package snapshot, fixed bundle, retained outcome, execution
+pause, cohort, factors, replicate plan, attempt budget, provider route, or
+analysis boundary. Implementing or supplying a changed skeleton after outcomes
+have been inspected creates a new Experiment 1 configuration and requires every
+affected cell to be rerun under Sections 4 and 9.
 
 Revision `0.1.8` prospectively raises only M5's fixed per-request total
 wall-clock deadline from `180 s` to `600 s`. A diagnostic M5 × SO-101 cell
