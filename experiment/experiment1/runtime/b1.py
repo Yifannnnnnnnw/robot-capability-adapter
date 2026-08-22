@@ -534,6 +534,13 @@ def _native_calls(client: Any) -> list[Mapping[str, Any]]:
     return [item for item in calls if isinstance(item, Mapping)]
 
 
+def _normalised_model_identity(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalised = value.strip().casefold()
+    return normalised or None
+
+
 _PROVIDER_INFRASTRUCTURE_ERROR_TYPES = frozenset(
     {"http_error", "timeout", "transport_error"}
 )
@@ -657,12 +664,33 @@ class RecordingClient:
         if not native_records:
             native_records = [{}]
         total_elapsed = max(0.0, time.monotonic() - started_monotonic)
-        if error is None:
-            self._model_turns += 1
         config = self.config
+        identity_error: dict[str, str] | None = None
+        if error is None:
+            expected_model = getattr(config, "model", None)
+            returned_model = native_records[-1].get("returned_model")
+            if _normalised_model_identity(returned_model) != (
+                _normalised_model_identity(expected_model)
+            ):
+                identity_error = {
+                    "type": "model_identity_mismatch",
+                    "message": (
+                        f"provider returned model identity {returned_model!r}; "
+                        f"expected {expected_model!r}"
+                    ),
+                }
+        if error is None and identity_error is None:
+            self._model_turns += 1
         message = str(error) if error is not None else ""
         status_match = re.search(r"HTTP\s+(\d{3})", message)
-        completed_offset = len(native_records) - 1 if error is None else None
+        completed_offset = (
+            len(native_records) - 1
+            if error is None and identity_error is None
+            else None
+        )
+        identity_error_offset = (
+            len(native_records) - 1 if identity_error is not None else None
+        )
         for offset, native in enumerate(native_records):
             outer_call_index = len(self.calls) + 1
             native_call_index = native.get("call_index")
@@ -688,7 +716,9 @@ class RecordingClient:
                 http_status = int(status_match.group(1)) if status_match else None
             completed_turn = offset == completed_offset
             native_error = native.get("error")
-            if completed_turn:
+            if offset == identity_error_offset:
+                call_error = copy.deepcopy(identity_error)
+            elif completed_turn:
                 call_error = None
             elif isinstance(native_error, Mapping):
                 call_error = copy.deepcopy(dict(native_error))
@@ -732,6 +762,8 @@ class RecordingClient:
                 }
             )
             self._on_update()
+        if identity_error is not None:
+            raise B1RunError(identity_error["message"])
 
     def _invoke(self, method_name: str, *, stage: str, arguments: Mapping[str, Any]) -> Any:
         started_utc = _utc_now()

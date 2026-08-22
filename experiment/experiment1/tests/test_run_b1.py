@@ -54,6 +54,13 @@ class ScriptedClient:
         )
 
     def generate_json(self, **_: Any) -> dict[str, Any]:
+        self.calls.append(
+            {
+                "requested_model": self.config.model,
+                "returned_model": self.config.model,
+                "usage": {},
+            }
+        )
         return {}
 
 
@@ -397,6 +404,54 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         self.assertEqual(route.generate_calls, 0)
         self.assertEqual(route.harness_calls, 0)
 
+    def test_returned_model_mismatch_or_absence_stops_before_generation(self) -> None:
+        for returned_model in ("other-model", None):
+            with self.subTest(returned_model=returned_model):
+                temporary = tempfile.TemporaryDirectory()
+                self.addCleanup(temporary.cleanup)
+                root = Path(temporary.name)
+                manifest = root / "manifest.json"
+                manifest.write_text("{}\n", encoding="utf-8")
+                route = ScriptedRoute(root, [])
+
+                class IdentityClient(ScriptedClient):
+                    def generate_json(self, **_: Any) -> dict[str, Any]:
+                        self.calls.append(
+                            {
+                                "requested_model": self.config.model,
+                                "returned_model": returned_model,
+                                "usage": {},
+                            }
+                        )
+                        return {}
+
+                hooks = replace(
+                    route.hooks(), client_factory=lambda _: IdentityClient()
+                )
+                record = run_single_cell(
+                    manifest_path=manifest,
+                    unit_id=UNIT_ID,
+                    output_dir=root / "run",
+                    hooks=hooks,
+                )
+
+                self.assertFalse(record["terminal_verdict"]["validation_passed"])
+                self.assertEqual(
+                    record["terminal_verdict"]["stop_reason"], "study_error"
+                )
+                self.assertEqual(route.generate_calls, 0)
+                self.assertEqual(route.harness_calls, 0)
+                self.assertEqual(record["actions"], [])
+                self.assertEqual(len(record["provider_calls"]), 1)
+                call = record["provider_calls"][0]
+                self.assertEqual(call["status"], "failed")
+                self.assertIsNone(call["model_turn_index"])
+                self.assertEqual(call["requested_model"], "scripted-model")
+                self.assertEqual(call["returned_model"], returned_model)
+                self.assertEqual(
+                    call["error"]["type"], "model_identity_mismatch"
+                )
+
     def test_provider_blocker_uses_only_the_final_physical_call(self) -> None:
         for error_type in ("http_error", "timeout", "transport_error"):
             with self.subTest(error_type=error_type):
@@ -504,8 +559,10 @@ class Experiment1B1RunnerTests(unittest.TestCase):
                 )
                 return {}
 
+        usage_client = UsageClient()
+        usage_client.config.model = "deepseek-v4-pro"
         recorder = RecordingClient(
-            UsageClient(), lambda: None, pinned["price_snapshot"]
+            usage_client, lambda: None, pinned["price_snapshot"]
         )
         recorder.generate_json(stage="study", prompt="study", inputs={})
         self.assertAlmostEqual(
@@ -521,6 +578,8 @@ class Experiment1B1RunnerTests(unittest.TestCase):
             def generate_json(self, **_: Any) -> dict[str, Any]:
                 self.calls.append(
                     {
+                        "requested_model": self.config.model,
+                        "returned_model": self.config.model,
                         "usage": {
                             "prompt_tokens": 2_000_000,
                             "completion_tokens": 3_000_000,
