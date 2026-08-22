@@ -73,12 +73,11 @@ class ScriptedRoute:
             "authority_revision": "test",
             "protocol_id": "b1-driver-synthesis",
             "protocol_version": "test",
-            "unit_count": 210,
+            "unit_count": 144,
             "robot_ids": [
                 "robotstudio_so101",
                 "unitree-go2-stock-12dof",
                 "leap_hand",
-                "hello_robot_stretch_2",
                 "aloha_2",
             ],
             "units": [

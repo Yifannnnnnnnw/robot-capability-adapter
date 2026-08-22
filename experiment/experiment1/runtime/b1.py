@@ -37,7 +37,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 EXPERIMENT_ROOT = REPOSITORY_ROOT / "experiment" / "experiment1"
 AUTOADAPTER_ROOT = REPOSITORY_ROOT / "autoadapter"
 AUTOADAPTER_SOURCE_ROOT = AUTOADAPTER_ROOT / "src"
-EXPECTED_UNIT_COUNT = 210
+EXPECTED_UNIT_COUNT = 144
 MAX_ACCEPTED_ATTEMPTS = 3
 ALLOWED_CONDITIONS = {"skeleton-assisted", "from-scratch"}
 EXISTING_FIXED_ROUTES = {
@@ -1896,7 +1896,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--manifest",
         type=Path,
         default=EXPERIMENT_ROOT / "manifest.json",
-        help="external 210-unit Experiment 1 manifest",
+        help="external 144-unit Experiment 1 manifest",
     )
     parser.add_argument("--unit-id", required=True, help="one exact B1 unit ID")
     parser.add_argument(

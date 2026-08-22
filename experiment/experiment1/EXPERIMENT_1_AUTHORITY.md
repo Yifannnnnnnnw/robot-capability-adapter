@@ -5,9 +5,23 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.29`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.9`<br>
+> **Revision:** `0.1.10`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution paused
+
+Revision `0.1.10` prospectively removes `hello_robot_stretch_2` and
+M7/Qwen3 32B from the active Experiment 1 matrix by explicit project-owner
+instruction. The active matrix is now four robots, six backbones, two
+conditions, and three core replicates: 144 core cells with at most 432 Driver
+submissions. Each complete extension replicate adds 48 cells and at most 144
+submissions; completing both produces 240 cumulative cells and at most 720
+submissions. This revision also prospectively fixes capability aggregation:
+at least two of the three H1/H2/H3 cases must pass for a capability to pass,
+and every capability assigned to the robot must pass for the Driver to pass.
+Existing Stretch and M7 packages, fixed bundles, provider files, run records,
+and other historical artifacts may remain as inactive history; they are not
+inputs to this revision and prior outcomes are not relabelled. Formal
+execution remains paused.
 
 Revision `0.1.9` updates the parent-Authority reference after `AA2-AUTH`
 revision `0.19.29` permitted task-neutral closed-loop Cartesian path tracking in
@@ -94,7 +108,7 @@ Every concrete experiment authority fixes exactly three classes of information:
 
 | Part | Experiment 1 content | Governing sections |
 |---|---|---|
-| Experimental object | Research claim, five robots, seven backbones, two conditions, statistical unit, and replicate plan | Sections 1–3 |
+| Experimental object | Research claim, four robots, six backbones, two conditions, statistical unit, and replicate plan | Sections 1–3 |
 | Required preparation | Clear Driver contracts and criteria plus a usable, isolated, recorded STUDY-to-terminal-validation route | Sections 4, 5, 7, and 8 |
 | Required records | Outcomes, evidence, timings, submitted attempts, model/provider calls, tokens, costs, errors, and observable action trace | Section 6 |
 
@@ -106,7 +120,7 @@ requirement. It may only implement this three-part contract.
 
 Experiment 1 is the fixed-input B1 driver-synthesis comparison. For each
 selected robot, one prior-designed Driver contract and its validation criteria
-are held fixed while seven Producer backbone families synthesize a
+are held fixed while six Producer backbone families synthesize a
 robot-specific `driver.py` under `skeleton-assisted` and `from-scratch`.
 
 The experiment measures driver-validation success, Repair behaviour, failures,
@@ -120,24 +134,23 @@ associational, not causal or morphology-wide estimates.
 
 ### 2.1 Robot configurations
 
-Experiment 1 contains exactly these five configurations:
+Experiment 1 contains exactly these four configurations:
 
 | Blocking category | Canonical robot configuration |
 |---|---|
 | Fixed serial arm | `robotstudio_so101` |
 | Quadruped | `unitree-go2-stock-12dof` |
 | Dexterous hand | `leap_hand` |
-| Mobile manipulator | `hello_robot_stretch_2` |
 | Bimanual manipulator | `aloha_2` |
 
-All five currently have a canonical trusted-skeleton source and therefore run
+All four currently have a canonical trusted-skeleton source and therefore run
 both generation conditions. A missing, invalid, or unusable skeleton is an
 infrastructure blocker; it does not convert that robot into a scratch-only row
 and is not scored as a model failure.
 
 ### 2.2 Producer backbone families
 
-The fixed family set contains exactly seven entries:
+The fixed family set contains exactly six entries:
 
 | ID | Family | Vendor |
 |---|---|---|
@@ -147,10 +160,9 @@ The fixed family set contains exactly seven entries:
 | `M4` | Nova Pro | Amazon |
 | `M5` | DeepSeek V4 Pro | DeepSeek |
 | `M6` | Ministral 3 8B | Mistral |
-| `M7` | Qwen3 32B | Alibaba |
 
-All seven Producers are invoked through remotely hosted APIs. M1--M4, M6, and
-M7 use the organization company gateway. M5 uses the official DeepSeek API
+All six Producers are invoked through remotely hosted APIs. M1--M4 and M6 use
+the organization company gateway. M5 uses the official DeepSeek API
 through the project owner's account and must return the exact
 `deepseek-v4-pro` identity. Experiment 1 does not use downloaded weights,
 self-hosted inference, or a local model as a substitute. A direct vendor
@@ -196,11 +208,11 @@ sample size.
 The primary design uses `r01`, `r02`, and `r03`:
 
 ```text
-5 robots × 7 backbones × 2 conditions × 3 replicates = 210 cells
-210 cells × at most 3 submitted drivers = at most 630 submissions
+4 robots × 6 backbones × 2 conditions × 3 replicates = 144 cells
+144 cells × at most 3 submitted drivers = at most 432 submissions
 ```
 
-Experiment 1 core completion requires all 210 planned cells to have a truthful
+Experiment 1 core completion requires all 144 planned cells to have a truthful
 terminal verdict or an explicit infrastructure blocker. A blocker remains in
 the planned denominator and is not converted into driver failure.
 
@@ -210,11 +222,11 @@ the planned denominator and is not converted into driver failure.
 complete balanced block:
 
 ```text
-5 robots × 7 backbones × 2 conditions = 70 additional cells
-70 cells × at most 3 submitted drivers = at most 210 additional submissions
+4 robots × 6 backbones × 2 conditions = 48 additional cells
+48 cells × at most 3 submitted drivers = at most 144 additional submissions
 ```
 
-Completing both produces 350 cumulative cells and at most 1,050 submissions.
+Completing both produces 240 cumulative cells and at most 720 submissions.
 An extension decision may depend only on recorded operational facts such as
 remaining calendar time, budget, provider availability, and unchanged frozen
 configuration. It may not depend on success rates, backbone rankings, condition
@@ -281,11 +293,13 @@ Evolution, and none of those resources or outcomes enter its denominator.
 ## 5. Validation, isolation, and retained evidence
 
 Every submitted driver runs every case and repetition in the same complete
-robot-specific suite. Passing requires the conjunctive public metric,
-temporal/order, closed-loop, canonical actuator-plus-physics, physical-integrity,
-source/import/build, and complete-video requirements inherited from the parent
-Authority. There is no majority vote, partial capability credit, compensation
-between capabilities, or model self-report substitute for a Harness verdict.
+robot-specific suite. Each case passes only when its conjunctive public metric,
+temporal/order, closed-loop, canonical actuator-plus-physics,
+physical-integrity, source/import/build, and complete-video requirements
+inherited from the parent Authority all pass. A capability passes when at least
+two of its three H1/H2/H3 cases pass. A Driver passes only when every capability
+assigned to its robot passes; there is no compensation between capabilities or
+model self-report substitute for a Harness verdict.
 
 Each condition and attempt uses the required isolated workspace and candidate
 worker. Every formal validation case/repetition retains a continuous,
@@ -386,7 +400,7 @@ not change the matrix or statistical unit.
 
 Experiment 1 may start as soon as both parts below are true:
 
-1. all five selected robots have clear fixed Driver interfaces and clear
+1. all four selected robots have clear fixed Driver interfaces and clear
    Harness-evaluable validation criteria, including the private values needed
    to execute each criterion; and
 2. both isolated generation routes are usable from STUDY through
@@ -412,7 +426,7 @@ run outputs, and Experiment 1-specific analysis. `AutoAdapter-Bench/` remains a
 reusable benchmark dependency and must not restate this experiment's cohort,
 R, matrix count, stopping decision, or results.
 
-Any change to the five robots, seven backbone families, remotely hosted API
+Any change to the four robots, six backbone families, remotely hosted API
 deployment boundary or fixed per-backbone route, two conditions, R=3
 primary design, attempt budget, fixed-input boundary, primary outcomes,
 mandatory recording hierarchy/action classification, or extension rule
@@ -422,11 +436,13 @@ cannot silently overwrite or relabel retained evidence.
 
 ## 中文决策摘要（辅助）
 
-Experiment 1 固定为五台机器人、七个 backbone、两种生成条件。核心 `R=3`，共 210 个实验
-cell，最多 630 次 driver submission；`r04`、`r05` 只能各自作为完整 70-cell block 追加，全部完成
-后为 350 cell、最多 1,050 次 submission。B1 从 STUDY 开始，在最终 capability validation verdict
+Experiment 1 固定为四台机器人、六个 backbone、两种生成条件。核心 `R=3`，共 144 个实验
+cell，最多 432 次 driver submission；`r04`、`r05` 只能各自作为完整 48-cell block 追加，全部完成
+后为 240 cell、最多 720 次 submission。B1 从 STUDY 开始，在最终 capability validation verdict
 结束；不运行 TGCD、IVC、Task Demo、high-level controller 或 Evolution。R=3 始终是 primary，后续
-完整 R=4/R=5 只作精度与稳健性扩展。开跑的唯一前置条件是：五台机器人的 Driver 接口与 Harness
+完整 R=4/R=5 只作精度与稳健性扩展。每个 capability 的 H1/H2/H3 至少通过 2 个才算该
+capability 通过，而 Driver 必须通过其全部 capability。开跑的唯一前置条件是：四台机器人的
+Driver 接口与 Harness
 可判定 criteria 全部清晰，以及两条 STUDY-to-generation/Repair/validation 路线可用并能写出第 6 节
 要求的记录。不要求 task-blind reference calibration。`0.1.4` 已明确批准最多八个隔离 cell 并发，
 但该批准只向前适用于按本 revision 派发的 cell，不追溯改变旧 cell 的 Authority revision、证据、

@@ -78,7 +78,7 @@ safe_environment = {
                 / "components"
                 / "execution-order-r1-r5.json",
                 output_dir=output,
-                backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6", "M7"],
+                backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6"],
                 robot_ids=["robotstudio_so101", "unitree-go2-stock-12dof"],
                 max_workers=8,
                 limit=8,

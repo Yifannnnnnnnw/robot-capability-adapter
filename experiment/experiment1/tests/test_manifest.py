@@ -28,15 +28,15 @@ class Experiment1ManifestTests(unittest.TestCase):
     def test_core_manifest_matches_the_authority_matrix(self) -> None:
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
 
-        self.assertEqual(resolved["robot_count"], 5)
-        self.assertEqual(resolved["backbone_count"], 7)
+        self.assertEqual(resolved["robot_count"], 4)
+        self.assertEqual(resolved["backbone_count"], 6)
         self.assertEqual(resolved["replicate_count"], 3)
         self.assertEqual(
             resolved["condition_counts"],
-            {"from-scratch": 105, "skeleton-assisted": 105},
+            {"from-scratch": 72, "skeleton-assisted": 72},
         )
-        self.assertEqual(resolved["unit_count"], 210)
-        self.assertEqual(resolved["maximum_submitted_driver_attempts"], 630)
+        self.assertEqual(resolved["unit_count"], 144)
+        self.assertEqual(resolved["maximum_submitted_driver_attempts"], 432)
 
     def test_every_block_contains_both_isolated_conditions(self) -> None:
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
@@ -46,7 +46,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                 unit["generation_condition"]
             )
 
-        self.assertEqual(len(conditions_by_pair), 5 * 7 * 3)
+        self.assertEqual(len(conditions_by_pair), 4 * 6 * 3)
         self.assertTrue(
             all(
                 conditions == {"skeleton-assisted", "from-scratch"}
@@ -61,7 +61,7 @@ class Experiment1ManifestTests(unittest.TestCase):
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
 
         self.assertNotIn("status", recipe)
-        self.assertEqual(recipe["authority_revision"], "0.1.8")
+        self.assertEqual(recipe["authority_revision"], "0.1.10")
         self.assertEqual(recipe["execution_concurrency"]["status"], "operational")
         self.assertTrue(resolved["ready_to_expand"])
         self.assertEqual(
@@ -92,7 +92,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                 / "AutoAdapter-Bench"
                 / "components"
                 / "backbone_sets"
-                / "declared-seven.json"
+                / "declared-six.json"
             ).read_text(encoding="utf-8")
         )["backbone_ids"]
 
@@ -102,11 +102,10 @@ class Experiment1ManifestTests(unittest.TestCase):
                 "robotstudio_so101",
                 "unitree-go2-stock-12dof",
                 "leap_hand",
-                "hello_robot_stretch_2",
                 "aloha_2",
             ],
         )
-        self.assertEqual(backbones, ["M1", "M2", "M3", "M4", "M5", "M6", "M7"])
+        self.assertEqual(backbones, ["M1", "M2", "M3", "M4", "M5", "M6"])
         self.assertEqual(
             recipe["backbone_runtime_configs"],
             {
@@ -116,7 +115,6 @@ class Experiment1ManifestTests(unittest.TestCase):
                 "M4": "providers/M4-company-api-nova-pro.json",
                 "M5": "providers/M5-deepseek-v4-pro.json",
                 "M6": "providers/M6-company-api-ministral-3-8b.json",
-                "M7": "providers/M7-company-api-qwen3-32b.json",
             },
         )
         self.assertEqual(recipe["model_execution_policy"], "remote-hosted-api-only")
@@ -143,8 +141,6 @@ class Experiment1ManifestTests(unittest.TestCase):
             config = json.loads(
                 (EXPERIMENT_ROOT / config_path).read_text(encoding="utf-8")
             )
-            if config["backbone_id"] == "M7":
-                continue
             self.assertGreater(config["context_limit_tokens"], 0)
             self.assertGreater(config["provider_max_output_tokens"], 0)
             self.assertLessEqual(
@@ -155,10 +151,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                 config["price_snapshot"]["input_cache_miss"], 0
             )
             self.assertGreaterEqual(config["price_snapshot"]["output"], 0)
-        for config_name in (
-            "M6-company-api-ministral-3-8b.json",
-            "M7-company-api-qwen3-32b.json",
-        ):
+        for config_name in ("M6-company-api-ministral-3-8b.json",):
             config = json.loads(
                 (EXPERIMENT_ROOT / "providers" / config_name).read_text(
                     encoding="utf-8"
@@ -170,8 +163,8 @@ class Experiment1ManifestTests(unittest.TestCase):
             )
         self.assertEqual(replicates, ["r01", "r02", "r03"])
         self.assertEqual(recipe["extension_replicate_ids"], ["r04", "r05"])
-        self.assertEqual(recipe["maximum_cumulative_generation_condition_replicates"], 350)
-        self.assertEqual(recipe["maximum_cumulative_submitted_driver_attempts"], 1050)
+        self.assertEqual(recipe["maximum_cumulative_generation_condition_replicates"], 240)
+        self.assertEqual(recipe["maximum_cumulative_submitted_driver_attempts"], 720)
         self.assertFalse(recipe["run_task_demo"])
         self.assertFalse(recipe["run_high_level_controller"])
         self.assertFalse(recipe["run_evolution"])
@@ -193,7 +186,7 @@ class Experiment1ManifestTests(unittest.TestCase):
             / "AutoAdapter-Bench"
             / "components"
             / "backbone_sets"
-            / "declared-seven.json"
+            / "declared-six.json"
         )
         recipe["replicate_set"] = str(
             EXPERIMENT_ROOT / "components" / "replicates-core-r3.json"
@@ -225,7 +218,7 @@ class Experiment1ManifestTests(unittest.TestCase):
             / "AutoAdapter-Bench"
             / "components"
             / "backbone_sets"
-            / "declared-seven.json"
+            / "declared-six.json"
         )
         recipe["replicate_set"] = str(
             EXPERIMENT_ROOT / "components" / "replicates-core-r3.json"

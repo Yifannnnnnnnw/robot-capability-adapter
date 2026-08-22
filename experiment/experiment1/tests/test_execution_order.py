@@ -62,25 +62,26 @@ class Experiment1ExecutionOrderTests(unittest.TestCase):
         self.assertEqual(
             replicate_set["execution_order"], "execution-order-r1-r5.json"
         )
+        self.assertEqual(replicate_set["authority_revision"], "0.1.10")
+        self.assertEqual(execution_order["authority_revision"], "0.1.10")
 
         robots = [
             "robotstudio_so101",
             "unitree-go2-stock-12dof",
             "leap_hand",
-            "hello_robot_stretch_2",
             "aloha_2",
         ]
-        backbones = ["M1", "M2", "M3", "M4", "M5", "M6", "M7"]
+        backbones = ["M1", "M2", "M3", "M4", "M5", "M6"]
         wave_specs = [
             (
                 "core-r3",
                 "core-primary",
                 ["r01", "r02", "r03"],
                 12928008,
-                53,
+                36,
             ),
-            ("extension-r04", "extension-only", ["r04"], 1558252846, 18),
-            ("extension-r05", "extension-only", ["r05"], 1014548398, 17),
+            ("extension-r04", "extension-only", ["r04"], 1558252846, 12),
+            ("extension-r05", "extension-only", ["r05"], 1014548398, 12),
         ]
 
         expected_all_units: set[str] = set()
@@ -147,10 +148,10 @@ class Experiment1ExecutionOrderTests(unittest.TestCase):
         resolved = manifest.resolve_b1(EXPERIMENT_ROOT / "manifest.json")
         resolved_core_units = {unit["unit_id"] for unit in resolved["units"]}
         self.assertEqual(expected_core_units, resolved_core_units)
-        self.assertEqual(len(expected_core_units), 210)
-        self.assertEqual(len(expected_all_units), 350)
-        self.assertEqual(execution_order["total_block_count"], 175)
-        self.assertEqual(execution_order["total_condition_cell_count"], 350)
+        self.assertEqual(len(expected_core_units), 144)
+        self.assertEqual(len(expected_all_units), 240)
+        self.assertEqual(execution_order["total_block_count"], 120)
+        self.assertEqual(execution_order["total_condition_cell_count"], 240)
 
 
 if __name__ == "__main__":

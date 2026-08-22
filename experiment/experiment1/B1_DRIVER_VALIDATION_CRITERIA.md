@@ -3,11 +3,11 @@
 > **Document role:** public Experiment 1 Driver-contract and validation-criteria register<br>
 > **Source rendering:** `appendix_b1_driver_validation_table.tex`<br>
 > **Experiment 1 authority:** `EXPERIMENT_1_AUTHORITY.md`<br>
-> **Execution status:** five fixed capability designs and their H1/H2/H3
+> **Execution status:** four fixed capability designs and their H1/H2/H3
 > trusted-Harness suites are connected through `fixed_validation_bundles/`
 
 This document projects the generated-driver methods, numerical validation
-criteria, and conjunctive acceptance rule in the LaTeX appendix onto the five
+criteria, and acceptance rule in the LaTeX appendix onto the four
 robot configurations selected for Experiment 1. The LaTeX source also contains
 rows for configurations outside Experiment 1; those rows are intentionally not
 reproduced here.
@@ -24,12 +24,11 @@ targets/resets. If it conflicts with
 | `robotstudio_so101` | A1–A5 | 5 |
 | `unitree-go2-stock-12dof` | G1–G5 | 5 |
 | `leap_hand` | L1–L6 | 6 |
-| `hello_robot_stretch_2` | ST1–ST8 | 8 |
 | `aloha_2` | AL1–AL6 | 6 |
-| **Total** |  | **30** |
+| **Total** |  | **22** |
 
 With three hidden cases per capability, one complete validation attempt across
-the five Experiment 1 robots contains 90 trials.
+the four Experiment 1 robots contains 66 trials.
 
 ## Common Driver ABI
 
@@ -60,9 +59,9 @@ safe/reachable domains; the concrete H1/H2/H3 values and resets remain hidden.
 ## Common acceptance rule
 
 Each capability is evaluated on three hidden combinations of target, initial
-state, and parameters. A capability passes only if all three cases pass. A
-generated driver passes B1 only if every capability assigned to its robot
-passes.
+state, and parameters. Each case applies all of its conjunctive criteria. A
+capability passes if at least two of its three H1/H2/H3 cases pass. A generated
+driver passes B1 only if every capability assigned to its robot passes.
 
 Every trial must also satisfy the common:
 
@@ -76,7 +75,7 @@ Every trial must also satisfy the common:
 
 ## Executable bundle connection
 
-The Experiment 1 manifest points to the five fixed Driver-and-criteria
+The Experiment 1 manifest points to the four active fixed Driver-and-criteria
 definitions in `fixed_validation_bundles/`. Each robot bundle contains the
 closed request schemas and exactly three fixed H1/H2/H3 cases per capability,
 including scene, reset, request, measurement binding, guards, criterion, and
@@ -152,30 +151,6 @@ with $0.10$ s established contact; at $0.25$ s the Framework moves at least one
 target smoothly over $0.05$ s by a sealed $[0.006,0.008]$ m distance. Every
 nonrequested fingertip moves at most `0.010 m` and each of its four joints at
 most `0.05 rad` from call time.
-
-## Hello Robot Stretch 2
-
-Experiment 1 configuration: `hello_robot_stretch_2`.
-
-| ID | Generated-driver method | Required request fields | Validation criterion |
-|---|---|---|---|
-| ST1 | `move_base_relative` | `translation_initial_yaw_m: number[2]`; `max_duration_s` | Planar-position error $\leq0.020$ m, yaw drift $\leq0.020$ rad, and planar speed $\leq0.020$ m/s for $0.5$ s. |
-| ST2 | `turn_base_to_heading` | `target_yaw_world_rad`; `max_duration_s` | Wrapped yaw error $\leq0.020$ rad, planar drift $\leq0.020$ m, and yaw rate $\leq0.020$ rad/s for $0.5$ s. |
-| ST3 | `move_tool_to_position` | `target_position_world_m: number[3]`; `max_duration_s` | Tool-position error $\leq0.025$ m continuously for $0.5$ s; side-effect guards pass. |
-| ST4 | `trace_tool_cartesian_path` | `waypoints_world_m: number[N][3]`, $2\leq N\leq8$; `max_duration_per_segment_s` | Ordered waypoint/cross-track error $\leq0.030$ m; segments meet budgets; endpoint error $\leq0.025$ m for $0.5$ s; side-effect guards pass. |
-| ST5 | `set_gripper_opening` | `opening_fraction` in $[0,1]$; `max_duration_s` | Physical gripper-slide error $\leq0.003$ m for $0.25$ s; hidden bidirectional excursion $\geq0.015$ m. |
-| ST6 | `set_wrist_yaw` | `target_yaw_rad`; `max_duration_s` | Absolute, non-wrapped wrist-joint error $\leq0.030$ rad for $0.5$ s. |
-| ST7 | `approach_until_contact` | Same five geometry/time fields as A4 | The complete A4 positive-contact, ray, speed, stopping, unrelated-contact, and penetration gates apply to the Stretch tool binding. |
-| ST8 | `move_tool_offset_and_return` | `offset_call_time_base_m: number[3]`; `max_duration_per_leg_s` | Outbound/return errors each $\leq0.025$ m, in order and within budgets; holds $0.25$ s/$0.5$ s; base remains within $0.020$ m and $0.030$ rad of call-time pose throughout. |
-
-ST3/ST4 may move the base at most `0.10 m` and `0.35 rad` from call time.
-ST5 maps opening fraction to physical joint target
-`-0.005 m + 0.045 m * opening_fraction`; hidden calls differ by at least 0.50.
-Both head joints stay within `0.03 rad` for every method. ST1/ST2 additionally
-hold lift/extension within `0.01 m`, wrist within `0.03 rad`, and gripper slide
-within `0.003 m`. ST3/ST4/ST7 hold wrist, gripper, and head at those bounds.
-ST5/ST6 hold base within `0.02 m`/`0.03 rad` and lift/extension within `0.01 m`.
-ST8 also holds wrist, gripper, and head at the common bounds.
 
 ## ALOHA 2
 
