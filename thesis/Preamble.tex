@@ -61,25 +61,28 @@ Within the evaluated scope, the thesis makes three scientific contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item AutoAdapter-Bench makes LLM backbone and trusted-skeleton access
-  explicit experimental factors while holding the capability interface,
-  capability-level pass standards, complete private validation suite, Harness
-  rules, and resource budget fixed for each robot. This isolates
-  robot-specific driver synthesis from upstream capability design and
-  downstream capability-interface use.
+  \item A layer-separated benchmark of LLMs as producers and users of robot
+  software. B1 evaluates robot-specific driver synthesis under fixed
+  capability interfaces and private validation, whereas B2 evaluates
+  controller backbones against fixed, validated
+  driver--interface--adapter stacks. Their factors, statistical units,
+  outcomes, and verdicts remain separate, so downstream task success is not
+  counted as evidence of driver synthesis.
 
-  \item Auto-Adapter treats capability abstraction and capability-level
-  pass-criteria design as empirical objects rather than hidden human inputs.
-  The implementation-blind Independent Validation Compiler audits source
-  preservation and binds accepted criteria to private cases, while the trusted
-  Harness owns observations and final verdicts. Generation or compilation
-  alone is not counted as reliable validation.
+  \item An evidence-governed synthesis lifecycle for model-authored robot
+  capabilities and controlled adaptation. Task-Grounded Capability Design
+  derives the capability layer and its acceptance requirements from
+  source-backed tasks; Driver Synthesis and bounded same-run Repair implement
+  that layer. Terminal Evolution may propose a restricted Experience record,
+  but only human-reviewed Experience can enter a later matched run.
 
-  \item A matched evaluation separates within-run Repair from later-run
-  Experience reuse. Evolution operates only on a bounded projection of a
-  terminal report, and a human disposition is required before a proposal
-  becomes Experience. Matched Experience and no-Experience runs test whether
-  reviewed evidence changes subsequent driver-synthesis outcomes.
+  \item An implementation-blind, physics-grounded test-oracle architecture for
+  generated robot software. The Independent Validation Compiler audits source
+  preservation and compiles accepted criteria without inspecting the candidate
+  implementation. The trusted Harness supplies Direct-MuJoCo observations,
+  enforces physical-integrity guards, and owns final verdicts, thereby
+  separating criterion compilation and structural conformance from
+  actuator-mediated behaviour.
 
 \end{enumerate}
 
@@ -88,19 +91,28 @@ industry-relevant contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item An inspectable path links reviewed task-level standards to
-  model-authored capability-level pass criteria, independent compilation, and
-  Harness verdicts for the declared tasks and validation cases.
+  \item A bounded and inspectable workflow for LLM-assisted robot integration.
+  Before each controlled comparison, Auto-Adapter fixes the admissible
+  per-robot inputs and callable contract, bounds generation and Repair, records
+  model and resource use, and assigns private physics-grounded evaluation to
+  the trusted Harness. Candidate revisions, model calls, token use, cost, wall
+  time, observations, and acceptance decisions can therefore be inspected
+  within the declared workflow.
 
-  \item A repeatable fixed-input robot-integration package records the
-  simulator assets, morphology and control facts, source-backed tasks,
-  capability interface, pass standards, private validation inputs, and
-  robot-specific driver used in the experiment.
+  \item A reusable experimental substrate for embodied-AI research and
+  development. Each admitted experimental stack exposes a stable capability
+  interface backed by a driver that has passed independent Direct-MuJoCo
+  capability validation. High-level-controller backbones can therefore be
+  compared against the same robot-facing software boundary without changing
+  the underlying integration within that comparison.
 
-  \item A review-gated pathway reuses terminal evidence only in later runs.
-  Human review, exclusion of private validation content, versioned Experience
-  snapshots, and matched no-Experience controls make that reuse inspectable
-  without changing the run that produced the evidence.
+  \item A resource-accounted basis for role-specific LLM selection. B1
+  supports conditional comparison of Producer backbones and trusted-skeleton
+  access for driver synthesis, whereas B2 supports conditional comparison of
+  controller backbones after the robot-facing stack has been fixed. Reporting
+  behavioural outcomes with calls, tokens, cost, wall time, Repair, and failure
+  records where applicable supports role-specific trade-off analysis rather
+  than a universal model ranking.
 
 \end{enumerate}
 
