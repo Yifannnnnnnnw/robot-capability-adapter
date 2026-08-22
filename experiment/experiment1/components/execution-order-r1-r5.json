@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "../EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.12",
+  "authority_revision": "0.1.13",
   "execution_order_id": "experiment1-r1-r5-paired-blocks",
   "materialization_method": "One-time Python random.Random(order_seed) shuffle of the declared pair list and a prospectively counterbalanced within-pair condition order. The materialized blocks, not runtime regeneration, are the execution order.",
   "runtime_rule": "Consume waves and paired blocks in listed order without outcome-based reseeding or reshuffling. Complete core-r3 before an extension decision; if extended, complete extension-r04 before extension-r05. Keep both condition cells isolated and dispatch them in their listed within-block order.",

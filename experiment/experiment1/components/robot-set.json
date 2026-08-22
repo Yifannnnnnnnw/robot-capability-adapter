@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "../EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.12",
+  "authority_revision": "0.1.13",
   "robot_set_id": "experiment1-four-morphologies",
   "robot_configuration_ids": [
     "robotstudio_so101",

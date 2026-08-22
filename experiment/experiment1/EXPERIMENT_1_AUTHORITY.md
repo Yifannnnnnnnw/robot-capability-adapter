@@ -5,9 +5,21 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.12`<br>
+> **Revision:** `0.1.13`<br>
 > **Effective date:** 2026-08-22<br>
-> **Design status:** active and prospectively fixed; formal execution paused
+> **Design status:** active and prospectively fixed; formal execution authorized
+
+Revision `0.1.13` records the project owner's explicit authorization on
+2026-08-22 to restart formal execution under the already fixed four-robot,
+six-backbone design. Before the first formal cell, a bounded M6 × SO-101
+two-condition diagnostic canary may exercise both generation routes; its
+outputs are readiness evidence only and do not enter the formal denominator or
+Experience. Formal cells then consume the already frozen global dispatch order,
+with isolated concurrency ramping from one to at most eight workers while
+infrastructure and evidence completeness are checked. This revision does not
+change the cohort, backbones, conditions, replicates, fixed validation bundles,
+attempt budget, provider routes, or analysis boundary, and it does not relabel
+any earlier diagnostic or formal outcome.
 
 Revision `0.1.12` prospectively supplies the task-neutral skeleton corrections
 permitted by the parent Authority. For the skeleton-assisted condition, the
