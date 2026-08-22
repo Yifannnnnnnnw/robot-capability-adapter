@@ -643,6 +643,128 @@ class ArmSerialDLSSkeleton(SessionBoundSkeleton):
             )
         return True
 
+    def track_cartesian_path(
+        self,
+        path_xyz: Sequence[Sequence[float]],
+        duration: float = 2.0,
+        *,
+        max_reference_step: float = 0.01,
+        gain: float = 1.8,
+        cross_track_gain: float = 2.0,
+        max_joint_delta: float = 0.12,
+        residual_tolerance: float = 0.12,
+    ) -> bool:
+        """Track a caller-supplied Cartesian segment or polyline with fresh-state DLS.
+
+        ``path_xyz`` contains ordered world-frame points.  ``duration`` fixes
+        the number of control cycles; the call is rejected when that timing
+        would advance the reference farther than ``max_reference_step`` in one
+        cycle.  Cross-track feedback is measured normal to the active segment,
+        and every actuator-target update is limited by ``max_joint_delta``.
+        """
+
+        self._resolve_indices()
+        np = self._load_numpy()
+        try:
+            path = np.asarray(path_xyz, dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("path_xyz must be a finite (N, 3) array") from exc
+        if path.ndim != 2 or path.shape[0] < 2 or path.shape[1] != 3:
+            raise ValueError("path_xyz must have shape (N, 3) with N >= 2")
+        if not np.all(np.isfinite(path)):
+            raise ValueError("path_xyz must contain finite values")
+
+        segment_vectors = np.diff(path, axis=0)
+        segment_lengths = np.linalg.norm(segment_vectors, axis=1)
+        if not np.all(np.isfinite(segment_lengths)):
+            raise ValueError("path_xyz length must be finite")
+        if np.any(segment_lengths <= 0.0):
+            raise ValueError("consecutive path_xyz points must differ")
+        cumulative_lengths = np.concatenate(([0.0], np.cumsum(segment_lengths)))
+        total_length = float(cumulative_lengths[-1])
+        if not math.isfinite(total_length):
+            raise ValueError("path_xyz length must be finite")
+
+        duration_value = _finite(duration, "duration")
+        reference_limit = _finite(max_reference_step, "max_reference_step")
+        gain_value = _finite(gain, "gain")
+        cross_track_gain_value = _finite(cross_track_gain, "cross_track_gain")
+        delta_limit = _finite(max_joint_delta, "max_joint_delta")
+        residual_limit = _finite(residual_tolerance, "residual_tolerance")
+        if duration_value < 0.0:
+            raise ValueError("duration must be non-negative")
+        if (
+            reference_limit <= 0.0
+            or gain_value <= 0.0
+            or cross_track_gain_value <= 0.0
+            or delta_limit <= 0.0
+            or residual_limit <= 0.0
+        ):
+            raise ValueError(
+                "max_reference_step, gain, cross_track_gain, max_joint_delta, "
+                "and residual_tolerance must be positive"
+            )
+
+        steps = max(1, int(math.ceil(duration_value / self._timestep)))
+        reference_step = total_length / steps
+        if reference_step > reference_limit:
+            raise ValueError(
+                "duration is too short for path length and max_reference_step"
+            )
+
+        segment_index = 0
+        for step_index in range(steps):
+            distance = (
+                total_length
+                if step_index == steps - 1
+                else (step_index + 1) * reference_step
+            )
+            while (
+                segment_index < len(segment_lengths) - 1
+                and distance > cumulative_lengths[segment_index + 1]
+            ):
+                segment_index += 1
+            segment_start = cumulative_lengths[segment_index]
+            fraction = (distance - segment_start) / segment_lengths[segment_index]
+            reference = path[segment_index] + fraction * segment_vectors[segment_index]
+            tangent = segment_vectors[segment_index] / segment_lengths[segment_index]
+
+            self._mj.mj_forward(self.model, self.data)
+            position_error = reference - self._ee_position()
+            along_track_error = tangent * float(np.dot(position_error, tangent))
+            cross_track_error = position_error - along_track_error
+            control_error = (
+                along_track_error + cross_track_gain_value * cross_track_error
+            )
+            residual = float(np.linalg.norm(position_error))
+
+            jacobian = np.zeros((3, int(self.model.nv)), dtype=float)
+            self._ee_position_jacobian(jacobian)
+            arm_jacobian = jacobian[:, self._arm_qvel_adr]
+            damping = self.spec.ik_damping * max(
+                1.0, 0.05 / max(residual, 1e-6)
+            )
+            system = arm_jacobian @ arm_jacobian.T + (damping**2) * np.eye(3)
+            raw_delta = arm_jacobian.T @ np.linalg.solve(system, control_error)
+            raw_norm = float(np.linalg.norm(raw_delta))
+            scale = gain_value
+            if raw_norm > 0.0:
+                scale = min(scale, delta_limit / raw_norm)
+            command_delta = scale * raw_delta
+            desired = self.get_joint_positions() + command_delta
+            self.set_arm_actuators(np.clip(desired, self._q_lo, self._q_hi))
+            self._physics_step(1)
+
+        self._mj.mj_forward(self.model, self.data)
+        final_residual = float(np.linalg.norm(path[-1] - self._ee_position()))
+        if final_residual > residual_limit:
+            raise IKUnreachableError(
+                final_residual,
+                residual_limit,
+                self.get_joint_positions().copy(),
+            )
+        return True
+
     def home(self, duration: float = 2.0) -> bool:
         """Drive the arm to the configured home pose through actuators."""
 

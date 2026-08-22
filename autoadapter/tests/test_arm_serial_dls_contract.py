@@ -236,6 +236,82 @@ class ArmSerialDLSContractTests(unittest.TestCase):
         np.testing.assert_allclose(solved_pose["pos"], target["pos"], atol=1e-5)
         np.testing.assert_allclose(solved_pose["R"], target["R"], atol=1e-5)
 
+    def test_cartesian_path_tracks_the_supplied_polyline_instead_of_cutting_to_endpoint(
+        self,
+    ) -> None:
+        model = mujoco.MjModel.from_xml_string(
+            """
+            <mujoco>
+              <compiler autolimits="true"/>
+              <option timestep="0.002" gravity="0 0 0"/>
+              <default>
+                <joint damping="2"/>
+                <position kp="300"/>
+              </default>
+              <worldbody>
+                <body>
+                  <joint name="slide_x" type="slide" axis="1 0 0" range="-0.3 0.3"/>
+                  <joint name="slide_y" type="slide" axis="0 1 0" range="-0.3 0.3"/>
+                  <geom type="sphere" size="0.01" mass="0.1"/>
+                  <site name="tool_site"/>
+                </body>
+              </worldbody>
+              <actuator>
+                <position name="slide_x_act" joint="slide_x"/>
+                <position name="slide_y_act" joint="slide_y"/>
+              </actuator>
+            </mujoco>
+            """
+        )
+        data = mujoco.MjData(model)
+        skeleton = ArmSerialDLSSkeleton.from_session(
+            model=model,
+            data=data,
+            spec=ArmSpec(
+                ee_site_name="tool_site",
+                arm_joint_names=("slide_x", "slide_y"),
+                arm_actuator_names=("slide_x_act", "slide_y_act"),
+                joint_limits={"slide_x": (-0.3, 0.3), "slide_y": (-0.3, 0.3)},
+            ),
+        )
+        samples: list[np.ndarray] = []
+        original_physics_step = skeleton._physics_step
+
+        def record_physics_step(count: int = 1) -> None:
+            for _ in range(count):
+                original_physics_step(1)
+                mujoco.mj_forward(model, data)
+                samples.append(np.array(data.site_xpos[0], copy=True))
+
+        skeleton._physics_step = record_physics_step  # type: ignore[method-assign]
+        waypoints = np.asarray(
+            ((0.0, 0.0, 0.0), (0.0, 0.15, 0.0), (0.15, 0.15, 0.0))
+        )
+
+        self.assertTrue(
+            skeleton.track_cartesian_path(
+                waypoints,
+                duration=0.8,
+                max_reference_step=0.002,
+                gain=3.0,
+                max_joint_delta=0.02,
+                residual_tolerance=0.02,
+            )
+        )
+
+        trace = np.asarray(samples)[:, :2]
+        elbow = waypoints[1, :2]
+        self.assertLess(float(np.min(np.linalg.norm(trace - elbow, axis=1))), 0.02)
+        first_segment_distance = np.hypot(
+            trace[:, 0], trace[:, 1] - np.clip(trace[:, 1], 0.0, 0.15)
+        )
+        second_segment_distance = np.hypot(
+            trace[:, 0] - np.clip(trace[:, 0], 0.0, 0.15), trace[:, 1] - 0.15
+        )
+        cross_track = np.minimum(first_segment_distance, second_segment_distance)
+        self.assertLess(float(np.max(cross_track)), 0.02)
+        np.testing.assert_allclose(trace[-1], waypoints[-1, :2], atol=0.02)
+
     def test_skeleton_uses_the_canonical_session_objects(self) -> None:
         model = object()
         data = object()
@@ -261,6 +337,7 @@ class ArmSerialDLSContractTests(unittest.TestCase):
                 "set_arm_actuators",
                 "move_joints",
                 "move_cartesian",
+                "track_cartesian_path",
                 "hold",
                 "set_gripper",
                 "home",
@@ -292,6 +369,7 @@ class ArmSerialDLSContractTests(unittest.TestCase):
             "set_arm_actuators",
             "move_joints",
             "move_cartesian",
+            "track_cartesian_path",
             "hold",
             "set_gripper",
             "home",
