@@ -2,12 +2,35 @@
 
 > **Document ID:** `AA2-EXP1`<br>
 > **Document role:** sole normative document for Experiment 1<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.29`<br>
+> **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.11`<br>
+> **Revision:** `0.1.12`<br>
 > **Effective date:** 2026-08-22<br>
 > **Design status:** active and prospectively fixed; formal execution paused
+
+Revision `0.1.12` prospectively supplies the task-neutral skeleton corrections
+permitted by the parent Authority. For the skeleton-assisted condition, the
+shared serial-arm DLS source now exposes position-only Cartesian polyline
+tracking from caller-supplied world-frame points, with bounded reference
+progression and fresh-state cross-track feedback; this changes the supplied
+source for ALOHA 2 and SO-101. The Go2 source now exposes fresh body-origin and
+body-yaw velocity observations plus bounded 40 ms PI velocity tracking, and its
+fallback PD gait retains phase across short calls. The raw learned-policy
+primitive remains available and unchanged. Explicit Go2 worker allowlisting is
+runtime isolation wiring, not another generation condition.
+
+These source changes create a new skeleton-assisted configuration; their
+diagnostic checks are not Experiment 1 outcomes or Experience. No prior outcome
+is relabelled. If any earlier cells are retained, every executed ALOHA 2,
+SO-101, or Go2 skeleton-assisted backbone/replicate cell is affected and must
+be regenerated and validated under this revision. LEAP Hand and from-scratch
+inputs are unchanged. This revision does not change the fixed capability
+interfaces or validation bundles, cohort, backbones, conditions, replicate
+plan, attempt budget, provider routes, or analysis boundary, and it does not
+authorize a formal restart. Formal execution remains paused. The parent update
+to `AA2-AUTH` revision `0.19.30` records its independent B2 delegation and does
+not otherwise change Experiment 1.
 
 Revision `0.1.11` prospectively adopts the minimum corrections needed for the
 fixed four-robot B1 Harness to implement revision `0.1.10` without known false

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.11",
+  "authority_revision": "0.1.12",
   "experiment_id": "experiment1-b1-core-r3",
   "track": "B1",
   "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
