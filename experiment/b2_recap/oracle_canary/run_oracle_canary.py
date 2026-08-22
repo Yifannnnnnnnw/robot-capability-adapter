@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Run the hidden scripted oracle through the persistent B2 path.
+"""Run the hidden scripted oracle through the fixed B2 diagnostic episode path.
 
-This is a diagnostic runner, not a formal episode dispatcher.  By default it
-disables video, so even a physically correct diagnostic cannot clear the
-AA2-B2 Section 7 scripted-oracle prerequisite.
+Oracle canaries remain diagnostic and never enter the formal 210-episode
+denominator.  A complete ten-task run can clear only the AA2-B2 Section 7
+scripted-oracle prerequisite.
 """
 
 from __future__ import annotations
@@ -70,24 +70,22 @@ class ScriptedOracleModel:
         return response
 
 
-def _task_index(suite: Mapping[str, Any]) -> dict[tuple[str, str], Mapping[str, Any]]:
-    return {
-        (str(robot["robot_configuration_id"]), str(task["task_id"])): task
-        for robot in suite["robot_suites"]
-        for task in robot["tasks"]
-    }
-
-
 def _summary(
     *,
     plan: Mapping[str, Any],
-    session: Mapping[str, Any],
-    harness: Mapping[str, Any],
+    episode: Mapping[str, Any],
 ) -> dict[str, Any]:
-    controller = session.get("controller")
-    worker = session.get("worker")
+    controller = episode.get("controller")
+    worker = episode.get("worker")
+    harness = episode.get("harness")
     controller_value = controller if isinstance(controller, Mapping) else {}
     worker_value = worker if isinstance(worker, Mapping) else {}
+    harness_value = harness if isinstance(harness, Mapping) else {}
+    oracle_canary_passed = bool(
+        harness_value.get("physical_harness_verdict") == "PASS"
+        and harness_value.get("physical_integrity_passed") is True
+        and harness_value.get("video_complete") is True
+    )
     return {
         "robot_configuration_id": plan["robot_configuration_id"],
         "task_id": plan["task_id"],
@@ -96,32 +94,45 @@ def _summary(
         "planned_leaf_count": len(plan["ordered_leaves"]),
         "executed_capability_calls": controller_value.get("capability_calls"),
         "worker_completed": worker_value.get("worker_completed"),
-        "task_metric_passed": harness.get("task_metric_passed"),
-        "physical_execution_passed": harness.get("physical_execution_passed"),
-        "physical_integrity_passed": harness.get("physical_integrity_passed"),
-        "video_complete": harness.get("video_complete"),
-        "independent_harness_verdict": harness.get("physical_harness_verdict"),
-        "formal_oracle_prerequisite_cleared": False,
+        "task_metric_passed": harness_value.get("task_metric_passed"),
+        "physical_execution_passed": harness_value.get("physical_execution_passed"),
+        "physical_integrity_passed": harness_value.get("physical_integrity_passed"),
+        "video_complete": harness_value.get("video_complete"),
+        "independent_harness_verdict": harness_value.get(
+            "physical_harness_verdict"
+        ),
+        "oracle_canary_passed": oracle_canary_passed,
     }
 
 
-def run(*, only_task: str | None, wall_timeout_s: float) -> dict[str, Any]:
+def _write_json(path: Path, value: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(dict(value), indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def run(
+    *,
+    only_task: str | None,
+    wall_timeout_s: float,
+    output_dir: Path,
+    record_video: bool = True,
+) -> dict[str, Any]:
     validate()
     source_root = REPOSITORY_ROOT / "autoadapter/src"
     if str(source_root) not in sys.path:
         sys.path.insert(0, str(source_root))
 
-    from autoadapter2.b2.recap import RecapBudgets
-    from autoadapter2.b2.session_runner import (
-        RecapWorkerSessionConfig,
-        run_recap_worker_session,
+    from autoadapter2.b2.episode_runner import (
+        B2DiagnosticEpisodeConfig,
+        run_b2_diagnostic_episode,
     )
-    from autoadapter2.b2.task_harness import evaluate_b2_task_harness
+    from autoadapter2.b2.recap import RecapBudgets
     from autoadapter2.libraries import load_robot_package
 
     oracle = _read_object(PLANS_PATH)
-    suite = _read_object(TASK_SUITE_PATH)
-    tasks = _task_index(suite)
     results: list[dict[str, Any]] = []
     selected = [
         plan
@@ -130,40 +141,35 @@ def run(*, only_task: str | None, wall_timeout_s: float) -> dict[str, Any]:
     ]
     if not selected:
         raise ValueError(f"unknown oracle task {only_task!r}")
+    output_root = output_dir.resolve()
 
     packages = {}
-    designs = {}
     for plan in selected:
         robot_id = str(plan["robot_configuration_id"])
         task_id = str(plan["task_id"])
-        task = tasks[(robot_id, task_id)]
         leaves = plan["ordered_leaves"]
         model = ScriptedOracleModel(leaves)
+        task_output_dir = output_root / robot_id / task_id
+        report_path = task_output_dir / "oracle_canary_report.json"
+        episode: dict[str, Any] | None = None
+        error: dict[str, str] | None = None
         try:
             if robot_id not in packages:
                 packages[robot_id] = load_robot_package(PACKAGE_ROOTS[robot_id])
-                designs[robot_id] = _read_object(DESIGN_PATHS[robot_id])
             package = packages[robot_id]
-            design = designs[robot_id]
-            replicate = next(
-                item
-                for item in task["replicate_inputs"]
-                if item["replicate_id"] == "R1"
-            )
-            session = run_recap_worker_session(
-                config=RecapWorkerSessionConfig(
-                    driver_path=DRIVER_PATHS[robot_id],
-                    scene_path=package.root / replicate["scene_entrypoint"],
+            episode = run_b2_diagnostic_episode(
+                config=B2DiagnosticEpisodeConfig(
+                    task_suite_path=TASK_SUITE_PATH,
                     robot_configuration_id=robot_id,
-                    reset=replicate["reset"],
-                    max_steps=int(task["episode_budget"]["max_steps"]),
-                    max_sim_time_s=float(task["episode_budget"]["timeout_sim_s"]),
-                    sample_hz=float(task["episode_budget"]["sample_hz"]),
+                    task_id=task_id,
+                    replicate_id="R1",
+                    driver_path=DRIVER_PATHS[robot_id],
+                    capability_design_path=DESIGN_PATHS[robot_id],
+                    output_dir=task_output_dir,
+                    record_video=record_video,
                     wall_timeout_s=wall_timeout_s,
-                    render={"enabled": False},
                 ),
-                capability_design=design,
-                public_task=task["public_projection"],
+                package=package,
                 model=model,
                 budgets=RecapBudgets(
                     max_model_calls=len(leaves) + 1,
@@ -174,48 +180,87 @@ def run(*, only_task: str | None, wall_timeout_s: float) -> dict[str, Any]:
                     max_history_chars=100_000,
                 ),
             )
-            harness = evaluate_b2_task_harness(
-                package=package,
-                task_suite_path=TASK_SUITE_PATH,
-                instance_id=str(task["private_instance_id"]),
-                replicate_id="R1",
-                session_result=session,
-            )
-            results.append(_summary(plan=plan, session=session, harness=harness))
         except Exception as exc:
-            results.append(
-                {
-                    "robot_configuration_id": robot_id,
-                    "task_id": task_id,
-                    "diagnostic_status": "ERROR",
-                    "error_type": type(exc).__name__,
-                    "error_message": str(exc)[:1000],
-                    "formal_oracle_prerequisite_cleared": False,
-                }
-            )
+            error = {
+                "type": type(exc).__name__,
+                "message": str(exc)[:1000],
+            }
 
-    return {
-        "artifact_type": "b2_recap_oracle_no_video_diagnostic",
+        if episode is None:
+            summary = {
+                "robot_configuration_id": robot_id,
+                "task_id": task_id,
+                "diagnostic_status": "ERROR",
+                "planned_leaf_count": len(leaves),
+                "oracle_canary_passed": False,
+            }
+        else:
+            summary = _summary(plan=plan, episode=episode)
+        summary["scripted_model_calls"] = model.call_count
+        summary["report"] = str(report_path.relative_to(output_root))
+        task_report = {
+            "artifact_type": "b2_recap_scripted_oracle_task_canary",
+            "formal_episode": False,
+            "formal_denominator_entry": False,
+            "video_requested": record_video,
+            "robot_configuration_id": robot_id,
+            "task_id": task_id,
+            "replicate_id": "R1",
+            "summary": summary,
+            "error": error,
+            "episode": episode,
+        }
+        _write_json(report_path, task_report)
+        results.append(summary)
+
+    complete_task_cohort = len(selected) == len(oracle["plans"]) == 10
+    selected_canaries_passed = bool(results) and all(
+        result.get("oracle_canary_passed") is True for result in results
+    )
+    prerequisite_cleared = bool(
+        record_video and complete_task_cohort and selected_canaries_passed
+    )
+    index = {
+        "artifact_type": "b2_recap_scripted_oracle_canary_index",
         "formal_episode": False,
-        "video_enabled": False,
-        "formal_oracle_prerequisite_cleared": False,
+        "formal_denominator_entry": False,
+        "oracle_plan_path": str(PLANS_PATH),
+        "task_suite_path": str(TASK_SUITE_PATH),
+        "video_enabled": record_video,
+        "selected_task_count": len(selected),
+        "required_task_count": len(oracle["plans"]),
+        "complete_task_cohort": complete_task_cohort,
+        "selected_canaries_passed": selected_canaries_passed,
+        "formal_oracle_prerequisite_cleared": prerequisite_cleared,
         "results": results,
     }
+    _write_json(output_root / "oracle_canary_index.json", index)
+    return index
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", help="run one task ID instead of all ten")
     parser.add_argument("--wall-timeout-s", type=float, default=300.0)
-    args = parser.parse_args()
-    print(
-        json.dumps(
-            run(only_task=args.task, wall_timeout_s=args.wall_timeout_s),
-            indent=2,
-            allow_nan=False,
-        )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=REPOSITORY_ROOT / "experiment/b2_recap/runs/oracle-canary",
     )
-    return 0
+    parser.add_argument(
+        "--no-video",
+        action="store_true",
+        help="diagnostic only; cannot clear the scripted-oracle prerequisite",
+    )
+    args = parser.parse_args()
+    report = run(
+        only_task=args.task,
+        wall_timeout_s=args.wall_timeout_s,
+        output_dir=args.output,
+        record_video=not args.no_video,
+    )
+    print(json.dumps(report, indent=2, allow_nan=False))
+    return 0 if report["formal_oracle_prerequisite_cleared"] else 1
 
 
 if __name__ == "__main__":

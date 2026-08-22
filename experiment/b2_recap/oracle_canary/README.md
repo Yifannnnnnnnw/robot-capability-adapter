@@ -14,21 +14,29 @@ python3 experiment/b2_recap/oracle_canary/validate_oracle_plans.py
 python3 -m unittest experiment/b2_recap/oracle_canary/test_oracle_plans.py
 ```
 
-Run a diagnostic R1 pass through the current persistent worker and independent
-task Harness with video deliberately disabled:
+Run all ten R1 canaries through the common task-aware diagnostic episode
+runner, persistent worker, independent task Harness, and continuous-video
+path. Reports and videos are retained below the selected output directory:
 
 ```bash
-python3 experiment/b2_recap/oracle_canary/run_oracle_canary.py
+PYTHONPATH=autoadapter/src python3 \
+  experiment/b2_recap/oracle_canary/run_oracle_canary.py \
+  --output experiment/b2_recap/runs/oracle-canary
 ```
 
-Use `--task TASK_ID` for one task. The runner always reports
-`formal_oracle_prerequisite_cleared: false`: a no-video diagnostic cannot meet
-the Authority's complete-video requirement, even if its task metric and
-physical integrity pass. The plans remain provisional until all ten are run,
-physically tuned where necessary, and pass the independent Harness with
-continuous video.
+The aggregate report is `oracle_canary_index.json`; each task directory keeps
+its complete controller, worker, Harness, error, and video record. The runner
+sets `formal_oracle_prerequisite_cleared: true` only for a complete ten-task
+cohort in which every independent Harness verdict is `PASS`, physical
+integrity is true, and video is complete. Oracle canaries remain diagnostic,
+set `formal_episode: false`, and never enter the 210-episode denominator.
 
-`diagnostic_status.json` records the latest attempted diagnostic. In the
-current environment all ten tasks remained unexecuted because MuJoCo was not
-installed; this is an infrastructure limitation, not task success or failure.
-The B2 formal-execution blocker is therefore still active.
+Use `--task TASK_ID` for a one-task video smoke. Use `--no-video` only for a
+faster execution diagnostic. A subset or no-video run deliberately exits
+non-zero and cannot clear the ten-task prerequisite even if every selected
+task otherwise passes.
+
+On macOS, video-required runs need a process with access to the active
+CoreGraphics session. A restricted/headless process reports
+`invalid CoreGraphics connection`; run the unchanged command in an authorized
+graphical execution context rather than disabling the required video.
