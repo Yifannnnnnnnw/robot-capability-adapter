@@ -1,8 +1,9 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v1",
-  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v1",
+  "suite_id": "b2-fixed-reference-suite::robotstudio_so101::v1",
+  "source_suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v1",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
   "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
@@ -477,6 +478,21 @@
         "opening_fraction": 0.2,
         "max_duration_s": 2.0
       },
+      "validation_request_sequence": [
+        {
+          "opening_fraction": 0.0,
+          "max_duration_s": 2.0
+        },
+        {
+          "opening_fraction": 1.0,
+          "max_duration_s": 2.0
+        },
+        {
+          "opening_fraction": 0.2,
+          "max_duration_s": 2.0
+        }
+      ],
+      "validation_timeout_sim_s": 8.0,
       "reset": {
         "kind": "default",
         "joint_positions": {
@@ -546,6 +562,21 @@
         "opening_fraction": 0.8,
         "max_duration_s": 2.5
       },
+      "validation_request_sequence": [
+        {
+          "opening_fraction": 1.0,
+          "max_duration_s": 2.5
+        },
+        {
+          "opening_fraction": 0.0,
+          "max_duration_s": 2.5
+        },
+        {
+          "opening_fraction": 0.8,
+          "max_duration_s": 2.5
+        }
+      ],
+      "validation_timeout_sim_s": 8.0,
       "reset": {
         "kind": "default",
         "joint_positions": {
@@ -615,6 +646,21 @@
         "opening_fraction": 0.5,
         "max_duration_s": 3.0
       },
+      "validation_request_sequence": [
+        {
+          "opening_fraction": 0.0,
+          "max_duration_s": 3.0
+        },
+        {
+          "opening_fraction": 1.0,
+          "max_duration_s": 3.0
+        },
+        {
+          "opening_fraction": 0.5,
+          "max_duration_s": 3.0
+        }
+      ],
+      "validation_timeout_sim_s": 9.5,
       "reset": {
         "kind": "default",
         "joint_positions": {
