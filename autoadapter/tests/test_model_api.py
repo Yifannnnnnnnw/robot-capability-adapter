@@ -454,6 +454,75 @@ class ModelApiTests(unittest.TestCase):
         self.assertEqual(client.calls[0]["mode"], "react")
         self.assertEqual(client.calls[0]["tool_names"], ["read_public_file"])
 
+    def test_native_history_normalizes_only_empty_assistant_without_tools(self) -> None:
+        client = JsonModelClient(
+            ModelConfig(
+                provider="company",
+                model="model",
+                base_url="https://model.example/v1",
+                api_key="secret-value",
+                tool_history_mode="native",
+            )
+        )
+        prior_tool_call = {
+            "id": "call-1",
+            "type": "function",
+            "function": {"name": "inspect", "arguments": "{}"},
+        }
+        messages = [
+            {"role": "user", "content": "Build the driver."},
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [prior_tool_call],
+            },
+            {"role": "tool", "tool_call_id": "call-1", "content": "{}"},
+            {"role": "assistant", "content": None},
+            {
+                "role": "user",
+                "content": "No artifact was submitted. Call submit_driver.",
+            },
+        ]
+        response_payload = {
+            "model": "model",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": "ready"},
+                }
+            ],
+            "usage": {},
+        }
+        captured: dict[str, object] = {}
+
+        def post(*, stage: str, body: dict[str, object]) -> dict:
+            del stage
+            captured.update(body)
+            return response_payload
+
+        with mock.patch.object(client, "_post", side_effect=post):
+            client.generate_tool_turn(
+                stage="generate",
+                system_prompt="Use the tools.",
+                messages=messages,
+                tools=[],
+            )
+
+        provider_messages = captured["messages"]
+        self.assertIsInstance(provider_messages, list)
+        history = provider_messages[1:]
+        self.assertEqual(history[0], messages[0])
+        self.assertEqual(history[1], messages[1])
+        self.assertEqual(history[2], messages[2])
+        self.assertEqual(
+            history[3],
+            {
+                "role": "assistant",
+                "content": "No tool call or terminal submission was produced.",
+            },
+        )
+        self.assertEqual(history[4], messages[4])
+
     def test_text_observation_mode_avoids_native_tool_history(self) -> None:
         config = ModelConfig(
             provider="company",

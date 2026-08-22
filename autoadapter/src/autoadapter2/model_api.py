@@ -33,6 +33,9 @@ class _ModelCallDeadline(TimeoutError):
 _RETRYABLE_HTTP_STATUSES = frozenset({429, 500, 502, 503, 504})
 _MAX_PHYSICAL_REQUESTS = 2
 _RETRY_BACKOFF_S = 1.0
+_EMPTY_NATIVE_ASSISTANT_CONTENT = (
+    "No tool call or terminal submission was produced."
+)
 
 
 @contextlib.contextmanager
@@ -263,7 +266,21 @@ class JsonModelClient:
         self, messages: Sequence[Mapping[str, Any]]
     ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         if self.config.tool_history_mode == "native":
-            projection = self._context_manager.project_native(messages)
+            native_messages = []
+            for message in messages:
+                current = dict(message)
+                content = current.get("content")
+                empty_content = content is None or (
+                    isinstance(content, str) and not content.strip()
+                )
+                if (
+                    current.get("role") == "assistant"
+                    and empty_content
+                    and not current.get("tool_calls")
+                ):
+                    current["content"] = _EMPTY_NATIVE_ASSISTANT_CONTENT
+                native_messages.append(current)
+            projection = self._context_manager.project_native(native_messages)
         else:
             projection = self._context_manager.project_text_observation(messages)
         return [dict(message) for message in projection.messages], dict(projection.stats)
