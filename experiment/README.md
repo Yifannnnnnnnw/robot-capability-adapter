@@ -10,7 +10,7 @@ Each experiment may have at most one authority explicitly delegated by
 outputs are non-normative implementations or evidence and cannot override the
 applicable authority.
 
-Active experiments:
+Chapter 3 workspaces:
 
 - `experiment1a_generation/` — Experiment 1a/B1 generation, with its authority,
   manifests, validation bundles, diagnostics, runtime, tests, and active run
@@ -18,6 +18,22 @@ Active experiments:
 - `experiment1b_use/` — Experiment 1b/B2 ReCAP use, with its authority,
   configuration, fixed reference validation, diagnostics, runtime, tests, and
   active run placeholder.
+
+Other delegated experiments:
+
+- `experiment2/` — Chapter 4's bounded SO-101 cross-run Experience closure.
+- `experiment3/` — Chapter 5's exact eleven-configuration Direct-MuJoCo
+  cohort.
+
+Shared support:
+
+- `path_layout.py` — read-only compatibility resolution for moved historical
+  B1/B2 run paths.
+- `archive/runs/` — immutable historical B1/B2 run evidence; it is not an
+  active output directory.
+- `tests/` — cross-experiment focused checks.
+- `CHAPTER4_5_RUNBOOK.md` — launch instructions scoped only to Experiments 2
+  and 3.
 
 Historical run evidence is read-only and is kept under `archive/runs/`; see
 `archive/README.md`.  The archive move preserved the raw files without
