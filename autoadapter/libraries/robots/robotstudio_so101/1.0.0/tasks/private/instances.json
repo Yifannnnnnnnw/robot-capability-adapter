@@ -1,7 +1,7 @@
 {
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
-  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
+  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v6",
   "instances": [
     {
       "instance_id": "so101-mw_reach_target",
@@ -106,17 +106,17 @@
           "task_id": "mw_pick_place",
           "task_parameters": {
             "start_position": [
-              0.38,
+              0.34,
               0.08,
               0.18
             ],
             "grasp_position": [
-              0.38,
-              0.07,
+              0.355,
+              0.08,
               0.195
             ],
             "grasp_wrist_roll": -1.5707963267948966,
-            "grasp_gripper": 0.35,
+            "grasp_gripper": 0.1,
             "target_position": [
               0.38,
               -0.08,

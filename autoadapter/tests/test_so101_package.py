@@ -242,6 +242,98 @@ def test_so101_package_load_and_request_abi() -> None:
         assert model.vis.global_.offheight >= 600
 
 
+def test_so101_pick_place_v6_snapshot_preserves_task_contract() -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    snapshot_id = "robotstudio-so101-source-protocols-2026-08-18-v6"
+    assert package.snapshot_id == snapshot_id
+
+    private_documents = {
+        name: json.loads(
+            (package.private_dir / name).read_text(encoding="utf-8")
+        )
+        for name in ("instances.json", "bindings.json", "guards.json")
+    }
+    assert all(
+        document["task_snapshot_id"] == snapshot_id
+        for document in private_documents.values()
+    )
+
+    instance = next(
+        item
+        for item in private_documents["instances.json"]["instances"]
+        if item["task_id"] == "mw_pick_place"
+    )
+    parameters = instance["public_arguments"]["request"]["task_parameters"]
+    assert parameters == {
+        "start_position": [0.34, 0.08, 0.18],
+        "grasp_position": [0.355, 0.08, 0.195],
+        "grasp_wrist_roll": -1.5707963267948966,
+        "grasp_gripper": 0.1,
+        "target_position": [0.38, -0.08, 0.26],
+        "release_position": [0.371, -0.078, 0.272],
+        "tool_target_position": [0.371, -0.078, 0.272],
+    }
+    assert instance["reset"] == _expected_reset()
+    assert instance["timeout_sim_s"] == 40.0
+    assert instance["max_steps"] == 10000
+
+    scene_path = package.root / instance["scene_entrypoint"]
+    worldbody = ET.parse(scene_path).getroot().find("worldbody")
+    assert worldbody is not None
+    workpiece = next(
+        body for body in worldbody.findall("body") if body.get("name") == "workpiece"
+    )
+    assert [float(value) for value in workpiece.get("pos", "").split()] == parameters[
+        "start_position"
+    ]
+
+    task = next(item for item in package.tasks if item["task_id"] == "mw_pick_place")
+    assert task["scoring"] == [
+        {
+            "clause_id": "placed_object_distance",
+            "metric": "object_goal_distance",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.07,
+            "temporal": {"kind": "terminal_state_after_release"},
+            "aggregation": {"kind": "single_trial"},
+            "source_refs": [
+                {
+                    "source_id": "metaworld_repo",
+                    "specific_reference": (
+                        "metaworld/envs/sawyer_pick_place_v3.py, evaluate_state, "
+                        "lines 84-114 at pinned commit: success is obj_to_target "
+                        "<= 0.07; __init__, lines 25-70, defines goal z in [0.05, "
+                        "0.30] m."
+                    ),
+                    "support": "adapted",
+                    "adaptation": (
+                        "Preserve the 0.07 m Euclidean terminal object-to-goal "
+                        "requirement. Substitute the SO-101 morphology and choose "
+                        "a reachable elevated target within the source goal-z "
+                        "range; no numeric success tolerance is relaxed."
+                    ),
+                }
+            ],
+        }
+    ]
+    pick_place_binding = next(
+        item
+        for item in private_documents["bindings.json"]["bindings"]
+        if item["binding_id"] == "binding-mw_pick_place"
+    )
+    assert pick_place_binding == {
+        "binding_id": "binding-mw_pick_place",
+        "metric": "object_goal_distance",
+        "unit": "m",
+        "kind": "final_body_position_error",
+        "parameters": {
+            "body_name": "workpiece",
+            "target_argument": "request.task_parameters.target_position",
+        },
+    }
+
+
 def test_so101_reference_source_and_ivc_contract() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     source = package.reference_driver.read_text(encoding="utf-8")

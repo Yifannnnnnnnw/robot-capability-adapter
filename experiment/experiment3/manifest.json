@@ -115,8 +115,8 @@
     },
     "reference_positive_controls": {
       "robotstudio_so101": {
-        "path": "../experiment/experiment3/diagnostics/reference_positive_control_status_2026-08-23.json",
-        "passed": false
+        "path": "../experiment/experiment3/diagnostics/reference_positive_control_so101_pass_2026-08-23.json",
+        "passed": true
       },
       "unitree-go2-stock-12dof": {
         "path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json",

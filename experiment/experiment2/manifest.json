@@ -121,8 +121,8 @@
       "passed": true
     },
     "reference_positive_control": {
-      "path": "../experiment/experiment3/diagnostics/reference_positive_control_status_2026-08-23.json",
-      "passed": false
+      "path": "../experiment/experiment3/diagnostics/reference_positive_control_so101_pass_2026-08-23.json",
+      "passed": true
     },
     "candidate_isolation": {
       "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",

@@ -26,6 +26,7 @@ ARM_JOINTS = (
 )
 GRIPPER_OPEN = 1.74533
 GRIPPER_CLOSED = -0.17453
+PICK_PLACE_PREGRASP = 0.35
 
 
 def _vector(value: Any, *, name: str) -> np.ndarray:
@@ -245,6 +246,12 @@ class ReferenceSO101Driver:
         self._step_to(
             pregrasp, residual_tolerance=0.08, wrist_roll=grasp_wrist_roll
         )
+        if task_id == "mw_pick_place":
+            # Narrow the aperture above the object before descending.  With a
+            # fully open SO-101 gripper, the fixed jaw reaches the object well
+            # before the moving jaw and pushes it out of the grasp corridor.
+            self._set_gripper(PICK_PLACE_PREGRASP)
+            self._idle(60)
         self._step_to(
             grasp, residual_tolerance=0.08, wrist_roll=grasp_wrist_roll
         )

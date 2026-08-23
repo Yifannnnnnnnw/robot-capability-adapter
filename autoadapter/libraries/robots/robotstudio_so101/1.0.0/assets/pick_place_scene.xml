@@ -9,7 +9,7 @@
     <geom name="work_surface" type="box" pos="0.39 0 0.08" size="0.20 0.17 0.08"
           mass="0" contype="1" conaffinity="3" friction="1 0.1 0.01"
           rgba="0.50 0.52 0.55 1"/>
-    <body name="workpiece" pos="0.38 0.08 0.18">
+    <body name="workpiece" pos="0.34 0.08 0.18">
       <freejoint/>
       <geom name="workpiece_geom" type="cylinder" size="0.02 0.02" mass="0.10"
             conaffinity="2" friction="1 0.1 0.002" condim="4"
