@@ -31,6 +31,9 @@ from autoadapter2.pipeline import ExperimentConfig, PipelineError, run_experimen
 
 
 EXPERIMENT_ID = "experiment2-so101-cross-run-closure"
+AUTHORITY_REVISION = "0.1.1"
+MANIFEST_REVISION = "0.1.0"
+PROTOCOL_REVISION = "0.1.0"
 ROBOT_CONFIGURATION = "robotstudio_so101"
 CONDITION = "skeleton-assisted"
 SOURCE_RUN_ID = "exp2-so101-source"
@@ -140,6 +143,18 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
 
     _require(isinstance(manifest, Mapping), "manifest must be one object")
     _require(manifest.get("schema_version") == 1, "schema_version must be 1")
+    _require(
+        manifest.get("authority_revision") == AUTHORITY_REVISION,
+        f"authority_revision must be {AUTHORITY_REVISION}",
+    )
+    _require(
+        manifest.get("manifest_revision") == MANIFEST_REVISION,
+        f"manifest_revision must be {MANIFEST_REVISION}",
+    )
+    _require(
+        manifest.get("protocol_revision") == PROTOCOL_REVISION,
+        f"protocol_revision must be {PROTOCOL_REVISION}",
+    )
     _require(manifest.get("experiment_id") == EXPERIMENT_ID, "unexpected experiment_id")
     _require(manifest.get("robot_configuration") == ROBOT_CONFIGURATION, "Experiment 2 robot must be SO-101")
     _require(manifest.get("generation_condition") == CONDITION, "Experiment 2 must be skeleton-assisted")

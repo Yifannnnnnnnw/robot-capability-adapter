@@ -1,5 +1,8 @@
 # Experiment 3 protocol — declared eleven-configuration cohort
 
+> **Protocol revision:** `0.1.0`<br>
+> **Effective date:** 2026-08-23
+
 This protocol implements `EXPERIMENT_3_AUTHORITY.md`. It is a direct,
 experiment-grade run recipe, not a new lifecycle or readiness state machine.
 
@@ -90,12 +93,24 @@ because a model, package, provider, Harness, or video path failed. An
 infrastructure failure is recorded visibly and remains in the 33-cell
 denominator; it is not relabelled as a model-synthesis failure.
 
+### Interrupted-process continuation
+
+The same formal run may be resumed after an operator, host, or Python-process
+interruption only under its originally recorded Authority, manifest, protocol,
+and Git revisions. A resumed process leaves every `completed` or `failed` row
+unchanged and makes no model call for it. A `predeclared` row whose workspace
+already exists is retained as an interrupted infrastructure failure and is not
+rerun. Only a `predeclared` row with no workspace may begin during the resumed
+process. This continuation does not create a replacement cell, retry a formal
+cell, change the denominator, or permit an additional replicate.
+
 ## Required cell record and descriptive analysis
 
 Every cell record retains:
 
 - robot/configuration ID, public morphology label, package and Task Library
-  snapshots, replicate ID, run ID, manifest/protocol revision, and condition;
+  snapshots, replicate ID, run ID, Authority/manifest/protocol revisions, Git
+  commit, and condition;
 - exact Sonnet model/provider identity and settings, request IDs, model calls,
   token categories, cost inputs, and wall time;
 - fresh TGCD and IVC traces and artifact identities;

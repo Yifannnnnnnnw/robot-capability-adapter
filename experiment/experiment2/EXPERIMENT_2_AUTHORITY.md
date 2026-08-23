@@ -5,9 +5,14 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.32`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.0`<br>
+> **Revision:** `0.1.1`<br>
 > **Effective date:** 2026-08-23<br>
-> **Design status:** active and prospectively fixed; formal execution paused
+> **Design status:** active and prospectively fixed; ready for formal dispatch after final preflight
+
+Revision `0.1.1` changes no robot, model role, run, attempt budget, review
+boundary, or claim. It fixes the ordinary manifest/protocol revision pins and
+authorises dispatch only while the final focused preflight confirms the
+already-declared readiness evidence.
 
 ## 0. Authority, scope, and precedence
 
@@ -246,8 +251,8 @@ difference.
 
 ## 6. Start blockers
 
-Formal execution remains paused until all of the following are recorded in the
-versioned manifest or its referenced evidence:
+Formal dispatch is authorised only while all of the following remain recorded
+in the versioned manifest or its referenced evidence:
 
 1. the canonical SO-101 package, twenty or more source-backed tasks, trusted
    skeleton, private Harness bindings, and video route pass focused checks;

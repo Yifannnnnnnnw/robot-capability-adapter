@@ -1,5 +1,8 @@
 # Experiment 2 protocol — SO-101 cross-run closure
 
+> **Protocol revision:** `0.1.0`<br>
+> **Effective date:** 2026-08-23
+
 This protocol implements `EXPERIMENT_2_AUTHORITY.md`. The authority controls
 the design; this file is an execution checklist and record contract. It does
 not create an additional status or promotion workflow.
@@ -157,9 +160,9 @@ Before formal dispatch, run the smallest checks that establish:
    terminal Task Demo ordering before Opus;
 4. the terminal Evolution response schema yields a public positive/negative
    proposal without private fields; and
-5. a manually launched independent run records Experience load or, after a
-   rejection, visibly records that the formal Experience-enabled closure is
-   blocked.
+5. a focused runner check proves that the separately invoked later command
+   records the exact Experience load, while a rejection visibly blocks that
+   command before a model call.
 
 These checks are diagnostic and do not enter the two-run denominator. Provider,
 package, Harness, isolation, or video failures remain infrastructure blockers.

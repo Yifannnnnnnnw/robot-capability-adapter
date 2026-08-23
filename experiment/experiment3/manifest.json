@@ -1,7 +1,9 @@
 {
   "schema_version": 1,
+  "manifest_revision": "0.1.0",
+  "protocol_revision": "0.1.0",
   "authority": "EXPERIMENT_3_AUTHORITY.md",
-  "authority_revision": "0.1.0",
+  "authority_revision": "0.1.1",
   "experiment_id": "experiment3-direct-mujoco-cohort-r3",
   "track": "declared-cohort-descriptive-run",
   "protocol": "PROTOCOL.md",

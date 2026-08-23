@@ -5,9 +5,15 @@
 > **Parent authority:** `AA2-AUTH` revision `0.19.32`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.0`<br>
+> **Revision:** `0.1.1`<br>
 > **Effective date:** 2026-08-23<br>
-> **Design status:** active and prospectively fixed; formal execution paused
+> **Design status:** active and prospectively fixed; ready for formal dispatch after final preflight
+
+Revision `0.1.1` changes no cohort member, replicate, model, condition,
+attempt budget, denominator, or claim. It fixes ordinary revision evidence and
+permits only interruption continuation for untouched cells in the same formal
+record; it never permits retry or replacement of a cell that has acquired a
+workspace or terminal outcome.
 
 ## 0. Authority, scope, and precedence
 
@@ -130,12 +136,24 @@ declared. The Task Demo verdict is separate from driver synthesis and never
 triggers Repair. Evolution is disabled, so there is no terminal proposal,
 human disposition, Experience snapshot, or post-round feedback path.
 
+A host, operator, or Python-process interruption may be continued only from
+the same formal run record under the exact recorded Authority, manifest,
+protocol, and Git revisions. The continuation leaves every `completed` or
+`failed` row unchanged and makes no model call for it. Any non-terminal row
+whose cell workspace already exists is retained as an interrupted
+infrastructure failure and is not rerun. Only a `predeclared` row with no
+workspace may begin. Continuation never retries, replaces, adds, or removes a
+formal cell and never changes the denominator of 33.
+
 ## 4. Evidence and analysis boundary
 
-Each of the 33 cells must retain a concise run record containing:
+The top-level experiment record and each of its 33 cell rows must retain the
+exact Authority, manifest, protocol, and Git revisions used for dispatch.
+Each cell must also retain a concise run record containing:
 
 - exact robot/configuration, morphology label, package and Task Library
-  snapshots, replicate ID, run ID, and manifest/protocol revision;
+  snapshots, replicate ID, run ID, Authority revision, manifest revision,
+  protocol revision, and Git commit;
 - Sonnet provider/model identity and settings, model calls, tokens, cost inputs,
   and wall-time measurements;
 - TGCD and implementation-blind IVC traces and artifact identities;
@@ -159,7 +177,7 @@ pass and not silently imputed.
 
 ## 5. Readiness blockers
 
-Formal execution remains paused until:
+Formal dispatch is authorised only while:
 
 1. all eleven exact packages resolve with complete local MJCF closure,
    twenty or more source-backed tasks, private instances/bindings/guards,

@@ -352,15 +352,48 @@ def test_identity_and_task_demo_postchecks_reject_false_success() -> None:
         )
 
 
-def test_checked_in_manifest_is_blocked_only_by_failed_so101_reference_control() -> None:
-    with pytest.raises(
-        runner.Experiment2RunnerError,
-        match="reference_positive_control has not passed",
-    ):
-        runner.validate_executable_preflight(
-            runner.load_manifest(),
-            mainline_root=Path(__file__).resolve().parents[2] / "autoadapter",
-        )
+def test_checked_in_manifest_has_executable_readiness_and_model_pins() -> None:
+    manifest = runner.load_manifest()
+    assert manifest["authority_revision"] == runner.AUTHORITY_REVISION
+    assert manifest["manifest_revision"] == runner.MANIFEST_REVISION
+    assert manifest["protocol_revision"] == runner.PROTOCOL_REVISION
+    preflight = runner.validate_executable_preflight(
+        manifest,
+        mainline_root=Path(__file__).resolve().parents[2] / "autoadapter",
+    )
+
+    assert preflight["producer_model"]["model_id"] == runner.SONNET_MODEL_ID
+    assert preflight["producer_model"]["temperature"] == 0.0
+    assert preflight["producer_model"]["max_output_tokens"] == 16_384
+    assert preflight["evolution_model"]["model_id"] == runner.OPUS_MODEL_ID
+    assert preflight["evolution_model"]["temperature"] == 0.0
+    assert preflight["evolution_model"]["max_output_tokens"] == 32_768
+
+    readiness = preflight["readiness_evidence"]
+    assert set(readiness) == {
+        "package",
+        "reference_positive_control",
+        "candidate_isolation",
+        "canonical_physics",
+        "independent_harness",
+        "recorder",
+        "producer_model_canary",
+        "evolution_model_canary",
+        "evolution_contract",
+        "experience_boundary",
+    }
+    assert all(item["passed"] is True for item in readiness.values())
+    assert readiness["reference_positive_control"]["artifact_type"].startswith(
+        "experiment3_reference_positive_control"
+    )
+    assert (
+        readiness["producer_model_canary"]["artifact_type"]
+        == "experiment3_exact_sonnet_runtime_pin_canary"
+    )
+    assert (
+        readiness["evolution_model_canary"]["artifact_type"]
+        == "experiment2_company_api_model_identity_canaries"
+    )
 
 
 def test_readiness_rejects_passed_reference_evidence_for_another_robot(
