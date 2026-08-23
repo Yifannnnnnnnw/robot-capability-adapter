@@ -13,6 +13,7 @@ import copy
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 from collections import Counter
@@ -65,6 +66,19 @@ EXPECTED_RETRY_POLICY = {
     "retryable_http_statuses": [429, 500, 502, 503, 504],
 }
 ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
+AUTHORITY_REVISION = "0.1.1"
+MANIFEST_REVISION = "0.1.0"
+PROTOCOL_REVISION = "0.1.0"
+FORMAL_GIT_PATHS = (
+    "AUTOADAPTER_2_AUTHORITY.md",
+    "experiment/experiment3",
+    "autoadapter/src/autoadapter2",
+    ":(exclude)autoadapter/src/autoadapter2/b2",
+    "autoadapter/libraries/robots",
+    "autoadapter/research/robots",
+    "autoadapter/pyproject.toml",
+)
 
 
 class Experiment3RunnerError(RuntimeError):
@@ -156,6 +170,18 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
 
     _require(isinstance(manifest, Mapping), "manifest must be one object")
     _require(manifest.get("schema_version") == 1, "schema_version must be 1")
+    _require(
+        manifest.get("authority_revision") == AUTHORITY_REVISION,
+        f"authority_revision must be {AUTHORITY_REVISION}",
+    )
+    _require(
+        manifest.get("manifest_revision") == MANIFEST_REVISION,
+        f"manifest_revision must be {MANIFEST_REVISION}",
+    )
+    _require(
+        manifest.get("protocol_revision") == PROTOCOL_REVISION,
+        f"protocol_revision must be {PROTOCOL_REVISION}",
+    )
     _require(manifest.get("experiment_id") == EXPERIMENT_ID, "unexpected experiment_id")
     _require(
         tuple(manifest.get("robot_configurations", ())) == ROBOT_CONFIGURATIONS,
@@ -611,7 +637,93 @@ def _resource_summary(client: Any, model: Mapping[str, Any]) -> dict[str, Any]:
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.tmp")
+    try:
+        temporary.write_text(
+            json.dumps(value, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(temporary, path)
+    except BaseException:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+
+
+def _current_git_commit(mainline_root: str | Path) -> str:
+    """Return HEAD after rejecting dirty Experiment 3 execution inputs."""
+
+    try:
+        root_result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(Path(mainline_root).resolve()),
+                "rev-parse",
+                "--show-toplevel",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise Experiment3RunnerError("cannot read the current Git commit") from exc
+    _require(root_result.returncode == 0, "cannot read the current Git commit")
+    repository_root = root_result.stdout.strip()
+    try:
+        commit_result = subprocess.run(
+            ["git", "-C", repository_root, "rev-parse", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        status_result = subprocess.run(
+            [
+                "git",
+                "-C",
+                repository_root,
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+                "--",
+                *FORMAL_GIT_PATHS,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise Experiment3RunnerError("cannot verify the current Git commit") from exc
+    _require(commit_result.returncode == 0, "cannot read the current Git commit")
+    _require(status_result.returncode == 0, "cannot verify committed Experiment 3 inputs")
+    dirty = status_result.stdout.strip()
+    _require(
+        not dirty,
+        "formal dispatch requires committed Experiment 3 inputs; dirty paths: "
+        + dirty.replace("\n", "; "),
+    )
+    return commit_result.stdout.strip()
+
+
+def _revision_evidence(
+    manifest: Mapping[str, Any], *, git_commit: str
+) -> dict[str, str]:
+    evidence = {
+        "authority_revision": str(manifest.get("authority_revision", "")),
+        "manifest_revision": str(manifest.get("manifest_revision", "")),
+        "protocol_revision": str(manifest.get("protocol_revision", "")),
+        "git_commit": git_commit.strip(),
+    }
+    _require(
+        GIT_COMMIT_PATTERN.fullmatch(evidence["git_commit"]) is not None,
+        "formal dispatch requires a non-empty full Git commit",
+    )
+    return evidence
 
 
 def _assert_returned_identity(client: Any, expected_model_id: str) -> None:
@@ -777,49 +889,38 @@ def run_preflight(
     return {**preflight, "current_package_check": package_check}
 
 
-def run_formal(
+def _update_record_counts(record: dict[str, Any]) -> None:
+    rows = record["cells"]
+    record["completed_cells"] = sum(row["status"] == "completed" for row in rows)
+    record["failed_cells"] = sum(row["status"] == "failed" for row in rows)
+    record["predeclared_cells"] = sum(
+        row["status"] == "predeclared" for row in rows
+    )
+    record["all_declared_cells_retained"] = len(rows) == 33
+
+
+def _dispatch_predeclared_rows(
     mainline_root: str | Path,
     *,
-    manifest: Mapping[str, Any] | None = None,
-    manifest_path: str | Path | None = None,
-    output_dir: str | Path,
-    client_factory: Callable[[str, Mapping[str, Any], Mapping[str, Any], Mapping[str, str]], Any]
-    | None = None,
-    run_experiment_fn: Callable[..., Mapping[str, Any]] = run_experiment,
-    package_check_fn: Callable[..., Mapping[str, Any]] = check_packages,
-    hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
-    check_self_containment: bool = True,
+    destination: Path,
+    record: dict[str, Any],
+    preflight: Mapping[str, Any],
+    client_factory: Callable[
+        [str, Mapping[str, Any], Mapping[str, Any], Mapping[str, str]], Any
+    ]
+    | None,
+    run_experiment_fn: Callable[..., Mapping[str, Any]],
+    hooks_factory: Callable[[Mapping[str, str]], Any] | None,
+    check_self_containment: bool,
 ) -> dict[str, Any]:
-    """Execute each predeclared cell once, retaining failures in denominator 33."""
+    """Run only untouched rows; terminal rows are deliberately invisible here."""
 
-    source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
-    declared = expand_cells(source)
-    destination = Path(output_dir).resolve()
-    _require(not destination.exists() or not any(destination.iterdir()), "Experiment 3 output directory must be new or empty")
-    rows: list[dict[str, Any]] = [{**cell, "status": "predeclared", "result": None, "failure": None} for cell in declared]
-    record: dict[str, Any] = {
-        "experiment_id": EXPERIMENT_ID,
-        "denominator": 33,
-        "dispatch_started": False,
-        "cells": rows,
-    }
-    _write_json(destination / "experiment3_run_record.json", record)
-
-    # This is deliberately after predeclaration and before client construction.
-    preflight = run_preflight(
-        mainline_root,
-        manifest=source,
-        package_check_fn=package_check_fn,
-        check_self_containment=check_self_containment,
-    )
-    package_check = preflight["current_package_check"]
-    record["dispatch_started"] = True
-    record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
-    record["current_package_check"] = package_check
-    _write_json(destination / "experiment3_run_record.json", record)
-
+    rows = record["cells"]
     seen_clients: list[Any] = []
     for row in rows:
+        if row["status"] in {"completed", "failed"}:
+            continue
+        _require(row["status"] == "predeclared", "run record contains an unknown cell status")
         cell_started = time.monotonic()
         cell = {
             key: str(row[key])
@@ -910,13 +1011,228 @@ def run_formal(
                 else None
             ),
         }
+        _update_record_counts(record)
         _write_json(destination / "experiment3_run_record.json", record)
 
-    record["completed_cells"] = sum(row["status"] == "completed" for row in rows)
-    record["failed_cells"] = sum(row["status"] == "failed" for row in rows)
-    record["all_declared_cells_retained"] = len(rows) == 33
+    _update_record_counts(record)
     _write_json(destination / "experiment3_run_record.json", record)
     return copy.deepcopy(record)
+
+
+def run_formal(
+    mainline_root: str | Path,
+    *,
+    manifest: Mapping[str, Any] | None = None,
+    manifest_path: str | Path | None = None,
+    output_dir: str | Path,
+    client_factory: Callable[
+        [str, Mapping[str, Any], Mapping[str, Any], Mapping[str, str]], Any
+    ]
+    | None = None,
+    run_experiment_fn: Callable[..., Mapping[str, Any]] = run_experiment,
+    package_check_fn: Callable[..., Mapping[str, Any]] = check_packages,
+    hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
+    check_self_containment: bool = True,
+    git_commit_fn: Callable[[str | Path], str] | None = None,
+) -> dict[str, Any]:
+    """Execute each predeclared cell once, retaining failures in denominator 33."""
+
+    source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
+    declared = expand_cells(source)
+    commit = (git_commit_fn or _current_git_commit)(mainline_root)
+    revisions = _revision_evidence(source, git_commit=commit)
+    destination = Path(output_dir).resolve()
+    _require(not destination.exists() or not any(destination.iterdir()), "Experiment 3 output directory must be new or empty")
+    rows: list[dict[str, Any]] = [
+        {
+            **cell,
+            **revisions,
+            "status": "predeclared",
+            "result": None,
+            "failure": None,
+        }
+        for cell in declared
+    ]
+    record: dict[str, Any] = {
+        "experiment_id": EXPERIMENT_ID,
+        "denominator": 33,
+        **revisions,
+        "dispatch_started": False,
+        "cells": rows,
+    }
+    _update_record_counts(record)
+    _write_json(destination / "experiment3_run_record.json", record)
+
+    # This is deliberately after predeclaration and before client construction.
+    preflight = run_preflight(
+        mainline_root,
+        manifest=source,
+        package_check_fn=package_check_fn,
+        check_self_containment=check_self_containment,
+    )
+    record["dispatch_started"] = True
+    record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
+    record["current_package_check"] = preflight["current_package_check"]
+    _write_json(destination / "experiment3_run_record.json", record)
+    return _dispatch_predeclared_rows(
+        mainline_root,
+        destination=destination,
+        record=record,
+        preflight=preflight,
+        client_factory=client_factory,
+        run_experiment_fn=run_experiment_fn,
+        hooks_factory=hooks_factory,
+        check_self_containment=check_self_containment,
+    )
+
+
+def _validate_resume_record(
+    record: Mapping[str, Any],
+    *,
+    declared: list[dict[str, str]],
+    revisions: Mapping[str, str],
+) -> list[dict[str, Any]]:
+    _require(record.get("experiment_id") == EXPERIMENT_ID, "resume record has the wrong experiment_id")
+    _require(record.get("denominator") == 33, "resume record denominator must remain 33")
+    for field, expected in revisions.items():
+        _require(record.get(field) == expected, f"resume record {field} differs from the current pin")
+    rows = record.get("cells")
+    _require(isinstance(rows, list) and len(rows) == 33, "resume record must retain exactly 33 cells")
+    identity_fields = (
+        "cell_id",
+        "experiment_id",
+        "replicate_id",
+        "robot_configuration_id",
+        "morphology_label",
+        "generation_condition",
+        "run_id",
+    )
+    checked_rows: list[dict[str, Any]] = []
+    for index, (raw_row, expected_cell) in enumerate(zip(rows, declared, strict=True)):
+        _require(isinstance(raw_row, dict), f"resume cell {index} must be an object")
+        row = raw_row
+        for field in identity_fields:
+            _require(
+                row.get(field) == expected_cell[field],
+                f"resume cell {index} {field} differs from the declared design",
+            )
+        for field, expected in revisions.items():
+            _require(
+                row.get(field) == expected,
+                f"resume cell {index} {field} differs from the current pin",
+            )
+        _require(
+            row.get("status") in {"predeclared", "completed", "failed"},
+            f"resume cell {index} has an unknown status",
+        )
+        checked_rows.append(row)
+    expected_counts = {
+        "completed_cells": sum(row["status"] == "completed" for row in checked_rows),
+        "failed_cells": sum(row["status"] == "failed" for row in checked_rows),
+        "predeclared_cells": sum(
+            row["status"] == "predeclared" for row in checked_rows
+        ),
+    }
+    for field, expected in expected_counts.items():
+        _require(
+            record.get(field) == expected,
+            f"resume record {field} differs from its cell rows",
+        )
+    _require(
+        record.get("all_declared_cells_retained") is True,
+        "resume record must retain all declared cells",
+    )
+    return checked_rows
+
+
+def run_resume(
+    mainline_root: str | Path,
+    *,
+    manifest: Mapping[str, Any] | None = None,
+    manifest_path: str | Path | None = None,
+    output_dir: str | Path,
+    client_factory: Callable[
+        [str, Mapping[str, Any], Mapping[str, Any], Mapping[str, str]], Any
+    ]
+    | None = None,
+    run_experiment_fn: Callable[..., Mapping[str, Any]] = run_experiment,
+    package_check_fn: Callable[..., Mapping[str, Any]] = check_packages,
+    hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
+    check_self_containment: bool = True,
+    git_commit_fn: Callable[[str | Path], str] | None = None,
+) -> dict[str, Any]:
+    """Continue untouched cells in the same fixed formal run without retries."""
+
+    source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
+    declared = expand_cells(source)
+    commit = (git_commit_fn or _current_git_commit)(mainline_root)
+    revisions = _revision_evidence(source, git_commit=commit)
+    destination = Path(output_dir).resolve()
+    record_path = destination / "experiment3_run_record.json"
+    record = _read_record(record_path)
+    rows = _validate_resume_record(record, declared=declared, revisions=revisions)
+
+    # An already terminal record is a true no-op: no package check and no client.
+    if all(row["status"] in {"completed", "failed"} for row in rows):
+        return copy.deepcopy(record)
+
+    partials_found = False
+    for row in rows:
+        if row["status"] != "predeclared":
+            continue
+        workspace = (
+            destination
+            / "cells"
+            / str(row["replicate_id"])
+            / str(row["robot_configuration_id"])
+        )
+        if not workspace.exists():
+            continue
+        partials_found = True
+        stage = "resume-partial-workspace"
+        reason = (
+            "predeclared cell workspace already exists; retained as an "
+            "interrupted infrastructure failure without rerun"
+        )
+        row["status"] = "failed"
+        row["failure_stage"] = stage
+        row["failure"] = {
+            "stage": stage,
+            "type": "InterruptedCellWorkspace",
+            "message": reason,
+        }
+        row["task_demo"] = {"status": "not-run", "reason": reason}
+        row["resource_summary"] = {
+            "runner_wall_time_s": 0.0,
+            "producer": None,
+        }
+    if partials_found:
+        _update_record_counts(record)
+        _write_json(record_path, record)
+
+    if all(row["status"] in {"completed", "failed"} for row in rows):
+        return copy.deepcopy(record)
+
+    preflight = run_preflight(
+        mainline_root,
+        manifest=source,
+        package_check_fn=package_check_fn,
+        check_self_containment=check_self_containment,
+    )
+    record["dispatch_started"] = True
+    record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
+    record["current_package_check"] = preflight["current_package_check"]
+    _write_json(record_path, record)
+    return _dispatch_predeclared_rows(
+        mainline_root,
+        destination=destination,
+        record=record,
+        preflight=preflight,
+        client_factory=client_factory,
+        run_experiment_fn=run_experiment_fn,
+        hooks_factory=hooks_factory,
+        check_self_containment=check_self_containment,
+    )
 
 
 def _distribution(values: list[float | int]) -> dict[str, Any]:
@@ -1100,6 +1416,12 @@ def _cli_parser() -> argparse.ArgumentParser:
     formal.add_argument("--output", required=True)
     formal.add_argument("--env-file", action="append", default=[])
 
+    resume = commands.add_parser("resume")
+    resume.add_argument("--root", required=True)
+    resume.add_argument("--manifest", required=True)
+    resume.add_argument("--output", required=True)
+    resume.add_argument("--env-file", action="append", default=[])
+
     summarise = commands.add_parser("summarise")
     summarise.add_argument("--record", required=True)
     summarise.add_argument("--output", required=True)
@@ -1159,9 +1481,10 @@ def main(argv: list[str] | None = None) -> int:
                     "current_package_check"
                 ]["package_check_passed"],
             }
-        elif args.command == "formal":
+        elif args.command in {"formal", "resume"}:
             _load_env_files(args.env_file)
-            record = run_formal(
+            action = run_formal if args.command == "formal" else run_resume
+            record = action(
                 args.root,
                 manifest_path=args.manifest,
                 output_dir=args.output,
@@ -1219,11 +1542,14 @@ def main(argv: list[str] | None = None) -> int:
 
 
 __all__ = [
+    "AUTHORITY_REVISION",
     "CONDITION",
     "EXPERIMENT_ID",
     "Experiment3RunnerError",
+    "MANIFEST_REVISION",
     "MODEL_ID",
     "MORPHOLOGY_LABELS",
+    "PROTOCOL_REVISION",
     "REPLICATE_IDS",
     "ROBOT_CONFIGURATIONS",
     "expand_cells",
@@ -1231,6 +1557,7 @@ __all__ = [
     "main",
     "run_formal",
     "run_preflight",
+    "run_resume",
     "summarise_results",
     "validate_design_manifest",
     "validate_executable_preflight",

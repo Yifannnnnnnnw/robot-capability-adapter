@@ -23,53 +23,19 @@ Experiment 1.
 - Focused Framework/Harness checks pass for candidate isolation, canonical
   physics, independent verdicting, and required-video invalidation. The
   manifests validate each named role against that evidence.
-- Ten reference positive controls pass. Only the SO101 `mw_pick_place`
-  reference control fails. Therefore no Experiment 2 or Experiment 3 formal
-  run has started.
+- All eleven reference positive controls pass, including the focused SO101
+  `mw_pick_place` control. Both executable preflights pass. No Experiment 2 or
+  Experiment 3 formal run has started.
 
-The checked-in preflight is intentionally blocked by exactly this retained
-fact:
+The earlier 10/11 status and SO101 failure record remain truthful historical
+diagnostics. The later focused SO101 pass is the current readiness evidence;
+do not edit the old record and do not rerun SO101 or the other ten controls.
+The retained model canaries remain the declared provider evidence, so this
+runbook does not add another model canary before formal dispatch.
 
-```text
-Experiment 2: readiness_evidence.reference_positive_control has not passed
-Experiment 3: readiness_evidence.reference_positive_controls.robotstudio_so101 has not passed
-```
-
-Do not bypass the gate, weaken the `0.07 m` task criterion, weaken the
-`0.005 m` integrity guard, substitute a model, or remove SO101 from the
-denominator.
-
-## Close the one remaining gate
-
-The SO101-owning workstream should calibrate grasp alignment/two-jaw engagement
-and rerun only:
-
-```sh
-cd autoadapter
-pyenv exec python -m pytest -q \
-  tests/test_so101_package.py::test_so101_pick_place_uses_a_physical_fixture_and_reference_passes
-```
-
-Do not rerun the other ten reference controls. If and only if this focused test
-passes, retain a new JSON evidence file with at least this semantic identity:
-
-```json
-{
-  "artifact_type": "experiment3_reference_positive_control",
-  "robot_configuration_id": "robotstudio_so101",
-  "passed": true
-}
-```
-
-The artifact may add the focused command, physical verdict, guard, metric, and
-video details; it must not omit or contradict the fields above. Then update
-these two manifest entries to point to it with `"passed": true`:
-
-- Experiment 2: `readiness_evidence.reference_positive_control`
-- Experiment 3:
-  `readiness_evidence.reference_positive_controls.robotstudio_so101`
-
-Keep the 2026-08-23 failed evidence unchanged as failure history.
+Formal dispatch must use the final committed revision. Experiment 3 records
+that Git commit plus the fixed Authority, manifest, and protocol revisions in
+the experiment record and every cell row.
 
 ## Offline design checks
 
@@ -88,7 +54,7 @@ exactly 33 Experiment 3 cells.
 
 ## Executable preflight
 
-After the new SO101 pass evidence is connected, run:
+From the final committed revision, run:
 
 ```sh
 PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment2.runner \
@@ -110,13 +76,14 @@ Use a new or empty output directory for each real run.
 Source run:
 
 ```sh
-PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment2.runner \
+env -u AUTOADAPTER_COMPANY_API_KEY \
+  PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
+  pyenv exec python -m experiment.experiment2.runner \
   source \
   --root autoadapter \
   --manifest experiment/experiment2/manifest.json \
   --output autoadapter/runs/experiment2/exp2-so101-source \
-  --manual-event operator-source-launch-2026-08-24 \
-  --env-file .env \
+  --manual-event operator-manual-launch-exp2-source \
   --env-file .env.company-api
 ```
 
@@ -138,14 +105,15 @@ Only after an acceptance and frozen snapshot, manually launch the independent
 later run:
 
 ```sh
-PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment2.runner \
+env -u AUTOADAPTER_COMPANY_API_KEY \
+  PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
+  pyenv exec python -m experiment.experiment2.runner \
   later \
   --root autoadapter \
   --manifest experiment/experiment2/manifest.json \
   --snapshot autoadapter/runs/experiment2/exp2-so101-source/experience_snapshot.json \
   --output autoadapter/runs/experiment2/exp2-so101-later \
-  --manual-event operator-later-launch-2026-08-24 \
-  --env-file .env \
+  --manual-event operator-manual-launch-exp2-later \
   --env-file .env.company-api
 ```
 
@@ -155,16 +123,18 @@ trace, and GENERATE trace. It must contain no Evolution call or review queue.
 ## Experiment 3 — one formal command
 
 After preflight passes, the following single command predeclares and executes
-the fixed 33-cell denominator. Use a new output directory; never reuse a failed
-or partial directory.
+the fixed 33-cell denominator. The initial `formal` command must use a new
+output directory. Only the `resume` command below may reuse that same partial
+directory after a process interruption.
 
 ```sh
-PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment3.runner \
+env -u AUTOADAPTER_COMPANY_API_KEY \
+  PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
+  pyenv exec python -m experiment.experiment3.runner \
   formal \
   --root autoadapter \
   --manifest experiment/experiment3/manifest.json \
-  --output autoadapter/runs/experiment3/formal-2026-08-24 \
-  --env-file .env \
+  --output autoadapter/runs/experiment3/experiment3-direct-mujoco-cohort-r3 \
   --env-file .env.company-api
 ```
 
@@ -172,13 +142,31 @@ Each declared cell is attempted once. A model, package, or Harness failure is
 retained at its original robot/replicate row; it is not retried as a replacement
 cell and does not shrink the denominator.
 
+If the operator, host, or Python process interrupts the command, resume the same
+record with the same committed revision:
+
+```sh
+env -u AUTOADAPTER_COMPANY_API_KEY \
+  PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
+  pyenv exec python -m experiment.experiment3.runner \
+  resume \
+  --root autoadapter \
+  --manifest experiment/experiment3/manifest.json \
+  --output autoadapter/runs/experiment3/experiment3-direct-mujoco-cohort-r3 \
+  --env-file .env.company-api
+```
+
+Resume never calls a model for `completed` or `failed` rows. A predeclared row
+with an existing partial workspace becomes an interrupted infrastructure
+failure and is not rerun; only untouched predeclared rows continue.
+
 After completion, produce the descriptive summary:
 
 ```sh
 PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment3.runner \
   summarise \
-  --record autoadapter/runs/experiment3/formal-2026-08-24/experiment3_run_record.json \
-  --output autoadapter/runs/experiment3/formal-2026-08-24/summary.json
+  --record autoadapter/runs/experiment3/experiment3-direct-mujoco-cohort-r3/experiment3_run_record.json \
+  --output autoadapter/runs/experiment3/experiment3-direct-mujoco-cohort-r3/summary.json
 ```
 
 Report per-configuration counts/proportions and median/range only. Morphology is

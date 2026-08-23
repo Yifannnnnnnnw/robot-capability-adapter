@@ -3,10 +3,11 @@ from __future__ import annotations
 import copy
 import json
 import os
+import subprocess
 from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Mapping
 
 import pytest
 
@@ -141,6 +142,51 @@ def _executable_manifest(tmp_path: Path) -> dict[str, Any]:
     return manifest
 
 
+def _resume_record(
+    output_dir: Path,
+    manifest: dict[str, Any],
+    *,
+    git_commit: str,
+    statuses: list[str] | None = None,
+) -> dict[str, Any]:
+    revisions = {
+        "authority_revision": manifest["authority_revision"],
+        "manifest_revision": manifest["manifest_revision"],
+        "protocol_revision": manifest["protocol_revision"],
+        "git_commit": git_commit,
+    }
+    declared = runner.expand_cells(manifest)
+    row_statuses = statuses or ["failed"] * len(declared)
+    rows = [
+        {
+            **cell,
+            **revisions,
+            "status": status,
+            "result": None,
+            "failure": None,
+        }
+        for cell, status in zip(declared, row_statuses, strict=True)
+    ]
+    record = {
+        "experiment_id": runner.EXPERIMENT_ID,
+        "denominator": 33,
+        **revisions,
+        "dispatch_started": True,
+        "completed_cells": sum(status == "completed" for status in row_statuses),
+        "failed_cells": sum(status == "failed" for status in row_statuses),
+        "predeclared_cells": sum(
+            status == "predeclared" for status in row_statuses
+        ),
+        "all_declared_cells_retained": True,
+        "cells": rows,
+    }
+    output_dir.mkdir(parents=True)
+    (output_dir / "experiment3_run_record.json").write_text(
+        json.dumps(record, indent=2) + "\n", encoding="utf-8"
+    )
+    return record
+
+
 def test_checked_in_manifest_expands_exact_replicate_major_33_cells() -> None:
     cells = runner.expand_cells(runner.load_manifest())
 
@@ -233,33 +279,20 @@ def test_task_demo_and_formal_evidence_postchecks_reject_false_terminal_success(
             run_id="declared-run",
         )
 
-def test_formal_dispatch_predeclares_rows_then_blocks_on_so101_reference_control(
-    tmp_path: Path,
-) -> None:
-    client_calls: list[str] = []
+def test_checked_in_preflight_accepts_the_current_so101_reference_control() -> None:
+    mainline_root = Path(__file__).resolve().parents[2] / "autoadapter"
 
-    with pytest.raises(
-        runner.Experiment3RunnerError,
-        match="reference_positive_controls.robotstudio_so101 has not passed",
-    ):
-        runner.run_formal(
-            Path(__file__).resolve().parents[2] / "autoadapter",
-            manifest=runner.load_manifest(),
-            output_dir=tmp_path / "blocked-run",
-            client_factory=lambda *_: client_calls.append("called"),
-            run_experiment_fn=lambda *_args, **_kwargs: {},
-        )
-
-    assert client_calls == []
-    record = json.loads(
-        (tmp_path / "blocked-run" / "experiment3_run_record.json").read_text(
-            encoding="utf-8"
-        )
+    checked = runner.validate_executable_preflight(
+        runner.load_manifest(), mainline_root=mainline_root
     )
-    assert record["denominator"] == 33
-    assert record["dispatch_started"] is False
-    assert len(record["cells"]) == 33
-    assert {row["status"] for row in record["cells"]} == {"predeclared"}
+
+    so101 = checked["readiness_evidence"]["reference_positive_controls"][
+        "robotstudio_so101"
+    ]
+    assert so101["passed"] is True
+    assert so101["artifact_type"].startswith(
+        "experiment3_reference_positive_control"
+    )
 
 
 def test_readiness_rejects_passed_evidence_with_the_wrong_semantic_scope(
@@ -382,6 +415,7 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
         },
         hooks_factory=hooks_factory,
         check_self_containment=False,
+        git_commit_fn=lambda _root: "a" * 40,
     )
 
     expected = [
@@ -429,6 +463,17 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
     assert identity_failed["task_demo"] == {"status": "executed", "passed": True}
     assert identity_failed["resource_summary"]["producer"]["call_count"] == 1
     assert result["denominator"] == 33
+    assert result["authority_revision"] == runner.AUTHORITY_REVISION
+    assert result["manifest_revision"] == runner.MANIFEST_REVISION
+    assert result["protocol_revision"] == runner.PROTOCOL_REVISION
+    assert result["git_commit"] == "a" * 40
+    assert all(
+        row["authority_revision"] == runner.AUTHORITY_REVISION
+        and row["manifest_revision"] == runner.MANIFEST_REVISION
+        and row["protocol_revision"] == runner.PROTOCOL_REVISION
+        and row["git_commit"] == "a" * 40
+        for row in result["cells"]
+    )
     assert result["all_declared_cells_retained"] is True
     assert result["completed_cells"] == 31
     assert result["failed_cells"] == 2
@@ -497,6 +542,314 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
         runner.summarise_results(malformed)
 
 
+def test_resume_skips_terminal_rows_fails_a_partial_workspace_and_runs_only_untouched(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+    commit = "b" * 40
+    statuses = ["completed", "predeclared", "predeclared"] + ["failed"] * 30
+    output = tmp_path / "resume-run"
+    original = _resume_record(
+        output, manifest, git_commit=commit, statuses=statuses
+    )
+    terminal_before = copy.deepcopy(original["cells"][0])
+    partial = original["cells"][1]
+    partial_workspace = (
+        output
+        / "cells"
+        / partial["replicate_id"]
+        / partial["robot_configuration_id"]
+    )
+    partial_workspace.mkdir(parents=True)
+    client_cells: list[str] = []
+    run_cells: list[str] = []
+    monkeypatch.setenv("TEST_MODEL_KEY", "resume-test-secret")
+
+    def client_factory(
+        _role: str,
+        model: Mapping[str, Any],
+        transport: Mapping[str, Any],
+        cell: Mapping[str, str],
+    ) -> Any:
+        client_cells.append(cell["cell_id"])
+        return SimpleNamespace(
+            config=SimpleNamespace(
+                provider=model["vendor"],
+                model=model["model_id"],
+                base_url=model["base_url"],
+                api_protocol=model["api_protocol"],
+                thinking=None,
+                timeout_s=float(transport["request_timeout_s"]),
+                max_tokens=model["max_output_tokens"],
+                tool_history_mode=model["tool_history_mode"],
+                history_char_budget=transport["history_char_budget"],
+                auth_header=transport["auth_header"],
+                auth_prefix=transport["auth_prefix"],
+            ),
+            calls=[],
+        )
+
+    def fake_run(_root: Path, **kwargs: Any) -> dict[str, Any]:
+        robot = kwargs["config"]["robots"][0]
+        run_cells.append(robot)
+        Path(kwargs["output_dir"]).mkdir(parents=True)
+        kwargs["producer_client"].calls.append(
+            {
+                "status": "success",
+                "returned_model": runner.MODEL_ID,
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "total_tokens": 15,
+                "elapsed_s": 0.1,
+            }
+        )
+        return {
+            "run_id": kwargs["run_id"],
+            "evolution_enabled": False,
+            "evolution_model": None,
+            "experience_input_ids": {robot: []},
+            "cells": [
+                {
+                    "cell_id": f"{robot}::{runner.CONDITION}",
+                    "robot_configuration_id": robot,
+                    "condition": runner.CONDITION,
+                    "attempt_count": 1,
+                    "pass@0": True,
+                    "final_capability_validation_passed": True,
+                    "capability_validation_executed": True,
+                    "video_required": True,
+                    "video_complete": True,
+                    "task_demo_executed": True,
+                    "task_demo_passed": True,
+                    "task_demo_video_complete": True,
+                    "task_demo_task_counts": {"passed": 5, "total": 5},
+                    "task_demo": {"skipped": False},
+                    "outcomes": {
+                        "TGCD": {"completed": True},
+                        "IVC": {"completed": True},
+                        "Evolution": None,
+                    },
+                }
+            ],
+        }
+
+    result = runner.run_resume(
+        tmp_path,
+        manifest=manifest,
+        output_dir=output,
+        client_factory=client_factory,
+        run_experiment_fn=fake_run,
+        package_check_fn=lambda *_args, **_kwargs: {
+            "package_check_passed": True,
+            "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
+        },
+        check_self_containment=False,
+        git_commit_fn=lambda _root: commit,
+    )
+
+    untouched = original["cells"][2]
+    assert client_cells == [untouched["cell_id"]]
+    assert run_cells == [untouched["robot_configuration_id"]]
+    assert result["cells"][0] == terminal_before
+    interrupted = result["cells"][1]
+    assert interrupted["status"] == "failed"
+    assert interrupted["failure_stage"] == "resume-partial-workspace"
+    assert interrupted["failure"]["type"] == "InterruptedCellWorkspace"
+    assert interrupted["resource_summary"]["producer"] is None
+    assert result["cells"][2]["status"] == "completed"
+    assert result["denominator"] == 33
+    assert result["completed_cells"] == 2
+    assert result["failed_cells"] == 31
+    assert result["predeclared_cells"] == 0
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "authority_revision",
+        "manifest_revision",
+        "protocol_revision",
+        "git_commit",
+    ],
+)
+def test_resume_rejects_each_revision_or_commit_mismatch(
+    tmp_path: Path, field: str
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+    commit = "c" * 40
+    output = tmp_path / f"mismatch-{field}"
+    record = _resume_record(output, manifest, git_commit=commit)
+    record[field] = "d" * 40 if field == "git_commit" else "mismatch"
+    (output / "experiment3_run_record.json").write_text(
+        json.dumps(record) + "\n", encoding="utf-8"
+    )
+
+    with pytest.raises(runner.Experiment3RunnerError, match=field):
+        runner.run_resume(
+            tmp_path,
+            manifest=manifest,
+            output_dir=output,
+            git_commit_fn=lambda _root: commit,
+        )
+
+
+def test_resume_rejects_a_cell_level_revision_mismatch(tmp_path: Path) -> None:
+    manifest = _executable_manifest(tmp_path)
+    commit = "d" * 40
+    output = tmp_path / "cell-mismatch"
+    record = _resume_record(output, manifest, git_commit=commit)
+    record["cells"][0]["protocol_revision"] = "mismatch"
+    (output / "experiment3_run_record.json").write_text(
+        json.dumps(record) + "\n", encoding="utf-8"
+    )
+
+    with pytest.raises(runner.Experiment3RunnerError, match="protocol_revision"):
+        runner.run_resume(
+            tmp_path,
+            manifest=manifest,
+            output_dir=output,
+            git_commit_fn=lambda _root: commit,
+        )
+
+
+def test_resume_rejects_an_unknown_cell_status(tmp_path: Path) -> None:
+    manifest = _executable_manifest(tmp_path)
+    commit = "e" * 40
+    output = tmp_path / "unknown-status"
+    record = _resume_record(output, manifest, git_commit=commit)
+    record["cells"][0]["status"] = "running"
+    (output / "experiment3_run_record.json").write_text(
+        json.dumps(record) + "\n", encoding="utf-8"
+    )
+
+    with pytest.raises(runner.Experiment3RunnerError, match="unknown status"):
+        runner.run_resume(
+            tmp_path,
+            manifest=manifest,
+            output_dir=output,
+            git_commit_fn=lambda _root: commit,
+        )
+
+
+def test_resume_of_an_all_terminal_record_is_a_no_op(tmp_path: Path) -> None:
+    manifest = _executable_manifest(tmp_path)
+    commit = "f" * 40
+    output = tmp_path / "terminal-run"
+    expected = _resume_record(output, manifest, git_commit=commit)
+    record_path = output / "experiment3_run_record.json"
+    retained_before = record_path.read_text(encoding="utf-8")
+
+    def forbidden(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("all-terminal resume must not execute dependencies")
+
+    result = runner.run_resume(
+        tmp_path,
+        manifest=manifest,
+        output_dir=output,
+        client_factory=forbidden,
+        run_experiment_fn=forbidden,
+        package_check_fn=forbidden,
+        git_commit_fn=lambda _root: commit,
+    )
+
+    assert result == expected
+    assert record_path.read_text(encoding="utf-8") == retained_before
+
+
+def test_atomic_record_write_preserves_previous_json_if_replace_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    record_path = tmp_path / "experiment3_run_record.json"
+    runner._write_json(record_path, {"version": "retained"})
+    retained_before = record_path.read_text(encoding="utf-8")
+
+    def fail_replace(_source: Path, _destination: Path) -> None:
+        raise OSError("simulated interruption before atomic replace")
+
+    monkeypatch.setattr(runner.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated interruption"):
+        runner._write_json(record_path, {"version": "partial"})
+
+    assert record_path.read_text(encoding="utf-8") == retained_before
+    assert not (tmp_path / ".experiment3_run_record.json.tmp").exists()
+
+
+def test_current_git_commit_rejects_dirty_formal_execution_input(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    mainline = repository / "autoadapter"
+    runner_path = repository / "experiment" / "experiment3" / "runner.py"
+    mainline.mkdir(parents=True)
+    runner_path.parent.mkdir(parents=True)
+    runner_path.write_text("clean = True\n", encoding="utf-8")
+    subprocess.run(["git", "init", str(repository)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(repository), "add", "experiment/experiment3/runner.py"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repository),
+            "-c",
+            "user.name=Experiment Test",
+            "-c",
+            "user.email=experiment@example.invalid",
+            "commit",
+            "-m",
+            "initial",
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+    clean_commit = runner._current_git_commit(mainline)
+    assert runner.GIT_COMMIT_PATTERN.fullmatch(clean_commit)
+
+    runner_path.write_text("clean = False\n", encoding="utf-8")
+    with pytest.raises(runner.Experiment3RunnerError, match="committed Experiment 3 inputs"):
+        runner._current_git_commit(mainline)
+
+
+def test_resume_rejects_record_counts_that_disagree_with_rows(tmp_path: Path) -> None:
+    manifest = _executable_manifest(tmp_path)
+    commit = "1" * 40
+    output = tmp_path / "count-mismatch"
+    record = _resume_record(output, manifest, git_commit=commit)
+    record["failed_cells"] = 32
+    (output / "experiment3_run_record.json").write_text(
+        json.dumps(record) + "\n", encoding="utf-8"
+    )
+
+    with pytest.raises(runner.Experiment3RunnerError, match="failed_cells"):
+        runner.run_resume(
+            tmp_path,
+            manifest=manifest,
+            output_dir=output,
+            git_commit_fn=lambda _root: commit,
+        )
+
+
+def test_formal_rejects_missing_git_commit_before_creating_a_record(
+    tmp_path: Path,
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+    output = tmp_path / "missing-commit"
+
+    with pytest.raises(runner.Experiment3RunnerError, match="full Git commit"):
+        runner.run_formal(
+            tmp_path,
+            manifest=manifest,
+            output_dir=output,
+            git_commit_fn=lambda _root: "",
+        )
+
+    assert not output.exists()
+
+
 def test_cli_dispatches_preflight_formal_and_summarise_without_a_test_factory(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -540,8 +893,20 @@ def test_cli_dispatches_preflight_formal_and_summarise_without_a_test_factory(
             "all_declared_cells_retained": True,
         }
 
+    def fake_resume(root: str, **kwargs: Any) -> dict[str, Any]:
+        assert os.environ["EXPERIMENT3_CLI_FILE_KEY"] == "formal-file-secret"
+        events.append(("resume", {"root": root, **kwargs}))
+        assert "client_factory" not in kwargs
+        return {
+            "denominator": 33,
+            "completed_cells": 31,
+            "failed_cells": 2,
+            "all_declared_cells_retained": True,
+        }
+
     monkeypatch.setattr(runner, "run_preflight", fake_preflight)
     monkeypatch.setattr(runner, "run_formal", fake_formal)
+    monkeypatch.setattr(runner, "run_resume", fake_resume)
 
     assert runner.main(
         [
@@ -573,6 +938,26 @@ def test_cli_dispatches_preflight_formal_and_summarise_without_a_test_factory(
     formal_payload = json.loads(formal_capture.out)
     assert formal_payload["denominator"] == 33
     assert "formal-file-secret" not in formal_capture.out + formal_capture.err
+
+    monkeypatch.delenv("EXPERIMENT3_CLI_FILE_KEY")
+    assert runner.main(
+        [
+            "resume",
+            "--root",
+            str(tmp_path),
+            "--manifest",
+            str(manifest_path),
+            "--output",
+            str(formal_output),
+            "--env-file",
+            str(env_file),
+        ]
+    ) == 0
+    resume_capture = capsys.readouterr()
+    resume_payload = json.loads(resume_capture.out)
+    assert resume_payload["command"] == "resume"
+    assert resume_payload["completed_cells"] == 31
+    assert "formal-file-secret" not in resume_capture.out + resume_capture.err
     assert events == [
         (
             "preflight",
@@ -580,6 +965,14 @@ def test_cli_dispatches_preflight_formal_and_summarise_without_a_test_factory(
         ),
         (
             "formal",
+            {
+                "root": str(tmp_path),
+                "manifest_path": str(manifest_path),
+                "output_dir": str(formal_output),
+            },
+        ),
+        (
+            "resume",
             {
                 "root": str(tmp_path),
                 "manifest_path": str(manifest_path),
