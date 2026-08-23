@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "authority": "EXPERIMENT_2_AUTHORITY.md",
+  "authority_revision": "0.1.0",
+  "experiment_id": "experiment2-so101-cross-run-closure",
+  "track": "cross-run-experience-closure",
+  "protocol": "PROTOCOL.md",
+  "robot_configuration": "robotstudio_so101",
+  "generation_condition": "skeleton-assisted",
+  "model_execution_policy": "remote-hosted-api-only",
+  "models": {
+    "producer": {
+      "family": "Sonnet 4.6",
+      "provider": "Anthropic",
+      "exact_model_id": "eu.anthropic.claude-sonnet-4-6",
+      "temperature": 0.0,
+      "context_limit_tokens": 1000000,
+      "max_output_tokens": 16384,
+      "roles": [
+        "TGCD",
+        "IVC-or-criteria-design-input",
+        "STUDY",
+        "GENERATE",
+        "Repair",
+        "Task-Demo-controller"
+      ]
+    },
+    "terminal_evolution": {
+      "family": "Opus 5",
+      "provider": "Anthropic",
+      "exact_model_id": "eu.anthropic.claude-opus-5",
+      "temperature": 0.0,
+      "context_limit_tokens": 1000000,
+      "max_output_tokens": 32768,
+      "callable_identity_required": true,
+      "identity_canary": "diagnostics/company_api_model_identity_canaries_2026-08-23.json",
+      "roles": [
+        "source-run-terminal-Evolution-only"
+      ],
+      "maximum_calls": 1
+    }
+  },
+  "runtime": {
+    "producer_model": {
+      "vendor": "anthropic",
+      "api_protocol": "openai-compatible",
+      "model_id": "eu.anthropic.claude-sonnet-4-6",
+      "revision": "claude-sonnet-4-6",
+      "base_url": "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1",
+      "context_window_tokens": 1000000,
+      "max_output_tokens": 16384,
+      "temperature": 0.0,
+      "thinking": null,
+      "tool_history_mode": "native",
+      "price_snapshot": {
+        "date": "2026-08-21",
+        "currency": "USD",
+        "input_per_million_tokens": 3.3,
+        "output_per_million_tokens": 16.5
+      }
+    },
+    "producer_transport": {
+      "endpoint_region": "eu-west-2",
+      "request_timeout_s": 120,
+      "retry_policy": {
+        "maximum_physical_requests": 2,
+        "backoff_seconds": 1.0,
+        "retryable_http_statuses": [429, 500, 502, 503, 504]
+      },
+      "history_char_budget": 80000,
+      "credential_env": "AUTOADAPTER_COMPANY_API_KEY",
+      "auth_header": "X-Api-Key",
+      "auth_prefix": ""
+    },
+    "evolution_model": {
+      "vendor": "anthropic",
+      "api_protocol": "openai-compatible",
+      "model_id": "eu.anthropic.claude-opus-5",
+      "revision": "claude-opus-5",
+      "base_url": "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1",
+      "context_window_tokens": 1000000,
+      "max_output_tokens": 32768,
+      "temperature": 0.0,
+      "thinking": null,
+      "tool_history_mode": "native",
+      "price_snapshot": {
+        "date": "2026-08-21",
+        "currency": "USD",
+        "input_per_million_tokens": 5.5,
+        "output_per_million_tokens": 27.5
+      }
+    },
+    "evolution_transport": {
+      "endpoint_region": "eu-west-2",
+      "request_timeout_s": 600,
+      "retry_policy": {
+        "maximum_physical_requests": 2,
+        "backoff_seconds": 1.0,
+        "retryable_http_statuses": [429, 500, 502, 503, 504]
+      },
+      "history_char_budget": 80000,
+      "credential_env": "AUTOADAPTER_COMPANY_API_KEY",
+      "auth_header": "X-Api-Key",
+      "auth_prefix": ""
+    },
+    "resources": {
+      "development_probe": {
+        "max_requests_per_stage": 14,
+        "wall_timeout_s_per_request": 30,
+        "max_output_chars_per_request": 12000
+      },
+      "validation": {
+        "record_video": true,
+        "worker_wall_timeout_s": 120
+      }
+    }
+  },
+  "readiness_evidence": {
+    "package": {
+      "path": "../experiment/experiment3/diagnostics/all_11_package_check_2026-08-23.json",
+      "passed": true
+    },
+    "reference_positive_control": {
+      "path": "../experiment/experiment3/diagnostics/reference_positive_control_status_2026-08-23.json",
+      "passed": false
+    },
+    "candidate_isolation": {
+      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "passed": true
+    },
+    "canonical_physics": {
+      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "passed": true
+    },
+    "independent_harness": {
+      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "passed": true
+    },
+    "recorder": {
+      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "passed": true
+    },
+    "evolution_transport": {
+      "path": "../experiment/experiment2/diagnostics/company_api_model_identity_canaries_2026-08-23.json",
+      "passed": true
+    },
+    "experience_boundary": {
+      "path": "../experiment/experiment2/diagnostics/runtime_experience_boundary_checks_2026-08-23.json",
+      "passed": true
+    }
+  },
+  "run_roles": {
+    "source": {
+      "run_id": "exp2-so101-source",
+      "manual_launch": true,
+      "experience_input": "empty",
+      "stages": [
+        "TGCD",
+        "IVC",
+        "STUDY",
+        "GENERATE",
+        "private-capability-validation",
+        "bounded-Repair",
+        "Task-Demo",
+        "terminal-Evolution"
+      ],
+      "task_demo_required": true,
+      "task_demo_outcome_when_no_admitted_driver": "not-run-with-nonempty-reason",
+      "evolution": {
+        "enabled": true,
+        "model_role": "terminal_evolution",
+        "terminal_only": true,
+        "same_run_input": false
+      },
+      "maximum_submitted_driver_attempts": 3
+    },
+    "later": {
+      "run_id": "exp2-so101-later",
+      "manual_launch": true,
+      "experience_input": "accepted-frozen-reviewed-source-snapshot",
+      "stages": [
+        "TGCD",
+        "IVC",
+        "STUDY",
+        "GENERATE",
+        "private-capability-validation",
+        "bounded-Repair",
+        "Task-Demo"
+      ],
+      "task_demo_required": true,
+      "evolution": {
+        "enabled": false,
+        "reason": "one terminal Evolution proposal is fixed to the source run"
+      },
+      "maximum_submitted_driver_attempts": 3,
+      "fresh_independent_run": true
+    }
+  },
+  "human_disposition": {
+    "allowed_values": [
+      "accept",
+      "reject"
+    ],
+    "content_editing": false,
+    "reason_required": true,
+    "reason_nonempty": true,
+    "label_editing": false,
+    "human_writable_fields": [
+      "disposition",
+      "reason"
+    ],
+    "later_run_requires": "accept_for_experience_input",
+    "reviewed_snapshot_freeze_required": true
+  },
+  "experience_policy": {
+    "allowed_valence": [
+      "positive",
+      "negative"
+    ],
+    "public": true,
+    "evidence_label_required": true,
+    "model_writable_fields": [
+      "observation",
+      "lesson",
+      "recommendation",
+      "scope",
+      "evidence"
+    ],
+    "framework_assigned_fields": [
+      "source_robot",
+      "generation_condition",
+      "terminal_outcome_label"
+    ],
+    "terminal_outcome_label_values": [
+      "positive",
+      "negative"
+    ],
+    "valence_authority": "framework_from_retained_terminal_verdict_facts",
+    "reference_material_allowed": false,
+    "private_validation_material_allowed": false,
+    "same_round_input": false,
+    "rejected_record": "retained_evidence_not_eligible",
+    "global_eligibility": "accept_plus_frozen_reviewed_snapshot",
+    "effective_when": "explicitly_loaded_unchanged_by_next_independent_run"
+  },
+  "attempt_policy": {
+    "initial_attempt_index": 0,
+    "maximum_submitted_driver_attempts_per_run": 3,
+    "repair_attempts_after_initial": 2
+  },
+  "denominator": {
+    "source_runs": 1,
+    "later_runs": 1,
+    "declared_closure_runs": 2,
+    "improvement_claim": false,
+    "matched_no_experience_control": false
+  },
+  "analysis_boundary": [
+    "cross-run mechanism closure",
+    "proposal and disposition traceability",
+    "unchanged Experience load in the next independent run",
+    "source and later run terminal outcomes reported separately",
+    "no improvement or causal Experience claim"
+  ]
+}
