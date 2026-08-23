@@ -76,8 +76,9 @@ name and is an instance method on the object returned by build(), with exact sig
 plain dict; use ``request["task_id"]`` and ``request["task_parameters"]``, not attribute access.
 Change only driver.py. Keep the requested generation condition boundary: skeleton-assisted may use
 the supplied trusted skeleton family; from-scratch must not import or call it. The Framework still
-owns canonical model/data and trial reset. Use direct, statically auditable attribute access; do not
-use getattr, setattr, eval, exec, or dynamic binding. Do not return a verdict.""" + (
+owns canonical model/data and trial reset. Use direct, statically auditable syntax: mapping fields
+via subscripts and object APIs via normal attributes; do not use getattr, setattr, eval, exec, or
+dynamic binding. Do not return a verdict.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 )
 
@@ -103,7 +104,10 @@ writes the revision, performs source audit and canonical import/build, and runs 
 smokes inside that one tool execution. Its public controls, state, and named-position observations are
 development feedback only; liveness success is not capability success or a private verdict. Compare
 them with the failed report before submission. Preserve the sealed method names and exact
-(self, request) ABI.
+(self, request) ABI. ``request`` is always a plain Python mapping: use item access such as
+``request["task_parameters"]`` for sealed fields; never ``request.task_parameters``. For
+keyword_request, read ``request["task_id"]`` and ``request["task_parameters"]``; for
+capability_request, use item access for fields declared by its request_schema.
 Respect the original skeleton-assisted or from-scratch boundary. Finish only with submit_driver after
 the bundled check succeeds. Never access or infer
 private suite construction, reference code, the other condition, or a final Harness verdict.""" + (

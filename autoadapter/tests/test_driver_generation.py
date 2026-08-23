@@ -194,6 +194,13 @@ class DriverGenerationTests(unittest.TestCase):
         ):
             self.assertIn(IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT, prompt)
 
+    def test_interactive_driver_prompts_expose_mapping_request_abi(self) -> None:
+        for prompt in (GENERATE_REACT_SYSTEM, REPAIR_REACT_SYSTEM):
+            normalized = " ".join(prompt.split())
+            self.assertIn("plain Python mapping", normalized)
+            self.assertIn('request["task_parameters"]', normalized)
+            self.assertIn("never ``request.task_parameters``", normalized)
+
     @staticmethod
     def _study(condition: str) -> dict:
         output = {

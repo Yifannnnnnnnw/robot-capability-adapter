@@ -204,6 +204,9 @@ class InteractiveSessionTests(unittest.TestCase):
 
     def test_interface_stub_contains_only_sealed_signatures_and_placeholders(self) -> None:
         source = render_interface_stub(("drive", "hold_position"))
+        self.assertIn("plain Python mapping", source)
+        self.assertIn('request["field"]', source)
+        self.assertIn("never request.field", source)
         self.assertIn("def drive(self, request):", source)
         self.assertIn("def hold_position(self, request):", source)
         self.assertIn("def build(model, data):", source)
@@ -455,7 +458,7 @@ class InteractiveSessionTests(unittest.TestCase):
         self.assertEqual(self.session.read_driver({})["source"], invalid_source)
         self.assertEqual(checked["development_status"]["probe_calls_used"], 0)
 
-    def test_driver_probe_limit_is_capability_count_plus_three_optional_probes(self) -> None:
+    def test_driver_probe_limit_reserves_two_complete_checks_plus_three_optional_probes(self) -> None:
         session = PublicDevelopmentSession(
             package=self.package,
             condition="from-scratch",
@@ -469,8 +472,121 @@ class InteractiveSessionTests(unittest.TestCase):
         status = session._development_status()
 
         self.assertEqual(status["configured_probe_calls_limit"], 32)
-        self.assertEqual(status["probe_calls_limit"], 5)
-        self.assertEqual(status["probe_calls_remaining"], 5)
+        self.assertEqual(status["probe_calls_limit"], 7)
+        self.assertEqual(status["probe_calls_remaining"], 7)
+        self.assertEqual(status["discretionary_probe_calls_limit"], 3)
+        with patch.object(session, "_run_probe", return_value={}) as run_probe:
+            for index in range(3):
+                session.run_mujoco_probe(
+                    {"probe_id": f"optional-{index}", "script": "pass"}
+                )
+            with self.assertRaisesRegex(ProbeError, "discretionary"):
+                session.run_mujoco_probe(
+                    {"probe_id": "optional-blocked", "script": "pass"}
+                )
+        self.assertEqual(run_probe.call_count, 3)
+
+    def test_ten_capability_failed_revision_can_be_corrected_and_fully_rechecked(
+        self,
+    ) -> None:
+        methods = tuple(f"capability_{index}" for index in range(10))
+        task_ids = {method: ("task-1",) for method in methods}
+
+        def source_for(request_access: str) -> str:
+            method_source = "\n".join(
+                (
+                    f"    def {method}(self, request):\n"
+                    f"        target = {request_access}.get('target', 0.0)\n"
+                    "        self.data.ctrl[0] = float(target)\n"
+                    "        mujoco.mj_step(self.model, self.data)\n"
+                    "        return True\n"
+                )
+                for method in methods
+            )
+            return (
+                "import mujoco\n\n"
+                "class Driver:\n"
+                "    def __init__(self, model, data):\n"
+                "        self.model = model\n"
+                "        self.data = data\n\n"
+                f"{method_source}\n"
+                "def build(model, data):\n"
+                "    return Driver(model, data)\n"
+            )
+
+        wrong_source = source_for("request.task_parameters")
+        corrected_source = source_for('request["task_parameters"]')
+        session = PublicDevelopmentSession(
+            package=self.package,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "ten-capability-recheck-session",
+            budget=ProbeBudget(max_requests=25, timeout_s=10),
+            source_root=Path(__file__).resolve().parents[1] / "src",
+            capability_methods=methods,
+            capability_task_ids=task_ids,
+        )
+        checks = [
+            {
+                "method_name": method,
+                "request": {
+                    "task_id": "task-1",
+                    "task_parameters": {"target": 0.1},
+                },
+            }
+            for method in methods
+        ]
+
+        def public_probe_result(
+            requests: Sequence[Mapping[str, Any]],
+            **kwargs: Any,
+        ) -> list[dict[str, Any]]:
+            request = requests[0]
+            probe_id = str(request["probe_id"])
+            candidate_source = str(kwargs.get("candidate_source") or "")
+            failed_mapping_access = (
+                probe_id.startswith("smoke-")
+                and "request.task_parameters" in candidate_source
+            )
+            return [
+                {
+                    "probe_id": probe_id,
+                    "exit_code": 1 if failed_mapping_access else 0,
+                    "physics_steps": 0 if failed_mapping_access else 1,
+                    "timed_out": False,
+                    "spawn_error": None,
+                    "elapsed_wall_s": 0.01,
+                    "stdout": "",
+                    "stderr": (
+                        "AttributeError: 'dict' object has no attribute "
+                        "'task_parameters'"
+                        if failed_mapping_access
+                        else ""
+                    ),
+                }
+            ]
+
+        with patch(
+            "autoadapter2.driver_synthesis.interactive.run_probes",
+            side_effect=public_probe_result,
+        ):
+            first = session.check_driver(
+                {"source": wrong_source, "checks": checks}
+            )
+            self.assertFalse(first["successful"])
+            self.assertEqual(first["revision"], 1)
+            self.assertEqual(first["development_status"]["probe_calls_used"], 11)
+
+            second = session.check_driver(
+                {"source": corrected_source, "checks": checks}
+            )
+            self.assertTrue(second["successful"])
+            self.assertEqual(second["revision"], 2)
+            self.assertEqual(second["development_status"]["probe_calls_used"], 22)
+            self.assertEqual(second["development_status"]["probe_calls_remaining"], 3)
+            submitted = session.submit_driver({"note": "corrected mapping ABI"})
+
+        self.assertEqual(submitted["development_revision"], 2)
+        self.assertEqual(submitted["smoked_methods"], list(methods))
 
     def test_identical_write_preserves_revision_audit_and_smoke_progress(self) -> None:
         first = self.session.write_driver({"source": DRIVER_SOURCE})

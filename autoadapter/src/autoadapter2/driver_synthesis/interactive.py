@@ -28,6 +28,7 @@ class DevelopmentSessionError(RuntimeError):
 
 
 MAX_DISCRETIONARY_DRIVER_PROBES = 3
+MAX_COMPLETE_DRIVER_CHECKS = 2
 MAX_STUDY_PROBES = 2
 PUBLIC_CHECK_SCOPE = {
     "check_scope": "public_source_import_and_physics_liveness",
@@ -108,7 +109,11 @@ def render_interface_stub(capability_methods: Sequence[str]) -> str:
 
     methods = validate_capability_names(capability_methods)
     lines = [
-        '"""Interface-only stub generated from the sealed Capability Design."""',
+        '"""Interface-only stub generated from the sealed Capability Design.',
+        "",
+        "Every request is a plain Python mapping. Access sealed fields with",
+        'request["field"] or mapping read methods, never request.field.',
+        '"""',
         "",
         "",
         "class CapabilityDriver:",
@@ -172,7 +177,8 @@ class PublicDevelopmentSession:
         effective_requests = min(
             budget.max_requests,
             (
-                len(self.capability_methods) + 1 + MAX_DISCRETIONARY_DRIVER_PROBES
+                MAX_COMPLETE_DRIVER_CHECKS * (len(self.capability_methods) + 1)
+                + MAX_DISCRETIONARY_DRIVER_PROBES
                 if self.capability_methods
                 else MAX_STUDY_PROBES
             ),
@@ -191,6 +197,7 @@ class PublicDevelopmentSession:
         self.probe_requests: list[dict[str, str]] = []
         self.probe_results: list[dict[str, Any]] = []
         self._probe_calls = 0
+        self._discretionary_probe_calls = 0
         self._revision = 0
         self._audited_revision: int | None = None
         self._smoked_revision: dict[str, int] = {}
@@ -241,6 +248,12 @@ class PublicDevelopmentSession:
             "probe_calls_limit": self.budget.max_requests,
             "configured_probe_calls_limit": self.configured_budget.max_requests,
             "probe_calls_remaining": max(0, self.budget.max_requests - self._probe_calls),
+            "discretionary_probe_calls_used": self._discretionary_probe_calls,
+            "discretionary_probe_calls_limit": (
+                MAX_DISCRETIONARY_DRIVER_PROBES
+                if self.capability_methods
+                else MAX_STUDY_PROBES
+            ),
             "missing_current_revision_smokes": missing,
         }
 
@@ -330,7 +343,18 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("probe_id must be a non-empty string")
         if not isinstance(script, str) or not script.strip():
             raise DevelopmentSessionError("script must be non-empty Python source")
+        discretionary_limit = (
+            MAX_DISCRETIONARY_DRIVER_PROBES
+            if self.capability_methods
+            else MAX_STUDY_PROBES
+        )
+        if self._discretionary_probe_calls >= discretionary_limit:
+            raise ProbeError(
+                f"discretionary development probe limit reached at "
+                f"{discretionary_limit} calls"
+            )
         self._reserve_required_check()
+        self._discretionary_probe_calls += 1
         source = self._candidate_source() if self.candidate_path.is_file() else None
         return self._run_probe(
             probe_id=probe_id.strip(),
@@ -761,7 +785,9 @@ class PublicDevelopmentSession:
             ToolSpec(
                 "check_driver",
                 "Submit one complete driver.py revision and exactly one ABI-conforming public "
-                "request per sealed capability. In the same Framework execution, the source is "
+                "request per sealed capability. Each request is passed to the candidate as a "
+                "plain Python mapping; read fields with request['field'] or mapping methods, "
+                "never request.field. In the same Framework execution, the source is "
                 "written, audited, imported/built, and every capability is invoked through "
                 "actuator-driven MuJoCo physics. Revise from returned public diagnostics when "
                 "needed; on success call submit_driver next.",

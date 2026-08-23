@@ -147,7 +147,8 @@ not import, copy, or call any skeleton and must implement actuator mapping, cont
 stepping with the supplied runtime primitives. The Framework owns the canonical model/data session;
 do not load a model, reset it, teleport state, or access private validation definitions. Do not return
 a verdict or a fixed/reference driver in place of model-authored source. Use direct, statically
-auditable attribute access; do not use getattr, setattr, eval, exec, or dynamic binding.""" + (
+auditable syntax: mapping fields via subscripts and object APIs via normal attributes; do not use
+getattr, setattr, eval, exec, or dynamic binding.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 )
 
@@ -177,7 +178,11 @@ GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_
 The public input contains the complete interface-only driver.py stub derived from the sealed
 Capability Design. It contains exact method names and (self, request) placeholders but no controller
 or request interpretation. Implement the complete source yourself and follow the invocation ABI and
-per-capability request schemas sealed in the design. Use public files and at most three optional
+per-capability request schemas sealed in the design. ``request`` is always a plain Python mapping:
+use item access such as ``request["task_parameters"]`` for sealed fields; never
+``request.task_parameters``. For keyword_request, read ``request["task_id"]`` and
+``request["task_parameters"]``; for capability_request, use item access for fields declared by its
+request_schema. Use public files and at most three optional
 MuJoCo development probes when genuinely needed. Your normal first action is one check_driver call
 containing the complete source and exactly one ABI-conforming public request per sealed capability. The
 Framework writes the source, audits it, imports/builds it, and runs all capability physics smokes in
