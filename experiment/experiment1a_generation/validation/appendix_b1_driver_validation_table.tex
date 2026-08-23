@@ -10,10 +10,10 @@
 \begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}
                         >{\raggedright\arraybackslash}p{0.32\textwidth}
                         >{\raggedright\arraybackslash}p{0.42\textwidth}@{}}
-\caption{B1 generated-driver capabilities and validation criteria}
+\caption{Experiment 1a generated-driver capabilities and validation criteria}
 \label{tab:appendix-b1-driver-validation}\\
 \hline
-\textbf{Robot configuration(s)} &
+\textbf{Robot configuration} &
 \textbf{Generated-driver methods} &
 \textbf{Validation criteria} \\
 \hline
@@ -21,7 +21,7 @@
 
 \multicolumn{3}{l}{\tablename\ \thetable{} -- continued from the previous page}\\
 \hline
-\textbf{Robot configuration(s)} &
+\textbf{Robot configuration} &
 \textbf{Generated-driver methods} &
 \textbf{Validation criteria} \\
 \hline
@@ -34,40 +34,30 @@
 \hline
 \endlastfoot
 
-SO-101; Franka Panda; Kinova Gen3 with Robotiq 2F-85; UFACTORY xArm7;
-Universal Robots UR5e with Robotiq 2F-85; Piper
+SO-101
 &
 \textbf{A1.} \texttt{move\_end\_effector\_to\_position}\newline
 \textbf{A2.} \texttt{trace\_cartesian\_path}\newline
 \textbf{A3.} \texttt{set\_gripper\_opening}\newline
 \textbf{A4.} \texttt{approach\_until\_contact}\newline
-\textbf{A5.} \texttt{move\_cartesian\_offset\_and\_return}
+\textbf{A5.} \texttt{move\_cartesian\_offset\_and\_return}\newline
+\textbf{A6.} \texttt{set\_wrist\_roll}
 &
-\textbf{A1.} End-effector position error $\leq 15$ mm for $0.5$ s.\newline
-\textbf{A2.} Waypoint and cross-track errors $\leq 20$ mm; final error
-$\leq 15$ mm for $0.5$ s.\newline
+\textbf{A1.} End-effector position error $\leq 15$ mm continuously for
+$0.5$ s.\newline
+\textbf{A2.} Ordered waypoint and cross-track errors $\leq 20$ mm within
+their segment budgets; final error $\leq 15$ mm continuously for $0.5$ s.\newline
 \textbf{A3.} Normalised physical-aperture error $\leq 0.10$ for $0.25$ s;
 motion in each direction $\geq 50\%$ of full travel.\newline
-\textbf{A4.} Pre-contact error $\leq 15$ mm; lateral approach error
-$\leq 10$ mm; no excess travel; target contact for $0.1$ s; penetration
+\textbf{A4.} Ordered pre-contact and ray-approach gates; allowed target
+contact for $0.1$ s; post-contact tool speed $\leq 0.02$ m/s; penetration
 $\leq 5$ mm; no unrelated contact.\newline
-\textbf{A5.} Outbound and return errors $\leq 15$ mm; respective dwell
-times of $0.25$ s and $0.5$ s. Robot-specific end-effector and gripper
-measurement bindings differ, but the thresholds are shared.
-\\[3pt]
-
-KUKA iiwa 14
-&
-\textbf{K1.} \texttt{move\_end\_effector\_to\_position}\newline
-\textbf{K2.} \texttt{trace\_cartesian\_path}\newline
-\textbf{K3.} \texttt{approach\_until\_contact}\newline
-\textbf{K4.} \texttt{move\_cartesian\_offset\_and\_return}\newline
-\textbf{K5.} \texttt{rotate\_end\_effector\_and\_return}
-&
-K1--K4 use the corresponding fixed-arm criteria above.\newline
-\textbf{K5.} Rotation must follow the requested local axis; orientation
-error $\leq 5^{\circ}$; position drift $\leq 15$ mm throughout; no
-additional full rotation; outbound and return dwell times of $0.25$ s.
+\textbf{A5.} Outbound and return errors $\leq 15$ mm, held for $0.25$ s and
+$0.5$ s respectively, with correct phase order and leg budgets; maximum
+displacement $\geq 80\%$ of the requested offset.\newline
+\textbf{A6.} Absolute wrist-roll error $\leq 0.03$ rad continuously for
+$0.25$ s; every other arm joint and the gripper remain within $0.03$ rad of
+their call-time positions.
 \\[3pt]
 
 Unitree Go2
@@ -79,99 +69,34 @@ Unitree Go2
 \textbf{G5.} \texttt{hold\_stable\_stance}
 &
 \textbf{G1.} Mean planar-velocity error $\leq 0.10$ m/s, mean yaw-rate
-error $\leq 0.30$ rad/s, and mean direction error $\leq 10^{\circ}$.\newline
-\textbf{G2.} Position error $\leq 0.10$ m and yaw error $\leq 5^{\circ}$
-for $0.5$ s.\newline
-\textbf{G3.} Waypoint error $\leq 0.10$ m, cross-track error
-$\leq 0.15$ m, and final error $\leq 0.10$ m.\newline
-\textbf{G4.} Height error $\leq 0.03$ m and absolute roll and pitch
-$\leq 10^{\circ}$ for $0.5$ s.\newline
-\textbf{G5.} Recovery to absolute roll and pitch $\leq 3^{\circ}$ within
-$0.5$ s after the registered disturbance; thereafter $\leq 5^{\circ}$,
-with height drift $\leq 0.03$ m, planar drift $\leq 0.05$ m, and valid
-four-foot support.
-\\[3pt]
-
-LEAP Hand
-&
-\textbf{L1.} \texttt{move\_hand\_to\_joint\_pose}\newline
-\textbf{L2.} \texttt{trace\_hand\_joint\_path}\newline
-\textbf{L3.} \texttt{reach\_fingertips\_to\_targets}\newline
-\textbf{L4.} \texttt{establish\_fingertip\_contact\_pattern}\newline
-\textbf{L5.} \texttt{hold\_fingertip\_contacts}\newline
-\textbf{L6.} \texttt{move\_fingertip\_offset\_and\_return}
-&
-\textbf{L1.} Maximum joint error $<10^{\circ}$ for $0.5$ s.\newline
-\textbf{L2.} Maximum joint error $\leq 0.05$ rad at every waypoint;
-final dwell of $0.5$ s.\newline
-\textbf{L3.} Concatenated four-fingertip position error $<8.944$ mm at
-terminal control step 50.\newline
-\textbf{L4.} Fingertip target error $\leq 10$ mm; specified approach
-direction and travel respected; contact for $0.1$ s; penetration
-$\leq 5$ mm.\newline
-\textbf{L5.} Following motion $\geq 80\%$ after a $6$--$8$ mm target
-separation; contact recovered within $0.2$ s; contact occupancy
-$\geq 90\%$.\newline
-\textbf{L6.} Outbound and return errors $\leq 10$ mm; each phase held
-for $0.25$ s.
-\\[3pt]
-
-Hello Robot Stretch 2
-&
-\textbf{ST1.} \texttt{move\_base\_relative}\newline
-\textbf{ST2.} \texttt{turn\_base\_to\_heading}\newline
-\textbf{ST3.} \texttt{move\_tool\_to\_position}\newline
-\textbf{ST4.} \texttt{trace\_tool\_cartesian\_path}\newline
-\textbf{ST5.} \texttt{set\_gripper\_opening}\newline
-\textbf{ST6.} \texttt{set\_wrist\_yaw}\newline
-\textbf{ST7.} \texttt{approach\_until\_contact}\newline
-\textbf{ST8.} \texttt{move\_tool\_offset\_and\_return}
-&
-\textbf{ST1.} Position error $\leq 20$ mm and yaw drift
-$\leq 0.02$ rad.\newline
-\textbf{ST2.} Yaw error $\leq 0.02$ rad and planar drift
-$\leq 20$ mm.\newline
-\textbf{ST3.} Tool-position error $\leq 25$ mm for $0.5$ s.\newline
-\textbf{ST4.} Waypoint and cross-track errors $\leq 30$ mm; final error
-$\leq 25$ mm.\newline
-\textbf{ST5.} Physical gripper-slide error $\leq 3$ mm; bidirectional
-travel $\geq 15$ mm.\newline
-\textbf{ST6.} Absolute wrist-yaw error $\leq 0.03$ rad for $0.5$ s.\newline
-\textbf{ST7.} The fixed-arm contact criteria apply.\newline
-\textbf{ST8.} Outbound and return errors $\leq 25$ mm; base drift
-$\leq 20$ mm and yaw drift $\leq 0.03$ rad throughout.
-\\[3pt]
-
-ALOHA 2
-&
-\textbf{AL1.} \texttt{move\_arm\_to\_position}\newline
-\textbf{AL2.} \texttt{trace\_arm\_cartesian\_path}\newline
-\textbf{AL3.} \texttt{set\_gripper\_opening}\newline
-\textbf{AL4.} \texttt{move\_bimanual\_to\_positions}\newline
-\textbf{AL5.} \texttt{approach\_until\_contact}\newline
-\textbf{AL6.} \texttt{move\_bimanual\_offsets\_and\_return}
-&
-\textbf{AL1.} Selected end-effector error $\leq 15$ mm for $0.5$ s;
-the unselected side remains within its call-time guard.\newline
-\textbf{AL2.} Waypoint and cross-track errors $\leq 20$ mm; final error
-$\leq 15$ mm for $0.5$ s.\newline
-\textbf{AL3.} Normalised aperture error $\leq 0.10$ and mirrored-finger
-disagreement $\leq 0.05$.\newline
-\textbf{AL4.} Both end-effector errors simultaneously $\leq 15$ mm for
-$0.5$ s; final-entry skew $\leq 0.10$ s.\newline
-\textbf{AL5.} The fixed-arm contact criteria apply to the selected arm;
-the unselected side remains within its call-time guard.\newline
-\textbf{AL6.} Both outbound and return errors $\leq 15$ mm; entry skew
-$\leq 0.10$ s; each phase held for $0.25$ s.
+error $\leq 0.30$ rad/s, and, when requested planar speed is at least
+$0.20$ m/s, mean direction error $\leq 10^{\circ}$.\newline
+\textbf{G2.} Position error $\leq 0.10$ m, wrapped yaw error
+$\leq 0.0873$ rad, and planar speed $\leq 0.10$ m/s continuously for
+$0.5$ s.\newline
+\textbf{G3.} Ordered waypoint error $\leq 0.10$ m, cross-track error
+$\leq 0.15$ m, and endpoint error and speed each $\leq 0.10$ in their
+stated units for $0.5$ s.\newline
+\textbf{G4.} Height error $\leq 0.03$ m, absolute roll and pitch
+$\leq 0.1745$ rad, planar displacement $\leq 0.05$ m, and yaw drift
+$\leq 0.0873$ rad continuously for $0.5$ s.\newline
+\textbf{G5.} Recover to absolute roll and pitch $\leq 0.0524$ rad within
+$0.5$ s after the registered disturbance; thereafter each remains
+$\leq 0.0873$ rad, with height drift $\leq 0.03$ m, planar drift
+$\leq 0.05$ m, mean planar speed and terminal vertical speed
+$\leq 0.05$ m/s, valid four-foot support, and no base/head--floor contact.
 \\
 
 \end{longtable}
 
 \noindent\footnotesize\textit{Acceptance rule.} Each capability is evaluated
 on three hidden combinations of target, initial state, and parameters. A
-capability passes only if all three cases pass, and a generated driver passes
-B1 only if every capability assigned to its robot passes. Each trial must also
-satisfy the common closed-loop, canonical-physics, control-range, unintended-
-motion, contact-integrity, maximum-penetration, and complete-video checks.
+capability passes when at least two of its three cases pass, and a generated
+driver passes Experiment 1a only when every capability assigned to its robot
+passes. Every trial must also satisfy the common closed-loop,
+canonical-physics, control-range, unintended-motion, contact-integrity,
+maximum-penetration, and complete-video checks. The table contains only the
+two active Experiment 1a configurations; broader historical robot and task
+catalogues are outside its denominator.
 
 \endgroup

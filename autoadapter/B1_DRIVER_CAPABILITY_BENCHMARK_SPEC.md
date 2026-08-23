@@ -1,6 +1,16 @@
-# B1 Generated-Driver Capability Benchmark Specification
+# Historical B1 Generated-Driver Capability Benchmark Proposal
 
-**Status:** proposed experiment specification; not yet a formal frozen B1 input bundle
+> **Superseded historical proposal — inactive.** This file records the
+> eleven-configuration, five-replicate proposal drafted on 2026-08-21. It is
+> not an input, admission rule, denominator, or authority for the active
+> Chapter 3 Experiment 1a. The current two-robot design is governed only by
+> `../experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`, with its
+> public criteria in
+> `../experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md`.
+> References below to a proposed or formal B1 run describe the superseded
+> design and must not be applied to current execution.
+
+**Status:** superseded historical proposal; inactive
 
 **Scope decision:** all six profiles, LEAP contact maintenance, and both ALOHA bimanual
 capabilities approved on 2026-08-21; numeric gates remain proposed until threshold approval and
@@ -8,7 +18,8 @@ reference calibration
 
 **Scope:** the exact eleven-configuration cohort declared by `AUTOADAPTER_2_AUTHORITY.md`
 
-**Purpose:** define what every generated `driver.py` must expose and exactly how B1 admits it
+**Historical purpose:** record the proposed interface and admission design for
+the former eleven-configuration B1 cohort
 
 This specification replaces the task-wrapper design of `fixed_driver_v1` as the proposed B1
 direction. It does not change the current executable benchmark by itself. The interfaces,
