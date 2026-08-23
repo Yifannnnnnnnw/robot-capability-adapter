@@ -111,12 +111,12 @@
               0.18
             ],
             "grasp_position": [
-              0.355,
+              0.34,
               0.08,
               0.195
             ],
             "grasp_wrist_roll": -1.5707963267948966,
-            "grasp_gripper": 0.1,
+            "grasp_gripper": 0.26,
             "target_position": [
               0.38,
               -0.08,

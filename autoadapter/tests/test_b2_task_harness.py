@@ -10,7 +10,12 @@ from autoadapter2.b2.task_harness import evaluate_b2_task_harness
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 TASK_SUITE_PATH = (
-    REPOSITORY_ROOT / "experiment" / "b2_recap" / "task_suite" / "task_suite.json"
+    REPOSITORY_ROOT
+    / "experiment"
+    / "experiment1b_use"
+    / "config"
+    / "task_suite"
+    / "task_suite.json"
 )
 INSTANCE_ID = "go2-go2-t16"
 

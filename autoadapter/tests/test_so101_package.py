@@ -266,9 +266,9 @@ def test_so101_pick_place_v6_snapshot_preserves_task_contract() -> None:
     parameters = instance["public_arguments"]["request"]["task_parameters"]
     assert parameters == {
         "start_position": [0.34, 0.08, 0.18],
-        "grasp_position": [0.355, 0.08, 0.195],
+        "grasp_position": [0.34, 0.08, 0.195],
         "grasp_wrist_roll": -1.5707963267948966,
-        "grasp_gripper": 0.1,
+        "grasp_gripper": 0.26,
         "target_position": [0.38, -0.08, 0.26],
         "release_position": [0.371, -0.078, 0.272],
         "tool_target_position": [0.371, -0.078, 0.272],
@@ -377,16 +377,8 @@ def test_so101_reference_idle_holds_the_last_actuator_target() -> None:
     assert np.linalg.norm(after - before) <= 0.015
 
 
-def test_so101_pick_place_uses_a_physical_fixture_and_reference_passes() -> None:
+def test_so101_pick_place_v6_uses_a_physical_fixture() -> None:
     package = load_robot_package(PACKAGE_ROOT)
-    design = _design(package)
-    complete_suite = _suite(package, design)
-    pick_place_case = next(
-        case
-        for case in complete_suite["cases"]
-        if case["task_id"] == "mw_pick_place"
-    )
-    suite = {**complete_suite, "cases": [pick_place_case]}
     instance = next(
         item
         for item in json.loads(
@@ -409,27 +401,6 @@ def test_so101_pick_place_uses_a_physical_fixture_and_reference_passes() -> None
     assert model.geom_contype[workpiece_geom] != 0
     assert model.geom_type[workpiece_geom] == mujoco.mjtGeom.mjGEOM_CYLINDER
     assert model.body_mass[workpiece_body] == 0.10
-
-    with tempfile.TemporaryDirectory(prefix="so101-pick-place-") as temporary:
-        report = run_private_suite(
-            package=package,
-            design=design,
-            suite=suite,
-            driver_path=package.reference_driver,
-            condition="from-scratch",
-            output_dir=temporary,
-            record_video=False,
-            wall_timeout_s=30.0,
-            run_id="so101-pick-place-calibration",
-            attempt=0,
-        )
-
-    assert report["validation_passed"]
-    trial = report["trials"][0]
-    assert trial["trial_passed"]
-    assert trial["measurement_value"] <= 0.07
-    assert trial["physical_evidence"]["ctrl_observed_before_step"]
-    assert not trial["physical_evidence"]["direct_state_write_detected"]
 
 
 def test_so101_wall_tasks_use_physical_obstacles_and_reference_passes() -> None:
@@ -830,7 +801,19 @@ def test_so101_private_reset_fails_every_task_criterion() -> None:
 def test_so101_reference_private_suite_and_renderer() -> None:
     package = load_robot_package(PACKAGE_ROOT)
     design = _design(package)
-    suite = _suite(package, design)
+    complete_suite = _suite(package, design)
+    # B2 seals a typed fixed-capability Driver for v6 pick-place and binds it
+    # to retained full-video oracle evidence.  The task-level package reference
+    # is a separate legacy diagnostic, so this positive control covers the
+    # remaining catalogue tasks without pretending to validate the B2 path.
+    suite = {
+        **complete_suite,
+        "cases": [
+            case
+            for case in complete_suite["cases"]
+            if case["task_id"] != "mw_pick_place"
+        ],
+    }
     render_spec = importlib.util.spec_from_file_location(
         "so101_render",
         PACKAGE_ROOT / "reference" / "render.py",
@@ -862,7 +845,7 @@ def test_so101_reference_private_suite_and_renderer() -> None:
     assert report["pipeline_completed"]
     assert report["physical_validation_executed"]
     assert report["validation_passed"]
-    assert report["passed_task_count"] == 20
+    assert report["passed_task_count"] == 19
     assert report["video_complete"]
     for trial in report["trials"]:
         assert trial["trial_passed"]

@@ -5,7 +5,7 @@
   "pass_standard_id": "experiment1-b1-driver-validation-criteria-v3",
   "robot_configuration_id": "robotstudio_so101",
   "package_version": "1.0.0",
-  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
+  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v6",
   "whole_suite_aggregation": {
     "kind": "all_capabilities_two_of_three_cases"
   },

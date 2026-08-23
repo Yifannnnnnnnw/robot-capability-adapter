@@ -18,7 +18,12 @@ from autoadapter2.b2.episode_runner import (
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 TASK_SUITE_PATH = (
-    REPOSITORY_ROOT / "experiment" / "b2_recap" / "task_suite" / "task_suite.json"
+    REPOSITORY_ROOT
+    / "experiment"
+    / "experiment1b_use"
+    / "config"
+    / "task_suite"
+    / "task_suite.json"
 )
 SO101_PACKAGE_ROOT = (
     REPOSITORY_ROOT
@@ -31,8 +36,10 @@ SO101_PACKAGE_ROOT = (
 SO101_DESIGN_PATH = (
     REPOSITORY_ROOT
     / "experiment"
-    / "experiment1"
-    / "fixed_validation_bundles"
+    / "experiment1b_use"
+    / "validation"
+    / "reference"
+    / "resolved"
     / "robotstudio_so101"
     / "capability_design.json"
 )
@@ -40,7 +47,7 @@ SO101_DESIGN_PATH = (
 
 def _package(root: Path, *, robot_id: str = "unitree-go2-stock-12dof") -> Any:
     if robot_id == "robotstudio_so101":
-        snapshot_id = "robotstudio-so101-source-protocols-2026-08-18-v5"
+        snapshot_id = "robotstudio-so101-source-protocols-2026-08-18-v6"
     else:
         snapshot_id = "unitree-go2-source-protocols-2026-08-18-v4"
     return SimpleNamespace(
@@ -96,7 +103,7 @@ def _write_mock_suite(path: Path) -> None:
             {
                 "artifact_type": "b2_recap_task_suite",
                 "schema_version": "1.0",
-                "authority": {"document_id": "AA2-B2", "revision": "0.1.2"},
+                "authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
                 "robot_suites": [
                     {
                         "robot_configuration_id": "unitree-go2-stock-12dof",

@@ -35,7 +35,7 @@ class OraclePlanTests(unittest.TestCase):
     def test_committed_asset_validates_against_sealed_tasks_and_designs(self) -> None:
         self.assertEqual(
             self.validator.validate(),
-            {"task_count": 10, "leaf_count": 50},
+            {"task_count": 10, "leaf_count": 52},
         )
 
     def test_each_task_has_only_ordered_typed_native_leaves(self) -> None:
@@ -46,6 +46,7 @@ class OraclePlanTests(unittest.TestCase):
                 "set_gripper_opening",
                 "approach_until_contact",
                 "move_cartesian_offset_and_return",
+                "set_wrist_roll",
             },
             "unitree-go2-stock-12dof": {
                 "track_planar_twist",

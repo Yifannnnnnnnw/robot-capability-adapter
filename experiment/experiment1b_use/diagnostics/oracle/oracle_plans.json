@@ -7,8 +7,8 @@
     "task_count": 10
   },
   "capability_design_ids": {
-    "robotstudio_so101": "experiment1-b1-fixed-interface::robotstudio_so101::v1",
-    "unitree-go2-stock-12dof": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v1"
+    "robotstudio_so101": "experiment1-b1-fixed-interface::robotstudio_so101::v3",
+    "unitree-go2-stock-12dof": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2"
   },
   "plans": [
     {
@@ -74,24 +74,40 @@
           "request": {"opening_fraction": 1.0, "max_duration_s": 0.5}
         },
         {
-          "capability_name": "approach_until_contact",
+          "capability_name": "set_wrist_roll",
           "request": {
-            "precontact_position_m": [0.38, 0.07, 0.255],
-            "approach_direction_unit": [0.0, 0.0, -1.0],
-            "max_travel_m": 0.06,
-            "max_approach_speed_m_s": 0.03,
+            "target_roll_rad": -1.5707963267948966,
+            "max_duration_s": 2.0
+          }
+        },
+        {
+          "capability_name": "move_end_effector_to_position",
+          "request": {
+            "target_position_m": [0.34, 0.08, 0.255],
+            "max_duration_s": 4.0
+          }
+        },
+        {
+          "capability_name": "move_end_effector_to_position",
+          "request": {
+            "target_position_m": [0.34, 0.08, 0.195],
             "max_duration_s": 3.0
           }
         },
         {
           "capability_name": "set_gripper_opening",
-          "request": {"opening_fraction": 0.35, "max_duration_s": 0.5}
+          "request": {"opening_fraction": 0.26, "max_duration_s": 1.5}
         },
         {
           "capability_name": "trace_cartesian_path",
           "request": {
-            "waypoints_m": [[0.38, 0.07, 0.28], [0.371, -0.078, 0.272]],
-            "max_duration_per_segment_s": 3.0
+            "waypoints_m": [
+              [0.34, 0.08, 0.28],
+              [0.36, 0.03, 0.29],
+              [0.371, -0.03, 0.29],
+              [0.371, -0.078, 0.272]
+            ],
+            "max_duration_per_segment_s": 5.0
           }
         },
         {

@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "authority": {
     "document_id": "AA2-B2",
-    "revision": "0.1.2",
+    "revision": "0.1.4",
     "path": "experiment/experiment1b_use/B2_RECAP_AUTHORITY.md"
   },
   "task_count": 10,
@@ -23,7 +23,7 @@
     {
       "robot_configuration_id": "robotstudio_so101",
       "package_version": "1.0.0",
-      "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v5",
+      "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v6",
       "canonical_source_paths": {
         "catalog": "autoadapter/libraries/robots/robotstudio_so101/1.0.0/tasks/catalog.json",
         "instances": "autoadapter/libraries/robots/robotstudio_so101/1.0.0/tasks/private/instances.json",
@@ -553,17 +553,17 @@
               "task_id": "mw_pick_place",
               "task_parameters": {
                 "start_position": [
-                  0.38,
+                  0.34,
                   0.08,
                   0.18
                 ],
                 "grasp_position": [
-                  0.38,
-                  0.07,
+                  0.34,
+                  0.08,
                   0.195
                 ],
                 "grasp_wrist_roll": -1.5707963267948966,
-                "grasp_gripper": 0.35,
+                "grasp_gripper": 0.26,
                 "target_position": [
                   0.38,
                   -0.08,

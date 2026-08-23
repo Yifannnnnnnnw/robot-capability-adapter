@@ -385,7 +385,7 @@ def resolved_suite() -> dict[str, Any]:
         "schema_version": "1.0",
         "authority": {
             "document_id": "AA2-B2",
-            "revision": "0.1.2",
+            "revision": "0.1.4",
             "path": "experiment/experiment1b_use/B2_RECAP_AUTHORITY.md",
         },
         "task_count": 10,
