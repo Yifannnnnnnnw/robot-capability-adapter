@@ -167,9 +167,10 @@ Formal execution remains paused until:
 2. the exact Sonnet model identity and settings are pinned and callable;
 3. candidate-worker isolation, canonical-scene/actuator authenticity,
    independent Harness verdicting, and recorder checks pass; and
-4. a dry run demonstrates fresh TGCD and IVC per selected cell, empty
-   Experience, at most three driver submissions, Task Demo evidence, and no
-   Evolution call.
+4. focused runtime/path checks enforce a fresh singleton workspace and client,
+   cell-local completed TGCD and IVC traces, empty Experience, at most three
+   driver submissions, required Task Demo/video evidence, and no Evolution
+   call or review queue.
 
 Focused package checks and canaries are diagnostic. A missing or incomplete
 configuration is an explicit blocker, not a failed model cell; the 33-cell

@@ -151,8 +151,10 @@ Before formal dispatch, run the smallest checks that establish:
 
 1. the canonical SO-101 package and source-backed task snapshot load;
 2. Sonnet and Opus return the pinned identities with the manifest settings;
-3. the skeleton-assisted source route reaches real MuJoCo and trusted Harness
-   terminal evidence in a diagnostic canary;
+3. focused Framework/Harness boundary checks and the retained real recorder
+   canary establish candidate isolation, canonical physics, independent
+   verdicting, and required-video invalidation, while runner checks enforce
+   terminal Task Demo ordering before Opus;
 4. the terminal Evolution response schema yields a public positive/negative
    proposal without private fields; and
 5. a manually launched independent run records Experience load or, after a

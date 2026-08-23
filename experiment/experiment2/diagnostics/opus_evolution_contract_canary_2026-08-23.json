@@ -1,0 +1,53 @@
+{
+  "artifact_type": "experiment2_opus_evolution_contract_canary",
+  "recorded_at_utc": "2026-08-23T00:42:39Z",
+  "formal_cell": false,
+  "formal_denominator_entry": false,
+  "passed": true,
+  "provider_route": "configured company API; endpoint and credentials omitted",
+  "credential_value_recorded": false,
+  "requested_model": "eu.anthropic.claude-opus-5",
+  "returned_model": "eu.anthropic.claude-opus-5",
+  "returned_model_matches_pin": true,
+  "input": "synthetic public terminal failure report",
+  "private_validation_material_supplied": false,
+  "logical_calls": 1,
+  "physical_requests": 1,
+  "elapsed_s": 9.988552875001915,
+  "usage": {
+    "input_tokens": 818,
+    "output_tokens": 757,
+    "total_tokens": 1575
+  },
+  "contract": {
+    "allowed_model_fields": [
+      "observation",
+      "lesson",
+      "recommendation",
+      "scope",
+      "evidence"
+    ],
+    "returned_exact_five_field_object": true,
+    "framework_wrapper_model_authored": false,
+    "proposal_created": true,
+    "failure": null
+  },
+  "proposal": {
+    "observation": "In run diagnostic-opus-evolution-contract (skeleton-assisted, robotstudio_so101), capability validation executed across all three attempts and no driver passed: terminal_capability_validation reports trial_count 0, passed_trial_count 0, video_count 0, complete_video_count 0, and an empty failed_trials list, with a DiagnosticFailure message that all three submitted drivers missed the public terminal task criterion. Task demo was skipped with reason 'No driver passed capability validation.', and the attempts array is empty in the retained report.",
+    "lesson": "A terminal report can record three consumed attempts and a hard failure while carrying zero per-trial evidence (trial_count 0, no failed_trials, no attempts entries). Under those conditions the public artifact only establishes that the criterion was missed each time; it does not localize which behavior or stage failed, so any driver-level root cause remains a hypothesis rather than something the report measures.",
+    "recommendation": "For future runs on this robot configuration and condition, consider treating per-attempt diagnostic capture as a first-class deliverable: emit at least one recorded trial or attempt entry per submitted driver before spending the second and third attempts, so that a later terminal report distinguishes 'driver never reached an executable trial' from 'trials ran and scored below the criterion'. Do not assume the absence of failed_trials implies a specific defect class.",
+    "scope": "Skeleton-assisted terminal capability-validation runs on robotstudio_so101 (and similar multi-attempt pipelines) where the public report may contain zero trial-level or attempt-level detail.",
+    "evidence": [
+      "terminal_report.attempt_count = 3 with terminal_report.attempts = [] (no per-attempt detail retained)",
+      "terminal_capability_validation: trial_count 0, passed_trial_count 0, failed_trials [], video_count 0, complete_video_count 0",
+      "failure.type 'DiagnosticFailure', message 'All three submitted drivers missed the public terminal task criterion.'",
+      "task_demo.skipped = true with skip_reason 'No driver passed capability validation.'; task_demo_executed = false",
+      "capability_validation_executed = true and pipeline_completed = true while final_capability_validation_passed = false"
+    ]
+  },
+  "limitations": [
+    "The terminal report was synthetic and public-only; this canary is not robot-performance evidence.",
+    "The canary verifies transport, returned-model identity, and the five-field response contract only.",
+    "It is not part of either Experiment 2 run or the Experiment 3 denominator."
+  ]
+}

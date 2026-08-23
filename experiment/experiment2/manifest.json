@@ -125,23 +125,31 @@
       "passed": false
     },
     "candidate_isolation": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     },
     "canonical_physics": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     },
     "independent_harness": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     },
     "recorder": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     },
-    "evolution_transport": {
+    "producer_model_canary": {
+      "path": "../experiment/experiment3/diagnostics/sonnet_exact_runtime_pin_canary_2026-08-23.json",
+      "passed": true
+    },
+    "evolution_model_canary": {
       "path": "../experiment/experiment2/diagnostics/company_api_model_identity_canaries_2026-08-23.json",
+      "passed": true
+    },
+    "evolution_contract": {
+      "path": "../experiment/experiment2/diagnostics/opus_evolution_contract_canary_2026-08-23.json",
       "passed": true
     },
     "experience_boundary": {

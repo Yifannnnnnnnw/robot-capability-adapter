@@ -1,0 +1,45 @@
+{
+  "artifact_type": "experiment3_reference_positive_control_status",
+  "recorded_at_utc": "2026-08-23T00:20:00Z",
+  "formal_cell": false,
+  "formal_denominator_entry": false,
+  "passed": false,
+  "robot_count": 11,
+  "passed_count": 10,
+  "failed_count": 1,
+  "passed_robot_configurations": [
+    "unitree-go2-stock-12dof",
+    "franka_panda",
+    "kinova_gen3_robotiq_2f85",
+    "ufactory_xarm7",
+    "universal_robots_ur5e_robotiq_2f85",
+    "piper",
+    "kuka_iiwa_14",
+    "leap_hand",
+    "hello_robot_stretch_2",
+    "aloha_2"
+  ],
+  "failed_robot_configurations": [
+    "robotstudio_so101"
+  ],
+  "so101_failure": {
+    "focused_test": "tests/test_so101_package.py::test_so101_pick_place_uses_a_physical_fixture_and_reference_passes",
+    "task_id": "mw_pick_place",
+    "validation_passed": false,
+    "physical_execution": true,
+    "all_guards_passed": true,
+    "candidate_exception": false,
+    "goal_distance_m": 0.1998004766,
+    "goal_distance_limit_m": 0.07,
+    "deepest_work_surface_penetration_m": -0.0067017,
+    "maximum_allowed_penetration_m": -0.005,
+    "fixed_jaw_contact_observed": true,
+    "moving_jaw_contact_observed": false,
+    "bounded_interpretation": "The retained evidence is consistent with grasp alignment or two-jaw engagement failure. It does not establish that the current package revision caused the failure."
+  },
+  "preflight_effect": "Experiment 2 and Experiment 3 formal dispatch remain blocked until a focused SO101 reference positive control passes without weakening criteria or integrity guards.",
+  "notes": [
+    "The ten passing robot controls remain valid; only SO101 requires another focused calibration run.",
+    "No formal experiment cell was started."
+  ]
+}

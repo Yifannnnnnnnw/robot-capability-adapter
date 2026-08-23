@@ -159,20 +159,24 @@
         "passed": true
       }
     },
+    "producer_model_canary": {
+      "path": "../experiment/experiment3/diagnostics/sonnet_exact_runtime_pin_canary_2026-08-23.json",
+      "passed": true
+    },
     "candidate_isolation": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     },
     "canonical_physics": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     },
     "independent_harness": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     },
     "recorder": {
-      "path": "../experiment/experiment3/diagnostics/franka_recorder_canary_2026-08-23.json",
+      "path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
       "passed": true
     }
   },
@@ -190,6 +194,19 @@
     "aloha_2"
   ],
   "morphology_role": "descriptive-only",
+  "morphology_labels": {
+    "robotstudio_so101": "fixed serial arm",
+    "unitree-go2-stock-12dof": "quadruped",
+    "franka_panda": "fixed serial arm",
+    "kinova_gen3_robotiq_2f85": "fixed serial arm",
+    "ufactory_xarm7": "fixed serial arm",
+    "universal_robots_ur5e_robotiq_2f85": "fixed serial arm",
+    "piper": "fixed serial arm",
+    "kuka_iiwa_14": "fixed serial arm",
+    "leap_hand": "dexterous hand",
+    "hello_robot_stretch_2": "mobile manipulator",
+    "aloha_2": "bimanual manipulator"
+  },
   "generation_condition": "skeleton-assisted",
   "conditions": [
     "skeleton-assisted"

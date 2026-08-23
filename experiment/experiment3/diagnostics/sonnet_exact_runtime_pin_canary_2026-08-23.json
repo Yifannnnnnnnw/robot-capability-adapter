@@ -1,0 +1,38 @@
+{
+  "artifact_type": "experiment3_exact_sonnet_runtime_pin_canary",
+  "recorded_at_utc": "2026-08-23T00:23:38Z",
+  "formal_cell": false,
+  "formal_denominator_entry": false,
+  "passed": true,
+  "requested_model": "eu.anthropic.claude-sonnet-4-6",
+  "returned_model": "eu.anthropic.claude-sonnet-4-6",
+  "returned_model_matches_pin": true,
+  "request_settings": {
+    "temperature": 0.0,
+    "context_limit_tokens": 1000000,
+    "max_output_tokens": 16384,
+    "timeout_s": 120.0,
+    "tool_history_mode": "native"
+  },
+  "transport": {
+    "api_protocol": "openai-compatible",
+    "endpoint_region": "eu-west-2",
+    "credential_env": "AUTOADAPTER_COMPANY_API_KEY",
+    "credential_value_recorded": false
+  },
+  "provider_call": {
+    "status": "success",
+    "http_status": 200,
+    "requested_model": "eu.anthropic.claude-sonnet-4-6",
+    "returned_model": "eu.anthropic.claude-sonnet-4-6",
+    "finish_reason": "stop",
+    "input_tokens": 57,
+    "output_tokens": 18,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null,
+    "reasoning_tokens": null,
+    "total_tokens": 75,
+    "elapsed_s": 1.2389000830007717
+  },
+  "limitation": "Connectivity, structured output, settings, and returned identifier only; not a formal cell and not independent upstream-weight attestation."
+}

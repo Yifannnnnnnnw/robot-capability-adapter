@@ -255,9 +255,10 @@ versioned manifest or its referenced evidence:
    pinned before the source call;
 3. source and later run workspaces, credential-free candidate workers, and
    independent canonical MuJoCo sessions are available;
-4. the source path records a terminal Task Demo-stage outcome (executed or
-   truthful `not-run`) in a diagnostic rehearsal, and the terminal Evolution
-   transport can return a structured proposal; and
+4. focused runtime/path checks establish that the source runner cannot
+   construct or call Opus before an executed Task Demo or truthful `not-run`
+   terminal state, and the terminal Evolution transport can return the exact
+   five-field public proposal contract; and
 5. the manual disposition and later-run load records can be retained without
    exposing private validation material.
 

@@ -123,9 +123,10 @@ Before formal dispatch, run the smallest checks that establish:
    temperature, context, and output settings;
 3. the shared Harness enforces candidate isolation, canonical physics,
    independent verdicts, anti-teleport checks, and complete videos;
-4. one selected diagnostic cell demonstrates fresh TGCD and IVC, empty
-   Experience, skeleton-assisted generation, the three-submission ceiling,
-   and Task Demo recording; and
+4. focused runner checks enforce a fresh singleton workspace and client,
+   cell-local completed TGCD and IVC traces, empty Experience,
+   skeleton-assisted generation, the three-submission ceiling, and required
+   Task Demo/video evidence; and
 5. no Evolution call or Experience input is possible from the Experiment 3
    runner/protocol boundary.
 

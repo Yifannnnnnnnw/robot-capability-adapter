@@ -46,7 +46,12 @@ from autoadapter2.driver_synthesis.source_check import (
     audit_driver_source,
 )
 from autoadapter2.environment import check_environment
-from autoadapter2.evolution import build_experience_review_queue, run_evolution
+from autoadapter2.evolution import (
+    EvolutionError,
+    build_experience_review_queue,
+    run_evolution,
+    validate_experience_snapshot,
+)
 from autoadapter2.harness.runner import run_private_suite
 from autoadapter2.libraries import (
     RobotPackage,
@@ -73,6 +78,9 @@ DEFAULT_CONDITIONS: tuple[GenerationCondition, ...] = (
     "from-scratch",
 )
 DEFAULT_CONFIG_PATH = Path("configs/experiments/mainline.json")
+_EXPERIENCE_USAGE_SCOPES = frozenset(
+    {"next_independent_run_only", "later_matched_run_only"}
+)
 
 
 class PipelineError(RuntimeError):
@@ -110,11 +118,14 @@ def _validated_model_manifest(value: Any) -> dict[str, Any]:
         "model_id",
         "revision",
         "base_url",
-        "thinking",
         "tool_history_mode",
     ):
         if not isinstance(value[field_name], str) or not value[field_name].strip():
             raise PipelineError(f"model.{field_name} must be a non-empty string")
+    if value["thinking"] is not None and (
+        not isinstance(value["thinking"], str) or not value["thinking"].strip()
+    ):
+        raise PipelineError("model.thinking must be a non-empty string or null")
     if value["api_protocol"] not in {"openai", "openai-compatible"}:
         raise PipelineError("model.api_protocol is unsupported")
     if not str(value["base_url"]).startswith("https://"):
@@ -156,6 +167,19 @@ def _validated_model_manifest(value: Any) -> dict[str, Any]:
     return copy.deepcopy(dict(value))
 
 
+def _validate_frozen_snapshot_records(
+    records: Sequence[Any], *, source_run_id: Any
+) -> None:
+    """Validate a new global snapshot before it can become model input."""
+
+    try:
+        validate_experience_snapshot(
+            {"source_run_id": source_run_id, "records": list(records)}
+        )
+    except EvolutionError as exc:
+        raise PipelineError(str(exc)) from exc
+
+
 @dataclass(frozen=True)
 class ExperimentConfig:
     """The small run configuration selected from ``configs/experiments``."""
@@ -169,12 +193,17 @@ class ExperimentConfig:
     worker_wall_timeout_s: float = 120.0
     model_manifest: Mapping[str, Any] | None = None
     experience_input: tuple[Mapping[str, Any], ...] = ()
+    experience_snapshot_input: Mapping[str, Any] | None = None
+    experience_snapshot_id: str | None = None
+    experience_source_run_id: str | None = None
     experience_review_queue_output: str = "experience_review_queue.json"
     experience_snapshot_output: str = "experience_snapshot.json"
     task_demo_seed_template: str = "{run_id}:{robot_configuration_id}"
     experience_declared: bool = False
     seeds_declared: bool = False
     evolution_declared: bool = False
+    evolution_enabled: bool = True
+    evolution_model_manifest: Mapping[str, Any] | None = None
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "ExperimentConfig":
@@ -248,7 +277,14 @@ class ExperimentConfig:
         if worker_timeout_value <= 0:
             raise PipelineError("validation.worker_wall_timeout_s must be positive")
 
-        model_manifest = value.get("model")
+        model_value = value.get("model")
+        producer_model_value = value.get("producer_model")
+        if model_value is not None and producer_model_value is not None:
+            if model_value != producer_model_value:
+                raise PipelineError("model and producer_model must match when both are supplied")
+        if model_value is None:
+            model_value = producer_model_value
+        model_manifest = model_value
         if model_manifest is not None:
             model_manifest = _validated_model_manifest(model_manifest)
 
@@ -256,9 +292,76 @@ class ExperimentConfig:
         experience_config = value.get("experience", {})
         if not isinstance(experience_config, Mapping):
             raise PipelineError("experience must be an object")
+        experience_snapshot_id: str | None = None
+        experience_source_run_id: str | None = None
+        experience_snapshot_input: Mapping[str, Any] | None = None
         experience_input_value = experience_config.get("input", [])
+        if isinstance(experience_input_value, Mapping):
+            if experience_input_value.get("artifact_type") != "autoadapter_experience_snapshot":
+                raise PipelineError(
+                    "experience.input object must be a reviewed Experience snapshot"
+                )
+            if experience_input_value.get("review_status") not in {
+                "reviewed",
+                # Historical library snapshots predate the compact review status.
+                "project_owner_reviewed",
+            }:
+                raise PipelineError("experience.input snapshot is not reviewed")
+            usage_scope = experience_input_value.get("usage_scope")
+            if usage_scope not in _EXPERIENCE_USAGE_SCOPES:
+                raise PipelineError("experience.input snapshot has invalid usage scope")
+            snapshot_id_value = experience_input_value.get("snapshot_id")
+            if not isinstance(snapshot_id_value, str) or not snapshot_id_value.strip():
+                raise PipelineError(
+                    "experience.input snapshot.snapshot_id must be non-empty text"
+                )
+            experience_snapshot_id = snapshot_id_value.strip()
+            source_run_id_value = experience_input_value.get("source_run_id")
+            if isinstance(source_run_id_value, str) and source_run_id_value.strip():
+                experience_source_run_id = source_run_id_value.strip()
+            if usage_scope == "next_independent_run_only" and experience_input_value.get(
+                "review_status"
+            ) != "reviewed":
+                raise PipelineError("experience.input snapshot is not reviewed")
+            snapshot_records = experience_input_value.get("records")
+            if snapshot_records is None and usage_scope == "later_matched_run_only":
+                # Historical snapshots stored one list under each robot key.  Keep
+                # those records consumable while the new global snapshot shape uses
+                # one top-level ``records`` list.
+                snapshot_records = []
+                metadata_fields = {
+                    "artifact_type",
+                    "snapshot_id",
+                    "version",
+                    "review_status",
+                    "usage_scope",
+                    "b1_input",
+                    "benefit_claim",
+                    "source_run_id",
+                }
+                for key, candidate in experience_input_value.items():
+                    if key in metadata_fields:
+                        continue
+                    if not isinstance(candidate, list):
+                        raise PipelineError(
+                            "legacy Experience snapshot robot records must be lists"
+                        )
+                    snapshot_records.extend(candidate)
+            if snapshot_records is None:
+                snapshot_records = []
+            if not isinstance(snapshot_records, list):
+                raise PipelineError("experience.input snapshot.records must be a list")
+            if usage_scope == "next_independent_run_only":
+                _validate_frozen_snapshot_records(
+                    snapshot_records,
+                    source_run_id=experience_input_value.get("source_run_id"),
+                )
+            # Preserve the reviewed container itself.  New snapshots use one
+            # global records list; historical snapshots retain per-robot lists.
+            experience_snapshot_input = _copy(dict(experience_input_value))
+            experience_input_value = snapshot_records
         if not isinstance(experience_input_value, list):
-            raise PipelineError("experience.input must be a list")
+            raise PipelineError("experience.input must be a list or reviewed snapshot")
         if not all(isinstance(item, Mapping) for item in experience_input_value):
             raise PipelineError("experience.input records must be objects")
         review_queue_output = experience_config.get(
@@ -293,17 +396,58 @@ class ExperimentConfig:
                 "'{run_id}:{robot_configuration_id}'"
             )
 
+        if "evolution_model" in value:
+            raise PipelineError(
+                "unsupported top-level evolution_model; use evolution.model"
+            )
         evolution_declared = "evolution" in value
         evolution = value.get("evolution", {})
+        if isinstance(evolution, bool):
+            evolution = {"enabled": evolution}
         if not isinstance(evolution, Mapping):
             raise PipelineError("evolution must be an object")
-        if evolution_declared and evolution != {
-            "after_each_terminal_cell": True,
-            "outcome_field": "cells[].outcomes.Evolution",
-        }:
-            raise PipelineError(
-                "evolution must require each terminal cell and the canonical outcome field"
-            )
+        evolution_enabled = True
+        evolution_model_manifest = None
+        if evolution_declared:
+            enabled_value = evolution.get("enabled", True)
+            if not isinstance(enabled_value, bool):
+                raise PipelineError("evolution.enabled must be boolean")
+            evolution_enabled = enabled_value
+            if "model_manifest" in evolution:
+                raise PipelineError(
+                    "unsupported evolution.model_manifest; use evolution.model"
+                )
+            evolution_model_value = evolution.get("model")
+            if evolution_model_value is not None:
+                evolution_model_manifest = _validated_model_manifest(
+                    evolution_model_value
+                )
+            if evolution_enabled:
+                expected_evolution = {
+                    "after_each_terminal_cell": True,
+                    "outcome_field": "cells[].outcomes.Evolution",
+                }
+                # The original two-field shape remains accepted.  The explicit enabled form
+                # may add a terminal Evolution model manifest.
+                actual_evolution = {
+                    key: value
+                    for key, value in evolution.items()
+                    if key not in {"enabled", "model", "model_manifest"}
+                }
+                if actual_evolution != expected_evolution:
+                    raise PipelineError(
+                        "evolution must require each terminal cell and the canonical outcome field"
+                    )
+            else:
+                allowed_disabled = {"enabled", "model", "model_manifest"}
+                unexpected_disabled = sorted(
+                    str(key) for key in evolution if key not in allowed_disabled
+                )
+                if unexpected_disabled:
+                    raise PipelineError(
+                        "disabled evolution has unexpected fields: "
+                        + ", ".join(unexpected_disabled)
+                    )
 
         return cls(
             experiment_id=experiment_id.strip(),
@@ -317,12 +461,17 @@ class ExperimentConfig:
             experience_input=tuple(
                 _copy(dict(item)) for item in experience_input_value
             ),
+            experience_snapshot_input=experience_snapshot_input,
+            experience_snapshot_id=experience_snapshot_id,
+            experience_source_run_id=experience_source_run_id,
             experience_review_queue_output=review_queue_output.strip(),
             experience_snapshot_output=snapshot_output.strip(),
             task_demo_seed_template=seed_template,
             experience_declared=experience_declared,
             seeds_declared=seeds_declared,
             evolution_declared=evolution_declared,
+            evolution_enabled=evolution_enabled,
+            evolution_model_manifest=evolution_model_manifest,
         )
 
     @classmethod
@@ -356,19 +505,34 @@ class ExperimentConfig:
             result["model"] = _copy(dict(self.model_manifest))
         if self.experience_declared:
             result["experience"] = {
-                "input": [_copy(dict(item)) for item in self.experience_input],
+                "input": (
+                    _copy(dict(self.experience_snapshot_input))
+                    if self.experience_snapshot_input is not None
+                    else [_copy(dict(item)) for item in self.experience_input]
+                ),
                 "review_queue_output": self.experience_review_queue_output,
                 "snapshot_output": self.experience_snapshot_output,
             }
+            if self.experience_snapshot_id is not None:
+                result["experience"]["snapshot_id"] = self.experience_snapshot_id
+            if self.experience_source_run_id is not None:
+                result["experience"]["source_run_id"] = self.experience_source_run_id
         if self.seeds_declared:
             result["seeds"] = {
                 "task_demo_selection": self.task_demo_seed_template,
             }
         if self.evolution_declared:
-            result["evolution"] = {
-                "after_each_terminal_cell": True,
-                "outcome_field": "cells[].outcomes.Evolution",
-            }
+            if self.evolution_enabled:
+                result["evolution"] = {
+                    "after_each_terminal_cell": True,
+                    "outcome_field": "cells[].outcomes.Evolution",
+                }
+                if self.evolution_model_manifest is not None:
+                    result["evolution"]["model"] = _copy(
+                        dict(self.evolution_model_manifest)
+                    )
+            else:
+                result["evolution"] = {"enabled": False}
         return result
 
 
@@ -614,7 +778,7 @@ def _validate_model_preflight(
         "model_id": manifest["model_id"],
         "base_url": str(manifest["base_url"]).rstrip("/"),
         "max_output_tokens": manifest["max_output_tokens"],
-        "thinking": manifest["thinking"],
+        "thinking": manifest["thinking"] or "disabled",
         "tool_history_mode": manifest["tool_history_mode"],
         "temperature": float(manifest["temperature"]),
     }
@@ -705,14 +869,115 @@ def _call_count(client: Any) -> int | None:
     return len(calls) if calls is not None else None
 
 
+def _experience_ids(experience: Sequence[Mapping[str, Any]]) -> list[str]:
+    return [
+        str(item["experience_id"])
+        for item in experience
+        if isinstance(item, Mapping)
+        and isinstance(item.get("experience_id"), str)
+        and item.get("experience_id")
+    ]
+
+
+def _with_experience_trace(
+    evidence: Mapping[str, Any], experience: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    result = _copy(dict(evidence))
+    result["experience_ids"] = _experience_ids(experience)
+    return result
+
+
+def _clone_client_for_manifest(client: Any, manifest: Mapping[str, Any]) -> Any | None:
+    """Clone the built-in client for a second direct model manifest when possible."""
+
+    config = getattr(client, "config", None)
+    if config is None:
+        return None
+    try:
+        from autoadapter2.model_api import JsonModelClient, ModelConfig
+
+        cloned_config = ModelConfig(
+            provider=str(manifest["vendor"]),
+            model=str(manifest["model_id"]),
+            base_url=str(manifest["base_url"]),
+            api_key=str(getattr(config, "api_key")),
+            api_protocol=str(manifest["api_protocol"]),
+            auth_header=str(getattr(config, "auth_header", "Authorization")),
+            auth_prefix=str(getattr(config, "auth_prefix", "Bearer ")),
+            thinking=(
+                None
+                if manifest.get("thinking") in {None, "disabled"}
+                else str(manifest["thinking"])
+            ),
+            timeout_s=float(getattr(config, "timeout_s", 180.0)),
+            max_tokens=int(manifest["max_output_tokens"]),
+            tool_history_mode=str(manifest["tool_history_mode"]),
+            history_char_budget=int(getattr(config, "history_char_budget", 80000)),
+        )
+        return JsonModelClient(cloned_config)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return None
+
+
 def _public_experience(
     experience: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None,
     robot: str,
 ) -> tuple[Mapping[str, Any], ...]:
     if experience is None:
         return ()
+    frozen_snapshot = False
+    snapshot_source_run_id: str | None = None
     if isinstance(experience, Mapping):
-        value = experience.get(robot, ())
+        if "artifact_type" in experience:
+            if experience.get("artifact_type") != "autoadapter_experience_snapshot":
+                raise PipelineError("experience object must be an Experience snapshot")
+            if experience.get("review_status") not in {
+                "reviewed",
+                "project_owner_reviewed",
+            }:
+                raise PipelineError("experience snapshot is not reviewed")
+            usage_scope = experience.get("usage_scope")
+            if usage_scope not in _EXPERIENCE_USAGE_SCOPES:
+                raise PipelineError("experience snapshot has invalid usage scope")
+            frozen_snapshot = usage_scope == "next_independent_run_only"
+            if frozen_snapshot and experience.get("review_status") != "reviewed":
+                raise PipelineError("experience snapshot is not reviewed")
+            snapshot_id = experience.get("snapshot_id")
+            if frozen_snapshot and (
+                not isinstance(snapshot_id, str) or not snapshot_id.strip()
+            ):
+                raise PipelineError(
+                    "experience snapshot.snapshot_id must be non-empty text"
+                )
+            source_run_id = experience.get("source_run_id")
+            if frozen_snapshot and (
+                not isinstance(source_run_id, str) or not source_run_id.strip()
+            ):
+                raise PipelineError(
+                    "experience snapshot.source_run_id must be non-empty text"
+                )
+            snapshot_source_run_id = source_run_id if isinstance(source_run_id, str) else None
+            if "records" in experience:
+                value = experience.get("records", ())
+            elif frozen_snapshot:
+                raise PipelineError("experience snapshot.records must be a list")
+            elif robot in experience:
+                # Historical snapshots used one top-level list per robot.
+                value = experience.get(robot, ())
+            else:
+                value = ()
+            if frozen_snapshot:
+                try:
+                    validate_experience_snapshot(experience)
+                except EvolutionError as exc:
+                    raise PipelineError(str(exc)) from exc
+        elif "records" in experience:
+            value = experience.get("records", ())
+        elif robot in experience:
+            # Historical snapshots used one top-level list per robot.
+            value = experience.get(robot, ())
+        else:
+            value = ()
     else:
         value = experience
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
@@ -726,6 +991,16 @@ def _public_experience(
         "scope",
         "evidence",
         "source_run_id",
+        "source_robot",
+        "generation_condition",
+        "terminal_outcome_label",
+        "source_condition",
+        "source_outcome",
+        "source_robot_configuration_id",
+        "source_generation_condition",
+        "outcome_label",
+        "review_decision",
+        "review_reason",
     }
     records: list[Mapping[str, Any]] = []
     for index, item in enumerate(value):
@@ -739,6 +1014,24 @@ def _public_experience(
             )
         if item.get("reviewed") is not True:
             raise PipelineError(f"experience for {robot!r}[{index}] is not reviewed")
+        experience_id = item.get("experience_id")
+        if not isinstance(experience_id, str) or not experience_id.strip():
+            raise PipelineError(
+                f"experience for {robot!r}[{index}].experience_id must be non-empty text"
+            )
+        review_decision = item.get("review_decision")
+        if review_decision is not None and review_decision != "accept":
+            raise PipelineError(
+                f"experience for {robot!r}[{index}] must have an accepted review"
+            )
+        source_outcome = item.get(
+            "terminal_outcome_label",
+            item.get("source_outcome", item.get("outcome_label")),
+        )
+        if source_outcome is not None and source_outcome not in {"positive", "negative"}:
+            raise PipelineError(
+                f"experience for {robot!r}[{index}].source_outcome must be positive or negative"
+            )
         for field in ("observation", "lesson", "recommendation", "scope"):
             child = item.get(field)
             if child is not None and (not isinstance(child, str) or not child.strip()):
@@ -752,8 +1045,104 @@ def _public_experience(
             raise PipelineError(
                 f"experience for {robot!r}[{index}].evidence must be a text list"
             )
-        records.append(_copy(dict(item)))
+        if frozen_snapshot:
+            required = (
+                "experience_id",
+                "source_run_id",
+                "source_robot",
+                "generation_condition",
+                "terminal_outcome_label",
+            )
+            if any(
+                not isinstance(item.get(field), str) or not item[field].strip()
+                for field in required
+            ):
+                raise PipelineError(
+                    f"experience for {robot!r}[{index}] is missing Framework lineage labels"
+                )
+            if item["source_run_id"] != snapshot_source_run_id:
+                raise PipelineError(
+                    f"experience for {robot!r}[{index}] has mismatched source_run_id"
+                )
+            if item["terminal_outcome_label"] not in {"positive", "negative"}:
+                raise PipelineError(
+                    f"experience for {robot!r}[{index}].terminal_outcome_label must be positive or negative"
+                )
+            if item.get("reviewed") is not True or item.get("review_decision") != "accept":
+                raise PipelineError(
+                    f"experience for {robot!r}[{index}] is not an accepted review"
+                )
+            review_reason = item.get("review_reason")
+            if not isinstance(review_reason, str) or not review_reason.strip():
+                raise PipelineError(
+                    f"experience for {robot!r}[{index}] requires a review reason"
+                )
+        # Review metadata is retained in the frozen artifact for auditability but is not
+        # model-authored input.  Only the public lesson content, stable ID, and Framework
+        # source labels cross this boundary.
+        public_item = {
+            str(key): _copy(child)
+            for key, child in item.items()
+            if str(key) not in {"review_decision", "review_reason"}
+        }
+        if not frozen_snapshot:
+            if "source_robot" not in public_item and "source_robot_configuration_id" in public_item:
+                public_item["source_robot"] = public_item["source_robot_configuration_id"]
+            if "generation_condition" not in public_item:
+                legacy_condition = public_item.get(
+                    "source_condition", public_item.get("source_generation_condition")
+                )
+                if isinstance(legacy_condition, str) and legacy_condition.strip():
+                    public_item["generation_condition"] = legacy_condition
+            if "terminal_outcome_label" not in public_item:
+                legacy_outcome = public_item.get(
+                    "source_outcome", public_item.get("outcome_label")
+                )
+                if isinstance(legacy_outcome, str) and legacy_outcome.strip():
+                    public_item["terminal_outcome_label"] = legacy_outcome
+        records.append(public_item)
     return tuple(records)
+
+
+def _flatten_experience_records(value: Any) -> list[Mapping[str, Any]]:
+    """Flatten global and historical per-robot containers for lineage checks."""
+
+    if isinstance(value, Mapping):
+        if "records" in value:
+            return _flatten_experience_records(value.get("records"))
+        if "experience_id" in value or "source_run_id" in value:
+            return [value]
+        records: list[Mapping[str, Any]] = []
+        for child in value.values():
+            if isinstance(child, (Mapping, Sequence)) and not isinstance(
+                child, (str, bytes)
+            ):
+                records.extend(_flatten_experience_records(child))
+        return records
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        records: list[Mapping[str, Any]] = []
+        for child in value:
+            records.extend(_flatten_experience_records(child))
+        return records
+    return []
+
+
+def _experience_source_run_ids(
+    experience: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None,
+) -> set[str]:
+    """Return source IDs carried by a public Experience input."""
+
+    source_ids = {
+        str(item.get("source_run_id"))
+        for item in _flatten_experience_records(experience)
+        if isinstance(item.get("source_run_id"), str)
+        and item.get("source_run_id")
+    }
+    if isinstance(experience, Mapping):
+        top_level_source_run_id = experience.get("source_run_id")
+        if isinstance(top_level_source_run_id, str) and top_level_source_run_id.strip():
+            source_ids.add(top_level_source_run_id.strip())
+    return source_ids
 
 
 def _runtime_contract(package: RobotPackage) -> dict[str, Any]:
@@ -1030,8 +1419,16 @@ def _run_cell(
     run_id: str,
     hooks: PipelineHooks,
     model_stage_log: list[dict[str, Any]],
+    evolution_client: Any | None = None,
+    evolution_enabled: bool = True,
 ) -> dict[str, Any]:
     workspace.mkdir(parents=True, exist_ok=True)
+    terminal_evolution_client = evolution_client if evolution_client is not None else client
+    experience_ids = _experience_ids(experience)
+    _write(
+        workspace / "experience_input.json",
+        {"experience_ids": experience_ids, "records": _copy(list(experience))},
+    )
     runtime_contract = _runtime_contract(package)
     public_design = _copy(dict(design))
     sealed_capability_suite = _copy(dict(capability_suite))
@@ -1062,7 +1459,13 @@ def _run_cell(
             source_root=_default_root() / "src",
         )
         evidence = _stage_evidence(client, stage="study", before=before, completed=True)
-        model_stage_log.append({"robot": robot, "condition": condition, **evidence})
+        model_stage_log.append(
+            {
+                "robot": robot,
+                "condition": condition,
+                **_with_experience_trace(evidence, experience),
+            }
+        )
         _write(
             workspace / "study.json",
             {
@@ -1081,7 +1484,13 @@ def _run_cell(
             completed=False,
             error=exc,
         )
-        model_stage_log.append({"robot": robot, "condition": condition, **evidence})
+        model_stage_log.append(
+            {
+                "robot": robot,
+                "condition": condition,
+                **_with_experience_trace(evidence, experience),
+            }
+        )
         dynamic_model_called = True
         failure = {"stage": "study", **_failure_record(exc)}
         _write(
@@ -1175,7 +1584,11 @@ def _run_cell(
                         completed=True,
                     )
                     model_stage_log.append(
-                        {"robot": robot, "condition": condition, **generation_evidence}
+                        {
+                            "robot": robot,
+                            "condition": condition,
+                            **_with_experience_trace(generation_evidence, experience),
+                        }
                     )
                     driver_generated = True
                 else:
@@ -1230,7 +1643,11 @@ def _run_cell(
                     repair_evidence["probe_attempted"] = bool(repair_probe_results)
                     repair_evidence["probe_results"] = repair_probe_results
                     model_stage_log.append(
-                        {"robot": robot, "condition": condition, **repair_evidence}
+                        {
+                            "robot": robot,
+                            "condition": condition,
+                            **_with_experience_trace(repair_evidence, experience),
+                        }
                     )
                     generated = repaired
                     driver_generated = True
@@ -1265,7 +1682,11 @@ def _run_cell(
                     error=exc,
                 )
                 model_stage_log.append(
-                    {"robot": robot, "condition": condition, **evidence}
+                    {
+                        "robot": robot,
+                        "condition": condition,
+                        **_with_experience_trace(evidence, experience),
+                    }
                 )
                 current_driver = None
                 current_source = exc.driver_source
@@ -1323,7 +1744,11 @@ def _run_cell(
                     error=exc,
                 )
                 model_stage_log.append(
-                    {"robot": robot, "condition": condition, **evidence}
+                    {
+                        "robot": robot,
+                        "condition": condition,
+                        **_with_experience_trace(evidence, experience),
+                    }
                 )
                 failure = {"stage": stage, **_failure_record(exc)}
                 candidate_preserved = False
@@ -1488,11 +1913,14 @@ def _run_cell(
                 {
                     "robot": robot,
                     "condition": condition,
-                    **_stage_evidence(
-                        client,
-                        stage="task_demo_controller",
-                        before=controller_before,
-                        completed=controller_stage_completed,
+                    **_with_experience_trace(
+                        _stage_evidence(
+                            client,
+                            stage="task_demo_controller",
+                            before=controller_before,
+                            completed=controller_stage_completed,
+                        ),
+                        experience,
                     ),
                 }
             )
@@ -1509,12 +1937,15 @@ def _run_cell(
                 {
                     "robot": robot,
                     "condition": condition,
-                    **_stage_evidence(
-                        client,
-                        stage="task_demo_controller",
-                        before=controller_before,
-                        completed=False,
-                        error=exc,
+                    **_with_experience_trace(
+                        _stage_evidence(
+                            client,
+                            stage="task_demo_controller",
+                            before=controller_before,
+                            completed=False,
+                            error=exc,
+                        ),
+                        experience,
                     ),
                 }
             )
@@ -1562,6 +1993,8 @@ def _run_cell(
         "condition": condition,
         "provider": identity["provider"],
         "model": identity["model"],
+        "experience_input_ids": experience_ids,
+        "experience_input_count": len(experience_ids),
         "pipeline_completed": cell_pipeline_completed,
         "dynamic_model_called": dynamic_model_called,
         "driver_generated_in_run": driver_generated,
@@ -1643,20 +2076,24 @@ def _run_cell(
         },
     }
 
-    try:
-        evolution = hooks.evolution_runner(client, raw_report)
-        if not isinstance(evolution, Mapping):
-            raise PipelineError("Evolution result must be an object")
-        raw_report["evolution"] = _copy(dict(evolution))
-    except Exception as exc:
-        raw_report["evolution"] = {
-            "non_blocking": True,
-            "evolution_attempted": True,
-            "evolution_completed": False,
-            "proposal_created": False,
-            "current_run_unchanged": True,
-            "failure": _failure_record(exc),
-        }
+    if evolution_enabled:
+        try:
+            evolution = hooks.evolution_runner(terminal_evolution_client, raw_report)
+            if not isinstance(evolution, Mapping):
+                raise PipelineError("Evolution result must be an object")
+            raw_report["evolution"] = _copy(dict(evolution))
+        except Exception as exc:
+            raw_report["evolution"] = {
+                "non_blocking": True,
+                "evolution_attempted": True,
+                "evolution_completed": False,
+                "proposal_created": False,
+                "current_run_unchanged": True,
+                "failure": _failure_record(exc),
+            }
+    else:
+        raw_report["evolution"] = None
+        raw_report["evolution_disabled"] = True
     _write(workspace / "cell_report.json", raw_report)
     return raw_report
 
@@ -1745,6 +2182,8 @@ def run_experiment(
     output_dir: str | Path | None = None,
     run_id: str | None = None,
     client: Any | None = None,
+    producer_client: Any | None = None,
+    evolution_client: Any | None = None,
     model_identity: Mapping[str, Any] | None = None,
     experience: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None,
     hooks: PipelineHooks | None = None,
@@ -1759,17 +2198,42 @@ def run_experiment(
         config = ExperimentConfig.from_path(config_path or root / DEFAULT_CONFIG_PATH)
     elif not isinstance(config, ExperimentConfig):
         config = ExperimentConfig.from_mapping(config)
+    if client is not None and producer_client is not None and client is not producer_client:
+        raise PipelineError("client and producer_client must refer to the same Producer client")
+    selected_producer = producer_client if producer_client is not None else client
+    selected_run_id = run_id or _new_run_id(config.experiment_id)
+    experience_snapshot_id = config.experience_snapshot_id
+    experience_source_run_id = config.experience_source_run_id
     if config.experience_declared:
-        if config.experience_input:
+        if config.experience_snapshot_input is not None:
+            if experience is not None:
+                raise PipelineError(
+                    "experience is declared in the manifest and cannot be overridden"
+                )
+            experience = _copy(dict(config.experience_snapshot_input))
+        elif config.experience_input:
             if experience is not None:
                 raise PipelineError(
                     "experience is declared in the manifest and cannot be overridden"
                 )
             experience = tuple(config.experience_input)
         elif experience is not None and bool(experience):
-            raise PipelineError("the initial shakedown manifest requires empty Experience")
+            raise PipelineError("the manifest requires empty Experience and cannot be overridden")
+    if isinstance(experience, Mapping) and experience.get(
+        "artifact_type"
+    ) == "autoadapter_experience_snapshot":
+        snapshot_id_value = experience.get("snapshot_id")
+        source_run_id_value = experience.get("source_run_id")
+        if isinstance(snapshot_id_value, str) and snapshot_id_value.strip():
+            experience_snapshot_id = snapshot_id_value.strip()
+        if isinstance(source_run_id_value, str) and source_run_id_value.strip():
+            experience_source_run_id = source_run_id_value.strip()
+    experience_source_ids = _experience_source_run_ids(experience)
+    if experience_source_run_id is not None:
+        experience_source_ids.add(experience_source_run_id)
+    if selected_run_id in experience_source_ids:
+        raise PipelineError("same-round Experience input is not permitted")
     selected_hooks = hooks or PipelineHooks()
-    selected_run_id = run_id or _new_run_id(config.experiment_id)
     destination = Path(output_dir).resolve() if output_dir is not None else root / "runs" / selected_run_id
     destination.mkdir(parents=True, exist_ok=True)
 
@@ -1791,17 +2255,40 @@ def run_experiment(
     }
     _write(destination / "package_check.json", package_check)
 
-    if client is None:
+    if selected_producer is None:
         from autoadapter2.model_api import JsonModelClient, ModelConfig
 
         try:
-            client = JsonModelClient(ModelConfig.from_env())
+            selected_producer = JsonModelClient(ModelConfig.from_env())
         except Exception as exc:
             raise PipelineError(f"real model client configuration failed: {exc}") from exc
-    identity = _client_identity(client, model_identity)
-    model_preflight = _validate_model_preflight(client, config.model_manifest)
+    client = selected_producer
+    if config.evolution_enabled:
+        if evolution_client is None and config.evolution_model_manifest is not None:
+            evolution_client = _clone_client_for_manifest(
+                selected_producer, config.evolution_model_manifest
+            )
+            if evolution_client is None:
+                raise PipelineError(
+                    "evolution.model requires a cloneable Producer client or an explicit evolution_client"
+                )
+        if evolution_client is None:
+            # Backward-compatible single-client behavior.
+            evolution_client = selected_producer
+    else:
+        # Disabled Evolution must not construct or touch a terminal model client.
+        evolution_client = None
+    identity = _client_identity(selected_producer, model_identity)
+    model_preflight = _validate_model_preflight(selected_producer, config.model_manifest)
     if model_preflight is not None:
         _write(destination / "model_preflight.json", model_preflight)
+    evolution_model_preflight = None
+    if config.evolution_enabled and config.evolution_model_manifest is not None:
+        evolution_model_preflight = _validate_model_preflight(
+            evolution_client, config.evolution_model_manifest
+        )
+        if evolution_model_preflight is not None:
+            _write(destination / "evolution_model_preflight.json", evolution_model_preflight)
     stage_log: list[dict[str, Any]] = []
     designs: dict[str, Mapping[str, Any]] = {}
     capability_suites: dict[str, Mapping[str, Any]] = {}
@@ -1840,6 +2327,7 @@ def run_experiment(
             )
             design = _copy(dict(design))
             evidence = _stage_evidence(client, stage="tgcd", before=before, completed=True)
+            evidence = _with_experience_trace(evidence, robot_experience)
             stage_log.append({"robot": robot, **evidence})
             write_capability_design(robot_design_dir / "capability_design.json", design)
             designs[robot] = design
@@ -1850,6 +2338,10 @@ def run_experiment(
                 before=locals().get("before"),
                 completed=False,
                 error=exc,
+            )
+            evidence = _with_experience_trace(
+                evidence,
+                _public_experience(experience, robot),
             )
             stage_log.append({"robot": robot, **evidence})
             failure = {
@@ -1890,6 +2382,10 @@ def run_experiment(
                 seed=selection_seed,
             )
             evidence = _stage_evidence(client, stage="ivc", before=before, completed=True)
+            evidence = _with_experience_trace(
+                evidence,
+                _public_experience(experience, robot),
+            )
             evidence["compiled_capability_validation_case_count"] = len(
                 capability_suite.get("cases", [])
             )
@@ -1914,6 +2410,10 @@ def run_experiment(
                 before=locals().get("before"),
                 completed=False,
                 error=exc,
+            )
+            evidence = _with_experience_trace(
+                evidence,
+                _public_experience(experience, robot),
             )
             stage_log.append({"robot": robot, **evidence})
             failure = {
@@ -2025,6 +2525,8 @@ def run_experiment(
                 condition=condition,
                 config=config,
                 client=client,
+                evolution_client=evolution_client,
+                evolution_enabled=config.evolution_enabled,
                 identity=identity,
                 experience=_public_experience(experience, robot),
                 workspace=cell_workspace,
@@ -2041,14 +2543,16 @@ def run_experiment(
         expected_conditions=config.generation_conditions,
         run_id=selected_run_id,
     )
-    review_queue = build_experience_review_queue(
-        run_id=selected_run_id,
-        experiment_id=config.experiment_id,
-        expected_robots=config.robots,
-        expected_conditions=config.generation_conditions,
-        cells=cell_reports,
-    )
-    _write(destination / config.experience_review_queue_output, review_queue)
+    review_queue: dict[str, Any] | None = None
+    if config.evolution_enabled:
+        review_queue = build_experience_review_queue(
+            run_id=selected_run_id,
+            experiment_id=config.experiment_id,
+            expected_robots=config.robots,
+            expected_conditions=config.generation_conditions,
+            cells=cell_reports,
+        )
+        _write(destination / config.experience_review_queue_output, review_queue)
     all_cells_passed = bool(
         paired["summary"]["all_cells_final_capability_validation_passed"]
     )
@@ -2070,18 +2574,50 @@ def run_experiment(
         "cells": cell_reports,
         "paired_report": paired,
         "pipeline_completed": all_cells_completed,
-        "cell_pipeline_completed": review_queue["cell_pipeline_completed"],
-        "expected_evolution_outcome_count": review_queue[
-            "expected_evolution_outcome_count"
-        ],
-        "retained_evolution_outcome_count": review_queue[
-            "retained_evolution_outcome_count"
-        ],
-        "all_evolution_outcomes_retained": review_queue[
-            "all_evolution_outcomes_retained"
-        ],
-        "reviewed_disposition_count": review_queue["reviewed_disposition_count"],
-        "dispositions_complete": review_queue["dispositions_complete"],
+        "evolution_enabled": config.evolution_enabled,
+        "cell_pipeline_completed": (
+            review_queue["cell_pipeline_completed"]
+            if review_queue is not None
+            else all_cells_completed
+        ),
+        "expected_evolution_outcome_count": (
+            review_queue["expected_evolution_outcome_count"]
+            if review_queue is not None
+            else 0
+        ),
+        "retained_evolution_outcome_count": (
+            review_queue["retained_evolution_outcome_count"]
+            if review_queue is not None
+            else 0
+        ),
+        "all_evolution_outcomes_retained": (
+            review_queue["all_evolution_outcomes_retained"]
+            if review_queue is not None
+            else True
+        ),
+        "reviewed_disposition_count": (
+            review_queue["reviewed_disposition_count"]
+            if review_queue is not None
+            else 0
+        ),
+        "dispositions_complete": (
+            review_queue["dispositions_complete"]
+            if review_queue is not None
+            else True
+        ),
+        "producer_model": _copy(identity),
+        "evolution_model": (
+            _client_identity(evolution_client, None)
+            if evolution_client is not None
+            else None
+        ),
+        "experience_input_ids": {
+            robot: _experience_ids(_public_experience(experience, robot))
+            for robot in config.robots
+        },
+        "experience_snapshot_id": experience_snapshot_id,
+        "experience_source_run_id": experience_source_run_id,
+        "experience_input_loaded": experience is not None,
         "dynamic_model_called": any(bool(cell["dynamic_model_called"]) for cell in cell_reports),
         "driver_generated_in_run": all(
             bool(cell["driver_generated_in_run"]) for cell in cell_reports

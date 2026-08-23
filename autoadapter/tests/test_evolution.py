@@ -72,7 +72,7 @@ def test_queue_has_one_deterministic_record_per_expected_cell_and_stays_pending(
     assert queue["records"][0]["generation_condition"] == "skeleton-assisted"
 
 
-def test_queue_retains_evolution_failure_but_drops_private_definition_fields() -> None:
+def test_queue_replaces_malformed_proposal_with_public_schema_failure() -> None:
     failed = {
         "non_blocking": True,
         "terminal_report_read": True,
@@ -103,10 +103,11 @@ def test_queue_retains_evolution_failure_but_drops_private_definition_fields() -
 
     outcome = queue["records"][0]["evolution"]
     assert outcome["evolution_completed"] is False
-    assert outcome["failure"]["type"] == "RuntimeError"
-    assert outcome["proposal"] == {
-        "observation": "The public model call failed.",
+    assert outcome["failure"] == {
+        "type": "EvolutionError",
+        "message": "Evolution proposal failed the exact public schema",
     }
+    assert outcome["proposal"] is None
     serialized = json.dumps(queue, sort_keys=True)
     for forbidden in (
         "private_suite",

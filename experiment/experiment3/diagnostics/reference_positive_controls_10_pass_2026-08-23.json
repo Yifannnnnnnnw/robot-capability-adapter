@@ -1,0 +1,27 @@
+{
+  "artifact_type": "experiment3_reference_positive_controls_partial",
+  "recorded_at_utc": "2026-08-23T00:20:00Z",
+  "formal_cell": false,
+  "formal_denominator_entry": false,
+  "passed": true,
+  "scope": "the ten configurations listed below only",
+  "robot_configuration_count": 10,
+  "robot_configurations": [
+    "unitree-go2-stock-12dof",
+    "franka_panda",
+    "kinova_gen3_robotiq_2f85",
+    "ufactory_xarm7",
+    "universal_robots_ur5e_robotiq_2f85",
+    "piper",
+    "kuka_iiwa_14",
+    "leap_hand",
+    "hello_robot_stretch_2",
+    "aloha_2"
+  ],
+  "result": "10 passed",
+  "limitations": [
+    "This artifact does not cover robotstudio_so101.",
+    "SO101 remains a separate failed readiness gate and cannot be inferred from this partial pass.",
+    "These are diagnostic reference/Harness controls, not formal Experiment 3 cells."
+  ]
+}

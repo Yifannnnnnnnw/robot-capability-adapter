@@ -19,7 +19,7 @@ from autoadapter2.reporting import (
 
 class FakeGenerator:
     def __init__(self, response: dict[str, Any] | None = None, error: Exception | None = None):
-        self.response = response if response is not None else {"proposal": None}
+        self.response = response if response is not None else {}
         self.error = error
         self.calls: list[dict[str, Any]] = []
 
@@ -104,13 +104,11 @@ class EvolutionTests(unittest.TestCase):
         original = copy.deepcopy(report)
         client = FakeGenerator(
             {
-                "proposal": {
-                    "observation": "The candidate reached the target.",
-                    "lesson": "Keep the control primitive available.",
-                    "recommendation": "Try the same interface in a later run.",
-                    "scope": "robotstudio_so101",
-                    "evidence": ["case-1-r00"],
-                }
+                "observation": "The candidate reached the target.",
+                "lesson": "Keep the control primitive available.",
+                "recommendation": "Try the same interface in a later run.",
+                "scope": "robotstudio_so101",
+                "evidence": ["case-1-r00"],
             }
         )
 
@@ -139,7 +137,7 @@ class EvolutionTests(unittest.TestCase):
         self.assertEqual(outcome["failure"]["type"], "RuntimeError")
         self.assertFalse(report["final_validation_passed"])
 
-    def test_model_input_compacts_physics_samples_but_keeps_failed_diagnostics(self) -> None:
+    def test_model_input_keeps_failure_class_but_drops_raw_failure_message(self) -> None:
         report = _terminal_report(passed=False)
         report["trials"][0]["candidate_exception"] = {
             "type": "AttributeError",
@@ -150,14 +148,19 @@ class EvolutionTests(unittest.TestCase):
             "samples": [{"qpos": list(range(1000))} for _ in range(20)],
         }
         report["attempts"] = [{"attempt": 0, "validation": copy.deepcopy(report)}]
-        client = FakeGenerator({"proposal": None})
+        client = FakeGenerator({})
 
         outcome = run_evolution(client, report)
 
         model_report = client.calls[0]["inputs"]["terminal_report"]
         packed = json.dumps(model_report)
         self.assertNotIn('"samples"', packed)
-        self.assertIn("request is a dict", packed)
+        self.assertNotIn("request is a dict", packed)
+        self.assertEqual(
+            model_report["terminal_capability_validation"]["failed_trials"][0]
+            ["candidate_exception"],
+            {"type": "AttributeError"},
+        )
         self.assertEqual(
             model_report["terminal_capability_validation"]["failed_trials"][0]
             ["physical_evidence"]["sample_count"],
@@ -171,7 +174,7 @@ class EvolutionTests(unittest.TestCase):
         report.pop("final_capability_validation_passed", None)
         report.pop("final_validation_passed", None)
         report.pop("validation_passed", None)
-        client = FakeGenerator({"proposal": None})
+        client = FakeGenerator({})
 
         outcome = run_evolution(client, report)
 
@@ -180,7 +183,7 @@ class EvolutionTests(unittest.TestCase):
         self.assertEqual(client.calls, [])
 
     def test_mutating_proposal_is_rejected_and_is_non_blocking(self) -> None:
-        client = FakeGenerator({"proposal": {"retry_decision": "retry"}})
+        client = FakeGenerator({"retry_decision": "retry"})
 
         outcome = run_evolution(client, _terminal_report())
 
