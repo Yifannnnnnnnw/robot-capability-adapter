@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import io
 import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 
@@ -19,6 +21,7 @@ from experiment.experiment1a_generation.runtime.results import (  # noqa: E402
     ResultsError,
     build_results,
     discover_cell_records,
+    main as aggregate_main,
     select_cell_records,
 )
 
@@ -91,6 +94,44 @@ def candidate(record: dict, path: str) -> dict:
 
 
 class Experiment1ResultTests(unittest.TestCase):
+    def test_require_complete_cli_rejects_missing_formal_units(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        scheduler_path = root / "scheduler_record.json"
+        scheduler_path.write_text(
+            json.dumps(
+                {
+                    "utc_finished_at": "2026-08-23T00:00:00Z",
+                    "exit_summary": {
+                        "process_count": 0,
+                        "failed_process_count": 0,
+                    },
+                    "units": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        output = root / "aggregate"
+        stdout = io.StringIO()
+
+        with redirect_stdout(stdout):
+            exit_code = aggregate_main(
+                [
+                    "--manifest",
+                    str(EXPERIMENT_ROOT / "manifest.json"),
+                    "--formal-scheduler",
+                    str(scheduler_path),
+                    "--output",
+                    str(output),
+                    "--require-complete",
+                ]
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("84 missing units", stdout.getvalue())
+        self.assertFalse(output.exists())
+
     def test_selection_excludes_pre_0119_records_and_rejects_eligible_duplicates(self) -> None:
         m2_unit = "b1::unitree-go2-stock-12dof::M2::r01::from-scratch"
         m1_unit = "b1::unitree-go2-stock-12dof::M1::r01::from-scratch"

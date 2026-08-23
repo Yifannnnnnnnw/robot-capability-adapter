@@ -173,6 +173,18 @@ def test_finished_scheduler_missing_a_planned_record_is_rejected(
         aggregate_schedulers([scheduler_path])
 
 
+def test_duplicate_executed_unit_record_is_rejected(tmp_path: Path) -> None:
+    scheduler_path, _ = _write_one_terminal(tmp_path)
+    scheduler = json.loads(scheduler_path.read_text(encoding="utf-8"))
+    scheduler["records"].append(dict(scheduler["records"][0]))
+    scheduler_path.write_text(json.dumps(scheduler), encoding="utf-8")
+
+    with pytest.raises(
+        B2AggregationError, match="duplicate scheduler/terminal record"
+    ):
+        aggregate_schedulers([scheduler_path])
+
+
 def test_harness_fail_with_physical_integrity_failure_remains_evaluable(
     tmp_path: Path,
 ) -> None:
