@@ -25,13 +25,19 @@ PACKAGE_ROOT = (
     / "1.0.0"
 )
 TASK_SUITE_PATH = (
-    REPOSITORY_ROOT / "experiment" / "b2_recap" / "task_suite" / "task_suite.json"
+    REPOSITORY_ROOT
+    / "experiment"
+    / "experiment1b_use"
+    / "config"
+    / "task_suite"
+    / "task_suite.json"
 )
 CAPABILITY_DESIGN_PATH = (
     REPOSITORY_ROOT
     / "experiment"
-    / "b2_recap"
-    / "reference_validation"
+    / "experiment1b_use"
+    / "validation"
+    / "reference"
     / "resolved"
     / "robotstudio_so101"
     / "capability_design.json"
