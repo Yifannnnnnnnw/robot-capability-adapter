@@ -80,12 +80,10 @@ class ScriptedRoute:
             "authority_revision": "test",
             "protocol_id": "b1-driver-synthesis",
             "protocol_version": "test",
-            "unit_count": 144,
+            "unit_count": 84,
             "robot_ids": [
                 "robotstudio_so101",
                 "unitree-go2-stock-12dof",
-                "leap_hand",
-                "aloha_2",
             ],
             "units": [
                 {
@@ -493,6 +491,30 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         self.assertEqual(record["identity"]["backbone_id"], "M5")
         self.assertEqual(record["identity"]["replicate_id"], "r01")
 
+    def test_paused_manifest_blocks_formal_dispatch_before_client_creation(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        manifest = root / "manifest.json"
+        manifest.write_text("{}\n", encoding="utf-8")
+        route = ScriptedRoute(root, [True])
+        hooks = replace(
+            route.hooks(),
+            manifest_resolver=lambda path: {
+                **route.resolver(path),
+                "formal_dispatch_enabled": False,
+            },
+        )
+
+        with self.assertRaisesRegex(B1RunError, "formal B1 dispatch is disabled"):
+            run_single_cell(
+                manifest_path=manifest,
+                unit_id=UNIT_ID,
+                output_dir=root / "run",
+                hooks=hooks,
+            )
+        self.assertEqual(route.client_creations, 0)
+
     def test_default_bundle_loader_refuses_a_missing_criteria_path(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -605,6 +627,54 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         )
         self.assertIsNone(
             recorder.calls[0]["tokens"]["input_cache_miss_tokens"]
+        )
+
+    def test_m8_public_price_uses_total_minus_cached_and_long_context_tier(self) -> None:
+        pinned = json.loads(
+            (
+                EXPERIMENT_ROOT
+                / "config"
+                / "providers"
+                / "M8-company-api-gpt-5-6-sol.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        class UsageClient(ScriptedClient):
+            def __init__(self, input_tokens: int) -> None:
+                super().__init__()
+                self.config.model = "openai.gpt-5.6-sol"
+                self.input_tokens = input_tokens
+
+            def generate_json(self, **_: Any) -> dict[str, Any]:
+                self.calls.append(
+                    {
+                        "requested_model": self.config.model,
+                        "returned_model": self.config.model,
+                        "usage": {
+                            "prompt_tokens": self.input_tokens,
+                            "prompt_tokens_details": {"cached_tokens": 100_000},
+                            "completion_tokens": 1_000,
+                        },
+                    }
+                )
+                return {}
+
+        def recorded_cost(input_tokens: int) -> float | None:
+            recorder = RecordingClient(
+                UsageClient(input_tokens),
+                lambda: None,
+                pinned["price_snapshot"],
+            )
+            recorder.generate_json(stage="study", prompt="study", inputs={})
+            return recorder.calls[0]["per_call_cost"]
+
+        self.assertAlmostEqual(
+            recorded_cost(272_000),
+            (100_000 * 0.5 + 172_000 * 5.0 + 1_000 * 30.0) / 1_000_000,
+        )
+        self.assertAlmostEqual(
+            recorded_cost(272_001),
+            (100_000 * 1.0 + 172_001 * 10.0 + 1_000 * 45.0) / 1_000_000,
         )
 
     def test_retry_requests_remain_separate_with_one_completed_model_turn(self) -> None:

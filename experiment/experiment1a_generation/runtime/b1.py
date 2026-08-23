@@ -37,9 +37,15 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 EXPERIMENT_ROOT = REPOSITORY_ROOT / "experiment" / "experiment1a_generation"
 AUTOADAPTER_ROOT = REPOSITORY_ROOT / "autoadapter"
 AUTOADAPTER_SOURCE_ROOT = AUTOADAPTER_ROOT / "src"
-EXPECTED_UNIT_COUNT = 144
 MAX_ACCEPTED_ATTEMPTS = 3
 ALLOWED_CONDITIONS = {"skeleton-assisted", "from-scratch"}
+EXPECTED_ROBOT_IDS = ("robotstudio_so101", "unitree-go2-stock-12dof")
+EXPECTED_BACKBONE_IDS = ("M1", "M2", "M3", "M4", "M5", "M6", "M8")
+EXPECTED_CORE_REPLICATE_IDS = ("r01", "r02", "r03")
+EXPECTED_EXTENSION_REPLICATE_IDS = ("r04", "r05")
+EXPECTED_CORE_UNIT_COUNT = 84
+EXPECTED_EXTENSION_UNIT_COUNT = 28
+EXPECTED_CUMULATIVE_UNIT_COUNT = 140
 EXISTING_FIXED_ROUTES = {
     "robotstudio_so101": AUTOADAPTER_ROOT
     / "runs"
@@ -147,6 +153,23 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
     if recipe.get("experience_input") != "empty":
         raise B1RunError(f"{manifest_path}: B1 requires empty Experience input")
 
+    formal_dispatch_enabled = recipe.get("formal_dispatch_enabled")
+    if not isinstance(formal_dispatch_enabled, bool):
+        raise B1RunError(
+            f"{manifest_path}: formal_dispatch_enabled must be a boolean"
+        )
+    blocked_reasons = recipe.get("blocked_reasons")
+    if not isinstance(blocked_reasons, list) or not all(
+        isinstance(reason, str) and reason.strip() for reason in blocked_reasons
+    ):
+        raise B1RunError(
+            f"{manifest_path}: blocked_reasons must contain non-empty strings"
+        )
+    if formal_dispatch_enabled and blocked_reasons:
+        raise B1RunError(
+            f"{manifest_path}: formal dispatch cannot be enabled while blockers remain"
+        )
+
     protocol_path, protocol = _reference_json(
         manifest_path, recipe.get("protocol"), field="protocol"
     )
@@ -173,6 +196,14 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
     backbone_ids = _string_list(
         backbone_set.get("backbone_ids"), field="backbone_ids", source=backbone_path
     )
+    if tuple(backbone_ids) != EXPECTED_BACKBONE_IDS:
+        raise B1RunError(
+            f"{backbone_path}: active backbones must be M1-M6 and M8"
+        )
+    if backbone_set.get("inactive_historical_backbone_ids") != ["M7"]:
+        raise B1RunError(
+            f"{backbone_path}: M7 must remain the explicitly inactive historical backbone"
+        )
     replicate_path, replicate_set = _reference_json(
         manifest_path, recipe.get("replicate_set"), field="replicate_set"
     )
@@ -181,6 +212,23 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
         field="replicate_ids",
         source=replicate_path,
     )
+    extension_replicate_ids = _string_list(
+        replicate_set.get("extension_replicate_ids"),
+        field="extension_replicate_ids",
+        source=replicate_path,
+    )
+    if set(replicate_ids) & set(extension_replicate_ids):
+        raise B1RunError(
+            f"{replicate_path}: core and extension replicate IDs must be disjoint"
+        )
+    if tuple(replicate_ids) != EXPECTED_CORE_REPLICATE_IDS:
+        raise B1RunError(
+            f"{replicate_path}: active core replicates must be r01, r02, and r03"
+        )
+    if tuple(extension_replicate_ids) != EXPECTED_EXTENSION_REPLICATE_IDS:
+        raise B1RunError(
+            f"{replicate_path}: extension replicates must be r04 and r05"
+        )
     seed_by_replicate: dict[str, int | None] = {}
     for item in replicate_set.get("seed_map", []):
         if isinstance(item, Mapping) and isinstance(item.get("replicate_id"), str):
@@ -195,7 +243,33 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
     if not isinstance(coverage, list) or not coverage:
         raise B1RunError(f"{manifest_path}: condition_coverage must be a list")
     units: list[dict[str, Any]] = []
+    extension_units: list[dict[str, Any]] = []
     robot_ids: list[str] = []
+
+    def append_units(
+        target: list[dict[str, Any]],
+        assignment_robots: Sequence[str],
+        condition: str,
+        selected_replicates: Sequence[str],
+    ) -> None:
+        for robot_id in assignment_robots:
+            if robot_id not in robot_ids:
+                robot_ids.append(robot_id)
+            for backbone_id in backbone_ids:
+                for replicate_id in selected_replicates:
+                    pair_id = f"b1::{robot_id}::{backbone_id}::{replicate_id}"
+                    target.append(
+                        {
+                            "unit_id": f"{pair_id}::{condition}",
+                            "condition_pair_id": pair_id,
+                            "robot_configuration_id": robot_id,
+                            "backbone_id": backbone_id,
+                            "replicate_id": replicate_id,
+                            "replicate_seed": seed_by_replicate.get(replicate_id),
+                            "generation_condition": condition,
+                        }
+                    )
+
     for assignment in coverage:
         if not isinstance(assignment, Mapping):
             raise B1RunError(f"{manifest_path}: condition coverage must use objects")
@@ -212,40 +286,68 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
             field="robot_configuration_ids",
             source=robot_path,
         )
-        for robot_id in assignment_robots:
-            if robot_id not in robot_ids:
-                robot_ids.append(robot_id)
-            for backbone_id in backbone_ids:
-                for replicate_id in replicate_ids:
-                    pair_id = f"b1::{robot_id}::{backbone_id}::{replicate_id}"
-                    units.append(
-                        {
-                            "unit_id": f"{pair_id}::{condition}",
-                            "condition_pair_id": pair_id,
-                            "robot_configuration_id": robot_id,
-                            "backbone_id": backbone_id,
-                            "replicate_id": replicate_id,
-                            "replicate_seed": seed_by_replicate.get(replicate_id),
-                            "generation_condition": condition,
-                        }
-                    )
+        append_units(units, assignment_robots, str(condition), replicate_ids)
+        append_units(
+            extension_units,
+            assignment_robots,
+            str(condition),
+            extension_replicate_ids,
+        )
 
-    unit_ids = [str(unit["unit_id"]) for unit in units]
+    unit_ids = [str(unit["unit_id"]) for unit in units + extension_units]
     if len(unit_ids) != len(set(unit_ids)):
         raise B1RunError(f"{manifest_path}: duplicate B1 unit IDs")
-    if len(units) != EXPECTED_UNIT_COUNT:
+    if tuple(robot_ids) != EXPECTED_ROBOT_IDS:
         raise B1RunError(
-            f"{manifest_path}: expected {EXPECTED_UNIT_COUNT} B1 units, got {len(units)}"
+            f"{manifest_path}: active robots must be SO-101 and Unitree Go2"
         )
-    if recipe.get("expected_generation_condition_replicates") != len(units):
+    expected_core_count = recipe.get("expected_generation_condition_replicates")
+    if expected_core_count != EXPECTED_CORE_UNIT_COUNT or expected_core_count != len(units):
         raise B1RunError(f"{manifest_path}: expected unit count does not match matrix")
-    if recipe.get("maximum_submitted_driver_attempts") != (
-        len(units) * MAX_ACCEPTED_ATTEMPTS
-    ):
+    if recipe.get("maximum_submitted_driver_attempts") != len(units) * MAX_ACCEPTED_ATTEMPTS:
         raise B1RunError(f"{manifest_path}: maximum attempt count does not match matrix")
+    extension_counts = {
+        replicate_id: sum(
+            1 for unit in extension_units if unit["replicate_id"] == replicate_id
+        )
+        for replicate_id in extension_replicate_ids
+    }
+    declared_extension_counts = recipe.get("extension_generation_condition_replicates")
+    if declared_extension_counts != {
+        "r04": EXPECTED_EXTENSION_UNIT_COUNT,
+        "r05": EXPECTED_EXTENSION_UNIT_COUNT,
+    } or declared_extension_counts != extension_counts:
+        raise B1RunError(
+            f"{manifest_path}: extension unit counts do not match matrix"
+        )
+    declared_extension_attempts = recipe.get("maximum_extension_submitted_driver_attempts")
+    expected_extension_attempts = {
+        replicate_id: count * MAX_ACCEPTED_ATTEMPTS
+        for replicate_id, count in extension_counts.items()
+    }
+    if declared_extension_attempts != expected_extension_attempts:
+        raise B1RunError(
+            f"{manifest_path}: extension attempt counts do not match matrix"
+        )
+    cumulative_count = len(units) + len(extension_units)
+    if (
+        recipe.get("maximum_cumulative_generation_condition_replicates")
+        != EXPECTED_CUMULATIVE_UNIT_COUNT
+        or cumulative_count != EXPECTED_CUMULATIVE_UNIT_COUNT
+    ):
+        raise B1RunError(f"{manifest_path}: cumulative unit count does not match matrix")
+    if (
+        recipe.get("maximum_cumulative_submitted_driver_attempts")
+        != cumulative_count * MAX_ACCEPTED_ATTEMPTS
+    ):
+        raise B1RunError(f"{manifest_path}: cumulative attempt count does not match matrix")
     runtime_values = recipe.get("backbone_runtime_configs", {})
     if not isinstance(runtime_values, Mapping):
         raise B1RunError(f"{manifest_path}: backbone_runtime_configs must be an object")
+    if set(runtime_values) != set(backbone_ids):
+        raise B1RunError(
+            f"{manifest_path}: runtime configs must exactly cover active backbones"
+        )
     runtime_paths: dict[str, str] = {}
     for backbone_id, value in runtime_values.items():
         if not isinstance(backbone_id, str) or not isinstance(value, str) or not value:
@@ -259,6 +361,7 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
         if not path.is_file():
             raise B1RunError(f"backbone runtime config does not exist: {path}")
         runtime_paths[backbone_id] = str(path)
+
     return {
         "experiment_id": recipe.get("experiment_id"),
         "authority_revision": recipe.get("authority_revision"),
@@ -267,9 +370,29 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
         "protocol_id": protocol.get("protocol_id"),
         "protocol_version": protocol.get("protocol_version"),
         "robot_ids": robot_ids,
+        "robot_count": len(robot_ids),
+        "backbone_ids": backbone_ids,
+        "backbone_count": len(backbone_ids),
+        "replicate_ids": replicate_ids,
+        "replicate_count": len(replicate_ids),
         "backbone_runtime_config_paths": runtime_paths,
         "units": units,
+        "extension_units": extension_units,
         "unit_count": len(units),
+        "condition_counts": {
+            condition: sum(
+                1 for unit in units if unit["generation_condition"] == condition
+            )
+            for condition in sorted(allowed)
+        },
+        "maximum_submitted_driver_attempts": recipe.get(
+            "maximum_submitted_driver_attempts"
+        ),
+        "fixed_validation_bundle_set": recipe.get("fixed_validation_bundle_set"),
+        "extension_unit_counts": extension_counts,
+        "cumulative_unit_count": cumulative_count,
+        "formal_dispatch_enabled": formal_dispatch_enabled,
+        "blocked_reasons": list(blocked_reasons),
     }
 
 
@@ -825,29 +948,51 @@ def _call_cost(
     miss = tokens.get("input_cache_miss_tokens")
     input_tokens = tokens.get("input_tokens")
     output = tokens.get("output_tokens")
-    hit_rate = price_snapshot.get("input_cache_hit")
-    miss_rate = price_snapshot.get("input_cache_miss")
-    output_rate = price_snapshot.get("output")
-
     def numeric(value: Any) -> bool:
         return isinstance(value, (int, float)) and not isinstance(value, bool)
 
-    if all(numeric(value) for value in (hit, miss, output, hit_rate, miss_rate, output_rate)):
-        return (
-            float(hit) * float(hit_rate)
-            + float(miss) * float(miss_rate)
-            + float(output) * float(output_rate)
-        ) / 1_000_000.0
-    if (
-        hit is None
-        and miss is None
-        and all(numeric(value) for value in (input_tokens, output, miss_rate, output_rate))
-    ):
-        return (
-            float(input_tokens) * float(miss_rate)
-            + float(output) * float(output_rate)
-        ) / 1_000_000.0
-    return None
+    if not numeric(output):
+        return None
+
+    if numeric(input_tokens):
+        total_input = float(input_tokens)
+    elif numeric(hit) and numeric(miss):
+        total_input = float(hit) + float(miss)
+    else:
+        return None
+
+    if numeric(hit) and numeric(miss):
+        hit_tokens = float(hit)
+        miss_tokens = float(miss)
+    elif numeric(hit):
+        hit_tokens = float(hit)
+        miss_tokens = max(0.0, total_input - hit_tokens)
+    elif numeric(miss):
+        miss_tokens = float(miss)
+        hit_tokens = max(0.0, total_input - miss_tokens)
+    else:
+        hit_tokens = 0.0
+        miss_tokens = total_input
+
+    rates: Mapping[str, Any] = price_snapshot
+    long_context = price_snapshot.get("long_context")
+    if isinstance(long_context, Mapping):
+        threshold = long_context.get("applies_when_input_tokens_gt")
+        if numeric(threshold) and total_input > float(threshold):
+            rates = long_context
+
+    hit_rate = rates.get("input_cache_hit")
+    miss_rate = rates.get("input_cache_miss")
+    output_rate = rates.get("output")
+    if not all(numeric(value) for value in (miss_rate, output_rate)):
+        return None
+    if hit_tokens > 0.0 and not numeric(hit_rate):
+        return None
+    return (
+        hit_tokens * float(hit_rate or 0.0)
+        + miss_tokens * float(miss_rate)
+        + float(output) * float(output_rate)
+    ) / 1_000_000.0
 
 
 def _runtime_config_for_unit(
@@ -974,6 +1119,9 @@ def _model_identity(
         "timeout_s": getattr(config, "timeout_s", None),
         "provider_seed_applied": None,
         "provider_model_revision": pinned.get("provider_model_revision") if pinned else None,
+        "upstream_revision_status": (
+            pinned.get("upstream_revision_status") if pinned else None
+        ),
         "runtime_config_path": str(pinned_path) if pinned_path else None,
         "price_snapshot": copy.deepcopy(pinned.get("price_snapshot")) if pinned else None,
     }
@@ -1327,8 +1475,6 @@ def _validation_case_counts(
 
 
 def _select_unit(resolved: Mapping[str, Any], unit_id: str) -> dict[str, Any]:
-    if resolved.get("unit_count") != EXPECTED_UNIT_COUNT:
-        raise B1RunError(f"Experiment 1 manifest must resolve {EXPECTED_UNIT_COUNT} units")
     units = resolved.get("units")
     if not isinstance(units, Sequence) or isinstance(units, (str, bytes)):
         raise B1RunError("resolved Experiment 1 manifest has no units")
@@ -1368,6 +1514,10 @@ def run_single_cell(
     if output.exists() and any(output.iterdir()):
         raise B1RunError(f"cell output directory must be new or empty: {output}")
     resolved = dict(hooks.manifest_resolver(manifest))
+    if resolved.get("formal_dispatch_enabled") is False:
+        raise B1RunError(
+            "formal B1 dispatch is disabled by the manifest; readiness blockers remain"
+        )
     unit = _select_unit(resolved, unit_id)
     robot_ids = resolved.get("robot_ids")
     if not isinstance(robot_ids, Sequence) or isinstance(robot_ids, (str, bytes)):
@@ -1946,7 +2096,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--manifest",
         type=Path,
         default=EXPERIMENT_ROOT / "manifest.json",
-        help="external 144-unit Experiment 1 manifest",
+        help="external Experiment 1 manifest",
     )
     parser.add_argument("--unit-id", required=True, help="one exact B1 unit ID")
     parser.add_argument(

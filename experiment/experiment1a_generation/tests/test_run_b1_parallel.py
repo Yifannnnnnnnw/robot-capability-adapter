@@ -62,6 +62,33 @@ safe_environment = {
         )
         output = root / "scheduler"
 
+        dispatch_manifest = json.loads(
+            (EXPERIMENT_ROOT / "manifest.json").read_text(encoding="utf-8")
+        )
+        dispatch_manifest["formal_dispatch_enabled"] = True
+        dispatch_manifest["blocked_reasons"] = []
+        dispatch_manifest["protocol"] = str(
+            REPOSITORY_ROOT / "AutoAdapter-Bench" / "protocols" / "b1-driver-synthesis.json"
+        )
+        dispatch_manifest["backbone_set"] = str(
+            EXPERIMENT_ROOT / "config" / "components" / "backbone-set-m1-m6-m8.json"
+        )
+        dispatch_manifest["replicate_set"] = str(
+            EXPERIMENT_ROOT / "config" / "components" / "replicates-core-r3.json"
+        )
+        dispatch_manifest["backbone_runtime_configs"] = {
+            backbone_id: str(EXPERIMENT_ROOT / path)
+            for backbone_id, path in dispatch_manifest["backbone_runtime_configs"].items()
+        }
+        for assignment in dispatch_manifest["condition_coverage"]:
+            assignment["robot_set"] = str(
+                EXPERIMENT_ROOT / "config" / "components" / "robot-set.json"
+            )
+        dispatch_manifest_path = root / "manifest.json"
+        dispatch_manifest_path.write_text(
+            json.dumps(dispatch_manifest), encoding="utf-8"
+        )
+
         company_key = "test-company-secret-not-for-records"
         deepseek_key = "test-deepseek-secret-not-for-records"
         with patch.dict(
@@ -73,12 +100,12 @@ safe_environment = {
             clear=False,
         ):
             record = launch_parallel(
-                manifest_path=EXPERIMENT_ROOT / "manifest.json",
+                manifest_path=dispatch_manifest_path,
                 order_path=EXPERIMENT_ROOT
                 / "config" / "components"
                 / "execution-order-r1-r5.json",
                 output_dir=output,
-                backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6"],
+                backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6", "M8"],
                 robot_ids=["robotstudio_so101", "unitree-go2-stock-12dof"],
                 max_workers=8,
                 limit=8,

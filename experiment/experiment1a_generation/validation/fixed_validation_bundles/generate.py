@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Any
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
 OUTPUT_ROOT = Path(__file__).resolve().parent
 ROBOT_ROOT = REPOSITORY_ROOT / "autoadapter" / "libraries" / "robots"
 CRITERIA_SOURCE = "experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md"
+ACTIVE_ROBOT_IDS = ("robotstudio_so101", "unitree-go2-stock-12dof")
 
 CAPABILITIES: dict[str, tuple[tuple[str, str], ...]] = {
     "robotstudio_so101": (
@@ -669,7 +670,7 @@ def write_json(path: Path, value: dict[str, Any]) -> None:
 
 
 def main() -> int:
-    for robot_id in CAPABILITIES:
+    for robot_id in ACTIVE_ROBOT_IDS:
         destination = OUTPUT_ROOT / robot_id
         write_json(destination / "capability_design.json", design_for(robot_id))
         write_json(destination / "capability_validation_suite.json", suite_for(robot_id))
@@ -678,7 +679,7 @@ def main() -> int:
         {
             "artifact_type": "b1_fixed_validation_bundle_set",
             "schema_version": "1.0",
-            "bundle_set_id": "experiment1-b1-four-robot-fixed-bundles-v5",
+            "bundle_set_id": "experiment1-b1-two-robot-fixed-bundles-v6",
             "robots": {
                 robot_id: {
                     "capability_design": f"{robot_id}/capability_design.json",
@@ -696,7 +697,7 @@ def main() -> int:
                         f"experiment1-b1-fixed-suite::{robot_id}::{suite_version(robot_id)}"
                     ),
                 }
-                for robot_id in CAPABILITIES
+                for robot_id in ACTIVE_ROBOT_IDS
             },
         },
     )

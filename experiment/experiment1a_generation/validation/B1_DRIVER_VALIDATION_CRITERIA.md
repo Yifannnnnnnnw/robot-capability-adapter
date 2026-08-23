@@ -3,14 +3,14 @@
 > **Document role:** public Experiment 1 Driver-contract and validation-criteria register<br>
 > **Source rendering:** `appendix_b1_driver_validation_table.tex`<br>
 > **Experiment 1 authority:** `EXPERIMENT_1_AUTHORITY.md`<br>
-> **Execution status:** four fixed capability designs and their H1/H2/H3
+> **Execution status:** two active fixed capability designs and their H1/H2/H3
 > trusted-Harness suites are connected through `validation/fixed_validation_bundles/`
 
 This document projects the generated-driver methods, numerical validation
-criteria, and acceptance rule in the LaTeX appendix onto the four
-robot configurations selected for Experiment 1. The LaTeX source also contains
-rows for configurations outside Experiment 1; those rows are intentionally not
-reproduced here.
+criteria, and acceptance rule in the LaTeX appendix onto the two active robot
+configurations selected for Experiment 1a. Historical LEAP Hand and ALOHA 2
+criteria remain at the end of this register for archive interpretation only;
+they are not active Experiment 1a inputs.
 
 This is the readable public criteria register required by the Authority, not
 an independent source of Experiment 1 scope or a disclosure of hidden private
@@ -23,12 +23,10 @@ targets/resets. If it conflicts with
 |---|---:|---:|
 | `robotstudio_so101` | A1–A6 | 6 |
 | `unitree-go2-stock-12dof` | G1–G5 | 5 |
-| `leap_hand` | L1–L6 | 6 |
-| `aloha_2` | AL1–AL6 | 6 |
-| **Total** |  | **23** |
+| **Total** |  | **11** |
 
 With three hidden cases per capability, one complete validation attempt across
-the four Experiment 1 robots contains 69 trials.
+the two active Experiment 1a robots contains 33 trials.
 
 ## Common Driver ABI
 
@@ -75,7 +73,7 @@ Every trial must also satisfy the common:
 
 ## Executable bundle connection
 
-The Experiment 1 manifest points to the four active fixed Driver-and-criteria
+The Experiment 1a manifest points to the two active fixed Driver-and-criteria
 definitions in `validation/fixed_validation_bundles/`. Each robot bundle contains the
 closed request schemas and exactly three fixed H1/H2/H3 cases per capability,
 including scene, reset, request, measurement binding, guards, criterion, and
@@ -135,9 +133,15 @@ one sealed world-frame roll or pitch disturbance of signed magnitude
 `[0.0873, 0.1396] rad`. Each foot has allowed floor support in at least 90% of
 post-disturbance samples and no continuous support loss exceeds `0.10 s`.
 
-## LEAP Hand
+## Inactive historical criteria
 
-Experiment 1 configuration: `leap_hand`.
+The following LEAP Hand and ALOHA 2 records document prior Experiment 1
+configurations. They remain readable for historical runs but are excluded from
+the active two-robot matrix, fixed-bundle index, and denominator.
+
+### LEAP Hand
+
+Inactive historical configuration: `leap_hand`.
 
 | ID | Generated-driver method | Required request fields | Validation criterion |
 |---|---|---|---|
@@ -157,9 +161,9 @@ target smoothly over $0.05$ s by a sealed $[0.006,0.008]$ m distance. Every
 nonrequested fingertip moves at most `0.010 m` and each of its four joints at
 most `0.05 rad` from call time.
 
-## ALOHA 2
+### ALOHA 2
 
-Experiment 1 configuration: `aloha_2`.
+Inactive historical configuration: `aloha_2`.
 
 | ID | Generated-driver method | Required request fields | Validation criterion |
 |---|---|---|---|

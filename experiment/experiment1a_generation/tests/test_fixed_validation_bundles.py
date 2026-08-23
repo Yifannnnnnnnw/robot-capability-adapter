@@ -70,15 +70,18 @@ class Experiment1FixedBundleTests(unittest.TestCase):
             for robot_id in cls.robot_ids
         }
 
-    def test_all_four_bundles_load_with_twenty_three_capabilities_and_sixty_nine_cases(self) -> None:
-        self.assertEqual(set(self.bundles), set(CAPABILITY_IDS_BY_ROBOT))
+    def test_active_bundles_load_with_eleven_capabilities_and_thirty_three_cases(self) -> None:
+        self.assertEqual(
+            set(self.bundles),
+            {"robotstudio_so101", "unitree-go2-stock-12dof"},
+        )
         self.assertEqual(
             sum(len(bundle.design["capabilities"]) for bundle in self.bundles.values()),
-            23,
+            11,
         )
         self.assertEqual(
             sum(len(bundle.suite["cases"]) for bundle in self.bundles.values()),
-            69,
+            33,
         )
         self.assertTrue(
             all(
@@ -87,6 +90,28 @@ class Experiment1FixedBundleTests(unittest.TestCase):
                 for bundle in self.bundles.values()
             )
         )
+
+    def test_index_is_two_robot_v6_and_historical_bundles_remain_unindexed(self) -> None:
+        index_path = (
+            EXPERIMENT_ROOT
+            / "validation"
+            / "fixed_validation_bundles"
+            / "index.json"
+        )
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            index["bundle_set_id"], "experiment1-b1-two-robot-fixed-bundles-v6"
+        )
+        self.assertEqual(
+            set(index["robots"]),
+            {"robotstudio_so101", "unitree-go2-stock-12dof"},
+        )
+        bundle_root = index_path.parent
+        for historical_robot_id in ("leap_hand", "aloha_2"):
+            self.assertTrue(
+                (bundle_root / historical_robot_id / "capability_design.json").is_file()
+            )
+            self.assertNotIn(historical_robot_id, index["robots"])
 
     def test_each_capability_has_exactly_h1_h2_h3_and_matching_method(self) -> None:
         for robot_id, bundle in self.bundles.items():

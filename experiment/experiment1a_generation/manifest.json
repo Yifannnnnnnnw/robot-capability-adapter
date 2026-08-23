@@ -1,18 +1,19 @@
 {
   "schema_version": 1,
   "authority": "EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.17",
+  "authority_revision": "0.1.19",
   "experiment_id": "experiment1-b1-core-r3",
   "track": "B1",
   "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
-  "backbone_set": "../../AutoAdapter-Bench/components/backbone_sets/declared-six.json",
+  "backbone_set": "config/components/backbone-set-m1-m6-m8.json",
   "backbone_runtime_configs": {
     "M1": "config/providers/M1-company-api-sonnet-4-6.json",
     "M2": "config/providers/M2-company-api-opus-5.json",
     "M3": "config/providers/M3-company-api-haiku-4-5.json",
     "M4": "config/providers/M4-company-api-nova-pro.json",
     "M5": "config/providers/M5-deepseek-v4-pro.json",
-    "M6": "config/providers/M6-company-api-ministral-3-8b.json"
+    "M6": "config/providers/M6-company-api-ministral-3-8b.json",
+    "M8": "config/providers/M8-company-api-gpt-5-6-sol.json"
   },
   "model_execution_policy": "remote-hosted-api-only",
   "replicate_set": "config/components/replicates-core-r3.json",
@@ -31,14 +32,24 @@
   "run_high_level_controller": false,
   "run_evolution": false,
   "experience_input": "empty",
-  "expected_generation_condition_replicates": 144,
-  "maximum_submitted_driver_attempts": 432,
+  "expected_generation_condition_replicates": 84,
+  "maximum_submitted_driver_attempts": 252,
   "extension_replicate_ids": [
     "r04",
     "r05"
   ],
-  "maximum_cumulative_generation_condition_replicates": 240,
-  "maximum_cumulative_submitted_driver_attempts": 720,
+  "maximum_cumulative_generation_condition_replicates": 140,
+  "maximum_cumulative_submitted_driver_attempts": 420,
+  "extension_generation_condition_replicates": {
+    "r04": 28,
+    "r05": 28
+  },
+  "maximum_extension_submitted_driver_attempts": {
+    "r04": 84,
+    "r05": 84
+  },
+  "blocked_reasons": [],
+  "formal_dispatch_enabled": true,
   "execution_concurrency": {
     "target_maximum": 8,
     "status": "operational"

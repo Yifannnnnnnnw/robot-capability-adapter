@@ -91,33 +91,33 @@ def candidate(record: dict, path: str) -> dict:
 
 
 class Experiment1ResultTests(unittest.TestCase):
-    def test_selection_excludes_pre_0115_m2_and_rejects_eligible_duplicates(self) -> None:
-        m2_unit = "b1::aloha_2::M2::r01::from-scratch"
-        m1_unit = "b1::aloha_2::M1::r01::from-scratch"
+    def test_selection_excludes_pre_0119_records_and_rejects_eligible_duplicates(self) -> None:
+        m2_unit = "b1::unitree-go2-stock-12dof::M2::r01::from-scratch"
+        m1_unit = "b1::unitree-go2-stock-12dof::M1::r01::from-scratch"
         so_unit = "b1::robotstudio_so101::M4::r01::from-scratch"
         old_m2 = candidate(
-            minimal_record(m2_unit, backbone_id="M2", revision="0.1.14"),
+            minimal_record(m2_unit, backbone_id="M2", revision="0.1.17", timeout_s=600),
             "/formal/old-m2.json",
         )
         new_m2 = candidate(
             minimal_record(
                 m2_unit,
                 backbone_id="M2",
-                revision="0.1.15",
+                revision="0.1.19",
                 timeout_s=600,
             ),
             "/formal/new-m2.json",
         )
         m1 = candidate(
-            minimal_record(m1_unit, backbone_id="M1", revision="0.1.13"),
+            minimal_record(m1_unit, backbone_id="M1", revision="0.1.19"),
             "/formal/m1.json",
         )
         old_so = candidate(
-            minimal_record(so_unit, backbone_id="M4", revision="0.1.14"),
+            minimal_record(so_unit, backbone_id="M4", revision="0.1.17"),
             "/formal/old-so.json",
         )
         new_so = candidate(
-            minimal_record(so_unit, backbone_id="M4", revision="0.1.16"),
+            minimal_record(so_unit, backbone_id="M4", revision="0.1.19"),
             "/formal/new-so.json",
         )
 
@@ -133,7 +133,7 @@ class Experiment1ResultTests(unittest.TestCase):
         self.assertEqual(audit["missing_unit_count"], 0)
         self.assertEqual(
             {row["reason"] for row in audit["excluded"]},
-            {"superseded_m2_pre_0115", "superseded_so101_pre_0116"},
+            {"superseded_pre_0119"},
         )
         with self.assertRaisesRegex(ResultsError, "ambiguous eligible formal records"):
             select_cell_records(

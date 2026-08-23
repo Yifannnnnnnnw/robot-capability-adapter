@@ -11,11 +11,13 @@ from .b1 import EXPERIMENT_ROOT, REPOSITORY_ROOT, resolve_experiment_manifest
 
 
 EXPERIMENT_ID = "experiment1-b1-core-r3"
-CURRENT_AUTHORITY_REVISION = "0.1.16"
-NON_SO101_ELIGIBLE_REVISIONS = frozenset(
-    {"0.1.13", "0.1.14", "0.1.15", "0.1.16"}
-)
-M2_ELIGIBLE_REVISIONS = frozenset({"0.1.15", "0.1.16"})
+CURRENT_AUTHORITY_REVISION = "0.1.19"
+EXPECTED_ROBOT_IDS = ("robotstudio_so101", "unitree-go2-stock-12dof")
+EXPECTED_BACKBONE_IDS = ("M1", "M2", "M3", "M4", "M5", "M6", "M8")
+EXPECTED_REPLICATE_IDS = ("r01", "r02", "r03")
+EXPECTED_CORE_UNIT_COUNT = 84
+EXPECTED_EXTENSION_UNIT_COUNTS = {"r04": 28, "r05": 28}
+EXPECTED_CUMULATIVE_UNIT_COUNT = 140
 ROBOT_DISPLAY_NAMES = {
     "robotstudio_so101": "SO-101",
     "unitree-go2-stock-12dof": "Unitree Go2",
@@ -173,22 +175,16 @@ def _eligibility(candidate: Mapping[str, Any]) -> tuple[bool, str | None]:
     record = _require_mapping(candidate.get("record"), label="candidate record")
     identity = _require_mapping(record.get("identity"), label="candidate identity")
     backbone = identity.get("backbone_id")
-    robot = identity.get("robot_configuration_id")
     revision = identity.get("authority_revision")
-    if robot == "robotstudio_so101" and revision != CURRENT_AUTHORITY_REVISION:
-        return False, "superseded_so101_pre_0116"
+    if revision != CURRENT_AUTHORITY_REVISION:
+        return False, "superseded_pre_0119"
     if backbone == "M2":
-        if revision not in M2_ELIGIBLE_REVISIONS:
-            return False, "superseded_m2_pre_0115"
         model = _require_mapping(record.get("model"), label="M2 model record")
         if float(model.get("timeout_s", -1)) != 600.0:
             raise ResultsError(
-                f"revision 0.1.15 M2 record does not use 600 s: "
+                f"current M2 record does not use 600 s: "
                 f"{candidate.get('cell_record_path')}"
             )
-        return True, None
-    if revision not in NON_SO101_ELIGIBLE_REVISIONS:
-        return False, "authority_revision_not_eligible"
     return True, None
 
 
@@ -198,7 +194,7 @@ def select_cell_records(
     expected_unit_ids: Sequence[str],
     preexcluded: Sequence[Mapping[str, Any]] = (),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Apply the 0.1.16 compatibility rule without outcome-based selection."""
+    """Apply the current 0.1.19 compatibility rule without outcome selection."""
 
     expected = list(expected_unit_ids)
     if len(expected) != len(set(expected)):
@@ -786,10 +782,16 @@ def aggregate_formal_results(
     if (
         resolved.get("experiment_id") != EXPERIMENT_ID
         or resolved.get("authority_revision") != CURRENT_AUTHORITY_REVISION
-        or resolved.get("unit_count") != 144
+        or tuple(resolved.get("robot_ids", ())) != EXPECTED_ROBOT_IDS
+        or tuple(resolved.get("backbone_ids", ())) != EXPECTED_BACKBONE_IDS
+        or tuple(resolved.get("replicate_ids", ())) != EXPECTED_REPLICATE_IDS
+        or resolved.get("unit_count") != EXPECTED_CORE_UNIT_COUNT
+        or resolved.get("unit_count") != len(resolved.get("units", ()))
+        or resolved.get("extension_unit_counts") != EXPECTED_EXTENSION_UNIT_COUNTS
+        or resolved.get("cumulative_unit_count") != EXPECTED_CUMULATIVE_UNIT_COUNT
     ):
         raise ResultsError(
-            "manifest must resolve the 144-cell Experiment 1 revision 0.1.16 design"
+            "manifest must resolve the exact 84-cell Experiment 1 revision 0.1.19 design"
         )
     expected = [str(unit["unit_id"]) for unit in resolved["units"]]
     candidates, discovery_exclusions = discover_cell_records(scheduler_paths)

@@ -14,7 +14,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SUITE_PATH = (
     REPOSITORY_ROOT
     / "experiment"
-    / "experiment1"
+    / "experiment1a_generation"
     / "validation" / "fixed_validation_bundles"
     / "robotstudio_so101"
     / "capability_validation_suite.json"

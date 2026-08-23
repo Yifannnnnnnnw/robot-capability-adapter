@@ -153,6 +153,10 @@ def materialized_units(
     robot_ids: Sequence[str] = (),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     resolved = resolve_experiment_manifest(manifest_path)
+    if resolved.get("formal_dispatch_enabled") is False:
+        raise B1RunError(
+            "formal B1 dispatch is disabled by the manifest; readiness blockers remain"
+        )
     runtime_paths = resolved.get("backbone_runtime_config_paths", {})
     admitted = tuple(dict.fromkeys(backbone_ids))
     if not admitted:
@@ -167,7 +171,8 @@ def materialized_units(
         )
     selected_robots = set(robot_ids)
     manifest_units = {
-        str(unit["unit_id"]): dict(unit) for unit in resolved["units"]
+        str(unit["unit_id"]): dict(unit)
+        for unit in resolved["units"]
     }
     order = _read_json(order_path.resolve(), label="materialized execution order")
     waves = order.get("waves")
@@ -179,6 +184,9 @@ def materialized_units(
     blocks = matches[0].get("blocks")
     if not isinstance(blocks, list):
         raise B1RunError(f"execution wave {wave_id!r} has no blocks")
+    wave_replicates = matches[0].get("replicate_ids")
+    if not isinstance(wave_replicates, list) or not wave_replicates:
+        raise B1RunError(f"execution wave {wave_id!r} has no replicate IDs")
     result: list[dict[str, Any]] = []
     for block_index, block in enumerate(blocks):
         if not isinstance(block, Mapping):
@@ -205,6 +213,24 @@ def materialized_units(
             )
     if not result:
         raise B1RunError("execution selection contains no Experiment 1 units")
+    expected = [
+        unit
+        for unit in manifest_units.values()
+        if unit.get("replicate_id") in set(wave_replicates)
+        and unit.get("backbone_id") in set(admitted)
+        and (
+            not selected_robots
+            or unit.get("robot_configuration_id") in selected_robots
+        )
+    ]
+    result_ids = [str(unit["unit_id"]) for unit in result]
+    expected_ids = [str(unit["unit_id"]) for unit in expected]
+    if len(result_ids) != len(set(result_ids)):
+        raise B1RunError(f"execution wave {wave_id!r} contains duplicate units")
+    if set(result_ids) != set(expected_ids):
+        raise B1RunError(
+            f"execution wave {wave_id!r} does not enumerate the manifest matrix"
+        )
     return result, resolved
 
 

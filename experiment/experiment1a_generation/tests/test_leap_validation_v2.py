@@ -233,17 +233,30 @@ ONE_MILLIMETRE_DRIVER = ACTUATOR_DRIVER_TEMPLATE.replace("__L6_SCALE__", "0.04")
 class LeapValidationV2Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        robot_ids = json.loads(
-            (EXPERIMENT_ROOT / "config" / "components" / "robot-set.json").read_text(
-                encoding="utf-8"
-            )
-        )["robot_configuration_ids"]
         cls.package = load_indexed_robot_package(
             REPOSITORY_ROOT / "autoadapter", "leap_hand"
         )
+        # LEAP remains a historical canonical validation source even though it
+        # is no longer in the active two-robot B1 index.  Point this focused
+        # validation test at the preserved historical bundle directory rather
+        # than reintroducing LEAP to the active index.
+        cls._historical_manifest_dir = tempfile.TemporaryDirectory()
+        historical_manifest = Path(cls._historical_manifest_dir.name) / "manifest.json"
+        historical_manifest.write_text(
+            json.dumps(
+                {
+                    "fixed_validation_bundle_set": str(
+                        EXPERIMENT_ROOT
+                        / "validation"
+                        / "fixed_validation_bundles"
+                    )
+                }
+            ),
+            encoding="utf-8",
+        )
         cls.bundle = load_fixed_bundle(
-            EXPERIMENT_ROOT / "manifest.json",
-            robot_ids,
+            historical_manifest,
+            ["leap_hand"],
             "leap_hand",
             cls.package,
         )

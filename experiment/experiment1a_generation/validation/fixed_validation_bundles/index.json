@@ -1,7 +1,7 @@
 {
   "artifact_type": "b1_fixed_validation_bundle_set",
   "schema_version": "1.0",
-  "bundle_set_id": "experiment1-b1-four-robot-fixed-bundles-v5",
+  "bundle_set_id": "experiment1-b1-two-robot-fixed-bundles-v6",
   "robots": {
     "robotstudio_so101": {
       "capability_design": "robotstudio_so101/capability_design.json",
@@ -16,20 +16,6 @@
       "fixed_capability_interface_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2",
       "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
       "validation_suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3"
-    },
-    "leap_hand": {
-      "capability_design": "leap_hand/capability_design.json",
-      "capability_validation_suite": "leap_hand/capability_validation_suite.json",
-      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::leap_hand::v2",
-      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
-      "validation_suite_id": "experiment1-b1-fixed-suite::leap_hand::v3"
-    },
-    "aloha_2": {
-      "capability_design": "aloha_2/capability_design.json",
-      "capability_validation_suite": "aloha_2/capability_validation_suite.json",
-      "fixed_capability_interface_id": "experiment1-b1-fixed-interface::aloha_2::v2",
-      "fixed_capability_pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
-      "validation_suite_id": "experiment1-b1-fixed-suite::aloha_2::v3"
     }
   }
 }
