@@ -4,9 +4,108 @@
 > **Document role / 文档角色：** sole project-wide normative document; bounded experiment authorities require explicit delegation in Section 0.1 / 项目范围唯一规范性文档；限定实验权威必须由第 0.1 节明确委派<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.30`<br>
-> **Effective date / 生效日期：** 2026-08-22<br>
+> **Document revision / 文档版本：** `0.19.33`<br>
+> **Effective date / 生效日期：** 2026-08-23<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.33` completes the prospective Chapter 3 pre-formal
+configuration without starting either formal matrix. Experiment 1a/B1 remains
+the fresh 84-cell two-robot driver-synthesis comparison, and Experiment 1b/B2
+remains the fresh 210-episode two-robot capability-interface-use comparison;
+both use active M1--M6 and M8 while M7 remains inactive history. M8 is pinned
+to returned identity `openai.gpt-5.6-sol`, the OpenAI public 1,050,000-token
+context and 128,000-token maximum output, and the dated 2026-08-23 public
+Standard price schedule. That price is a reproducible public reference
+estimate, not a claim about the organization gateway's actual invoice; the
+upstream revision is recorded as not independently verifiable rather than
+invented. The SO-101 `mw_pick_place` v6 public request fixes start
+`[0.34, 0.08, 0.18]`, grasp `[0.34, 0.08, 0.195]`, and
+`grasp_gripper=0.26`, while preserving its target, release, reset,
+`40 s / 10000` budget, `0.07 m` task threshold, and `0.005 m` physical
+integrity threshold.
+
+The B2 readiness gate reuses, without rewriting or rerunning, the complete
+33-case full-video reference calibration retained as
+`reference-calibration-a6-356c400-video` together with the retained
+`pick-place-v6-oracle-full-video` typed-Driver delta evidence. The formal
+resolver must validate both evidence sets, current task inputs, and required
+videos before credentials are read or a model client is created. No new M5,
+M8, or other pre-formal LLM canary is required. The synchronized manifests may
+therefore enable formal dispatch after their zero-model checks pass, but this
+revision does not itself launch or create any formal B1 or B2 observation.
+
+**中文辅助说明。** 修订 `0.19.33` 完成 Chapter 3 正式实验前配置，但不启动任何正式矩阵。
+Experiment 1a/B1 仍为两台机器人、84 个全新 driver-synthesis cell；Experiment 1b/B2
+仍为两台机器人、210 个全新 capability-interface-use episode。两者均使用 active M1--M6
+与 M8，M7 继续作为 inactive 历史配置。M8 固定返回身份
+`openai.gpt-5.6-sol`、OpenAI 公开的 1,050,000-token context、128,000-token 最大输出，
+以及日期为 2026-08-23 的公开 Standard 价格；该价格只用于可复现的公开参考估算，不代表
+organization gateway 的实际账单，无法独立验证的 upstream revision 保持如实记录。
+SO-101 `mw_pick_place` v6 固定 start `[0.34, 0.08, 0.18]`、grasp
+`[0.34, 0.08, 0.195]` 和 `grasp_gripper=0.26`，其 target、release、reset、
+`40 s / 10000` budget、`0.07 m` task threshold 与 `0.005 m` 物理完整性阈值不变。
+正式门禁直接机械复用已有 33-case 全视频 reference calibration 与 v6 typed-Driver oracle，
+不改写历史记录、不重跑，也不增加 M5、M8 或其他 LLM canary。零模型检查通过后 manifest
+可开启 formal dispatch，但本修订本身不启动正式 B1/B2，也不产生正式观测。
+
+Revision `0.19.32` prospectively delegates two bounded downstream protocols.
+Experiment 2 (`experiment/experiment2/EXPERIMENT_2_AUTHORITY.md`, `AA2-EXP2`)
+is the SO-101 cross-run closure: a Sonnet 4.6 skeleton-assisted source run
+with empty Experience through the Task Demo stage (an admitted-driver demo or
+truthful `not-run` outcome), one terminal Opus 5 Evolution proposal, human
+accept/reject disposition with a nonempty reason and without content editing, and one
+manually launched independent Sonnet 4.6 Experience-enabled later run when
+the proposal is accepted. It is mechanism evidence only and cannot support an
+improvement or causal Experience claim. Experiment 3
+(`experiment/experiment3/EXPERIMENT_3_AUTHORITY.md`, `AA2-EXP3`) is the exact
+eleven-configuration Direct-MuJoCo cohort, Sonnet 4.6 only, skeleton-assisted
+only, `r01`--`r03`, fresh end-to-end TGCD and IVC per cell, empty Experience,
+at most three submitted drivers, Task Demo, then stop. Evolution is disabled;
+the denominator is 33 cells and morphology is descriptive only. These
+protocols supersede the former formal matched Experience-effect RQ3 design
+and the former all-robot two-condition/Ministral/Evolution obligations.
+RQ1/Experiment 1 remains governed by its existing delegated authority.
+
+**中文辅助说明。** `0.19.32` 事先委派两个有界的后续 protocol。
+Experiment 2（`experiment/experiment2/EXPERIMENT_2_AUTHORITY.md`，`AA2-EXP2`）是 SO-101
+跨运行 closure：Sonnet 4.6 skeleton-assisted、空 Experience 的 source run 必须运行到
+Task Demo stage（准入 driver 执行 demo，或真实 `not-run`），再由 Opus 5 做一次终态 Evolution proposal；人工只能
+accept/reject 并提供非空 reason，不能编辑内容；
+proposal 被接受后手动启动一次独立的 Sonnet 4.6 Experience-enabled later run。它只产生机制证据，
+不能支持 improvement 或因果 Experience claim。Experiment 3
+（`experiment/experiment3/EXPERIMENT_3_AUTHORITY.md`，`AA2-EXP3`）是精确十一配置
+Direct-MuJoCo cohort，仅 Sonnet 4.6、仅 skeleton-assisted，`r01`--`r03`，每个 cell 新鲜执行
+TGCD/IVC，空 Experience，最多三次 driver submission，运行 Task Demo 后停止；Evolution 禁用，
+denominator 为 33，morphology 仅作描述。上述 protocol 取代旧的 matched Experience-effect RQ3
+设计及旧的全机器人双条件/Ministral/Evolution 义务。RQ1/Experiment 1 仍由原有委派权威管理。
+
+Revision `0.19.31` fixes Chapter 3 and RQ1 as two bounded subexperiments under the
+project-wide construction cohort. Experiment 1a/B1 is the fixed-input driver-synthesis
+comparison over exactly `robotstudio_so101` and `unitree-go2-stock-12dof`, active Producer
+models M1--M6 and M8, skeleton-assisted and from-scratch conditions, and `r01`--`r03`:
+`2 × 7 × 2 × 3 = 84` cells with at most 252 submitted drivers. A prospective complete `r04`
+or `r05` block adds 28 cells and at most 84 submissions; through `r05` the cumulative maximum
+is 140 cells and 420 submissions. Experiment 1b/B2 is the fixed ReCAP capability-interface-use
+comparison over the same two robots, five tasks per robot, the same seven active models, and
+fresh `R1`--`R3` episodes at each robot-task canonical reset: `2 × 5 × 7 × 3 = 210` episodes.
+M8 is pinned to the verified returned identity `openai.gpt-5.6-sol`; M7/Qwen3 32B remains
+inactive historical configuration. B2 is a Chapter 3/RQ1 subexperiment and is not Experiment 2
+or RQ2 evidence. The eleven-configuration construction and initial shakedown cohort in
+Section 1.3 remains unchanged and is separate from both Chapter 3 denominators. Formal B1 and
+B2 execution remains paused under their delegated authorities until each authority's stated
+readiness prerequisites are synchronized.
+
+**中文辅助说明。** `0.19.31` 将 Chapter 3 和 RQ1 固定为全项目建设 cohort 下的两个有界子实验。
+Experiment 1a/B1 只使用 `robotstudio_so101` 与 `unitree-go2-stock-12dof`，active Producer 为
+M1--M6 与 M8，包含 skeleton-assisted 和 from-scratch 两种条件以及 `r01`--`r03`：
+`2 × 7 × 2 × 3 = 84` 个 cell，最多提交 252 个 driver。事先声明并完整执行的 `r04` 或 `r05`
+各增加 28 个 cell、最多 84 次提交；到 `r05` 的累计上限是 140 个 cell、420 次提交。
+Experiment 1b/B2 使用相同两台机器人、每台五项 task、相同七个 active model，并在每个
+robot-task 的 canonical reset 上为 `R1`--`R3` 建立 fresh episode：`2 × 5 × 7 × 3 = 210` 个
+episode。M8 固定为已验证的返回身份 `openai.gpt-5.6-sol`；M7/Qwen3 32B 保留为 inactive
+历史配置。B2 是 Chapter 3/RQ1 子实验，不是 Experiment 2，也不产生 RQ2 证据。第 1.3 节的
+十一配置建设与首轮 shakedown cohort 保持不变，并与两个 Chapter 3 denominator 分开。B1、B2
+正式执行在各自委派权威的 readiness 前置条件同步完成前保持暂停。
 
 Revision `0.19.30` delegates `experiment/experiment1b_use/B2_RECAP_AUTHORITY.md` (`AA2-B2`)
 as the sole bounded authority for the B2 ReCAP capability-interface-use extension. B2 is an
@@ -630,14 +729,22 @@ it. When they conflict, this file governs and the conflicting material must be c
 One experiment or declared extension may have one active scoped authority only when this section
 names its exact path and bounded scope. The current delegations are:
 
-- `experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md` (`AA2-EXP1`), which governs Experiment 1's
+- `experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md` (`AA2-EXP1`), which governs Experiment 1a/B1's
   exact robot selection, Producer-backbone families, generation conditions, replicate plan,
   attempt budget, analysis boundary, extension rule, and execution blockers; and
-- `experiment/experiment1b_use/B2_RECAP_AUTHORITY.md` (`AA2-B2`), which governs only the B2 ReCAP
+- `experiment/experiment1b_use/B2_RECAP_AUTHORITY.md` (`AA2-B2`), which governs only the Chapter 3 Experiment 1b/B2 ReCAP
   capability-interface-use extension's exact robots, tasks, controller architecture, backbone
   factor, replicate plan, fixed-input requirements, analysis boundary, and execution blockers.
   B2 is not Experiment 2. Within B2 only, `AA2-B2` prospectively selects its fixed ReCAP
-  controller in place of Section 3.6's general post-admission ReAct controller.
+  controller in place of Section 3.6's general post-admission ReAct controller; and
+- `experiment/experiment2/EXPERIMENT_2_AUTHORITY.md` (`AA2-EXP2`), which governs the exact SO-101
+  source/later cross-run closure, Sonnet/Opus role pins, terminal Evolution proposal, human
+  accept/reject-only disposition, public Experience eligibility, mechanism-only analysis boundary,
+  and execution blockers; and
+- `experiment/experiment3/EXPERIMENT_3_AUTHORITY.md` (`AA2-EXP3`), which governs the exact eleven
+  Direct-MuJoCo configurations, Sonnet-only skeleton-assisted condition, `r01`--`r03` fresh TGCD/IVC
+  cells, three-submission budget, Task Demo stop point, 33-cell denominator, descriptive morphology
+  boundary, and execution blockers.
 
 Each delegated authority implements, and may not otherwise weaken or override, this project's
 architecture, isolation, Harness, physical-integrity, evidence, or authenticity requirements.
@@ -657,7 +764,7 @@ parallel normative source.
 **中文辅助说明。** 本文件是当前项目目标、架构边界、研究问题、主线验收标准以及 SDK 扩展
 关系的唯一项目范围规范来源。只有本节点名精确路径和限定范围后，一个实验或已声明扩展才可以
 拥有一份有效的限定权威。当前委派为：
-`experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`（`AA2-EXP1`）负责 Experiment 1 的限定
+`experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`（`AA2-EXP1`）负责 Chapter 3 Experiment 1a/B1 的限定
 实验设计；`experiment/experiment1b_use/B2_RECAP_AUTHORITY.md`（`AA2-B2`）仅负责 B2 ReCAP
 capability-interface-use 扩展的机器人、task、controller 架构、backbone 因素、replicate、固定输入、
 分析边界和执行 blocker。B2 不是 Experiment 2；仅在 B2 范围内，`AA2-B2` 用固定 ReCAP
@@ -665,6 +772,13 @@ controller 取代第 3.6 节的通用 ReAct controller。任何限定权威都�
 架构、隔离、Harness、物理完整性、证据或真实性要求。README、manifest、run record、分析代码、论文文本和
 benchmark 文档都不能覆盖相应权威。英文条款具有规范效力；中文文本只作辅助阅读。Git 历史保留被取代
 设计；仓库不得创建未经委派的并行权威、同一实验或扩展的第二份有效权威，或把旧设计保留为并行规范来源。
+
+`experiment/experiment2/EXPERIMENT_2_AUTHORITY.md`（`AA2-EXP2`）负责 SO-101 source/later
+cross-run closure、Sonnet/Opus role pin、terminal Evolution proposal、只能 accept/reject 的人工
+disposition、Experience eligibility 和 mechanism-only analysis；`experiment/experiment3/EXPERIMENT_3_AUTHORITY.md`
+（`AA2-EXP3`）负责精确十一配置、Sonnet-only skeleton-assisted、`r01`--`r03`、每 cell 新鲜 TGCD/IVC、
+三次 submission、Task Demo stop、33-cell denominator 和 morphology descriptive-only 边界。
+Experiment 2 不产生 improvement claim；Experiment 3 禁用 Evolution 和 Experience。
 
 ### 0.2 Experiment-grade governance / 实验级治理
 
@@ -715,7 +829,7 @@ The following terms are locked across this Authority, experiment reports, and th
 | **capability-level pass criterion** | A measurable acceptance condition for one capability. It is derived from source-backed task pass standards and is independently audited, compiled, and evaluated outside the candidate driver. |
 | **Task Demo** | A post-admission demonstration that runs five recorded, uniformly sampled original Task Library tasks, including all scoring clauses of each selected task, with the fixed capability-validated driver. It has a separate verdict, is not a driver-synthesis gate, and cannot trigger same-run Repair. |
 | **robot-software synthesis** | The experiment-level process of designing a robot capability interface and its capability-level pass criteria, synthesising a robot-specific driver that implements the interface, and independently validating that driver. The primary executable product is the robot-specific driver; TGCD still produces only a design contract, and `Driver Synthesis` remains the phase that produces executable code. |
-| **capability-interface use** | The use of a fixed robot capability interface, backed by the same fixed and validated robot-specific driver, by an otherwise matched high-level controller whose LLM backbone is the experimental variable. Use evidence is separate from driver-synthesis evidence. It is outside the current three formal experiments and requires a separately declared extension. |
+| **capability-interface use** | The use of a fixed robot capability interface, backed by the same fixed and validated robot-specific driver, by an otherwise matched high-level controller whose LLM backbone is the experimental variable. Experiment 1b/B2 is the bounded Chapter 3/RQ1 use comparison; its evidence remains separate from driver-synthesis evidence and does not support Experiment 2 or RQ2. |
 | **low-level motion-control capability** | A capability whose implementation converts a requested robot operation into robot-specific actuation, kinematic or locomotion control, and physics stepping. It must not be called a low-level motion-control skill. |
 | **trusted skeleton** | Robot-control implementation assistance available only in the skeleton-assisted generation condition. It is distinct from the high-level controller. |
 | **robot morphology** | A robot's physical form and joint arrangement. It is distinct from a **robot configuration**, which identifies the exact model, assets, actuators, and control setup used in a run. In the current formal programme, morphology is a required package fact and cohort descriptor, not an experimental factor. |
@@ -736,8 +850,8 @@ interface` 是由公开 capability contract 构成、供该 controller 调用机
 机器人集成产物；它负责实现该 interface，不是操作系统 device driver。
 `robot-software synthesis` 表示从能力接口设计、capability-level pass criteria 设计、driver 合成到
 独立验证的实验级过程，但 TGCD 本身仍不称为 synthesis。`capability-interface use` 必须同时固定公开
-interface 及实现它的同一套固定且已验证的 driver；其证据不能代替 driver-synthesis 证据，且该用途
-不属于当前三个正式实验，必须通过另行声明的扩展研究。`low-level
+interface 及实现它的同一套固定且已验证的 driver；Experiment 1b/B2 在 Chapter 3/RQ1 中对该用途做
+有界比较，其证据不能代替 driver-synthesis 证据，也不支持 Experiment 2 或 RQ2。`low-level
 motion-control capability` 不得写作 low-level motion-control skill。`trusted skeleton` 是
 skeleton-assisted 条件中的机器人控制实现辅助，不是 high-level controller。`robot morphology`
 指物理形态和关节排列；`robot configuration` 指一次运行使用的准确模型、资产、actuator 和控制
@@ -756,31 +870,39 @@ driver-synthesis gate，也不能触发本轮 Repair。
 Build the simplest experiment-grade Auto-Adapter 2.0 framework and evaluation needed to determine,
 under controlled Direct-MuJoCo conditions, how LLM backbones differ in fixed-input robot-specific
 driver synthesis, whether reusable capability and validation contracts can be derived from
-source-backed tasks, and what effect reviewed Experience has on matched later synthesis runs.
+source-backed tasks, whether a reviewed terminal proposal can be carried into one independent later
+run, and how the exact declared construction cohort behaves under a bounded end-to-end route.
 
 The research programme separates three objects that must not be conflated. Upstream capability and
 pass-criteria design determines the fixed contract that a driver must implement and how its outcomes
 will be judged. Fixed-input driver synthesis concerns whether a generated driver implements that
-sealed contract and passes independent validation. Continued Evolution may expose human-reviewed
-Experience only to a later run and cannot change the run that produced its evidence.
+sealed contract and passes independent validation. Experiment 2 records a terminal, human-dispositioned
+Experience handoff to one later run as mechanism evidence only. Experiment 3 starts each cell with empty
+Experience and disables Evolution; neither experiment changes the run that produced its evidence.
 
-Capability-interface use remains conceptually separate from driver synthesis. It may be evaluated
-only through a separately declared extension and is not part of the current Experiment 1.
+Capability-interface use remains conceptually separate from driver synthesis. Chapter 3/RQ1
+therefore has two bounded delegated subexperiments: Experiment 1a/B1 evaluates fixed-input
+robot-specific driver synthesis, while Experiment 1b/B2 evaluates the usability of the deployed
+model and endpoint through the fixed ReCAP capability interface. B2 is separate evidence and is
+not Experiment 2 or RQ2.
 
-The current engineering milestone is a complete all-robot, two-generation-condition shakedown over
-the exact cohort declared in Section 1.3. It is the required entry point to the broader thesis
-experiment, not a production platform or a claim of universal robot support.
+The current construction milestone is Experiment 3: the exact eleven-configuration cohort in
+Section 1.3, Sonnet 4.6, skeleton-assisted only, `r01`--`r03`, fresh TGCD/IVC per cell, empty
+Experience, at most three submitted drivers, and Task Demo followed by a stop. It is mechanism and
+descriptive evidence, not a production platform, universal robot-support claim, or morphology effect.
 
 **中文辅助说明。** 构建最简单的实验级 Auto-Adapter 2.0 框架和评估，以在受控
 Direct-MuJoCo 条件下研究：不同 LLM backbone 在固定输入 robot-specific driver synthesis 中有何
-差异；能否从有来源任务中产生可复用 capability 与 validation contract；以及 reviewed Experience
-对匹配后续 synthesis run 有何影响。研究必须区分三个不能混为一谈的对象：上游 capability 与
-pass-criteria 设计决定 driver 必须实现什么以及如何判定；固定输入 driver synthesis 研究生成 driver
-能否实现封存 contract 并通过独立 validation；Continued Evolution 只能向后续 run 提供经过人工审查
-的 Experience，不能改变产生证据的当前 run。Capability-interface use 与 driver synthesis 仍须明确
-区分；它只能由另行声明的扩展研究，不属于当前 Experiment 1。当前工程里程碑是在第 1.3 节
-精确 cohort 上完成全机器人、双生成条件 shakedown；它是后续论文实验的必要入口，不是生产平台或
-通用机器人支持主张。
+差异；能否从有来源任务中产生可复用 capability 与 validation contract；以及一个 reviewed、
+evidence-labelled Experience proposal 能否按规定跨运行 handoff。研究必须区分三个不能混为一谈的
+对象：上游 capability 与 pass-criteria 设计决定 driver 必须实现什么以及如何判定；固定输入 driver
+synthesis 研究生成 driver 能否实现封存 contract 并通过独立 validation；Experiment 2 的
+Continued Evolution 只能向一个独立 later run 提供经过固定人工 disposition 的 Experience，不能改变
+产生证据的当前 run。Capability-interface use 与 driver synthesis 仍须明确区分；Chapter 3/RQ1 因此
+包含两个有界委派子实验：Experiment 1a/B1 评估固定输入的 robot-specific driver synthesis，
+Experiment 1b/B2 评估已部署 model 和 endpoint 通过固定 ReCAP capability interface 的可用性。B2 的
+证据独立存在，不是 Experiment 2 或 RQ2。当前工程里程碑是 Experiment 3 的精确 33-cell construction
+cohort；它是描述性建设证据，不是生产平台或通用机器人支持主张。
 
 ### 1.2 Claim boundary / 主张边界
 
@@ -795,18 +917,27 @@ The project may claim only what the corresponding experiment evidence directly s
 - model-authored and source-grounded capability-level pass criteria that the implementation-blind
   IVC independently audits and compiles, and that the Harness evaluates under declared calibration
   and false-success checks, as separate RQ2 evidence rather than B1-varying inputs;
-- later-run differences associated with reviewed Evolution Experience only when an
-  Experience-enabled run is compared with its matched no-Experience control;
+- Experiment 2 source-to-later mechanism evidence showing an accepted public,
+  evidence-labelled Experience proposal loaded unchanged by one independent
+  later run, without an improvement or causal-effect claim;
 - independent Direct-MuJoCo validation, first-attempt and post-Repair outcomes, failure patterns,
   and resource use.
+- bounded usability of the deployed model and endpoint in Experiment 1b/B2, using the fixed ReCAP
+  controller, validated capability stack, canonical resets, and trusted Harness on the declared
+  ten robot-task blocks.
+- Experiment 3's per-cell TGCD/IVC, driver-validation, Repair, Task Demo, failure, resource, and
+  evidence-completeness outcomes for the exact eleven-configuration cohort, with morphology used
+  only as a descriptive package label.
 
-The current three formal experiments do **not** establish real-SDK fidelity, hardware validity,
+The current formal evidence does **not** establish real-SDK fidelity, hardware validity,
 sim-to-real transfer, visual perception, production reliability, universal model or robot
-superiority, downstream capability-interface-use performance, Task Demo completion for tasks outside the five-task sample,
-autonomous or same-run self-improvement, or a morphology effect. A capability-level pass criterion
+superiority, capability-interface-use performance beyond the bounded Experiment 1b/B2 design,
+Task Demo completion for tasks outside the five-task sample,
+autonomous or same-run self-improvement, an Experience improvement/effect claim from Experiment 2,
+or a morphology effect from Experiment 3. A capability-level pass criterion
 is not established as reliable merely because the model wrote it or the compiler accepted its
-syntax. An Evolution proposal is not evidence of later-run improvement without the declared
-matched no-Experience control.
+syntax. An Experiment 2 Evolution proposal is mechanism evidence only and is not evidence of
+later-run improvement.
 
 **中文辅助说明。** 项目只能提出对应实验直接证据支持的结论：对每台机器人，在全部 backbone、
 replicate 与生成条件间固定 Auto-Adapter 配置、机器人输入、有来源 Task Library、robot capability
@@ -815,15 +946,16 @@ LLM backbone 在 skeleton-assisted 与 from-scratch 条件中的 robot-specific 
 模型根据至少二十项有来源任务完成的 task-grounded capability 设计；由模型设计、具有来源依据且由实现
 不可见 IVC 独立审计和编译，并由 Harness 在已声明校准和 false-success 检查下评估的
 capability-level pass criteria，但它属于独立 RQ2 证据而不是 B1 中变化的输入；只有在
-Experience-enabled run 与匹配的 no-Experience control
-比较时，才能报告与 reviewed Evolution Experience 相关的后续运行差异；独立 Direct-MuJoCo
+Experiment 2 的 accepted public Experience proposal 在一个独立 later run 中原样加载时，才能
+报告跨运行 closure 的机制事实；该实验不支持 improvement 或因果 effect；独立 Direct-MuJoCo
 验证、首次与 Repair 后结果、失败模式和资源使用。当前三个正式实验不证明真实 SDK 保真度、硬件
 有效性、sim-to-real 迁移、视觉感知、生产可靠性、模型或机器人的普遍优越性、下游 capability-interface-use
 表现、五-task 样本外任务的 Task Demo 完成结果、自主或本轮 self-improvement，或 morphology
-effect。模型写出 criterion 或 compiler 接受其语法，本身都不足以证明 criterion 可靠。若没有声明的
-匹配 no-Experience control，Evolution proposal 也不能证明后续运行得到改善。
+effect。Experiment 3 的 morphology 只作描述性 package label。模型写出 criterion 或 compiler 接受其
+语法，本身都不足以证明 criterion 可靠。Experiment 2 的 Evolution proposal 只属于机制证据，不证明
+后续运行得到改善。
 
-### 1.3 Declared all-robot mainline cohort and shakedown boundary / 声明的全机器人主线集合与 shakedown 边界
+### 1.3 Declared construction cohort and Experiment 3 boundary / 声明建设 cohort 与 Experiment 3 边界
 
 For this Authority, **all robots** means the following exact eleven-configuration cohort. It does
 not mean every robot that exists, every asset in the repository, or a dynamically changing index.
@@ -844,7 +976,7 @@ not mean every robot that exists, every asset in the repository, or a dynamicall
 
 `unitree_g1` and `google_barkour_vb` remain optional research backups outside this exact formal
 cohort. Their retained assets, tasks, skeletons, policies, or calibration results do not block the
-formal round and do not count as formal-round evidence.
+formal Experiment 3 cohort and do not count as cohort evidence.
 
 Every configuration uses its complete local MJCF closure with `mujoco==3.3.6`. Its exact model,
 assets, admitted task records and source standards, private instances, resets, measurement adapters
@@ -857,20 +989,22 @@ remain within the same limit. Torque-driven robots need not remain standing with
 policy, but their initial reset must be valid and any later fall or penetration remains a physical
 failure under the shared Harness.
 
-The initial all-robot mainline shakedown manifest must contain this complete cohort. Before that
-round, every listed configuration must pass its package and simulator-integrity checks and must
-appear in `libraries/robots/index.json`. A missing or incomplete configuration remains a visible
-blocker; it may not be silently omitted, replaced, or treated as a failed model cell. Adding or
-removing a configuration from that shakedown requires an explicit project-Authority revision made
-before outcomes are inspected.
+This section is the construction and calibration boundary for the mainline. It does not impose a
+second generation condition, a Ministral round, or Evolution on the declared cohort. Experiment 3's
+formal manifest must contain this complete cohort. Before Experiment 3, every listed configuration
+must pass its package and simulator-integrity checks and must appear in `libraries/robots/index.json`.
+A missing or incomplete configuration remains a visible blocker; it may not be silently omitted,
+replaced, or treated as a failed model cell. Adding or removing a configuration from Experiment 3
+requires an explicit project-Authority revision made before outcomes are inspected.
 
 Per-robot package checks, hidden reference diagnostics, and real-model canaries may execute as soon
-as that package is ready. They are diagnostic construction evidence and do not satisfy the
-all-robot round. Reference source or derived logic is never model input. This complete cohort
-governs the initial construction shakedown, not every downstream experiment. A delegated
+as that package is ready. They are diagnostic construction/calibration evidence and do not satisfy
+the formal Experiment 3 cohort. Reference source or derived logic is never model input. This complete
+cohort governs Experiment 3's construction run, not every downstream experiment. A delegated
 experiment authority may prospectively select a fixed subset without changing the mainline package
-inventory or claiming an all-robot result. The initial shakedown contains eleven robots crossed with
-`skeleton-assisted` and `from-scratch`, for twenty-two cells per replicate.
+inventory or claiming an all-robot result. Experiment 3 contains the eleven robots crossed with
+`skeleton-assisted` only and `r01`--`r03`, for exactly thirty-three cells. It has no Ministral
+shakedown, from-scratch counterpart, Evolution, or Experience-disposition requirement.
 
 **中文辅助说明。** 在本 Authority 中，**全部机器人**特指上表声明的十一个精确配置，不表示
 世界上所有机器人、仓库内每个 asset，也不是运行时动态变化的集合。每个配置使用自己的完整本地
@@ -883,58 +1017,61 @@ torque-driven 机器人无需在缺少主动 policy 时保持站立，但其初�
 穿透仍由共享 Harness 判为 physical failure。
 
 `unitree_g1` 与 `google_barkour_vb` 作为可选研究备份保留，不属于上述正式 cohort；它们不阻塞
-正式轮次，其资产、task、skeleton、policy 或校准结果也不计作正式轮次证据。
+正式 Experiment 3 cohort，其资产、task、skeleton、policy 或校准结果也不计作 cohort 证据。
 
-首轮全机器人主线 shakedown manifest 必须包含完整十一配置集合。该轮开始前，每个配置都必须
-通过 package check 和 simulator-integrity check，并进入
-`libraries/robots/index.json`。缺失或不完整配置是显式 blocker，不能静默省略、替换，也不能算作
-模型失败 cell；从该 shakedown 增删配置必须在查看结果前通过项目 Authority 修订。单机器人 package
-check、隐藏 reference 诊断和真实模型 canary 可在对应 package 就绪后提前执行，但只属于建设期
-诊断证据，不能替代全机器人轮次；reference 源码或衍生逻辑绝不成为模型输入。完整十一配置只约束
-首轮建设 shakedown，不自动约束每个后续实验。经第 0.1 节委派的实验权威可以在查看结果前固定一个
-子集，但不能借此改变主线 package inventory 或声称全机器人结果。首轮 shakedown 每个 replicate
-共十一乘二，即二十二个 cell。
+本节是主线的建设与校准边界，不额外要求第二种生成条件、Ministral round 或 Evolution。Experiment 3
+的正式 manifest 必须包含完整十一配置集合。Experiment 3 开始前，每个配置都必须通过 package check
+和 simulator-integrity check，并进入 `libraries/robots/index.json`。缺失或不完整配置是显式 blocker，
+不能静默省略、替换，也不能算作模型失败 cell；从 Experiment 3 增删配置必须在查看结果前通过项目
+Authority 修订。单机器人 package check、隐藏 reference 诊断和真实模型 canary 可在对应 package 就绪
+后提前执行，但只属于建设/校准诊断证据，不能替代正式 Experiment 3 cohort；reference 源码或衍生逻辑
+绝不成为模型输入。完整十一配置只约束
+Experiment 3 的建设 run，不自动约束每个后续实验。经第 0.1 节委派的实验权威可以在查看结果前固定一个
+子集，但不能借此改变主线 package inventory 或声称全机器人结果。Experiment 3 只使用
+skeleton-assisted，每个 replicate 为十一配置，即 `r01`--`r03` 共三十三个 cell；没有 Ministral
+shakedown、from-scratch、Evolution 或 Experience disposition 要求。
 
-### 1.4 Planned RQ1 Producer LLM coverage / 规划中的 RQ1 Producer LLM 覆盖
+### 1.4 Active Chapter 3 LLM coverage / 当前 Chapter 3 LLM 覆盖
 
-The planned B1 Producer-backbone set contains seven model families (`M = 7`):
+The active Chapter 3 Producer-backbone set contains seven model families (`M = 7`):
 
-| Model family | Vendor | Protocol status |
-|---|---|---|
-| Sonnet 4.6 | Anthropic | Exact identifier pending |
-| Opus 5 | Anthropic | Exact identifier pending |
-| Haiku 4.5 | Anthropic | Exact identifier pending |
-| Nova Pro | Amazon | Exact identifier pending |
-| DeepSeek V4 Pro | DeepSeek | Exact identifier pending |
-| Ministral 3 8B | Mistral | Exact identifier pending |
-| Qwen3 32B | Alibaba | Exact identifier pending |
+| ID | Model family | Vendor | Protocol status |
+|---|---|---|---|
+| `M1` | Sonnet 4.6 | Anthropic | Exact deployment pin in the active experiment manifests |
+| `M2` | Opus 5 | Anthropic | Exact deployment pin in the active experiment manifests |
+| `M3` | Haiku 4.5 | Anthropic | Exact deployment pin in the active experiment manifests |
+| `M4` | Nova Pro | Amazon | Exact deployment pin in the active experiment manifests |
+| `M5` | DeepSeek V4 Pro | DeepSeek | Exact deployment pin in the active experiment manifests |
+| `M6` | Ministral 3 8B | Mistral | Exact deployment pin in the active experiment manifests |
+| `M8` | GPT-5.6 Sol | OpenAI | Returned identity `openai.gpt-5.6-sol`; public limits and dated reference price pinned |
 
-The initial all-robot shakedown uses `Ministral 8B`, the lowest-parameter family in this planned
-set, for every model-authored phase and every one of the twenty-two cells. Here “simplest model”
-means that declared family, not whichever endpoint is cheapest or most convenient at run time. The
-experiment manifest must pin its exact provider identifier, revision, endpoint, inference settings,
-context limit, and price snapshot before the first call. If that exact usable model cannot be
-pinned, the shakedown remains blocked until an explicit pre-outcome protocol revision; silent
-substitution is forbidden. The shakedown starts with an empty Experience input so that same-round
-cells cannot influence one another. It checks end-to-end execution before the seven-family B1
-comparison and does not by itself complete that comparison.
+`M7`/Qwen3 32B is an inactive historical configuration and its ID is not reused in the active
+Chapter 3 matrices. M8 is the only active model assigned the new M8 ID; the exact returned identity
+is fixed by the experiment manifests for B1 and B2.
 
-Inclusion defines planned RQ1 scope; it does not claim that exact provider identifiers, revisions,
-endpoints, inference settings, context limits, or prices are already frozen. Before a formal B1
-run, the versioned experiment manifest must pin those facts for every family. An unavailable family
-must remain a visible blocked cell or be removed through an explicit Authority/protocol revision;
-it may not be silently replaced after outcomes are inspected.
+Experiment 3 uses Sonnet 4.6 only, not the historical M6 Ministral shakedown. Its exact provider
+identifier, revision, endpoint, inference settings, context limit, and price snapshot must be pinned
+before the first call. The experiment starts each of its thirty-three cells with empty Experience,
+uses only skeleton-assisted generation, and stops after Task Demo; Evolution is disabled. Experiment
+3 is not a seven-family B1 comparison.
 
-**中文辅助说明。** B1 规划中的 Producer backbone 集合包含上述七个模型 family（`M = 7`）。
-纳入表格表示 RQ1 的规划范围，并不表示准确 provider identifier、revision、endpoint、inference
-配置、context limit 或价格已经冻结。首轮全机器人 shakedown 在全部二十二个 cell 的所有模型创作
-阶段统一使用该集合中参数量最小的 `Ministral 8B`；“最简单模型”特指这个 family，不是运行时临时
-选择最便宜或最方便的 endpoint。首次调用前 manifest 必须固定准确 provider identifier、revision、
-endpoint、inference 设置、context limit 和价格快照；若无法固定可用的准确模型，该轮保持 blocked，
-直到在查看结果前明确修订 protocol，禁止静默替换。该轮以空 Experience 输入开始，避免同轮 cell
-相互影响；它用于先检查完整端到端链路，本身不等于完成七-family B1 比较。正式 B1 运行前，版本化
-experiment manifest 必须为每个 family 固定上述信息。不可用 family 必须保留为可见 blocked cell，
-或通过明确的 Authority/protocol 修订删除；不得在查看结果后静默替换。
+Inclusion defines active Chapter 3/RQ1 scope. The versioned B1 and B2 manifests
+pin the exact provider routes, returned identities, inference settings,
+context/output limits, and dated prices used for formal accounting. For M8,
+the public OpenAI limit and price pin is explicitly a reference estimate; its
+organization-gateway upstream revision and actual billing remain independently
+unverified. An unavailable family must remain a visible infrastructure terminal
+and may not be silently replaced or removed after outcomes are inspected.
+
+**中文辅助说明。** Chapter 3/RQ1 当前 active Producer backbone 集合包含上述七个模型 family（`M = 7`）。
+其中 M7/Qwen3 32B 是 inactive historical configuration，不得复用 M7 编号；M8 只表示已通过公司
+gateway 验证并返回 `openai.gpt-5.6-sol` 的 GPT-5.6 Sol。
+纳入表格表示 Chapter 3/RQ1 的 active 范围；B1/B2 的版本化 manifest 固定正式核算所用的 provider
+route、返回 identity、inference 配置、context/output limit 和价格。M8 的 OpenAI 公开 limit 与价格
+只作为参考估算，其 organization-gateway upstream revision 与实际账单无法独立验证。Experiment 3 只使用 Sonnet 4.6，并非历史 M6 Ministral shakedown；
+每个 cell 空 Experience 开始，仅 skeleton-assisted，Task Demo 后停止，Evolution 禁用。准确 provider
+identifier、revision、endpoint、inference 配置、context limit 和价格快照须在首次调用前固定；不可用
+provider 保持显式 blocker，不能静默替换。
 
 ### 1.5 Research questions / 研究问题
 
@@ -948,23 +1085,15 @@ The project evaluates three controlled research questions:
    backbones differ in synthesising a robot-specific driver under the skeleton-assisted and
    from-scratch generation conditions?
 
-2. **RQ2---Task-grounded capability and validation design.**
+   Chapter 3/RQ1 is operationalised by two bounded delegated subexperiments. Experiment 1a/B1
+   answers this fixed-input driver-synthesis question. Experiment 1b/B2 holds the validated
+   capability stack and ReCAP controller fixed and measures the usability of the deployed model
+   and endpoint across the same two robots and five tasks per robot; it is a separate RQ1 result,
+   not an Experiment 2 or RQ2 result.
 
-   **(a) Task-grounded capability design.** Can an LLM derive five to ten reusable capabilities
-   from at least twenty source-backed tasks without receiving a pre-authored capability catalogue
-   or task-to-capability mapping?
+2. **RQ2—Framework construction and cross-run closure.** Can Auto-Adapter transform source-backed robot tasks into a validated robot-specific driver through task-grounded capability design, implementation-blind validation, and bounded Repair, and can its terminal Evolution stage produce reviewed Experience that is demonstrably consumed by a later generation run?
 
-   **(b) Capability-level pass-criteria design.** Can the LLM design source-grounded
-   capability-level pass criteria without human predefinition at the capability level, and can the
-   implementation-blind IVC independently audit and compile those criteria into executable
-   validation?
-
-3. **RQ3---Continued Evolution in later driver synthesis.**
-
-   With the robot, LLM backbone, fixed capability-and-validation inputs, generation condition,
-   evaluation protocol, and resource budget held constant, what effect, if any, does access to
-   human-reviewed Experience derived from completed terminal runs have on later driver-synthesis
-   outcomes relative to matched runs without that Experience?
+3. **RQ3—Cross-configuration evaluation.** With Sonnet 4.6, the skeleton-assisted generation condition, Framework version, resource budget, and evidence protocol held fixed, how do end-to-end synthesis, validation, Repair, and Task Demo outcomes vary across the eleven declared Direct-MuJoCo robot configurations?
 
 For RQ1 driver synthesis, each robot has one prior-designed and fixed B1 Driver-and-criteria definition:
 the public capability interface and capability-level pass standards plus the complete private task
@@ -991,13 +1120,11 @@ remain separate from B1 driver-synthesis resources.
 
 Reference drivers are positive controls for the Framework and Direct-MuJoCo execution route. They
 are not B1 model conditions and cannot be counted as evidence of model-based robot-specific driver
-synthesis. A reviewed reference driver may support a separately declared capability-interface-use
-extension only under
+synthesis. A reviewed reference driver supports Experiment 1b/B2 only under
 the interface-binding, validation, isolation, and controller-execution requirements in Section 3.6;
-its calibration result alone is not capability-interface-use evidence. That extension is outside
-the current three formal experiments. For RQ3, an Experience effect may be reported only from the
-prospectively declared matched later-run comparison; the source-run Evolution proposal cannot
-support that claim by itself.
+its calibration result alone is not capability-interface-use evidence. B2 is the bounded Chapter
+3/RQ1 use subexperiment and is not Experiment 2 or RQ2. Experiment 2 reports only the declared
+SO-101 cross-run mechanism closure; its source Evolution proposal is not an improvement claim.
 
 **中文辅助说明。** 项目评估三个受控研究问题：
 
@@ -1006,17 +1133,17 @@ support that claim by itself.
    设计的 robot capability interface、capability-level pass standard、完整私有 validation suite、
    Harness 测量与判定规则以及资源预算时，不同 LLM backbone 在 skeleton-assisted 与
    from-scratch 条件下合成 robot-specific driver 的能力有何差异？
-2. **RQ2——Task-grounded capability 与 validation 设计。**
-   **(a) Task-grounded capability design：** 在不接收预写 capability catalogue 或
-   task-to-capability mapping 的情况下，LLM 能否从至少二十项有来源任务中归纳五至十项可复用
-   capabilities？
-   **(b) Capability-level pass-criteria design：** 在 capability level 没有人工预定义的情况下，
-   LLM 能否设计有来源依据的 capability-level pass criteria，且实现不可见的 IVC 能否独立审计并
-   将其编译为可执行 validation？
-3. **RQ3——后续 driver synthesis 中的 Continued Evolution。**
-   在固定 robot、LLM backbone、capability-and-validation 输入、生成条件、评估协议和资源预算时，
-   与不使用 Experience 的匹配 run 相比，访问由已完成 terminal run 产生并经人工审查的 Experience
-   会对后续 driver-synthesis outcome 产生何种影响（如有）？
+   Chapter 3/RQ1 由两个有界委派子实验具体实现：Experiment 1a/B1 回答上述固定输入的
+   driver-synthesis 问题；Experiment 1b/B2 固定已验证 capability stack 和 ReCAP controller，
+   在相同两台机器人及每台五项 task 上测量已部署 model 和 endpoint 的可用性。B2 是独立的
+   RQ1 结果，不是 Experiment 2 或 RQ2 结果。
+2. **RQ2——Framework construction 与 cross-run closure。** Auto-Adapter 能否通过 task-grounded
+   capability design、implementation-blind validation 和 bounded Repair，把有来源 robot task 转化为
+   validated robot-specific driver；其 terminal Evolution stage 能否产生 reviewed Experience，并被
+   later generation run 明确消费？
+3. **RQ3——Cross-configuration evaluation。** 在固定 Sonnet 4.6、skeleton-assisted generation condition、
+   Framework version、resource budget 和 evidence protocol 时，十一个声明的 Direct-MuJoCo robot
+   configuration 之间的 end-to-end synthesis、validation、Repair 和 Task Demo outcome 如何变化？
 
 在 RQ1 driver synthesis 中，每台机器人只有一套由前序实验设计并固定的 B1 Driver 与 criteria
 定义：公开 capability interface 与 capability-level pass standard，以及完整私有 task instance、
@@ -1035,8 +1162,8 @@ Reference driver 是 Framework 和 Direct-MuJoCo 执行路径的正向对照，�
 计为 model-based robot-specific driver synthesis 的证据。经审查的 reference driver 只有在满足
 第 3.6 节的 interface 绑定、validation、隔离和 controller 执行要求后，才可支持另行声明的
 capability-interface-use 扩展；单独的 reference calibration 结果不是 capability-interface-use 证据。
-该扩展不属于当前三个正式实验。RQ3 的 Experience effect 只能来自事先声明的
-匹配后续 run 比较；source-run Evolution proposal 本身不能支持该主张。
+该 B2 子实验不属于 Experiment 2 或 RQ2。RQ3 只报告 Experiment 3 的逐 cell 与描述性 cohort
+outcome；不进行 Experience effect、morphology effect 或 matched later-run comparison。
 
 ---
 
@@ -1290,7 +1417,7 @@ The required mainline flow is:
 
 ```text
 Morphology + >=20 sourced Tasks/pass standards
-       + optional reviewed Experience (empty for initial shakedown)
+       + protocol-eligible Experience (empty for Exp2 source and every Exp3 cell)
                               |
                               v
  Task-Grounded Capability Design (5-10 capability contracts)
@@ -1336,7 +1463,7 @@ Morphology + >=20 sourced Tasks/pass standards
           non-blocking Evolution sidecar
                        |
                        v
-       proposal/outcome for post-round human review
+       proposal/outcome for the applicable protocol's review
                        |
                        v
      versioned Experience disposition for later runs only
@@ -1346,8 +1473,8 @@ The vendored AutoAdapter 1.0 STUDY/GENERATE substrate is derived from commit
 `585eb1f1fde33f17f5f9a1e169a18dd41f97b586`. Later changes may make the code self-contained, but
 must preserve the observable contract below rather than silently substitute a fixed driver.
 
-The two generation conditions are separate experimental cells. For one robot/model replicate they
-reuse the same sealed `capability_design.json`, the same complete
+For RQ1/Experiment 1, the two generation conditions are separate experimental cells. For one
+robot/model replicate they reuse the same sealed `capability_design.json`, the same complete
 `capability_validation_suite.json`, the same recorded five-task `task_demo_suite.json`, frozen Task
 Library snapshot, model identity, and environment.
 They run in isolated workspaces; neither condition may
@@ -1355,13 +1482,15 @@ inspect or reuse the other condition's candidate, trace, validation result, Repa
 generated driver. Each condition has its own maximum of three submitted driver attempts and
 receives an independent capability-validation verdict. Only an admitted final driver enters Task
 Demo; that later verdict is recorded separately and never causes same-run Repair. Results are never
-merged into one ambiguous driver result.
+merged into one ambiguous driver result. Experiment 2 and Experiment 3 do not inherit this
+two-condition branch: their delegated authorities fix the SO-101 source/later route and the
+Sonnet-only 33-cell skeleton-assisted route, respectively.
 
 **中文辅助说明。** 主线必须遵循以下流程：
 
 ```text
 Morphology + >=20 项有来源 Tasks/通过标准
-          + 可选已审查 Experience（首轮 shakedown 为空）
+          + protocol-eligible Experience（Exp2 source 与每个 Exp3 cell 为空）
                               |
                               v
  Task-Grounded Capability Design（5-10 项 capability contract）
@@ -1407,7 +1536,7 @@ Morphology + >=20 项有来源 Tasks/通过标准
              非阻塞 Evolution sidecar
                        |
                        v
-          供整轮结束后人工审查的 proposal/outcome
+          供适用 protocol 审查的 proposal/outcome
                        |
                        v
          仅供后续运行的版本化 Experience disposition
@@ -1417,13 +1546,15 @@ Morphology + >=20 项有来源 Tasks/通过标准
 `585eb1f1fde33f17f5f9a1e169a18dd41f97b586`。后续可以把代码改为自包含，但必须保持下述
 可观察合同，不能悄悄改为输出固定 driver。
 
-两种生成条件是相互独立的实验 cell。对于同一个机器人/model replicate，它们复用同一份已封存
+对于 RQ1/Experiment 1，两种生成条件是相互独立的实验 cell。对于同一个机器人/model replicate，它们复用同一份已封存
 `capability_design.json`、同一套完整 `capability_validation_suite.json`、同一套有记录的五-task
 `task_demo_suite.json`、已封存 Task Library 快照、模型身份和环境，
 并在隔离的 workspace 中运行；任一条件都不得检查或复用另一条件的 candidate、trace、验证结果、
 Repair 历史或生成的 driver。每种条件各自最多提交三个 driver attempt，并分别获得 Harness
 capability-validation verdict。只有通过准入的最终 driver 才进入 Task Demo；后续 Demo verdict
-单独记录，绝不触发本轮 Repair。结果不得合并成一个含糊的 driver 结果。
+单独记录，绝不触发本轮 Repair。结果不得合并成一个含糊的 driver 结果。Experiment 2 与
+Experiment 3 不继承这个双条件分支：两者分别由委派权威固定 SO-101 source/later route 和仅
+Sonnet 的 33-cell skeleton-assisted route。
 
 ### 3.1 Task-Grounded Capability Design / 任务驱动的能力设计
 
@@ -1910,7 +2041,7 @@ remain fixed across matched LLM backbones. A controller finish action or self-re
 Harness verdict, and private criteria, bindings, guards, reference inputs, and model credentials are
 never sent to the candidate worker.
 
-For a separately declared capability-interface-use extension, the versioned experiment manifest may
+For delegated Experiment 1b/B2, the versioned experiment manifest may
 preselect a reviewed package reference driver instead of a B1-generated driver. The manifest must
 pin the exact driver identity and validation evidence before outcomes are inspected. Formal
 extension execution remains blocked
@@ -1918,8 +2049,9 @@ until one capability interface and its adapter are frozen for that driver, the c
 interface-bound capability validation suite passes, and the same fixed driver-interface-adapter
 combination is used for every compared backbone. The controller receives only the public task and
 interface-derived tools; it never receives the reference source or reference-only calibration data.
-This extension is outside the current three formal experiments. It does not expose reference
-material to B1 or convert the fixed driver into a model condition.
+B2 is the bounded Chapter 3/RQ1 capability-interface-use subexperiment and is not Experiment 2 or
+RQ2 evidence. It does not expose reference material to B1 or convert the fixed driver into a model
+condition.
 
 **中文辅助说明。** 只有某一条件的最终生成 driver 通过完整 capability validation suite 后，
 Task Demo 才开始。Framework 固定该已准入 driver，通过同一可信 Direct-MuJoCo Harness 运行一次
@@ -1940,13 +2072,14 @@ LLM backbone 比较中，controller 架构、system prompt、tool 派生规则�
 Controller 的 finish action 或自述绝不构成 Harness verdict；私有 criterion、binding、guard、reference
 输入和模型 credential 也绝不发送给 candidate worker。
 
-对于另行声明的 capability-interface-use 扩展，版本化 experiment manifest 可以预先选择经审查的
+对于委派的 Experiment 1b/B2 capability-interface-use 子实验，版本化 experiment manifest 可以预先选择经审查的
 package reference driver，而不必选择 B1 生成的 driver。Manifest 必须在查看 outcome 前固定准确
 driver identity 和 validation evidence。只有当该 driver 对应的一套 capability interface 及其 adapter
 已封存、完整的 interface-bound capability validation suite 已通过，并且全部被比较 backbone 使用
 同一套固定 driver-interface-adapter 组合时，该扩展才可正式执行。Controller 只接收公开 task 与从
-interface 派生的 tools，绝不接收 reference 源码或 reference-only calibration data。该扩展不属于
-当前三个正式实验，不会向 B1 暴露 reference material，也不会把固定 driver 变成模型条件。
+interface 派生的 tools，绝不接收 reference 源码或 reference-only calibration data。B2 是 Chapter 3/RQ1
+的有界 capability-interface-use 子实验，不是 Experiment 2 或 RQ2，也不会向 B1 暴露 reference
+material 或把固定 driver 变成模型条件。
 
 ### 3.7 Evolution / 经验演化
 
@@ -1959,32 +2092,28 @@ already been available to Repair. Evolution cannot change the current driver, su
 verdict, retry decision, or run inputs. Failure of Evolution does not turn a completed validation
 run into a driver-synthesis failure.
 
-The initial all-robot shakedown invokes Evolution after every one of its twenty-two terminal
-cells, including cells whose driver was not admitted and therefore did not enter Task Demo. No cell
-in that round may consume an Experience proposed by another cell in the same round. After all cells
-reach terminal verdicts, a human reviewer writes one disposition record per cell: accept the
-proposal, reject it with a reason, or record that no reusable lesson was found. Each disposition
-identifies the source run, robot, generation condition, and evidence projection. Only accepted,
-public, non-reference, non-private content enters a versioned Experience snapshot for a later
-matched run.
+Experiment 2 is the only current formal protocol that invokes Evolution. Its SO-101 source run
+starts with empty Experience, records a terminal Task Demo-stage outcome (executed with an admitted
+driver or truthful `not-run` with a nonempty reason), and then makes exactly one terminal Opus 5
+Evolution call. Opus writes only `observation`, `lesson`, `recommendation`, `scope`, and a public-only
+`evidence` list. The Framework assigns `source_robot`, `generation_condition`, and a `positive` or
+`negative` `terminal_outcome_label` from retained source-run verdict facts. A human reviewer records
+exactly `accept` or `reject` with a nonempty reason for the unedited, Framework-labelled proposal;
+the reviewer cannot edit any content or assigned label. An accepted proposal becomes globally eligible
+after the fixed disposition and frozen reviewed snapshot. If accepted, one manually launched
+independent Sonnet 4.6 later run loads the exact snapshot unchanged, at which point it becomes
+effective. The source run never consumes its own proposal, and no same-round input is allowed.
 
-Formal Experiment 3 requires prospectively declared matched later-run cells. The Experience-enabled
-cell and its no-Experience control use the same declared robot configuration, exact model
-configuration, fixed capability-and-validation bundle, generation condition, Framework and package
-snapshots, evaluation protocol, and resource budget; only the eligible Experience input may differ.
-Both cells execute the real fixed-input generation, Repair, and terminal Harness-validation path.
-Reporting is limited to the declared matched cells and separates initial validation, final
-validation, Repair, failure, model-use, cost, and time outcomes. Human acceptance makes an
-Experience record eligible as input but is not evidence that it is beneficial. The initial
-all-robot shakedown may produce eligible Experience inputs, but it does not itself constitute this
-matched comparison. Exact Experiment 3 cohort, replicate plan, and analysis denominator must be
-declared prospectively before formal execution.
+Experiment 3 disables Evolution and Experience entirely. Its exact eleven-configuration,
+Sonnet-only, skeleton-assisted `r01`--`r03` cells execute fresh TGCD/IVC, driver synthesis,
+validation, and Task Demo, then stop. It has no matched no-Experience control and cannot support an
+improvement, causal Experience, or morphology-effect claim.
 
-A terminal driver-synthesis result remains truthful if its Evolution call fails. However, the
-all-robot shakedown cannot be reported as having completed its required Evolution/Experience path
-until every terminal cell has an Evolution outcome and a human disposition. A failed sidecar may be
-rerun from the retained immutable terminal-report projection; that rerun still cannot alter the
-cell's candidate or verdict.
+A terminal driver-synthesis result remains truthful if the Experiment 2 Evolution call fails, but
+the Experiment 2 closure must report the missing proposal and cannot claim an Experience-enabled
+later run. Experiment 3 has no Evolution call to rerun. A failed sidecar or provider request may be
+diagnosed from the retained terminal projection without altering any candidate, suite, verdict, or
+run input.
 
 **中文辅助说明。** Evolution 是非阻塞 sidecar：它读取最终结构化报告的有界投影，并为后续
 运行提出一条 candidate Experience，或明确记录没有可复用 lesson。该投影保留终态
@@ -1993,27 +2122,24 @@ execution/verdict 事实、attempt 摘要、结果计数和完整失败 trial �
 driver、suite、criterion、verdict、retry 决定或 run input。Evolution 失败不会把已经完成的
 validation run 变成 driver-synthesis failure。
 
-首轮全机器人 shakedown 的二十二个 cell 每个到达终态后都必须执行 Evolution，包括 driver 未准入
-因而没有进入 Task Demo 的 cell。同一轮中，任何 cell 都不得读取其他 cell 刚产生的 Experience。
-全部 cell 到达终态后，人工 reviewer 必须为每个 cell 写一条 disposition：接受 proposal、说明理由
-后拒绝，或记录没有可复用 lesson。每条 disposition 标明来源 run、机器人、生成条件和 evidence
-projection；只有被接受且不含 reference/private 内容的公开信息才能进入供后续匹配 run 使用的
-版本化 Experience snapshot。
+当前只有 Experiment 2 调用 Evolution：SO-101 source run 以空 Experience 开始，记录终态 Task Demo
+stage（准入 driver 执行，或无准入 driver 时以非空理由记录 `not-run`），再由 Opus 5 做一次终态
+Evolution call。Opus 只能写 `observation`、`lesson`、`recommendation`、`scope` 和 `evidence`；`evidence`
+列表只能包含公开证据；
+Framework 根据保留的 source-run verdict facts 赋值 `source_robot`、`generation_condition` 以及
+`positive`/`negative` `terminal_outcome_label`。人工 reviewer 对未编辑且带 Framework label 的公开
+proposal 只记录 `accept` 或 `reject` 及非空 reason，不得修改内容或 assigned label。接受后，固定
+disposition 与 frozen reviewed snapshot 使其 globally eligible；手动启动的独立 Sonnet 4.6 later
+run 原样加载该 snapshot 后，Experience 才 effective。Source run 不得读取自己的 proposal，同轮不得互相输入。
 
-正式 Experiment 3 必须使用事先声明的匹配后续 run cell。Experience-enabled cell 与其
-no-Experience control 使用相同的已声明 robot configuration、准确 model configuration、固定
-capability-and-validation bundle、生成条件、Framework 与 package snapshot、评估协议和资源预算；
-只有 eligible Experience input 可以不同。两个 cell 都必须执行真实的固定输入生成、Repair 和终态
-Harness-validation 路线。报告仅限已声明的 matched cell，并分别报告初次 validation、最终
-validation、Repair、failure、model use、cost 和 time outcome。人工接受只使 Experience record
-具备作为输入的资格，并不能证明它有益。首轮全机器人 shakedown 可以产生 eligible Experience
-input，但本身不构成这项 matched comparison。正式执行前必须事先声明 Experiment 3 的准确 cohort、
-replicate plan 和 analysis denominator。
+Experiment 3 完全禁用 Evolution 和 Experience。精确十一配置、Sonnet-only、skeleton-assisted、
+`r01`--`r03` 的 cell 新鲜执行 TGCD/IVC、driver synthesis、validation 和 Task Demo 后停止；没有
+matched no-Experience control，也不支持 improvement、因果 Experience 或 morphology effect claim。
 
-如果 Evolution 调用失败，该 cell 的 terminal driver-synthesis 结果仍保持真实；但在每个终态 cell
-都有 Evolution outcome 和人工 disposition 前，不得声称首轮已完整执行必需的
-Evolution/Experience 路径。可以从保留且不可变的终态报告投影补跑失败 sidecar；补跑仍不得改变
-该 cell 的 candidate 或 verdict。
+如果 Experiment 2 的 Evolution 调用失败，terminal driver-synthesis 结果仍保持真实，但 closure 必须
+记录 proposal 缺失，不能声称 Experience-enabled later run 已完成。Experiment 3 没有 Evolution call
+可补跑。失败的 sidecar 或 provider request 可以基于保留的终态 projection 做诊断，但不得改变任何
+candidate、suite、verdict 或 run input。
 
 ---
 
@@ -2163,13 +2289,13 @@ persistent state machine.
 | Reference calibration | Reviewed reference driver, real MuJoCo, complete `capability_validation_suite.json` Harness verdicts, and complete videos | The selected assets, controller baseline, complete capability-validation route, Harness, and recording path are feasible | Any model generated the driver or any Task Demo passed |
 | Shakedown generation-condition executed | Source-backed 20+ task snapshot, real-model TGCD design of 5–10 capability contracts without a pre-authored effect policy, complete IVC-audited `capability_validation_suite.json`, named skeleton-assisted or from-scratch condition, real model identities/calls, model-generated `driver.py`, condition-appropriate STUDY/GENERATE trace, and real MuJoCo capability validation reaching a terminal verdict | That capability-design and generation condition executed end to end in the declared shakedown | The capability requirements passed, formal B1 executed, Task Demo ran, or the other condition executed |
 | B1 generation-condition executed | Manifest-pinned prior-designed Driver interface and complete fixed `capability_validation_suite.json`, named skeleton-assisted or from-scratch condition, real model identities/calls beginning at STUDY, model-generated `driver.py`, condition-appropriate STUDY/GENERATE trace, and real MuJoCo capability validation reaching a terminal verdict | That fixed-input B1 generation condition executed end to end | The capability requirements passed, a reference calibration ran, TGCD or IVC ran in B1, Task Demo ran, or the other condition executed |
-| Experiment 2 capability-and-validation design executed | An admitted 20+ task source set; real-model design of five to ten capabilities without a pre-authored catalogue or mapping; source-grounded model-authored criteria; implementation-blind IVC audit and compilation; and declared calibration and false-success evidence | The declared upstream capability-and-validation design process executed and produced the reported outcomes | Any driver passed, or a criterion is reliable merely because it was generated or compiled |
-| Experiment 3 matched Experience comparison executed | Prospectively declared matched later-run cells differing only in eligible Experience input, a reviewed versioned Experience record with source-run lineage, and real fixed-input generation, Repair, and terminal Harness evidence for both cells | The reported within-design difference between reviewed-Experience and no-Experience conditions | The originating run improved, autonomous self-improvement occurred, or the result generalises beyond the matched conditions |
+| Experiment 2 SO-101 cross-run closure executed | Sonnet 4.6 skeleton-assisted empty-Experience source run records the Task Demo stage (an admitted-driver demo or truthful `not-run` outcome); Opus writes only observation/lesson/recommendation/scope/public evidence; Framework assigns source robot, generation condition, and positive/negative terminal-outcome label from retained verdict facts; human records accept/reject with a nonempty reason without editing; and, when accepted, one manually launched independent Sonnet 4.6 later run loads the exact frozen public snapshot | The declared cross-run mechanism and Experience handoff executed; the loaded snapshot is effective in the later run | Improvement, causal Experience effect, matched-control estimate, autonomous self-improvement, or global generalisation |
+| Experiment 3 declared cohort executed | Exactly eleven configurations × `r01`--`r03`; Sonnet 4.6 only; skeleton-assisted only; fresh TGCD/IVC per cell; empty Experience; at most three submissions; Task Demo then stop; no Evolution | The declared 33-cell Direct-MuJoCo construction route produced the reported per-cell evidence | A morphology effect, Experience effect, model ranking, from-scratch comparison, or universal robot support |
 | Single-robot condition success | Dynamic condition evidence plus every case in the complete capability validation suite passes within that condition's declared attempt budget | The generated robot-specific driver passed capability admission for that robot, condition, and run | Any Task Demo passed, or the paired condition, all-robot round, or SDK path succeeded |
 | Task Demo executed | A capability-validated fixed driver, sealed random five-task `task_demo_suite.json`, separate Harness verdict, and complete videos | The five selected tasks and all of their scoring clauses were demonstrated with that admitted driver | Every Task Library task passed, driver synthesis failed, or capability-interface use succeeded without the declared high-level controller |
 | Per-robot two-condition experiment completed | Both generation conditions reach capability-validation terminal verdicts for one declared robot using the same sealed `capability_design.json`, `capability_validation_suite.json`, and declared experiment configuration | That robot's two-cell Direct-MuJoCo comparison executed | Either cell passed, the complete cohort ran, or either Task Demo ran |
-| Initial all-robot shakedown completed | All twenty-two declared robot-by-generation-condition cells use the manifest-pinned Ministral 8B configuration with empty Experience input, reach terminal verdicts, retain required evidence, execute Evolution, and receive post-round Experience dispositions | The complete initial all-robot mainline and Evolution/Experience path executed | Every cell passed, the seven-family B1 comparison completed, or every Task Demo ran |
-| All-robot mainline success | Every declared robot-by-generation-condition cell independently satisfies single-robot condition success and the required all-round evidence and Evolution/Experience obligations | The complete declared-cohort Direct-MuJoCo mainline succeeded for the named model, replicate, and protocol | SDK fidelity, hardware validity, sim-to-real, universal applicability, or completion of other LLM families |
+| Experiment 3 33-cell cohort evidence | All 33 declared robot-by-replicate cells use Sonnet 4.6, skeleton-assisted generation, empty Experience, fresh TGCD/IVC, at most three submissions, terminal Task Demo outcome or truthful not-run reason, and complete evidence | The exact descriptive construction cohort executed under the declared route | Every cell passed, a morphology effect, an Experience effect, a backbone comparison, or universal applicability |
+| Experiment 3 descriptive cohort summary | Per-cell outcomes are retained for all 11 configurations and 3 replicates, with morphology shown only as a package label | The reported configuration-level and descriptive morphology-stratified outcomes | Causal morphology effect, model superiority, SDK fidelity, hardware validity, or sim-to-real |
 | SDK-grounded extension evidence | Real SDK application logic and robot-specific Translation execute bidirectionally with MuJoCo | The named SDK-extension route executed | Hardware equivalence or mainline replacement |
 
 **中文辅助表。**
@@ -2179,27 +2305,28 @@ persistent state machine.
 | 参考校准 | 经审查的 reference driver、真实 MuJoCo、完整 `capability_validation_suite.json` 的 Harness verdict 和完整视频 | 所选资产、controller baseline、完整 capability-validation 路径、Harness 和录像路径可行 | driver 由任何模型生成，或任何 Task Demo 已通过 |
 | Shakedown 生成条件已执行 | 有来源的 20+ task 快照、没有预写 effect policy 的真实模型 TGCD 五至十项 capability contract 设计、IVC 完整审计的 `capability_validation_suite.json`、明确的 skeleton-assisted 或 from-scratch 条件、真实模型身份和调用、模型生成的 `driver.py`、符合该条件的 STUDY/GENERATE trace，以及到达最终 verdict 的真实 MuJoCo capability validation | capability 设计及该生成条件已在声明的 shakedown 中完成端到端执行 | capability 要求已通过、正式 B1 已执行、Task Demo 已运行，或另一条件已执行 |
 | B1 生成条件已执行 | Manifest 固定的前序实验 Driver interface 与完整固定 `capability_validation_suite.json`、明确的 skeleton-assisted 或 from-scratch 条件、从 STUDY 开始的真实模型身份与调用、模型生成的 `driver.py`、符合该条件的 STUDY/GENERATE trace，以及到达最终 verdict 的真实 MuJoCo capability validation | 固定输入的 B1 生成条件已完成端到端执行 | capability 要求已通过、运行了 reference calibration、B1 中运行了 TGCD 或 IVC、Task Demo 已运行，或另一条件执行 |
-| Experiment 2 capability-and-validation 设计已执行 | 已准入的 20+ task 来源集合；没有预写 catalogue 或 mapping 的真实模型五至十项 capability 设计；有来源依据的模型 criteria；实现不可见 IVC 审计和编译；以及声明的 calibration 和 false-success 证据 | 声明的上游 capability-and-validation 设计流程已执行并产生所报告 outcome | 任何 driver 已通过，或 criterion 仅因生成或编译成功就可靠 |
-| Experiment 3 匹配 Experience 比较已执行 | 事先声明且只有 eligible Experience input 不同的匹配后续 run cell、带 source-run lineage 的已审查版本化 Experience record，以及两个 cell 的真实固定输入 generation、Repair 和终态 Harness 证据 | 已报告的 reviewed-Experience 与 no-Experience 条件内比较差异 | originating run 得到改善、发生自主 self-improvement，或结果可推广到匹配条件以外 |
+| Experiment 2 SO-101 跨运行 closure 已执行 | Sonnet 4.6 skeleton-assisted 空 Experience source run 记录 Task Demo stage（准入 driver 执行 demo，或真实 `not-run`）；Opus 只写 observation/lesson/recommendation/scope/public evidence；Framework 从保留 verdict facts 赋值 source robot、generation condition 和 positive/negative terminal-outcome label；人工以非空 reason 记录 accept/reject 且不编辑；接受时一个手动独立 Sonnet 4.6 later run 原样加载 frozen public snapshot | 声明的跨运行机制和 Experience handoff 已执行，且加载后的 snapshot 在 later run 生效 | improvement、因果 Experience effect、matched control estimate、自主 self-improvement 或全局推广 |
+| Experiment 3 声明 cohort 已执行 | 精确十一配置×`r01`--`r03`；仅 Sonnet 4.6、仅 skeleton-assisted；每 cell 新鲜 TGCD/IVC；空 Experience；最多三次 submission；Task Demo 后停止；Evolution 禁用 | 声明的 33-cell Direct-MuJoCo construction route 产生了逐 cell evidence | morphology effect、Experience effect、model ranking、from-scratch comparison 或普遍 robot support |
 | 单机器人条件成功 | 具备动态条件证据，且完整 capability validation suite 中每个 case 均在该条件声明的 attempt 预算内通过 | 该机器人、该生成条件和该 run 生成的 robot-specific driver 通过 capability 准入 | 任何 Task Demo 已通过，或配对条件、全机器人轮次或 SDK 路径成功 |
 | Task Demo 已执行 | 固定的 capability-validated driver、封存的随机五-task `task_demo_suite.json`、独立 Harness verdict 和完整视频 | 该已准入 driver 完成了所选五项 task 及其全部 scoring clause 的演示 | Task Library 全部任务通过、driver synthesis 失败，或在没有声明 high-level controller 时 capability-interface use 成功 |
 | 单机器人双条件实验已完成 | 某一声明机器人在相同封存 `capability_design.json`、`capability_validation_suite.json` 和实验配置下，让两种生成条件都到达 capability-validation 最终 verdict | 该机器人的两个 Direct-MuJoCo cell 已执行 | 任一 cell 已通过、完整 cohort 已运行，或任一 Task Demo 已运行 |
-| 首轮全机器人 shakedown 已完成 | 二十二个声明机器人×生成条件 cell 均使用 manifest 固定的 Ministral 8B 配置和空 Experience 输入，到达终态、保留必需证据、执行 Evolution，并得到整轮结束后的 Experience disposition | 完整首轮全机器人主线及 Evolution/Experience 路径已执行 | 每个 cell 都通过、七-family B1 比较已完成，或每个 Task Demo 都运行 |
-| 全机器人主线成功 | 每个声明机器人×生成条件 cell 均独立满足单机器人条件成功，并满足整轮证据及 Evolution/Experience 义务 | 指定模型、replicate 和 protocol 下的完整声明 cohort Direct-MuJoCo 主线成功 | SDK 保真度、硬件有效性、sim-to-real、普遍适用性或其他 LLM family 已完成 |
+| Experiment 3 33-cell cohort evidence | 全部 33 个 robot×replicate cell 使用 Sonnet 4.6、skeleton-assisted、空 Experience、新鲜 TGCD/IVC、最多三次 submission，并保留终态 Task Demo 或真实 not-run reason 与完整 evidence | 精确描述性 construction cohort 按声明 route 执行 | 每个 cell 都通过、morphology effect、Experience effect、backbone comparison 或普遍适用性 |
+| Experiment 3 描述性 cohort summary | 11 个 configuration 和 3 个 replicate 的逐 cell outcome 全部保留，morphology 只作为 package label 展示 | 按 configuration 和描述性 morphology strata 报告 outcome | 因果 morphology effect、model superiority、SDK fidelity、hardware validity 或 sim-to-real |
 | 基于真实 SDK 的扩展证据 | 真实 SDK 应用逻辑和机器人专用 Translation 与 MuJoCo 双向执行 | 指定的 SDK 扩展路径已执行 | 与硬件等效，或可替代主线 |
 
-A dynamic run must retain enough evidence to verify the declared generation condition. A
-skeleton-assisted run shows trusted-skeleton inspection; a from-scratch run shows that the
-submitted source does not import, copy, or call the skeleton implementation. Both show an attempted
-real local MuJoCo probe and prove that the submitted driver was generated in that run. At minimum,
+A dynamic run must retain enough evidence to verify its declared protocol. A
+skeleton-assisted run shows trusted-skeleton inspection and a generated driver; a
+fresh TGCD/IVC cell shows model-authored design and implementation-blind compilation; an
+Experience-enabled later run shows the unchanged public proposal load event. The run shows an
+attempted real local MuJoCo probe and proves that the submitted driver was generated in that run. At minimum,
 the concise run summary records:
 
 - run ID and code version;
 - robot/configuration, package versions, Task Library snapshot, admitted task count, and source
   coverage;
 - model provider, exact model identifier, and generation condition;
-- fixed B1 Driver interface, capability-level pass-standard, and validation-suite identities;
-- STUDY, GENERATE, capability validation, Repair, Task Demo, and Evolution outcomes;
+- fixed Driver or cell-local Capability Design, capability-level pass-standard, and validation-suite identities;
+- TGCD/IVC where declared, STUDY, GENERATE, capability validation, Repair, Task Demo, and Evolution outcomes;
 - attempt count, separate initial/final capability-validation verdicts, and the separate Task Demo verdict;
 - per-capability, source-standard-clause, and private-case results and video completeness; and
 - any infrastructure or candidate failure reason.
@@ -2212,9 +2339,9 @@ Artifact hashes, signing, and an evidence registry are not required.
 需要证明模型检查了可信 skeleton；from-scratch run 需要证明提交源码没有导入、复制或调用 skeleton
 实现。两者都必须证明尝试了真实本地 MuJoCo probe，并在本次运行中生成最终提交的 driver。简洁
 运行摘要至少记录：run ID 和代码版本；机器人/配置及 package 版本、Task Library 快照、已准入
-task 数量和来源覆盖；模型 provider、准确模型标识和 generation condition；固定 B1 interface、
-capability-level pass standard 和 validation suite identity；STUDY、
-GENERATE、Capability Validation、Repair、Task Demo 和 Evolution 结果；attempt 次数、分开的首次
+task 数量和来源覆盖；模型 provider、准确模型标识和 generation condition；固定 Driver 或 cell-local
+Capability Design、capability-level pass standard 和 validation suite identity；在 protocol 要求时的
+TGCD/IVC、STUDY、GENERATE、Capability Validation、Repair、Task Demo 和 Evolution 结果；attempt 次数、分开的首次
 与最终 capability-validation verdict，以及单独的 Task Demo verdict；
 逐 capability、来源标准 clause 和私有 case 结果及视频完整性；基础设施或 candidate 失败原因。
 
@@ -2227,27 +2354,22 @@ As of this revision, tracked mainline evidence includes historical package-level
 current focused simulator-integrity checks. A historical reference report predating the per-step
 penetration verdict supports only the diagnostic claim recorded at that time; it is not current
 physical-success evidence by itself. Earlier Demo2 and narrow-cohort diagnostic runs also remain
-historical evidence only. No retained run contains the required twenty-two-cell Ministral 8B matrix
-with per-cell Evolution outcomes and post-round Experience dispositions. Therefore current evidence
-does not support “the all-robot model-generated mainline completed” or “the all-robot mainline
-succeeded.”
-
-No retained evidence yet contains a prospectively declared Experiment 3 matched later-run
-Experience/no-Experience comparison. Existing Evolution proposals, human dispositions, or completed
-shakedown paths therefore do not support an Experiment 3 effect claim. Experiment 2 and Experiment 3
-also remain undelegated under Section 0.1, so formal execution requires prospective scoped
-authorities.
+historical evidence only. No retained run is automatically counted as an Experiment 2 closure or an
+Experiment 3 cell. Existing Evolution proposals, human dispositions, or completed shakedown paths
+therefore do not support an Experiment 2 mechanism claim or an Experiment 3 cohort result unless the
+applicable prospective manifest, model pins, isolation, and evidence requirements are satisfied.
+Experiment 2 and Experiment 3 are delegated under Section 0.1. Their versioned manifests and
+retained evidence now satisfy the scoped construction prerequisites; formal execution has not begun
+and is authorised only from the final committed revision after the focused preflight passes.
 
 **中文辅助说明。** 截至本版，受版本控制的主线 evidence 包括历史 package-level reference run
 以及当前聚焦的 simulator-integrity check。早于逐 step 穿透判定的历史 reference report 只能支持
 当时记录的诊断结论，不能单独作为当前 physical-success 证据。更早的 Demo2 和小范围 diagnostic
-run 也只属于历史证据。当前没有任何保留 run 包含必需的二十二-cell Ministral 8B matrix、逐 cell
-Evolution outcome 和整轮结束后的 Experience disposition，因此不能支持“全机器人模型生成主线
-已完成”或“全机器人主线成功”。
-
-当前也没有保留证据包含事先声明的 Experiment 3 匹配后续 Experience/no-Experience 比较。因此，
-现有 Evolution proposal、人工 disposition 或已完成 shakedown 路径都不能支持 Experiment 3 effect
-claim。Experiment 2 与 Experiment 3 在第 0.1 节下仍未被委派；正式执行前必须建立前瞻性限定权威。
+run 也只属于历史证据。当前没有任何保留 run 自动属于 Experiment 2 closure 或 Experiment 3 cell。
+现有 Evolution proposal、人工 disposition 或已完成 shakedown 路径，只有在满足适用的前瞻性 manifest、
+model pin、隔离和 evidence 要求时，才能支持 Experiment 2 mechanism 或 Experiment 3 cohort result。
+Experiment 2 与 Experiment 3 已在第 0.1 节委派。其版本化 manifest 与保留 evidence 已满足 scoped
+建设前置条件；正式执行尚未开始，且只有在最终提交版本通过聚焦 preflight 后才获准启动。
 
 ---
 
@@ -2262,17 +2384,18 @@ implementation work must satisfy each obligation when the affected component or 
    scoring-clause lineage, keeping incomplete packages non-runnable;
 3. implement real-model TGCD and implementation-blind IVC without carrying forward Demo2's fixed
    five-task projection, pre-authored effect catalog, or task-to-effect allowlist;
-4. preserve and independently execute both AutoAdapter 1.0 Driver Synthesis conditions against the
-   same sealed per-robot Capability Design and complete capability validation suite, then run the
-   same sealed random five-task Task Demo only for each capability-validated final driver;
+4. preserve the applicable declared route: Experiment 2 uses its SO-101 source/later closure, while
+   Experiment 3 independently executes fresh TGCD and implementation-blind IVC in each of its
+   Sonnet-only skeleton-assisted cells, then runs the sealed random five-task Task Demo only for an
+   admitted final driver;
 5. build private-suite isolation, candidate-process isolation, canonical-session enforcement,
    anti-teleport checks, actuator-plus-physics-step evidence, and per-step contact-penetration
    evidence into the Harness path itself; report task-metric success and physical integrity
    independently, with either failure making the trial fail;
 6. expose to Repair the complete candidate-facing attempt report and media while redacting only the
-   private validation definitions, enforce three total driver attempts per condition, preserve the
-   full budget-bounded local Python/MuJoCo development probe, keep the capability suite unchanged,
-   and never feed the same-run Task Demo report back into Repair;
+   private validation definitions, enforce three total submitted driver attempts per declared run,
+   preserve the full budget-bounded local Python/MuJoCo development probe, keep each run's capability
+   suite unchanged, and never feed the same-run Task Demo report back into Repair;
 7. record one complete Framework-controlled video and manifest entry for every required capability-validation or Task Demo case
    repetition, with incomplete media invalidating that trial's evidence;
 8. report pipeline execution, model calls, in-run generation, capability validation, initial and
@@ -2281,10 +2404,10 @@ implementation work must satisfy each obligation when the affected component or 
    success-oriented commands fail when either required metric or physical evidence fails;
 9. keep every selected robot's handwritten reference driver hidden and diagnostic-only rather than
    making planner success an admission gate, then retain truthful terminal evidence for every
-   declared robot-by-generation-condition cell; and
-10. keep Evolution terminal and non-blocking so that it cannot alter the current candidate, either
-    suite, retry decision, verdict, or run inputs, while retaining one Evolution outcome and one
-    post-round Experience disposition for every terminal cell in the initial shakedown.
+   Experiment 2 run role and every one of Experiment 3's 33 robot-by-replicate cells; and
+10. keep Experiment 2 Evolution terminal and non-blocking so that it cannot alter the source
+    candidate, suite, retry decision, verdict, or run inputs, while disabling Evolution and
+    Experience entirely in Experiment 3.
 
 These obligations govern all new mainline code even when the corresponding Demo2 defect is retained as a
 historical regression fixture. Passing a later acceptance gate does not excuse bypassing the
@@ -2298,191 +2421,187 @@ construction boundary while implementing an earlier component.
    package；不完整 package 保持不可运行；
 3. 实现真实模型 TGCD 和对实现不可见的 IVC，不得继承 Demo2 的固定五任务 projection、预写
    effect catalog 或 task→effect allowlist；
-4. 保留并独立执行 AutoAdapter 1.0 两种 Driver Synthesis 条件；同一机器人的两种条件使用相同
-   封存 Capability Design 和同一套完整 capability validation suite；仅当最终 driver 通过准入后，
-   才使用同一套封存的随机五-task Task Demo；
+4. 按适用的声明 route 执行：Experiment 2 完成 SO-101 source/later closure；Experiment 3
+   在每个仅 Sonnet、仅 skeleton-assisted 的 cell 中独立执行新鲜 TGCD 和 implementation-blind
+   IVC，并仅在最终 driver 通过准入后执行封存的随机五-task Task Demo；
 5. 在 Harness 路径内直接实现私有 suite 隔离、candidate 进程隔离、canonical session、
    anti-teleport、actuator 加 physics-step 证据和逐 step 接触穿透证据；task metric success 与
    physical integrity 必须独立报告，任一失败都会使 trial 失败；
 6. Repair 可以接收完整的 candidate-facing attempt 报告和媒体，只删除私有 validation 定义；
-   每种条件最多三个 driver attempt，保留完整但有预算上限的本地 Python/MuJoCo 开发 probe，且
-   capability suite 始终不变，且本轮 Task Demo 报告绝不回传给 Repair；
+   每个声明 run 最多三个 submitted-driver attempt，保留完整但有预算上限的本地 Python/MuJoCo
+   开发 probe，且 capability suite 始终不变，且本轮 Task Demo 报告绝不回传给 Repair；
 7. 每个必需 capability-validation 或 Task Demo case repetition 都有独立、完整、Framework 控制的视频和 manifest 记录；
    媒体不完整时该 trial 的证据无效；
 8. 分开报告 pipeline 执行、模型调用、本次生成、capability validation、首次/最终 capability
    verdict、Task Demo 执行/verdict、task-metric verdict、physical-integrity verdict、clause/case 数、
    attempt 和视频完整性；用于证明成功的命令在任一必需 metric 或物理证据失败时必须失败；
 9. 每个被选机器人的手写 reference driver 都保持隐藏且只作诊断，不把 planner 成功当作准入
-   门槛；每个声明的机器人×生成条件 cell 都必须保留真实终态证据；
-10. Evolution 必须位于 terminal verdict 之后且不阻塞当前判定，不能改变当前 candidate、任一
-    suite、retry 决定、verdict 或 run input；首轮每个终态 cell 还必须保留一份 Evolution outcome
-    和一份整轮结束后的 Experience disposition。
+   门槛；每个 Experiment 2 run role 和 Experiment 3 的 33 个 robot×replicate cell 都必须
+   保留真实终态证据；
+10. Experiment 2 的 Evolution 必须位于 terminal verdict 之后且不阻塞当前判定，不能改变当前
+    candidate、suite、retry 决定、verdict 或 run input；Experiment 3 完全禁用 Evolution 和
+    Experience。
 
 即使对应 Demo2 缺陷被保留为历史 regression fixture，这些义务仍约束所有新主线代码。后续
 验收门槛通过，不能成为搭建早期组件时绕开上述边界的理由。
 
-### 6.1 Ready for the initial all-robot shakedown / 可以启动首轮全机器人 shakedown
+### 6.1 Ready for Experiment 2 closure and Experiment 3 cohort / Experiment 2 closure 与 Experiment 3 cohort 就绪
 
-`autoadapter/` is already the canonical mainline. The initial all-robot shakedown may begin only
-after all of the following are true:
+`autoadapter/` remains the canonical mainline. Formal dispatch of the delegated protocols is
+authorised only when one final preflight confirms all of the following input and path prerequisites:
 
-1. the environment declared by `autoadapter/pyproject.toml` installs and the focused mainline checks
-   run without importing or resolving project-authored code or assets from a sibling tree;
-2. every one of the eleven configurations in Section 1.3 resolves from a complete versioned
-   package containing Morphology, twenty or more admitted source-backed Tasks, private
-   instances/bindings/guards, a complete local asset closure, a trusted skeleton, and a calibration
-   reference;
-3. every scoring clause has exact source lineage and a machine-expressible pass standard, every
-   package check passes, and all eleven exact configuration IDs appear in
+1. the environment declared by `autoadapter/pyproject.toml` installs and focused mainline checks run
+   without importing or resolving project-authored code or assets from a sibling tree;
+2. every one of the eleven configurations in Section 1.3 resolves from a complete versioned package
+   containing Morphology, twenty or more admitted source-backed Tasks, private instances/bindings/guards,
+   a complete local asset closure, a trusted skeleton, and a calibration reference; every exact ID is in
    `libraries/robots/index.json`;
-4. every package's physical task fixtures collide with the robot layer, visual-only markers remain
-   non-colliding, every private reset stays within the 5 mm penetration limit, and every
-   position-held environment also stays within that limit for the focused 100-step passive-settling
-   check; torque-driven robots instead require a valid initial reset and the same dynamic Harness
-   penetration verdict;
-5. anti-teleport, per-step penetration, independent task-metric/physical-integrity,
-   canonical-scene, candidate-process, private-suite, from-scratch no-skeleton, and recorder checks
-   pass on the shared Framework/Harness path;
-6. the formal manifest selects exactly the Section 1.3 cohort, both generation conditions, empty
-   Experience input, the exact pinned Ministral 8B model configuration, attempt and development
-   budgets, seeds, video settings, and the required Evolution/Experience outputs; and
-7. any diagnostic canary failure caused by package, simulator, Framework, Harness, model transport,
-   or video infrastructure has been resolved or remains an explicit blocker rather than being
-   relabelled as a model-synthesis result. A hidden reference planner failure is not a blocker unless
-   it exposes one of those underlying defects.
+3. every scoring clause has exact source lineage and a machine-expressible pass standard, package and
+   simulator-integrity checks pass, and the shared Framework/Harness path passes its isolation,
+   anti-teleport, per-step penetration, canonical-scene, candidate-process, private-suite, and recorder
+   checks;
+4. Experiment 2 has distinct available SO-101 source and later-run workspace paths, exact Sonnet 4.6
+   Producer and Opus 5 terminal-Evolution pins, empty source Experience, enforced terminal Task Demo
+   ordering before Opus, an accept/reject-only review command with a required nonempty reason and no
+   content editing, and a separate manual later-run entry point that accepts only the frozen reviewed
+   snapshot;
+5. Experiment 3's formal manifest selects exactly the eleven Section 1.3 configurations and `r01`--`r03`
+   (33 cells), uses Sonnet 4.6 and skeleton assistance only, starts each cell with empty Experience,
+   runs fresh end-to-end TGCD/IVC, permits at most three submitted drivers, executes Task Demo then stops,
+   and disables Evolution;
+6. the recorder and video paths have passed focused checks and are configured to require one complete
+   Framework-controlled video and matching manifest entry for every executed capability-validation
+   and Task Demo case, with missing media invalidating formal evidence rather than being relabelled as
+   model synthesis; and
+7. hidden reference drivers remain diagnostic-only, and no canary or package check is used to silently
+   omit, replace, or relabel a declared configuration.
 
-Optional backup robots may remain in `research/robots/index.json`, and focused package checks,
-hidden reference diagnostics, or canaries may run independently. Those diagnostics do not waive
-any item above. The shakedown starts only once the complete cohort is ready; the formal manifest
-cannot select a convenient subset.
+Optional backup robots may remain in `research/robots/index.json`, and focused package checks, hidden
+reference diagnostics, or canaries may run independently. Those diagnostics do not waive any item
+above, and a formal manifest cannot select a convenient subset of the declared cohort.
 
-**中文辅助说明。** `autoadapter/` 已经是 canonical 主线。只有同时满足以下全部条件，才能启动
-首轮全机器人 shakedown：
+**中文辅助说明。** `autoadapter/` 仍是 canonical 主线。只有最终一次 preflight 同时确认以下全部
+input 与 path 前置条件，才获准启动委派协议的正式执行：
 
 1. `autoadapter/pyproject.toml` 声明的环境可以安装，主线聚焦检查不从同级源码树导入或解析任何
    项目自编代码和资产；
 2. 第 1.3 节十一个配置都能从完整版本化 package 解析出 Morphology、二十项以上已准入有来源
    Tasks、私有 instances/bindings/guards、完整本地 asset closure、可信 skeleton 和 calibration
-   reference；
-3. 每条 scoring clause 都有精确 source lineage 和机器可表达 pass standard，每个 package check
-   都通过，且十一个精确配置 ID 全部进入 `libraries/robots/index.json`；
-4. 每个 package 的实物 task fixture 都与机器人 collision layer 真实碰撞，纯视觉 marker 保持
-   non-colliding，每个 private reset 都在 5 mm 穿透上限内；由 position control 保持的环境还要在
-   聚焦 100-step 被动沉降中维持该上限；torque-driven 机器人改为要求有效初始 reset，并在动态
-   Harness 中使用同一穿透判定；
-5. 共享 Framework/Harness 路径的 anti-teleport、逐 step 穿透、独立 task-metric/physical-integrity、
-   canonical-scene、candidate-process、private-suite、from-scratch no-skeleton 和 recorder 检查通过；
-6. 正式 manifest 精确选择第 1.3 节完整 cohort、两种生成条件、空 Experience 输入、准确固定的
-   Ministral 8B 模型配置、attempt/development budget、seed、视频设置和必需的
-   Evolution/Experience 输出；
-7. 诊断 canary 中由 package、simulator、Framework、Harness、model transport 或视频基础设施
-   造成的失败已修复，或保持为显式 blocker，不能改写成 model-synthesis 结果。隐藏 reference
-   planner 失败本身不阻塞，除非它暴露了上述底层缺陷。
+   reference，且所有精确 ID 都进入 `libraries/robots/index.json`；
+3. 每条 scoring clause 都有精确 source lineage 和机器可表达 pass standard，package、simulator-
+   integrity、isolation、anti-teleport、逐 step 穿透、canonical-scene、candidate-process、
+   private-suite 和 recorder 检查都通过；
+4. Experiment 2 具备彼此独立且可用的 SO-101 source/later workspace path、准确 Sonnet 4.6
+   Producer 与 Opus 5 terminal Evolution pin、空 source Experience、强制 Task Demo terminal state
+   先于 Opus 的运行顺序、只接受 accept/reject 与非空 reason 且不能编辑内容的 review command，
+   以及只接受 frozen reviewed snapshot 的独立手动 later-run 入口；
+5. Experiment 3 的正式 manifest 精确选择十一个配置与 `r01`--`r03`（33 个 cell），仅使用 Sonnet
+   4.6 和 skeleton assistance；每个 cell 空 Experience、新鲜端到端 TGCD/IVC、最多三次 submitted
+   driver、Task Demo 后停止，并禁用 Evolution；
+6. recorder 与 video 路径已通过聚焦检查，并被配置为每个实际执行的 capability-validation 与
+   Task Demo case 都必须保留一份完整 Framework 控制视频及匹配 manifest entry；缺失媒体会使正式
+   evidence 无效，不能改写成 model synthesis；
+7. hidden reference driver 仅作诊断，不得静默省略、替换或改写任何声明配置。
 
 可选备份机器人可以留在 `research/robots/index.json`；各 package check、隐藏 reference 诊断或
-canary 也可独立运行。这些诊断不能免除上述任何一项。只有完整 cohort 就绪后才启动 shakedown，
-正式 manifest 不能选择一个方便的子集。
+canary 也可独立运行。这些诊断不能免除上述任何一项，正式 manifest 不能选择一个方便的子集。
 
-### 6.2 Initial all-robot shakedown completion and success / 首轮全机器人 shakedown 完成与成功
+### 6.2 Experiment 2 closure and Experiment 3 cohort completion / Experiment 2 closure 与 Experiment 3 cohort 完成
 
-The project may state that the required initial all-robot shakedown completed only when:
+The project may state that the delegated protocols completed only when their
+own prospective records satisfy the following boundaries:
 
-1. one prospective manifest selects exactly the eleven Section 1.3 configurations, both
-   generation conditions, and the same exact Ministral 8B provider/model configuration, producing
-   twenty-two declared robot-by-generation-condition cells per replicate;
-2. every cell starts without prior Experience and uses the same Framework version, environment,
-   budgets, package snapshots, evidence rules, and condition-appropriate public inputs;
-3. each robot/model replicate uses one real-model `capability_design.json` containing five to ten
-   genuinely designed capabilities/interfaces and source-traceable validation contracts, with no
-   pre-authored effect catalog or task-to-effect allowlist;
-4. one real-model complete `capability_validation_suite.json` produced by IVC passes the
-   no-weaker-selected-standard and per-capability primary/robustness audit and remains unchanged
-   across both generation conditions and all Repair attempts; any diagnostic reference run uses the
-   same sealed suite without becoming a dynamic input; the Framework separately seals one recorded
-   random five-task `task_demo_suite.json`;
-5. before either dynamic condition begins, that robot satisfies the package and simulator-integrity
-   gate in Section 6.1. A hidden reference driver may run against the sealed suite for diagnostics,
-   but its source and derived logic remain unavailable to the model and its planner success is not
-   required. A reference failure blocks only when it reveals an input, package, simulator, Harness,
-   or infrastructure defect;
-6. both conditions use isolated workspaces, run their own real STUDY and GENERATE or GEN_ALGO calls,
-   and do not exchange candidates, traces, validation results, Repair history, generated code, or
-   same-round Experience;
-7. every submitted `driver.py` is generated inside its declared condition and every one of the
-   twenty-two cells reaches a truthful terminal capability-validation verdict within its maximum
-   three submitted-driver attempts; each admitted final driver then executes the separately
-   reported five-task Task Demo without that Demo changing the synthesis verdict or triggering
-   Repair;
-8. actuator/physics-step, per-step penetration, independent task-metric/physical-integrity,
-   isolation, canonical-scene, from-scratch no-skeleton, and evidence-camera checks pass, and every
-   required capability-validation and Task Demo trial has complete decodable video and a matching
-   manifest;
-9. Evolution executes from each terminal cell report, all twenty-two outcomes are retained, and
-   post-round human review writes one Experience disposition per cell without feeding any proposal
-   back into the same round;
-10. cell-specific `pass@0`, post-Repair, Task Demo, Evolution, model-use, token, cost, time, and video
-    results are reported separately, alongside per-robot and cohort summaries that never hide a
-    failed or blocked cell in an aggregate; and
-11. the mainline has no runtime import or dependency on the SDK extension or any repository sibling,
-    and no formal evaluation step downloads code, data, standards, or robot assets.
+1. Experiment 2 has one SO-101 source run with empty Experience that reaches
+   the real Sonnet skeleton-assisted route through the Task Demo stage, records
+   an admitted-driver demo or a truthful `not-run` outcome with a nonempty
+   reason, and then makes one terminal Opus 5 Evolution proposal or records an
+   explicit terminal transport failure;
+2. the proposal retains the Opus-written observation/lesson/recommendation/
+   scope/evidence fields, with `evidence` restricted to public material, and
+   Framework-assigned source robot,
+   generation condition, and positive/negative terminal-outcome label; a human
+   records exactly `accept` or `reject` with a nonempty reason without editing,
+   merging, or replacing content;
+3. after that fixed disposition, exactly one later run is manually launched in
+   a fresh independent workspace and process. An accepted proposal plus its
+   frozen reviewed snapshot becomes globally eligible; it must be loaded
+   unchanged by the later Sonnet 4.6 Experience-enabled run to become
+   effective. A rejected proposal or infrastructure failure is reported as a
+   blocked formal Experience-enabled closure, not silently converted into a
+   result;
+4. the proposal is never a same-run, same-round, or pre-disposition input, and
+   the source and later outcomes are reported separately without an improvement
+   or causal Experience claim;
+5. Experiment 3 has exactly the eleven Section 1.3 configuration IDs crossed
+   with `r01`--`r03`, for 33 declared cells, and no hidden substitute or omitted
+   configuration;
+6. every Experiment 3 cell uses Sonnet 4.6, skeleton assistance only, empty
+   Experience, fresh end-to-end TGCD and implementation-blind IVC, at most
+   three submitted driver attempts, and its own Task Demo after an admitted
+   final driver. The cell stops after Task Demo and has Evolution disabled;
+7. every Experiment 3 cell has a truthful terminal capability/Task Demo
+   outcome or an explicit infrastructure-blocker/not-run reason, with complete
+   Framework/Harness evidence and required videos. A generated-driver failure
+   is named as such; a package, simulator, Harness, transport, or video
+   prerequisite failure remains an infrastructure blocker;
+8. Experiment 3 reports all 33 per-cell outcomes and the declared denominator
+   of 33. Morphology is shown only descriptively as a package/configuration
+   label or stratum; no morphology effect, model comparison, Experience
+   effect, or from-scratch comparison is computed or claimed;
+9. the Direct-MuJoCo mainline remains independent of the SDK extension and
+   repository siblings, and no formal evaluation downloads unpinned code,
+   data, standards, or robot assets; and
+10. any claim of completion names missing or blocked records rather than
+    treating a partial cohort, diagnostic canary, or reference-driver result
+    as formal evidence.
 
-Completion and success are distinct. Once all twenty-two cells have terminal verdicts and all
-required Evolution/Experience records, the shakedown completed even if one or more generated
-drivers failed. The all-robot mainline succeeded only if every cell independently satisfies
-single-robot condition success and all evidence obligations above. If any generated cell fails,
-the correct claim names the failed cells; if a package, simulator, Harness, or infrastructure
-prerequisite fails, the round is incomplete and the affected dynamic cells are not model failures.
-A passing reference alone supports only diagnostic reference calibration, while a reference
-planner failure alone does not make the round incomplete.
+Completion is distinct from success. Experiment 2 can report a mechanism
+closure only when the accepted public proposal is loaded by the next
+independent later run; an accepted frozen snapshot is globally eligible before
+that load and becomes effective at the load, while a rejection is a recorded
+disposition and a blocked formal Experience-enabled closure. Experiment 3 can report execution of its
+33-cell denominator when every cell has a truthful terminal record, including
+an infrastructure blocker, but it may report only the per-cell and descriptive
+cohort outcomes allowed above. Neither protocol supports an improvement claim.
 
-The Ministral 8B shakedown remains construction evidence. It counts as a downstream experiment
-replicate only when that experiment's delegated authority and prospective manifest explicitly admit
-the exact run and every applicable stage, input, isolation, and evidence requirement matches. The
-current Experiment 1 authority does not automatically admit the all-robot shakedown as one of its
-replicates.
+**中文辅助说明。** 只有各自的前瞻性记录满足以下边界，项目才能声明委派协议完成：
 
-**中文辅助说明。** 只有满足以下全部条件，项目才可以声明必需的首轮全机器人 shakedown 已完成：
+1. Experiment 2 有一个空 Experience 的 SO-101 source run，真实执行 Sonnet
+   skeleton-assisted 路径直至 Task Demo stage；有准入 driver 时执行 demo，无准入 driver 时以非空
+   reason 记录真实 `not-run`；随后由 Opus 5 执行一次 terminal Evolution proposal，或明确记录
+   terminal transport failure；
+2. proposal 保留 Opus 写入的 observation/lesson/recommendation/scope/evidence 字段，其中
+   `evidence` 仅限公开材料；proposal 同时保留 Framework 根据 verdict facts 赋值的 source robot、
+   generation condition 和 positive/negative
+   terminal-outcome label；人工严格记录一次 `accept` 或 `reject` 及非空 reason，不得编辑、合并或替换内容；
+3. 固定 disposition 后手动启动且仅启动一个全新、独立 workspace/process 的 later run。接受的 proposal
+   加 frozen reviewed snapshot 后 globally eligible；later Sonnet 4.6 Experience-enabled run 必须
+   原样加载该 snapshot 才会 effective。拒绝或基础设施失败必须报告为 formal Experience-enabled
+   closure blocked，不能静默变成结果；
+4. proposal 不能作为同 run、同 round 或 disposition 前的 input；source 与 later 分开报告，不能声称
+   improvement 或因果 Experience effect；
+5. Experiment 3 精确使用第 1.3 节十一个 configuration ID 与 `r01`--`r03` 的笛卡尔积，共 33 个
+   cell，不得隐藏替换或省略 configuration；
+6. 每个 Experiment 3 cell 仅用 Sonnet 4.6、仅 skeleton assistance、空 Experience、新鲜端到端
+   TGCD 和 implementation-blind IVC、最多三次 submitted-driver attempt；准入 final driver 后运行
+   自己的 Task Demo，随后停止且禁用 Evolution；
+7. 每个 cell 都有真实 terminal capability/Task Demo outcome，或明确 infrastructure-blocker/not-run
+   reason，并具备完整 Framework/Harness evidence 和必需视频；生成 driver 失败要点名，package、simulator、
+   Harness、transport 或视频前置失败保持为 infrastructure blocker；
+8. Experiment 3 报告全部 33 个逐 cell outcome 和 denominator 33；morphology 只作为 package/configuration
+   label 或 stratum 描述，不计算或声称 morphology effect、model comparison、Experience effect 或
+   from-scratch comparison；
+9. Direct-MuJoCo 主线仍独立于 SDK 扩展和仓库同级目录，正式 evaluation 不下载未固定的 code、data、
+   standards 或 robot assets；
+10. 任何完成声明都必须点名缺失或 blocked record，不能把 partial cohort、diagnostic canary 或
+    reference-driver result 当作 formal evidence。
 
-1. 一份事先确定的 manifest 精确选择第 1.3 节十一个配置、两种生成条件和同一套准确的
-   Ministral 8B provider/model 配置，每个 replicate 声明二十二个机器人×生成条件 cell；
-2. 每个 cell 都以空 Experience 输入开始，并使用相同 Framework 版本、环境、budget、package
-   snapshot、证据规则和符合条件的公开输入；
-3. 每个 robot/model replicate 使用一份真实模型设计的 `capability_design.json`，其中包含五至
-   十项真正设计的 capability/interface 及可追溯来源 validation contract，不存在预写 effect
-   catalog 或 task→effect allowlist；
-4. IVC 生成的一套完整 `capability_validation_suite.json` 通过“不弱化所选来源标准”和逐
-   capability primary/robustness 审计，并在两种生成条件和所有 Repair attempt 间保持不变；任何
-   诊断 reference run 使用同一封存 suite，但不成为 dynamic input；Framework 另行封存一套有记录
-   的随机五-task `task_demo_suite.json`；
-5. 在任一 dynamic condition 开始前，该机器人满足第 6.1 节 package 和 simulator-integrity 门槛。
-   隐藏 reference driver 可以对封存 suite 运行诊断，但源码和衍生逻辑始终对模型不可见，且 planner
-   成功不是必需条件。只有 reference 失败暴露 input、package、simulator、Harness 或 infrastructure
-   缺陷时，才构成 blocker；
-6. 两种条件使用隔离 workspace，分别执行自己的真实 STUDY 与 GENERATE 或 GEN_ALGO 调用，且
-   不能交换 candidate、trace、validation result、Repair 历史、生成代码或同轮 Experience；
-7. 每个提交的 `driver.py` 都在所声明条件内生成；二十二个 cell 每个都在最多三次 submitted-driver
-   attempt 内到达真实 terminal capability-validation verdict；每个已准入最终 driver 随后执行单独
-   报告的五-task Task Demo，该 Demo 不改变 synthesis verdict，也不触发 Repair；
-8. actuator/physics-step、逐 step 穿透、独立 task-metric/physical-integrity、isolation、
-   canonical-scene、from-scratch no-skeleton 和 evidence-camera 检查通过，每个必需
-   capability-validation 和 Task Demo trial 都有完整可解码视频及匹配 manifest；
-9. 每个 terminal cell report 都执行 Evolution，保留全部二十二个 outcome；整轮结束后人工审查为
-   每个 cell 写一条 Experience disposition，且任何 proposal 都不回传本轮；
-10. 分开报告每个 cell 的 `pass@0`、Repair 后、Task Demo、Evolution、model use、token、cost、
-    time 和视频结果；逐机器人及 cohort aggregate 不能隐藏任何失败或 blocked cell；
-11. 主线在 runtime 不导入或依赖 SDK 扩展或任何仓库同级目录，正式 evaluation 的任何步骤都不
-    下载代码、数据、标准或机器人资产。
-
-“完成”和“成功”必须区分。二十二个 cell 全部到达终态且具备必需 Evolution/Experience 记录时，
-即使有生成 driver 失败，也可以说 shakedown 已完成；只有每个 cell 都独立满足单机器人条件成功和
-上述全部证据义务，才可说全机器人主线成功。生成 cell 失败时必须点名失败 cell；package、
-simulator、Harness 或 infrastructure 前置项失败时，该轮仍不完整，受影响 dynamic cell 不能算
-模型失败。单纯 reference planner 失败不会使轮次不完整；仅 reference 通过只能支持
-“diagnostic reference calibration passed”。
-
-Ministral 8B shakedown 保持为建设证据。只有下游实验被委派的权威和事先确定的 manifest 明确接纳
-该精确 run，且所有 stage、input、隔离和证据要求完全匹配时，它才可以计入该实验 replicate。当前
-Experiment 1 权威不会自动把全机器人 shakedown 接纳为其 replicate。
+“完成”和“成功”必须区分。Experiment 2 只有在 accepted public proposal 被下一独立 later run
+加载时，才能报告 mechanism closure；accept 加 frozen snapshot 后 proposal 已 globally eligible，
+在 load 时才 effective；reject 只是已记录的 disposition，并意味着 formal Experience-enabled closure
+blocked。Experiment 3 在每个 cell 都有真实 terminal record（包括
+infrastructure blocker）时，可以报告 33-cell denominator 的执行情况，但只能报告上述允许的逐 cell
+和描述性 cohort outcome。两项实验都不支持 improvement claim。
 
 ---
 
@@ -2554,7 +2673,7 @@ The current project must not add or expand:
 - artifact hashing, signing, attestations, provenance chains, registries, or governance services;
 - exhaustive schemas, defensive abstraction layers, plugin systems, or future-robot frameworks;
 - broad regression, fuzz, property, coverage-driven, or adversarial-security test programs;
-- silently omitting, replacing, or relabelling a declared cohort robot in a formal all-robot round;
+- silently omitting, replacing, or relabelling a declared cohort robot in a formal declared-cohort round;
 - reference-driver substitution in a dynamic run;
 - candidate-visible private suites, exact criteria, private definition-bearing reports, or
   privileged verdict state; complete candidate-facing Repair reports remain required by Section 3.5;
@@ -2564,7 +2683,8 @@ The current project must not add or expand:
 
 The minimum focused package, simulator-integrity, and shared-Harness checks for every declared
 cohort robot take priority over broader cleanup. Hidden reference diagnostics and per-robot canaries
-may run as packages become ready, but the formal initial shakedown waits for the complete cohort.
+may run as packages become ready, but the formal Experiment 3 cohort waits for the complete declared
+cohort.
 
 **中文辅助说明。** 当前项目不得新增或扩展：
 
@@ -2572,7 +2692,7 @@ may run as packages become ready, but the formal initial shakedown waits for the
 - artifact hash、签名、attestation、provenance chain、registry 或 governance service；
 - 穷尽式 schema、防御性 abstraction layer、plugin system 或面向未来机器人的 framework；
 - 广泛的 regression、fuzz、property、coverage-driven 或 adversarial-security 测试计划；
-- 在正式全机器人轮次中静默省略、替换声明 cohort 机器人，或改写其身份；
+- 在正式声明 cohort 轮次中静默省略、替换声明 cohort 机器人，或改写其身份；
 - 在 dynamic run 中用 reference driver 替换生成 driver；
 - 向 candidate 暴露 private suite、精确 criterion、含私有定义的报告或 privileged verdict
   state；3.5 节要求的完整 candidate-facing Repair 报告仍必须提供；
@@ -2581,5 +2701,5 @@ may run as packages become ready, but the formal initial shakedown waits for the
 - 根据 Direct-MuJoCo 证据声称 hardware、perception、SDK fidelity 或 sim-to-real 成果。
 
 每个声明 cohort 机器人的最低限度 package、simulator-integrity 和共享 Harness 聚焦检查优先于
-更广泛的整理。各 package 就绪后可运行隐藏 reference 诊断和逐机器人 canary，但正式首轮
-shakedown 必须等待完整 cohort。
+更广泛的整理。各 package 就绪后可运行隐藏 reference 诊断和逐机器人 canary，但正式 Experiment 3
+cohort 必须等待完整声明 cohort。

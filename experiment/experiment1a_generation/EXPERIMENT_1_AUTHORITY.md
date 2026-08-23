@@ -1,13 +1,76 @@
-# Experiment 1 — B1 Driver-Synthesis Backbone Comparison Authority
+# Experiment 1a — B1 Driver-Synthesis Backbone Comparison Authority
 
 > **Document ID:** `AA2-EXP1`<br>
-> **Document role:** sole normative document for Experiment 1<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.30`<br>
+> **Document role:** sole normative document for Experiment 1a — B1<br>
+> **Parent authority:** `AA2-AUTH` revision `0.19.33`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.17`<br>
-> **Effective date:** 2026-08-22<br>
-> **Design status:** active and prospectively fixed; formal execution paused
+> **Revision:** `0.1.19`<br>
+> **Effective date:** 2026-08-23<br>
+> **Design status:** active and prospectively fixed; formal dispatch authorised but not started
+
+Revision `0.1.19` completes the synchronized pre-formal B1 configuration and
+authorises, but does not start, the fresh 84-cell core. The two robots, active
+M1--M6 and M8, two conditions, `r01`--`r03`, attempt budget, fixed validation
+inputs, and execution routes remain those fixed by revision `0.1.18`. M8 is
+pinned to returned identity `openai.gpt-5.6-sol`, the OpenAI public
+1,050,000-token context and 128,000-token maximum output, and the dated
+2026-08-23 public Standard price schedule: USD 5 input, USD 0.50 cached input,
+and USD 30 output per million tokens up to 272,000 input tokens; a request with
+more than 272,000 input tokens uses USD 10, USD 1, and USD 45 respectively for
+the full request. These rates are a public reference cost estimate rather than
+a claim about actual organization-gateway billing, and the unavailable
+upstream revision is recorded as `not_independently_verifiable` rather than
+invented.
+
+The fixed manifest, provider pins, two active fixed-bundle inputs, exact
+84-cell order, both generation routes, terminal-record enforcement, and
+aggregation checks are synchronized. Existing completed real-route evidence
+is sufficient for the unchanged execution line; revision `0.1.19` supersedes
+earlier pre-formal M2/M6 canary requirements and requires no new M5, M8, or
+other LLM diagnostic call. Formal cells remain new observations and no prior
+run is admitted into the denominator. Enabling dispatch is readiness state
+only and does not launch a cell.
+
+**中文辅助说明。** 修订 `0.1.19` 完成 B1 正式实验前同步，并授权但不启动全新的 84-cell core。
+两台机器人、active M1--M6 与 M8、两种 condition、`r01`--`r03`、attempt budget、固定
+validation input 与执行路线均保持 `0.1.18` 的设计。M8 固定返回 identity
+`openai.gpt-5.6-sol`、OpenAI 公开的 1,050,000-token context、128,000-token 最大输出，
+以及 2026-08-23 公开 Standard 价格：不超过 272,000 个输入 token 时，每百万 input/cached
+input/output 分别为 USD 5/USD 0.50/USD 30；超过 272,000 输入 token 的整个 request 分别使用
+USD 10/USD 1/USD 45。该价格只用于公开参考成本估算，不代表 organization gateway 实际账单；
+无法独立验证的 upstream revision 如实记录。manifest、provider pin、两套 active fixed bundle、
+84-cell 顺序、两条 generation route、终态记录与聚合检查已同步。既有真实路线证据足以覆盖未改动
+的执行线；本修订取代旧的正式实验前 M2/M6 canary 要求，不增加 M5、M8 或其他 LLM 诊断调用。
+开启 dispatch 仅表示就绪，不会自动启动 cell，也不把历史 run 放入新 denominator。
+
+Revision `0.1.18` prospectively fixes Experiment 1a — B1 to exactly the
+`robotstudio_so101` and `unitree-go2-stock-12dof` configurations, active
+Producers `M1` Sonnet 4.6, `M2` Opus 5, `M3` Haiku 4.5, `M4` Nova Pro,
+`M5` DeepSeek V4 Pro, `M6` Ministral 3 8B, and `M8` GPT-5.6 Sol. M8 must
+return exactly `openai.gpt-5.6-sol` through the verified company gateway.
+`M7`/Qwen3 remains inactive historical configuration; its identifier is not
+reused. Both `skeleton-assisted` and `from-scratch` remain active conditions.
+The fresh `r01`–`r03` matrix is `2 × 7 × 2 × 3 = 84` cells with at most 252
+submitted drivers; no old record may be cherry-picked into it. Optional
+complete `r04` and `r05` blocks each add 28 cells and at most 84 submissions,
+for 140 cumulative cells and at most 420 submissions when both are complete.
+Each active backbone has a 12-cell core denominator, and `R=3` results are
+descriptive and bounded. Formal execution remains paused until the new
+manifest, provider/model pins, fixed inputs, and generation routes are
+synchronized and the required readiness checks pass.
+
+**中文辅助说明。** 修订 `0.1.18` 事先将 Experiment 1a — B1 固定为
+`robotstudio_so101` 与 `unitree-go2-stock-12dof` 两台机器人；active Producer 为
+`M1` Sonnet 4.6、`M2` Opus 5、`M3` Haiku 4.5、`M4` Nova Pro、`M5` DeepSeek V4 Pro、
+`M6` Ministral 3 8B 和 `M8` GPT-5.6 Sol。M8 必须经 verified company gateway 返回准确的
+`openai.gpt-5.6-sol`；`M7`/Qwen3 仅保留为 inactive 历史配置，不能复用其 ID。两种 active
+condition 仍为 `skeleton-assisted` 与 `from-scratch`。全新的 `r01`–`r03` 矩阵为
+`2 × 7 × 2 × 3 = 84` 个 cell，最多 252 次 driver submission，旧记录不得 cherry-pick；
+可选完整 `r04`、`r05` 各增加 28 个 cell、最多 84 次 submission，两者都完成时累计 140 个
+cell、最多 420 次 submission。每个 active backbone 的 core denominator 为 12，`R=3` 结果
+仅作有界描述性比较。新的 manifest、provider/model pin、fixed input 和 generation route
+同步且 readiness check 通过前，正式执行保持暂停。
 
 Revision `0.1.17` prospectively raises only M2's fixed per-request output
 budget from `8,192` to `32,768` tokens while retaining the revision `0.1.15`
@@ -217,10 +280,11 @@ or attempt budget.
 
 ## 0. Authority, scope, and precedence
 
-This is the only normative source for Experiment 1's exact cohort, Producer
-backbone families, generation conditions, replicate plan, attempt budget,
-analysis boundary, extension rule, and execution blockers. It is the bounded
-experiment authority delegated by `AUTOADAPTER_2_AUTHORITY.md` Section 0.1.
+This is the only normative source for Experiment 1a — B1's exact cohort,
+active Producer backbone families, generation conditions, replicate plan,
+attempt budget, analysis boundary, extension rule, and execution blockers. It
+is the bounded experiment authority delegated by
+`AUTOADAPTER_2_AUTHORITY.md` Section 0.1.
 
 The parent Authority continues to govern the project architecture, canonical
 robot packages, Direct-MuJoCo execution, trusted Harness, candidate isolation,
@@ -235,17 +299,17 @@ code, README files, thesis text, historical Chapter 3 plans, and the proposed
 `autoadapter/B1_DRIVER_CAPABILITY_BENCHMARK_SPEC.md` are non-normative. If any
 of them conflicts with this file, this file governs.
 
-This revision supersedes every earlier 10-plus-5, 11-robot, 14-robot, R=5-only,
-525-cell, 665-cell, or 770-cell Chapter 3/Experiment 1 matrix. Those designs may
-remain in Git history but are not active Experiment 1 requirements.
+This revision supersedes every earlier Chapter 3/Experiment 1 matrix and any
+inactive cohort or denominator. Those designs may remain in Git history but are
+not active Experiment 1a — B1 requirements.
 
 ### 0.1 Three-part experiment contract
 
 Every concrete experiment authority fixes exactly three classes of information:
 
-| Part | Experiment 1 content | Governing sections |
+| Part | Experiment 1a — B1 content | Governing sections |
 |---|---|---|
-| Experimental object | Research claim, four robots, six backbones, two conditions, statistical unit, and replicate plan | Sections 1–3 |
+| Experimental object | Research claim, two robots, seven active backbones, two conditions, statistical unit, and replicate plan | Sections 1–3 |
 | Required preparation | Clear Driver contracts and criteria plus a usable, isolated, recorded STUDY-to-terminal-validation route | Sections 4, 5, 7, and 8 |
 | Required records | Outcomes, evidence, timings, submitted attempts, model/provider calls, tokens, costs, errors, and observable action trace | Section 6 |
 
@@ -255,9 +319,9 @@ requirement. It may only implement this three-part contract.
 
 ## 1. Research object and claim boundary
 
-Experiment 1 is the fixed-input B1 driver-synthesis comparison. For each
+Experiment 1a — B1 is the fixed-input driver-synthesis comparison. For each
 selected robot, one prior-designed Driver contract and its validation criteria
-are held fixed while six Producer backbone families synthesize a
+are held fixed while seven active Producer backbone families synthesize a
 robot-specific `driver.py` under `skeleton-assisted` and `from-scratch`.
 
 The experiment measures driver-validation success, Repair behaviour, failures,
@@ -271,23 +335,21 @@ associational, not causal or morphology-wide estimates.
 
 ### 2.1 Robot configurations
 
-Experiment 1 contains exactly these four configurations:
+Experiment 1a — B1 contains exactly these two configurations:
 
 | Blocking category | Canonical robot configuration |
 |---|---|
 | Fixed serial arm | `robotstudio_so101` |
 | Quadruped | `unitree-go2-stock-12dof` |
-| Dexterous hand | `leap_hand` |
-| Bimanual manipulator | `aloha_2` |
 
-All four currently have a canonical trusted-skeleton source and therefore run
-both generation conditions. A missing, invalid, or unusable skeleton is an
+Both currently have a canonical trusted-skeleton source and therefore run both
+generation conditions. A missing, invalid, or unusable skeleton is an
 infrastructure blocker; it does not convert that robot into a scratch-only row
 and is not scored as a model failure.
 
 ### 2.2 Producer backbone families
 
-The fixed family set contains exactly six entries:
+The active fixed family set contains exactly seven entries:
 
 | ID | Family | Vendor |
 |---|---|---|
@@ -297,20 +359,24 @@ The fixed family set contains exactly six entries:
 | `M4` | Nova Pro | Amazon |
 | `M5` | DeepSeek V4 Pro | DeepSeek |
 | `M6` | Ministral 3 8B | Mistral |
+| `M8` | GPT-5.6 Sol | OpenAI |
 
-All six Producers are invoked through remotely hosted APIs. M1--M4 and M6 use
-the organization company gateway. M5 uses the official DeepSeek API
-through the project owner's account and must return the exact
-`deepseek-v4-pro` identity. Experiment 1 does not use downloaded weights,
-self-hosted inference, or a local model as a substitute. A direct vendor
-endpoint or an organization-approved company API gateway is acceptable only
-when its exact route and returned model identity are recorded; the deployment
-route is fixed per backbone before its first affected cell.
+All seven active Producers are invoked through remotely hosted APIs. M1--M4,
+M6, and M8 use the verified organization company gateway. M5 uses the official
+DeepSeek API through the project owner's account and must return the exact
+`deepseek-v4-pro` identity. M8 must return the exact `openai.gpt-5.6-sol`
+identity. `M7`/Qwen3 32B remains inactive historical configuration, and its ID
+is not reused. Experiment 1a — B1 does not use downloaded weights, self-hosted
+inference, or a local model as a substitute. A direct vendor endpoint or an
+organization-approved company API gateway is acceptable only when its exact
+route and returned model identity are recorded; the deployment route is fixed
+per active backbone before its first affected cell.
 
-Before cells for one backbone are dispatched, the manifest must pin that
-backbone's exact provider model identifier and revision, endpoint/region,
+Before cells for one active backbone are dispatched, the manifest must pin
+that backbone's exact returned model identifier and its available provider
+revision or truthful revision status, endpoint/region,
 transport, inference settings, context/output limits, timeout, and dated price
-snapshot. An unpinned family blocks only its affected cells and is never
+snapshot. An unpinned active family blocks only its affected cells and is never
 silently replaced; it does not prevent an unrelated ready backbone from
 starting.
 
@@ -342,16 +408,18 @@ sample size.
 
 ### 3.1 Core design
 
-The primary design uses `r01`, `r02`, and `r03`:
+The primary design uses fresh `r01`, `r02`, and `r03` cells:
 
 ```text
-4 robots × 6 backbones × 2 conditions × 3 replicates = 144 cells
-144 cells × at most 3 submitted drivers = at most 432 submissions
+2 robots × 7 active backbones × 2 conditions × 3 replicates = 84 cells
+84 cells × at most 3 submitted drivers = at most 252 submissions
 ```
 
-Experiment 1 core completion requires all 144 planned cells to have a truthful
-terminal verdict or an explicit infrastructure blocker. A blocker remains in
-the planned denominator and is not converted into driver failure.
+Each active backbone has a 12-cell core denominator (`2 robots × 2 conditions ×
+3 replicates`). No old record may be cherry-picked into the fresh matrix.
+Experiment 1a — B1 core completion requires all 84 planned cells to have a
+truthful terminal verdict or an explicit infrastructure blocker. A blocker
+remains in the planned denominator and is not converted into driver failure.
 
 ### 3.2 Prespecified precision extension
 
@@ -359,11 +427,11 @@ the planned denominator and is not converted into driver failure.
 complete balanced block:
 
 ```text
-4 robots × 6 backbones × 2 conditions = 48 additional cells
-48 cells × at most 3 submitted drivers = at most 144 additional submissions
+2 robots × 7 active backbones × 2 conditions = 28 additional cells
+28 cells × at most 3 submitted drivers = at most 84 additional submissions
 ```
 
-Completing both produces 240 cumulative cells and at most 720 submissions.
+Completing both produces 140 cumulative cells and at most 420 submissions.
 An extension decision may depend only on recorded operational facts such as
 remaining calendar time, budget, provider availability, and unchanged frozen
 configuration. It may not depend on success rates, backbone rankings, condition
@@ -381,6 +449,11 @@ The independent seed map and randomized execution order for `r01` through
 `r05` must be frozen before the first formal model call.
 
 ## 4. Fixed input and execution path
+
+Under revision `0.1.19`, the active manifest, all active provider/model pins,
+the fixed validation inputs, and both generation routes are synchronized and
+their zero-model readiness checks pass. The requirements below remain the
+fixed input and execution path for every subsequently dispatched formal cell.
 
 Before the first cell starts, every selected robot must have one fixed
 Driver-and-criteria definition containing:
@@ -513,8 +586,11 @@ be derived from the ordered raw records rather than entered manually. Numeric
 provider-reported reasoning-token usage may be retained; hidden chain-of-thought
 or hidden reasoning content must never be requested or stored.
 
-Primary summaries report counts/rates and equal-robot macro-averages by
-backbone and condition, plus matched within-block condition differences.
+Primary summaries report counts/rates and equal-robot macro-averages by active
+backbone and condition, plus matched within-block condition differences. For
+each active backbone, the R=3 core denominator is 12 cells. With R=3, all
+backbone and condition comparisons are descriptive and bounded; they do not
+support stable fine-grained rankings or broad generalization.
 Per-robot, per-capability, failure-class, Repair, cost, and time breakdowns are
 reported without turning inner measurements into independent samples. With
 R=3, one exact robot-backbone-condition rate has only four possible values
@@ -535,9 +611,14 @@ not change the matrix or statistical unit.
 
 ## 8. Sole start prerequisite
 
-Experiment 1 may start as soon as both parts below are true:
+Revision `0.1.19` records that the active manifest, provider/model pins
+(including M8's exact returned identity and public reference price), fixed
+validation inputs, and both generation routes are synchronized and pass their
+required zero-model readiness checks. Formal dispatch is authorised under that
+exact manifest, but no cell starts merely because the gate is enabled. Both
+parts below remain mandatory during execution:
 
-1. all four selected robots have clear fixed Driver interfaces and clear
+1. both selected robots have clear fixed Driver interfaces and clear
    Harness-evaluable validation criteria, including the private values needed
    to execute each criterion; and
 2. both isolated generation routes are usable from STUDY through
@@ -545,12 +626,12 @@ Experiment 1 may start as soon as both parts below are true:
    terminal verdict, while retaining the records required by Section 6.
 
 There is no task-blind reference-calibration gate and no additional global
-admission workflow. Exact provider/model settings must still be fixed and
-recorded for each affected backbone before its cells are dispatched; a
-transport or account problem blocks those affected cells, not the start of
-unrelated ready cells. The already frozen seed/order component determines
-dispatch order. Eight-way concurrency is admitted but optional; serial
-execution remains valid.
+admission workflow, and no additional pre-formal LLM canary is required.
+Exact provider/model settings remain fixed and recorded for each affected
+active backbone; a transport or account problem becomes a visible affected
+cell terminal rather than a silent substitution. The already frozen seed/order
+component determines dispatch order. Eight-way concurrency is admitted but
+optional; serial execution remains valid.
 
 A readable criterion with no working Harness binding, or a route that omits
 the mandatory records, does not satisfy these two parts. Directory presence or
@@ -563,28 +644,29 @@ run outputs, and Experiment 1-specific analysis. `AutoAdapter-Bench/` remains a
 reusable benchmark dependency and must not restate this experiment's cohort,
 R, matrix count, stopping decision, or results.
 
-Any change to the four robots, six backbone families, remotely hosted API
-deployment boundary or fixed per-backbone route, two conditions, R=3
-primary design, attempt budget, fixed-input boundary, primary outcomes,
-mandatory recording hierarchy/action classification, or extension rule
-requires a new revision of this file made before affected outcomes are
-inspected. Post-outcome changes define a new experiment configuration and
-cannot silently overwrite or relabel retained evidence.
+Any change to the two robots, seven active backbone families (M1--M6 and M8),
+the inactive historical status and non-reuse of M7, remotely hosted API
+deployment boundary or fixed per-backbone route, two conditions, R=3 primary
+design, attempt budget, fixed-input boundary, primary outcomes, mandatory
+recording hierarchy/action classification, extension rule, or synchronized
+readiness gate requires a new revision of this file made before affected
+outcomes are inspected. Post-outcome changes define a new experiment
+configuration and cannot silently overwrite or relabel retained evidence.
 
 ## 中文决策摘要（辅助）
 
-Experiment 1 固定为四台机器人、六个 backbone、两种生成条件。核心 `R=3`，共 144 个实验
-cell，最多 432 次 driver submission；`r04`、`r05` 只能各自作为完整 48-cell block 追加，全部完成
-后为 240 cell、最多 720 次 submission。B1 从 STUDY 开始，在最终 capability validation verdict
-结束；不运行 TGCD、IVC、Task Demo、high-level controller 或 Evolution。R=3 始终是 primary，后续
-完整 R=4/R=5 只作精度与稳健性扩展。每个 capability 的 H1/H2/H3 至少通过 2 个才算该
-capability 通过，而 Driver 必须通过其全部 capability。开跑的唯一前置条件是：四台机器人的
-Driver 接口与 Harness
-可判定 criteria 全部清晰，以及两条 STUDY-to-generation/Repair/validation 路线可用并能写出第 6 节
-要求的记录。不要求 task-blind reference calibration。`0.1.4` 已明确批准最多八个隔离 cell 并发，
-但该批准只向前适用于按本 revision 派发的 cell，不追溯改变旧 cell 的 Authority revision、证据、
-失败分类或 verdict；八路并发并非必须，串行仍然有效。每个 cell、attempt slot、stage、模型
-iteration、物理 provider request 与 tool event 都
-必须记录可审计用时；每个 cell 记录实际 submission 次数，每个可观察 iteration 固定分类为
-`observe_or_plan`、`execute_clean`、`execute_error` 或 `submit`，并保留错误、token、成本和 stage 边界。
-失败与 retry call 不能丢弃；隐藏思维内容不得记录。
+Experiment 1a — B1 固定为两台机器人（`robotstudio_so101` 与
+`unitree-go2-stock-12dof`）、七个 active backbone（`M1`–`M6` 与 `M8`）和两种生成条件。
+核心 `R=3` 为全新的 84 个实验 cell，最多 252 次 driver submission；`r04`、`r05` 只能各自
+作为完整 28-cell block 追加，全部完成后为 140 cell、最多 420 次 submission。`M7`/Qwen3
+仅为 inactive 历史配置，不能复用其 ID。每个 active backbone 的 core denominator 为 12，
+`R=3` 结果仅作有界描述性比较。B1 从 STUDY 开始，在最终 capability validation verdict
+结束；不运行 TGCD、IVC、Task Demo、high-level controller 或 Evolution。两台机器人都必须
+运行 `skeleton-assisted` 与 `from-scratch`；manifest、provider/model pin、fixed input 与
+generation route 已同步并通过零模型 readiness check，正式 dispatch 已获授权但尚未启动，且不要求
+新增正式实验前 LLM canary。每个 capability 的 H1/H2/H3
+至少通过 2 个才算该 capability 通过，而 Driver 必须通过其全部 capability。每个 cell、attempt
+slot、stage、模型 iteration、物理 provider request 与 tool event 都必须记录可审计用时；每个
+cell 记录实际 submission 次数，每个可观察 iteration 固定分类为 `observe_or_plan`、
+`execute_clean`、`execute_error` 或 `submit`，并保留错误、token、成本和 stage 边界。失败与
+retry call 不能丢弃；隐藏思维内容不得记录。
