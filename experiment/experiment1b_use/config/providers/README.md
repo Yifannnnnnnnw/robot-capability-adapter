@@ -14,25 +14,9 @@ PYTHONPATH=autoadapter/src \
 python3 experiment/experiment1b_use/config/providers/validate_manifest.py
 ```
 
-Run one structured-output connectivity request for every M1–M7 level. The
-runner reads credentials only into the parent process and writes exact
-secret-free request/response message bodies to the ignored diagnostic report:
-
-```bash
-SSL_CERT_FILE=/private/etc/ssl/cert.pem \
-PYTHONDONTWRITEBYTECODE=1 \
-PYTHONPATH=autoadapter/src \
-python3 experiment/experiment1b_use/config/providers/run_connectivity.py \
-  --env-file .env \
-  --env-file .env.company-api \
-  --output experiment/experiment1b_use/runs/provider-connectivity/report.json
-```
-
-`SSL_CERT_FILE` selects the macOS system CA bundle used by this workspace's
-Python installation; it can be omitted when Python already has a working CA
-bundle.
-
-This does not run a robot, create a formal episode, clear the other Section 7
-prerequisites, or enter the 210-episode denominator. A returned model identifier
-is checked against its pin, but the gateway cannot independently attest the
-upstream weights or revision; the report retains that limitation explicitly.
+No new provider-connectivity request is part of the pre-formal gate. Existing
+diagnostic reports retain their historical role outside the 210-episode
+denominator; the next model requests are the deliberately launched formal
+episodes. Returned identifiers are still checked against their pins, while the
+gateway limitation on independently attesting upstream weights or revisions
+remains explicit.

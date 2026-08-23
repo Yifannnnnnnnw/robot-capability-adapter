@@ -115,7 +115,66 @@ def test_video_request_reaches_episode_and_is_required_for_chain(
     )
 
     assert captured["config"].record_video is True
+    assert captured["config"].robot_configuration_id == "robotstudio_so101"
     assert captured["config"].task_id == "mw_pick_place"
     assert report["video_requested"] is True
     assert report["summary"]["video_requirement_satisfied"] is True
+    assert report["summary"]["diagnostic_chain_completed"] is True
+
+
+def test_go2_selection_reaches_the_same_episode_path(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    provider_path = tmp_path / "provider.json"
+    provider_path.write_text(json.dumps(_pin()), encoding="utf-8")
+    env_path = tmp_path / ".env"
+    env_path.write_text("CANARY_SECRET=parent-only\n", encoding="utf-8")
+    captured = {}
+
+    class _Model:
+        provider_call_records = (
+            {"status": "success", "returned_model": "pinned-model"},
+        )
+        provider_exchange_records = ()
+
+        def __init__(self, **_kwargs) -> None:
+            pass
+
+    def _episode(*, config, **_kwargs):
+        captured["config"] = config
+        return {
+            "controller": {
+                "status": "CONTROLLER_FINISHED",
+                "model_calls": 1,
+                "capability_calls": 1,
+            },
+            "worker": {"worker_completed": True},
+            "harness": {
+                "task_metric_passed": False,
+                "physical_execution_passed": True,
+                "physical_integrity_passed": True,
+                "video_complete": True,
+                "physical_harness_verdict": "FAIL",
+            },
+        }
+
+    monkeypatch.setattr(canary, "ReCAPJsonModelClient", _Model)
+    monkeypatch.setattr(canary, "load_robot_package", lambda _path: SimpleNamespace())
+    monkeypatch.setattr(canary, "run_b2_diagnostic_episode", _episode)
+    monkeypatch.setattr(canary, "_code_version", lambda: {"git_commit": "test"})
+
+    report = canary.run(
+        env_path=env_path,
+        provider_path=provider_path,
+        output_path=tmp_path / "report.json",
+        wall_timeout_s=30.0,
+        record_video=True,
+        robot_id="unitree-go2-stock-12dof",
+        task_id="GO2-T02",
+    )
+
+    assert captured["config"].robot_configuration_id == "unitree-go2-stock-12dof"
+    assert captured["config"].task_id == "GO2-T02"
+    assert report["summary"]["independent_harness_verdict"] == "FAIL"
     assert report["summary"]["diagnostic_chain_completed"] is True

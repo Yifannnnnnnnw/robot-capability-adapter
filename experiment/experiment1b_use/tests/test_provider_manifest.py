@@ -29,7 +29,8 @@ from validate_manifest import (
 def test_manifest_pins_all_levels_and_overrides_source_runtime_differences() -> None:
     resolved = load_and_validate_manifest()
 
-    assert list(resolved["providers"]) == [f"M{index}" for index in range(1, 8)]
+    assert list(resolved["providers"]) == ["M1", "M2", "M3", "M4", "M5", "M6", "M8"]
+    assert resolved["unresolved_price_backbones"] == []
     common = resolved["common_transport_policy"]
     assert common["temperature"] == 0.0
     assert common["max_tokens"] == 4096
@@ -47,10 +48,7 @@ def test_manifest_pins_all_levels_and_overrides_source_runtime_differences() -> 
     assert resolved["providers"]["M6"]["inference_settings"][
         "tool_history_mode"
     ] == "text-observation"
-    assert resolved["providers"]["M7"]["inference_settings"][
-        "tool_history_mode"
-    ] == "text-observation"
-    for backbone_id in ("M5", "M6", "M7"):
+    for backbone_id in ("M5", "M6"):
         config = provider_model_config(resolved, backbone_id=backbone_id)
         client = ReCAPJsonModelClient(
             provider_config=config,
@@ -71,44 +69,30 @@ def test_manifest_rejects_common_policy_drift() -> None:
         validate_manifest_document(changed)
 
 
-def test_m7_source_pin_contains_only_the_verified_limit_region_and_price_facts() -> None:
-    source = load_and_validate_manifest()["providers"]["M7"]
+def test_m8_source_pin_uses_the_public_limits_and_reference_price() -> None:
+    source = load_and_validate_manifest()["providers"]["M8"]
 
+    assert source["exact_model_id"] == "openai.gpt-5.6-sol"
+    assert source["expected_returned_model_id"] == source["exact_model_id"]
+    assert source["provider_model_revision"] is None
+    assert source["upstream_revision_status"] == "not_independently_verifiable"
+    assert source["context_limit_tokens"] == 1_050_000
+    assert source["provider_max_output_tokens"] == 128_000
     assert source["endpoint_region"] == "eu-west-2"
-    assert source["context_limit_tokens"] == 32768
-    assert source["provider_max_output_tokens"] == 8192
-    assert source["model_limit_sources"] == [
-        {
-            "facts": ["context_limit_tokens", "provider_max_output_tokens"],
-            "query_date": "2026-08-22",
-            "source": (
-                "https://docs.aws.amazon.com/bedrock/latest/userguide/"
-                "model-card-qwen-qwen3-32b.html"
-            ),
-        },
-        {
-            "facts": ["endpoint_region"],
-            "query_date": "2026-08-22",
-            "source": (
-                "https://docs.aws.amazon.com/bedrock/latest/userguide/"
-                "models-region-compatibility.html"
-            ),
-        },
-    ]
-    assert source["price_snapshot"] == {
-        "snapshot_date": "2026-08-22",
-        "source_publication_date": "2026-08-20",
-        "query_date": "2026-08-22",
-        "currency": "USD",
-        "unit": "per_1m_tokens",
-        "input_cache_miss": 0.23,
-        "output": 0.93,
-        "pricing_scope": "eu-west-2 standard on-demand",
-        "source": (
-            "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/"
-            "AmazonBedrock/current/eu-west-2/index.json"
-        ),
+    price = source["price_snapshot"]
+    assert price["snapshot_date"] == "2026-08-23"
+    assert (price["input_cache_miss"], price["input_cache_hit"], price["output"]) == (
+        5.0,
+        0.5,
+        30.0,
+    )
+    assert price["long_context"] == {
+        "applies_when_input_tokens_gt": 272_000,
+        "input_cache_hit": 1.0,
+        "input_cache_miss": 10.0,
+        "output": 45.0,
     }
+    assert price["cost_basis"] == "public_standard_reference_estimate"
 
 
 def test_env_loader_is_parent_local_and_rejects_conflicts(tmp_path: Path) -> None:
@@ -258,4 +242,4 @@ def test_connectivity_failure_remains_visible_and_does_not_stop_later_levels(
     m3 = next(level for level in report["levels"] if level["backbone_id"] == "M3")
     assert m3["connectivity_succeeded"] is False
     assert m3["error"]["type"] == "RuntimeError"
-    assert report["levels"][-1]["backbone_id"] == "M7"
+    assert report["levels"][-1]["backbone_id"] == "M8"

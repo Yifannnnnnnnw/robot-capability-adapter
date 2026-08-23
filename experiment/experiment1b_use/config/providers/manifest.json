@@ -3,11 +3,12 @@
   "schema_version": "1.0",
   "authority": {
     "document_id": "AA2-B2",
-    "revision": "0.1.2",
+    "revision": "0.1.4",
     "sections": ["2.1", "4", "7.3"]
   },
-  "diagnostic_only": true,
-  "formal_dispatch_enabled": false,
+  "diagnostic_only": false,
+  "formal_dispatch_enabled": true,
+  "unresolved_price_backbones": [],
   "provider_runtime_configs": {
     "M1": "../../../experiment1a_generation/config/providers/M1-company-api-sonnet-4-6.json",
     "M2": "../../../experiment1a_generation/config/providers/M2-company-api-opus-5.json",
@@ -15,7 +16,7 @@
     "M4": "../../../experiment1a_generation/config/providers/M4-company-api-nova-pro.json",
     "M5": "../../../experiment1a_generation/config/providers/M5-deepseek-v4-pro.json",
     "M6": "../../../experiment1a_generation/config/providers/M6-company-api-ministral-3-8b.json",
-    "M7": "../../../experiment1a_generation/config/providers/M7-company-api-qwen3-32b.json"
+    "M8": "../../../experiment1a_generation/config/providers/M8-company-api-gpt-5-6-sol.json"
   },
   "common_controller_contract": {
     "system_prompt": "You are the fixed high-level ReCAP controller for one public robot task.\n\nRecursively decompose the current node into a complete ordered list of\nsubtasks. The runtime executes only the head item, returns one bounded public\nobservation, and then asks you to replace/refine the remaining list. Use an\nabstract `subtask` when more decomposition is needed. Use a `capability` leaf\nonly with a capability_name and capability-native request that exactly match\nthe supplied public catalogue and request schema. Never invent wrapper fields.\n\nReturn only the fixed JSON response. `reasoning_summary` must be a concise plan\nsummary, not private chain-of-thought. An empty subtask list completes only the\ncurrent recursive node; an empty list at the root stops the controller. Stopping\nthe controller is not physical success and is never a Harness verdict. You do\nnot receive private criteria, thresholds, bindings, guards, reset state,\nreference inputs, model credentials, or the final physical verdict.\n",

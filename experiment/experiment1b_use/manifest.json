@@ -1,0 +1,77 @@
+{
+  "artifact_type": "b2_recap_formal_manifest",
+  "schema_version": "1.0",
+  "authority": {
+    "document_id": "AA2-B2",
+    "revision": "0.1.4"
+  },
+  "formal_dispatch_enabled": true,
+  "blockers": [],
+  "robots": [
+    "robotstudio_so101",
+    "unitree-go2-stock-12dof"
+  ],
+  "models": [
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M8"
+  ],
+  "inactive_historical_models": [
+    "M7"
+  ],
+  "replicates": [
+    "R1",
+    "R2",
+    "R3"
+  ],
+  "expected_units": 210,
+  "paths": {
+    "task_suite": "config/task_suite/task_suite.json",
+    "provider_manifest": "config/providers/manifest.json",
+    "reference_selection": "validation/reference/selection.json"
+  },
+  "readiness_evidence": {
+    "interface_calibration": {
+      "index_path": "../archive/runs/b2_recap/reference-calibration-a6-356c400-video/reference_calibration_index.json",
+      "run_id": "reference-calibration-a6-356c400-video",
+      "code_revision": "356c4000f1956af90820d602b638328930457c39",
+      "typed_adapter": "autoadapter2.b2.capability_adapter.CapabilityAdapter",
+      "public_state_profile_revision": "b2-public-state-v2",
+      "robots": [
+        {
+          "robot_configuration_id": "robotstudio_so101",
+          "report": "robotstudio_so101/reference_calibration_report.json",
+          "capability_design_id": "experiment1-b1-fixed-interface::robotstudio_so101::v3",
+          "capability_validation_suite_id": "b2-fixed-reference-suite::robotstudio_so101::v2",
+          "source_capability_validation_suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v4",
+          "pass_standard_id": "experiment1-b1-driver-validation-criteria-v3",
+          "capability_ids": ["A1", "A2", "A3", "A4", "A5", "A6"],
+          "private_case_count": 18
+        },
+        {
+          "robot_configuration_id": "unitree-go2-stock-12dof",
+          "report": "unitree-go2-stock-12dof/reference_calibration_report.json",
+          "capability_design_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2",
+          "capability_validation_suite_id": "b2-fixed-reference-suite::unitree-go2-stock-12dof::v2",
+          "source_capability_validation_suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3",
+          "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
+          "capability_ids": ["G1", "G2", "G3", "G4", "G5"],
+          "private_case_count": 15
+        }
+      ]
+    },
+    "pick_place_v6": {
+      "report_path": "runs/diagnostic/pick-place-v6-oracle-full-video/robotstudio_so101/mw_pick_place/oracle_canary_report.json",
+      "video_path": "runs/diagnostic/pick-place-v6-oracle-full-video/robotstudio_so101/mw_pick_place/videos/robotstudio_so101__mw_pick_place__R1.mp4",
+      "oracle_plan_path": "diagnostics/oracle/oracle_plans.json",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "replicate_id": "R1",
+      "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v6"
+    }
+  }
+}

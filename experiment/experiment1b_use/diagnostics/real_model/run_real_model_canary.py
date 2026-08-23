@@ -49,18 +49,13 @@ DEFAULT_PROVIDER_PATH = (
 TASK_SUITE_PATH = (
     REPOSITORY_ROOT / "experiment/experiment1b_use/config/task_suite/task_suite.json"
 )
-ROBOT_ID = "robotstudio_so101"
+REFERENCE_SELECTION_PATH = (
+    REPOSITORY_ROOT
+    / "experiment/experiment1b_use/validation/reference/selection.json"
+)
+ROBOT_IDS = ("robotstudio_so101", "unitree-go2-stock-12dof")
+ROBOT_ID = ROBOT_IDS[0]
 TASK_ID = "mw_sweep_into_goal"
-PACKAGE_ROOT = (
-    REPOSITORY_ROOT
-    / "autoadapter/libraries/robots/robotstudio_so101/1.0.0"
-)
-DRIVER_PATH = PACKAGE_ROOT / "reference/fixed_capability_driver.py"
-CAPABILITY_DESIGN_PATH = (
-    REPOSITORY_ROOT
-    / "experiment/experiment1b_use/validation/reference/resolved/robotstudio_so101"
-    / "capability_design.json"
-)
 
 
 def _utc_now() -> str:
@@ -96,6 +91,43 @@ def _read_object(path: Path, *, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{label} must contain one JSON object")
     return value
+
+
+def _reference_inputs(robot_id: str) -> tuple[Path, Path, Path]:
+    if robot_id not in ROBOT_IDS:
+        raise ValueError(f"unsupported B2 diagnostic robot: {robot_id}")
+    selection = _read_object(
+        REFERENCE_SELECTION_PATH,
+        label="B2 reference selection",
+    )
+    robots = selection.get("robots")
+    if not isinstance(robots, list):
+        raise ValueError("B2 reference selection has no robots list")
+    matches = [
+        item
+        for item in robots
+        if isinstance(item, Mapping)
+        and item.get("robot_configuration_id") == robot_id
+    ]
+    if len(matches) != 1:
+        raise ValueError(f"B2 reference selection must contain exactly one {robot_id}")
+    selected = matches[0]
+
+    def repository_path(field: str) -> Path:
+        value = selected.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"B2 reference selection has invalid {field}")
+        path = Path(value)
+        if not path.is_absolute():
+            path = REPOSITORY_ROOT / path
+        return path.resolve()
+
+    package_root = repository_path("package_root")
+    driver_path = repository_path("driver_path")
+    capability_design_path = (
+        repository_path("resolved_bundle_dir") / "capability_design.json"
+    )
+    return package_root, driver_path, capability_design_path
 
 
 def _load_env_values(path: Path) -> dict[str, str]:
@@ -215,6 +247,7 @@ def run(
     output_path: Path,
     wall_timeout_s: float,
     record_video: bool = False,
+    robot_id: str = ROBOT_ID,
     task_id: str = TASK_ID,
 ) -> dict[str, Any]:
     provider_path = provider_path.resolve()
@@ -236,15 +269,16 @@ def run(
     episode: dict[str, Any] | None = None
     error: dict[str, str] | None = None
     try:
-        package = load_robot_package(PACKAGE_ROOT)
+        package_root, driver_path, capability_design_path = _reference_inputs(robot_id)
+        package = load_robot_package(package_root)
         episode = run_b2_diagnostic_episode(
             config=B2DiagnosticEpisodeConfig(
                 task_suite_path=TASK_SUITE_PATH,
-                robot_configuration_id=ROBOT_ID,
+                robot_configuration_id=robot_id,
                 task_id=task_id,
                 replicate_id="R1",
-                driver_path=DRIVER_PATH,
-                capability_design_path=CAPABILITY_DESIGN_PATH,
+                driver_path=driver_path,
+                capability_design_path=capability_design_path,
                 output_dir=output_path.parent,
                 record_video=record_video,
                 wall_timeout_s=wall_timeout_s,
@@ -302,7 +336,7 @@ def run(
         "formal_episode": False,
         "formal_denominator_entry": False,
         "video_requested": record_video,
-        "authority": {"document_id": "AA2-B2", "revision": "0.1.2"},
+        "authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
         "code_version": _code_version(),
         "started_at_utc": started_at_utc,
         "ended_at_utc": _utc_now(),
@@ -345,9 +379,15 @@ def main() -> int:
     parser.add_argument("--wall-timeout-s", type=float, default=900.0)
     parser.add_argument("--record-video", action="store_true")
     parser.add_argument(
+        "--robot",
+        choices=ROBOT_IDS,
+        default=ROBOT_ID,
+        help="B2 robot configuration (default: robotstudio_so101)",
+    )
+    parser.add_argument(
         "--task",
         default=TASK_ID,
-        help="sealed SO-101 B2 task ID (default: mw_sweep_into_goal)",
+        help="task ID belonging to the selected robot",
     )
     args = parser.parse_args()
     report = run(
@@ -356,6 +396,7 @@ def main() -> int:
         output_path=args.output,
         wall_timeout_s=args.wall_timeout_s,
         record_video=args.record_video,
+        robot_id=args.robot,
         task_id=args.task,
     )
     console = {

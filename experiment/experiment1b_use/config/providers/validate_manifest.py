@@ -49,7 +49,7 @@ _EXPECTED_CONFIGS = {
     "M4": "M4-company-api-nova-pro.json",
     "M5": "M5-deepseek-v4-pro.json",
     "M6": "M6-company-api-ministral-3-8b.json",
-    "M7": "M7-company-api-qwen3-32b.json",
+    "M8": "M8-company-api-gpt-5-6-sol.json",
 }
 _EXPECTED_FAMILIES = {
     "M1": "Sonnet 4.6",
@@ -58,7 +58,7 @@ _EXPECTED_FAMILIES = {
     "M4": "Nova Pro",
     "M5": "DeepSeek V4 Pro",
     "M6": "Ministral 3 8B",
-    "M7": "Qwen3 32B",
+    "M8": "GPT-5.6 Sol",
 }
 
 
@@ -154,11 +154,28 @@ def _validate_provider_source(
         "deployment_mode",
         "api_route_kind",
         "exact_model_id",
-        "provider_model_revision",
         "credential_env",
         "auth_header",
     ):
         _required_string(source.get(field), label=f"{backbone_id}.{field}")
+    if backbone_id == "M8":
+        if source.get("provider_model_revision") is not None:
+            raise ProviderManifestError(
+                "M8.provider_model_revision must remain explicitly unresolved"
+            )
+        if source.get("upstream_revision_status") != "not_independently_verifiable":
+            raise ProviderManifestError(
+                "M8 upstream revision limitation must remain explicit"
+            )
+        if source.get("expected_returned_model_id") != source.get("exact_model_id"):
+            raise ProviderManifestError(
+                "M8 expected returned model must equal its requested model pin"
+            )
+    else:
+        _required_string(
+            source.get("provider_model_revision"),
+            label=f"{backbone_id}.provider_model_revision",
+        )
     _required_string(
         source.get("auth_prefix"),
         label=f"{backbone_id}.auth_prefix",
@@ -194,6 +211,15 @@ def _validate_provider_source(
         raise ProviderManifestError(
             f"common max_tokens leaves no input context for {backbone_id}"
         )
+    if backbone_id == "M8" and (
+        context_limit != 1_050_000
+        or output_limit != 128_000
+        or source.get("limits_scope")
+        != "OpenAI public model specification; company-gateway enforcement not independently verified"
+        or source.get("limits_source")
+        != "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
+    ):
+        raise ProviderManifestError("M8 public model limits are not the fixed pin")
 
     inference = source.get("inference_settings")
     if not isinstance(inference, dict):
@@ -219,6 +245,27 @@ def _validate_provider_source(
             raise ProviderManifestError(
                 f"{backbone_id}.price_snapshot.{field} must be non-negative"
             )
+    if backbone_id == "M8" and price != {
+        "snapshot_date": "2026-08-23",
+        "currency": "USD",
+        "unit": "per_1m_tokens",
+        "input_cache_hit": 0.5,
+        "input_cache_miss": 5.0,
+        "output": 30.0,
+        "long_context": {
+            "applies_when_input_tokens_gt": 272000,
+            "input_cache_hit": 1.0,
+            "input_cache_miss": 10.0,
+            "output": 45.0,
+        },
+        "cost_basis": "public_standard_reference_estimate",
+        "pricing_scope": (
+            "OpenAI public Standard API reference; "
+            "company-gateway billing not independently verified"
+        ),
+        "source": "https://platform.openai.com/pricing",
+    }:
+        raise ProviderManifestError("M8 public reference price pin is invalid")
 
     return path, source
 
@@ -234,14 +281,16 @@ def validate_manifest_document(
     authority = document.get("authority")
     if authority != {
         "document_id": "AA2-B2",
-        "revision": "0.1.2",
+        "revision": "0.1.4",
         "sections": ["2.1", "4", "7.3"],
     }:
         raise ProviderManifestError("B2 provider authority pin is invalid")
-    if document.get("diagnostic_only") is not True:
-        raise ProviderManifestError("B2 provider preparation must remain diagnostic")
-    if document.get("formal_dispatch_enabled") is not False:
-        raise ProviderManifestError("B2 formal dispatch must remain disabled")
+    if document.get("diagnostic_only") is not False:
+        raise ProviderManifestError("B2 provider pins must be formal inputs")
+    if document.get("formal_dispatch_enabled") is not True:
+        raise ProviderManifestError("B2 provider dispatch must be enabled")
+    if document.get("unresolved_price_backbones") != []:
+        raise ProviderManifestError("B2 provider price blockers must be empty")
 
     expected_controller = {
         "system_prompt": RECAP_B2_SYSTEM_PROMPT,
@@ -284,7 +333,7 @@ def validate_manifest_document(
 
     sources = document.get("provider_runtime_configs")
     if not isinstance(sources, dict) or list(sources) != list(_EXPECTED_CONFIGS):
-        raise ProviderManifestError("B2 provider set must be ordered M1 through M7")
+        raise ProviderManifestError("B2 provider set must be ordered M1 through M6 and M8")
     providers: dict[str, dict[str, Any]] = {}
     provider_paths: dict[str, Path] = {}
     for backbone_id, raw_path in sources.items():
@@ -296,6 +345,11 @@ def validate_manifest_document(
         )
         providers[backbone_id] = source
         provider_paths[backbone_id] = source_path
+    unresolved_price_backbones: list[str] = []
+    if unresolved_price_backbones != document["unresolved_price_backbones"]:
+        raise ProviderManifestError(
+            "B2 provider unresolved price blocker does not match source pins"
+        )
 
     return {
         "manifest_path": manifest_path,
@@ -303,6 +357,7 @@ def validate_manifest_document(
         "providers": providers,
         "provider_paths": provider_paths,
         "common_transport_policy": common,
+        "unresolved_price_backbones": unresolved_price_backbones,
     }
 
 
@@ -346,7 +401,8 @@ def main() -> int:
         "manifest_path": str(resolved["manifest_path"]),
         "backbone_ids": list(resolved["providers"]),
         "common_transport_policy": resolved["common_transport_policy"],
-        "formal_dispatch_enabled": False,
+        "unresolved_price_backbones": resolved["unresolved_price_backbones"],
+        "formal_dispatch_enabled": True,
     }
     print(json.dumps(output, allow_nan=False, sort_keys=True))
     return 0
