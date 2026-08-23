@@ -7,7 +7,48 @@
 > **Chinese text:** auxiliary reading support only<br>
 > **Revision:** `0.1.4`<br>
 > **Effective date:** 2026-08-23<br>
-> **Design status:** active and prospectively fixed; formal dispatch authorised but not started
+> **Design status:** active; first seven units executed; subsequent dispatch uses the ordinary Harness
+
+### Closed batch001 reporting adjudication (2026-08-23)
+
+This append-only addendum records one explicit project-owner instruction made
+after inspection of the first seven formal records. It is a closed reporting
+exception, not a reusable Harness rule and not a revision of the frozen
+revision-`0.1.4` execution inputs.
+
+The retained raw terminals, episode records, Harness reports, contact
+measurements, provider records, schedulers, and videos remain unchanged. The
+following exact units, all executed at code revision
+`e128247e6c88ddcacccde77a96716ad68b8e938e`, are counted as
+`AUTHORITY_ADJUDICATED_PASS` in the reported task-success numerator:
+
+- `b2::robotstudio_so101::mw_push_to_goal::M1::R1`;
+- `b2::robotstudio_so101::mw_push_to_goal::M3::R1`;
+- `b2::robotstudio_so101::mw_push_to_goal::M5::R1`; and
+- `b2::robotstudio_so101::mw_push_to_goal::M8::R1`.
+
+Each retained raw terminal remains `harness_fail` and must not be described as
+`HARNESS_PASS`. In all four cases the task metric, physical execution,
+authenticity guards, returned-model identity, and continuous video passed; the
+sole failing component was the global 5 mm integrity gate on the canonical
+`work_surface`--`workpiece_geom` support contact. A fixed reference-driver
+push reproduced the threshold crossing, identifying a scene/contact
+calibration artefact rather than evidence that the task was not completed.
+
+For this seven-unit batch, M4 and M6 remain failures and M2 remains
+`evidence_incomplete`. The adjudicated report is therefore planned `210`,
+covered `7`, reported successes `4`, failures `2`, evaluable `6`,
+evidence-incomplete `1`, and not-yet-executed `203`. The exact raw and reported
+fields are retained in `batch001_manual_adjudication.json`. This exception
+does not match any later episode, batch, replicate, task, or experiment. Every
+subsequent B2 result continues to use the ordinary trusted-Harness and
+physical-integrity rules in Sections 1, 2.3, 5, 6, and 8.
+
+**中文辅助说明。** 本附录记录项目负责人在查看首批七条结果后明确授权的一次性报告裁决。
+M1、M3、M5、M8 仅在本批 task-success 报告分子中记为
+`AUTHORITY_ADJUDICATED_PASS`；原始 Harness FAIL、穿透数值、terminal、episode record、
+provider record、scheduler 和视频全部保留，且不得称为 Harness PASS。M4、M6 仍失败，M2
+仍为证据不完整；后续所有 episode 继续使用正常 Harness 规则，本例外不自动延伸。
 
 Revision `0.1.4` completes the synchronized pre-formal B2 configuration and
 authorises, but does not start, the fresh 210-episode core. The two robots,

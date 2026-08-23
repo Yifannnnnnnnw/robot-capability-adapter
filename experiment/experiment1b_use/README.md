@@ -11,6 +11,13 @@ The `runs/` directory is an active local-output placeholder.  Historical B2
 runs are under `../archive/runs/b2_recap/` and are resolved read-only by
 `../path_layout.py` when an old path is missing.
 
+The first seven-unit batch has one closed, project-owner-authorised reporting
+adjudication in `batch001_manual_adjudication.json`: M1, M3, M5, and M8 are
+reported as task successes, M4 and M6 remain failures, and M2 remains evidence
+incomplete. The sidecar preserves the original Harness outcomes and applies to
+those exact unit IDs only; later episodes use the ordinary Harness without an
+adjudication.
+
 Useful entry points:
 
 ```bash
