@@ -63,7 +63,10 @@ def _executable_manifest(tmp_path: Path) -> dict[str, Any]:
         "producer_transport": _transport(),
         "resources": {
             "development_probe": {
-                "max_requests_per_stage": 12,
+                "max_requests_per_stage": runner.DRIVER_PROBE_CALLS_PER_STAGE,
+                "max_complete_driver_checks": (
+                    runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
+                ),
                 "wall_timeout_s_per_request": 30,
                 "max_output_chars_per_request": 12_000,
             },
@@ -188,7 +191,8 @@ def _resume_record(
 
 
 def test_checked_in_manifest_expands_exact_replicate_major_33_cells() -> None:
-    cells = runner.expand_cells(runner.load_manifest())
+    manifest = runner.load_manifest()
+    cells = runner.expand_cells(manifest)
 
     assert len(cells) == 33
     assert len({cell["cell_id"] for cell in cells}) == 33
@@ -208,6 +212,18 @@ def test_checked_in_manifest_expands_exact_replicate_major_33_cells() -> None:
         and cell["replicate_id"] in cell["run_id"]
         and cell["robot_configuration_id"] in cell["run_id"]
         for cell in cells
+    )
+    assert (
+        manifest["runtime"]["resources"]["development_probe"][
+            "max_requests_per_stage"
+        ]
+        == runner.DRIVER_PROBE_CALLS_PER_STAGE
+    )
+    assert (
+        manifest["runtime"]["resources"]["development_probe"][
+            "max_complete_driver_checks"
+        ]
+        == runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
     )
 
 
@@ -282,9 +298,32 @@ def test_task_demo_and_formal_evidence_postchecks_reject_false_terminal_success(
 def test_checked_in_preflight_accepts_the_current_so101_reference_control() -> None:
     mainline_root = Path(__file__).resolve().parents[2] / "autoadapter"
 
-    checked = runner.validate_executable_preflight(
-        runner.load_manifest(), mainline_root=mainline_root
+    manifest = runner.load_manifest()
+    checked = runner.validate_executable_preflight(manifest, mainline_root=mainline_root)
+
+    assert (
+        checked["resources"]["development_probe"]["max_requests_per_stage"]
+        == runner.DRIVER_PROBE_CALLS_PER_STAGE
     )
+    assert (
+        checked["resources"]["development_probe"][
+            "max_complete_driver_checks"
+        ]
+        == runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
+    )
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["resources"]["development_probe"][
+        "max_requests_per_stage"
+    ] = 14
+    with pytest.raises(runner.Experiment3RunnerError, match="reserve 25"):
+        runner.validate_executable_preflight(drifted, mainline_root=mainline_root)
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["resources"]["development_probe"][
+        "max_complete_driver_checks"
+    ] = 1
+    with pytest.raises(runner.Experiment3RunnerError, match="must be 2"):
+        runner.validate_executable_preflight(drifted, mainline_root=mainline_root)
 
     so101 = checked["readiness_evidence"]["reference_positive_controls"][
         "robotstudio_so101"

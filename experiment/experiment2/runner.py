@@ -12,6 +12,7 @@ import copy
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 from collections.abc import Callable, Mapping
@@ -31,17 +32,43 @@ from autoadapter2.pipeline import ExperimentConfig, PipelineError, run_experimen
 
 
 EXPERIMENT_ID = "experiment2-so101-cross-run-closure"
-AUTHORITY_REVISION = "0.1.1"
-MANIFEST_REVISION = "0.1.0"
-PROTOCOL_REVISION = "0.1.0"
+AUTHORITY_REVISION = "0.1.2"
+MANIFEST_REVISION = "0.1.1"
+PROTOCOL_REVISION = "0.1.1"
 ROBOT_CONFIGURATION = "robotstudio_so101"
 CONDITION = "skeleton-assisted"
-SOURCE_RUN_ID = "exp2-so101-source"
+PRE_FIX_SOURCE_RUN_ID = "exp2-so101-source"
+SOURCE_RUN_ID = "exp2-so101-source-v2"
 LATER_RUN_ID = "exp2-so101-later"
 SONNET_MODEL_ID = "eu.anthropic.claude-sonnet-4-6"
 OPUS_MODEL_ID = "eu.anthropic.claude-opus-5"
 SOURCE_CELL_ID = f"{ROBOT_CONFIGURATION}::{CONDITION}"
 EXPERIENCE_ID = f"{SOURCE_RUN_ID}:{SOURCE_CELL_ID}"
+DRIVER_PROBE_CALLS_PER_STAGE = 25
+COMPLETE_DRIVER_CHECKS_PER_STAGE = 2
+GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
+REVISION_FIELDS = (
+    "authority_revision",
+    "manifest_revision",
+    "protocol_revision",
+    "git_commit",
+)
+PUBLIC_PROPOSAL_FIELDS = frozenset(
+    {"observation", "lesson", "recommendation", "scope", "evidence"}
+)
+FORMAL_GIT_PATHS = (
+    "AUTOADAPTER_2_AUTHORITY.md",
+    "experiment/experiment2",
+    "experiment/experiment3/diagnostics/all_11_package_check_2026-08-23.json",
+    "experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json",
+    "experiment/experiment3/diagnostics/reference_positive_control_so101_pass_2026-08-23.json",
+    "experiment/experiment3/diagnostics/sonnet_exact_runtime_pin_canary_2026-08-23.json",
+    "autoadapter/src/autoadapter2",
+    ":(exclude)autoadapter/src/autoadapter2/b2",
+    "autoadapter/libraries/robots/index.json",
+    "autoadapter/libraries/robots/robotstudio_so101",
+    "autoadapter/pyproject.toml",
+)
 EXPECTED_RETRY_POLICY = {
     "maximum_physical_requests": 2,
     "backoff_seconds": 1.0,
@@ -318,10 +345,28 @@ def _resources(value: Any) -> dict[str, Any]:
     _require(isinstance(development, Mapping), "runtime.resources.development_probe must be an object")
     _require(isinstance(validation, Mapping), "runtime.resources.validation must be an object")
     assert isinstance(development, Mapping) and isinstance(validation, Mapping)
-    _require(set(development) == {"max_requests_per_stage", "wall_timeout_s_per_request", "max_output_chars_per_request"}, "development_probe resource fields are incomplete")
+    _require(
+        set(development)
+        == {
+            "max_requests_per_stage",
+            "max_complete_driver_checks",
+            "wall_timeout_s_per_request",
+            "max_output_chars_per_request",
+        },
+        "development_probe resource fields are incomplete",
+    )
     for key in development:
         number = development[key]
         _require(isinstance(number, (int, float)) and not isinstance(number, bool) and float(number) > 0, f"development_probe.{key} must be positive")
+    _require(
+        development.get("max_requests_per_stage") == DRIVER_PROBE_CALLS_PER_STAGE,
+        "development_probe.max_requests_per_stage must reserve 25 calls",
+    )
+    _require(
+        development.get("max_complete_driver_checks")
+        == COMPLETE_DRIVER_CHECKS_PER_STAGE,
+        "development_probe.max_complete_driver_checks must be 2",
+    )
     _require(set(validation) == {"record_video", "worker_wall_timeout_s"}, "validation resource fields are incomplete")
     _require(validation.get("record_video") is True, "formal Experiment 2 requires video")
     timeout = validation.get("worker_wall_timeout_s")
@@ -709,6 +754,164 @@ def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _current_git_commit(mainline_root: str | Path) -> str:
+    """Return HEAD after rejecting dirty Experiment 2 execution inputs."""
+
+    try:
+        root_result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(Path(mainline_root).resolve()),
+                "rev-parse",
+                "--show-toplevel",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise Experiment2RunnerError("cannot read the current Git commit") from exc
+    _require(root_result.returncode == 0, "cannot read the current Git commit")
+    repository_root = root_result.stdout.strip()
+    try:
+        commit_result = subprocess.run(
+            ["git", "-C", repository_root, "rev-parse", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        status_result = subprocess.run(
+            [
+                "git",
+                "-C",
+                repository_root,
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=all",
+                "--",
+                *FORMAL_GIT_PATHS,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise Experiment2RunnerError("cannot verify the current Git commit") from exc
+    _require(commit_result.returncode == 0, "cannot read the current Git commit")
+    _require(
+        status_result.returncode == 0,
+        "cannot verify committed Experiment 2 inputs",
+    )
+    dirty = status_result.stdout.strip()
+    _require(
+        not dirty,
+        "formal dispatch requires committed Experiment 2 inputs; dirty paths: "
+        + dirty.replace("\n", "; "),
+    )
+    return commit_result.stdout.strip()
+
+
+def _revision_evidence(
+    manifest: Mapping[str, Any], *, git_commit: str
+) -> dict[str, str]:
+    evidence = {
+        "authority_revision": str(manifest.get("authority_revision", "")),
+        "manifest_revision": str(manifest.get("manifest_revision", "")),
+        "protocol_revision": str(manifest.get("protocol_revision", "")),
+        "git_commit": git_commit.strip(),
+    }
+    _require(
+        GIT_COMMIT_PATTERN.fullmatch(evidence["git_commit"]) is not None,
+        "formal dispatch requires a non-empty full Git commit",
+    )
+    return evidence
+
+
+def _attach_revision_evidence(
+    result: dict[str, Any], revisions: Mapping[str, str]
+) -> None:
+    evidence = {field: str(revisions[field]) for field in REVISION_FIELDS}
+    result.update(evidence)
+    result["experiment2_revision_evidence"] = copy.deepcopy(evidence)
+    cells = result.get("cells")
+    if not isinstance(cells, list):
+        return
+    for index, cell in enumerate(cells):
+        if not isinstance(cell, Mapping):
+            continue
+        stamped = copy.deepcopy(dict(cell))
+        stamped.update(evidence)
+        cells[index] = stamped
+
+
+def _require_source_revision_evidence(value: Mapping[str, Any]) -> dict[str, str]:
+    evidence = {field: value.get(field) for field in REVISION_FIELDS}
+    _require(
+        evidence["authority_revision"] == AUTHORITY_REVISION
+        and evidence["manifest_revision"] == MANIFEST_REVISION
+        and evidence["protocol_revision"] == PROTOCOL_REVISION,
+        "source artifact revision lineage differs from Experiment 2",
+    )
+    commit = evidence["git_commit"]
+    _require(
+        isinstance(commit, str)
+        and GIT_COMMIT_PATTERN.fullmatch(commit) is not None,
+        "source artifact lacks a full Git commit",
+    )
+    return {field: str(evidence[field]) for field in REVISION_FIELDS}
+
+
+def _require_reviewable_source_queue(queue: Any) -> Mapping[str, Any]:
+    """Require one determinate exact-five-field proposal from the corrected source."""
+
+    _require(isinstance(queue, Mapping), "source review queue must be one object")
+    assert isinstance(queue, Mapping)
+    _require(
+        queue.get("run_id") != PRE_FIX_SOURCE_RUN_ID,
+        "the retained pre-fix source queue is not reviewable",
+    )
+    _require(
+        queue.get("artifact_type") == "experience_review_queue"
+        and queue.get("run_id") == SOURCE_RUN_ID,
+        "source review queue identity differs from Experiment 2",
+    )
+    _require_source_revision_evidence(queue)
+    records = queue.get("records")
+    _require(
+        isinstance(records, list) and len(records) == 1,
+        "source review queue must contain exactly one fixed record",
+    )
+    record = records[0]
+    _require(isinstance(record, Mapping), "source review record must be one object")
+    assert isinstance(record, Mapping)
+    _require(
+        record.get("cell_id") == SOURCE_CELL_ID,
+        "source review record cell differs from Experiment 2",
+    )
+    _require(
+        record.get("terminal_outcome_label") in {"positive", "negative"},
+        "source terminal outcome label is indeterminate; human review is not permitted",
+    )
+    evolution = record.get("evolution")
+    _require(
+        isinstance(evolution, Mapping)
+        and evolution.get("proposal_created") is True,
+        "source has no reusable Evolution proposal; human review is not permitted",
+    )
+    assert isinstance(evolution, Mapping)
+    proposal = evolution.get("proposal")
+    _require(
+        isinstance(proposal, Mapping)
+        and set(proposal) == PUBLIC_PROPOSAL_FIELDS,
+        "source Evolution proposal must contain exactly the five public model fields",
+    )
+    return record
+
+
 def _assert_returned_identity(client: Any, *, role: str, expected_model_id: str) -> None:
     calls = getattr(client, "calls", None)
     _require(isinstance(calls, list) and bool(calls), f"{role} returned-model evidence is missing")
@@ -892,15 +1095,18 @@ def run_source(
     evolution_runner_fn: Callable[[Any, Mapping[str, Any]], Mapping[str, Any]] = run_evolution,
     hooks: Any | None = None,
     check_self_containment: bool = True,
+    git_commit_fn: Callable[[str | Path], str] | None = None,
 ) -> dict[str, Any]:
     """Run Sonnet through Task Demo, then and only then call terminal Opus."""
 
     runner_started = time.monotonic()
     launched_at_utc = _utc_now()
     _require(isinstance(manual_launch_event, str) and bool(manual_launch_event.strip()), "source manual_launch_event is required")
-    destination = _new_output(output_dir, role="source")
     source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
     preflight = validate_executable_preflight(source, mainline_root=mainline_root)
+    commit = (git_commit_fn or _current_git_commit)(mainline_root)
+    revisions = _revision_evidence(source, git_commit=commit)
+    destination = _new_output(output_dir, role="source")
     producer_client = (
         client_factory("producer", copy.deepcopy(preflight["producer_model"]), copy.deepcopy(preflight["producer_transport"]))
         if client_factory is not None
@@ -921,6 +1127,7 @@ def run_source(
     if hooks is not None:
         kwargs["hooks"] = hooks
     result = copy.deepcopy(dict(run_experiment_fn(mainline_root, **kwargs)))
+    _attach_revision_evidence(result, revisions)
     result["experiment2_manual_launch_event"] = manual_launch_event.strip()
     result["experiment2_manual_launched_at_utc"] = launched_at_utc
     try:
@@ -1081,6 +1288,29 @@ def run_source(
         expected_conditions=(CONDITION,),
         cells=(cell,),
     )
+    queue.update(copy.deepcopy(revisions))
+    try:
+        _require_reviewable_source_queue(queue)
+    except Experiment2RunnerError as exc:
+        _retain_runner_failure(
+            destination=destination,
+            result=result,
+            role="source",
+            stage="source-review-eligibility",
+            error=exc,
+            runner_started=runner_started,
+            producer_client=producer_client,
+            producer_model=preflight["producer_model"],
+            manual_launch_event=manual_launch_event,
+            launched_at_utc=launched_at_utc,
+            evolution_client=evolution_client,
+            evolution_model=preflight["evolution_model"],
+        )
+        raise Experiment2RunnerError(
+            "source outcome is not eligible for human review; the Opus outcome was "
+            "retained but no human-review queue was written and the closure is blocked: "
+            + str(exc)
+        ) from exc
     _write_json(destination / "experience_review_queue.json", queue)
     result["experiment2_runner_status"] = "completed"
     result["experiment2_run_role"] = "source"
@@ -1105,6 +1335,8 @@ def review_source(
         queue = json.loads(queue_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise Experiment2RunnerError("source review queue is unavailable") from exc
+    _require_reviewable_source_queue(queue)
+    source_revisions = _require_source_revision_evidence(queue)
     try:
         reviewed = apply_experience_review(
             queue,
@@ -1121,6 +1353,8 @@ def review_source(
         records = snapshot.get("records")
         _require(isinstance(records, list) and len(records) == 1, "accepted source must freeze exactly one Experience record")
         _require(records[0].get("experience_id") == EXPERIENCE_ID, "accepted Experience ID is not the fixed source ID")
+        snapshot.update(copy.deepcopy(source_revisions))
+        snapshot["source_revision_evidence"] = copy.deepcopy(source_revisions)
         _write_json(reviewed_path, reviewed)
         _write_json(snapshot_path, snapshot)
     else:
@@ -1139,6 +1373,11 @@ def _accepted_snapshot(path: str | Path) -> dict[str, Any]:
         snapshot = load_experience_snapshot(path)
     except (OSError, EvolutionError) as exc:
         raise Experiment2RunnerError("later run requires an accepted frozen Experience snapshot") from exc
+    source_revisions = _require_source_revision_evidence(snapshot)
+    _require(
+        snapshot.get("source_revision_evidence") == source_revisions,
+        "Experience snapshot source revision lineage is incomplete",
+    )
     _require(snapshot.get("source_run_id") == SOURCE_RUN_ID, "Experience source run ID does not match Experiment 2")
     records = snapshot.get("records")
     _require(isinstance(records, list) and len(records) == 1, "later run requires exactly one accepted Experience record")
@@ -1172,6 +1411,7 @@ def run_later(
     run_experiment_fn: Callable[..., Mapping[str, Any]] = run_experiment,
     hooks: Any | None = None,
     check_self_containment: bool = True,
+    git_commit_fn: Callable[[str | Path], str] | None = None,
 ) -> dict[str, Any]:
     """Manually launch the independent later Sonnet run from one frozen snapshot."""
 
@@ -1181,9 +1421,11 @@ def run_later(
     # client is constructed and therefore before any model call.
     snapshot = _accepted_snapshot(snapshot_path)
     loaded_at_utc = _utc_now()
-    destination = _new_output(output_dir, role="later")
     source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
     preflight = validate_executable_preflight(source, mainline_root=mainline_root)
+    commit = (git_commit_fn or _current_git_commit)(mainline_root)
+    revisions = _revision_evidence(source, git_commit=commit)
+    destination = _new_output(output_dir, role="later")
     producer_client = (
         client_factory("producer", copy.deepcopy(preflight["producer_model"]), copy.deepcopy(preflight["producer_transport"]))
         if client_factory is not None
@@ -1202,6 +1444,7 @@ def run_later(
     if hooks is not None:
         kwargs["hooks"] = hooks
     result = copy.deepcopy(dict(run_experiment_fn(mainline_root, **kwargs)))
+    _attach_revision_evidence(result, revisions)
     result["experiment2_manual_launch_event"] = manual_launch_event.strip()
     result["experiment2_manual_launched_at_utc"] = loaded_at_utc
     result["experiment2_loaded_experience_id"] = EXPERIENCE_ID
@@ -1209,6 +1452,9 @@ def run_later(
         "experience_id": EXPERIENCE_ID,
         "snapshot_id": snapshot["snapshot_id"],
         "source_run_id": snapshot["source_run_id"],
+        "source_revision_evidence": copy.deepcopy(
+            snapshot["source_revision_evidence"]
+        ),
         "loaded_at_utc": loaded_at_utc,
         "manual_launch_event": manual_launch_event.strip(),
     }
@@ -1400,12 +1646,18 @@ def main(argv: list[str] | None = None) -> int:
 
 
 __all__ = [
+    "AUTHORITY_REVISION",
+    "COMPLETE_DRIVER_CHECKS_PER_STAGE",
     "CONDITION",
+    "DRIVER_PROBE_CALLS_PER_STAGE",
     "EXPERIENCE_ID",
     "EXPERIMENT_ID",
     "Experiment2RunnerError",
     "LATER_RUN_ID",
+    "MANIFEST_REVISION",
     "OPUS_MODEL_ID",
+    "PRE_FIX_SOURCE_RUN_ID",
+    "PROTOCOL_REVISION",
     "ROBOT_CONFIGURATION",
     "SONNET_MODEL_ID",
     "SOURCE_RUN_ID",

@@ -12,6 +12,14 @@ import pytest
 from experiment.experiment2 import runner
 
 
+TEST_GIT_COMMIT = "a" * 40
+
+
+@pytest.fixture(autouse=True)
+def _committed_experiment2_inputs(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runner, "_current_git_commit", lambda _root: TEST_GIT_COMMIT)
+
+
 def _model_pin(
     model_id: str, revision: str, *, max_output_tokens: int = 16_384
 ) -> dict[str, Any]:
@@ -100,7 +108,10 @@ def _executable_manifest(tmp_path: Path) -> dict[str, Any]:
         "evolution_transport": _transport(),
         "resources": {
             "development_probe": {
-                "max_requests_per_stage": 12,
+                "max_requests_per_stage": runner.DRIVER_PROBE_CALLS_PER_STAGE,
+                "max_complete_driver_checks": (
+                    runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
+                ),
                 "wall_timeout_s_per_request": 30,
                 "max_output_chars_per_request": 12_000,
             },
@@ -305,6 +316,15 @@ def _proposal() -> dict[str, Any]:
     }
 
 
+def _source_revision_evidence() -> dict[str, str]:
+    return {
+        "authority_revision": runner.AUTHORITY_REVISION,
+        "manifest_revision": runner.MANIFEST_REVISION,
+        "protocol_revision": runner.PROTOCOL_REVISION,
+        "git_commit": TEST_GIT_COMMIT,
+    }
+
+
 def test_checked_in_manifest_fixes_two_roles_and_distinct_model_assignments() -> None:
     manifest = runner.validate_design_manifest(runner.load_manifest())
 
@@ -314,6 +334,18 @@ def test_checked_in_manifest_fixes_two_roles_and_distinct_model_assignments() ->
     assert manifest["models"]["terminal_evolution"]["exact_model_id"] == runner.OPUS_MODEL_ID
     assert manifest["denominator"]["declared_closure_runs"] == 2
     assert manifest["denominator"]["improvement_claim"] is False
+    assert (
+        manifest["runtime"]["resources"]["development_probe"][
+            "max_requests_per_stage"
+        ]
+        == runner.DRIVER_PROBE_CALLS_PER_STAGE
+    )
+    assert (
+        manifest["runtime"]["resources"]["development_probe"][
+            "max_complete_driver_checks"
+        ]
+        == runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
+    )
 
     drifted = copy.deepcopy(manifest)
     drifted["models"]["terminal_evolution"]["max_output_tokens"] = 16_384
@@ -368,6 +400,36 @@ def test_checked_in_manifest_has_executable_readiness_and_model_pins() -> None:
     assert preflight["evolution_model"]["model_id"] == runner.OPUS_MODEL_ID
     assert preflight["evolution_model"]["temperature"] == 0.0
     assert preflight["evolution_model"]["max_output_tokens"] == 32_768
+    assert (
+        preflight["resources"]["development_probe"]["max_requests_per_stage"]
+        == runner.DRIVER_PROBE_CALLS_PER_STAGE
+    )
+    assert (
+        preflight["resources"]["development_probe"][
+            "max_complete_driver_checks"
+        ]
+        == runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
+    )
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["resources"]["development_probe"][
+        "max_requests_per_stage"
+    ] = 14
+    with pytest.raises(runner.Experiment2RunnerError, match="reserve 25"):
+        runner.validate_executable_preflight(
+            drifted,
+            mainline_root=Path(__file__).resolve().parents[2] / "autoadapter",
+        )
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["resources"]["development_probe"][
+        "max_complete_driver_checks"
+    ] = 1
+    with pytest.raises(runner.Experiment2RunnerError, match="must be 2"):
+        runner.validate_executable_preflight(
+            drifted,
+            mainline_root=Path(__file__).resolve().parents[2] / "autoadapter",
+        )
 
     readiness = preflight["readiness_evidence"]
     assert set(readiness) == {
@@ -394,6 +456,27 @@ def test_checked_in_manifest_has_executable_readiness_and_model_pins() -> None:
         readiness["evolution_model_canary"]["artifact_type"]
         == "experiment2_company_api_model_identity_canaries"
     )
+
+
+def test_source_requires_committed_revision_before_client_construction(
+    tmp_path: Path,
+) -> None:
+    clients: list[str] = []
+    output = tmp_path / "uncommitted-source"
+
+    with pytest.raises(runner.Experiment2RunnerError, match="full Git commit"):
+        runner.run_source(
+            tmp_path,
+            manifest=_executable_manifest(tmp_path),
+            output_dir=output,
+            manual_launch_event="operator-source-launch",
+            client_factory=lambda role, *_args: clients.append(role),
+            run_experiment_fn=lambda *_args, **_kwargs: {},
+            git_commit_fn=lambda _root: "",
+        )
+
+    assert clients == []
+    assert not output.exists()
 
 
 def test_readiness_rejects_passed_reference_evidence_for_another_robot(
@@ -487,6 +570,10 @@ def test_source_runs_sonnet_to_task_demo_before_one_distinct_opus_call_and_no_ov
         "run:opus",
     ]
     assert result["cells"][0]["outcomes"]["Evolution"]["proposal_created"] is True
+    assert result["experiment2_revision_evidence"] == _source_revision_evidence()
+    for field, value in _source_revision_evidence().items():
+        assert result[field] == value
+        assert result["cells"][0][field] == value
     resources = result["resource_summary"]
     assert resources["runner_wall_time_s"] >= 0
     assert resources["producer"]["call_count"] == 1
@@ -508,6 +595,8 @@ def test_source_runs_sonnet_to_task_demo_before_one_distinct_opus_call_and_no_ov
     assert queue["records"][0]["generation_condition"] == runner.CONDITION
     assert queue["records"][0]["terminal_outcome_label"] == "positive"
     assert queue["records"][0]["disposition"] is None
+    for field, value in _source_revision_evidence().items():
+        assert queue[field] == value
 
     with pytest.raises(runner.Experiment2RunnerError, match="never overwritten"):
         runner.run_source(
@@ -761,6 +850,199 @@ def test_truthful_task_demo_not_run_is_terminal_and_can_yield_negative_experienc
     assert queue["records"][0]["terminal_outcome_label"] == "negative"
 
 
+def test_indeterminate_source_retains_opus_but_writes_no_review_queue(
+    tmp_path: Path,
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+    roles: list[str] = []
+
+    def client_factory(
+        role: str, model: dict[str, Any], transport: dict[str, Any]
+    ) -> Any:
+        roles.append(role)
+        return _client(model, transport, role)
+
+    def fake_run(_root: Path, **kwargs: Any) -> dict[str, Any]:
+        Path(kwargs["output_dir"]).mkdir(parents=True)
+        kwargs["producer_client"].calls.append(
+            {"returned_model": runner.SONNET_MODEL_ID}
+        )
+        result = _source_pipeline_result(task_demo_executed=False)
+        cell = result["cells"][0]
+        cell["attempt_count"] = 0
+        cell["pipeline_completed"] = False
+        cell["final_capability_validation_passed"] = False
+        cell["capability_validation_executed"] = False
+        cell["video_complete"] = False
+        cell["capability_validation"] = {
+            "pipeline_completed": False,
+            "physical_validation_executed": False,
+            "validation_passed": False,
+            "video_required": True,
+            "video_complete": False,
+            "failure": {"stage": "generate", "type": "GenerationError"},
+        }
+        return result
+
+    def fake_evolution(client: Any, _cell: dict[str, Any]) -> dict[str, Any]:
+        client.calls.append({"returned_model": client.config.model})
+        return _proposal()
+
+    output = tmp_path / "indeterminate-source"
+    with pytest.raises(
+        runner.Experiment2RunnerError,
+        match="no human-review queue was written",
+    ):
+        runner.run_source(
+            tmp_path,
+            manifest=manifest,
+            output_dir=output,
+            manual_launch_event="operator-source-launch",
+            client_factory=client_factory,
+            run_experiment_fn=fake_run,
+            evolution_runner_fn=fake_evolution,
+        )
+
+    assert roles == ["producer", "terminal_evolution"]
+    assert not (output / "experience_review_queue.json").exists()
+    report = json.loads((output / "experiment_report.json").read_text())
+    assert report["experiment2_runner_status"] == "failed"
+    assert (
+        report["experiment2_runner_failure"]["stage"]
+        == "source-review-eligibility"
+    )
+    proposal = report["cells"][0]["outcomes"]["Evolution"]["proposal"]
+    assert set(proposal) == {
+        "observation",
+        "lesson",
+        "recommendation",
+        "scope",
+        "evidence",
+    }
+
+
+def test_no_reusable_lesson_retains_opus_but_writes_no_review_queue(
+    tmp_path: Path,
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+
+    def client_factory(
+        role: str, model: dict[str, Any], transport: dict[str, Any]
+    ) -> Any:
+        return _client(model, transport, role)
+
+    def fake_run(_root: Path, **kwargs: Any) -> dict[str, Any]:
+        Path(kwargs["output_dir"]).mkdir(parents=True)
+        kwargs["producer_client"].calls.append(
+            {"returned_model": runner.SONNET_MODEL_ID}
+        )
+        return _source_pipeline_result()
+
+    def no_lesson(client: Any, _cell: dict[str, Any]) -> dict[str, Any]:
+        client.calls.append({"returned_model": client.config.model})
+        outcome = _proposal()
+        outcome["proposal_created"] = False
+        outcome["proposal"] = None
+        outcome["no_reusable_lesson"] = True
+        return outcome
+
+    output = tmp_path / "no-lesson-source"
+    with pytest.raises(runner.Experiment2RunnerError, match="no reusable"):
+        runner.run_source(
+            tmp_path,
+            manifest=manifest,
+            output_dir=output,
+            manual_launch_event="operator-source-launch",
+            client_factory=client_factory,
+            run_experiment_fn=fake_run,
+            evolution_runner_fn=no_lesson,
+        )
+
+    assert not (output / "experience_review_queue.json").exists()
+    report = json.loads((output / "experiment_report.json").read_text())
+    evolution = report["cells"][0]["outcomes"]["Evolution"]
+    assert evolution["evolution_completed"] is True
+    assert evolution["no_reusable_lesson"] is True
+    assert evolution["proposal"] is None
+    assert (
+        report["experiment2_runner_failure"]["stage"]
+        == "source-review-eligibility"
+    )
+
+
+def test_indeterminate_legacy_queue_cannot_be_accepted_or_rejected(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "legacy-indeterminate-source"
+    source_dir.mkdir()
+    queue = {
+        "artifact_type": "experience_review_queue",
+        "experiment_id": runner.EXPERIMENT_ID,
+        "run_id": runner.SOURCE_RUN_ID,
+        **_source_revision_evidence(),
+        "records": [
+            {
+                "source_run_id": runner.SOURCE_RUN_ID,
+                "cell_id": runner.SOURCE_CELL_ID,
+                "robot_configuration_id": runner.ROBOT_CONFIGURATION,
+                "source_robot": runner.ROBOT_CONFIGURATION,
+                "generation_condition": runner.CONDITION,
+                "terminal_outcome_label": "indeterminate",
+                "evolution": {
+                    "proposal_created": True,
+                    "proposal": _proposal()["proposal"],
+                },
+                "disposition": None,
+                "reason": None,
+            }
+        ],
+    }
+    queue_path = source_dir / "experience_review_queue.json"
+    original = json.dumps(queue, indent=2) + "\n"
+    queue_path.write_text(original, encoding="utf-8")
+
+    for disposition in ("accept", "reject"):
+        with pytest.raises(
+            runner.Experiment2RunnerError,
+            match="indeterminate",
+        ):
+            runner.review_source(
+                source_dir,
+                disposition=disposition,
+                reason="A nonempty reason must not make this queue reviewable.",
+            )
+
+    assert queue_path.read_text(encoding="utf-8") == original
+    assert not (source_dir / "experience_reviewed_queue.json").exists()
+    assert not (source_dir / "experience_snapshot.json").exists()
+
+
+def test_retained_pre_fix_source_queue_is_never_reviewable(tmp_path: Path) -> None:
+    source_dir = tmp_path / "pre-fix-source"
+    source_dir.mkdir()
+    queue = {
+        "artifact_type": "experience_review_queue",
+        "experiment_id": runner.EXPERIMENT_ID,
+        "run_id": runner.PRE_FIX_SOURCE_RUN_ID,
+        "records": [],
+    }
+    queue_path = source_dir / "experience_review_queue.json"
+    original = json.dumps(queue) + "\n"
+    queue_path.write_text(original, encoding="utf-8")
+
+    for disposition in ("accept", "reject"):
+        with pytest.raises(runner.Experiment2RunnerError, match="pre-fix"):
+            runner.review_source(
+                source_dir,
+                disposition=disposition,
+                reason="Historical evidence must remain immutable.",
+            )
+
+    assert queue_path.read_text(encoding="utf-8") == original
+    assert not (source_dir / "experience_reviewed_queue.json").exists()
+    assert not (source_dir / "experience_snapshot.json").exists()
+
+
 def test_accept_freezes_exact_id_and_manual_later_consumes_it_without_evolution(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -801,6 +1083,42 @@ def test_accept_freezes_exact_id_and_manual_later_consumes_it_without_evolution(
     snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
     assert snapshot["records"][0]["experience_id"] == runner.EXPERIENCE_ID
     assert snapshot["records"][0]["review_reason"].startswith("The proposal")
+    assert snapshot["source_revision_evidence"] == _source_revision_evidence()
+    for field, value in _source_revision_evidence().items():
+        assert snapshot[field] == value
+
+    tampered_snapshot = copy.deepcopy(snapshot)
+    tampered_snapshot["source_revision_evidence"]["git_commit"] = "b" * 40
+    tampered_path = tmp_path / "tampered-experience-snapshot.json"
+    tampered_path.write_text(json.dumps(tampered_snapshot), encoding="utf-8")
+    tampered_clients: list[str] = []
+    with pytest.raises(runner.Experiment2RunnerError, match="lineage is incomplete"):
+        runner.run_later(
+            tmp_path,
+            manifest=manifest,
+            snapshot_path=tampered_path,
+            output_dir=tmp_path / "later-tampered-lineage",
+            manual_launch_event="operator-later-launch-tampered",
+            client_factory=lambda role, *_args: tampered_clients.append(role),
+            run_experiment_fn=lambda *_args, **_kwargs: {},
+        )
+    assert tampered_clients == []
+
+    blocked_clients: list[str] = []
+    blocked_output = tmp_path / "later-uncommitted"
+    with pytest.raises(runner.Experiment2RunnerError, match="full Git commit"):
+        runner.run_later(
+            tmp_path,
+            manifest=manifest,
+            snapshot_path=snapshot_path,
+            output_dir=blocked_output,
+            manual_launch_event="operator-later-launch-uncommitted",
+            client_factory=lambda role, *_args: blocked_clients.append(role),
+            run_experiment_fn=lambda *_args, **_kwargs: {},
+            git_commit_fn=lambda _root: "",
+        )
+    assert blocked_clients == []
+    assert not blocked_output.exists()
 
     monkeypatch.setenv("TEST_MODEL_KEY", "manifest-pinned-secret")
     later_clients: list[Any] = []
@@ -872,11 +1190,18 @@ def test_accept_freezes_exact_id_and_manual_later_consumes_it_without_evolution(
     assert result["experiment2_experience_load"]["experience_id"] == runner.EXPERIENCE_ID
     assert result["experiment2_experience_load"]["snapshot_id"] == snapshot["snapshot_id"]
     assert result["experiment2_experience_load"]["source_run_id"] == runner.SOURCE_RUN_ID
+    assert (
+        result["experiment2_experience_load"]["source_revision_evidence"]
+        == _source_revision_evidence()
+    )
     assert result["experiment2_experience_load"]["manual_launch_event"] == "operator-later-launch"
     assert result["experiment2_experience_load"]["loaded_at_utc"].endswith("Z")
     assert result["resource_summary"]["producer"]["call_count"] == 1
     assert result["resource_summary"]["producer"]["token_categories"]["total_tokens"] == 60
     assert result["resource_summary"]["runner_wall_time_s"] >= 0
+    assert result["experiment2_revision_evidence"] == _source_revision_evidence()
+    for field, value in _source_revision_evidence().items():
+        assert result["cells"][0][field] == value
     assert not (tmp_path / "later" / "experience_review_queue.json").exists()
 
     def wrong_identity_later(root: Path, **kwargs: Any) -> dict[str, Any]:
@@ -901,7 +1226,7 @@ def test_accept_freezes_exact_id_and_manual_later_consumes_it_without_evolution(
     assert failed["resource_summary"]["producer"]["call_count"] == 1
 
 
-def test_reject_and_null_proposal_block_later_before_model_construction(
+def test_reject_blocks_later_and_null_proposal_cannot_be_reviewed(
     tmp_path: Path,
 ) -> None:
     source_dir = tmp_path / "rejected-source"
@@ -910,6 +1235,7 @@ def test_reject_and_null_proposal_block_later_before_model_construction(
         "artifact_type": "experience_review_queue",
         "experiment_id": runner.EXPERIMENT_ID,
         "run_id": runner.SOURCE_RUN_ID,
+        **_source_revision_evidence(),
         "records": [
             {
                 "source_run_id": runner.SOURCE_RUN_ID,
@@ -918,10 +1244,13 @@ def test_reject_and_null_proposal_block_later_before_model_construction(
                 "generation_condition": runner.CONDITION,
                 "source_robot": runner.ROBOT_CONFIGURATION,
                 "source_condition": runner.CONDITION,
-                    "source_outcome": "negative",
-                    "outcome_label": "negative",
-                    "terminal_outcome_label": "negative",
-                "evolution": {"proposal": None},
+                "source_outcome": "negative",
+                "outcome_label": "negative",
+                "terminal_outcome_label": "negative",
+                "evolution": {
+                    "proposal_created": True,
+                    "proposal": _proposal()["proposal"],
+                },
                 "disposition": None,
                 "reason": None,
             }
@@ -933,7 +1262,7 @@ def test_reject_and_null_proposal_block_later_before_model_construction(
     review = runner.review_source(
         source_dir,
         disposition="reject",
-        reason="No reusable public lesson was proposed.",
+        reason="The proposed public lesson is too narrow to reuse.",
     )
     assert review["later_run_eligible"] is False
     assert review["snapshot_path"] is None
@@ -953,15 +1282,24 @@ def test_reject_and_null_proposal_block_later_before_model_construction(
 
     null_dir = tmp_path / "null-source"
     null_dir.mkdir()
+    null_queue = copy.deepcopy(queue)
+    null_queue["records"][0]["evolution"] = {
+        "proposal_created": False,
+        "no_reusable_lesson": True,
+        "proposal": None,
+    }
     (null_dir / "experience_review_queue.json").write_text(
-        json.dumps(queue), encoding="utf-8"
+        json.dumps(null_queue), encoding="utf-8"
     )
-    with pytest.raises(runner.Experiment2RunnerError, match="must contain an Evolution proposal"):
-        runner.review_source(
-            null_dir,
-            disposition="accept",
-            reason="Attempted acceptance of a null proposal.",
-        )
+    for disposition in ("accept", "reject"):
+        with pytest.raises(runner.Experiment2RunnerError, match="no reusable"):
+            runner.review_source(
+                null_dir,
+                disposition=disposition,
+                reason="A null proposal cannot enter human review.",
+            )
+    assert not (null_dir / "experience_reviewed_queue.json").exists()
+    assert not (null_dir / "experience_snapshot.json").exists()
 
 
 def test_cli_keeps_source_review_and_later_as_separate_explicit_commands(

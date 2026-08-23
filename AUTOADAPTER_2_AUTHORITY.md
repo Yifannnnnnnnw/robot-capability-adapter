@@ -4,9 +4,49 @@
 > **Document role / 文档角色：** sole project-wide normative document; bounded experiment authorities require explicit delegation in Section 0.1 / 项目范围唯一规范性文档；限定实验权威必须由第 0.1 节明确委派<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.19.33`<br>
+> **Document revision / 文档版本：** `0.19.34`<br>
 > **Effective date / 生效日期：** 2026-08-23<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
+
+Revision `0.19.34` fixes an observed pre-submission Driver Synthesis
+contradiction before Experiment 3 begins. A ten-capability source revision used
+the former fourteen-call allowance on one import and ten complete public
+smokes, leaving three calls; although the model corrected its ordinary-Mapping
+request access on the next turn, the Framework could not create and check that
+revision. Generate and Repair now expose the Mapping ABI in their actual
+interactive instructions and interface stub. Experiment 2 and Experiment 3
+explicitly opt into `max_complete_driver_checks = 2`; an opted-in driver stage
+with `C` capabilities may use at most `2 × (C + 1) + 3` local probe calls: two
+complete current-revision import/all-capability bundles and no more than three
+separately counted discretionary probes. Experiment 2 and Experiment 3 pin the
+ten-capability ceiling of 25. The twelve model turns, three submitted-driver
+attempts, private Harness boundary, robot cohorts, models, and claims do not
+change. The runtime default remains one complete check, so Experiment 1 keeps
+its delegated effective probe limits without any Experiment 1 file change.
+
+The retained pre-fix Experiment 2 source dispatch and its raw Opus outcome are
+immutable infrastructure-failure evidence. Its Framework label is
+`indeterminate`, so its queue cannot legally receive either `accept` or
+`reject`, cannot produce Experience, and must not be relabelled. The scoped
+Authority authorises exactly one fresh corrected source dispatch as
+`exp2-so101-source-v2` in its new output directory after the revised pins and
+focused checks are committed. The pre-fix `exp2-so101-source` artifacts remain
+retained and no further replacement is authorised.
+
+**中文辅助说明。** 修订 `0.19.34` 修复 Experiment 3 开跑前真实暴露的 Driver Synthesis
+预提交矛盾。十项 capability 的第一版源码用一次 import 和十次完整公开 smoke 消耗原有 14 次
+额度中的 11 次，只剩 3 次；模型下一回合虽已改正 Mapping 访问方式，Framework 却无法创建并
+检查新 revision。现在 Generate、Repair 的真实交互指令和接口 stub 都明确普通 Mapping ABI；
+Experiment 2/3 通过 `max_complete_driver_checks = 2` 显式启用双检查，含 `C` 项 capability 的
+适用 driver stage 最多使用 `2 × (C + 1) + 3` 次本地调用，即两套完整的
+当前 revision import/逐 capability 检查和独立计数的最多三次自由 probe。Experiment 2/3 对十项
+capability 固定上限 25；十二个模型回合、三次正式 driver submission、私有 Harness 边界、机器人、
+模型与 claim 均不改变；runtime 默认仍为一次完整检查，因此 Experiment 1 的委派 probe 上限不变，
+且不修改任何 Experiment 1 文件。
+旧 Experiment 2 source dispatch 及原始 Opus 输出保持为不可变的 infrastructure-failure evidence；
+其 `indeterminate` queue 既不能 accept 也不能 reject，不能生成 Experience，也不得改写 label。
+scoped Authority 只允许在新版本与聚焦检查提交后，以新目录 dispatch 一次
+`exp2-so101-source-v2`；旧 `exp2-so101-source` 证据继续保留，且不再允许其他 replacement。
 
 Revision `0.19.33` completes the prospective Chapter 3 pre-formal
 configuration without starting either formal matrix. Experiment 1a/B1 remains
@@ -1760,6 +1800,25 @@ model can revise the candidate before submission. The Framework counts a formal 
 the model explicitly submits `driver.py`; development revisions and rejected pre-submission checks
 do not consume one of the three Harness attempts.
 
+The runtime default permits one complete bundled check. Experiment 2 and Experiment 3 alone
+explicitly pin `max_complete_driver_checks = 2`; under that pin, a stage with `C` sealed
+capabilities reserves at most `2 × (C + 1) + 3` local probe calls: two complete bundles of one
+canonical import/build plus one public physics smoke per capability, and no more than three
+separately counted discretionary probes. A changed source invalidates prior-revision smokes, so the
+second bundle validates only the corrected current revision. This capacity is local development
+validation, not an additional model turn or submitted-driver attempt. The interface stub and the
+actual interactive Generate/Repair prompts state that `request` is an ordinary Python mapping;
+candidate fields are accessed with mapping subscription or mapping methods rather than attribute
+access.
+
+**中文辅助说明。** runtime 默认允许一次完整 bundled check。只有 Experiment 2/3 显式固定
+`max_complete_driver_checks = 2`；在该配置下，含 `C` 项 capability 的
+stage 最多保留 `2 × (C + 1) + 3` 次本地调用：两套“canonical import/build 加逐 capability
+公开 physics smoke”，以及独立计数且最多三次的自由 probe。源码改变后旧 revision 的 smoke
+失效，第二套只验证修正后的当前 revision。这是本地开发检查容量，不增加模型回合或正式 driver
+submission。接口 stub 和真实 Generate/Repair 交互 prompt 都明确 `request` 是普通 Python
+mapping，字段必须使用下标或 mapping 方法访问，而非属性访问。
+
 The Framework applies one deterministic bounded projection when serializing this tool conversation
 for the next model turn. It retains the initial public task context, exactly one latest complete
 `driver.py` snapshot, and the three most recent completed tool-interaction groups. Superseded
@@ -2359,8 +2418,13 @@ Experiment 3 cell. Existing Evolution proposals, human dispositions, or complete
 therefore do not support an Experiment 2 mechanism claim or an Experiment 3 cohort result unless the
 applicable prospective manifest, model pins, isolation, and evidence requirements are satisfied.
 Experiment 2 and Experiment 3 are delegated under Section 0.1. Their versioned manifests and
-retained evidence now satisfy the scoped construction prerequisites; formal execution has not begun
-and is authorised only from the final committed revision after the focused preflight passes.
+retained evidence satisfy the scoped construction prerequisites. One pre-fix Experiment 2 source
+dispatch occurred under the older revisions, but its observed local-probe deadlock prevented the
+declared correction path and its terminal facts yielded only an `indeterminate` label. It remains
+immutable infrastructure-failure evidence and is not a valid source role in the two-run closure.
+Exactly one corrected source dispatch is authorised by `AA2-EXP2` after the revised committed
+preflight. Experiment 3 remains at zero of thirty-three formal cells and may begin only from its
+revised committed pins after the focused preflight passes.
 
 **中文辅助说明。** 截至本版，受版本控制的主线 evidence 包括历史 package-level reference run
 以及当前聚焦的 simulator-integrity check。早于逐 step 穿透判定的历史 reference report 只能支持
@@ -2369,7 +2433,11 @@ run 也只属于历史证据。当前没有任何保留 run 自动属于 Experim
 现有 Evolution proposal、人工 disposition 或已完成 shakedown 路径，只有在满足适用的前瞻性 manifest、
 model pin、隔离和 evidence 要求时，才能支持 Experiment 2 mechanism 或 Experiment 3 cohort result。
 Experiment 2 与 Experiment 3 已在第 0.1 节委派。其版本化 manifest 与保留 evidence 已满足 scoped
-建设前置条件；正式执行尚未开始，且只有在最终提交版本通过聚焦 preflight 后才获准启动。
+建设前置条件。旧版本下曾 dispatch 一次 Experiment 2 source，但本地 probe 死锁阻止了已声明的
+修正路径，终态事实也只能得到 `indeterminate` label；它保持为不可变 infrastructure-failure
+evidence，不属于两轮 closure 中有效的 source role。`AA2-EXP2` 仅允许在新版本提交并通过 preflight
+后重新 dispatch 一次修正 source。Experiment 3 仍为 0/33 个正式 cell，只有新版本提交并通过聚焦
+preflight 后才可开跑。
 
 ---
 

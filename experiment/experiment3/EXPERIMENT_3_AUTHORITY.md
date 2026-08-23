@@ -2,18 +2,18 @@
 
 > **Document ID:** `AA2-EXP3`<br>
 > **Document role:** sole normative document for Experiment 3<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.32`<br>
+> **Parent authority:** `AA2-AUTH` revision `0.19.34`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.1`<br>
+> **Revision:** `0.1.2`<br>
 > **Effective date:** 2026-08-23<br>
 > **Design status:** active and prospectively fixed; ready for formal dispatch after final preflight
 
-Revision `0.1.1` changes no cohort member, replicate, model, condition,
-attempt budget, denominator, or claim. It fixes ordinary revision evidence and
-permits only interruption continuation for untouched cells in the same formal
-record; it never permits retry or replacement of a cell that has acquired a
-workspace or terminal outcome.
+Revision `0.1.2` changes no cohort member, replicate, model, condition,
+submitted-driver attempt budget, denominator, resume rule, or claim. Before
+the first Experiment 3 cell, it fixes the observed shared pre-submission
+deadlock by reserving two complete current-revision public checks plus three
+discretionary probes and by exposing the ordinary-Mapping request ABI.
 
 ## 0. Authority, scope, and precedence
 
@@ -99,6 +99,14 @@ Every cell uses:
   independent workspace; and
 - at most three submitted drivers: initial attempt `0` and no more than two
   bounded Repair attempts.
+
+For `C` sealed capabilities, each Generate or Repair stage receives at most
+`2 × (C + 1) + 3` local probe calls: two complete import/all-capability physics
+bundles plus no more than three discretionary probes. The manifest explicitly
+pins `max_complete_driver_checks = 2` and 25 as the ten-capability ceiling.
+Candidate methods read request fields with mapping
+item access or mapping methods, never `request.field`. This local recovery
+capacity does not increase the twelve model turns or three formal submissions.
 
 The model and inference settings are fixed as follows:
 

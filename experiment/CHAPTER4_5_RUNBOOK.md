@@ -24,8 +24,16 @@ Experiment 1.
   physics, independent verdicting, and required-video invalidation. The
   manifests validate each named role against that evidence.
 - All eleven reference positive controls pass, including the focused SO101
-  `mw_pick_place` control. Both executable preflights pass. No Experiment 2 or
-  Experiment 3 formal run has started.
+  `mw_pick_place` control. Both executable preflights pass. Neither a valid
+  Experiment 2 closure result nor an Experiment 3 cell has entered its
+  declared denominator.
+
+One pre-fix Experiment 2 source dispatch is retained at
+`autoadapter/runs/experiment2/exp2-so101-source`. Its probe deadlock and
+`indeterminate` Framework label make it immutable infrastructure-failure
+evidence, not the valid source role; it cannot be reviewed or supplied to the
+later run. The single authorised corrected source uses the distinct
+`exp2-so101-source-v2` identity and has not started.
 
 The earlier 10/11 status and SO101 failure record remain truthful historical
 diagnostics. The later focused SO101 pass is the current readiness evidence;
@@ -33,9 +41,11 @@ do not edit the old record and do not rerun SO101 or the other ten controls.
 The retained model canaries remain the declared provider evidence, so this
 runbook does not add another model canary before formal dispatch.
 
-Formal dispatch must use the final committed revision. Experiment 3 records
-that Git commit plus the fixed Authority, manifest, and protocol revisions in
-the experiment record and every cell row.
+Formal dispatch must use the final committed revision. Experiment 2 rejects
+dirty scoped inputs and records the Git commit plus fixed Authority, manifest,
+and protocol revisions in each source/later report and cell row; the accepted
+snapshot retains source lineage. Experiment 3 records the same revision fields
+in the experiment record and every cell row.
 
 ## Offline design checks
 
@@ -82,18 +92,21 @@ env -u AUTOADAPTER_COMPANY_API_KEY \
   source \
   --root autoadapter \
   --manifest experiment/experiment2/manifest.json \
-  --output autoadapter/runs/experiment2/exp2-so101-source \
-  --manual-event operator-manual-launch-exp2-source \
+  --output autoadapter/runs/experiment2/exp2-so101-source-v2 \
+  --manual-event operator-manual-launch-exp2-source-v2 \
   --env-file .env.company-api
 ```
 
-Inspect the retained terminal report and unedited proposal. Then record exactly
-one human decision with a nonempty reason:
+Inspect the retained terminal report and unedited proposal. A review command is
+legal only if the runner created `experience_review_queue.json`; an
+`indeterminate` outcome or explicit no-reusable-lesson result retains the Opus
+record without a queue and stops the closure. Otherwise record exactly one
+human decision with a nonempty reason:
 
 ```sh
 PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment2.runner \
   review \
-  --source-output autoadapter/runs/experiment2/exp2-so101-source \
+  --source-output autoadapter/runs/experiment2/exp2-so101-source-v2 \
   --disposition accept \
   --reason "REPLACE WITH THE REVIEWER'S NONEMPTY REASON"
 ```
@@ -111,7 +124,7 @@ env -u AUTOADAPTER_COMPANY_API_KEY \
   later \
   --root autoadapter \
   --manifest experiment/experiment2/manifest.json \
-  --snapshot autoadapter/runs/experiment2/exp2-so101-source/experience_snapshot.json \
+  --snapshot autoadapter/runs/experiment2/exp2-so101-source-v2/experience_snapshot.json \
   --output autoadapter/runs/experiment2/exp2-so101-later \
   --manual-event operator-manual-launch-exp2-later \
   --env-file .env.company-api

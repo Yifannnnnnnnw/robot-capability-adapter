@@ -40,6 +40,7 @@ class ProbeBudget:
     """Hard limits shared by one condition's local probe batch."""
 
     max_requests: int = 12
+    max_complete_driver_checks: int = 1
     timeout_s: float = 30.0
     max_output_chars: int = 24000
     max_steps: int = 4000
@@ -48,6 +49,12 @@ class ProbeBudget:
     def __post_init__(self) -> None:
         if self.max_requests <= 0:
             raise ValueError("max_requests must be positive")
+        if (
+            isinstance(self.max_complete_driver_checks, bool)
+            or not isinstance(self.max_complete_driver_checks, int)
+            or self.max_complete_driver_checks not in {1, 2}
+        ):
+            raise ValueError("max_complete_driver_checks must be 1 or 2")
         if self.timeout_s <= 0.0:
             raise ValueError("timeout_s must be positive")
         if self.max_output_chars <= 0:

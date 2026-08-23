@@ -28,7 +28,6 @@ class DevelopmentSessionError(RuntimeError):
 
 
 MAX_DISCRETIONARY_DRIVER_PROBES = 3
-MAX_COMPLETE_DRIVER_CHECKS = 2
 MAX_STUDY_PROBES = 2
 PUBLIC_CHECK_SCOPE = {
     "check_scope": "public_source_import_and_physics_liveness",
@@ -177,7 +176,8 @@ class PublicDevelopmentSession:
         effective_requests = min(
             budget.max_requests,
             (
-                MAX_COMPLETE_DRIVER_CHECKS * (len(self.capability_methods) + 1)
+                budget.max_complete_driver_checks
+                * (len(self.capability_methods) + 1)
                 + MAX_DISCRETIONARY_DRIVER_PROBES
                 if self.capability_methods
                 else MAX_STUDY_PROBES

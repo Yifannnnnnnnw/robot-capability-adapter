@@ -255,6 +255,9 @@ class ExperimentConfig:
         try:
             probe_budget = ProbeBudget(
                 max_requests=int(development.get("max_requests_per_stage", 12)),
+                max_complete_driver_checks=int(
+                    development.get("max_complete_driver_checks", 1)
+                ),
                 timeout_s=float(development.get("wall_timeout_s_per_request", 30)),
                 max_output_chars=int(
                     development.get("max_output_chars_per_request", 12000)
@@ -493,6 +496,9 @@ class ExperimentConfig:
             "max_driver_attempts_per_condition": self.max_driver_attempts_per_condition,
             "development_probe": {
                 "max_requests_per_stage": self.probe_budget.max_requests,
+                "max_complete_driver_checks": (
+                    self.probe_budget.max_complete_driver_checks
+                ),
                 "wall_timeout_s_per_request": self.probe_budget.timeout_s,
                 "max_output_chars_per_request": self.probe_budget.max_output_chars,
             },

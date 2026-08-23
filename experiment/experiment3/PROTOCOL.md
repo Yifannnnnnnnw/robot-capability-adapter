@@ -1,10 +1,18 @@
 # Experiment 3 protocol — declared eleven-configuration cohort
 
-> **Protocol revision:** `0.1.0`<br>
+> **Protocol revision:** `0.1.1`<br>
 > **Effective date:** 2026-08-23
 
 This protocol implements `EXPERIMENT_3_AUTHORITY.md`. It is a direct,
 experiment-grade run recipe, not a new lifecycle or readiness state machine.
+
+Revision `0.1.1` makes the bounded pre-submission recovery path executable.
+For `C` sealed capabilities, a driver stage receives at most
+`2 × (C + 1) + 3` local probe calls: two complete import/all-capability bundles
+and no more than three discretionary probes. The manifest explicitly pins
+`max_complete_driver_checks = 2` and 25 as the ten-capability ceiling. The
+twelve model turns, three submitted-driver
+attempts, 33-cell denominator, and resume rules do not change.
 
 ## Matrix and fixed inputs
 
@@ -76,6 +84,8 @@ Attempt `0` is the initial submitted driver. Attempts `1` and `2` are the only
 possible Repair submissions. Development probes and rejected pre-submission
 checks do not consume the three-submission budget. Task Demo is a separate
 five-task verdict with separate videos; it cannot trigger same-run Repair.
+Generate and Repair receive an explicit Mapping ABI: candidate methods read
+request fields with mapping item access or methods, never `request.field`.
 
 If the final driver is not admitted, record a truthful Task Demo not-run reason
 and stop that cell. Do not substitute a reference driver or convert a
@@ -142,7 +152,10 @@ Before formal dispatch, run the smallest checks that establish:
    cell-local completed TGCD and IVC traces, empty Experience,
    skeleton-assisted generation, the three-submission ceiling, and required
    Task Demo/video evidence; and
-5. no Evolution call or Experience input is possible from the Experiment 3
+5. one failed complete ten-capability driver check can be followed by one
+   corrected complete check while discretionary probes remain capped at
+   three; and
+6. no Evolution call or Experience input is possible from the Experiment 3
    runner/protocol boundary.
 
 Focused checks are diagnostic and do not enter the 33-cell denominator. They

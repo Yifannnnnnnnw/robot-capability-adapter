@@ -67,9 +67,11 @@ EXPECTED_RETRY_POLICY = {
 }
 ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
-AUTHORITY_REVISION = "0.1.1"
-MANIFEST_REVISION = "0.1.0"
-PROTOCOL_REVISION = "0.1.0"
+AUTHORITY_REVISION = "0.1.2"
+MANIFEST_REVISION = "0.1.1"
+PROTOCOL_REVISION = "0.1.1"
+DRIVER_PROBE_CALLS_PER_STAGE = 25
+COMPLETE_DRIVER_CHECKS_PER_STAGE = 2
 FORMAL_GIT_PATHS = (
     "AUTOADAPTER_2_AUTHORITY.md",
     "experiment/experiment3",
@@ -315,12 +317,27 @@ def _resources(value: Any) -> dict[str, Any]:
     _require(isinstance(validation, Mapping), "runtime.resources.validation must be an object")
     assert isinstance(development, Mapping) and isinstance(validation, Mapping)
     _require(
-        set(development) == {"max_requests_per_stage", "wall_timeout_s_per_request", "max_output_chars_per_request"},
+        set(development)
+        == {
+            "max_requests_per_stage",
+            "max_complete_driver_checks",
+            "wall_timeout_s_per_request",
+            "max_output_chars_per_request",
+        },
         "development_probe resource fields are incomplete",
     )
     for key in development:
         number = development[key]
         _require(isinstance(number, (int, float)) and not isinstance(number, bool) and float(number) > 0, f"development_probe.{key} must be positive")
+    _require(
+        development.get("max_requests_per_stage") == DRIVER_PROBE_CALLS_PER_STAGE,
+        "development_probe.max_requests_per_stage must reserve 25 calls",
+    )
+    _require(
+        development.get("max_complete_driver_checks")
+        == COMPLETE_DRIVER_CHECKS_PER_STAGE,
+        "development_probe.max_complete_driver_checks must be 2",
+    )
     _require(set(validation) == {"record_video", "worker_wall_timeout_s"}, "validation resource fields are incomplete")
     _require(validation.get("record_video") is True, "formal Experiment 3 requires video")
     timeout = validation.get("worker_wall_timeout_s")

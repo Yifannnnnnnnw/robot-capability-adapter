@@ -463,7 +463,11 @@ class InteractiveSessionTests(unittest.TestCase):
             package=self.package,
             condition="from-scratch",
             workspace=Path(self.temporary.name) / "derived-probe-limit-session",
-            budget=ProbeBudget(max_requests=32, timeout_s=10),
+            budget=ProbeBudget(
+                max_requests=32,
+                max_complete_driver_checks=2,
+                timeout_s=10,
+            ),
             source_root=Path(__file__).resolve().parents[1] / "src",
             capability_methods=("drive",),
             capability_task_ids={"drive": ("task-1",)},
@@ -485,6 +489,29 @@ class InteractiveSessionTests(unittest.TestCase):
                     {"probe_id": "optional-blocked", "script": "pass"}
                 )
         self.assertEqual(run_probe.call_count, 3)
+
+    def test_default_probe_policy_preserves_b1_single_complete_check_caps(self) -> None:
+        expected_caps = {6: 10, 5: 9}
+        for capability_count, expected_limit in expected_caps.items():
+            methods = tuple(
+                f"capability_{index}" for index in range(capability_count)
+            )
+            with self.subTest(capability_count=capability_count):
+                session = PublicDevelopmentSession(
+                    package=self.package,
+                    condition="from-scratch",
+                    workspace=(
+                        Path(self.temporary.name)
+                        / f"default-single-check-{capability_count}"
+                    ),
+                    budget=ProbeBudget(max_requests=32, timeout_s=10),
+                    source_root=Path(__file__).resolve().parents[1] / "src",
+                    capability_methods=methods,
+                )
+                self.assertEqual(
+                    session._development_status()["probe_calls_limit"],
+                    expected_limit,
+                )
 
     def test_ten_capability_failed_revision_can_be_corrected_and_fully_rechecked(
         self,
@@ -520,7 +547,11 @@ class InteractiveSessionTests(unittest.TestCase):
             package=self.package,
             condition="from-scratch",
             workspace=Path(self.temporary.name) / "ten-capability-recheck-session",
-            budget=ProbeBudget(max_requests=25, timeout_s=10),
+            budget=ProbeBudget(
+                max_requests=25,
+                max_complete_driver_checks=2,
+                timeout_s=10,
+            ),
             source_root=Path(__file__).resolve().parents[1] / "src",
             capability_methods=methods,
             capability_task_ids=task_ids,

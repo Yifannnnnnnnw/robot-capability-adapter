@@ -2,17 +2,25 @@
 
 > **Document ID:** `AA2-EXP2`<br>
 > **Document role:** sole normative document for Experiment 2<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.32`<br>
+> **Parent authority:** `AA2-AUTH` revision `0.19.34`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.1`<br>
+> **Revision:** `0.1.2`<br>
 > **Effective date:** 2026-08-23<br>
-> **Design status:** active and prospectively fixed; ready for formal dispatch after final preflight
+> **Design status:** active; one corrected source dispatch is authorised after the revised final preflight
 
-Revision `0.1.1` changes no robot, model role, run, attempt budget, review
-boundary, or claim. It fixes the ordinary manifest/protocol revision pins and
-authorises dispatch only while the final focused preflight confirms the
-already-declared readiness evidence.
+Revision `0.1.2` fixes an observed pre-submission infrastructure contradiction
+without changing the robot, model roles, two-run denominator, submitted-driver
+attempt budget, or claim. The retained pre-fix source dispatch used one full
+ten-capability check and then could not execute the Authority-permitted
+corrected check because only three of fourteen local probe calls remained. It
+also produced an `indeterminate` Framework label that is not eligible for the
+declared human review. Those artifacts remain immutable infrastructure-failure
+evidence and their Opus proposal cannot be accepted or rejected. Exactly one
+fresh corrected source dispatch in a new output directory is authorised after
+the `0.1.2` Authority, `0.1.1` manifest/protocol, and implementing Git commit
+pass the focused preflight; this is not an outcome-selected replacement and no
+further replacement source is authorised.
 
 ## 0. Authority, scope, and precedence
 
@@ -36,6 +44,14 @@ implement or report this design but cannot change it. A later revision may fix a
 provider or infrastructure prerequisite before dispatch; it may not add a
 robot, model role, run, control condition, replicate, or improvement claim after
 outcomes are inspected.
+
+The retained pre-fix `exp2-so101-source` directory is not one of the two valid closure
+roles because the Framework prevented the model from exercising the declared
+pre-submission correction path. It must not be deleted, overwritten,
+relabelled, reviewed, or supplied to the later run. The single corrected
+dispatch uses the distinct run ID `exp2-so101-source-v2` and corresponding
+Experience ID, Task Demo seed, and new output directory while retaining the
+same source role and fixed factors; it adds no replicate or condition.
 
 ## 1. Research object and claim boundary
 
@@ -131,6 +147,16 @@ that budget. The same complete private capability-validation suite is used for
 all attempts within one run; the later run has its own fresh run-local TGCD,
 IVC, suite, and trace.
 
+For a driver stage with `C` sealed capabilities, the local probe budget is
+`2 × (C + 1) + 3`: two complete current-revision bundles, each containing one
+import/build and one public physics smoke per capability, plus no more than
+three discretionary public development probes. Because TGCD may declare at
+most ten capabilities, the manifest explicitly pins
+`max_complete_driver_checks = 2` and 25 calls per stage. Generate and
+Repair expose the ordinary-Mapping request ABI explicitly: candidate methods
+use mapping item access or mapping methods, never `request.field`. These local
+checks do not increase the twelve model turns or the three formal submissions.
+
 ## 3. Run roles and sequence
 
 ### 3.1 Source run
@@ -158,7 +184,19 @@ through the parent Evolution boundary and sent to the exact Opus configuration
 for one terminal proposal. Evolution is non-blocking with respect to the
 already recorded driver and Task Demo-stage outcome, and may produce a
 negative, evidence-labelled proposal after a driver failure or not-run outcome.
-The closure record must retain either its proposal or its explicit failure.
+The closure record must retain its proposal, explicit no-reusable-lesson
+outcome, or explicit failure.
+
+If the retained terminal facts support neither `positive` nor `negative`, the
+Framework retains the terminal report and any completed Opus outcome but
+writes no human-review queue. An `indeterminate` record cannot receive either
+disposition, cannot create an Experience snapshot, and cannot be coerced into
+a determinate label.
+
+If Opus returns the valid explicit no-reusable-lesson outcome, the Framework
+likewise retains that terminal outcome but writes no human-review queue. Human
+`accept/reject` applies only to a determinate proposal containing exactly the
+five public model fields; there is nothing to review when no proposal exists.
 
 ### 3.2 Human disposition
 
@@ -228,7 +266,8 @@ ordinary disposition fields are sufficient.
 
 The source and later run records must separately retain:
 
-- run role, run ID, robot/package snapshot, model/provider identity, condition,
+- run role, run ID, Authority/manifest/protocol revisions, exact Git commit,
+  robot/package snapshot, model/provider identity, condition,
   Experience input state, and manual-launch/operator event;
 - TGCD, IVC, STUDY, GENERATE, capability-validation, Repair, and Task Demo
   traces and verdicts;

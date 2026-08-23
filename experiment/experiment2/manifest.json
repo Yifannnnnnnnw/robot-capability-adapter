@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "manifest_revision": "0.1.0",
-  "protocol_revision": "0.1.0",
+  "manifest_revision": "0.1.1",
+  "protocol_revision": "0.1.1",
   "authority": "EXPERIMENT_2_AUTHORITY.md",
-  "authority_revision": "0.1.1",
+  "authority_revision": "0.1.2",
   "experiment_id": "experiment2-so101-cross-run-closure",
   "track": "cross-run-experience-closure",
   "protocol": "PROTOCOL.md",
@@ -107,7 +107,8 @@
     },
     "resources": {
       "development_probe": {
-        "max_requests_per_stage": 14,
+        "max_requests_per_stage": 25,
+        "max_complete_driver_checks": 2,
         "wall_timeout_s_per_request": 30,
         "max_output_chars_per_request": 12000
       },
@@ -161,7 +162,7 @@
   },
   "run_roles": {
     "source": {
-      "run_id": "exp2-so101-source",
+      "run_id": "exp2-so101-source-v2",
       "manual_launch": true,
       "experience_input": "empty",
       "stages": [
