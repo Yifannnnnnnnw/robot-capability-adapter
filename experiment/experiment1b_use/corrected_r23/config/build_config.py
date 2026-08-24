@@ -95,7 +95,7 @@ def _task_suite() -> dict[str, Any]:
             ):
                 raise ValueError(f"{task_id} R1 reset declaration changed")
             task["replicate_inputs"] = []
-            for replicate_id in ("R1", "R2", "R3"):
+            for replicate_id in ("R2", "R3"):
                 replicated = copy.deepcopy(r1)
                 replicated["replicate_id"] = replicate_id
                 task["replicate_inputs"].append(replicated)
@@ -114,7 +114,7 @@ def _task_suite() -> dict[str, Any]:
         "document_id": AUDIT_ID,
         "revision": AUDIT_REVISION,
     }
-    suite["replicate_plan"] = {"replicate_ids": ["R1", "R2", "R3"]}
+    suite["replicate_plan"] = {"replicate_ids": ["R2", "R3"]}
     suite["source_corrected_r1"] = {
         "artifact_type": "b2_corrected_r1_task_suite",
         "audit_identity": {
@@ -122,6 +122,10 @@ def _task_suite() -> dict[str, Any]:
             "revision": "1.0.0",
         },
         "inputs_changed_beyond_replicate_identity": False,
+        "equivalence_basis": (
+            "Each emitted R2/R3 input is a deep copy of the sealed corrected-R1 "
+            "input with only replicate_id changed."
+        ),
     }
     return suite
 

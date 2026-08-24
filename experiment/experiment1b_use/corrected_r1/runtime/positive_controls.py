@@ -361,6 +361,7 @@ def run_task(
         ),
         "created_at": datetime.now(UTC).isoformat(),
         "formal_episode": False,
+        "control_replicate_id": replicate_id,
         "task_id": task_id,
         "robot_configuration_id": robot_id,
         "driver_kind": "fixed_capability_driver",
@@ -376,6 +377,7 @@ def run_task(
     _write_object(record_path, record)
     return {
         "task_id": task_id,
+        "replicate_id": replicate_id,
         "status": record["status"],
         "passed": passed,
         "trusted_harness": trusted_harness,
@@ -391,6 +393,8 @@ def _index(
     required_task_ids: Sequence[str] = REQUIRED_TASK_IDS,
     audit_identity: Mapping[str, str] | None = None,
     artifact_prefix: str = "b2_corrected_r1",
+    control_replicate_id: str = "R1",
+    covered_replicates: Sequence[str] = ("R1",),
 ) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     for task_id in required_task_ids:
@@ -401,6 +405,7 @@ def _index(
         results.append(
             {
                 "task_id": task_id,
+                "replicate_id": record.get("control_replicate_id"),
                 "status": record.get("status"),
                 "passed": record.get("passed"),
                 "trusted_harness": record.get("trusted_harness"),
@@ -410,7 +415,8 @@ def _index(
             }
         )
     passed = len(results) == len(required_task_ids) and all(
-        item.get("status") == "PASS"
+        item.get("replicate_id") == control_replicate_id
+        and item.get("status") == "PASS"
         and item.get("passed") is True
         and item.get("trusted_harness") is True
         and item.get("video_complete") is True
@@ -425,6 +431,8 @@ def _index(
         ),
         "created_at": datetime.now(UTC).isoformat(),
         "formal_episode": False,
+        "control_replicate_id": control_replicate_id,
+        "covered_replicates": list(covered_replicates),
         "required_task_ids": list(required_task_ids),
         "results": results,
         "gate_passed": passed,
@@ -449,6 +457,7 @@ def main() -> int:
         audit_identity = {"document_id": AUDIT_ID, "revision": AUDIT_REVISION}
         artifact_prefix = "b2_corrected_r1"
         replicate_id = args.replicate_id or "R1"
+        covered_replicates = ("R1",)
         default_output = DEFAULT_OUTPUT
     else:
         from .dispatch import resolve_corrected_manifest
@@ -461,6 +470,13 @@ def main() -> int:
         artifact_prefix = manifest.evidence_prefix
         replicate_id = args.replicate_id or (
             "R2" if manifest.evidence_prefix == "b2_corrected_r23" else "R1"
+        )
+        if manifest.evidence_prefix == "b2_corrected_r23" and replicate_id != "R2":
+            parser.error("corrected-R23 positive controls are fixed to replicate R2")
+        covered_replicates = (
+            ("R2", "R3")
+            if manifest.evidence_prefix == "b2_corrected_r23"
+            else ("R1",)
         )
         default_output = manifest.manifest_path.parent.parent / "runs/positive-controls"
     selected = list(required_task_ids) if args.task is None else args.task
@@ -490,6 +506,8 @@ def main() -> int:
         required_task_ids=required_task_ids,
         audit_identity=audit_identity,
         artifact_prefix=artifact_prefix,
+        control_replicate_id=replicate_id,
+        covered_replicates=covered_replicates,
     )
     _write_object(output_root / "positive_control_index.json", index)
     print(f"gate_passed={index['gate_passed']}")

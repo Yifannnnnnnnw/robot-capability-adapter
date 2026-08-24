@@ -14,7 +14,6 @@
   "task_count": 10,
   "replicate_plan": {
     "replicate_ids": [
-      "R1",
       "R2",
       "R3"
     ]
@@ -231,21 +230,6 @@
             "camera": "evidence"
           },
           "replicate_inputs": [
-            {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/push_to_goal_scene.xml",
-              "reset": {
-                "kind": "default",
-                "joint_positions": {
-                  "shoulder_pan": -1.9
-                },
-                "actuator_controls": {
-                  "shoulder_pan": -1.9
-                }
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
             {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/push_to_goal_scene.xml",
@@ -485,21 +469,6 @@
             "camera": "evidence"
           },
           "replicate_inputs": [
-            {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/sweep_into_goal_scene.xml",
-              "reset": {
-                "kind": "default",
-                "joint_positions": {
-                  "shoulder_pan": -1.9
-                },
-                "actuator_controls": {
-                  "shoulder_pan": -1.9
-                }
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
             {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/sweep_into_goal_scene.xml",
@@ -777,21 +746,6 @@
             "camera": "evidence"
           },
           "replicate_inputs": [
-            {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/pick_place_scene.xml",
-              "reset": {
-                "kind": "default",
-                "joint_positions": {
-                  "shoulder_pan": -1.9
-                },
-                "actuator_controls": {
-                  "shoulder_pan": -1.9
-                }
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
             {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/pick_place_scene.xml",
@@ -1076,21 +1030,6 @@
           },
           "replicate_inputs": [
             {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/pick_place_wall_scene.xml",
-              "reset": {
-                "kind": "default",
-                "joint_positions": {
-                  "shoulder_pan": -1.9
-                },
-                "actuator_controls": {
-                  "shoulder_pan": -1.9
-                }
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
-            {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/pick_place_wall_scene.xml",
               "reset": {
@@ -1336,21 +1275,6 @@
           },
           "replicate_inputs": [
             {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/dial_scene.xml",
-              "reset": {
-                "kind": "default",
-                "joint_positions": {
-                  "shoulder_pan": -1.9
-                },
-                "actuator_controls": {
-                  "shoulder_pan": -1.9
-                }
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
-            {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/dial_scene.xml",
               "reset": {
@@ -1555,16 +1479,6 @@
           },
           "replicate_inputs": [
             {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/lee_step_up.xml",
-              "reset": {
-                "kind": "keyframe",
-                "name": "task_start"
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
-            {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/lee_step_up.xml",
               "reset": {
@@ -1744,16 +1658,6 @@
             "camera": "evidence"
           },
           "replicate_inputs": [
-            {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/lee_step_down.xml",
-              "reset": {
-                "kind": "keyframe",
-                "name": "task_start"
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
             {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/lee_step_down.xml",
@@ -2042,16 +1946,6 @@
           },
           "replicate_inputs": [
             {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/miki_mixed_course.xml",
-              "reset": {
-                "kind": "keyframe",
-                "name": "task_start"
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
-            {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/miki_mixed_course.xml",
               "reset": {
@@ -2261,16 +2155,6 @@
             "camera": "evidence"
           },
           "replicate_inputs": [
-            {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/barkour_tables.xml",
-              "reset": {
-                "kind": "keyframe",
-                "name": "task_start"
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
             {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/barkour_tables.xml",
@@ -2546,16 +2430,6 @@
           },
           "replicate_inputs": [
             {
-              "replicate_id": "R1",
-              "scene_entrypoint": "assets/barkour_weave.xml",
-              "reset": {
-                "kind": "keyframe",
-                "name": "task_start"
-              },
-              "reset_seed": null,
-              "reset_seed_applied": false
-            },
-            {
               "replicate_id": "R2",
               "scene_entrypoint": "assets/barkour_weave.xml",
               "reset": {
@@ -2608,6 +2482,7 @@
       "document_id": "AA2-B2-CORRECTED-R1",
       "revision": "1.0.0"
     },
-    "inputs_changed_beyond_replicate_identity": false
+    "inputs_changed_beyond_replicate_identity": false,
+    "equivalence_basis": "Each emitted R2/R3 input is a deep copy of the sealed corrected-R1 input with only replicate_id changed."
   }
 }

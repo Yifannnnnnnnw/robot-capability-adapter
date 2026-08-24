@@ -526,7 +526,11 @@ def _resolve_r23_manifest(
         or suite.get("formal_episode") is not False
         or suite.get("task_count") != 10
         or suite.get("replicate_plan")
-        != {"replicate_ids": ["R1", "R2", "R3"]}
+        != {"replicate_ids": ["R2", "R3"]}
+        or suite.get("source_corrected_r1", {}).get(
+            "inputs_changed_beyond_replicate_identity"
+        )
+        is not False
     ):
         raise CorrectedDispatchError("corrected-R23 task suite identity is invalid")
     _identity(
@@ -592,6 +596,13 @@ def assert_positive_control_gate(manifest: ResolvedCorrectedManifest) -> dict[st
             document_id=manifest.audit_document_id,
             revision=manifest.audit_revision,
         )
+        if manifest.evidence_prefix == "b2_corrected_r23" and (
+            document.get("control_replicate_id") != "R2"
+            or document.get("covered_replicates") != ["R2", "R3"]
+        ):
+            raise CorrectedDispatchError(
+                "corrected-R23 positive-control replicate coverage is invalid"
+            )
         if tuple(document.get("required_task_ids", ())) != manifest.expected_task_order:
             raise CorrectedDispatchError("positive-control required_task_ids changed")
         results = document.get("results")
@@ -610,6 +621,11 @@ def assert_positive_control_gate(manifest: ResolvedCorrectedManifest) -> dict[st
             )
             task_ids.append(task_id)
             if (
+                (
+                    manifest.evidence_prefix == "b2_corrected_r23"
+                    and item.get("replicate_id") != "R2"
+                )
+                or
                 item.get("status") != "PASS"
                 or item.get("passed") is not True
                 or item.get("trusted_harness") is not True
