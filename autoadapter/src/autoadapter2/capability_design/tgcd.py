@@ -257,9 +257,51 @@ def _sanitise_experience(experience: Sequence[Mapping[str, Any]]) -> list[dict[s
     return result
 
 
+def _sanitise_study(study: Mapping[str, Any] | None) -> dict[str, Any] | None:
+    """Project the completed public STUDY artifact into TGCD.
+
+    STUDY precedes capability design.  Its public findings and probe plan are
+    useful design evidence, but candidate/private material is never a valid
+    STUDY field and must fail closed if a caller tries to inject it.
+    """
+
+    if study is None:
+        return None
+    if not isinstance(study, Mapping):
+        raise CapabilityDesignError("study must be one public JSON object")
+    copied = json_copy(dict(study), label="study")
+    forbidden = {
+        "candidate_driver",
+        "candidate_source",
+        "driver_code",
+        "driver_source",
+        "private_bindings",
+        "private_cases",
+        "private_guards",
+        "repair_history",
+        "validation_verdict",
+    }
+
+    def audit(value: Any, where: str) -> None:
+        if isinstance(value, Mapping):
+            for key, child in value.items():
+                if str(key).lower() in forbidden:
+                    raise CapabilityDesignError(
+                        f"{where} contains candidate/private field {key!r}"
+                    )
+                audit(child, f"{where}.{key}")
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                audit(child, f"{where}[{index}]")
+
+    audit(copied, "study")
+    return copied
+
+
 def build_public_tgcd_inputs(
     package: Any,
     *,
+    study: Mapping[str, Any] | None = None,
     experience: Sequence[Mapping[str, Any]] = (),
     reference_catalog: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
@@ -283,6 +325,7 @@ def build_public_tgcd_inputs(
             "tasks": json_copy(list(_package_tasks(package)), label="task_library"),
         },
         "capability_v2_public_references": references,
+        "completed_public_study": _sanitise_study(study),
         "eligible_experience": _sanitise_experience(experience),
         "task_support_is_design_evidence_only": True,
         "runtime_tools_are_not_derived_from_task_support": True,
@@ -311,6 +354,7 @@ class TGCDPhase:
 
     client: JsonGenerator
     package: Any
+    study: Mapping[str, Any] | None = None
     experience: Sequence[Mapping[str, Any]] = ()
     reference_catalog: Sequence[Mapping[str, Any]] | None = None
     callback: TGCDEventCallback | None = None
@@ -321,6 +365,7 @@ class TGCDPhase:
         return run_tgcd(
             self.client,
             self.package,
+            study=self.study,
             experience=self.experience,
             reference_catalog=self.reference_catalog,
             callback=self.callback,
@@ -333,6 +378,7 @@ def run_tgcd(
     client: JsonGenerator,
     package: Any,
     *,
+    study: Mapping[str, Any] | None = None,
     experience: Sequence[Mapping[str, Any]] = (),
     reference_catalog: Sequence[Mapping[str, Any]] | None = None,
     callback: TGCDEventCallback | None = None,
@@ -348,6 +394,7 @@ def run_tgcd(
         raise CapabilityDesignError("max_turns must be between one and six")
     inputs = build_public_tgcd_inputs(
         package,
+        study=study,
         experience=experience,
         reference_catalog=reference_catalog,
     )

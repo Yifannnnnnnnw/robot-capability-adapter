@@ -272,6 +272,12 @@ def test_tgcd_six_turn_phase_accepts_generic_experience_and_seals_artifact(tmp_p
     result = TGCDPhase(
         model,
         _package(),
+        study={
+            "condition": "skeleton-assisted",
+            "findings": ["canonical joints are finite"],
+            "implementation_plan": ["use bounded feedback"],
+            "probe_requests": [{"probe_id": "public-liveness", "script": "pass"}],
+        },
         experience=[
             {
                 "observation": "public outcome",
@@ -292,6 +298,17 @@ def test_tgcd_six_turn_phase_accepts_generic_experience_and_seals_artifact(tmp_p
     assert artifact_path.exists()
     assert any(event["stage"] == "tgcd-sealed" for event in events)
     assert "candidate_driver" not in json.dumps(model.calls[0]["inputs"])
+    assert model.calls[0]["inputs"]["completed_public_study"]["findings"] == [
+        "canonical joints are finite"
+    ]
+
+
+def test_tgcd_rejects_candidate_material_in_study_projection() -> None:
+    with pytest.raises(CapabilityDesignError, match="candidate/private"):
+        build_public_tgcd_inputs(
+            _package(),
+            study={"candidate_driver": "not public study material"},
+        )
 
 
 class _IVCModel:

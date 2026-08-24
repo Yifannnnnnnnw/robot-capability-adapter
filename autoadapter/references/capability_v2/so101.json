@@ -2,10 +2,15 @@
   "artifact_type": "capability_v2_public_reference",
   "protocol_version": "capability-v2",
   "robot_configuration_id": "robotstudio_so101",
-  "package_version": "1.0.0",
+  "package_version": "1.0.4",
   "reference_source": {
     "source_id": "b1_driver_validation_criteria",
-    "specific_reference": "Experiment 1 B1 Driver Validation Criteria, SO-101 A1-A6 and fixed capability bundle"
+    "specific_reference": "Experiment 1 B1 Driver Validation Criteria, SO-101 A1-A6 and fixed capability bundle",
+    "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101",
+    "calibration_kind": "retained real MuJoCo fixed-bundle calibration",
+    "interface_id": "experiment1-b1-fixed-interface::robotstudio_so101::v4",
+    "pass_standard_id": "experiment1-b1-driver-validation-criteria-v4",
+    "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v5"
   },
   "capabilities": [
     {
