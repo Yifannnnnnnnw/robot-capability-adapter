@@ -186,6 +186,100 @@ def _scheduler_artifacts(
     return results
 
 
+def _scheduler_attempt_cost_records(
+    scheduler_paths: Sequence[Path],
+) -> list[dict[str, Any]]:
+    """Account for every paid attempt while keeping only the selected outcome."""
+
+    cost_records: list[dict[str, Any]] = []
+    seen_terminal_paths: set[Path] = set()
+    for scheduler_path in scheduler_paths:
+        scheduler_path = scheduler_path.resolve()
+        scheduler = _read_object(scheduler_path, label="corrected scheduler")
+        records = scheduler.get("records")
+        if (
+            scheduler.get("artifact_type") != "b2_corrected_r1_scheduler"
+            or scheduler.get("audit_identity") != AUDIT_IDENTITY
+            or scheduler.get("formal_episode") is not False
+            or not isinstance(records, list)
+        ):
+            raise CorrectedAggregationError(
+                f"corrected scheduler is invalid: {scheduler_path}"
+            )
+        for record in records:
+            if not isinstance(record, Mapping):
+                raise CorrectedAggregationError(
+                    f"corrected scheduler record is invalid: {scheduler_path}"
+                )
+            unit_id = record.get("unit_id")
+            attempts = record.get("attempts")
+            selected_path = _resolve_evidence_path(
+                record.get("terminal_path"), relative_to=scheduler_path.parent
+            )
+            if (
+                not isinstance(unit_id, str)
+                or not unit_id
+                or not isinstance(attempts, list)
+                or not attempts
+                or selected_path is None
+            ):
+                raise CorrectedAggregationError(
+                    f"scheduler attempt history is invalid for {unit_id!r}"
+                )
+            attempt_paths: list[Path] = []
+            for expected_number, attempt in enumerate(attempts, start=1):
+                if not isinstance(attempt, Mapping):
+                    raise CorrectedAggregationError(
+                        f"scheduler attempt is invalid for {unit_id}"
+                    )
+                terminal_path = _resolve_evidence_path(
+                    attempt.get("terminal_path"), relative_to=scheduler_path.parent
+                )
+                if (
+                    attempt.get("attempt_number") != expected_number
+                    or terminal_path is None
+                    or not terminal_path.is_file()
+                    or terminal_path in seen_terminal_paths
+                ):
+                    raise CorrectedAggregationError(
+                        f"scheduler attempt terminal is invalid for {unit_id}"
+                    )
+                terminal = _read_object(
+                    terminal_path, label="corrected attempt terminal"
+                )
+                if (
+                    terminal.get("artifact_type")
+                    != "b2_corrected_r1_unit_terminal"
+                    or terminal.get("unit_id") != unit_id
+                    or terminal.get("classification")
+                    != attempt.get("classification")
+                    or terminal.get("evaluable") is not attempt.get("evaluable")
+                    or terminal.get("success") is not attempt.get("success")
+                ):
+                    raise CorrectedAggregationError(
+                        f"scheduler/attempt terminal disagree for {unit_id}"
+                    )
+                provider_path = _resolve_evidence_path(
+                    terminal.get("provider_record_path"),
+                    relative_to=terminal_path.parent,
+                )
+                seen_terminal_paths.add(terminal_path)
+                attempt_paths.append(terminal_path)
+                cost_records.append(
+                    {
+                        "unit_id": unit_id,
+                        "attempt_number": expected_number,
+                        "selected": terminal_path == selected_path,
+                        "provider_cost_usd": _provider_cost(provider_path),
+                    }
+                )
+            if attempt_paths[-1] != selected_path:
+                raise CorrectedAggregationError(
+                    f"scheduler did not select the final attempt for {unit_id}"
+                )
+    return cost_records
+
+
 def _validate_common(value: Mapping[str, Any], unit: Mapping[str, Any]) -> None:
     if value.get("audit_identity") != AUDIT_IDENTITY:
         raise CorrectedAggregationError(f"foreign audit identity for {unit['unit_id']}")
@@ -547,6 +641,7 @@ def aggregate_corrected(
         "b2_corrected_r1_unit_terminal",
     )
     selected_terminals = _scheduler_artifacts(scheduler_paths)
+    scheduler_attempt_costs = _scheduler_attempt_cost_records(scheduler_paths)
     overlap = set(terminals).intersection(selected_terminals)
     if overlap:
         raise CorrectedAggregationError(
@@ -614,6 +709,43 @@ def aggregate_corrected(
         for row in results
     )
     incomplete_unknown = sum(value is None for value in incomplete_cost_records)
+    scheduled_unit_ids = {
+        str(record["unit_id"]) for record in scheduler_attempt_costs
+    }
+    direct_attempt_costs = [
+        {
+            "unit_id": row["unit_id"],
+            "attempt_number": 1,
+            "selected": True,
+            "provider_cost_usd": row["provider_cost_usd"],
+        }
+        for row in results
+        if row["execution_origin"] in {"fresh_corrected", "replacement"}
+        and row["classification"] != "missing"
+        and row["unit_id"] not in scheduled_unit_ids
+    ]
+    all_new_attempt_costs = scheduler_attempt_costs + direct_attempt_costs
+    all_new_known_total = sum(
+        float(record["provider_cost_usd"])
+        for record in all_new_attempt_costs
+        if _finite_cost(record.get("provider_cost_usd")) is not None
+    )
+    all_new_unknown = sum(
+        _finite_cost(record.get("provider_cost_usd")) is None
+        for record in all_new_attempt_costs
+    )
+    retry_attempt_costs = [
+        record for record in all_new_attempt_costs if record["selected"] is False
+    ]
+    retry_known_total = sum(
+        float(record["provider_cost_usd"])
+        for record in retry_attempt_costs
+        if _finite_cost(record.get("provider_cost_usd")) is not None
+    )
+    retry_unknown = sum(
+        _finite_cost(record.get("provider_cost_usd")) is None
+        for record in retry_attempt_costs
+    )
     overall = _summary(results)
     return {
         "artifact_type": "b2_corrected_r1_aggregate",
@@ -649,17 +781,27 @@ def aggregate_corrected(
             "original_related_21_known_cost_usd": retained_total + incomplete_total,
             "new_corrected_51_known_cost_usd": new_total,
             "new_corrected_51_unknown_cost_units": new_unknown,
+            "new_corrected_all_attempts_known_spend_usd": all_new_known_total,
+            "new_corrected_all_attempts_unknown_cost_attempts": all_new_unknown,
+            "new_corrected_attempt_count": len(all_new_attempt_costs),
+            "new_corrected_retry_attempt_count": len(retry_attempt_costs),
+            "retry_attempts_known_spend_usd": retry_known_total,
+            "retry_attempts_unknown_cost_attempts": retry_unknown,
             "corrected_evidence_known_cost_usd": retained_total + new_total,
             "corrected_evidence_unknown_cost_units": retained_unknown + new_unknown,
-            "actual_related_known_spend_usd": retained_total + incomplete_total + new_total,
+            "actual_related_known_spend_usd": (
+                retained_total + incomplete_total + all_new_known_total
+            ),
             "actual_related_unknown_cost_units": (
-                retained_unknown + incomplete_unknown + new_unknown
+                retained_unknown + incomplete_unknown + all_new_unknown
             ),
             "retained_rejudication_additional_model_cost_usd": 0.0,
             "old_batch001_manual_sidecar_included": False,
             "note": (
                 "The two superseded incomplete M2 costs are disclosed as actual "
-                "prior spend but excluded from corrected evidence cost."
+                "prior spend but excluded from corrected evidence cost. Corrected "
+                "evidence uses each scheduler's selected terminal; actual spend "
+                "includes every infrastructure-retry attempt."
             ),
         },
         "video_index": {

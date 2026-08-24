@@ -104,9 +104,11 @@ def test_complete_aggregate_counts_each_origin_and_cost_once(tmp_path: Path) -> 
     manifest = _load(MANIFEST)
     fresh_root = tmp_path / "fresh"
     fresh_root.mkdir()
+    scheduler_path = tmp_path / "scheduler.json"
     for index, unit in enumerate(manifest["fresh_units"]):
-        evidence = fresh_root / unit["unit_id"].replace("::", "__")
-        evidence.mkdir()
+        evidence_root = tmp_path / "scheduled/attempt-2" if index == 0 else fresh_root
+        evidence = evidence_root / unit["unit_id"].replace("::", "__")
+        evidence.mkdir(parents=True)
         provider = evidence / "provider_record.json"
         provider.write_text(
             json.dumps({"total_cost_usd": 0.25}), encoding="utf-8"
@@ -150,11 +152,71 @@ def test_complete_aggregate_counts_each_origin_and_cost_once(tmp_path: Path) -> 
         (evidence / "terminal.json").write_text(
             json.dumps(terminal), encoding="utf-8"
         )
+        if index == 0:
+            first_evidence = (
+                tmp_path / "scheduled/attempt-1" / unit["unit_id"].replace("::", "__")
+            )
+            first_evidence.mkdir(parents=True)
+            first_provider = first_evidence / "provider_record.json"
+            first_provider.write_text(
+                json.dumps({"total_cost_usd": 0.10}), encoding="utf-8"
+            )
+            first_terminal_path = first_evidence / "terminal.json"
+            first_terminal_path.write_text(
+                json.dumps(
+                    {
+                        "artifact_type": "b2_corrected_r1_unit_terminal",
+                        "unit_id": unit["unit_id"],
+                        "classification": "infrastructure_failure",
+                        "evaluable": False,
+                        "success": False,
+                        "provider_record_path": str(first_provider),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            selected_terminal_path = evidence / "terminal.json"
+            scheduler_path.write_text(
+                json.dumps(
+                    {
+                        "artifact_type": "b2_corrected_r1_scheduler",
+                        "audit_identity": AUDIT_IDENTITY,
+                        "formal_episode": False,
+                        "records": [
+                            {
+                                "unit_id": unit["unit_id"],
+                                "terminal_path": str(selected_terminal_path),
+                                "classification": "harness_pass",
+                                "evaluable": True,
+                                "success": True,
+                                "attempts": [
+                                    {
+                                        "attempt_number": 1,
+                                        "terminal_path": str(first_terminal_path),
+                                        "classification": "infrastructure_failure",
+                                        "evaluable": False,
+                                        "success": False,
+                                    },
+                                    {
+                                        "attempt_number": 2,
+                                        "terminal_path": str(selected_terminal_path),
+                                        "classification": "harness_pass",
+                                        "evaluable": True,
+                                        "success": True,
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
 
     aggregate = aggregate_corrected(
         manifest_path=MANIFEST,
         sidecar_roots=[sidecar_root],
         fresh_roots=[fresh_root],
+        scheduler_paths=[scheduler_path],
         require_complete=True,
     )
 
@@ -167,6 +229,18 @@ def test_complete_aggregate_counts_each_origin_and_cost_once(tmp_path: Path) -> 
     assert sum(row["execution_origin"] == "fresh_corrected" for row in aggregate["results"]) == 49
     assert sum(row["execution_origin"] == "replacement" for row in aggregate["results"]) == 2
     assert aggregate["costs"]["new_corrected_51_known_cost_usd"] == pytest.approx(12.75)
+    assert aggregate["costs"]["new_corrected_all_attempts_known_spend_usd"] == pytest.approx(
+        12.85
+    )
+    assert aggregate["costs"]["new_corrected_attempt_count"] == 52
+    assert aggregate["costs"]["new_corrected_retry_attempt_count"] == 1
+    assert aggregate["costs"]["retry_attempts_known_spend_usd"] == pytest.approx(0.10)
+    assert aggregate["costs"]["corrected_evidence_known_cost_usd"] == pytest.approx(
+        aggregate["costs"]["original_retained_19_known_cost_usd"] + 12.75
+    )
+    assert aggregate["costs"]["actual_related_known_spend_usd"] == pytest.approx(
+        aggregate["costs"]["original_related_21_known_cost_usd"] + 12.85
+    )
     assert aggregate["costs"]["original_superseded_incomplete_2_known_cost_usd"] == pytest.approx(
         0.7521635 + 0.8085825
     )
