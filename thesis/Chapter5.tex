@@ -1,102 +1,537 @@
-\chapter[Validated Adapter Utility Across Robots and Tasks]{Validated Adapter Utility Across Robots and Tasks}\label{chapter:bench-evaluation}
-
-\begin{quote}\itshape
-This chapter presents Exp. 3. It tests whether validated adapters remain
-useful across robot morphologies, model families, runtime routes, task
-settings, and baselines.
-\end{quote}
+\chapter[Auto-Adapter Across Robots]{Auto-Adapter Across Eleven Robot Configurations}
+\label{chapter:multi-robot-experiment}
 
 \section[Introduction]{Introduction}
-This experiment tests whether the harness and role-separated agent workflow can
-produce adapters that satisfy declared contracts and remain useful beyond a
-single generation run. It addresses RQ1 and RQ2 by separating adapter synthesis
-performance from downstream adapter use.
 
-\section[Background Literature]{Background Literature}
-The evaluation is informed by software benchmarks, coding-agent evaluation,
-robot task benchmarks, and tool-use evaluation. These areas motivate the need
-to measure not only whether code is generated, but whether the resulting tool
-layer is reusable and valid under robot-specific constraints.
+Extending a robot-software framework to a new platform usually requires a
+robot-specific driver: a reusable Python interface that translates common
+capability requests into platform commands. Experiment 3 applies Auto-Adapter
+to eleven robot configurations under one fixed generation condition. Three
+fresh runs per configuration produce 33 robot--replicate cells. In each cell,
+Auto-Adapter generates a capability design, independently compiles its
+validation criteria before driver generation, and permits an initial driver
+submission followed by at most two Repair submissions. A driver that passes
+the complete suite then enters a separate five-task Task Demo. The experiment
+addresses RQ3 by reporting capability generation, driver validation and
+downstream task completion. Its evidence is descriptive and limited to the
+declared Direct-MuJoCo cohort; it does not isolate morphology as a causal
+factor or establish hardware performance.
 
-\subsection[Coding and Program Synthesis Benchmarks]{Coding and Program Synthesis Benchmarks}
-Coding benchmarks measure whether models can produce working software
-artifacts. AutoAdapter-Bench extends this logic to robot runtime adapters,
-where generated code must satisfy morphology, backend, and primitive
-constraints.
+\section[Background]{Background}
 
-\subsection[Robot Task and Tool-Use Evaluation]{Robot Task and Tool-Use Evaluation}
-Robot task evaluation measures whether an agent can execute behaviours in an
-environment. Tool-use evaluation measures whether an agent can call an existing
-interface effectively. This chapter keeps these questions separate from the
-synthesis of the interface itself.
+Robotics software has long sought portability across platforms by separating
+task logic from platform-specific execution. The Robot Operating System (ROS)
+provided modular communication and shared software packages, while ROS 2
+extended this architecture for distributed systems
+\citep{quigley2009ros,macenski2022ros2}. Capability-based frameworks expose
+robot functions as task-facing operations, and SkiROS2 organises these
+operations into executable skills
+\citep{pantano2022capabilitysurvey,mayr2023skiros2}. However, these abstractions
+do not themselves supply the platform-specific control interface required by a
+newly introduced robot. Auto-Adapter targets this integration step by
+generating a driver behind a stable capability interface. Its longer-term aim
+is to simplify future robot onboarding, whereas Experiment 3 examines this
+route within a bounded simulator cohort.
 
-\subsection[Validation as Evaluation Evidence]{Validation as Evaluation Evidence}
-Validation outcomes serve as evidence for contract conformance. They do not by
-themselves prove physical deployment success, but they provide a consistent way
-to compare models, robots, and specification conditions.
+\section[Experimental Design]{Experimental Design}
 
-\section[Data Set and Benchmark Design]{Data Set and Benchmark Design}
-The benchmark data set consists of robot specifications, runtime profiles,
-primitive requirements, model outputs, generated adapter artifacts, validation
-reports, and downstream task evidence. These materials allow the experiment to
-compare synthesis success and downstream utility across conditions.
+Table~\ref{tab:chapter5-experimental-matrix} formalises the experimental unit,
+prospective denominator and three reporting levels.
 
-\subsection[Robot and Task Coverage]{Robot and Task Coverage}
-The benchmark covers variation in robot morphology, control surface, primitive
-set, and runtime assumptions. Such variation is necessary because a reusable
-adapter claim is only meaningful if it survives embodiment and backend
-differences.
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{Experiment 3 cross-configuration experimental matrix.}
+  \label{tab:chapter5-experimental-matrix}
+  \begin{tabularx}{\textwidth}{@{}
+      >{\raggedright\arraybackslash}p{38mm}
+      >{\raggedright\arraybackslash}p{55mm}
+      X@{}}
+    \toprule
+    \textbf{Design element} &
+    \textbf{Declaration} &
+    \textbf{Analytical role} \\
+    \midrule
+    Configuration dimension &
+    Eleven prespecified Direct-MuJoCo robot configurations &
+    Basis for configuration-level descriptive reporting; not a causal
+    treatment \\
+    Replicates &
+    \texttt{r01}, \texttt{r02} and \texttt{r03} for every configuration &
+    Three fresh executions under the same fixed conditions \\
+    Experimental unit &
+    One robot-configuration--replicate cell &
+    Unit at which capability generation, driver validation and Task Demo
+    eligibility are determined \\
+    Prospective denominator &
+    $11$ configurations $\times 3$ replicates $=33$ cells &
+    Blocked and infrastructure-failure cells remain visible in the declared
+    denominator \\
+    Evidence levels &
+    Cell-local capability design, whole-suite driver validation and
+    post-admission Task Demo &
+    Capability generation, driver admission and downstream task execution are
+    reported separately \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
 
-\subsection[Model Families and Prompt Conditions]{Model Families and Prompt Conditions}
-The benchmark compares model families and generation conditions. This helps
-separate failures caused by insufficient model capability from failures caused
-by weak specifications, missing context, or inadequate validation feedback.
+The prescribed cohort is listed in
+Table~\ref{tab:chapter5-robot-cohort}. Robot type is descriptive: each
+configuration jointly specifies the robot body, actuation, assets, control
+interface and Task Library, so differences between configurations cannot
+isolate morphology.
 
-\subsection[Baselines]{Baselines}
-Baselines distinguish direct task scripting from reusable adapter synthesis and
-compare harness-supported generation against weaker specification or feedback
-conditions.
+\begin{landscape}
+\begin{table}[p]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.08}
+  \caption{Prespecified Experiment 3 robot cohort and configuration identifiers.}
+  \label{tab:chapter5-robot-cohort}
+  \begin{tabularx}{\linewidth}{@{}
+      >{\raggedright\arraybackslash}p{45mm}
+      >{\raggedright\arraybackslash}p{92mm}
+      X
+      >{\centering\arraybackslash}p{12mm}@{}}
+    \toprule
+    \textbf{Robot configuration} &
+    \textbf{Configuration identifier} &
+    \textbf{Descriptive robot type} &
+    \textbf{Cells} \\
+    \midrule
+    The Robot Studio SO-101 &
+    \path{robotstudio_so101} &
+    Fixed serial arm & 3 \\
+    Unitree Go2, stock twelve-degree-of-freedom configuration &
+    \path{unitree-go2-stock-12dof} &
+    Quadruped & 3 \\
+    Franka Panda &
+    \path{franka_panda} &
+    Fixed serial arm & 3 \\
+    Kinova Gen3 with Robotiq 2F-85 &
+    \path{kinova_gen3_robotiq_2f85} &
+    Fixed serial arm & 3 \\
+    UFACTORY xArm7 &
+    \path{ufactory_xarm7} &
+    Fixed serial arm & 3 \\
+    Universal Robots UR5e with Robotiq 2F-85 &
+    \path{universal_robots_ur5e_robotiq_2f85} &
+    Fixed serial arm & 3 \\
+    AgileX PiPER &
+    \path{piper} &
+    Fixed serial arm & 3 \\
+    KUKA LBR iiwa 14 &
+    \path{kuka_iiwa_14} &
+    Fixed serial arm & 3 \\
+    LEAP Hand, right-hand configuration &
+    \path{leap_hand} &
+    Dexterous hand & 3 \\
+    Hello Robot Stretch 2 &
+    \path{hello_robot_stretch_2} &
+    Mobile manipulator & 3 \\
+    ALOHA 2 &
+    \path{aloha_2} &
+    Bimanual manipulator & 3 \\
+    \midrule
+    \textbf{Total} & & & \textbf{33} \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+\end{landscape}
 
-\section[Aims of Study and Analysis Approach]{Aims of Study and Analysis Approach}
-The aim of the experiment is to evaluate whether generated adapters satisfy
-declared contracts, whether validated adapters can be reused across tasks, and
-how performance varies across robots, models, and baselines.
+Table~\ref{tab:chapter5-fixed-conditions} records the settings shared by every
+cell.
 
-\subsection[Adapter Synthesis Metrics]{Adapter Synthesis Metrics}
-Adapter synthesis is evaluated through validation pass rates, failure
-categories, repair outcomes, contract conformance, and evidence of reuse.
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{Fixed experimental conditions for all 33 Experiment 3 cells.}
+  \label{tab:chapter5-fixed-conditions}
+  \begin{tabularx}{\textwidth}{@{}
+      >{\raggedright\arraybackslash}p{42mm}
+      X@{}}
+    \toprule
+    \textbf{Condition} & \textbf{Fixed setting} \\
+    \midrule
+    Language model &
+    Sonnet 4.6, using the manifest-pinned model identity
+    \texttt{eu.anthropic.claude-sonnet-4-6} \\
+    Inference settings &
+    Temperature $0.0$, context limit of $1{,}000{,}000$ tokens and maximum
+    output of $16{,}384$ tokens \\
+    Framework &
+    One versioned Auto-Adapter architecture and one manifest-pinned resource
+    budget across all cells \\
+    Generation condition &
+    Skeleton-assisted only \\
+    Capability-generation input &
+    The canonical robot package and the complete admitted set of source-backed
+    tasks for the selected configuration, referred to as its Task Library \\
+    Per-cell design &
+    Fresh Task-Grounded Capability Design and fresh implementation-blind
+    Independent Validation Compiler output \\
+    Experience &
+    Empty at the start of every cell; no generated artefact is reused across
+    cells \\
+    Isolation &
+    Fresh workspace, model conversation, canonical simulator reset and
+    Direct-MuJoCo execution session \\
+    Driver-submission budget &
+    One initial submission and at most two bounded Repair submissions \\
+    Capability validation &
+    The complete cell-local validation suite is executed by the trusted Harness
+    using candidate-independent observations and verdicts \\
+    Task Demo &
+    Five sealed Task Library tasks are executed only after the final driver
+    passes capability validation; Task Demo receives a separate verdict \\
+    Stop condition &
+    The cell terminates after Task Demo, or after recording a truthful
+    \texttt{not-run} reason when no driver is admitted; Evolution is disabled \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
 
-\subsection[Downstream Utility Metrics]{Downstream Utility Metrics}
-Downstream utility is evaluated by whether task agents can call validated
-adapters as tool layers and whether performance differs from direct scripting
-or weaker interface conditions.
-
-\section[Benchmark Analysis]{Benchmark Analysis}
-The analysis distinguishes three questions: whether an adapter can be
-synthesized, whether it passes validation, and whether it remains useful for
-downstream task execution.
-
-\subsection[Reusable Adapter Synthesis]{Reusable Adapter Synthesis}
-This analysis reports adapter generation success, validation outcomes, repair
-patterns, and failure categories. It provides the primary evidence for the
-claim that the harness can produce reusable adapters.
-
-\subsection[Downstream Adapter Utility]{Downstream Adapter Utility}
-This analysis reports whether validated adapters can serve as tool layers for
-downstream agents. It keeps downstream use separate from synthesis so the
-thesis does not confuse using an interface with generating one.
-
-\subsection[Use Versus Synthesis]{Use Versus Synthesis}
-Some models may use an existing adapter effectively while failing to synthesize
-one. This distinction is central to the thesis because tool use and tool
-synthesis are different capabilities.
+A capability is a task-facing operation implemented by the generated driver.
+Within each cell, Task-Grounded Capability Design (TGCD) defines the interface,
+and the Independent Validation Compiler (IVC) compiles its
+implementation-blind criteria before driver generation. The trusted Harness
+then determines driver admission, after which only the admitted driver is
+fixed for the separate Task Demo.
 
 \section[Results]{Results}
-The expected results report adapter generation success, validation outcomes,
-downstream utility, baseline comparisons, and recurring failure categories
-across robot morphologies and model families.
 
-\section[Discussion]{Discussion}
-The benchmark evaluation supports claims about reusable adapter synthesis only
-within the benchmark and validation boundaries. Its findings motivate the
-boundary and runtime integration analysis in Chapter~\ref{chapter:runtime-improvement}.
+Only formal records from the prespecified 33-cell cohort contribute to the two
+result tables; diagnostic and preflight runs are excluded.
+
+\subsection[Generated Capabilities and Validation Criteria]
+{Generated Capabilities and Validation Criteria}
+
+Table~\ref{tab:chapter5-generated-capabilities} retains one row per
+robot--replicate cell, preventing cross-run variation from being hidden by
+configuration-level aggregation.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\setstretch{1.0}
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{longtable}{@{}
+  >{\raggedright\arraybackslash}p{45mm}
+  >{\centering\arraybackslash}p{10mm}
+  >{\centering\arraybackslash}p{23mm}
+  >{\centering\arraybackslash}p{15mm}
+  >{\raggedright\arraybackslash}p{54mm}
+  >{\raggedright\arraybackslash}p{65mm}@{}}
+  \caption{Generated capability methods and implementation-blind validation
+  criteria for the 33 robot--replicate cells. Private validation material is
+  omitted.}
+  \label{tab:chapter5-generated-capabilities}\\
+  \toprule
+  \textbf{Configuration} &
+  \textbf{Rep.} &
+  \textbf{TGCD/IVC status} &
+  \textbf{Capability count} &
+  \textbf{Generated capability methods} &
+  \textbf{Validation-criterion summary} \\
+  \midrule
+  \endfirsthead
+
+  \multicolumn{6}{c}{\tablename\ \thetable\ continued} \\
+  \toprule
+  \textbf{Configuration} &
+  \textbf{Rep.} &
+  \textbf{TGCD/IVC status} &
+  \textbf{Capability count} &
+  \textbf{Generated capability methods} &
+  \textbf{Validation-criterion summary} \\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{6}{r}{Continued on next page} \\
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+  \path{robotstudio_so101} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{robotstudio_so101} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{robotstudio_so101} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{unitree-go2-stock-12dof} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{unitree-go2-stock-12dof} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{unitree-go2-stock-12dof} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{franka_panda} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{franka_panda} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{franka_panda} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{kinova_gen3_robotiq_2f85} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{kinova_gen3_robotiq_2f85} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{kinova_gen3_robotiq_2f85} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{ufactory_xarm7} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{ufactory_xarm7} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{ufactory_xarm7} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{universal_robots_ur5e_robotiq_2f85} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{universal_robots_ur5e_robotiq_2f85} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{universal_robots_ur5e_robotiq_2f85} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{piper} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{piper} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{piper} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{kuka_iiwa_14} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{kuka_iiwa_14} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{kuka_iiwa_14} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{leap_hand} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{leap_hand} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{leap_hand} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{hello_robot_stretch_2} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{hello_robot_stretch_2} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{hello_robot_stretch_2} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+
+  \path{aloha_2} &
+  r01 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{aloha_2} &
+  r02 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+  \path{aloha_2} &
+  r03 & \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} \\
+\end{longtable}
+\endgroup
+\end{landscape}
+
+The TGCD/IVC status records completion of the two pre-driver stages; it is not
+a driver-validation verdict.
+
+\subsection[Capability Validation and Task Success]
+{Capability Validation and Task Success}
+
+Driver admission, Repair and Task Demo outcomes are aggregated by
+configuration in Table~\ref{tab:chapter5-validation-task-results}.
+
+\begin{landscape}
+\begingroup
+\scriptsize
+\setstretch{1.0}
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.12}
+\begin{longtable}{@{}
+  >{\raggedright\arraybackslash}p{37mm}
+  >{\centering\arraybackslash}p{23mm}
+  >{\centering\arraybackslash}p{23mm}
+  >{\centering\arraybackslash}p{18mm}
+  >{\centering\arraybackslash}p{25mm}
+  >{\centering\arraybackslash}p{29mm}
+  >{\centering\arraybackslash}p{29mm}
+  >{\raggedright\arraybackslash}p{28mm}@{}}
+  \caption{Capability-validation, Repair and Task Demo outcomes by robot
+  configuration.}
+  \label{tab:chapter5-validation-task-results}\\
+  \toprule
+  \textbf{Configuration} &
+  \textbf{Initial whole-suite CV pass, $n/3$ (\%)} &
+  \textbf{Final whole-suite CV pass, $n/3$ (\%)} &
+  \textbf{Repair conversions, $n$} &
+  \textbf{Task Demo P/F/NR, $n/3$} &
+  \textbf{Tasks passed/evaluable (\%)} &
+  \textbf{Coverage: evaluable/$(5 \times A)$} &
+  \textbf{Terminal failure classes (cell counts)} \\
+  \midrule
+  \endfirsthead
+
+  \multicolumn{8}{c}{\tablename\ \thetable\ continued} \\
+  \toprule
+  \textbf{Configuration} &
+  \textbf{Initial whole-suite CV pass, $n/3$ (\%)} &
+  \textbf{Final whole-suite CV pass, $n/3$ (\%)} &
+  \textbf{Repair conversions, $n$} &
+  \textbf{Task Demo P/F/NR, $n/3$} &
+  \textbf{Tasks passed/evaluable (\%)} &
+  \textbf{Coverage: evaluable/$(5 \times A)$} &
+  \textbf{Terminal failure classes (cell counts)} \\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{8}{r}{Continued on next page} \\
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+  The Robot Studio SO-101 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  Unitree Go2 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  Franka Panda &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  Kinova Gen3 with Robotiq 2F-85 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  UFACTORY xArm7 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  Universal Robots UR5e with Robotiq 2F-85 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  AgileX PiPER &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  KUKA LBR iiwa 14 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  LEAP Hand &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  Hello Robot Stretch 2 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  ALOHA 2 &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} & \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+  \midrule
+  \textbf{All configurations} &
+  \textit{[RESULT NEEDED: $n/33$]} &
+  \textit{[RESULT NEEDED: $n/33$]} &
+  \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED: counts sum to 33]} &
+  \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} &
+  \textit{[RESULT NEEDED]} \\
+\end{longtable}
+\endgroup
+\end{landscape}
+
+An initial whole-suite pass requires the first driver submission to pass every
+cell-local criterion; final admission may occur on any submission within the
+three-submission budget. A Repair conversion is an initial failure followed by
+final admission. Both rates retain all three cells per configuration and all
+33 cells overall, including cells that do not reach driver admission.
+
+Task Demo statuses are mutually exclusive: P denotes a complete five-task
+pass, F an executed Demo that does not pass, and NR a \texttt{not-run}
+outcome. An F outcome does not by itself attribute the failure to the
+candidate. Terminal failure classes are recorded separately; an
+infrastructure failure is therefore reported in the failure-class column
+rather than as a fourth Demo status.
+
+Task success is the number of passed tasks divided by the number of
+independently evaluable tasks and is reported as \texttt{N/A} when that
+denominator is zero. Coverage is $\mathrm{evaluable}/(5 \times A)$, where $A$
+is the number of final-admitted cells. An NR outcome contributes no passed or
+evaluable tasks.
+
+\section[Discussion and Limitations]{Discussion and Limitations}
+
+\textit{[RESULT NEEDED: interpret the configuration-level findings and
+limitations.]}
+
+\section[Summary]{Summary}
+
+\textit{[RESULT NEEDED: state the bounded answer to RQ3.]}
