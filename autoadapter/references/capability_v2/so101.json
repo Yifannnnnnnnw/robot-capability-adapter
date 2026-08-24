@@ -1,0 +1,117 @@
+{
+  "artifact_type": "capability_v2_public_reference",
+  "protocol_version": "capability-v2",
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.0",
+  "reference_source": {
+    "source_id": "b1_driver_validation_criteria",
+    "specific_reference": "Experiment 1 B1 Driver Validation Criteria, SO-101 A1-A6 and fixed capability bundle"
+  },
+  "capabilities": [
+    {
+      "capability_id": "A1",
+      "method_name": "move_end_effector_to_position",
+      "description": "Move the SO-101 end effector to one bounded world-frame position.",
+      "effect": "Bounded closed-loop end-effector position regulation.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_position_m": {"type": "array", "minItems": 3, "maxItems": 3, "unit": "m", "frame": "world", "items": {"type": "number", "unit": "m", "frame": "world", "minimum": -1.0, "maximum": 1.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A1 request bounds: target_position_m"}]}},
+          "max_duration_s": {"type": "number", "unit": "s", "frame": "none", "minimum": 0.25, "maximum": 8.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A1 request bounds: max_duration_s"}]}
+        },
+        "required": ["target_position_m", "max_duration_s"],
+        "additionalProperties": false
+      },
+      "criteria": [{"metric": "end_effector_position_error", "unit": "m", "comparator": "<=", "threshold": 0.015, "temporal": {"kind": "continuous", "duration_s": 0.5}, "aggregation": {"kind": "all_samples"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A1: position error <= 0.015 m continuously for 0.5 s"}]}],
+      "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A1"}]
+    },
+    {
+      "capability_id": "A2",
+      "method_name": "trace_cartesian_path",
+      "description": "Trace bounded SO-101 world-frame Cartesian waypoints in order.",
+      "effect": "Ordered Cartesian path tracking with bounded cross-track error.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "waypoints_m": {"type": "array", "minItems": 2, "maxItems": 8, "unit": "m", "frame": "world", "items": {"type": "array", "minItems": 3, "maxItems": 3, "unit": "m", "frame": "world", "items": {"type": "number", "unit": "m", "frame": "world", "minimum": -1.0, "maximum": 1.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A2 request bounds: waypoints_m"}]}}},
+          "max_duration_per_segment_s": {"type": "number", "unit": "s", "frame": "none", "minimum": 0.25, "maximum": 5.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"}]}
+        },
+        "required": ["waypoints_m", "max_duration_per_segment_s"],
+        "additionalProperties": false
+      },
+      "criteria": [{"metric": "cartesian_path_error", "unit": "m", "comparator": "<=", "threshold": 0.02, "temporal": {"kind": "ordered_waypoints_and_terminal_hold", "terminal_hold_s": 0.5}, "aggregation": {"kind": "maximum_cross_track_and_terminal_error"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A2: ordered waypoints, cross-track <= 0.020 m, final error <= 0.015 m for 0.5 s"}], "checks": [{"metric": "cross_track_error", "unit": "m", "comparator": "<=", "threshold": 0.02}, {"metric": "terminal_position_error", "unit": "m", "comparator": "<=", "threshold": 0.015}]}],
+      "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A2"}]
+    },
+    {
+      "capability_id": "A3",
+      "method_name": "set_gripper_opening",
+      "description": "Set the SO-101 physical gripper aperture by normalised opening fraction.",
+      "effect": "Bounded gripper aperture regulation without changing the arm target.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "opening_fraction": {"type": "number", "unit": "ratio", "frame": "none", "minimum": 0.0, "maximum": 1.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A3 request bounds: opening_fraction"}]},
+          "max_duration_s": {"type": "number", "unit": "s", "frame": "none", "minimum": 0.25, "maximum": 8.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A3 request bounds: max_duration_s"}]}
+        },
+        "required": ["opening_fraction", "max_duration_s"],
+        "additionalProperties": false
+      },
+      "criteria": [{"metric": "normalised_aperture_error", "unit": "ratio", "comparator": "<=", "threshold": 0.1, "temporal": {"kind": "continuous", "duration_s": 0.25}, "aggregation": {"kind": "all_samples_and_bidirectional_excursion"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A3: aperture error <= 0.10 for 0.25 s and excursion >= 50%"}], "checks": [{"metric": "bidirectional_excursion", "unit": "ratio", "comparator": ">=", "threshold": 0.5}]}],
+      "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A3"}]
+    },
+    {
+      "capability_id": "A4",
+      "method_name": "approach_until_contact",
+      "description": "Approach a reachable target along a bounded ray until controlled contact.",
+      "effect": "Bounded axial approach with controlled target contact and penetration.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "precontact_position_m": {"type": "array", "minItems": 3, "maxItems": 3, "unit": "m", "frame": "world", "items": {"type": "number", "unit": "m", "frame": "world", "minimum": -1.0, "maximum": 1.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A4 request bounds: precontact_position_m"}]}},
+          "approach_direction_unit": {"type": "array", "minItems": 3, "maxItems": 3, "unit": "unitless", "frame": "world", "items": {"type": "number", "unit": "unitless", "frame": "world", "minimum": -1.0, "maximum": 1.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"}]}},
+          "max_travel_m": {"type": "number", "unit": "m", "frame": "none", "exclusiveMinimum": 0.0, "maximum": 0.08, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A4 request bounds: max_travel_m"}]},
+          "max_approach_speed_m_s": {"type": "number", "unit": "m/s", "frame": "none", "exclusiveMinimum": 0.0, "maximum": 0.05, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"}]},
+          "max_duration_s": {"type": "number", "unit": "s", "frame": "none", "minimum": 0.25, "maximum": 8.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A4 request bounds: max_duration_s"}]}
+        },
+        "required": ["precontact_position_m", "approach_direction_unit", "max_travel_m", "max_approach_speed_m_s", "max_duration_s"],
+        "additionalProperties": false
+      },
+      "criteria": [{"metric": "contact_integrity", "unit": "mixed", "comparator": "==", "threshold": 1, "temporal": {"kind": "ordered_precontact_ray_contact", "contact_hold_s": 0.1}, "aggregation": {"kind": "all_gates"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A4: contact 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, unrelated contacts 0"}], "checks": [{"metric": "post_contact_speed", "unit": "m/s", "comparator": "<=", "threshold": 0.02}, {"metric": "penetration", "unit": "m", "comparator": "<=", "threshold": 0.005}, {"metric": "unrelated_contact_count", "unit": "count", "comparator": "==", "threshold": 0}]}],
+      "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A4"}]
+    },
+    {
+      "capability_id": "A5",
+      "method_name": "move_cartesian_offset_and_return",
+      "description": "Move the SO-101 end effector by a base-frame offset and return.",
+      "effect": "Ordered outbound and return displacement tracking in the robot-base frame.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "offset_robot_base_m": {"type": "array", "minItems": 3, "maxItems": 3, "unit": "m", "frame": "robot_base", "items": {"type": "number", "unit": "m", "frame": "robot_base", "minimum": -0.06, "maximum": 0.06, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"}]}},
+          "max_duration_per_leg_s": {"type": "number", "unit": "s", "frame": "none", "minimum": 0.25, "maximum": 5.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"}]}
+        },
+        "required": ["offset_robot_base_m", "max_duration_per_leg_s"],
+        "additionalProperties": false
+      },
+      "criteria": [{"metric": "ordered_outbound_return_error", "unit": "m", "comparator": "<=", "threshold": 0.015, "temporal": {"kind": "ordered_phase_holds", "outbound_hold_s": 0.25, "return_hold_s": 0.5}, "aggregation": {"kind": "both_legs_and_displacement"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A5: outbound/return errors <= 0.015 m and displacement >= 80%"}], "checks": [{"metric": "requested_displacement_fraction", "unit": "ratio", "comparator": ">=", "threshold": 0.8}]}],
+      "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A5"}]
+    },
+    {
+      "capability_id": "A6",
+      "method_name": "set_wrist_roll",
+      "description": "Set the SO-101 wrist-roll joint to one bounded absolute angle while holding the other joints.",
+      "effect": "Absolute non-wrapped wrist-roll regulation with whole-arm hold.",
+      "request_schema": {
+        "type": "object",
+        "properties": {
+          "target_roll_rad": {"type": "number", "unit": "rad", "frame": "joint", "minimum": -2.7438473, "maximum": 2.7438473, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A6 request bounds: target_roll_rad"}]},
+          "max_duration_s": {"type": "number", "unit": "s", "frame": "none", "minimum": 0.25, "maximum": 8.0, "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A6 request bounds: max_duration_s"}]}
+        },
+        "required": ["target_roll_rad", "max_duration_s"],
+        "additionalProperties": false
+      },
+      "criteria": [{"metric": "wrist_roll_error", "unit": "rad", "comparator": "<=", "threshold": 0.03, "temporal": {"kind": "continuous", "duration_s": 0.25}, "aggregation": {"kind": "target_and_other_joint_hold"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A6: wrist-roll error <= 0.03 rad and all other arm joints/gripper held"}], "checks": [{"metric": "other_joint_or_gripper_drift", "unit": "rad", "comparator": "<=", "threshold": 0.03}]}],
+      "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "SO-101 A6"}]
+    }
+  ]
+}

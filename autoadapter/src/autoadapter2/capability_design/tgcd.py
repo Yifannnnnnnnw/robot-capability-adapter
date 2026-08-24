@@ -1,88 +1,61 @@
-"""Real-model Task-Grounded Capability Design and its structural audit."""
+"""Task-Grounded Capability Design (``capability-v2``).
+
+TGCD is the only design stage that receives eligible Experience.  The model
+authors a small set of reusable capabilities from the public morphology and
+source-backed Task Library; it does not choose from a Framework primitive
+family and it does not compile a task macro.  The deterministic protocol
+validator in :mod:`autoadapter2.capability_design.protocol` is the sole
+boundary for the resulting artifact.
+"""
 
 from __future__ import annotations
 
-import copy
 import json
-from collections import Counter
-from collections.abc import Mapping, Sequence
+import re
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-from autoadapter2.driver_synthesis import (
-    SkeletonContractError,
-    validate_capability_names,
+from .protocol import (
+    CAPABILITY_INVOCATION_ABI,
+    CAPABILITY_PROTOCOL_VERSION,
+    CapabilityProtocolError,
+    CapabilitySchemaError,
+    capability_methods,
+    capability_records,
+    json_copy,
+    validate_schema_definition,
+    validate_structured_criterion,
+    validate_capability_design as _validate_capability_design,
 )
-from autoadapter2.libraries import RobotPackage
-from autoadapter2.model_api import ModelInvocationError
 
 
-TGCD_SYSTEM_PROMPT = """You perform Task-Grounded Capability Design, not code generation.
-Using only the supplied public Morphology, complete source-backed Task Library, and eligible
-Experience, design 5 to 10 reusable robot capability contracts. Do not select from or infer a
-pre-authored effect catalog. Every task must be covered by exactly one capability, and tasks may
-be grouped only when they share a genuine reusable physical robot effect.
+TGCD_SYSTEM_PROMPT = """You are AutoAdapter capability-v2 Task-Grounded Capability Design.
+Author three to ten reusable, package-bound robot capabilities from the supplied public
+morphology and source-backed Task Library. Do not select from a primitive_family catalogue.
+Each capability is one single-call physical effect and must have a unique capability_id and
+Python method_name, a concise description and effect, a closed task-neutral request_schema,
+preconditions, temporal_semantics, invariants, failure_behavior, and source-grounded structured
+criteria. Every non-object request-schema field has an explicit unit and frame and numeric bounds
+are finite where relevant. A request schema must not contain task_id, task_parameters, scene,
+reset, private values, criteria, oracle fields, or a task/macro plan.
 
-Keep the complete JSON comfortably below 16,000 tokens. Prefer the smallest genuine grouping,
-use one concise sentence for each narrative field, and do not repeat source or task prose outside
-the fields that must copy it exactly. The 5-to-10 capability count is a hard output constraint.
-
-Return one JSON object with artifact_type='capability_design', schema_version='1.0', the supplied
-robot_configuration_id, package_version and task_snapshot_id, invocation_abi exactly equal to
-{'kind':'keyword_request','method_call':'method(request=request)','request_required':['task_id',
-'task_parameters']}, and capabilities[]. Each capability
-must contain: capability_id, effect, method_name, description, covered_task_ids,
-abstraction_rationale, interface{inputs,outputs}, preconditions, temporal_semantics, invariants,
-required_affordances{actions,observations}, failure_behavior, and validation_contract[].
-method_name must be a valid public Python identifier authored by you.
-
-interface.inputs and interface.outputs MUST each be a non-empty JSON array, never a keyed object.
-Every item must have string name, type, unit, and frame fields. Parameter inputs must also copy the
-public task-schema description whenever one is declared. inputs must contain the fixed item
-{"name":"request","type":"object","unit":"unitless","frame":"none"} plus exactly one item for
-each distinct required task parameter of the covered tasks. A parameter input is a semantic path,
-not another Python argument, and has this exact form:
-{"name":"request.task_parameters.target_position","type":"array","unit":"m","frame":"world",
-"description":"Desired terminal state of the task entity, not generally an end-effector waypoint",
-"required_for_task_ids":["task-a","task-b"]}. Copy type, unit, frame, and description from the
-public task schema, and list exactly the covered tasks for which that parameter is required. outputs are
-model-authored and contain exactly name, type, unit, and frame; for example
-{"name":"completed","type":"bool","unit":"unitless","frame":"none"}.
-The Framework mechanically canonicalizes required_for_task_ids from the covered public task
-schemas; concentrate on selecting the correct capability grouping and semantic parameter paths.
-preconditions, invariants, required_affordances.actions, and required_affordances.observations MUST
-be JSON arrays. temporal_semantics MUST be a JSON object, for example
-{"kind":"bounded","description":"Complete within the request duration"}.
-
-The method name and semantic grouping are model-authored, but the Python transport ABI is fixed:
-every generated public method receives one keyword argument named request. request.task_id selects
-the covered task and request.task_parameters follows that task's public invocation_schema. Describe
-only declared task-parameter fields in the capability interface; do not invent alternate Python
-argument names. required_affordances actions and observations must be selected only from the exact
-vocabularies in morphology.public_affordances.
-
-validation_contract must contain exactly one primary item and may contain at most one robustness
-item. Each model-authored item contains only case_role ('primary' or 'robustness'),
-selection_rationale, source_task_id, and source_clause_id. The Framework mechanically carries the
-selected public clause's metric, unit, comparator, threshold, temporal, aggregation, and source_refs
-into the audited artifact, so do not repeat those fields. The primary item must represent the
-capability's shared physical effect. Add a robustness item only when a different covered task has a
-materially different scene, metric, or temporal obligation that the primary item cannot exercise;
-explain that difference in selection_rationale. Do not mechanically select every task or scoring
-clause for validation_contract. Unselected task clauses remain in the Task Library for the separate
-Task Demo. Do not return implementation code, simulator bindings, private cases, reset values,
-guards, expected trajectories, or a success verdict."""
+Return one JSON object with artifact_type='capability_design', schema_version='2.0',
+capability_protocol_version='capability-v2', the supplied package identity, invocation_abi
+exactly equal to the supplied capability-request ABI, capabilities[], and task_support[].
+task_support is only a many-to-many relation of {task_id, capability_id, rationale}; it contains
+no ordered calls, waypoints, macro, plan, reset, scene, criterion, or private values. Do not
+return code, Driver/Repair material, hidden instances, exact private requests, oracle plans, or
+a self-reported verdict. The public reference catalog is background evidence only: author the
+capabilities yourself and do not copy task mappings from it."""
 
 
-class CapabilityDesignError(ValueError):
-    """Raised when model-authored capability design violates the public contract."""
+TGCD_ARTIFACT_TURNS = 6
 
 
-INVOCATION_ABI = {
-    "kind": "keyword_request",
-    "method_call": "method(request=request)",
-    "request_required": ["task_id", "task_parameters"],
-}
+class CapabilityDesignError(CapabilitySchemaError):
+    """Raised when TGCD cannot produce a valid capability-v2 artifact."""
 
 
 class JsonGenerator(Protocol):
@@ -95,550 +68,358 @@ class JsonGenerator(Protocol):
     ) -> dict[str, Any]: ...
 
 
-def _text(value: Mapping[str, Any], field: str, *, where: str) -> str:
-    item = value.get(field)
-    if not isinstance(item, str) or not item.strip():
-        raise CapabilityDesignError(f"{where}.{field} must be a non-empty string")
-    return item.strip()
+TGCDEventCallback = Callable[[Mapping[str, Any]], Any]
 
 
-def _list(value: Mapping[str, Any], field: str, *, where: str) -> list[Any]:
-    item = value.get(field)
-    if not isinstance(item, list) or not item:
-        raise CapabilityDesignError(f"{where}.{field} must be a non-empty list")
-    return item
+_REFERENCE_ROOT = Path(__file__).resolve().parents[3] / "references" / "capability_v2"
+_FORBIDDEN_PUBLIC_REFERENCE_KEYS = {
+    "task_support",
+    "supported_task_ids",
+    "covered_task_ids",
+    "task_id",
+    "task_ids",
+    "oracle",
+    "oracle_plan",
+    "task_mapping",
+    "task_mappings",
+    "exact_task_calls",
+    "calls",
+    "waypoints",
+    "macro",
+    "plan",
+}
 
 
-def _typed_item(item: Mapping[str, Any], *, where: str) -> dict[str, str]:
-    return {field: _text(item, field, where=where) for field in ("name", "type", "unit", "frame")}
+def _assert_reference_public(value: Any, *, where: str = "reference") -> None:
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if str(key) in _FORBIDDEN_PUBLIC_REFERENCE_KEYS:
+                raise CapabilityDesignError(f"{where} exposes forbidden reference field {key!r}")
+            _assert_reference_public(child, where=f"{where}.{key}")
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            _assert_reference_public(child, where=f"{where}[{index}]")
 
 
-def _required_parameter_inputs(
-    package: RobotPackage,
-    covered_task_ids: Sequence[str],
-    *,
-    where: str,
+def load_public_reference_catalog(
+    root: str | Path | None = None,
 ) -> list[dict[str, Any]]:
-    covered = set(covered_task_ids)
-    inputs: dict[str, dict[str, Any]] = {}
-    for task in package.tasks:
-        task_id = str(task["task_id"])
-        if task_id not in covered:
-            continue
-        parameters = task["invocation_schema"]["request"]["task_parameters"]
-        properties = parameters["properties"]
-        for parameter_name in parameters["required"]:
-            schema = properties[parameter_name]
-            name = f"request.task_parameters.{parameter_name}"
-            typed = {
-                "name": name,
-                "type": str(schema["type"]),
-                "unit": str(schema["unit"]),
-                "frame": str(schema["frame"]),
-            }
-            description = schema.get("description")
-            if isinstance(description, str) and description.strip():
-                typed["description"] = description.strip()
-            existing = inputs.get(name)
-            if existing is None:
-                inputs[name] = {**typed, "required_for_task_ids": [task_id]}
-            elif any(
-                existing.get(field) != typed.get(field)
-                for field in ("type", "unit", "frame", "description")
-            ):
+    """Load the canonical SO-101/Go2 public reference projection.
+
+    The assets are a public design aid only.  This loader intentionally
+    rejects any accidental task relation or oracle field rather than silently
+    leaking it into a model prompt.
+    """
+
+    reference_root = Path(root) if root is not None else _REFERENCE_ROOT
+    index_path = reference_root / "index.json"
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise CapabilityDesignError(f"cannot read capability-v2 reference index: {exc}") from None
+    if not isinstance(index, Mapping):
+        raise CapabilityDesignError("capability-v2 reference index must be an object")
+    entries = index.get("references")
+    if not isinstance(entries, list) or not entries:
+        raise CapabilityDesignError("capability-v2 reference index has no references")
+    result: list[dict[str, Any]] = []
+    for position, entry in enumerate(entries):
+        if not isinstance(entry, Mapping):
+            raise CapabilityDesignError(f"references[{position}] must be an object")
+        relative = entry.get("path")
+        if not isinstance(relative, str) or not relative.strip():
+            raise CapabilityDesignError(f"references[{position}].path must be non-empty text")
+        path = (reference_root / relative).resolve()
+        try:
+            path.relative_to(reference_root.resolve())
+        except ValueError:
+            raise CapabilityDesignError("capability-v2 reference path escapes its root") from None
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError) as exc:
+            raise CapabilityDesignError(f"cannot read reference {relative}: {exc}") from None
+        if not isinstance(value, dict):
+            raise CapabilityDesignError(f"reference {relative} must be an object")
+        _assert_reference_public(value, where=relative)
+        capabilities = value.get("capabilities")
+        if not isinstance(capabilities, list) or not capabilities:
+            raise CapabilityDesignError(f"reference {relative} has no capabilities")
+        for capability_index, capability in enumerate(capabilities):
+            if not isinstance(capability, Mapping):
                 raise CapabilityDesignError(
-                    f"{where} groups incompatible schemas for task parameter {parameter_name!r}"
+                    f"{relative}.capabilities[{capability_index}] must be an object"
                 )
-            else:
-                existing["required_for_task_ids"].append(task_id)
-    return list(inputs.values())
-
-
-def _validate_interface(
-    capability: Mapping[str, Any],
-    package: RobotPackage,
-    covered_task_ids: Sequence[str],
-    *,
-    where: str,
-) -> None:
-    interface = capability.get("interface")
-    if not isinstance(interface, Mapping):
-        raise CapabilityDesignError(f"{where}.interface must be an object")
-    inputs = interface.get("inputs")
-    outputs = interface.get("outputs")
-    if not isinstance(inputs, list) or not inputs:
-        raise CapabilityDesignError(f"{where}.interface.inputs must be a non-empty list")
-    if not isinstance(outputs, list) or not outputs:
-        raise CapabilityDesignError(f"{where}.interface.outputs must be a non-empty list")
-
-    expected_inputs = {
-        "request": {
-            "name": "request",
-            "type": "object",
-            "unit": "unitless",
-            "frame": "none",
-        }
-    }
-    expected_inputs.update(
-        {
-            item["name"]: item
-            for item in _required_parameter_inputs(
-                package,
-                covered_task_ids,
-                where=f"{where}.interface.inputs",
-            )
-        }
-    )
-    actual_inputs: dict[str, Mapping[str, Any]] = {}
-    for index, item in enumerate(inputs):
-        item_where = f"{where}.interface.inputs[{index}]"
-        if not isinstance(item, Mapping):
-            raise CapabilityDesignError(f"{item_where} must be an object")
-        name = _typed_item(item, where=item_where)["name"]
-        if name in actual_inputs:
-            raise CapabilityDesignError(f"{where}.interface.inputs duplicates {name!r}")
-        actual_inputs[name] = item
-    if set(actual_inputs) != set(expected_inputs):
-        missing = sorted(set(expected_inputs) - set(actual_inputs))
-        unsupported = sorted(set(actual_inputs) - set(expected_inputs))
-        raise CapabilityDesignError(
-            f"{where}.interface.inputs must exactly expose required task parameters; "
-            f"missing={missing}, unsupported={unsupported}"
-        )
-    for name, expected in expected_inputs.items():
-        actual = actual_inputs[name]
-        expected_fields = set(expected)
-        if set(actual) != expected_fields or any(
-            actual.get(key) != value
-            for key, value in expected.items()
-            if key != "required_for_task_ids"
-        ):
-            raise CapabilityDesignError(
-                f"{where}.interface input {name!r} must copy its public task parameter contract"
-            )
-        if "required_for_task_ids" in expected:
-            required_for = actual.get("required_for_task_ids")
-            if (
-                not isinstance(required_for, list)
-                or any(not isinstance(task_id, str) for task_id in required_for)
-                or len(required_for) != len(set(required_for))
-                or set(required_for) != set(expected["required_for_task_ids"])
-            ):
+            try:
+                validate_schema_definition(
+                    capability.get("request_schema"),
+                    path=f"{relative}.capabilities[{capability_index}].request_schema",
+                )
+            except CapabilityProtocolError as exc:
+                raise CapabilityDesignError(str(exc)) from None
+            criteria = capability.get("criteria")
+            if not isinstance(criteria, list) or not criteria:
                 raise CapabilityDesignError(
-                    f"{where}.interface input {name!r} must identify exactly the tasks "
-                    "that require it"
+                    f"{relative}.capabilities[{capability_index}].criteria must be a non-empty array"
                 )
-
-    output_names: set[str] = set()
-    for index, item in enumerate(outputs):
-        item_where = f"{where}.interface.outputs[{index}]"
-        if not isinstance(item, Mapping):
-            raise CapabilityDesignError(f"{item_where} must be an object")
-        typed = _typed_item(item, where=item_where)
-        if set(item) != set(typed):
-            raise CapabilityDesignError(f"{item_where} may contain only name, type, unit, and frame")
-        if typed["name"] in output_names:
-            raise CapabilityDesignError(
-                f"{where}.interface.outputs duplicates {typed['name']!r}"
-            )
-        output_names.add(typed["name"])
-
-
-def _canonical_interface_items(value: Any) -> Any:
-    """Canonicalize the two common JSON spellings without changing semantics."""
-
-    if not isinstance(value, Mapping):
-        return value
-    if all(field in value for field in ("name", "type", "unit", "frame")):
-        return [dict(value)]
-    items: list[dict[str, Any]] = []
-    for name, description in value.items():
-        if not isinstance(description, Mapping):
-            return value
-        item = dict(description)
-        item.setdefault("name", str(name))
-        items.append(item)
-    return items
-
-
-def _canonicalize_design(design: Mapping[str, Any]) -> dict[str, Any]:
-    result = copy.deepcopy(dict(design))
-    capabilities = result.get("capabilities")
-    if not isinstance(capabilities, list):
-        return result
-    for capability in capabilities:
-        if not isinstance(capability, dict):
-            continue
-        interface = capability.get("interface")
-        if not isinstance(interface, dict):
-            continue
-        for direction in ("inputs", "outputs"):
-            interface[direction] = _canonical_interface_items(interface.get(direction))
-        for field in ("preconditions", "invariants"):
-            if isinstance(capability.get(field), str):
-                capability[field] = [capability[field]]
-        temporal = capability.get("temporal_semantics")
-        if isinstance(temporal, str) and temporal.strip():
-            capability["temporal_semantics"] = {"description": temporal}
-        affordances = capability.get("required_affordances")
-        if isinstance(affordances, dict):
-            for field in ("actions", "observations"):
-                if isinstance(affordances.get(field), str):
-                    affordances[field] = [affordances[field]]
+            for criterion_index, criterion in enumerate(criteria):
+                try:
+                    validate_structured_criterion(
+                        criterion,
+                        path=(
+                            f"{relative}.capabilities[{capability_index}]"
+                            f".criteria[{criterion_index}]"
+                        ),
+                    )
+                except CapabilityProtocolError as exc:
+                    raise CapabilityDesignError(str(exc)) from None
+        result.append(json_copy(value, label=relative))
+    _assert_reference_public(result)
     return result
 
 
-def _canonicalize_parameter_task_coverage(
-    design: dict[str, Any], package: RobotPackage
-) -> dict[str, Any]:
-    capabilities = design.get("capabilities")
-    if not isinstance(capabilities, list):
-        return design
-    for index, capability in enumerate(capabilities):
-        if not isinstance(capability, dict):
-            continue
-        covered = capability.get("covered_task_ids")
-        interface = capability.get("interface")
-        if not isinstance(covered, list) or not isinstance(interface, dict):
-            continue
-        inputs = interface.get("inputs")
-        if not isinstance(inputs, list):
-            continue
-        expected = {
-            item["name"]: item
-            for item in _required_parameter_inputs(
-                package,
-                [task_id for task_id in covered if isinstance(task_id, str)],
-                where=f"capabilities[{index}].interface.inputs",
-            )
+def _package_ids(package: Any) -> dict[str, str]:
+    if isinstance(package, Mapping):
+        values = {
+            "robot_configuration_id": package.get("robot_configuration_id"),
+            "package_version": package.get("package_version"),
+            "task_snapshot_id": package.get("task_snapshot_id", package.get("snapshot_id")),
         }
-        for item in inputs:
-            if not isinstance(item, dict):
-                continue
-            expected_item = expected.get(item.get("name"))
-            if expected_item is not None:
-                for field, value in expected_item.items():
-                    item[field] = copy.deepcopy(value)
-    return design
+    else:
+        values = {
+            "robot_configuration_id": getattr(package, "robot_configuration_id", None),
+            "package_version": getattr(package, "package_version", None),
+            "task_snapshot_id": getattr(package, "snapshot_id", None),
+        }
+    result: dict[str, str] = {}
+    for key, value in values.items():
+        if not isinstance(value, str) or not value.strip():
+            raise CapabilityDesignError(f"package.{key} must be non-empty text")
+        result[key] = value
+    return result
 
 
-def _canonicalize_validation_contracts(
-    design: dict[str, Any], package: RobotPackage
+def _package_tasks(package: Any) -> Sequence[Mapping[str, Any]]:
+    if isinstance(package, Mapping):
+        raw = package.get("tasks", package.get("task_library", {}).get("tasks", []))
+    else:
+        raw = getattr(package, "tasks", ())
+    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
+        raise CapabilityDesignError("package.tasks must be an array")
+    return raw
+
+
+def _sanitise_experience(experience: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Copy public Experience without imposing a historical record schema."""
+
+    if not isinstance(experience, Sequence) or isinstance(experience, (str, bytes)):
+        raise CapabilityDesignError("experience must be an array")
+    result: list[dict[str, Any]] = []
+    for index, item in enumerate(experience):
+        if not isinstance(item, Mapping):
+            raise CapabilityDesignError(f"experience[{index}] must be an object")
+        copied = json_copy(dict(item), label=f"experience[{index}]")
+        if not isinstance(copied, dict):  # pragma: no cover - mapping input
+            raise CapabilityDesignError(f"experience[{index}] must be an object")
+        # These names would cross the candidate visibility boundary.  The
+        # allowed root fields are intentionally not enumerated so the newer
+        # observation/lesson/recommendation/scope/public_evidence records and
+        # Framework-added provenance/outcome remain forward compatible.
+        forbidden = {
+            "driver",
+            "driver_code",
+            "candidate_driver",
+            "repair_history",
+            "candidate_source",
+            "private_cases",
+            "private_bindings",
+            "guards",
+        }
+        def audit(value: Any, where: str) -> None:
+            if isinstance(value, Mapping):
+                for key, child in value.items():
+                    normalized = str(key).lower()
+                    tokens = {
+                        token for token in re.split(r"[^a-z0-9]+", normalized) if token
+                    }
+                    if normalized in forbidden or tokens.intersection(
+                        {"driver", "repair", "candidate", "private", "guard"}
+                    ):
+                        raise CapabilityDesignError(
+                            f"{where} contains candidate/private field {key!r}"
+                        )
+                    audit(child, f"{where}.{key}")
+            elif isinstance(value, list):
+                for child_index, child in enumerate(value):
+                    audit(child, f"{where}[{child_index}]")
+
+        audit(copied, f"experience[{index}]")
+        result.append(copied)
+    return result
+
+
+def build_public_tgcd_inputs(
+    package: Any,
+    *,
+    experience: Sequence[Mapping[str, Any]] = (),
+    reference_catalog: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    capabilities = design.get("capabilities")
-    if not isinstance(capabilities, list):
-        return design
-    source_clauses = _source_clauses(package.tasks)
-    standard_fields = (
-        "metric",
-        "unit",
-        "comparator",
-        "threshold",
-        "temporal",
-        "aggregation",
-        "source_refs",
+    """Build the complete model-visible TGCD projection."""
+
+    ids = _package_ids(package)
+    morphology = package.get("morphology", {}) if isinstance(package, Mapping) else getattr(package, "morphology", {})
+    if not isinstance(morphology, Mapping):
+        raise CapabilityDesignError("package.morphology must be an object")
+    references = (
+        load_public_reference_catalog()
+        if reference_catalog is None
+        else [json_copy(dict(value), label="reference_catalog") for value in reference_catalog]
     )
-    for capability in capabilities:
-        if not isinstance(capability, dict):
-            continue
-        contracts = capability.get("validation_contract")
-        if not isinstance(contracts, list):
-            continue
-        for contract in contracts:
-            if not isinstance(contract, dict):
-                continue
-            key = (contract.get("source_task_id"), contract.get("source_clause_id"))
-            source = source_clauses.get(key)
-            if source is None:
-                continue
-            for field in standard_fields:
-                contract[field] = copy.deepcopy(source[field])
-    return design
-
-
-def _source_clauses(tasks: Sequence[Mapping[str, Any]]) -> dict[tuple[str, str], Mapping[str, Any]]:
-    clauses: dict[tuple[str, str], Mapping[str, Any]] = {}
-    for task in tasks:
-        task_id = str(task["task_id"])
-        for clause in task["scoring"]:
-            key = (task_id, str(clause["clause_id"]))
-            clauses[key] = clause
-    return clauses
-
-
-def _same_public_standard(
-    designed: Mapping[str, Any],
-    source: Mapping[str, Any],
-) -> bool:
-    fields = (
-        "metric",
-        "unit",
-        "comparator",
-        "threshold",
-        "temporal",
-        "aggregation",
-        "source_refs",
-    )
-    return all(designed.get(field) == source.get(field) for field in fields)
-
-
-def _materially_distinct_contract(
-    primary: Mapping[str, Any],
-    robustness: Mapping[str, Any],
-    tasks_by_id: Mapping[str, Mapping[str, Any]],
-) -> bool:
-    if primary.get("source_task_id") == robustness.get("source_task_id"):
-        return False
-    standard_fields = (
-        "metric",
-        "unit",
-        "comparator",
-        "threshold",
-        "temporal",
-        "aggregation",
-    )
-    if any(primary.get(field) != robustness.get(field) for field in standard_fields):
-        return True
-    primary_task = tasks_by_id.get(str(primary.get("source_task_id")), {})
-    robustness_task = tasks_by_id.get(str(robustness.get("source_task_id")), {})
-    primary_scene = primary_task.get("scene_assumptions")
-    robustness_scene = robustness_task.get("scene_assumptions")
-    return (
-        isinstance(primary_scene, list)
-        and isinstance(robustness_scene, list)
-        and primary_scene != robustness_scene
-    )
+    _assert_reference_public(references)
+    return {
+        "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        "robot_package": {
+            **ids,
+            "morphology": json_copy(dict(morphology), label="morphology"),
+            "tasks": json_copy(list(_package_tasks(package)), label="task_library"),
+        },
+        "capability_v2_public_references": references,
+        "eligible_experience": _sanitise_experience(experience),
+        "task_support_is_design_evidence_only": True,
+        "runtime_tools_are_not_derived_from_task_support": True,
+    }
 
 
 def validate_capability_design(
     design: Mapping[str, Any],
-    package: RobotPackage,
+    package: Any,
+    *,
+    require_task_support: bool = True,
 ) -> dict[str, Any]:
-    """Validate coverage and names, carrying selected source standards exactly."""
-
-    design = _canonicalize_validation_contracts(
-        _canonicalize_parameter_task_coverage(
-            _canonicalize_design(design), package
-        ),
-        package,
-    )
-    expected_root = {
-        "artifact_type": "capability_design",
-        "schema_version": "1.0",
-        "robot_configuration_id": package.robot_configuration_id,
-        "package_version": package.package_version,
-        "task_snapshot_id": package.snapshot_id,
-    }
-    for field, expected in expected_root.items():
-        if design.get(field) != expected:
-            raise CapabilityDesignError(f"{field} must equal {expected!r}")
-    if design.get("invocation_abi") != INVOCATION_ABI:
-        raise CapabilityDesignError("invocation_abi must use the fixed public request envelope")
-    capabilities = design.get("capabilities")
-    if not isinstance(capabilities, list) or not 5 <= len(capabilities) <= 10:
-        count = len(capabilities) if isinstance(capabilities, list) else None
-        raise CapabilityDesignError(
-            f"capabilities must contain between 5 and 10 items; received {count}"
-        )
-
-    task_ids = {str(task["task_id"]) for task in package.tasks}
-    source_clauses = _source_clauses(package.tasks)
-    tasks_by_id = {str(task["task_id"]): task for task in package.tasks}
-    task_coverage: Counter[str] = Counter()
-    capability_ids: set[str] = set()
-    effects: set[str] = set()
-    method_names: list[str] = []
-
-    for index, capability in enumerate(capabilities):
-        where = f"capabilities[{index}]"
-        if not isinstance(capability, Mapping):
-            raise CapabilityDesignError(f"{where} must be an object")
-        capability_id = _text(capability, "capability_id", where=where)
-        effect = _text(capability, "effect", where=where)
-        method_name = _text(capability, "method_name", where=where)
-        if capability_id in capability_ids:
-            raise CapabilityDesignError(f"duplicate capability_id {capability_id!r}")
-        if effect in effects:
-            raise CapabilityDesignError(f"duplicate effect {effect!r}")
-        capability_ids.add(capability_id)
-        effects.add(effect)
-        method_names.append(method_name)
-        for field in ("description", "abstraction_rationale", "failure_behavior"):
-            _text(capability, field, where=where)
-        covered = _list(capability, "covered_task_ids", where=where)
-        for task_id in covered:
-            if not isinstance(task_id, str) or task_id not in task_ids:
-                raise CapabilityDesignError(f"{where} covers unknown task {task_id!r}")
-            task_coverage[task_id] += 1
-        _validate_interface(capability, package, covered, where=where)
-        _list(capability, "preconditions", where=where)
-        if not isinstance(capability.get("temporal_semantics"), Mapping):
-            raise CapabilityDesignError(f"{where}.temporal_semantics must be an object")
-        _list(capability, "invariants", where=where)
-        affordances = capability.get("required_affordances")
-        if not isinstance(affordances, Mapping):
-            raise CapabilityDesignError(f"{where}.required_affordances must be an object")
-        public_affordances = package.morphology.get("public_affordances")
-        if not isinstance(public_affordances, Mapping):
-            raise CapabilityDesignError("morphology.public_affordances must be an object")
-        for direction in ("actions", "observations"):
-            required = _list(
-                affordances,
-                direction,
-                where=f"{where}.required_affordances",
-            )
-            if any(not isinstance(item, str) or not item.strip() for item in required):
-                raise CapabilityDesignError(
-                    f"{where}.required_affordances.{direction} must contain non-empty strings"
-                )
-            if len(required) != len(set(required)):
-                raise CapabilityDesignError(
-                    f"{where}.required_affordances.{direction} must not contain duplicates"
-                )
-            declared = public_affordances.get(direction)
-            declared_set = set(declared) if isinstance(declared, list) else set()
-            if not set(required) <= declared_set:
-                unsupported = sorted(set(required) - declared_set)
-                raise CapabilityDesignError(
-                    f"{where}.required_affordances.{direction} contains unsupported "
-                    f"affordances: {unsupported}"
-                )
-
-        contracts = _list(capability, "validation_contract", where=where)
-        if len(contracts) > 2:
-            raise CapabilityDesignError(
-                f"{where}.validation_contract must contain one primary and at most one robustness item"
-            )
-        roles: Counter[str] = Counter()
-        selected_keys: set[tuple[str, str]] = set()
-        contracts_by_role: dict[str, Mapping[str, Any]] = {}
-        for clause_index, clause in enumerate(contracts):
-            clause_where = f"{where}.validation_contract[{clause_index}]"
-            if not isinstance(clause, Mapping):
-                raise CapabilityDesignError(f"{clause_where} must be an object")
-            role = _text(clause, "case_role", where=clause_where)
-            if role not in {"primary", "robustness"}:
-                raise CapabilityDesignError(
-                    f"{clause_where}.case_role must be 'primary' or 'robustness'"
-                )
-            _text(clause, "selection_rationale", where=clause_where)
-            task_id = _text(clause, "source_task_id", where=clause_where)
-            clause_id = _text(clause, "source_clause_id", where=clause_where)
-            key = (task_id, clause_id)
-            if key in selected_keys:
-                raise CapabilityDesignError(
-                    f"{where}.validation_contract duplicates source clause {key}"
-                )
-            selected_keys.add(key)
-            source = source_clauses.get(key)
-            if source is None:
-                raise CapabilityDesignError(f"{clause_where} references unknown source clause {key}")
-            if task_id not in covered:
-                raise CapabilityDesignError(
-                    f"{clause_where} belongs to a task outside this capability"
-                )
-            if not _same_public_standard(clause, source):
-                raise CapabilityDesignError(f"{clause_where} changes a source pass standard")
-            roles[role] += 1
-            contracts_by_role[role] = clause
-        if roles["primary"] != 1 or roles["robustness"] > 1:
-            raise CapabilityDesignError(
-                f"{where}.validation_contract must contain exactly one primary and at most one robustness item"
-            )
-        robustness = contracts_by_role.get("robustness")
-        if robustness is not None and not _materially_distinct_contract(
-            contracts_by_role["primary"], robustness, tasks_by_id
-        ):
-            raise CapabilityDesignError(
-                f"{where}.validation_contract robustness item is not materially distinct"
-            )
-
     try:
-        validate_capability_names(method_names)
-    except SkeletonContractError as exc:
-        raise CapabilityDesignError(str(exc)) from exc
-    if set(task_coverage) != task_ids or any(count != 1 for count in task_coverage.values()):
-        raise CapabilityDesignError("every Task Library task must be covered exactly once")
-    return dict(design)
+        return _validate_capability_design(
+            design,
+            package=package,
+            require_task_support=require_task_support,
+        )
+    except CapabilityProtocolError as exc:
+        raise CapabilityDesignError(str(exc)) from None
+
+
+@dataclass(frozen=True)
+class TGCDPhase:
+    """Six-turn TGCD artifact workflow exposed for Framework integration."""
+
+    client: JsonGenerator
+    package: Any
+    experience: Sequence[Mapping[str, Any]] = ()
+    reference_catalog: Sequence[Mapping[str, Any]] | None = None
+    callback: TGCDEventCallback | None = None
+    max_turns: int = TGCD_ARTIFACT_TURNS
+    artifact_path: str | Path | None = None
+
+    def run(self) -> dict[str, Any]:
+        return run_tgcd(
+            self.client,
+            self.package,
+            experience=self.experience,
+            reference_catalog=self.reference_catalog,
+            callback=self.callback,
+            max_turns=self.max_turns,
+            artifact_path=self.artifact_path,
+        )
 
 
 def run_tgcd(
     client: JsonGenerator,
-    package: RobotPackage,
+    package: Any,
     *,
     experience: Sequence[Mapping[str, Any]] = (),
-    max_model_attempts: int = 3,
+    reference_catalog: Sequence[Mapping[str, Any]] | None = None,
+    callback: TGCDEventCallback | None = None,
+    max_turns: int = TGCD_ARTIFACT_TURNS,
+    max_model_attempts: int | None = None,
+    artifact_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Invoke the configured model with only TGCD-visible public inputs."""
+    """Run TGCD, audit the replacement on each turn, and optionally seal a file."""
 
-    if not 1 <= max_model_attempts <= 3:
-        raise CapabilityDesignError("max_model_attempts must be between one and three")
-
-    inputs = {
-        "morphology": package.morphology,
-        "task_library": {
-            "robot_configuration_id": package.robot_configuration_id,
-            "package_version": package.package_version,
-            "snapshot_id": package.snapshot_id,
-            "sources": list(package.sources),
-            "tasks": list(package.tasks),
-        },
-        "experience": list(experience),
-    }
+    if max_model_attempts is not None:
+        max_turns = max_model_attempts
+    if not isinstance(max_turns, int) or isinstance(max_turns, bool) or not 1 <= max_turns <= TGCD_ARTIFACT_TURNS:
+        raise CapabilityDesignError("max_turns must be between one and six")
+    inputs = build_public_tgcd_inputs(
+        package,
+        experience=experience,
+        reference_catalog=reference_catalog,
+    )
     prompt = TGCD_SYSTEM_PROMPT
-    for attempt in range(max_model_attempts):
-        stage = "tgcd"
-        if attempt == 1:
-            stage = "tgcd-structure-correction"
-        elif attempt == 2:
-            stage = "tgcd-structure-correction-2"
+    for turn in range(max_turns):
+        stage = "tgcd" if turn == 0 else f"tgcd-artifact-correction-{turn}"
         try:
-            design = client.generate_json(
-                stage=stage,
-                prompt=prompt,
-                inputs=inputs,
-            )
-        except ModelInvocationError as exc:
-            if attempt + 1 >= max_model_attempts:
+            output = client.generate_json(stage=stage, prompt=prompt, inputs=inputs)
+        except Exception as exc:
+            if turn + 1 >= max_turns:
                 raise CapabilityDesignError(
-                    f"model JSON generation failed after {max_model_attempts} attempts: {exc}"
-                ) from exc
-            inputs = {
-                **inputs,
-                "deterministic_audit_error": str(exc),
-            }
-            prompt = (
-                TGCD_SYSTEM_PROMPT
-                + "\nThe previous response was not a complete parseable JSON object. Return the "
-                "entire replacement object more compactly; never emit commentary, omit required "
-                "fields, or exceed 10 capabilities."
-            )
+                    f"model JSON generation failed after {max_turns} turns: {type(exc).__name__}"
+                ) from None
+            inputs = {**inputs, "deterministic_audit_error": f"model call failed: {type(exc).__name__}"}
             continue
+        if callback is not None:
+            callback({"stage": stage, "turn": turn + 1, "artifact": output})
         try:
-            return validate_capability_design(design, package)
+            canonical = validate_capability_design(output, package)
+            if artifact_path is not None:
+                write_capability_design(artifact_path, canonical)
+            if callback is not None:
+                callback({"stage": "tgcd-sealed", "turn": turn + 1, "artifact": canonical})
+            return canonical
         except CapabilityDesignError as exc:
-            if attempt + 1 >= max_model_attempts:
+            if turn + 1 >= max_turns:
                 raise
             inputs = {
                 **inputs,
-                "previous_invalid_design": design,
+                "previous_invalid_design": json_copy(output, label="previous_invalid_design"),
                 "deterministic_audit_error": str(exc),
             }
-            prompt = (
-                TGCD_SYSTEM_PROMPT
-                + "\nThe prior rejected public JSON object and deterministic audit error are "
-                "included. Edit that object into one complete replacement instead of starting "
-                "over. If the capability count is outside 5 to 10, merge the physically closest "
-                "groups while preserving exact one-time task coverage. Never return fewer than 5 "
-                "or more than 10 capabilities. Do not change or weaken any source standard."
+            prompt = TGCD_SYSTEM_PROMPT + (
+                "\nCorrect the prior object into one complete replacement. Keep three to ten "
+                "self-authored capabilities, closed task-neutral request schemas, exact finite "
+                "criteria fields with evidence_refs for every numeric bound, and pair-only "
+                "task_support."
             )
     raise AssertionError("unreachable")
 
 
 def write_capability_design(path: str | Path, design: Mapping[str, Any]) -> None:
+    """Write one validated/canonical artifact for callers that persist TGCD."""
+
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(
         json.dumps(dict(design), indent=2, ensure_ascii=True) + "\n",
         encoding="utf-8",
     )
+
+
+# Compatibility aliases for callers that select capability design explicitly.
+run_capability_tgcd = run_tgcd
+validate_design = validate_capability_design
+
+
+__all__ = [
+    "CAPABILITY_INVOCATION_ABI",
+    "CAPABILITY_PROTOCOL_VERSION",
+    "CapabilityDesignError",
+    "JsonGenerator",
+    "TGCD_ARTIFACT_TURNS",
+    "TGCDPhase",
+    "TGCD_SYSTEM_PROMPT",
+    "build_public_tgcd_inputs",
+    "capability_methods",
+    "capability_records",
+    "load_public_reference_catalog",
+    "run_capability_tgcd",
+    "run_tgcd",
+    "validate_capability_design",
+    "validate_design",
+    "write_capability_design",
+]

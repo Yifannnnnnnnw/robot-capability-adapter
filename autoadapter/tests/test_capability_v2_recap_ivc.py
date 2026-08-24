@@ -1,0 +1,460 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+
+import pytest
+
+from autoadapter2.b2.capability_adapter import CapabilityAdapter
+from autoadapter2.b2.public_observation import project_public_state
+from autoadapter2.capability_design import (
+    CAPABILITY_INVOCATION_ABI,
+    CAPABILITY_PROTOCOL_VERSION,
+    CapabilityDesignError,
+    CapabilitySchemaError,
+    TGCD_ARTIFACT_TURNS,
+    TGCDPhase,
+    build_public_tgcd_inputs,
+    load_public_reference_catalog,
+    validate_capability_design,
+)
+from autoadapter2.capability_design.tgcd import run_tgcd
+from autoadapter2.task_demo.recap import RecapBudgets, run_recap
+from autoadapter2.validation_compiler import (
+    IVC_ARTIFACT_TURNS,
+    IVC_CASE_ROLES,
+    IVCPhase,
+    build_ivc_inputs,
+    run_ivc,
+    validate_capability_validation_suite,
+)
+from autoadapter2.validation_compiler.ivc import IVCError
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _package() -> dict[str, Any]:
+    return {
+        "robot_configuration_id": "test_robot",
+        "package_version": "1.0.0",
+        "task_snapshot_id": "test-tasks-v1",
+        "morphology": {
+            "public_observations": {"frames": ["world"]},
+            "public_affordances": {"actions": ["position"], "observations": ["joint_positions"]},
+        },
+        "tasks": [
+            {"task_id": "task-a", "description": "First public task"},
+            {"task_id": "task-b", "description": "Second public task"},
+        ],
+    }
+
+
+def _evidence(field: str) -> list[dict[str, str]]:
+    return [{"source_id": "test-calibration", "specific_reference": field}]
+
+
+def _scalar_schema(field: str) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            field: {
+                "type": "number",
+                "unit": "m",
+                "frame": "world",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": _evidence(f"request bound: {field}"),
+            }
+        },
+        "required": [field],
+        "additionalProperties": False,
+    }
+
+
+def _design() -> dict[str, Any]:
+    capabilities = []
+    for index in range(3):
+        capability_id = f"C{index + 1}"
+        method_name = f"apply_effect_{index + 1}"
+        capabilities.append(
+            {
+                "capability_id": capability_id,
+                "method_name": method_name,
+                "description": f"Apply reusable effect {index + 1}.",
+                "effect": f"bounded_effect_{index + 1}",
+                "request_schema": _scalar_schema(f"amount_{index + 1}"),
+                "preconditions": ["The public robot state is finite."],
+                "temporal_semantics": {"kind": "bounded_single_call", "hold_s": 0.2},
+                "invariants": ["No unrelated public state is intentionally changed."],
+                "failure_behavior": "Return a bounded operation error without private details.",
+                "criteria": [
+                    {
+                        "metric": f"effect_{index + 1}_error",
+                        "unit": "m",
+                        "comparator": "<=",
+                        "threshold": 0.05 + index * 0.01,
+                        "temporal": {"kind": "terminal_hold", "duration_s": 0.2},
+                        "aggregation": {"kind": "all_samples"},
+                        "source_refs": _evidence(f"criterion: C{index + 1}"),
+                    }
+                ],
+                "evidence_refs": _evidence(f"capability: C{index + 1}"),
+            }
+        )
+    return {
+        "artifact_type": "capability_design",
+        "schema_version": "2.0",
+        "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        **{
+            "robot_configuration_id": "test_robot",
+            "package_version": "1.0.0",
+            "task_snapshot_id": "test-tasks-v1",
+        },
+        "invocation_abi": CAPABILITY_INVOCATION_ABI,
+        "capabilities": capabilities,
+        "task_support": [
+            {"task_id": task_id, "capability_id": cap_id, "rationale": "same reusable effect"}
+            for task_id in ("task-a", "task-b")
+            for cap_id in ("C1", "C2", "C3")
+        ],
+    }
+
+
+def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
+    instances = []
+    bindings = []
+    guards = []
+    for capability in design["capabilities"]:
+        capability_id = capability["capability_id"]
+        criterion = capability["criteria"][0]
+        for role in IVC_CASE_ROLES:
+            suffix = f"{capability_id.lower()}-{role}"
+            instances.append(
+                {
+                    "instance_id": f"instance-{suffix}",
+                    "capability_id": capability_id,
+                    "case_role": role,
+                    "guard_ids": [],
+                    "repetitions": 2,
+                    "timeout_sim_s": 5.0,
+                }
+            )
+            bindings.append(
+                {
+                    "binding_id": f"binding-{suffix}",
+                    "capability_id": capability_id,
+                    "case_role": role,
+                    "metric": criterion["metric"],
+                    "unit": criterion["unit"],
+                }
+            )
+    return {"instances": instances, "bindings": bindings, "guards": guards}
+
+
+def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
+    cases = []
+    instances = {item["instance_id"]: item for item in private["instances"]}
+    bindings = {item["binding_id"]: item for item in private["bindings"]}
+    for capability in design["capabilities"]:
+        cap_id = capability["capability_id"]
+        method_name = capability["method_name"]
+        for role in IVC_CASE_ROLES:
+            suffix = f"{cap_id.lower()}-{role}"
+            cases.append(
+                {
+                    "case_id": f"case-{suffix}",
+                    "case_role": role,
+                    "capability_id": cap_id,
+                    "method_name": method_name,
+                    "instance_id": instances[f"instance-{suffix}"]["instance_id"],
+                    "binding_id": bindings[f"binding-{suffix}"]["binding_id"],
+                    "guard_ids": [],
+                    "repetitions": 2,
+                    "timeout_sim_s": 5.0,
+                    "criteria": json.loads(json.dumps(capability["criteria"])),
+                }
+            )
+    return {
+        "artifact_type": "capability_validation_suite",
+        "schema_version": "2.0",
+        "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        "robot_configuration_id": "test_robot",
+        "package_version": "1.0.0",
+        "task_snapshot_id": "test-tasks-v1",
+        "whole_suite_aggregation": {"kind": "all_cases"},
+        "cases": cases,
+    }
+
+
+def _walk_keys(value: Any) -> set[str]:
+    keys: set[str] = set()
+    if isinstance(value, dict):
+        keys.update(str(key) for key in value)
+        for child in value.values():
+            keys.update(_walk_keys(child))
+    elif isinstance(value, list):
+        for child in value:
+            keys.update(_walk_keys(child))
+    return keys
+
+
+def test_capability_schema_is_closed_units_framed_and_source_backed() -> None:
+    package = _package()
+    design = validate_capability_design(_design(), package)
+    for capability in design["capabilities"]:
+        schema = capability["request_schema"]
+        assert schema["additionalProperties"] is False
+        field = next(iter(schema["properties"].values()))
+        assert field["unit"] == "m"
+        assert field["frame"] == "world"
+        assert field["evidence_refs"]
+    forbidden = json.loads(json.dumps(_design()))
+    forbidden["capabilities"][0]["request_schema"]["properties"]["task_id"] = {
+        "type": "string",
+        "unit": "none",
+        "frame": "none",
+    }
+    forbidden["capabilities"][0]["request_schema"]["required"].append("task_id")
+    with pytest.raises(CapabilityDesignError):
+        validate_capability_design(forbidden, package)
+
+
+def test_numeric_schema_bound_without_evidence_is_rejected() -> None:
+    schema = _scalar_schema("amount")
+    del schema["properties"]["amount"]["evidence_refs"]
+    with pytest.raises(CapabilitySchemaError, match="evidence_refs"):
+        from autoadapter2.capability_design import validate_schema_definition
+
+        validate_schema_definition(schema)
+
+
+def test_public_reference_projection_has_only_so101_and_go2_designs() -> None:
+    references = load_public_reference_catalog()
+    assert [len(reference["capabilities"]) for reference in references] == [6, 5]
+    keys = _walk_keys(references)
+    assert not keys.intersection(
+        {
+            "task_support",
+            "task_id",
+            "task_ids",
+            "task_mapping",
+            "task_mappings",
+            "oracle_plan",
+            "exact_task_calls",
+        }
+    )
+    for reference in references:
+        for capability in reference["capabilities"]:
+            assert capability["criteria"][0]["source_refs"]
+
+
+class _TGCDModel:
+    def __init__(self, design: dict[str, Any]) -> None:
+        self.design = design
+        self.calls: list[dict[str, Any]] = []
+
+    def generate_json(self, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append(kwargs)
+        if len(self.calls) == 1:
+            invalid = json.loads(json.dumps(self.design))
+            invalid["task_support"] = []
+            return invalid
+        return self.design
+
+
+def test_tgcd_six_turn_phase_accepts_generic_experience_and_seals_artifact(tmp_path: Path) -> None:
+    model = _TGCDModel(_design())
+    events: list[dict[str, Any]] = []
+    artifact_path = tmp_path / "capability_design.json"
+    result = TGCDPhase(
+        model,
+        _package(),
+        experience=[
+            {
+                "observation": "public outcome",
+                "lesson": "keep the motion bounded",
+                "recommendation": "hold the target",
+                "scope": "design",
+                "public_evidence": ["source-x"],
+                "provenance": {"run": "r1"},
+                "outcome": "useful",
+            }
+        ],
+        callback=events.append,
+        artifact_path=artifact_path,
+    ).run()
+    assert result["artifact_type"] == "capability_design"
+    assert len(model.calls) == 2
+    assert TGCD_ARTIFACT_TURNS == 6
+    assert artifact_path.exists()
+    assert any(event["stage"] == "tgcd-sealed" for event in events)
+    assert "candidate_driver" not in json.dumps(model.calls[0]["inputs"])
+
+
+class _IVCModel:
+    def __init__(self, suite: dict[str, Any]) -> None:
+        self.suite = suite
+        self.calls: list[dict[str, Any]] = []
+
+    def generate_json(self, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append(kwargs)
+        if len(self.calls) == 1:
+            invalid = json.loads(json.dumps(self.suite))
+            invalid["cases"].pop()
+            return invalid
+        return self.suite
+
+
+def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Path) -> None:
+    package = _package()
+    design = _design()
+    private = _private_inputs(design)
+    suite = _suite(design, private)
+    inputs = build_ivc_inputs(
+        package=package,
+        design=design,
+        private_inputs=private,
+        examples=[{"observation": "public only", "outcome": "bounded"}],
+    )
+    serialized = json.dumps(inputs).lower()
+    assert "driver" not in serialized
+    assert "repair" not in serialized
+    assert "candidate" not in serialized
+    model = _IVCModel(suite)
+    events: list[dict[str, Any]] = []
+    artifact_path = tmp_path / "capability_validation_suite.json"
+    result = IVCPhase(
+        model,
+        package,
+        design,
+        private,
+        callback=events.append,
+        artifact_path=artifact_path,
+        reference_positive_control_hook=lambda **kwargs: {"reference_passed": True},
+    ).run()
+    assert len(result["cases"]) == 2 * len(design["capabilities"])
+    assert len(model.calls) == 2
+    assert any(event["stage"] == "ivc-reference-positive-control" for event in events)
+    assert artifact_path.exists()
+    roles = {(case["capability_id"], case["case_role"]) for case in result["cases"]}
+    assert len(roles) == 2 * len(design["capabilities"])
+    assert IVC_ARTIFACT_TURNS == 6
+
+    tampered = json.loads(json.dumps(suite))
+    tampered["cases"][0]["criteria"][0]["threshold"] = 999.0
+    with pytest.raises(IVCError, match="criterion"):
+        validate_capability_validation_suite(
+            tampered, package=package, design=design, private_inputs=private
+        )
+
+
+def test_recap_uses_dynamic_catalogue_and_fixed_16_12_budgets() -> None:
+    design = _design()
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    def invoke(method_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        calls.append((method_name, arguments))
+        return {"operation": {"status": "EXECUTED"}, "public_state": {"sim_time_s": 1.0}}
+
+    adapter = CapabilityAdapter(design, invoke)
+    catalog = adapter.public_catalog()
+    assert {item["method_name"] for item in catalog} == {
+        capability["method_name"] for capability in design["capabilities"]
+    }
+    assert all("criteria" not in item and "task_support" not in item for item in catalog)
+
+    class Model:
+        def __init__(self) -> None:
+            self.turn = 0
+
+        def generate_recap_json(self, **kwargs: Any) -> dict[str, Any]:
+            self.turn += 1
+            if self.turn == 1:
+                method = design["capabilities"][0]["method_name"]
+                field = next(iter(design["capabilities"][0]["request_schema"]["properties"]))
+                return {
+                    "reasoning_summary": "Apply one public capability.",
+                    "subtasks": [{"kind": "capability", "capability_name": method, "request": {field: 0.1}}],
+                }
+            return {"reasoning_summary": "Done.", "subtasks": []}
+
+    result = run_recap(
+        public_task={"objective": "Use the public interface."},
+        adapter=adapter,
+        model=Model(),
+    )
+    assert result.status == "CONTROLLER_FINISHED"
+    assert result.planning_turns == 2
+    assert result.capability_calls == 1
+    assert RecapBudgets().max_planning_turns == 16
+    assert RecapBudgets().max_capability_calls == 12
+    assert calls[0][1].keys() == {"request"}
+
+
+class _MujocoTypes:
+    mjOBJ_SITE = "site"
+    mjOBJ_JOINT = "joint"
+    mjOBJ_BODY = "body"
+    mjOBJ_GEOM = "geom"
+    mjOBJ_SENSOR = "sensor"
+
+
+class _MujocoJoint:
+    mjJNT_FREE = 0
+
+
+class _FakeMujoco:
+    mjtObj = _MujocoTypes
+    mjtJoint = _MujocoJoint
+
+    @staticmethod
+    def mj_name2id(model: Any, object_type: Any, name: str) -> int:
+        return 0
+
+
+def _fake_model_data() -> tuple[Any, Any]:
+    model = SimpleNamespace(
+        jnt_qposadr=[0],
+        jnt_range=[[0.0, 1.0]],
+        body_parentid=[0],
+        body_jntadr=[0],
+        body_jntnum=[1],
+        jnt_type=[0],
+        jnt_dofadr=[0],
+        geom_bodyid=[0],
+        sensor_adr=[0],
+        sensor_dim=[1],
+    )
+    data = SimpleNamespace(
+        time=1.0,
+        qpos=[0.5],
+        qvel=[0.0, 0.0, 0.0],
+        site_xpos=[[0.1, 0.2, 0.3]],
+        site_xmat=[[1.0] * 9],
+        xpos=[[0.0, 0.0, 0.3]],
+        xquat=[[1.0, 0.0, 0.0, 0.0]],
+        cvel=[[0.0] * 6],
+        sensordata=[0.0],
+        ncon=0,
+        contact=[],
+    )
+    return model, data
+
+
+def test_public_observation_projection_covers_all_eleven_current_packages() -> None:
+    index = json.loads((ROOT / "autoadapter" / "libraries" / "robots" / "index.json").read_text())
+    mujoco = _FakeMujoco()
+    for robot_id in index["robots"]:
+        model, data = _fake_model_data()
+        state = project_public_state(
+            robot_configuration_id=robot_id,
+            mujoco=mujoco,
+            model=model,
+            data=data,
+        )
+        assert state["simulation_time_s"] == 1.0
+        assert "criterion" not in json.dumps(state).lower()
+        assert "private" not in json.dumps(state).lower()

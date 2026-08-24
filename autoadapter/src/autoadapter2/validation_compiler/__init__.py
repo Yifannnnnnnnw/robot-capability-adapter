@@ -1,12 +1,18 @@
-"""Implementation-blind private validation compilation."""
+"""Implementation-blind capability-v2 validation compilation."""
 
 from .ivc import (
+    IVC_ARTIFACT_TURNS,
+    IVC_CASE_ROLES,
     IVCError,
+    IVCPhase,
     IVC_SYSTEM_PROMPT,
     PRIVATE_CASE_SAMPLE_SIZE,
+    ReferencePositiveControlHook,
     TASK_DEMO_CASE_COUNT,
     TASK_DEMO_TASK_COUNT,
+    build_ivc_inputs,
     run_ivc,
+    run_reference_positive_control,
     sample_private_suite,
     sample_task_demo_suite,
     validate_capability_validation_suite,
@@ -15,12 +21,18 @@ from .ivc import (
 )
 
 __all__ = [
+    "IVC_ARTIFACT_TURNS",
+    "IVC_CASE_ROLES",
     "IVCError",
+    "IVCPhase",
     "IVC_SYSTEM_PROMPT",
     "PRIVATE_CASE_SAMPLE_SIZE",
+    "ReferencePositiveControlHook",
     "TASK_DEMO_CASE_COUNT",
     "TASK_DEMO_TASK_COUNT",
+    "build_ivc_inputs",
     "run_ivc",
+    "run_reference_positive_control",
     "sample_private_suite",
     "sample_task_demo_suite",
     "validate_capability_validation_suite",
