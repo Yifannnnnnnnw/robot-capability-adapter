@@ -58,9 +58,12 @@ client. Run:
 6. On failure, at most two Repairs, each at most 22 turns and each editing the
    prior `driver.py`; freeze and validate no more than three Driver revisions
    total.
-7. ReCAP Task Demo for an admitted final Driver, with at most 16 planning turns
-   and 12 validated-capability calls per task, persistent credential-free
-   MuJoCo execution and a trusted Harness verdict.
+7. If the final frozen Driver has at least one capability whose nominal and
+   calibrated-boundary cases both passed, run ReCAP Task Demo with exactly that
+   passed-capability whitelist. Use at most 16 planning turns and 12 capability
+   calls per task, persistent credential-free MuJoCo execution and a trusted
+   Harness verdict. A full-suite Capability Validation pass is not required to
+   trigger this diagnostic Task Demo.
 8. Stop. Do not call Evolution or write an Experience review queue/snapshot.
 
 A phase artifact written validly on its final turn is accepted without an

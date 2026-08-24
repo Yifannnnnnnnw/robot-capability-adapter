@@ -1,9 +1,9 @@
 """Thin formal runner for the fixed Experiment 3 cohort.
 
-Design validation is deliberately separate from executable preflight.  The
+Design validation is deliberately separate from executable preflight. The
 checked-in prospective manifest can therefore prove the fixed 33-cell design
-while formal dispatch remains blocked until endpoint, price, resource, and
-readiness evidence pins have been added prospectively.
+and current readiness pins while formal dispatch remains locked pending a
+later explicit project-owner approval.
 """
 
 from __future__ import annotations
@@ -190,10 +190,12 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
         f"protocol_revision must be {PROTOCOL_REVISION}",
     )
     _require(manifest.get("experiment_id") == EXPERIMENT_ID, "unexpected experiment_id")
-    _require(manifest.get("status") == "preflight-only", "status must be preflight-only")
+    status = manifest.get("status")
+    dispatch_authorised = manifest.get("formal_dispatch_authorised")
     _require(
-        manifest.get("formal_dispatch_authorised") is False,
-        "the checked-in manifest must keep formal dispatch unauthorised",
+        (status == "preflight-only" and dispatch_authorised is False)
+        or (status == "formal-authorised" and dispatch_authorised is True),
+        "status and formal_dispatch_authorised must form a locked or explicitly authorised pair",
     )
     _require(
         tuple(manifest.get("robot_configurations", ())) == ROBOT_CONFIGURATIONS,
@@ -210,6 +212,18 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     _require(manifest.get("repair_attempts_after_initial") == 2, "Repair allowance must be two after attempt 0")
     _require(manifest.get("run_task_demo") is True, "Task Demo must be enabled")
     _require(manifest.get("stop_after") == "ReCAP-Task-Demo", "Experiment 3 must stop after ReCAP Task Demo")
+    _require(
+        manifest.get("fresh_end_to_end_per_cell")
+        == {
+            "study": True,
+            "tgcd": True,
+            "ivc": True,
+            "workspace": True,
+            "model_conversation": True,
+            "canonical_reset": True,
+        },
+        "every cell must use fresh STUDY, TGCD, IVC, workspace, conversation, and reset",
+    )
     _require(manifest.get("morphology_role") == "descriptive-only", "morphology must be descriptive-only")
     _require(
         manifest.get("morphology_labels") == MORPHOLOGY_LABELS,
@@ -248,6 +262,18 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     _require(
         workflow.get("maximum_frozen_driver_attempts") == 3,
         "workflow must freeze at most three drivers",
+    )
+
+    ivc_contract = manifest.get("ivc_contract")
+    _require(isinstance(ivc_contract, Mapping), "ivc_contract must be pinned")
+    assert isinstance(ivc_contract, Mapping)
+    _require(
+        ivc_contract.get("candidate_blind") is True
+        and ivc_contract.get("experience_visible") is False
+        and ivc_contract.get("cases_per_capability")
+        == ["nominal", "calibrated_boundary"]
+        and ivc_contract.get("private_reference_positive_control_required") is True,
+        "IVC must be candidate-blind, Experience-free, exact nominal/boundary, and reference-calibrated",
     )
 
     groups = manifest.get("reporting_groups")
@@ -840,26 +866,59 @@ def _assert_attempt_ceiling(result: Mapping[str, Any]) -> Mapping[str, Any]:
     cell = cells[0]
     _require(isinstance(cell, Mapping), "singleton cell result must be an object")
     attempt_count = cell.get("attempt_count")
+    frozen_attempt_count = cell.get("frozen_driver_attempt_count")
     _require(
         isinstance(attempt_count, int)
         and not isinstance(attempt_count, bool)
         and 0 <= attempt_count <= 3,
-        "cell submitted more than three drivers or omitted its attempt count",
+        "cell recorded more than three attempts or omitted its attempt count",
+    )
+    _require(
+        isinstance(frozen_attempt_count, int)
+        and not isinstance(frozen_attempt_count, bool)
+        and 0 <= frozen_attempt_count <= 3,
+        "cell froze more than three drivers or omitted its frozen-attempt count",
+    )
+    _require(
+        attempt_count == frozen_attempt_count,
+        "only frozen Driver revisions may consume the formal attempt count",
     )
     return cell
 
 
-def _task_demo_terminal(cell: Mapping[str, Any]) -> dict[str, Any]:
-    admitted = cell.get("final_capability_validation_passed")
+def _passed_capability_whitelist(cell: Mapping[str, Any]) -> tuple[str, ...]:
+    value = cell.get("passed_capability_whitelist")
     _require(
-        isinstance(admitted, bool),
-        "cell omitted its final capability-admission verdict",
+        isinstance(value, list)
+        and all(isinstance(item, str) and bool(item.strip()) for item in value),
+        "cell omitted its nominal-and-boundary-passed capability whitelist",
     )
+    assert isinstance(value, list)
+    normalised = tuple(item.strip() for item in value)
+    _require(
+        len(normalised) == len(set(normalised)),
+        "passed capability whitelist contains duplicates",
+    )
+    return normalised
+
+
+def _task_demo_terminal(cell: Mapping[str, Any]) -> dict[str, Any]:
+    passed_capabilities = _passed_capability_whitelist(cell)
     executed = cell.get("task_demo_executed") is True
-    if admitted:
-        _require(executed, "an admitted final driver requires an executed Task Demo")
-        return {"status": "executed", "passed": cell.get("task_demo_passed") is True}
-    _require(not executed, "Task Demo executed without an admitted final driver")
+    if passed_capabilities:
+        _require(
+            executed,
+            "a final Driver with a nominal-and-boundary-passed capability requires an executed Task Demo",
+        )
+        return {
+            "status": "executed",
+            "passed": cell.get("task_demo_passed") is True,
+            "capability_whitelist": list(passed_capabilities),
+        }
+    _require(
+        not executed,
+        "Task Demo executed without a nominal-and-boundary-passed capability",
+    )
     task_demo = cell.get("task_demo")
     if (
         isinstance(task_demo, Mapping)
@@ -869,7 +928,7 @@ def _task_demo_terminal(cell: Mapping[str, Any]) -> dict[str, Any]:
     ):
         return {"status": "not-run", "reason": str(task_demo["skip_reason"]).strip()}
     raise Experiment3RunnerError(
-        "a cell without an admitted final driver requires a truthful Task Demo not-run reason"
+        "a cell without a nominal-and-boundary-passed capability requires a truthful Task Demo not-run reason"
     )
 
 
@@ -903,11 +962,15 @@ def _assert_formal_cell_evidence(
             cell.get("video_required") is True and cell.get("video_complete") is True,
             "executed capability validation lacks complete required video evidence",
         )
-    if cell.get("final_capability_validation_passed") is True:
+    passed_capabilities = _passed_capability_whitelist(cell)
+    if passed_capabilities:
         task_counts = cell.get("task_demo_task_counts")
+        task_total = task_counts.get("total") if isinstance(task_counts, Mapping) else None
         _require(
-            isinstance(task_counts, Mapping) and task_counts.get("total") == 5,
-            "an admitted final driver requires an exact five-task Task Demo",
+            isinstance(task_total, int)
+            and not isinstance(task_total, bool)
+            and 1 <= task_total <= 5,
+            "a passed capability whitelist requires one to five Task Demo tasks",
         )
         _require(
             cell.get("task_demo_video_complete") is True,
@@ -921,6 +984,7 @@ def _cell_config(preflight: Mapping[str, Any], robot: str) -> dict[str, Any]:
         "experiment_id": EXPERIMENT_ID,
         "robots": [robot],
         "generation_conditions": [CONDITION],
+        "formal": True,
         "max_driver_attempts_per_condition": 3,
         "phase_turn_budgets": copy.deepcopy(resources["phase_turn_budgets"]),
         "execute_python": copy.deepcopy(resources["execute_python"]),
@@ -1049,7 +1113,7 @@ def _dispatch_predeclared_rows(
                 "run_id": cell["run_id"],
                 "producer_client": client,
                 "check_self_containment": check_self_containment,
-                "skip_reference_calibration": True,
+                "skip_reference_calibration": False,
             }
             if hooks_factory is not None:
                 kwargs["hooks"] = hooks_factory(copy.deepcopy(cell))
@@ -1373,6 +1437,15 @@ def summarise_results(record: Mapping[str, Any]) -> dict[str, Any]:
             "result row has the wrong descriptive morphology label",
         )
         _require(row.get("status") in {"completed", "failed"}, "result row is not terminal")
+        expected_group = (
+            "reference-seen-control"
+            if robot in REFERENCE_SEEN_ROBOTS
+            else "transfer"
+        )
+        _require(
+            row.get("reference_exposure_group") == expected_group,
+            "result row has the wrong reference-exposure group",
+        )
         pairs.append((str(robot), str(replicate)))
     pair_counts = Counter(pairs)
     expected_pairs = {
@@ -1395,6 +1468,7 @@ def summarise_results(record: Mapping[str, Any]) -> dict[str, Any]:
                 "status": row.get("status"),
                 "failure_stage": row.get("failure_stage"),
                 "failure": copy.deepcopy(row.get("failure")),
+                "reference_exposure_group": row.get("reference_exposure_group"),
                 "task_demo": copy.deepcopy(row.get("task_demo")),
             }
         )
@@ -1491,10 +1565,55 @@ def summarise_results(record: Mapping[str, Any]) -> dict[str, Any]:
                 "runner_wall_time_s": _distribution(wall_times),
             },
         }
+    reporting_groups: dict[str, Any] = {}
+    for group_name, expected_denominator in (
+        ("reference_seen_controls", 6),
+        ("transfer_cells", 27),
+    ):
+        exposure_label = (
+            "reference-seen-control"
+            if group_name == "reference_seen_controls"
+            else "transfer"
+        )
+        group_rows = [
+            row
+            for row in rows
+            if row.get("reference_exposure_group") == exposure_label
+        ]
+        _require(
+            len(group_rows) == expected_denominator,
+            f"{group_name} must retain exactly {expected_denominator} rows",
+        )
+        reporting_groups[group_name] = {
+            "denominator": expected_denominator,
+            "cell_ids": [str(row["cell_id"]) for row in group_rows],
+            "completed": sum(row.get("status") == "completed" for row in group_rows),
+            "failed": sum(row.get("status") == "failed" for row in group_rows),
+            "task_demo_executed": sum(
+                isinstance(row.get("task_demo"), Mapping)
+                and row["task_demo"].get("status") == "executed"
+                for row in group_rows
+            ),
+            "task_demo_passed": sum(
+                isinstance(row.get("task_demo"), Mapping)
+                and row["task_demo"].get("status") == "executed"
+                and row["task_demo"].get("passed") is True
+                for row in group_rows
+            ),
+        }
+
     return {
         "experiment_id": EXPERIMENT_ID,
         "denominator": 33,
-        "analysis": "descriptive per exact robot configuration; no morphology-effect or causal statistic",
+        "analysis": (
+            "descriptive per exact robot configuration and reference exposure; "
+            "no morphology-effect, quadruped-transfer, or causal statistic"
+        ),
+        "reporting_groups": {
+            **reporting_groups,
+            "effect_claim": False,
+            "quadruped_transfer_claim": False,
+        },
         "configurations": configuration_summaries,
         "case_rows": case_rows,
     }

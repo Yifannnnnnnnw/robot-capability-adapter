@@ -58,18 +58,20 @@ def _evidence(
 
 def _executable_manifest(tmp_path: Path) -> dict[str, Any]:
     manifest = runner.load_manifest()
+    manifest["status"] = "formal-authorised"
+    manifest["formal_dispatch_authorised"] = True
     manifest["runtime"] = {
         "producer_model": _model_pin(),
         "producer_transport": _transport(),
         "resources": {
-            "development_probe": {
-                "max_requests_per_stage": runner.DRIVER_PROBE_CALLS_PER_STAGE,
-                "max_complete_driver_checks": (
-                    runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
-                ),
-                "wall_timeout_s_per_request": 30,
-                "max_output_chars_per_request": 12_000,
+            "phase_turn_budgets": copy.deepcopy(runner.PHASE_TURN_BUDGETS),
+            "execute_python": {
+                "wall_timeout_s_per_call": 30,
+                "max_output_chars_per_call": 12_000,
+                "max_steps_per_phase": 4_000,
+                "max_sim_time_s_per_phase": 20.0,
             },
+            "recap": copy.deepcopy(runner.RECAP_BUDGET),
             "validation": {"record_video": True, "worker_wall_timeout_s": 120},
         },
     }
@@ -213,18 +215,10 @@ def test_checked_in_manifest_expands_exact_replicate_major_33_cells() -> None:
         and cell["robot_configuration_id"] in cell["run_id"]
         for cell in cells
     )
-    assert (
-        manifest["runtime"]["resources"]["development_probe"][
-            "max_requests_per_stage"
-        ]
-        == runner.DRIVER_PROBE_CALLS_PER_STAGE
+    assert manifest["runtime"]["resources"]["phase_turn_budgets"] == (
+        runner.PHASE_TURN_BUDGETS
     )
-    assert (
-        manifest["runtime"]["resources"]["development_probe"][
-            "max_complete_driver_checks"
-        ]
-        == runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
-    )
+    assert manifest["runtime"]["resources"]["recap"] == runner.RECAP_BUDGET
 
 
 def test_design_validation_rejects_an_extra_condition_or_enabled_evolution() -> None:
@@ -263,7 +257,7 @@ def test_returned_identity_check_allows_a_failed_physical_retry_before_success()
 
 def test_task_demo_and_formal_evidence_postchecks_reject_false_terminal_success() -> None:
     contradictory = {
-        "final_capability_validation_passed": True,
+        "passed_capability_whitelist": ["capability-a"],
         "task_demo_executed": False,
         "task_demo": {
             "skipped": True,
@@ -279,9 +273,11 @@ def test_task_demo_and_formal_evidence_postchecks_reject_false_terminal_success(
         "robot_configuration_id": robot,
         "condition": runner.CONDITION,
         "outcomes": {
+            "STUDY": {"completed": True},
             "TGCD": {"completed": True},
             "IVC": {"completed": True},
         },
+        "passed_capability_whitelist": [],
         "capability_validation_executed": True,
         "video_required": True,
         "video_complete": False,
@@ -301,28 +297,18 @@ def test_checked_in_preflight_accepts_the_current_so101_reference_control() -> N
     manifest = runner.load_manifest()
     checked = runner.validate_executable_preflight(manifest, mainline_root=mainline_root)
 
-    assert (
-        checked["resources"]["development_probe"]["max_requests_per_stage"]
-        == runner.DRIVER_PROBE_CALLS_PER_STAGE
-    )
-    assert (
-        checked["resources"]["development_probe"][
-            "max_complete_driver_checks"
-        ]
-        == runner.COMPLETE_DRIVER_CHECKS_PER_STAGE
-    )
+    assert checked["resources"]["phase_turn_budgets"] == runner.PHASE_TURN_BUDGETS
+    assert checked["resources"]["recap"] == runner.RECAP_BUDGET
     drifted = copy.deepcopy(manifest)
-    drifted["runtime"]["resources"]["development_probe"][
-        "max_requests_per_stage"
-    ] = 14
-    with pytest.raises(runner.Experiment3RunnerError, match="reserve 25"):
+    drifted["runtime"]["resources"]["phase_turn_budgets"]["ivc"] = 5
+    with pytest.raises(runner.Experiment3RunnerError, match="file-workflow budgets"):
         runner.validate_executable_preflight(drifted, mainline_root=mainline_root)
 
     drifted = copy.deepcopy(manifest)
-    drifted["runtime"]["resources"]["development_probe"][
-        "max_complete_driver_checks"
-    ] = 1
-    with pytest.raises(runner.Experiment3RunnerError, match="must be 2"):
+    drifted["runtime"]["resources"]["recap"][
+        "max_capability_calls_per_task"
+    ] = 13
+    with pytest.raises(runner.Experiment3RunnerError, match="16 planning turns and 12"):
         runner.validate_executable_preflight(drifted, mainline_root=mainline_root)
 
     so101 = checked["readiness_evidence"]["reference_positive_controls"][
@@ -376,10 +362,11 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
         clients.append(kwargs["producer_client"])
         assert config["robots"] == [robot]
         assert config["generation_conditions"] == ["skeleton-assisted"]
+        assert config["formal"] is True
         assert config["max_driver_attempts_per_condition"] == 3
         assert config["experience"]["input"] == []
         assert config["evolution"] == {"enabled": False}
-        assert kwargs["skip_reference_calibration"] is True
+        assert kwargs["skip_reference_calibration"] is False
         assert kwargs["producer_client"].config.api_key == "manifest-pinned-secret"
         assert kwargs["hooks"].cell_id.endswith(f"::{replicate}::{robot}")
         if replicate == "r02" and robot == "piper":
@@ -414,8 +401,12 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
                     "robot_configuration_id": robot,
                     "condition": runner.CONDITION,
                     "attempt_count": 1,
+                    "frozen_driver_attempt_count": 1,
                     "pass@0": not truthful_not_run,
                     "final_capability_validation_passed": not truthful_not_run,
+                    "passed_capability_whitelist": (
+                        [] if truthful_not_run else ["capability-a"]
+                    ),
                     "capability_validation_executed": True,
                     "video_required": True,
                     "video_complete": True,
@@ -435,6 +426,7 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
                         else {"skipped": False}
                     ),
                     "outcomes": {
+                        "STUDY": {"completed": True},
                         "TGCD": {"completed": True},
                         "IVC": {"completed": True},
                         "Evolution": None,
@@ -499,7 +491,11 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
     assert identity_failed["status"] == "failed"
     assert identity_failed["failure_stage"] == "result-postcheck"
     assert identity_failed["result"] is not None
-    assert identity_failed["task_demo"] == {"status": "executed", "passed": True}
+    assert identity_failed["task_demo"] == {
+        "status": "executed",
+        "passed": True,
+        "capability_whitelist": ["capability-a"],
+    }
     assert identity_failed["resource_summary"]["producer"]["call_count"] == 1
     assert result["denominator"] == 33
     assert result["authority_revision"] == runner.AUTHORITY_REVISION
@@ -542,6 +538,10 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
     summary = runner.summarise_results(result)
     assert summary["denominator"] == 33
     assert len(summary["case_rows"]) == 33
+    assert summary["reporting_groups"]["reference_seen_controls"]["denominator"] == 6
+    assert summary["reporting_groups"]["transfer_cells"]["denominator"] == 27
+    assert summary["reporting_groups"]["effect_claim"] is False
+    assert summary["reporting_groups"]["quadruped_transfer_claim"] is False
     assert "morphology" not in summary["configurations"]
     so101 = summary["configurations"]["robotstudio_so101"]
     assert so101["morphology_label"] == "fixed serial arm"
@@ -653,8 +653,10 @@ def test_resume_skips_terminal_rows_fails_a_partial_workspace_and_runs_only_unto
                     "robot_configuration_id": robot,
                     "condition": runner.CONDITION,
                     "attempt_count": 1,
+                    "frozen_driver_attempt_count": 1,
                     "pass@0": True,
                     "final_capability_validation_passed": True,
+                    "passed_capability_whitelist": ["capability-a"],
                     "capability_validation_executed": True,
                     "video_required": True,
                     "video_complete": True,
@@ -664,6 +666,7 @@ def test_resume_skips_terminal_rows_fails_a_partial_workspace_and_runs_only_unto
                     "task_demo_task_counts": {"passed": 5, "total": 5},
                     "task_demo": {"skipped": False},
                     "outcomes": {
+                        "STUDY": {"completed": True},
                         "TGCD": {"completed": True},
                         "IVC": {"completed": True},
                         "Evolution": None,

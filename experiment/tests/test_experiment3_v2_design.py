@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
 import pytest
 
@@ -61,5 +62,92 @@ def test_design_rejects_quadruped_transfer_claim_or_dispatch_unlock() -> None:
 
     unlocked = copy.deepcopy(runner.load_manifest())
     unlocked["formal_dispatch_authorised"] = True
-    with pytest.raises(runner.Experiment3RunnerError, match="unauthorised"):
+    with pytest.raises(runner.Experiment3RunnerError, match="locked or explicitly authorised"):
         runner.validate_design_manifest(unlocked)
+
+
+def test_formal_cell_config_is_fresh_reference_calibrated_and_evolution_free() -> None:
+    manifest = runner.load_manifest()
+    preflight = runner.validate_executable_preflight(
+        manifest,
+        mainline_root=Path(__file__).resolve().parents[2] / "autoadapter",
+    )
+
+    config = runner._cell_config(preflight, "robotstudio_so101")
+
+    assert config["formal"] is True
+    assert config["robots"] == ["robotstudio_so101"]
+    assert config["generation_conditions"] == ["skeleton-assisted"]
+    assert config["experience"]["input"] == []
+    assert config["max_driver_attempts_per_condition"] == 3
+    assert config["evolution"] == {"enabled": False}
+
+
+def test_task_demo_trigger_uses_partial_nominal_boundary_whitelist() -> None:
+    partial_pass = {
+        "final_capability_validation_passed": False,
+        "passed_capability_whitelist": ["capability-a"],
+        "task_demo_executed": True,
+        "task_demo_passed": False,
+    }
+
+    assert runner._task_demo_terminal(partial_pass) == {
+        "status": "executed",
+        "passed": False,
+        "capability_whitelist": ["capability-a"],
+    }
+
+    without_pair = {
+        "final_capability_validation_passed": False,
+        "passed_capability_whitelist": [],
+        "task_demo_executed": False,
+        "task_demo": {
+            "skipped": True,
+            "skip_reason": "no capability passed both required case roles",
+        },
+    }
+    assert runner._task_demo_terminal(without_pair)["status"] == "not-run"
+
+
+def test_partial_whitelist_task_demo_may_cover_fewer_than_five_tasks() -> None:
+    robot = runner.ROBOT_CONFIGURATIONS[0]
+    cell = {
+        "cell_id": f"{robot}::{runner.CONDITION}",
+        "robot_configuration_id": robot,
+        "condition": runner.CONDITION,
+        "outcomes": {
+            "STUDY": {"completed": True},
+            "TGCD": {"completed": True},
+            "IVC": {"completed": True},
+        },
+        "capability_validation_executed": True,
+        "video_required": True,
+        "video_complete": True,
+        "passed_capability_whitelist": ["capability-a"],
+        "task_demo_task_counts": {"passed": 0, "total": 1},
+        "task_demo_video_complete": True,
+    }
+
+    runner._assert_formal_cell_evidence(
+        {"run_id": "declared-run"},
+        cell,
+        robot=robot,
+        run_id="declared-run",
+    )
+
+
+def test_frozen_driver_attempts_are_the_only_formal_attempts() -> None:
+    valid = {
+        "cells": [
+            {
+                "attempt_count": 2,
+                "frozen_driver_attempt_count": 2,
+            }
+        ]
+    }
+    assert runner._assert_attempt_ceiling(valid)["frozen_driver_attempt_count"] == 2
+
+    mismatch = copy.deepcopy(valid)
+    mismatch["cells"][0]["attempt_count"] = 3
+    with pytest.raises(runner.Experiment3RunnerError, match="only frozen Driver"):
+        runner._assert_attempt_ceiling(mismatch)
