@@ -727,7 +727,7 @@ def study(
     experience: Sequence[Mapping[str, Any]] = (),
     runtime_contract: Mapping[str, Any] | None = None,
     workspace: str | Path | None = None,
-    probe_budget: ProbeBudget = ProbeBudget(),
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
     source_root: str | Path | None = None,
 ) -> StudyResult:
     """Run the condition-neutral pre-TGCD public STUDY phase.
@@ -855,7 +855,7 @@ def generate(
     probe_results: Sequence[Mapping[str, Any]] = (),
     experience: Sequence[Mapping[str, Any]] = (),
     runtime_contract: Mapping[str, Any] | None = None,
-    probe_budget: ProbeBudget = ProbeBudget(),
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
     source_root: str | Path | None = None,
 ) -> GenerationResult:
     """Generate, audit, compile, and write one model-authored ``driver.py``.

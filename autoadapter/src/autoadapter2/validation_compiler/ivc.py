@@ -14,8 +14,10 @@ import copy
 import json
 import re
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Protocol
 
 from autoadapter2.capability_design.protocol import (
@@ -24,9 +26,13 @@ from autoadapter2.capability_design.protocol import (
     capability_records,
     json_copy,
 )
+from autoadapter2.driver_synthesis.interactive import IsolatedArtifactSession
+from autoadapter2.driver_synthesis.probe import ProbeBudget
+from autoadapter2.react import ReactLoopError, run_artifact_react
 
 
 IVC_ARTIFACT_TURNS = 6
+IVC_ARTIFACT_NAME = "capability_validation_suite.json"
 IVC_CASE_ROLES = ("nominal", "calibrated_boundary")
 # Historical callers imported this symbol.  Capability-v2 no longer samples
 # Task Library tasks; it compiles two cases per capability instead.
@@ -76,6 +82,35 @@ class ReferencePositiveControlHook(Protocol):
 
 
 IVCEventCallback = Callable[[Mapping[str, Any]], Any]
+_SANITIZED_EXAMPLES_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "references"
+    / "capability_v2"
+    / "ivc_examples.json"
+)
+
+
+def _supports_artifact_react(client: Any) -> bool:
+    return callable(getattr(client, "generate_tool_turn", None))
+
+
+def _read_json_object(path: Path, *, artifact_name: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise IVCError(f"{artifact_name} is not valid JSON: {exc}") from exc
+    if not isinstance(value, dict):
+        raise IVCError(f"{artifact_name} must contain one JSON object")
+    return value
+
+
+def _positive_control_passed(result: Mapping[str, Any]) -> bool:
+    """Accept the Framework's explicit pass flag, never a bare object."""
+
+    for field in ("passed", "reference_passed", "validation_passed"):
+        if field in result:
+            return result.get(field) is True
+    return False
 
 
 def _read_object(path: Path) -> dict[str, Any]:
@@ -86,6 +121,26 @@ def _read_object(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise IVCError(f"private compiler input {path.name} must be an object")
     return value
+
+
+def load_sanitized_ivc_examples(
+    path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Load the IVC's structure-only, non-oracle example projection."""
+
+    source = Path(path) if path is not None else _SANITIZED_EXAMPLES_PATH
+    document = _read_object(source)
+    examples = document.get("examples")
+    if (
+        not isinstance(examples, list)
+        or not examples
+        or not all(isinstance(item, Mapping) for item in examples)
+    ):
+        raise IVCError("sanitized IVC examples must be a non-empty object array")
+    copied = _copy_private_inputs({"examples": examples}).get("examples")
+    if not isinstance(copied, list):  # pragma: no cover - guarded above
+        raise IVCError("sanitized IVC examples could not be copied")
+    return [dict(item) for item in copied]
 
 
 def _private_inputs_from_package(package: Any) -> dict[str, Any]:
@@ -340,7 +395,10 @@ def build_ivc_inputs(
     """Build IVC inputs while enforcing implementation blindness."""
 
     copied_private = _copy_private_inputs(private_inputs)
-    sanitized_examples = _copy_private_inputs({"examples": list(examples)}).get("examples", [])
+    selected_examples = list(examples) if examples else load_sanitized_ivc_examples()
+    sanitized_examples = _copy_private_inputs(
+        {"examples": selected_examples}
+    ).get("examples", [])
     return {
         "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
         "sealed_capability_design": json_copy(dict(design), label="sealed_capability_design"),
@@ -411,6 +469,112 @@ def run_ivc(
         private_inputs=private,
         examples=examples,
     )
+
+    def validate_and_calibrate(artifact: Mapping[str, Any], *, turn: int) -> dict[str, Any]:
+        canonical = validate_capability_validation_suite(
+            artifact,
+            package=package,
+            design=design,
+            private_inputs=private,
+        )
+        if reference_positive_control_hook is not None:
+            try:
+                positive_control = run_reference_positive_control(
+                    reference_positive_control_hook,
+                    capability_design=design,
+                    validation_suite=canonical,
+                )
+            except Exception:
+                # Reference paths, private IDs, requests and raw Harness output
+                # must not be reflected into the model conversation.
+                raise IVCError(
+                    "reference calibration failed for at least one nominal or "
+                    "calibrated-boundary case; revise only the supplied private "
+                    "case selections and bindings"
+                ) from None
+            if callback is not None:
+                callback(
+                    {
+                        "stage": "ivc-reference-positive-control",
+                        "turn": turn,
+                        "result": positive_control,
+                    }
+                )
+        return canonical
+
+    if _supports_artifact_react(client):
+        destination = Path(artifact_path).resolve() if artifact_path is not None else None
+        temporary = TemporaryDirectory(prefix="autoadapter-ivc-") if destination is None else None
+        workspace_root = (
+            Path(temporary.name)
+            if temporary is not None
+            else destination.parent / "workspace"
+        )
+        context = temporary if temporary is not None else nullcontext()
+        with context:
+            session = IsolatedArtifactSession(
+                workspace=workspace_root,
+                budget=ProbeBudget(max_requests=None),
+            )
+            (session.workspace / "ivc_inputs.json").write_text(
+                json.dumps(inputs, indent=2, ensure_ascii=True) + "\n",
+                encoding="utf-8",
+            )
+            working_artifact = session.workspace / IVC_ARTIFACT_NAME
+            working_artifact.unlink(missing_ok=True)
+            validation_turn = 0
+
+            def validate_file(path: Path) -> dict[str, Any]:
+                nonlocal validation_turn
+                validation_turn += 1
+                return validate_and_calibrate(
+                    _read_json_object(path, artifact_name=IVC_ARTIFACT_NAME),
+                    turn=validation_turn,
+                )
+
+            try:
+                result = run_artifact_react(
+                    client=client,
+                    stage="ivc",
+                    system_prompt=IVC_SYSTEM_PROMPT,
+                    user_prompt=(
+                        "Read ivc_inputs.json and author the complete canonical "
+                        f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
+                        "for credential-free calibration calculations. End the turn when the "
+                        "artifact is ready; there is no submit or check tool."
+                    ),
+                    tools=session.artifact_tools(),
+                    artifact_name=IVC_ARTIFACT_NAME,
+                    artifact_path=working_artifact,
+                    validate_artifact=validate_file,
+                    max_turns=max_turns,
+                )
+            except ReactLoopError as exc:
+                raise IVCError(
+                    f"IVC did not produce a calibrated {IVC_ARTIFACT_NAME} in {max_turns} turns"
+                ) from exc
+            finally:
+                session.close()
+            if not isinstance(result.artifact, Mapping):
+                raise IVCError(
+                    f"{IVC_ARTIFACT_NAME} validation returned no suite object"
+                )
+            canonical = json_copy(dict(result.artifact), label=IVC_ARTIFACT_NAME)
+            if destination is not None:
+                write_private_suite(destination, canonical)
+            if callback is not None:
+                callback(
+                    {
+                        "stage": "ivc-sealed",
+                        "turn": result.model_turns,
+                        "artifact": canonical,
+                        "completion": result.completed_on,
+                        "tool_calls": result.tool_calls,
+                        "trace": list(result.trace),
+                    }
+                )
+            return canonical
+
     prompt = IVC_SYSTEM_PROMPT
     for turn in range(max_turns):
         stage = "ivc" if turn == 0 else f"ivc-artifact-correction-{turn}"
@@ -419,12 +583,7 @@ def run_ivc(
         if callback is not None:
             callback(event)
         try:
-            canonical = validate_capability_validation_suite(
-                artifact,
-                package=package,
-                design=design,
-                private_inputs=private,
-            )
+            canonical = validate_and_calibrate(artifact, turn=turn + 1)
         except IVCError as exc:
             if turn + 1 >= max_turns:
                 raise
@@ -439,20 +598,6 @@ def run_ivc(
                 "copy every criterion value exactly."
             )
             continue
-        if reference_positive_control_hook is not None:
-            positive_control = run_reference_positive_control(
-                reference_positive_control_hook,
-                capability_design=design,
-                validation_suite=canonical,
-            )
-            if callback is not None:
-                callback(
-                    {
-                        "stage": "ivc-reference-positive-control",
-                        "turn": turn + 1,
-                        "result": positive_control,
-                    }
-                )
         if artifact_path is not None:
             write_private_suite(artifact_path, canonical)
         if callback is not None:
@@ -478,7 +623,10 @@ def run_reference_positive_control(
     result = hook(capability_design=capability_design, validation_suite=validation_suite)
     if not isinstance(result, Mapping):
         raise IVCError("reference positive-control result must be an object")
-    return json_copy(dict(result), label="reference_positive_control")
+    copied = json_copy(dict(result), label="reference_positive_control")
+    if not _positive_control_passed(copied):
+        raise IVCError("reference positive control did not pass the complete suite")
+    return copied
 
 
 def write_private_suite(path: str | Path, suite: Mapping[str, Any]) -> None:
@@ -497,6 +645,7 @@ sample_task_demo_suite = sample_private_suite
 
 __all__ = [
     "IVC_ARTIFACT_TURNS",
+    "IVC_ARTIFACT_NAME",
     "IVC_CASE_ROLES",
     "IVCError",
     "IVCEventCallback",
@@ -508,6 +657,7 @@ __all__ = [
     "TASK_DEMO_CASE_COUNT",
     "TASK_DEMO_TASK_COUNT",
     "build_ivc_inputs",
+    "load_sanitized_ivc_examples",
     "run_ivc",
     "run_reference_positive_control",
     "sample_private_suite",

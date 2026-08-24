@@ -190,11 +190,14 @@ class PublicDevelopmentSession:
         return any(_successful_probe(result, require_physics=True) for result in self.probe_results)
 
     def _development_status(self) -> dict[str, Any]:
+        limit = self.budget.max_requests
         return {
             "revision": self._revision,
             "probe_calls_used": self._probe_calls,
-            "probe_calls_limit": self.budget.max_requests,
-            "probe_calls_remaining": max(0, self.budget.max_requests - self._probe_calls),
+            "probe_calls_limit": limit,
+            "probe_calls_remaining": (
+                None if limit is None else max(0, limit - self._probe_calls)
+            ),
         }
 
     def _candidate_source(self) -> str:
@@ -284,7 +287,10 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("code must be non-empty Python source")
         if len(code) > MAX_EXECUTE_PYTHON_CHARS:
             raise DevelopmentSessionError("execute_python code exceeds the character limit")
-        if self._probe_calls >= self.budget.max_requests:
+        if (
+            self.budget.max_requests is not None
+            and self._probe_calls >= self.budget.max_requests
+        ):
             raise ProbeError(
                 f"execute_python probe budget exhausted at {self.budget.max_requests} calls"
             )
@@ -439,8 +445,123 @@ class PublicDevelopmentSession:
             )
         return tuple(tools)
 
+
+class IsolatedArtifactSession:
+    """Workspace-only file tools plus a credential-free Python/MuJoCo session.
+
+    This is the narrower IVC boundary.  Unlike ``PublicDevelopmentSession``
+    it does not stage or expose morphology, tasks, assets, skeletons, Driver
+    source, or a package root.  ``execute_python`` runs in a tiny sandbox with
+    an empty MuJoCo scene so calculations can persist without creating a
+    second execution mechanism or opening the admitted robot package.
+    """
+
+    def __init__(self, *, workspace: str | Path, budget: ProbeBudget) -> None:
+        self.workspace = Path(workspace).resolve()
+        self.workspace.mkdir(parents=True, exist_ok=True)
+        sandbox = self.workspace / ".python_sandbox"
+        sandbox.mkdir(parents=True, exist_ok=True)
+        scene_path = sandbox / "empty_scene.xml"
+        scene_path.write_text(
+            "<mujoco model=\"ivc_calculation_sandbox\"><worldbody/></mujoco>\n",
+            encoding="utf-8",
+        )
+        self.public_workspace = PublicProbeWorkspace(
+            root=sandbox,
+            scene_path=scene_path,
+            skeleton_root=None,
+            python_root=None,
+        )
+        self.budget = budget
+        self._python_session: PersistentPythonSession | None = None
+        self._calls = 0
+
+    def close(self) -> None:
+        if self._python_session is not None:
+            self._python_session.close()
+            self._python_session = None
+
+    def _path(self, value: Any) -> tuple[str, Path]:
+        relative = PublicDevelopmentSession._safe_relative_path(value)
+        path = PublicDevelopmentSession._under(
+            self.workspace, relative, label="workspace file path"
+        )
+        return relative, path
+
+    def read_file(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        relative, path = self._path(arguments.get("path"))
+        if not path.is_file():
+            raise DevelopmentSessionError(f"workspace file does not exist: {relative}")
+        if path.stat().st_size > MAX_FILE_CHARS:
+            raise DevelopmentSessionError("file is too large for the model tool")
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise DevelopmentSessionError("file is not UTF-8 text") from exc
+        return {"path": relative, "root": "workspace", "content": content}
+
+    def write_file(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        relative, path = self._path(arguments.get("path"))
+        content = arguments.get("content")
+        if not isinstance(content, str):
+            raise DevelopmentSessionError("content must be text")
+        if len(content) > MAX_FILE_CHARS:
+            raise DevelopmentSessionError("file exceeds the 200000-character limit")
+        before = path.read_text(encoding="utf-8") if path.is_file() else None
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return {
+            "path": relative,
+            "bytes_written": len(content.encode("utf-8")),
+            "source_changed": before != content,
+        }
+
+    def execute_python(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        code = arguments.get("code")
+        if not isinstance(code, str) or not code.strip():
+            raise DevelopmentSessionError("code must be non-empty Python source")
+        if len(code) > MAX_EXECUTE_PYTHON_CHARS:
+            raise DevelopmentSessionError("execute_python code exceeds the character limit")
+        if self._python_session is None:
+            self._python_session = PersistentPythonSession(
+                public_workspace=self.public_workspace,
+                workspace=self.workspace,
+                condition="from-scratch",
+                budget=self.budget,
+            )
+        self._calls += 1
+        result = dict(self._python_session.execute(code))
+        result["execute_python_call"] = self._calls
+        return result
+
+    def artifact_tools(self) -> tuple[ToolSpec, ...]:
+        return (
+            ToolSpec(
+                "read_file",
+                "Read one UTF-8 file from this isolated phase workspace.",
+                _object_schema({"path": {"type": "string"}}, required=("path",)),
+                self.read_file,
+            ),
+            ToolSpec(
+                "write_file",
+                "Write one UTF-8 file inside this isolated phase workspace.",
+                _object_schema(
+                    {"path": {"type": "string"}, "content": {"type": "string"}},
+                    required=("path", "content"),
+                ),
+                self.write_file,
+            ),
+            ToolSpec(
+                "execute_python",
+                "Execute credential-free Python/MuJoCo calculations in one persistent isolated session. Time, output and physics remain bounded.",
+                _object_schema({"code": {"type": "string"}}, required=("code",)),
+                self.execute_python,
+            ),
+        )
+
 __all__ = [
     "DevelopmentSessionError",
+    "IsolatedArtifactSession",
     "PublicDevelopmentSession",
     "render_interface_stub",
 ]

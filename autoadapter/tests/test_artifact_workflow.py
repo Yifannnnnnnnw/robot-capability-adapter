@@ -55,6 +55,9 @@ def _json_validator(path: Path) -> dict[str, Any]:
 
 
 class ArtifactWorkflowTests(unittest.TestCase):
+    def test_default_file_workflow_has_no_aggregate_tool_call_ceiling(self) -> None:
+        self.assertIsNone(ProbeBudget().max_requests)
+
     def test_invalid_artifact_gets_deterministic_same_conversation_recovery(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             artifact = Path(directory) / "study.json"

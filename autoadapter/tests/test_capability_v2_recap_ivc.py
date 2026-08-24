@@ -22,11 +22,14 @@ from autoadapter2.capability_design import (
 )
 from autoadapter2.capability_design.tgcd import run_tgcd
 from autoadapter2.task_demo.recap import RecapBudgets, run_recap
+from autoadapter2.libraries import load_robot_package
+from autoadapter2.react import ToolCall, ToolTurn
 from autoadapter2.validation_compiler import (
     IVC_ARTIFACT_TURNS,
     IVC_CASE_ROLES,
     IVCPhase,
     build_ivc_inputs,
+    load_sanitized_ivc_examples,
     run_ivc,
     validate_capability_validation_suite,
 )
@@ -34,6 +37,7 @@ from autoadapter2.validation_compiler.ivc import IVCError
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SO101_PACKAGE_ROOT = ROOT / "autoadapter" / "libraries" / "robots" / "robotstudio_so101" / "1.0.4"
 
 
 def _package() -> dict[str, Any]:
@@ -231,6 +235,13 @@ def test_numeric_schema_bound_without_evidence_is_rejected() -> None:
         validate_schema_definition(schema)
 
 
+def test_recap_finish_name_is_reserved_at_capability_design_boundary() -> None:
+    design = _design()
+    design["capabilities"][0]["method_name"] = "finish"
+    with pytest.raises(CapabilityDesignError, match="non-reserved"):
+        validate_capability_design(design, _package())
+
+
 def test_public_reference_projection_has_only_so101_and_go2_designs() -> None:
     references = load_public_reference_catalog()
     assert [len(reference["capabilities"]) for reference in references] == [6, 5]
@@ -263,6 +274,51 @@ class _TGCDModel:
             invalid["task_support"] = []
             return invalid
         return self.design
+
+
+class _ArtifactModel:
+    def __init__(self, artifacts: list[dict[str, Any]]) -> None:
+        self.artifacts = list(artifacts)
+        self.messages: list[list[dict[str, Any]]] = []
+        self.tool_names: list[set[str]] = []
+
+    def generate_tool_turn(self, **kwargs: Any) -> ToolTurn:
+        self.messages.append([dict(item) for item in kwargs["messages"]])
+        self.tool_names.append(
+            {item["function"]["name"] for item in kwargs["tools"]}
+        )
+        artifact = self.artifacts.pop(0)
+        path = artifact.pop("__path__")
+        content = json.dumps(artifact, ensure_ascii=True)
+        call = ToolCall(
+            id=f"write-{len(self.messages)}",
+            name="write_file",
+            arguments={"path": path, "content": content},
+            raw_arguments=json.dumps({"path": "canonical", "content": content}),
+        )
+        return ToolTurn(content=None, tool_calls=(call,), finish_reason="end_turn")
+
+
+def _real_package_design() -> tuple[Any, dict[str, Any]]:
+    package = load_robot_package(SO101_PACKAGE_ROOT)
+    design = _design()
+    design.update(
+        {
+            "robot_configuration_id": package.robot_configuration_id,
+            "package_version": package.package_version,
+            "task_snapshot_id": package.snapshot_id,
+        }
+    )
+    design["task_support"] = [
+        {
+            "task_id": task["task_id"],
+            "capability_id": capability["capability_id"],
+            "rationale": "bounded reusable physical effect",
+        }
+        for task in package.tasks
+        for capability in design["capabilities"]
+    ]
+    return package, design
 
 
 def test_tgcd_six_turn_phase_accepts_generic_experience_and_seals_artifact(tmp_path: Path) -> None:
@@ -303,6 +359,26 @@ def test_tgcd_six_turn_phase_accepts_generic_experience_and_seals_artifact(tmp_p
     ]
 
 
+def test_tgcd_real_client_uses_exact_file_tools_and_accepts_final_turn_write(
+    tmp_path: Path,
+) -> None:
+    package, design = _real_package_design()
+    artifact = {**json.loads(json.dumps(design)), "__path__": "capability_design.json"}
+    model = _ArtifactModel([artifact])
+
+    result = run_tgcd(
+        model,
+        package,
+        max_turns=1,
+        artifact_path=tmp_path / "sealed" / "capability_design.json",
+        reference_catalog=[],
+    )
+
+    assert result["artifact_type"] == "capability_design"
+    assert model.tool_names == [{"read_file", "write_file", "execute_python"}]
+    assert (tmp_path / "sealed" / "capability_design.json").is_file()
+
+
 def test_tgcd_rejects_candidate_material_in_study_projection() -> None:
     with pytest.raises(CapabilityDesignError, match="candidate/private"):
         build_public_tgcd_inputs(
@@ -340,6 +416,8 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
     assert "driver" not in serialized
     assert "repair" not in serialized
     assert "candidate" not in serialized
+    assert load_sanitized_ivc_examples()
+    assert inputs["sanitized_capability_validation_examples"]
     model = _IVCModel(suite)
     events: list[dict[str, Any]] = []
     artifact_path = tmp_path / "capability_validation_suite.json"
@@ -366,6 +444,59 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
         validate_capability_validation_suite(
             tampered, package=package, design=design, private_inputs=private
         )
+
+
+def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
+    tmp_path: Path,
+) -> None:
+    package, design = _real_package_design()
+    private = _private_inputs(design)
+    suite = _suite(design, private)
+    for field, value in {
+        "robot_configuration_id": package.robot_configuration_id,
+        "package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+    }.items():
+        suite[field] = value
+    first = {**json.loads(json.dumps(suite)), "__path__": "capability_validation_suite.json"}
+    second = {**json.loads(json.dumps(suite)), "__path__": "capability_validation_suite.json"}
+    model = _ArtifactModel([first, second])
+    controls = iter(
+        [
+            RuntimeError("SECRET-private-case-id-and-driver-path"),
+            {"passed": True},
+        ]
+    )
+
+    def reference_control(**_kwargs: Any) -> dict[str, Any]:
+        value = next(controls)
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    result = run_ivc(
+        model,
+        package=package,
+        design=design,
+        private_inputs=private,
+        max_turns=2,
+        reference_positive_control_hook=reference_control,
+        artifact_path=tmp_path / "sealed" / "capability_validation_suite.json",
+    )
+
+    assert len(result["cases"]) == 2 * len(design["capabilities"])
+    assert model.tool_names == [
+        {"read_file", "write_file", "execute_python"},
+        {"read_file", "write_file", "execute_python"},
+    ]
+    correction_messages = json.dumps(model.messages[1])
+    assert "reference calibration failed" in correction_messages
+    assert "SECRET-private-case-id-and-driver-path" not in correction_messages
+    workspace = tmp_path / "sealed" / "workspace"
+    assert (workspace / "ivc_inputs.json").is_file()
+    assert not (workspace / "staged").exists()
+    assert not (workspace / "morphology.json").exists()
+    assert not (workspace / "driver.py").exists()
 
 
 def test_recap_uses_dynamic_catalogue_and_fixed_16_12_budgets() -> None:

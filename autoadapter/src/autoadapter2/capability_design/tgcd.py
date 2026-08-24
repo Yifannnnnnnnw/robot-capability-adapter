@@ -13,9 +13,15 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Protocol
+
+from autoadapter2.driver_synthesis.interactive import PublicDevelopmentSession
+from autoadapter2.driver_synthesis.probe import ProbeBudget
+from autoadapter2.react import ReactLoopError, run_artifact_react
 
 from .protocol import (
     CAPABILITY_INVOCATION_ABI,
@@ -52,6 +58,7 @@ capabilities yourself and do not copy task mappings from it."""
 
 
 TGCD_ARTIFACT_TURNS = 6
+TGCD_ARTIFACT_NAME = "capability_design.json"
 
 
 class CapabilityDesignError(CapabilitySchemaError):
@@ -66,6 +73,24 @@ class JsonGenerator(Protocol):
         prompt: str,
         inputs: Mapping[str, Any],
     ) -> dict[str, Any]: ...
+
+
+def _supports_artifact_react(client: Any) -> bool:
+    return callable(getattr(client, "generate_tool_turn", None))
+
+
+def _read_json_object(path: Path, *, artifact_name: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise CapabilityDesignError(f"{artifact_name} is not valid JSON: {exc}") from exc
+    if not isinstance(value, dict):
+        raise CapabilityDesignError(f"{artifact_name} must contain one JSON object")
+    return value
+
+
+def _framework_source_root() -> Path:
+    return Path(__file__).resolve().parents[2]
 
 
 TGCDEventCallback = Callable[[Mapping[str, Any]], Any]
@@ -386,7 +411,13 @@ def run_tgcd(
     max_model_attempts: int | None = None,
     artifact_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run TGCD, audit the replacement on each turn, and optionally seal a file."""
+    """Author and seal ``capability_design.json``.
+
+    A real unified model client uses the AA1-style file workspace.  The
+    ``generate_json`` branch is retained only as a compatibility seam for
+    focused deterministic tests and older callers; the mainline model client
+    always exposes ``generate_tool_turn``.
+    """
 
     if max_model_attempts is not None:
         max_turns = max_model_attempts
@@ -398,6 +429,81 @@ def run_tgcd(
         experience=experience,
         reference_catalog=reference_catalog,
     )
+
+    if _supports_artifact_react(client):
+        destination = Path(artifact_path).resolve() if artifact_path is not None else None
+        temporary = TemporaryDirectory(prefix="autoadapter-tgcd-") if destination is None else None
+        workspace_root = (
+            Path(temporary.name)
+            if temporary is not None
+            else destination.parent / "workspace"
+        )
+        context = temporary if temporary is not None else nullcontext()
+        with context:
+            session = PublicDevelopmentSession(
+                package=package,
+                condition="from-scratch",
+                workspace=workspace_root,
+                budget=ProbeBudget(max_requests=None),
+                source_root=_framework_source_root(),
+            )
+            model_inputs_path = session.workspace / "tgcd_inputs.json"
+            model_inputs_path.write_text(
+                json.dumps(inputs, indent=2, ensure_ascii=True) + "\n",
+                encoding="utf-8",
+            )
+            working_artifact = session.workspace / TGCD_ARTIFACT_NAME
+            working_artifact.unlink(missing_ok=True)
+
+            def validate_file(path: Path) -> dict[str, Any]:
+                return validate_capability_design(
+                    _read_json_object(path, artifact_name=TGCD_ARTIFACT_NAME),
+                    package,
+                )
+
+            try:
+                result = run_artifact_react(
+                    client=client,
+                    stage="tgcd",
+                    system_prompt=TGCD_SYSTEM_PROMPT,
+                    user_prompt=(
+                        "Read tgcd_inputs.json, inspect the public robot package as needed, and "
+                        f"author the complete canonical {TGCD_ARTIFACT_NAME} with write_file. "
+                        "You may use execute_python for credential-free public MuJoCo checks. "
+                        "End the turn when the artifact is ready; there is no submit tool."
+                    ),
+                    tools=session.artifact_tools(include_skeleton=False),
+                    artifact_name=TGCD_ARTIFACT_NAME,
+                    artifact_path=working_artifact,
+                    validate_artifact=validate_file,
+                    max_turns=max_turns,
+                )
+            except ReactLoopError as exc:
+                raise CapabilityDesignError(
+                    f"TGCD did not produce a valid {TGCD_ARTIFACT_NAME} in {max_turns} turns"
+                ) from exc
+            finally:
+                session.close()
+            if not isinstance(result.artifact, Mapping):
+                raise CapabilityDesignError(
+                    f"{TGCD_ARTIFACT_NAME} validation returned no design object"
+                )
+            canonical = json_copy(dict(result.artifact), label=TGCD_ARTIFACT_NAME)
+            if destination is not None:
+                write_capability_design(destination, canonical)
+            if callback is not None:
+                callback(
+                    {
+                        "stage": "tgcd-sealed",
+                        "turn": result.model_turns,
+                        "artifact": canonical,
+                        "completion": result.completed_on,
+                        "tool_calls": result.tool_calls,
+                        "trace": list(result.trace),
+                    }
+                )
+            return canonical
+
     prompt = TGCD_SYSTEM_PROMPT
     for turn in range(max_turns):
         stage = "tgcd" if turn == 0 else f"tgcd-artifact-correction-{turn}"
@@ -458,6 +564,7 @@ __all__ = [
     "CapabilityDesignError",
     "JsonGenerator",
     "TGCD_ARTIFACT_TURNS",
+    "TGCD_ARTIFACT_NAME",
     "TGCDPhase",
     "TGCD_SYSTEM_PROMPT",
     "build_public_tgcd_inputs",

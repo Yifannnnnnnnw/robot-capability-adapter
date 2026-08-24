@@ -496,7 +496,11 @@ def validate_capability_design(
             raise CapabilityProtocolError(f"{where} must be an object")
         capability_id = _required_text(raw.get("capability_id", raw.get("id")), where=f"{where}.capability_id")
         method_name = _required_text(raw.get("method_name", raw.get("method")), where=f"{where}.method_name")
-        if not method_name.isidentifier() or method_name in {"build", "finish_task_demo"}:
+        if not method_name.isidentifier() or method_name in {
+            "build",
+            "finish",
+            "finish_task_demo",
+        }:
             raise CapabilityProtocolError(f"{where}.method_name must be a non-reserved identifier")
         if capability_id in seen_ids or method_name in seen_methods:
             raise CapabilityProtocolError(f"{where} capability ID and method names must be unique")

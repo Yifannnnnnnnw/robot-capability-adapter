@@ -40,7 +40,11 @@ class ProbeSourceError(ProbeError):
 class ProbeBudget:
     """Hard limits shared by one condition's local probe batch."""
 
-    max_requests: int = 12
+    # ``None`` is the file-workflow mainline: ReAct has a turn budget but no
+    # second aggregate tool-call ceiling.  Focused legacy/batch callers may
+    # still supply a finite count when that count is itself the subject of a
+    # diagnostic test.
+    max_requests: int | None = None
     max_complete_driver_checks: int = 1
     timeout_s: float = 30.0
     max_output_chars: int = 24000
@@ -48,8 +52,8 @@ class ProbeBudget:
     max_sim_time_s: float = 20.0
 
     def __post_init__(self) -> None:
-        if self.max_requests <= 0:
-            raise ValueError("max_requests must be positive")
+        if self.max_requests is not None and self.max_requests <= 0:
+            raise ValueError("max_requests must be positive or None")
         if (
             isinstance(self.max_complete_driver_checks, bool)
             or not isinstance(self.max_complete_driver_checks, int)
@@ -796,7 +800,7 @@ def _normalise_requests(
     *,
     budget: ProbeBudget,
 ) -> tuple[ProbeRequest, ...]:
-    if len(requests) > budget.max_requests:
+    if budget.max_requests is not None and len(requests) > budget.max_requests:
         raise ProbeError(
             f"probe request count {len(requests)} exceeds budget {budget.max_requests}"
         )

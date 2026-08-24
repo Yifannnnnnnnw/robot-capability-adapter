@@ -1,0 +1,29 @@
+{
+  "artifact_type": "sanitized_capability_validation_examples",
+  "schema_version": "1.0",
+  "examples": [
+    {
+      "example_id": "nominal-boundary-pair-structure-v1",
+      "description": "Structure-only example for selecting one supplied nominal instance and one supplied calibrated-boundary instance for a sealed capability.",
+      "nominal_case": {
+        "case_role": "nominal",
+        "capability_id": "copy one sealed capability_id",
+        "method_name": "copy its sealed method_name",
+        "instance_id": "select one supplied nominal instance_id",
+        "binding_id": "select its supplied binding_id",
+        "guard_ids": "copy the selected supplied guard_ids",
+        "criteria": "copy the complete sealed criteria array byte-for-value"
+      },
+      "calibrated_boundary_case": {
+        "case_role": "calibrated_boundary",
+        "capability_id": "copy the same sealed capability_id",
+        "method_name": "copy its sealed method_name",
+        "instance_id": "select one supplied calibrated-boundary instance_id",
+        "binding_id": "select its supplied binding_id",
+        "guard_ids": "copy the selected supplied guard_ids",
+        "criteria": "copy the complete sealed criteria array byte-for-value"
+      },
+      "not_an_oracle": "The example supplies no IDs, requests, numeric values, thresholds, task mapping, waypoint, call sequence, or expected verdict."
+    }
+  ]
+}

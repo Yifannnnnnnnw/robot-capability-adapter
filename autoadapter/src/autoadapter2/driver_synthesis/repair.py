@@ -919,7 +919,7 @@ def repair_with_probes(
     workspace: str | Path,
     max_total_attempts: int = MAX_TOTAL_ATTEMPTS,
     capability_methods: Sequence[str] | None = None,
-    probe_budget: ProbeBudget = ProbeBudget(),
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
     source_root: str | Path | None = None,
 ) -> RepairResult:
     """Run one interactive Repair, with a one-shot path retained for test fakes."""
