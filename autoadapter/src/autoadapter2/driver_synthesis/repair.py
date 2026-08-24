@@ -27,7 +27,7 @@ from .generation import (
     _validate_public_invocation_abi,
     _invoke,
 )
-from .interactive import PublicDevelopmentSession, capability_task_ids
+from .interactive import PublicDevelopmentSession
 from .probe import ProbeBudget, ProbeSourceError, audit_public_source, run_probes
 from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_source
 
@@ -73,8 +73,9 @@ values/trajectories, Harness source, or other condition artifacts.
 Return exactly one JSON object with driver_filename='driver.py', driver_source, and repair_note.
 Preserve the fixed public invocation ABI: each sealed capability method keeps its exact model-authored
 name and is an instance method on the object returned by build(), with exact signature
-``def <method_name>(self, request)``. Top-level functions do not satisfy the ABI. ``request`` is a
-plain dict; use ``request["task_id"]`` and ``request["task_parameters"]``, not attribute access.
+``def <method_name>(self, request)``. Top-level functions do not satisfy the ABI. ``request`` is the
+closed mapping declared by that capability's sealed request_schema; read only its declared fields and
+do not add task, scene, reset, private-criteria, or whole-task fields.
 Change only driver.py. Keep the requested generation condition boundary: skeleton-assisted may use
 the supplied trusted skeleton family; from-scratch must not import or call it. The Framework still
 owns canonical model/data and trial reset. Use direct, statically auditable syntax: mapping fields
@@ -100,9 +101,9 @@ driver.py is the previous model-authored source. Diagnose the report and revise 
 both are already complete in the initial public input. Use read_file, write_file, and one persistent
 credential-free public Python/MuJoCo execute_python session. Skeleton discovery is available only in
 skeleton-assisted Repair; from-scratch must not read or import skeleton source. Preserve sealed
-method names and the exact (self, request) ABI; request is always a plain Python mapping and fields
-are accessed with request["field"], never request.field. For keyword_request use
-request["task_id"] and request["task_parameters"], never ``request.task_parameters`` or other attribute access. End a turn after writing a corrected driver.py; the
+method names and the exact (self, request) ABI; request is always the closed mapping declared by the
+sealed request_schema. Read only schema-declared fields and do not add task, scene, reset,
+private-criteria, or whole-task fields. End a turn after writing a corrected driver.py; the
 Framework validates its source and public import/build boundary. Never access or infer private suite
 construction, reference code, the other condition, credentials, or a final Harness verdict.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
@@ -677,6 +678,7 @@ def _materialize_driver(
             driver_source,
             condition=condition,  # type: ignore[arg-type]
             capability_methods=_method_names(public_inputs, capability_methods),
+            candidate_request_boundary=True,
         )
         _validate_public_invocation_abi(
             driver_source,
@@ -769,14 +771,6 @@ def _interactive_repair(
         max_total_attempts=max_total_attempts,
     )
     methods = _method_names(public_inputs, capability_methods)
-    design = public_inputs.get("sealed_capability_design")
-    task_map = capability_task_ids(design) if isinstance(design, Mapping) else {}
-    invocation_abi = (
-        design.get("invocation_abi")
-        if isinstance(design, Mapping)
-        and isinstance(design.get("invocation_abi"), Mapping)
-        else None
-    )
     session = PublicDevelopmentSession(
         package=package,
         condition=str(condition),
@@ -784,8 +778,6 @@ def _interactive_repair(
         budget=probe_budget,
         source_root=_source_root(source_root),
         capability_methods=methods,
-        capability_task_ids=task_map,
-        invocation_abi=invocation_abi,
         initial_driver_source=source,
     )
     calls = getattr(client, "calls", ())
@@ -809,6 +801,7 @@ def _interactive_repair(
                 driver_source,
                 condition=condition,  # type: ignore[arg-type]
                 capability_methods=methods,
+                candidate_request_boundary=True,
             )
             _validate_public_invocation_abi(driver_source, methods)
             audit_public_source(driver_source, condition=condition)

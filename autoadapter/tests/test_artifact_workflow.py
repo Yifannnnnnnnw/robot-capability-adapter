@@ -243,28 +243,80 @@ class ArtifactWorkflowTests(unittest.TestCase):
                     tools = session.artifact_tools(include_skeleton=include_skeleton)
                     self.assertEqual({tool.name for tool in tools}, expected)
                     self.assertTrue(all(not tool.terminal for tool in tools))
-                    self.assertNotIn("submit_driver", {tool.name for tool in tools})
-                    self.assertNotIn("check_driver", {tool.name for tool in tools})
                 finally:
                     session.close()
 
-            study_design = {"capabilities": [{"method_name": "drive"}]}
             self.assertEqual(
                 _build_study_inputs(
                     package,
-                    study_design,
+                    None,
                     condition="skeleton-assisted",
                     experience=(),
                     runtime_contract={"primitives": ["mujoco.mj_step"]},
                 ),
                 _build_study_inputs(
                     package,
-                    study_design,
+                    None,
                     condition="from-scratch",
                     experience=(),
                     runtime_contract={"primitives": ["mujoco.mj_step"]},
                 ),
             )
+
+    def test_pre_tgcd_study_inputs_are_package_only(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            package_root = Path(directory) / "package"
+            (package_root / "assets").mkdir(parents=True)
+            (package_root / "tasks").mkdir()
+            (package_root / "reference").mkdir()
+            scene = package_root / "assets" / "scene.xml"
+            scene.write_text("<mujoco model='tiny'><worldbody/></mujoco>\n", encoding="utf-8")
+            (package_root / "morphology.json").write_text("{}", encoding="utf-8")
+            (package_root / "tasks" / "catalog.json").write_text("{}", encoding="utf-8")
+            (package_root / "tasks" / "sources.json").write_text("{}", encoding="utf-8")
+            package = RobotPackage(
+                root=package_root,
+                robot_configuration_id="tiny",
+                package_version="1.0.0",
+                snapshot_id="tiny",
+                morphology={},
+                sources=(),
+                tasks=(),
+                mjcf_path=scene,
+                skeleton_dir=package_root / "skeleton",
+                reference_driver=package_root / "reference" / "driver.py",
+                private_dir=package_root / "tasks" / "private",
+            )
+            from autoadapter2.driver_synthesis.generation import _build_study_inputs
+
+            inputs = _build_study_inputs(
+                package,
+                None,
+                condition="from-scratch",
+                experience=(),
+                runtime_contract=None,
+            )
+            self.assertNotIn("sealed_capability_design", inputs)
+            self.assertNotIn("driver_interface_stub", inputs)
+            self.assertNotIn("public_invocation_abi", inputs["allowed_runtime_facts"])
+
+    def test_owned_workflow_source_has_no_retired_tool_names(self) -> None:
+        source_root = Path(__file__).resolve().parents[1] / "src" / "autoadapter2"
+        paths = [
+            source_root / "react.py",
+            source_root / "driver_synthesis" / "generation.py",
+            source_root / "driver_synthesis" / "repair.py",
+            source_root / "driver_synthesis" / "interactive.py",
+        ]
+        source = "\n".join(path.read_text(encoding="utf-8") for path in paths)
+        retired = (
+            "submit" + "_driver",
+            "check" + "_driver",
+            "list" + "_public_files",
+            "read" + "_public_file",
+        )
+        for name in retired:
+            self.assertNotIn(name, source)
 
     def test_artifact_turn_budgets_match_aa1_conditions(self) -> None:
         self.assertEqual(_artifact_turn_budget("study", "from-scratch"), 16)

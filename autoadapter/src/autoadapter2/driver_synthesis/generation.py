@@ -25,7 +25,6 @@ from autoadapter2.react import (
 
 from .interactive import (
     PublicDevelopmentSession,
-    capability_task_ids,
     render_interface_stub,
 )
 from .probe import (
@@ -116,24 +115,17 @@ hidden acceptance rules, private resets, expected trajectories, or privileged si
 
 
 STUDY_PROMPT = """You are the AutoAdapter 1.0 STUDY stage for a Direct-MuJoCo driver.
-Study only the supplied public robot package, sealed public capability design, runtime contract,
-and eligible experience. Produce a concise JSON study record for this generation condition.
-For skeleton-assisted, record which supplied trusted skeleton source symbols and primitives you
-inspected. For from-scratch, plan a controller using only the supplied public MuJoCo, NumPy, and
-Python primitives; no skeleton source is available in this condition.
-
-TGCD method names are model-authored and must be copied exactly from sealed_capability_design; they
-are not selected from an effect catalog. The public invocation ABI is sealed in that design. Study
-how each method consumes its request according to invocation_abi and the capability's request_schema,
-using public_smoke_request when supplied. Do not impose a task_id/task_parameters envelope on a
-capability_request design.
+Study only the supplied public robot package, runtime contract, and eligible experience. This is a
+pre-TGCD study: no capability design, task dispatch, private criteria, or whole-task request is
+available or needed. Produce one concise JSON study record from the public morphology, source
+records, canonical MuJoCo scene, and public Python primitives. Keep the same study procedure for
+both eventual generation conditions; trusted skeleton source is unavailable in this phase.
 
 You must request at least one bounded local development probe that loads the canonical public scene
 and advances real MuJoCo physics with mujoco.mj_step. Each probe request must contain a short probe_id
 and a complete Python script string. A probe may inspect the canonical public scene, run MuJoCo
 physics, and print diagnostics. It may not read private validation data or claim a final validation
-result. Return one JSON object with condition, findings, implementation_plan, probe_requests, and
-(for skeleton-assisted) skeleton_inspection."""
+result. Return one JSON object with condition, findings, implementation_plan, and probe_requests."""
 
 
 GENERATE_PROMPT = """You are the AutoAdapter 1.0 GENERATE stage. Using the supplied public package,
@@ -144,10 +136,9 @@ and a short generation_note.
 The source must define build() and every exact public capability method name from the sealed design.
 TGCD method names are arbitrary model-authored identifiers, not an effect-library selection. Preserve
 each exact sealed-design name and implement its sealed public invocation ABI. Every capability method
-must accept a keyword-compatible ``request`` object. For keyword_request, use its declared
-task_id/task_parameters envelope; for capability_request, consume the capability-native object
-declared by that capability's request_schema. Use the sealed design and public Morphology ABI to
-interpret it; do not invent a different public signature or task/effect allowlist. Define a driver class, make build()
+must accept the exact ``request`` object declared by the sealed capability request_schema. Consume the
+capability-native mapping directly; do not add task, scene, reset, private-criteria, or whole-task
+fields, and do not invent a different public signature or task/effect allowlist. Define a driver class, make build()
 return an instance of it, and define every capability as an instance method with the exact signature
 ``def <method_name>(self, request)``; top-level functions do not satisfy the ABI. ``request`` is a
 plain dict; read only the fields declared by the sealed ABI and capability request schema.
@@ -164,14 +155,14 @@ getattr, setattr, eval, exec, or dynamic binding.""" + (
 
 STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage.
 STUDY is identical across skeleton-assisted and from-scratch conditions: use only the supplied
-public package projection, sealed Capability Design, and eligible Experience. The trusted skeleton
-is not available in this phase. Use read_file only for public inputs, execute_python for one
-credential-free persistent public Python/MuJoCo session, and write_file for the canonical
-study.json artifact in the condition workspace. Do not access private Harness data, reference
-drivers, repository paths, network, or credentials.
+public package projection, runtime contract, and eligible Experience. This is pre-TGCD, so no
+capability design, task dispatch, private criteria, or whole-task request is available or needed.
+The trusted skeleton is not available in this phase. Use read_file only for public inputs,
+execute_python for one credential-free persistent public Python/MuJoCo session, and write_file for
+the canonical study.json artifact in the condition workspace. Do not access private Harness data,
+reference drivers, repository paths, network, or credentials.
 
-Ground the study in the design invocation_abi and each capability request_schema; capability_request design does not use
-the legacy task envelope. Before finishing,
+Before finishing,
 execute a real public probe that loads only
 ``mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])`` and advances physics with
 ``mujoco.mj_step``. Keep state across execute_python calls and keep code bounded. Write one JSON
@@ -184,9 +175,9 @@ GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_
 Use read_file and execute_python on the supplied public projection and use write_file to create the
 canonical condition-workspace artifact driver.py. The interface-only stub, when present, is only a
 starting point: replace every placeholder with a complete executable driver. Follow the sealed
-invocation ABI and capability request schemas; request is a plain Python mapping, so use request["field"]
-and never ``request.task_parameters`` or other attribute access. For keyword_request use request["task_id"] and request["task_parameters"];
-skeleton-assisted may list_skeletons and inspect_skeleton, while
+invocation ABI and each capability's closed request_schema directly. Read only schema-declared fields;
+do not add task, scene, reset, private-criteria, or whole-task fields. Skeleton-assisted may
+list_skeletons and inspect_skeleton, while
 from-scratch must not read or import skeleton source. Use one persistent credential-free public
 Python/MuJoCo session for bounded development probes. Do not use private Harness definitions,
 reference code, the other condition, credentials, or network. Finish by ending a turn once driver.py
@@ -406,18 +397,12 @@ def _skeleton_sources(package: RobotPackage) -> list[dict[str, str]]:
 
 def _sealed_invocation_abi(design: Mapping[str, Any]) -> dict[str, Any]:
     raw = design.get("invocation_abi")
-    if raw is None:
-        # Compatibility for older focused fixtures. Audited TGCD artifacts carry
-        # this envelope explicitly.
-        return {
-            "kind": "keyword_request",
-            "method_call": "method(request=request)",
-            "request_required": ["task_id", "task_parameters"],
-        }
     if not isinstance(raw, Mapping):
-        raise GenerationError("sealed capability design invocation_abi must be an object")
+        raise GenerationError(
+            "sealed capability design invocation_abi must be the closed capability-v2 object"
+        )
     kind = raw.get("kind")
-    if kind not in {"keyword_request", "capability_request"}:
+    if kind != "capability_request":
         raise GenerationError(f"unsupported sealed invocation ABI kind {kind!r}")
     return _copy(dict(raw))
 
@@ -429,18 +414,12 @@ def _public_invocation_facts(invocation_abi: Mapping[str, Any]) -> dict[str, Any
         "method_names_are_copied_from_sealed_design": True,
         "effect_catalog_or_task_effect_allowlist": False,
     }
-    if invocation_abi.get("kind") == "keyword_request":
-        facts["request_schema"] = {
-            "task_id": "string",
-            "task_parameters": "object",
-        }
-    else:
-        facts["request_schema_source"] = (
-            "sealed_capability_design.capabilities[].request_schema"
-        )
-        facts["smoke_request_source"] = (
-            "sealed_capability_design.capabilities[].public_smoke_request"
-        )
+    facts["request_schema_source"] = (
+        "sealed_capability_design.capabilities[].request_schema"
+    )
+    facts["smoke_request_source"] = (
+        "sealed_capability_design.capabilities[].public_smoke_request"
+    )
     return facts
 
 
@@ -449,7 +428,6 @@ def _runtime_facts(
     *,
     invocation_abi: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    sealed_abi = invocation_abi or _sealed_invocation_abi({})
     base: dict[str, Any] = {
         "python": f"{sys.version_info.major}.{sys.version_info.minor}",
         "candidate_allowed_imports": [
@@ -493,13 +471,14 @@ def _runtime_facts(
             ),
             "relative_or_synthetic_scene_fallback_forbidden": True,
         },
-        "public_invocation_abi": _public_invocation_facts(sealed_abi),
         "morphology_abi": {
             "source": "public_robot_package.morphology",
             "robot_symbols_and_actuator_mapping_must_come_from_morphology": True,
             "driver_must_not_invent_a_substitute_robot_model": True,
         },
     }
+    if invocation_abi is not None:
+        base["public_invocation_abi"] = _public_invocation_facts(invocation_abi)
     if runtime_contract:
         # Only caller-supplied runtime facts are merged.  The condition-specific
         # artifact below is constructed separately so from-scratch never receives
@@ -539,7 +518,7 @@ def _from_scratch_artifacts(runtime_contract: Mapping[str, Any] | None) -> dict[
 
 def build_public_generation_inputs(
     package: RobotPackage,
-    design: Mapping[str, Any],
+    design: Mapping[str, Any] | None,
     *,
     condition: GenerationCondition | str,
     experience: Sequence[Mapping[str, Any]] = (),
@@ -591,15 +570,17 @@ def build_public_generation_inputs(
     inputs: dict[str, Any] = {
         "generation_condition": selected_condition,
         "public_robot_package": public_package,
-        "sealed_capability_design": _copy(dict(design)),
-        "driver_interface_stub": render_interface_stub(_capability_methods(design)),
         "eligible_experience": _copy(list(experience)),
-        "allowed_runtime_facts": _runtime_facts(
-            runtime_contract,
-            invocation_abi=_sealed_invocation_abi(design),
-        ),
+        "allowed_runtime_facts": _runtime_facts(runtime_contract),
         "condition_eligible_artifacts": artifacts,
     }
+    if design is not None:
+        inputs["sealed_capability_design"] = _copy(dict(design))
+        inputs["driver_interface_stub"] = render_interface_stub(_capability_methods(design))
+        inputs["allowed_runtime_facts"] = _runtime_facts(
+            runtime_contract,
+            invocation_abi=_sealed_invocation_abi(design),
+        )
     if study_output is not None:
         inputs["study"] = _copy(dict(study_output))
     inputs["probe_results"] = _copy(list(probe_results))
@@ -608,7 +589,7 @@ def build_public_generation_inputs(
 
 def _build_study_inputs(
     package: RobotPackage,
-    design: Mapping[str, Any],
+    design: Mapping[str, Any] | None,
     *,
     condition: GenerationCondition,
     experience: Sequence[Mapping[str, Any]],
@@ -627,9 +608,21 @@ def _build_study_inputs(
     # generation condition through this helper would leak a condition-specific
     # artifact description (and make the two STUDY conversations differ) even
     # though STUDY is deliberately shared.
+    # New mainline callers pass no design before TGCD.  Keep the old Exp1a
+    # fixed-bundle seam only for an explicitly sealed capability artifact;
+    # arbitrary/unsealed mappings must never leak into pre-TGCD STUDY.
+    study_design = (
+        design
+        if isinstance(design, Mapping)
+        and design.get("artifact_type")
+        in {"capability_design", "b1_fixed_capability_design"}
+        and isinstance(design.get("invocation_abi"), Mapping)
+        and design["invocation_abi"].get("kind") == "capability_request"
+        else None
+    )
     inputs = build_public_generation_inputs(
         package,
-        design,
+        study_design,
         condition="from-scratch",
         experience=experience,
         runtime_contract=runtime_contract,
@@ -711,18 +704,12 @@ def _probe_requests(output: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
 def _validate_study(
     output: Mapping[str, Any],
     condition: GenerationCondition,
-    *,
-    require_skeleton_inspection: bool = True,
 ) -> tuple[dict[str, Any], ...]:
     if output.get("condition") != condition:
         raise GenerationError("STUDY output condition does not match the requested condition")
     for field in ("findings", "implementation_plan"):
         if field not in output:
             raise GenerationError(f"STUDY output is missing {field}")
-    if condition == "skeleton-assisted" and require_skeleton_inspection:
-        inspection = output.get("skeleton_inspection")
-        if not isinstance(inspection, Mapping) or not inspection:
-            raise GenerationError("skeleton-assisted STUDY must record skeleton_inspection")
     requests = _probe_requests(output)
     if not requests:
         raise GenerationError(
@@ -734,7 +721,7 @@ def _validate_study(
 def study(
     client: JsonGenerator,
     package: RobotPackage,
-    design: Mapping[str, Any],
+    design: Mapping[str, Any] | None = None,
     *,
     condition: GenerationCondition | str,
     experience: Sequence[Mapping[str, Any]] = (),
@@ -743,7 +730,12 @@ def study(
     probe_budget: ProbeBudget = ProbeBudget(),
     source_root: str | Path | None = None,
 ) -> StudyResult:
-    """Run real-model STUDY with the condition-specific public boundary."""
+    """Run the condition-neutral pre-TGCD public STUDY phase.
+
+    ``design`` is optional for the new ordering.  A supplied design is retained
+    only as a compatibility input for fixed-bundle callers; the normal
+    pre-TGCD path passes ``None`` and therefore exposes no design to STUDY.
+    """
 
     selected_condition = _require_condition(str(condition))
     inputs = _build_study_inputs(
@@ -792,7 +784,6 @@ def study(
             _validate_study(
                 canonical,
                 selected_condition,
-                require_skeleton_inspection=False,
             )
             return _copy(canonical)
 
@@ -843,7 +834,6 @@ def study(
     requests = _validate_study(
         output,
         selected_condition,
-        require_skeleton_inspection=not _supports_react(client),
     )
     return StudyResult(
         condition=selected_condition,
@@ -916,8 +906,6 @@ def generate(
             budget=probe_budget,
             source_root=_source_root(source_root),
             capability_methods=capability_methods,
-            capability_task_ids=capability_task_ids(design),
-            invocation_abi=_sealed_invocation_abi(design),
             seed_interface_stub=True,
         )
         calls = getattr(client, "calls", ())
@@ -937,6 +925,7 @@ def generate(
                     driver_source,
                     condition=selected_condition,
                     capability_methods=capability_methods,
+                    candidate_request_boundary=True,
                 )
                 _validate_public_invocation_abi(driver_source, capability_methods)
                 audit_public_source(driver_source, condition=selected_condition)
@@ -1016,6 +1005,7 @@ def generate(
             driver_source,
             condition=selected_condition,
             capability_methods=capability_methods,
+            candidate_request_boundary=True,
         )
         _validate_public_invocation_abi(driver_source, capability_methods)
         audit_public_source(driver_source, condition=selected_condition)

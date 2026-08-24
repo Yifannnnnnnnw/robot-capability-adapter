@@ -200,14 +200,12 @@ def _reported_execution_error(result: Any, *, terminal: bool) -> str | None:
 
 
 def _observable_action_type(
-    *, tool_name: str, terminal: bool, execution_error: str | None
+    *, terminal: bool, execution_error: str | None
 ) -> str:
     if execution_error is not None:
         return "execute_error"
     if terminal:
         return "submit"
-    if tool_name in {"list_public_files", "read_public_file"}:
-        return "observe_or_plan"
     return "execute_clean"
 
 
@@ -401,7 +399,6 @@ def run_react(
                         "clean" if execution_error is None else "error"
                     ),
                     "action_type": _observable_action_type(
-                        tool_name=call.name,
                         terminal=bool(tool is not None and tool.terminal),
                         execution_error=execution_error,
                     ),

@@ -257,12 +257,12 @@ class ReactLoopTests(unittest.TestCase):
         self.assertEqual(submitted["action_type"], "submit")
         self.assertTrue(submitted["submission_event"])
 
-    def test_public_read_is_observe_or_plan(self) -> None:
+    def test_public_read_is_a_clean_development_action(self) -> None:
         client = ScriptedClient(
             [
                 ToolTurn(
                     content=None,
-                    tool_calls=(call("one", "read_public_file", {"path": "x"}),),
+                    tool_calls=(call("one", "read_file", {"path": "x"}),),
                 ),
                 ToolTurn(content=None, tool_calls=(call("two", "submit", {}),)),
             ]
@@ -274,7 +274,7 @@ class ReactLoopTests(unittest.TestCase):
             user_prompt="Study.",
             tools=(
                 ToolSpec(
-                    "read_public_file",
+                    "read_file",
                     "Read.",
                     {"type": "object"},
                     lambda _arguments: {"content": "public"},
@@ -290,9 +290,9 @@ class ReactLoopTests(unittest.TestCase):
         )
 
         read_event = next(
-            item for item in result.trace if item.get("tool") == "read_public_file"
+            item for item in result.trace if item.get("tool") == "read_file"
         )
-        self.assertEqual(read_event["action_type"], "observe_or_plan")
+        self.assertEqual(read_event["action_type"], "execute_clean")
 
     def test_malformed_arguments_are_returned_as_a_tool_error(self) -> None:
         called = False

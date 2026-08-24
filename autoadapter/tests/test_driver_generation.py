@@ -50,7 +50,7 @@ class GeneratedDriver:
         self.data = data
 
     def drive(self, request):
-        self.data.ctrl[0] = float(request["task_parameters"].get("target", 0.0))
+        self.data.ctrl[0] = float(request.get("target", 0.0))
         mujoco.mj_step(self.model, self.data)
 
 
@@ -179,7 +179,24 @@ class DriverGenerationTests(unittest.TestCase):
         )
         self.design = {
             "artifact_type": "capability_design",
-            "capabilities": [{"capability_id": "cap-1", "method_name": "drive"}],
+            "invocation_abi": {
+                "kind": "capability_request",
+                "method_call": "method(request=request)",
+                "request_required": ["request"],
+            },
+            "capabilities": [
+                {
+                    "capability_id": "cap-1",
+                    "method_name": "drive",
+                    "request_schema": {
+                        "type": "object",
+                        "properties": {"target": {"type": "number"}},
+                        "required": [],
+                        "additionalProperties": False,
+                    },
+                    "public_smoke_request": {"target": 0.0},
+                }
+            ],
         }
 
     def tearDown(self) -> None:
@@ -197,9 +214,9 @@ class DriverGenerationTests(unittest.TestCase):
     def test_interactive_driver_prompts_expose_mapping_request_abi(self) -> None:
         for prompt in (GENERATE_REACT_SYSTEM, REPAIR_REACT_SYSTEM):
             normalized = " ".join(prompt.split())
-            self.assertIn("plain Python mapping", normalized)
-            self.assertIn('request["task_parameters"]', normalized)
-            self.assertIn("never ``request.task_parameters``", normalized)
+            self.assertIn("request_schema", normalized)
+            self.assertIn("do not add task, scene, reset, private-criteria, or whole-task fields", normalized)
+            self.assertNotIn("request.task_parameters", normalized)
 
     @staticmethod
     def _study(condition: str) -> dict:
@@ -247,11 +264,15 @@ class DriverGenerationTests(unittest.TestCase):
                     runtime_contract={"primitives": ["mujoco.mj_step", "data.ctrl"]},
                 )
                 self.assertEqual([item["stage"] for item in client.calls], ["study", "generate"])
-                abi = client.inputs[0]["allowed_runtime_facts"]["public_invocation_abi"]
-                self.assertEqual(abi["request_schema"]["task_id"], "string")
-                self.assertEqual(abi["request_schema"]["task_parameters"], "object")
+                # STUDY is pre-TGCD and package-only; the sealed ABI begins at GENERATE.
+                abi = client.inputs[1]["allowed_runtime_facts"]["public_invocation_abi"]
+                self.assertEqual(abi["kind"], "capability_request")
+                self.assertEqual(
+                    abi["request_schema_source"],
+                    "sealed_capability_design.capabilities[].request_schema",
+                )
                 self.assertFalse(abi["effect_catalog_or_task_effect_allowlist"])
-                runtime = client.inputs[0]["allowed_runtime_facts"]
+                runtime = client.inputs[1]["allowed_runtime_facts"]
                 self.assertIn("os", runtime["candidate_forbidden_imports"])
                 self.assertIn(
                     "os", runtime["probe_environment"]["allowed_utility_imports"]
@@ -260,7 +281,7 @@ class DriverGenerationTests(unittest.TestCase):
                     "AUTOADAPTER_PROBE_SCENE",
                     runtime["probe_environment"]["canonical_scene_loader"],
                 )
-                interface_stub = client.inputs[0]["driver_interface_stub"]
+                interface_stub = client.inputs[1]["driver_interface_stub"]
                 self.assertIn("def drive(self, request):", interface_stub)
                 self.assertIn("NotImplementedError", interface_stub)
                 self.assertNotIn("mujoco", interface_stub)
@@ -302,8 +323,9 @@ class DriverGenerationTests(unittest.TestCase):
             abi["request_schema_source"],
             "sealed_capability_design.capabilities[].request_schema",
         )
-        self.assertIn("Do not impose a task_id/task_parameters envelope", STUDY_PROMPT)
-        self.assertIn("capability_request design does not use", STUDY_REACT_SYSTEM)
+        self.assertIn("pre-TGCD study", STUDY_PROMPT)
+        self.assertIn("pre-TGCD", STUDY_REACT_SYSTEM)
+        self.assertNotIn("sealed_capability_design", STUDY_PROMPT)
 
     def test_study_condition_is_framework_canonicalized(self) -> None:
         output = self._study("from-scratch")
