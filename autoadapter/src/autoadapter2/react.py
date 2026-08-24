@@ -90,6 +90,29 @@ class ReactResult:
     submitted_with: str
 
 
+@dataclass(frozen=True)
+class ArtifactResult:
+    """Result of an AutoAdapter-1-style file-producing phase.
+
+    Unlike :func:`run_react`, an artifact phase has no model-visible submit
+    tool.  ``end_turn`` is only a request to inspect the expected file; the
+    file validator, rather than a tool call, decides whether the phase is
+    complete.
+    """
+
+    artifact: Any
+    trace: tuple[dict[str, Any], ...]
+    model_turns: int
+    tool_calls: int
+    completed_on: str
+
+    @property
+    def submission(self) -> Any:
+        """Compatibility alias for callers that consume ``ReactResult``."""
+
+        return self.artifact
+
+
 def _bounded_text(value: Any, limit: int) -> str:
     try:
         text = json.dumps(value, ensure_ascii=True, sort_keys=True)
@@ -199,8 +222,28 @@ def run_react(
     max_tool_calls: int = 48,
     max_submission_turns: int = 2,
     tool_output_chars: int = 24000,
+    artifact_name: str | None = None,
+    artifact_path: Any = None,
+    validate_artifact: Callable[[Any], Any] | None = None,
 ) -> ReactResult:
     """Run one model conversation until a terminal tool accepts an artifact."""
+
+    if artifact_name is not None:
+        # Keep the historical entrypoint usable for callers that have not yet
+        # switched imports, while making the file workflow explicit whenever
+        # an expected artifact is supplied.
+        return run_artifact_react(  # type: ignore[return-value]
+            client=client,
+            stage=stage,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            tools=tools,
+            artifact_name=artifact_name,
+            artifact_path=artifact_path,
+            validate_artifact=validate_artifact,
+            max_turns=max_turns,
+            tool_output_chars=tool_output_chars,
+        )
 
     if (
         max_turns < 1
@@ -419,3 +462,250 @@ def run_react(
         model_turns=max_turns,
         tool_calls=call_count,
     )
+
+
+def _artifact_validation_error(
+    *,
+    artifact_name: str,
+    artifact_path: Any,
+    validate_artifact: Callable[[Any], Any] | None,
+) -> tuple[bool, Any, str | None]:
+    """Validate one phase artifact and return a stable model-facing error.
+
+    Validators are deliberately small callables owned by the synthesis layer.
+    They may return a boolean, a ``{"valid": bool, "error": ...}`` mapping,
+    or the validated artifact itself.  Exceptions are converted into a stable
+    diagnostic so that a malformed file can be repaired in the same
+    conversation instead of aborting the phase.
+    """
+
+    path = artifact_path
+    try:
+        exists = bool(path is not None and path.is_file())
+    except (AttributeError, OSError):
+        exists = False
+    if not exists:
+        return False, None, f"expected artifact {artifact_name!r} was not written"
+
+    try:
+        if validate_artifact is None:
+            return True, path, None
+        result = validate_artifact(path)
+    except Exception as exc:  # artifact errors are recoverable observations
+        message = str(exc).strip().replace("\n", " ")
+        if not message:
+            message = type(exc).__name__
+        return (
+            False,
+            None,
+            f"{artifact_name} is invalid ({type(exc).__name__}: {message[:1000]})",
+        )
+
+    if isinstance(result, Mapping):
+        valid = result.get("valid", result.get("ok", True))
+        if valid is False:
+            reason = result.get("error", result.get("message", "validation failed"))
+            return False, None, f"{artifact_name} is invalid ({str(reason)[:1000]})"
+        return True, result.get("artifact", result), None
+    if result is False:
+        return False, None, f"{artifact_name} is invalid (validation failed)"
+    if result is True or result is None:
+        return True, path, None
+    return True, result, None
+
+
+def run_artifact_react(
+    *,
+    client: ToolModelClient,
+    stage: str,
+    system_prompt: str,
+    user_prompt: str,
+    tools: Sequence[ToolSpec],
+    artifact_name: str,
+    artifact_path: Any,
+    validate_artifact: Callable[[Any], Any] | None = None,
+    max_turns: int = 16,
+    tool_output_chars: int = 24000,
+) -> ArtifactResult:
+    """Run a bounded AA1-style file/artifact conversation.
+
+    The model edits files with ordinary tools and ends a turn when it believes
+    the phase is complete.  ``end_turn`` is provisional: the expected file is
+    checked, and a deterministic validation diagnostic is appended to the same
+    conversation when it is absent or invalid.  On the final model turn a
+    valid file is accepted immediately, including when that turn only writes
+    the file and does not provide a separate closing response.
+
+    There is intentionally no aggregate tool-call limit here.  Tool handlers
+    retain their own path, execution-time, output, and stage-local resource
+    limits; a long-lived development conversation must not be cut off by a
+    second, unrelated call counter.
+    """
+
+    if max_turns < 1 or tool_output_chars < 256:
+        raise ValueError("artifact ReAct limits must be positive and tool output at least 256 chars")
+    tool_map = {tool.name: tool for tool in tools}
+    if len(tool_map) != len(tools):
+        raise ValueError("artifact ReAct tool names must be unique")
+    messages: list[dict[str, Any]] = [{"role": "user", "content": user_prompt}]
+    trace: list[dict[str, Any]] = []
+    call_count = 0
+
+    def validate(*, turn_number: int, event: str) -> ArtifactResult | None:
+        valid, artifact, error = _artifact_validation_error(
+            artifact_name=artifact_name,
+            artifact_path=artifact_path,
+            validate_artifact=validate_artifact,
+        )
+        trace.append(
+            {
+                "turn": turn_number,
+                "event": event,
+                "artifact": artifact_name,
+                "artifact_valid": valid,
+                **({"artifact_error": error} if error else {}),
+            }
+        )
+        if valid:
+            return ArtifactResult(
+                artifact=artifact,
+                trace=tuple(trace),
+                model_turns=turn_number,
+                tool_calls=call_count,
+                completed_on=event,
+            )
+        remaining = max_turns - turn_number
+        if remaining > 0:
+            _append_user_instruction(
+                messages,
+                f"Artifact validation failed for {artifact_name}: {error}. "
+                f"{remaining} model turns remain. Correct the same workspace artifact "
+                f"and finish with {artifact_name} present and valid.",
+            )
+        return None
+
+    for turn_number in range(1, max_turns + 1):
+        final_turn = turn_number == max_turns
+        model_started = time.monotonic()
+        turn = client.generate_tool_turn(
+            stage=stage,
+            system_prompt=system_prompt,
+            messages=messages,
+            tools=[
+                tool.model_definition()
+                for tool in tools
+                if tool.is_available()
+            ],
+        )
+        model_elapsed_s = max(0.0, time.monotonic() - model_started)
+        messages.append(_assistant_message(turn))
+
+        if not turn.tool_calls:
+            trace.append(
+                {
+                    "turn": turn_number,
+                    "assistant": turn.content or "",
+                    "finish_reason": turn.finish_reason,
+                    "event": "artifact_completion_requested",
+                    "action_type": "observe_or_plan",
+                    "elapsed_s": model_elapsed_s,
+                }
+            )
+            result = validate(turn_number=turn_number, event="end_turn")
+            if result is not None:
+                return result
+            if final_turn:
+                break
+            continue
+
+        for call in turn.tool_calls:
+            call_count += 1
+            tool = tool_map.get(call.name)
+            result: Any = None
+            error: str | None = call.argument_error
+            tool_started = time.monotonic()
+            if tool is None:
+                error = f"unknown tool: {call.name}"
+            elif not tool.is_available():
+                error = f"tool unavailable in the current state: {call.name}"
+            elif call.arguments is None and error is None:
+                error = "tool arguments must be one JSON object"
+            if error is None and tool is not None and call.arguments is not None:
+                try:
+                    result = tool.handler(call.arguments)
+                except ReactToolAbort:
+                    raise
+                except Exception as exc:  # recoverable tool observation
+                    error = f"{type(exc).__name__}: {exc}"
+            reported_error = (
+                _reported_execution_error(result, terminal=False)
+                if error is None
+                else None
+            )
+            execution_error = error or reported_error
+            tool_elapsed_s = max(0.0, time.monotonic() - tool_started)
+            budget_status = {
+                "model_turn": turn_number,
+                "model_turns_remaining": max_turns - turn_number,
+                "tool_calls_used": call_count,
+            }
+            if error is not None:
+                envelope = {"ok": False, "error": error, "budget": budget_status}
+            elif reported_error is not None:
+                envelope = {
+                    "ok": False,
+                    "error": reported_error,
+                    "result": result,
+                    "budget": budget_status,
+                }
+            else:
+                envelope = {"ok": True, "result": result, "budget": budget_status}
+            observation = _bounded_text(envelope, tool_output_chars)
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": call.id,
+                    "content": observation,
+                }
+            )
+            trace.append(
+                {
+                    "turn": turn_number,
+                    "tool_call_id": call.id,
+                    "tool": call.name,
+                    "arguments": _bounded_text(call.raw_arguments, 4000),
+                    "ok": execution_error is None,
+                    "tool_outcome": "clean" if execution_error is None else "error",
+                    "action_type": (
+                        "execute_error" if execution_error is not None else "execute_clean"
+                    ),
+                    "elapsed_s": tool_elapsed_s,
+                    "model_elapsed_s": model_elapsed_s,
+                    "observation": observation,
+                }
+            )
+
+        # A final turn may contain the write itself and therefore cannot wait
+        # for an additional end_turn response.  Earlier tool turns continue
+        # the conversation unless the model explicitly ended the turn.
+        if final_turn:
+            result = validate(turn_number=turn_number, event="final_turn")
+            if result is not None:
+                return result
+            break
+        if turn.finish_reason in {"end_turn", "stop"}:
+            result = validate(turn_number=turn_number, event="end_turn")
+            if result is not None:
+                return result
+
+    raise ReactLoopError(
+        f"{stage} reached {max_turns} model turns without a valid {artifact_name}",
+        trace=trace,
+        model_turns=max_turns,
+        tool_calls=call_count,
+    )
+
+
+# A descriptive alias makes the file-oriented API easy to discover without
+# changing the historical ``run_react`` entrypoint used by Task Demo.
+run_file_artifact_react = run_artifact_react

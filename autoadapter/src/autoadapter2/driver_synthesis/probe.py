@@ -11,6 +11,7 @@ from __future__ import annotations
 import ast
 import json
 import os
+import select
 import shutil
 import subprocess
 import sys
@@ -87,6 +88,280 @@ class PublicProbeWorkspace:
     scene_path: Path
     skeleton_root: Path | None
     python_root: Path | None
+
+
+_PERSISTENT_RESULT_PREFIX = "__AUTOADAPTER_PERSISTENT_RESULT__="
+
+
+_PERSISTENT_BOOTSTRAP = r'''
+import contextlib
+import io
+import json
+import os
+import sys
+import traceback
+
+import mujoco
+
+
+_public_root = os.environ.get("AUTOADAPTER_PROBE_PUBLIC_PACKAGE")
+if _public_root:
+    # ``-I`` removes the working directory from the import path.  Keep the
+    # staged public package importable even when the session started before a
+    # model wrote the candidate driver.py into it.
+    sys.path.insert(0, _public_root)
+_python_root = os.environ.get("AUTOADAPTER_PROBE_PYTHON_ROOT")
+if _python_root:
+    sys.path.insert(0, _python_root)
+
+
+_max_steps = int(os.environ["AUTOADAPTER_PROBE_MAX_STEPS"])
+_max_sim_time_s = float(os.environ["AUTOADAPTER_PROBE_MAX_SIM_TIME_S"])
+_total_steps = 0
+_original_mj_step = mujoco.mj_step
+_state = {"__name__": "__execute_python__", "__builtins__": __builtins__}
+
+
+def _requested_steps(args, kwargs):
+    value = kwargs.get("nstep", args[0] if args else 1)
+    try:
+        steps = int(value)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("execute_python nstep must be an integer") from exc
+    if steps < 0:
+        raise RuntimeError("execute_python nstep must not be negative")
+    return steps
+
+
+def _bounded_mj_step(model, data, *args, **kwargs):
+    global _total_steps
+    steps = _requested_steps(args, kwargs)
+    if _total_steps + steps > _max_steps:
+        raise RuntimeError("execute_python control-step budget exceeded")
+    result = _original_mj_step(model, data, *args, **kwargs)
+    _total_steps += steps
+    if float(data.time) > _max_sim_time_s:
+        raise RuntimeError("execute_python simulated-time budget exceeded")
+    return result
+
+
+mujoco.mj_step = _bounded_mj_step
+
+
+for _line in sys.stdin:
+    try:
+        _request = json.loads(_line)
+        _code = _request["code"]
+        if _request.get("invalidate_driver"):
+            sys.modules.pop("driver", None)
+            _state.pop("driver", None)
+        _stdout = io.StringIO()
+        _stderr = io.StringIO()
+        _before = _total_steps
+        _ok = True
+        _error = None
+        with contextlib.redirect_stdout(_stdout), contextlib.redirect_stderr(_stderr):
+            try:
+                exec(compile(_code, "<execute_python>", "exec"), _state, _state)
+            except BaseException as _exc:
+                _ok = False
+                _error = {"type": type(_exc).__name__, "message": str(_exc)}
+                traceback.print_exc()
+        _response = {
+            "ok": _ok,
+            "stdout": _stdout.getvalue(),
+            "stderr": _stderr.getvalue(),
+            "physics_steps": _total_steps - _before,
+            "physics_steps_total": _total_steps,
+            "error": _error,
+        }
+    except BaseException as _exc:
+        _response = {
+            "ok": False,
+            "stdout": "",
+            "stderr": "",
+            "physics_steps": 0,
+            "physics_steps_total": _total_steps,
+            "error": {"type": type(_exc).__name__, "message": str(_exc)},
+        }
+    sys.__stdout__.write("__AUTOADAPTER_PERSISTENT_RESULT__=" + json.dumps(_response) + "\n")
+    sys.__stdout__.flush()
+'''
+
+
+class PersistentPythonSession:
+    """One credential-free, public-only Python/MuJoCo process per phase.
+
+    The process speaks a tiny JSON-lines protocol.  Each ``execute`` call is
+    evaluated in the same globals dictionary, so model-authored exploratory
+    state survives across calls while the parent still enforces the existing
+    timeout, output, and MuJoCo step budgets.
+    """
+
+    def __init__(
+        self,
+        *,
+        public_workspace: PublicProbeWorkspace,
+        workspace: str | Path,
+        condition: ProbeCondition | str,
+        budget: ProbeBudget,
+    ) -> None:
+        self.public_workspace = public_workspace
+        self.workspace = Path(workspace).resolve()
+        self.condition = str(condition)
+        self.budget = budget
+        self._calls = 0
+        self._closed = False
+        self._process: subprocess.Popen[bytes] | None = None
+        env = _probe_environment(public_workspace=public_workspace, budget=budget)
+        # Never inherit cloud credentials, proxy credentials, or unrelated
+        # host state.  The existing probe environment intentionally contains
+        # only interpreter/runtime variables and public workspace paths.
+        self._process = subprocess.Popen(
+            [sys.executable, "-I", "-u", "-c", _PERSISTENT_BOOTSTRAP],
+            cwd=str(public_workspace.root),
+            env=env,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+    @property
+    def calls(self) -> int:
+        return self._calls
+
+    def _stop_process(self) -> None:
+        process = self._process
+        self._process = None
+        if process is None:
+            return
+        try:
+            process.kill()
+        except OSError:
+            pass
+        try:
+            process.communicate(timeout=1.0)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self._stop_process()
+
+    def __del__(self) -> None:  # pragma: no cover - best-effort interpreter cleanup
+        self._stop_process()
+
+    def execute(self, code: str, *, invalidate_driver: bool = False) -> dict[str, Any]:
+        if self._closed:
+            raise ProbeError("persistent execute_python session is closed")
+        if not isinstance(code, str) or not code.strip():
+            raise ProbeError("execute_python.code must be non-empty Python source")
+        audit_public_source(
+            code,
+            condition=self.condition,
+            allow_probe_utilities=True,
+        )
+        process = self._process
+        if process is None or process.poll() is not None or process.stdin is None or process.stdout is None:
+            raise ProbeError("persistent execute_python session is unavailable")
+        self._calls += 1
+        started = time.monotonic()
+        request = json.dumps(
+            {"code": code, "invalidate_driver": bool(invalidate_driver)},
+            ensure_ascii=True,
+        ).encode("utf-8") + b"\n"
+        try:
+            process.stdin.write(request)
+            process.stdin.flush()
+        except (BrokenPipeError, OSError) as exc:
+            self._stop_process()
+            raise ProbeError(f"persistent execute_python transport failed: {exc}") from exc
+
+        ready, _, _ = select.select([process.stdout], [], [], self.budget.timeout_s)
+        if not ready:
+            self._stop_process()
+            return {
+                "ok": False,
+                "successful": False,
+                "timed_out": True,
+                "exit_code": None,
+                "spawn_error": None,
+                "stdout": "",
+                "stderr": "",
+                "physics_steps": None,
+                "elapsed_wall_s": time.monotonic() - started,
+            }
+        try:
+            line = process.stdout.readline()
+        except OSError as exc:
+            raise ProbeError(f"persistent execute_python read failed: {exc}") from exc
+        if not line:
+            stderr = b""
+            if process.stderr is not None:
+                try:
+                    stderr = process.stderr.read()
+                except OSError:
+                    pass
+            return {
+                "ok": False,
+                "successful": False,
+                "timed_out": False,
+                "exit_code": process.poll(),
+                "spawn_error": "persistent execute_python process exited",
+                "stdout": "",
+                "stderr": stderr.decode("utf-8", errors="replace")[-self.budget.max_output_chars :],
+                "physics_steps": None,
+                "elapsed_wall_s": time.monotonic() - started,
+            }
+        text = line.decode("utf-8", errors="replace").rstrip("\n")
+        if not text.startswith(_PERSISTENT_RESULT_PREFIX):
+            return {
+                "ok": False,
+                "successful": False,
+                "timed_out": False,
+                "exit_code": process.poll(),
+                "spawn_error": "persistent execute_python protocol error",
+                "stdout": "",
+                "stderr": text[: self.budget.max_output_chars],
+                "physics_steps": None,
+                "elapsed_wall_s": time.monotonic() - started,
+            }
+        try:
+            payload = json.loads(text.split("=", 1)[1])
+        except json.JSONDecodeError as exc:
+            raise ProbeError("persistent execute_python returned malformed JSON") from exc
+        if not isinstance(payload, Mapping):
+            raise ProbeError("persistent execute_python response must be an object")
+        stdout_value = payload.get("stdout", "")
+        stderr_value = payload.get("stderr", "")
+        stdout, stdout_truncated, stdout_total = _bounded_text(
+            str(stdout_value).encode("utf-8", errors="replace"),
+            self.budget.max_output_chars,
+        )
+        remaining = max(0, self.budget.max_output_chars - len(stdout))
+        stderr, stderr_truncated, stderr_total = _bounded_text(
+            str(stderr_value).encode("utf-8", errors="replace"), remaining
+        )
+        ok = bool(payload.get("ok"))
+        error = payload.get("error")
+        return {
+            "ok": ok,
+            "successful": ok,
+            "timed_out": False,
+            "exit_code": 0 if ok else 1,
+            "spawn_error": None,
+            "stdout": stdout,
+            "stderr": stderr,
+            "stdout_chars": stdout_total,
+            "stderr_chars": stderr_total,
+            "output_truncated": stdout_truncated or stderr_truncated,
+            "elapsed_wall_s": time.monotonic() - started,
+            "physics_steps": payload.get("physics_steps"),
+            "physics_steps_total": payload.get("physics_steps_total"),
+            "error": error,
+        }
 
 
 _NETWORK_IMPORT_ROOTS = frozenset(
@@ -754,6 +1029,7 @@ __all__ = [
     "ProbeError",
     "ProbeRequest",
     "ProbeSourceError",
+    "PersistentPythonSession",
     "PublicProbeWorkspace",
     "audit_public_source",
     "prepare_public_probe_workspace",

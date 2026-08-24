@@ -15,6 +15,7 @@ from .probe import (
     ProbeBudget,
     ProbeError,
     PublicProbeWorkspace,
+    PersistentPythonSession,
     audit_public_source,
     prepare_public_probe_workspace,
     run_probes,
@@ -29,6 +30,8 @@ class DevelopmentSessionError(RuntimeError):
 
 MAX_DISCRETIONARY_DRIVER_PROBES = 3
 MAX_STUDY_PROBES = 2
+MAX_FILE_CHARS = 200_000
+MAX_EXECUTE_PYTHON_CHARS = 200_000
 PUBLIC_CHECK_SCOPE = {
     "check_scope": "public_source_import_and_physics_liveness",
     "capability_behavior_validated": False,
@@ -196,6 +199,8 @@ class PublicDevelopmentSession:
         self.invocation_abi_kind = str(invocation_kind)
         self.probe_requests: list[dict[str, str]] = []
         self.probe_results: list[dict[str, Any]] = []
+        self._python_session: PersistentPythonSession | None = None
+        self._driver_dirty = False
         self._probe_calls = 0
         self._discretionary_probe_calls = 0
         self._revision = 0
@@ -214,10 +219,42 @@ class PublicDevelopmentSession:
                 render_interface_stub(self.capability_methods),
                 encoding="utf-8",
             )
+            self._sync_candidate_to_public()
         elif initial_driver_source is not None:
             if not isinstance(initial_driver_source, str) or not initial_driver_source.strip():
                 raise DevelopmentSessionError("initial_driver_source must be non-empty")
             self.candidate_path.write_text(initial_driver_source, encoding="utf-8")
+            self._sync_candidate_to_public()
+
+    def close(self) -> None:
+        """Close the one stage-local execute_python process, if started."""
+
+        if self._python_session is not None:
+            self._python_session.close()
+            self._python_session = None
+
+    def __del__(self) -> None:  # pragma: no cover - best-effort cleanup
+        self.close()
+
+    def _sync_candidate_to_public(self) -> None:
+        """Expose only the current candidate to the public probe process."""
+
+        destination = self.public_workspace.root / "driver.py"
+        if self.candidate_path.is_file():
+            destination.write_text(self.candidate_path.read_text(encoding="utf-8"), encoding="utf-8")
+        else:
+            destination.unlink(missing_ok=True)
+        self._driver_dirty = True
+
+    def _ensure_python_session(self) -> PersistentPythonSession:
+        if self._python_session is None:
+            self._python_session = PersistentPythonSession(
+                public_workspace=self.public_workspace,
+                workspace=self.workspace,
+                condition=self.condition,
+                budget=self.budget,
+            )
+        return self._python_session
 
     @property
     def revision(self) -> int:
@@ -308,6 +345,137 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("public file is not UTF-8 text") from exc
         return {"path": relative, "content": content}
 
+    @staticmethod
+    def _safe_relative_path(value: Any, *, label: str = "path") -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise DevelopmentSessionError(f"{label} must be a non-empty relative path")
+        relative = value.strip().replace("\\", "/")
+        path = Path(relative)
+        if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+            raise DevelopmentSessionError(f"{label} must remain relative to the allowed root")
+        return "/".join(path.parts)
+
+    @staticmethod
+    def _under(root: Path, relative: str, *, label: str) -> Path:
+        candidate = (root / relative).resolve()
+        try:
+            candidate.relative_to(root.resolve())
+        except ValueError as exc:
+            raise DevelopmentSessionError(f"{label} escapes its allowed root") from exc
+        return candidate
+
+    def _read_file_path(self, relative: str) -> tuple[Path, str]:
+        """Resolve a model path against public projection or stage workspace."""
+
+        if self.condition == "from-scratch" and "skeleton" in Path(relative).parts:
+            raise DevelopmentSessionError("from-scratch cannot read skeleton files")
+        workspace_candidate = self._under(self.workspace, relative, label="file path")
+        if workspace_candidate.is_file():
+            return workspace_candidate, "workspace"
+        public_candidate = self._under(
+            self.public_workspace.root, relative, label="public file path"
+        )
+        if public_candidate.is_file():
+            return public_candidate, "public_package"
+        raise DevelopmentSessionError(f"file does not exist in the public package or workspace: {relative}")
+
+    def read_file(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        """Read a UTF-8 file only from the public projection or stage workspace."""
+
+        relative = self._safe_relative_path(arguments.get("path"))
+        path, root_name = self._read_file_path(relative)
+        if path.stat().st_size > MAX_FILE_CHARS:
+            raise DevelopmentSessionError("file is too large for the model tool")
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            raise DevelopmentSessionError("file is not UTF-8 text") from exc
+        return {"path": relative, "root": root_name, "content": content}
+
+    def write_file(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        """Write a UTF-8 file strictly inside the condition-local workspace."""
+
+        relative = self._safe_relative_path(arguments.get("path"))
+        content = arguments.get("content")
+        if not isinstance(content, str):
+            raise DevelopmentSessionError("content must be text")
+        if len(content) > MAX_FILE_CHARS:
+            raise DevelopmentSessionError("file exceeds the 200000-character limit")
+        destination = self._under(self.workspace, relative, label="workspace file path")
+        before = destination.read_text(encoding="utf-8") if destination.is_file() else None
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(content, encoding="utf-8")
+        if relative == "driver.py":
+            self.candidate_path = destination
+            self._revision += 1 if before != content else 0
+            self._audited_revision = None
+            self._smoked_revision.clear()
+            self._sync_candidate_to_public()
+        return {
+            "path": relative,
+            "bytes_written": len(content.encode("utf-8")),
+            "source_changed": before != content,
+            "revision": self._revision if relative == "driver.py" else None,
+        }
+
+    def execute_python(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        """Execute public-only Python/MuJoCo code in the persistent phase session."""
+
+        code = arguments.get("code")
+        if not isinstance(code, str) or not code.strip():
+            raise DevelopmentSessionError("code must be non-empty Python source")
+        if len(code) > MAX_EXECUTE_PYTHON_CHARS:
+            raise DevelopmentSessionError("execute_python code exceeds the character limit")
+        if self._probe_calls >= self.budget.max_requests:
+            raise ProbeError(
+                f"execute_python probe budget exhausted at {self.budget.max_requests} calls"
+            )
+        self._probe_calls += 1
+        session = self._ensure_python_session()
+        result = dict(session.execute(code, invalidate_driver=self._driver_dirty))
+        self._driver_dirty = False
+        result.update(
+            {
+                "probe_id": f"execute-python-{self._probe_calls}",
+                "script_relpath": f"execute_python/{self._probe_calls}.py",
+                "development_status": self._development_status(),
+            }
+        )
+        self.probe_requests.append(
+            {"probe_id": result["probe_id"], "script": code}
+        )
+        self.probe_results.append(result)
+        return result
+
+    def list_skeletons(self, _arguments: Mapping[str, Any]) -> dict[str, Any]:
+        if self.condition != "skeleton-assisted":
+            raise DevelopmentSessionError("skeleton tools are unavailable in from-scratch mode")
+        files = []
+        root = self.public_workspace.skeleton_root
+        if root is None or not root.is_dir():
+            raise DevelopmentSessionError("skeleton projection is unavailable")
+        for path in sorted(root.rglob("*.py")):
+            if path.is_file():
+                files.append({"name": path.relative_to(root).as_posix(), "path": f"skeleton/{path.relative_to(root).as_posix()}"})
+        return {"root": "skeleton", "skeletons": files}
+
+    def inspect_skeleton(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        if self.condition != "skeleton-assisted":
+            raise DevelopmentSessionError("skeleton tools are unavailable in from-scratch mode")
+        name = arguments.get("name", arguments.get("skeleton_name"))
+        relative = self._safe_relative_path(name, label="skeleton name")
+        if not relative.endswith(".py"):
+            relative += ".py"
+        root = self.public_workspace.skeleton_root
+        if root is None:
+            raise DevelopmentSessionError("skeleton projection is unavailable")
+        path = self._under(root, relative, label="skeleton path")
+        if not path.is_file():
+            raise DevelopmentSessionError(f"skeleton does not exist: {relative}")
+        if path.stat().st_size > MAX_FILE_CHARS:
+            raise DevelopmentSessionError("skeleton source is too large for the model tool")
+        return {"name": relative, "source": path.read_text(encoding="utf-8")}
+
     def _run_probe(
         self,
         *,
@@ -392,6 +560,7 @@ class PublicDevelopmentSession:
                 f"the bundled check requires {required} import-and-smoke probes"
             )
         self.candidate_path.write_text(source, encoding="utf-8")
+        self._sync_candidate_to_public()
         self._revision += 1
         self._audited_revision = None
         self._smoked_revision.clear()
@@ -422,6 +591,42 @@ class PublicDevelopmentSession:
         compile(source, "driver.py", "exec")
         self._audited_revision = self._revision
         return audit
+
+    def validate_driver_artifact(self, _path: Path | str | None = None) -> dict[str, Any]:
+        """Apply source and public import/build checks to ``driver.py``.
+
+        This is the narrow boundary required before Generate/Repair hands the
+        artifact back to the caller.  It intentionally does not invoke a
+        private Harness, a validation suite, or capability verdict logic.
+        """
+
+        audit = self._audit_candidate()
+        result = self.execute_python(
+            {
+                "code": (
+                    "import os\n"
+                    "import mujoco\n"
+                    "import driver\n"
+                    "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
+                    "data = mujoco.MjData(model)\n"
+                    "candidate = driver.build(model=model, data=data)\n"
+                    "print('candidate_import_and_build_ok=' + type(candidate).__name__)\n"
+                )
+            }
+        )
+        if not bool(result.get("successful")):
+            detail = result.get("stderr") or result.get("stdout") or result.get("error")
+            raise DevelopmentSessionError(
+                f"driver.py public import/build failed: {str(detail)[:2000]}"
+            )
+        return {
+            "valid": True,
+            "source_audit": asdict(audit),
+            "import": {
+                "successful": True,
+                "stdout": result.get("stdout", ""),
+            },
+        }
 
     def audit_driver(self, _arguments: Mapping[str, Any]) -> dict[str, Any]:
         return {
@@ -761,6 +966,63 @@ class PublicDevelopmentSession:
                 self.run_mujoco_probe,
             ),
         )
+
+    def artifact_tools(self, *, include_skeleton: bool = False) -> tuple[ToolSpec, ...]:
+        """Return the AA1 file/artifact tool surface for this phase.
+
+        ``read_file``, ``write_file`` and ``execute_python`` are always
+        available.  Skeleton discovery is deliberately an explicit opt-in so
+        STUDY and from-scratch phases cannot accidentally inspect trusted
+        implementation source.
+        """
+
+        tools: list[ToolSpec] = [
+            ToolSpec(
+                "read_file",
+                "Read one UTF-8 file from the public package projection or this condition workspace. Paths are relative and cannot escape either root.",
+                _object_schema({"path": {"type": "string"}}, required=("path",)),
+                self.read_file,
+            ),
+            ToolSpec(
+                "write_file",
+                "Write one UTF-8 file under the condition workspace. Use study.json and driver.py for canonical artifacts.",
+                _object_schema(
+                    {"path": {"type": "string"}, "content": {"type": "string"}},
+                    required=("path", "content"),
+                ),
+                self.write_file,
+            ),
+            ToolSpec(
+                "execute_python",
+                "Execute credential-free public-only Python/MuJoCo code in one persistent stage-local session. State survives across calls; time, output, and control-step budgets remain bounded.",
+                _object_schema({"code": {"type": "string"}}, required=("code",)),
+                self.execute_python,
+            ),
+        ]
+        if include_skeleton:
+            if self.condition != "skeleton-assisted":
+                raise DevelopmentSessionError(
+                    "skeleton tools may only be enabled for skeleton-assisted stages"
+                )
+            tools.extend(
+                (
+                    ToolSpec(
+                        "list_skeletons",
+                        "List the trusted skeleton sources projected into this skeleton-assisted condition.",
+                        _object_schema(),
+                        self.list_skeletons,
+                    ),
+                    ToolSpec(
+                        "inspect_skeleton",
+                        "Inspect one trusted skeleton source by its relative skeleton name.",
+                        _object_schema(
+                            {"name": {"type": "string"}}, required=("name",)
+                        ),
+                        self.inspect_skeleton,
+                    ),
+                )
+            )
+        return tuple(tools)
 
     def driver_tools(self) -> tuple[ToolSpec, ...]:
         def development_available() -> bool:

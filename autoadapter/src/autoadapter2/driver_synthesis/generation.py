@@ -13,12 +13,15 @@ import copy
 import json
 import sys
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
 from autoadapter2.libraries import RobotPackage
-from autoadapter2.react import ReactLoopError, ToolSpec, run_react
+from autoadapter2.react import (
+    ReactLoopError,
+    run_artifact_react,
+)
 
 from .interactive import (
     PublicDevelopmentSession,
@@ -37,10 +40,16 @@ from .source_check import DriverSourceAudit, DriverSourceError, audit_driver_sou
 
 GenerationCondition = Literal["skeleton-assisted", "from-scratch"]
 
-STUDY_REACT_MAX_TURNS = 3
-STUDY_REACT_MAX_TOOL_CALLS = 3
-DRIVER_REACT_MAX_TURNS = 12
-DRIVER_REACT_MAX_TOOL_CALLS = 24
+# File-producing phases use the bounded AutoAdapter-1 turn budgets.  The
+# historical ``DRIVER_REACT_MAX_TURNS`` name remains as a compatibility alias;
+# the interactive mainline does not use a global aggregate tool-call limit.
+STUDY_REACT_MAX_TURNS = 16
+STUDY_MAX_TURNS = STUDY_REACT_MAX_TURNS
+GENERATE_SKELETON_MAX_TURNS = 22
+GENERATE_SCRATCH_MAX_TURNS = 40
+REPAIR_SKELETON_MAX_TURNS = 22
+REPAIR_SCRATCH_MAX_TURNS = 20
+DRIVER_REACT_MAX_TURNS = GENERATE_SKELETON_MAX_TURNS
 
 
 class JsonGenerator(Protocol):
@@ -153,63 +162,48 @@ getattr, setattr, eval, exec, or dynamic binding.""" + (
 )
 
 
-STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage for one
-Direct-MuJoCo generation condition. The initial public input already contains the complete public
-robot-package projection, selected MJCF closure, sealed Capability Design, and every condition-
-eligible skeleton source. Ground the implementation plan in the design's invocation_abi and each
-capability's request_schema; a capability_request design does not use the legacy task envelope. Do
-not spend remote turns listing or rereading those inputs. Your first
-action must be one public-only MuJoCo probe intended to advance physics. Use no private Harness,
-reference driver, repository path, network, or other condition artifact. In every probe, load the
-only canonical scene with ``import os, mujoco`` and
-``mujoco.MjModel.from_xml_path(os.environ["AUTOADAPTER_PROBE_SCENE"])``. Probe-only ``os.environ``
-access is allowed. Never guess a relative scene path, search with ``sys``/filesystem introspection,
-construct a fallback scene, or import the trusted skeleton inside this liveness probe; its source is
-already inline for STUDY. Keep the probe to canonical load, ``MjData``, public-name inspection when
-useful, and one or more ``mujoco.mj_step`` calls. If that first probe fails,
-use exactly one recovery turn to correct and rerun it; otherwise do not probe again. As soon as a
-probe succeeds, call submit_study with non-empty findings and a non-empty capability-by-capability
-implementation_plan. The third turn is reserved only for submission or correction of a rejected
-submission. In skeleton-assisted mode, submit a non-empty ``skeleton_inspection`` object as well.
-Do not write the final driver in STUDY."""
+STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage.
+STUDY is identical across skeleton-assisted and from-scratch conditions: use only the supplied
+public package projection, sealed Capability Design, and eligible Experience. The trusted skeleton
+is not available in this phase. Use read_file only for public inputs, execute_python for one
+credential-free persistent public Python/MuJoCo session, and write_file for the canonical
+study.json artifact in the condition workspace. Do not access private Harness data, reference
+drivers, repository paths, network, or credentials.
+
+Ground the study in the design invocation_abi and each capability request_schema; capability_request design does not use
+the legacy task envelope. Before finishing,
+execute a real public probe that loads only
+``mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])`` and advances physics with
+``mujoco.mj_step``. Keep state across execute_python calls and keep code bounded. Write one JSON
+object to study.json containing condition, non-empty findings, non-empty implementation_plan, and
+at least one probe_requests entry with probe_id and script. Skeleton inspection is not part of
+STUDY. When the file is complete, end the turn; the Framework validates study.json."""
 
 
 GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
-The public input contains the complete interface-only driver.py stub derived from the sealed
-Capability Design. It contains exact method names and (self, request) placeholders but no controller
-or request interpretation. Implement the complete source yourself and follow the invocation ABI and
-per-capability request schemas sealed in the design. ``request`` is always a plain Python mapping:
-use item access such as ``request["task_parameters"]`` for sealed fields; never
-``request.task_parameters``. For keyword_request, read ``request["task_id"]`` and
-``request["task_parameters"]``; for capability_request, use item access for fields declared by its
-request_schema. Use public files and at most three optional
-MuJoCo development probes when genuinely needed. Your normal first action is one check_driver call
-containing the complete source and exactly one ABI-conforming public request per sealed capability. The
-Framework writes the source, audits it, imports/builds it, and runs all capability physics smokes in
-that same tool execution. The returned public controls, state, and named-position observations are
-development feedback only: a successful check proves ABI/import/physics liveness, not capability
-behavior or private validation. Never call it capability success. Revise the complete source when
-the observations expose a defect, then rerun check_driver. Finish only with submit_driver. Never
-access private Harness definitions,
-reference code, the other condition, or credentials, and never claim the final verdict.""" + (
+Use read_file and execute_python on the supplied public projection and use write_file to create the
+canonical condition-workspace artifact driver.py. The interface-only stub, when present, is only a
+starting point: replace every placeholder with a complete executable driver. Follow the sealed
+invocation ABI and capability request schemas; request is a plain Python mapping, so use request["field"]
+and never ``request.task_parameters`` or other attribute access. For keyword_request use request["task_id"] and request["task_parameters"];
+skeleton-assisted may list_skeletons and inspect_skeleton, while
+from-scratch must not read or import skeleton source. Use one persistent credential-free public
+Python/MuJoCo session for bounded development probes. Do not use private Harness definitions,
+reference code, the other condition, credentials, or network. Finish by ending a turn once driver.py
+is written; the Framework validates its source and public import/build boundary.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 )
 
-STUDY_REACT_TASK = """Use the complete supplied public inputs directly. First call
-run_mujoco_probe with a focused real-physics check that loads only
-os.environ["AUTOADAPTER_PROBE_SCENE"]. After a successful observation, call
-submit_study on the next turn with non-empty grounded findings and a non-empty implementation plan.
-Only when the first probe fails may you use the next turn for one corrected probe before submitting
-on the reserved final turn. Do not list or reread staged files, write the driver, or merely print a
-JSON answer."""
+STUDY_REACT_TASK = """Use the complete supplied public inputs directly. Use execute_python to run a
+focused real-physics probe against os.environ["AUTOADAPTER_PROBE_SCENE"], then write study.json
+with non-empty findings, implementation_plan, and probe_requests. Do not write driver.py or inspect
+skeletons. End the turn only after study.json is complete."""
 
-GENERATE_REACT_TASK = """Develop the complete executable driver from the supplied
-driver_interface_stub. Do not spend a turn reading or separately writing driver.py. Call check_driver
-with the complete implementation source and exactly one ABI-conforming public request for every sealed
-capability. If that atomic write-and-check succeeds, call submit_driver on the next turn. If it fails,
-revise the complete source from the returned public diagnostics and call check_driver again. A changed
-source creates a new revision and invalidates the earlier check. Do not call separate
-write/read/audit/import/per-capability smoke tools, and do not merely print source in a JSON answer."""
+GENERATE_REACT_TASK = """Develop the complete executable driver from the supplied public inputs.
+Use write_file to write the complete source to driver.py, and use execute_python for any bounded
+public checks needed while developing it. Skeleton discovery is available only in the
+skeleton-assisted condition. Do not merely print source in a JSON answer; leave the valid canonical
+driver.py artifact in the workspace and end the turn."""
 
 
 @dataclass(frozen=True)
@@ -327,6 +321,24 @@ def _react_user_prompt(prompt: str, inputs: Mapping[str, Any]) -> str:
         + "\n\nPUBLIC_INPUT_JSON:\n"
         + json.dumps(dict(inputs), ensure_ascii=True, sort_keys=True)
     )
+
+
+def _artifact_turn_budget(stage: str, condition: GenerationCondition) -> int:
+    if stage == "study":
+        return STUDY_REACT_MAX_TURNS
+    if stage == "generate":
+        return (
+            GENERATE_SKELETON_MAX_TURNS
+            if condition == "skeleton-assisted"
+            else GENERATE_SCRATCH_MAX_TURNS
+        )
+    if stage == "repair":
+        return (
+            REPAIR_SKELETON_MAX_TURNS
+            if condition == "skeleton-assisted"
+            else REPAIR_SCRATCH_MAX_TURNS
+        )
+    raise ValueError(f"unknown artifact stage {stage!r}")
 
 
 def _source_root(value: str | Path | None) -> Path:
@@ -534,6 +546,7 @@ def build_public_generation_inputs(
     runtime_contract: Mapping[str, Any] | None = None,
     study_output: Mapping[str, Any] | None = None,
     probe_results: Sequence[Mapping[str, Any]] = (),
+    include_condition_artifacts: bool = True,
 ) -> dict[str, Any]:
     """Build the exact public context sent to STUDY/GENERATE/Repair.
 
@@ -560,12 +573,17 @@ def build_public_generation_inputs(
     }
 
     artifacts: dict[str, Any]
-    if selected_condition == "skeleton-assisted":
+    if selected_condition == "skeleton-assisted" and include_condition_artifacts:
         artifacts = {
             "kind": "trusted-skeleton-family",
             "import_root": "autoadapter2.trusted_skeletons",
             "source_files": _skeleton_sources(package),
             "inspection_required": True,
+        }
+    elif selected_condition == "skeleton-assisted":
+        artifacts = {
+            "kind": "study-neutral-public-projection",
+            "skeleton_available": False,
         }
     else:
         artifacts = _from_scratch_artifacts(runtime_contract)
@@ -585,6 +603,43 @@ def build_public_generation_inputs(
     if study_output is not None:
         inputs["study"] = _copy(dict(study_output))
     inputs["probe_results"] = _copy(list(probe_results))
+    return inputs
+
+
+def _build_study_inputs(
+    package: RobotPackage,
+    design: Mapping[str, Any],
+    *,
+    condition: GenerationCondition,
+    experience: Sequence[Mapping[str, Any]],
+    runtime_contract: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Build the condition-neutral STUDY view.
+
+    STUDY must exercise the same public workflow in both generation
+    conditions.  Trusted skeleton source is therefore withheld here; it is
+    only projected and discoverable during skeleton-assisted Generate/Repair.
+    The requested generation condition is intentionally omitted from the model
+    view; the Framework canonicalizes it on the resulting study artifact.
+    """
+
+    # Build the view from one fixed neutral branch.  Passing the requested
+    # generation condition through this helper would leak a condition-specific
+    # artifact description (and make the two STUDY conversations differ) even
+    # though STUDY is deliberately shared.
+    inputs = build_public_generation_inputs(
+        package,
+        design,
+        condition="from-scratch",
+        experience=experience,
+        runtime_contract=runtime_contract,
+        include_condition_artifacts=False,
+    )
+    inputs["generation_condition"] = "study"
+    inputs["condition_eligible_artifacts"] = {
+        "kind": "study-neutral-public-projection",
+        "skeleton_available": False,
+    }
     return inputs
 
 
@@ -653,13 +708,18 @@ def _probe_requests(output: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
     return tuple(normalized)
 
 
-def _validate_study(output: Mapping[str, Any], condition: GenerationCondition) -> tuple[dict[str, Any], ...]:
+def _validate_study(
+    output: Mapping[str, Any],
+    condition: GenerationCondition,
+    *,
+    require_skeleton_inspection: bool = True,
+) -> tuple[dict[str, Any], ...]:
     if output.get("condition") != condition:
         raise GenerationError("STUDY output condition does not match the requested condition")
     for field in ("findings", "implementation_plan"):
         if field not in output:
             raise GenerationError(f"STUDY output is missing {field}")
-    if condition == "skeleton-assisted":
+    if condition == "skeleton-assisted" and require_skeleton_inspection:
         inspection = output.get("skeleton_inspection")
         if not isinstance(inspection, Mapping) or not inspection:
             raise GenerationError("skeleton-assisted STUDY must record skeleton_inspection")
@@ -686,7 +746,7 @@ def study(
     """Run real-model STUDY with the condition-specific public boundary."""
 
     selected_condition = _require_condition(str(condition))
-    inputs = build_public_generation_inputs(
+    inputs = _build_study_inputs(
         package,
         design,
         condition=selected_condition,
@@ -698,140 +758,72 @@ def study(
             raise GenerationError("interactive STUDY requires a condition-local workspace")
         session = PublicDevelopmentSession(
             package=package,
-            condition=selected_condition,
-            workspace=Path(workspace).resolve() / "study-development",
+            # STUDY is intentionally condition-neutral.  In particular, the
+            # skeleton-assisted model must not gain a hidden import path here;
+            # skeleton discovery is reserved for Generate/Repair.
+            condition="from-scratch",
+            # Keep the canonical artifact at the condition workspace root so
+            # callers can hand the same ``study.json`` to Generate.
+            workspace=Path(workspace).resolve(),
             budget=probe_budget,
             source_root=_source_root(source_root),
         )
-
-        def run_study_probe(arguments: Mapping[str, Any]) -> dict[str, Any]:
-            if session.has_successful_physics_probe():
-                raise GenerationError(
-                    "STUDY physics requirement is already satisfied; call submit_study now"
-                )
-            result = session.run_mujoco_probe(arguments)
-            if session.has_successful_physics_probe():
-                return {
-                    **result,
-                    "study_requirement_satisfied": True,
-                    "required_next_action": (
-                        "Call submit_study now; do not run another probe."
-                    ),
-                }
-            return {
-                **result,
-                "study_requirement_satisfied": False,
-                "required_next_action": (
-                    "The probe failed. Use the single recovery probe now; do not "
-                    "submit until real MuJoCo physics advances successfully."
-                ),
-            }
-
-        def decoded_container(value: Any) -> Any:
-            if not isinstance(value, str):
-                return value
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                return value
-
-        def submit_study(arguments: Mapping[str, Any]) -> dict[str, Any]:
-            findings = decoded_container(arguments.get("findings"))
-            implementation_plan = decoded_container(
-                arguments.get("implementation_plan")
-            )
-            if not isinstance(findings, list) or not findings:
-                raise GenerationError("submit_study requires non-empty findings")
-            if not isinstance(implementation_plan, list) or not implementation_plan:
-                raise GenerationError("submit_study requires a non-empty implementation_plan")
-            if not session.has_successful_physics_probe():
-                raise GenerationError(
-                    "STUDY requires a successful public probe with real MuJoCo physics steps"
-                )
-            submitted: dict[str, Any] = {
-                "condition": selected_condition,
-                "findings": _copy(findings),
-                "implementation_plan": _copy(implementation_plan),
-                "probe_requests": _copy(session.probe_requests),
-            }
-            inspection = decoded_container(arguments.get("skeleton_inspection"))
-            if selected_condition == "skeleton-assisted":
-                if not isinstance(inspection, Mapping) or not inspection:
-                    raise GenerationError(
-                        "skeleton-assisted STUDY requires skeleton_inspection"
-                    )
-                submitted["skeleton_inspection"] = _copy(dict(inspection))
-            elif isinstance(inspection, Mapping) and inspection:
-                submitted["skeleton_inspection"] = _copy(dict(inspection))
-            return submitted
-
-        submit_schema = {
-            "type": "object",
-            "properties": {
-                "findings": {"type": "array", "items": {}, "minItems": 1},
-                "implementation_plan": {
-                    "type": "array",
-                    "items": {},
-                    "minItems": 1,
-                },
-                "skeleton_inspection": {"type": "object"},
-            },
-            "required": [
-                "findings",
-                "implementation_plan",
-                *(
-                    ["skeleton_inspection"]
-                    if selected_condition == "skeleton-assisted"
-                    else []
-                ),
-            ],
-            "additionalProperties": False,
-        }
-        probe_tool = next(
-            tool for tool in session.public_tools() if tool.name == "run_mujoco_probe"
-        )
-        tools = (
-            replace(
-                probe_tool,
-                description=(
-                    "Run a minimal STUDY liveness probe. Use only import os, mujoco; load "
-                    "os.environ['AUTOADAPTER_PROBE_SCENE']; construct MjData; call "
-                    "mujoco.mj_step at least once. Do not import the skeleton, sys, "
-                    "importlib, or construct/search for another scene."
-                ),
-                handler=run_study_probe,
-            ),
-            ToolSpec(
-                "submit_study",
-                "Submit the condition-specific findings after at least one successful real-physics public probe.",
-                submit_schema,
-                submit_study,
-                terminal=True,
-            ),
-        )
         calls = getattr(client, "calls", ())
         start = len(calls) if isinstance(calls, Sequence) else 0
+
+        study_path = session.workspace / "study.json"
+
+        def validate_study_file(path: Path) -> dict[str, Any]:
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise GenerationError(f"study.json is not valid JSON: {exc}") from exc
+            if not isinstance(value, Mapping):
+                raise GenerationError("study.json must contain one JSON object")
+            if not session.has_successful_physics_probe():
+                raise GenerationError(
+                    "study.json requires a successful public execute_python MuJoCo probe"
+                )
+            canonical = dict(value)
+            declared_condition = canonical.get("condition")
+            if declared_condition != selected_condition:
+                canonical["model_declared_condition"] = declared_condition
+                canonical["condition"] = selected_condition
+            _validate_study(
+                canonical,
+                selected_condition,
+                require_skeleton_inspection=False,
+            )
+            return _copy(canonical)
+
         try:
-            react_result = run_react(
+            react_result = run_artifact_react(
                 client=client,
                 stage="study",
                 system_prompt=STUDY_REACT_SYSTEM,
                 user_prompt=_react_user_prompt(STUDY_REACT_TASK, inputs),
-                tools=tools,
-                max_turns=STUDY_REACT_MAX_TURNS,
-                max_tool_calls=STUDY_REACT_MAX_TOOL_CALLS,
+                tools=session.artifact_tools(include_skeleton=False),
+                artifact_name="study.json",
+                artifact_path=study_path,
+                validate_artifact=validate_study_file,
+                max_turns=_artifact_turn_budget("study", selected_condition),
             )
         except ReactLoopError as exc:
             raise GenerationError(
-                f"interactive STUDY did not submit: {exc}",
+                f"interactive STUDY did not produce a valid study.json: {exc}",
                 react_trace=exc.trace,
                 probe_results=session.probe_results,
                 model_turns=exc.model_turns,
                 tool_calls=exc.tool_calls,
             ) from exc
-        if not isinstance(react_result.submission, Mapping):
-            raise GenerationError("submit_study must return one study object")
-        output = _copy(dict(react_result.submission))
+        finally:
+            interactive_probe_results = tuple(
+                _copy(dict(item)) for item in session.probe_results
+            )
+            session.close()
+        if not isinstance(react_result.artifact, Mapping):
+            raise GenerationError("study.json must contain one study object")
+        output = _copy(dict(react_result.artifact))
         evidence = _react_evidence(
             client,
             start=start,
@@ -841,9 +833,6 @@ def study(
             output=output,
             trace=react_result.trace,
         )
-        interactive_probe_results = tuple(
-            _copy(dict(item)) for item in session.probe_results
-        )
     else:
         output, evidence = _invoke(client, stage="study", prompt=STUDY_PROMPT, inputs=inputs)
         interactive_probe_results = ()
@@ -851,7 +840,11 @@ def study(
     if declared_condition != selected_condition:
         output["model_declared_condition"] = declared_condition
         output["condition"] = selected_condition
-    requests = _validate_study(output, selected_condition)
+    requests = _validate_study(
+        output,
+        selected_condition,
+        require_skeleton_inspection=not _supports_react(client),
+    )
     return StudyResult(
         condition=selected_condition,
         output=output,
@@ -919,7 +912,7 @@ def generate(
         session = PublicDevelopmentSession(
             package=package,
             condition=selected_condition,
-            workspace=Path(workspace).resolve() / "generate-development",
+            workspace=Path(workspace).resolve(),
             budget=probe_budget,
             source_root=_source_root(source_root),
             capability_methods=capability_methods,
@@ -929,30 +922,73 @@ def generate(
         )
         calls = getattr(client, "calls", ())
         start = len(calls) if isinstance(calls, Sequence) else 0
+
+        driver_path = session.workspace / "driver.py"
+
+        def validate_driver_file(path: Path) -> dict[str, Any]:
+            try:
+                driver_source = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                raise GenerationError(f"driver.py cannot be read: {exc}") from exc
+            if not driver_source.strip():
+                raise GenerationError("driver.py is empty")
+            try:
+                source_audit = audit_driver_source(
+                    driver_source,
+                    condition=selected_condition,
+                    capability_methods=capability_methods,
+                )
+                _validate_public_invocation_abi(driver_source, capability_methods)
+                audit_public_source(driver_source, condition=selected_condition)
+                compile(driver_source, "driver.py", "exec")
+            except (
+                DriverSourceError,
+                GenerationError,
+                ProbeSourceError,
+                SyntaxError,
+                ValueError,
+            ) as exc:
+                raise GenerationError(f"driver.py source boundary failed: {exc}") from exc
+            import_result = session.validate_driver_artifact(path)
+            return {
+                "driver_filename": "driver.py",
+                "driver_source": driver_source,
+                "source_audit": asdict(source_audit),
+                "import": import_result.get("import", {}),
+            }
+
         try:
-            react_result = run_react(
+            react_result = run_artifact_react(
                 client=client,
                 stage="generate",
                 system_prompt=GENERATE_REACT_SYSTEM,
                 user_prompt=_react_user_prompt(GENERATE_REACT_TASK, inputs),
-                tools=session.driver_tools(),
-                max_turns=DRIVER_REACT_MAX_TURNS,
-                max_tool_calls=DRIVER_REACT_MAX_TOOL_CALLS,
+                tools=session.artifact_tools(
+                    include_skeleton=selected_condition == "skeleton-assisted"
+                ),
+                artifact_name="driver.py",
+                artifact_path=driver_path,
+                validate_artifact=validate_driver_file,
+                max_turns=_artifact_turn_budget("generate", selected_condition),
             )
         except ReactLoopError as exc:
             raise GenerationError(
-                f"interactive GENERATE did not submit: {exc}",
+                f"interactive GENERATE did not produce a valid driver.py: {exc}",
                 react_trace=exc.trace,
                 probe_results=session.probe_results,
                 candidate_path=session.candidate_path,
                 model_turns=exc.model_turns,
                 tool_calls=exc.tool_calls,
             ) from exc
-        if not isinstance(react_result.submission, Mapping):
-            raise GenerationError("submit_driver must return one driver object")
-        output = _copy(dict(react_result.submission))
-        note = output.pop("note", "")
-        output["generation_note"] = note
+        finally:
+            interactive_probe_results = tuple(
+                _copy(dict(item)) for item in session.probe_results
+            )
+            session.close()
+        if not isinstance(react_result.artifact, Mapping):
+            raise GenerationError("driver.py validation did not return an artifact record")
+        output = _copy(dict(react_result.artifact))
+        output.setdefault("generation_note", "")
         evidence = _react_evidence(
             client,
             start=start,
@@ -961,9 +997,6 @@ def generate(
             inputs=inputs,
             output=output,
             trace=react_result.trace,
-        )
-        interactive_probe_results = tuple(
-            _copy(dict(item)) for item in session.probe_results
         )
     else:
         output, evidence = _invoke(
@@ -1020,12 +1053,17 @@ def generate(
 
 __all__ = [
     "GENERATE_PROMPT",
+    "GENERATE_SCRATCH_MAX_TURNS",
+    "GENERATE_SKELETON_MAX_TURNS",
     "DriverSourceAuditError",
     "GenerationCondition",
     "GenerationError",
     "GenerationResult",
     "JsonGenerator",
     "ModelCallEvidence",
+    "REPAIR_SCRATCH_MAX_TURNS",
+    "REPAIR_SKELETON_MAX_TURNS",
+    "STUDY_MAX_TURNS",
     "STUDY_PROMPT",
     "STUDY_REACT_SYSTEM",
     "GENERATE_REACT_SYSTEM",
