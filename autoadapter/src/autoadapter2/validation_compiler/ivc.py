@@ -423,6 +423,7 @@ class IVCPhase:
     max_turns: int = IVC_ARTIFACT_TURNS
     reference_positive_control_hook: ReferencePositiveControlHook | None = None
     artifact_path: str | Path | None = None
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None)
 
     def run(self) -> dict[str, Any]:
         return run_ivc(
@@ -435,6 +436,7 @@ class IVCPhase:
             max_turns=self.max_turns,
             reference_positive_control_hook=self.reference_positive_control_hook,
             artifact_path=self.artifact_path,
+            probe_budget=self.probe_budget,
         )
 
 
@@ -450,6 +452,7 @@ def run_ivc(
     max_model_attempts: int | None = None,
     reference_positive_control_hook: ReferencePositiveControlHook | None = None,
     artifact_path: str | Path | None = None,
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
 ) -> dict[str, Any]:
     """Run the six-turn implementation-blind IVC artifact workflow."""
 
@@ -514,7 +517,7 @@ def run_ivc(
         with context:
             session = IsolatedArtifactSession(
                 workspace=workspace_root,
-                budget=ProbeBudget(max_requests=None),
+                budget=probe_budget,
             )
             (session.workspace / "ivc_inputs.json").write_text(
                 json.dumps(inputs, indent=2, ensure_ascii=True) + "\n",

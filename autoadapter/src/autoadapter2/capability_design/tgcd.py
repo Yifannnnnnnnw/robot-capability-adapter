@@ -385,6 +385,7 @@ class TGCDPhase:
     callback: TGCDEventCallback | None = None
     max_turns: int = TGCD_ARTIFACT_TURNS
     artifact_path: str | Path | None = None
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None)
 
     def run(self) -> dict[str, Any]:
         return run_tgcd(
@@ -396,6 +397,7 @@ class TGCDPhase:
             callback=self.callback,
             max_turns=self.max_turns,
             artifact_path=self.artifact_path,
+            probe_budget=self.probe_budget,
         )
 
 
@@ -410,6 +412,7 @@ def run_tgcd(
     max_turns: int = TGCD_ARTIFACT_TURNS,
     max_model_attempts: int | None = None,
     artifact_path: str | Path | None = None,
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
 ) -> dict[str, Any]:
     """Author and seal ``capability_design.json``.
 
@@ -444,7 +447,7 @@ def run_tgcd(
                 package=package,
                 condition="from-scratch",
                 workspace=workspace_root,
-                budget=ProbeBudget(max_requests=None),
+                budget=probe_budget,
                 source_root=_framework_source_root(),
             )
             model_inputs_path = session.workspace / "tgcd_inputs.json"
