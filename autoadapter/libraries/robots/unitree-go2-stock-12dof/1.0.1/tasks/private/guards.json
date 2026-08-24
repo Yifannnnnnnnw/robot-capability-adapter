@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.1",
+  "task_snapshot_id": "unitree-go2-corrected-r1-2026-08-24-v1",
+  "guards": [
+    {
+      "guard_id": "go2_physics",
+      "kind": "actuator_and_physics_step_required"
+    },
+    {
+      "guard_id": "go2_no_state_write",
+      "kind": "no_direct_state_write"
+    },
+    {
+      "guard_id": "go2_canonical",
+      "kind": "canonical_model_data"
+    },
+    {
+      "guard_id": "go2_video",
+      "kind": "complete_video"
+    },
+    {
+      "guard_id": "go2_t06_inclined_platform_contact",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": [
+        "FL",
+        "FR",
+        "RL",
+        "RR"
+      ],
+      "task_geom_names": [
+        "inclined_platform"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "go2_t06_raised_platform_contact",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": [
+        "FL",
+        "FR",
+        "RL",
+        "RR"
+      ],
+      "task_geom_names": [
+        "raised_platform"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "go2_t06_stairs_contact",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": [
+        "FL",
+        "FR",
+        "RL",
+        "RR"
+      ],
+      "task_geom_names": [
+        "stair_1",
+        "stair_2",
+        "stair_3"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "go2_t06_block_family_contact",
+      "kind": "named_geom_contact_pair_required",
+      "robot_geom_names": [
+        "FL",
+        "FR",
+        "RL",
+        "RR"
+      ],
+      "task_geom_names": [
+        "block_1",
+        "block_2",
+        "block_3"
+      ],
+      "minimum_steps": 1
+    },
+    {
+      "guard_id": "go2_terminal_stability",
+      "kind": "terminal_body_stability",
+      "body_name": "base_link",
+      "minimum_height_m": 0.18,
+      "minimum_upright_cosine": 0.7,
+      "adaptation_note": "Private Go2 morphology guard: reject fallen or ground-sliding terminal states; these values are not claimed as source benchmark thresholds."
+    }
+  ]
+}

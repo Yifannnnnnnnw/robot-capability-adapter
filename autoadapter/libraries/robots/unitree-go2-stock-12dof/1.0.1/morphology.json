@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "unitree-go2",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.1",
+  "morphology_kind": "free_base_quadruped",
+  "degrees_of_freedom": {
+    "floating_base": 6,
+    "actuated_joints": 12
+  },
+  "mjcf_entrypoint": "assets/go2_scene.xml",
+  "public_control": {
+    "actuation": "joint_torque",
+    "leg_order": ["FL", "FR", "RL", "RR"],
+    "joint_names": [
+      "FL_hip_joint",
+      "FL_thigh_joint",
+      "FL_calf_joint",
+      "FR_hip_joint",
+      "FR_thigh_joint",
+      "FR_calf_joint",
+      "RL_hip_joint",
+      "RL_thigh_joint",
+      "RL_calf_joint",
+      "RR_hip_joint",
+      "RR_thigh_joint",
+      "RR_calf_joint"
+    ],
+    "actuator_names": [
+      "FL_hip",
+      "FL_thigh",
+      "FL_calf",
+      "FR_hip",
+      "FR_thigh",
+      "FR_calf",
+      "RL_hip",
+      "RL_thigh",
+      "RL_calf",
+      "RR_hip",
+      "RR_thigh",
+      "RR_calf"
+    ],
+    "nominal_home_qpos_rad": [
+      0.0,
+      0.9,
+      -1.8,
+      0.0,
+      0.9,
+      -1.8,
+      0.0,
+      0.9,
+      -1.8,
+      0.0,
+      0.9,
+      -1.8
+    ]
+  },
+  "public_observations": {
+    "base_body": "base_link",
+    "imu_site": "imu",
+    "foot_bodies": ["FL_foot", "FR_foot", "RL_foot", "RR_foot"],
+    "frames": ["world", "body", "initial_body_yaw", "joint"]
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_torque_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "base_pose",
+      "base_velocity",
+      "body_height",
+      "named_body_pose",
+      "foot_contacts",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
+  "invocation_abi": {
+    "argument_name": "request",
+    "envelope": "request",
+    "required": ["request"],
+    "request": {
+      "required": ["task_id", "task_parameters"],
+      "task_id": "one of catalog.tasks[].task_id",
+      "task_parameters": "validated by the selected task invocation_schema.request.task_parameters"
+    }
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default_keyframe": "home"
+  },
+  "asset_provenance": {
+    "model_title": "Unitree Go2 Direct-MuJoCo model closure",
+    "upstream": "https://github.com/google-deepmind/mujoco_menagerie/tree/71f066ad0be9cd271f7ed58c030243ef157af9f4/unitree_go2",
+    "derived_revision": "71f066ad0be9cd271f7ed58c030243ef157af9f4"
+  }
+}

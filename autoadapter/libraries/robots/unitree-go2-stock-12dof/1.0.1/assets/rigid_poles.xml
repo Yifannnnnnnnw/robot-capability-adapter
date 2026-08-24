@@ -1,0 +1,10 @@
+<mujoco model="go2_rigid_poles">
+  <include file="go2.xml"/>
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1" diffuse="1 1 1"/>
+    <geom name="floor" type="plane" size="12 12 0.05" friction="1 0.01 0.001"/>
+    <geom name="pole_a" type="cylinder" pos="0.75 0.22 0.16" size="0.05 0.16" friction="1 0.01 0.001"/>
+    <geom name="pole_b" type="cylinder" pos="1.35 -0.18 0.16" size="0.05 0.16" friction="1 0.01 0.001"/>
+    <geom name="pole_c" type="cylinder" pos="1.95 0.20 0.16" size="0.05 0.16" friction="1 0.01 0.001"/>
+  </worldbody>
+</mujoco>
