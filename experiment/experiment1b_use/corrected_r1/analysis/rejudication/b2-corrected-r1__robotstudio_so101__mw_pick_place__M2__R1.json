@@ -1,0 +1,348 @@
+{
+  "artifact_type": "b2_corrected_r1_rejudication_sidecar",
+  "schema_version": "1.0",
+  "audit_identity": {
+    "document_id": "AA2-B2-CORRECTED-R1",
+    "revision": "1.0.0"
+  },
+  "formal_episode": false,
+  "formal_denominator_entry": false,
+  "unit_id": "b2-corrected-r1::robotstudio_so101::mw_pick_place::M2::R1",
+  "robot_configuration_id": "robotstudio_so101",
+  "task_id": "mw_pick_place",
+  "model_id": "M2",
+  "replicate_id": "R1",
+  "execution_origin": "retained_rejudged",
+  "source_evidence": {
+    "original_unit_id": "b2::robotstudio_so101::mw_pick_place::M2::R1",
+    "original_terminal_path": "experiment/experiment1b_use/runs/formal-b2-v014-batch003-pick-place-company/terminals/b2__robotstudio_so101__mw_pick_place__M2__R1.json",
+    "original_episode_record_path": "experiment/experiment1b_use/runs/formal-b2-v014-batch003-pick-place-company/episodes/b2__robotstudio_so101__mw_pick_place__M2__R1/episode_record.json",
+    "original_provider_record_path": "experiment/experiment1b_use/runs/formal-b2-v014-batch003-pick-place-company/episodes/b2__robotstudio_so101__mw_pick_place__M2__R1/provider_record.json",
+    "original_records_modified": false
+  },
+  "semantic_equivalence": {
+    "passed": true,
+    "checks": {
+      "public_task_and_metric": {
+        "equal": true,
+        "old_package": "autoadapter/libraries/robots/robotstudio_so101/1.0.0",
+        "corrected_package": "autoadapter/libraries/robots/robotstudio_so101/1.0.2",
+        "video_encoding_difference_excluded": true
+      },
+      "scene": {
+        "equal": true,
+        "old_path": "autoadapter/libraries/robots/robotstudio_so101/1.0.0/assets/pick_place_scene.xml",
+        "corrected_path": "autoadapter/libraries/robots/robotstudio_so101/1.0.2/assets/pick_place_scene.xml"
+      },
+      "reset": {
+        "equal": true,
+        "reset": {
+          "kind": "default",
+          "joint_positions": {
+            "shoulder_pan": -1.9
+          },
+          "actuator_controls": {
+            "shoulder_pan": -1.9
+          }
+        }
+      },
+      "fixed_capability_driver": {
+        "equal": true,
+        "old_path": "autoadapter/libraries/robots/robotstudio_so101/1.0.0/reference/fixed_capability_driver.py",
+        "corrected_path": "autoadapter/libraries/robots/robotstudio_so101/1.0.2/reference/fixed_capability_driver.py"
+      },
+      "capability_interface": {
+        "equal": true,
+        "old_path": "experiment/experiment1b_use/validation/reference/resolved/robotstudio_so101/capability_design.json",
+        "corrected_path": "experiment/experiment1b_use/corrected_r1/config/reference/resolved/robotstudio_so101/capability_design.json"
+      },
+      "recap_contract": {
+        "equal": true,
+        "provider_manifest": "experiment/experiment1b_use/config/providers/manifest.json"
+      },
+      "model_pin": {
+        "equal": true,
+        "provider_source_path": "experiment/experiment1a_generation/config/providers/M2-company-api-opus-5.json",
+        "expected_model": "eu.anthropic.claude-opus-5"
+      }
+    },
+    "allowed_nonsemantic_difference": {
+      "package_identity": "1.0.0 -> isolated 1.0.2",
+      "future_video_fps": "10 -> 20; retained source video is not replaced",
+      "contact_verdict_policy": "corrected sidecar only"
+    }
+  },
+  "original_result": {
+    "classification": "harness_pass",
+    "success": true,
+    "physical_harness_verdict": "PASS",
+    "contact_integrity": {
+      "passed": true,
+      "maximum_allowed_penetration_m": 0.005,
+      "minimum_contact_distance_m": -0.002786019699552893,
+      "deepest_contact_pair": {
+        "geom1": "work_surface",
+        "geom2": "workpiece_geom",
+        "minimum_distance_m": -0.002786019699552893
+      }
+    }
+  },
+  "corrected_result": {
+    "classification": "harness_pass",
+    "evaluable": true,
+    "success": true,
+    "model_identity": {
+      "requested_model": "eu.anthropic.claude-opus-5",
+      "returned_models": [
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5",
+        "eu.anthropic.claude-opus-5"
+      ],
+      "exact_match": true
+    },
+    "harness": {
+      "physical_harness_verdict": "PASS",
+      "task_metric_passed": true,
+      "physical_execution_passed": true,
+      "guard_outcomes": {
+        "guard_actuator_and_physics_step": true,
+        "guard_no_direct_state_write": true,
+        "guard_canonical_model_data": true
+      },
+      "guard_error": null,
+      "contact_integrity": {
+        "policy": "corrected_r1_pair_aware_v1",
+        "task_id": "mw_pick_place",
+        "contact_monitoring_complete": true,
+        "passed": true,
+        "default_maximum_allowed_penetration_m": 0.005,
+        "expected_contact_buffer_m": 0.006,
+        "expected_contact_cap_m": 0.03,
+        "minimum_contact_distance_m": -0.002786019699552893,
+        "deepest_contact_pair": {
+          "geom1": "work_surface",
+          "geom2": "workpiece_geom",
+          "body1": "world",
+          "body2": "workpiece",
+          "minimum_distance_m": -0.002786019699552893,
+          "penetration_m": 0.002786019699552893,
+          "expected_pair_declared": true,
+          "role1": "support",
+          "role2": "workpiece",
+          "proxy_moving_geom": "workpiece_geom",
+          "policy_applied": "expected_contact_geometry_proxy",
+          "applied_threshold_m": 0.026000000000000002,
+          "passed": true
+        },
+        "pair_results": [
+          {
+            "geom1": "fixed_jaw_box3",
+            "geom2": "workpiece_geom",
+            "body1": "gripper",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.0005091426968727393,
+            "penetration_m": 0.0005091426968727393,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "fixed_jaw_box4",
+            "geom2": "workpiece_geom",
+            "body1": "gripper",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.0011508506298869969,
+            "penetration_m": 0.0011508506298869969,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "fixed_jaw_sph_tip1",
+            "geom2": "workpiece_geom",
+            "body1": "gripper",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.0014160349985429498,
+            "penetration_m": 0.0014160349985429498,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "fixed_jaw_sph_tip2",
+            "geom2": "workpiece_geom",
+            "body1": "gripper",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.0012604636907034008,
+            "penetration_m": 0.0012604636907034008,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "fixed_jaw_sph_tip3",
+            "geom2": "workpiece_geom",
+            "body1": "gripper",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.001418165289855236,
+            "penetration_m": 0.001418165289855236,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "goal_pedestal",
+            "geom2": "workpiece_geom",
+            "body1": "world",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.0018244647729142858,
+            "penetration_m": 0.0018244647729142858,
+            "expected_pair_declared": false,
+            "role1": null,
+            "role2": "workpiece",
+            "proxy_moving_geom": null,
+            "policy_applied": "default_5mm",
+            "applied_threshold_m": 0.005,
+            "passed": true
+          },
+          {
+            "geom1": "moving_jaw_box2",
+            "geom2": "workpiece_geom",
+            "body1": "moving_jaw_so101_v1",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.00220170569616396,
+            "penetration_m": 0.00220170569616396,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "moving_jaw_box3",
+            "geom2": "workpiece_geom",
+            "body1": "moving_jaw_so101_v1",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.00041669285854561137,
+            "penetration_m": 0.00041669285854561137,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "moving_jaw_sph_tip1",
+            "geom2": "workpiece_geom",
+            "body1": "moving_jaw_so101_v1",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.0008813984588447593,
+            "penetration_m": 0.0008813984588447593,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "moving_jaw_sph_tip2",
+            "geom2": "workpiece_geom",
+            "body1": "moving_jaw_so101_v1",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.002223482661617548,
+            "penetration_m": 0.002223482661617548,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "moving_jaw_sph_tip3",
+            "geom2": "workpiece_geom",
+            "body1": "moving_jaw_so101_v1",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.0019193174918137358,
+            "penetration_m": 0.0019193174918137358,
+            "expected_pair_declared": true,
+            "role1": "gripper",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          },
+          {
+            "geom1": "work_surface",
+            "geom2": "workpiece_geom",
+            "body1": "world",
+            "body2": "workpiece",
+            "minimum_distance_m": -0.002786019699552893,
+            "penetration_m": 0.002786019699552893,
+            "expected_pair_declared": true,
+            "role1": "support",
+            "role2": "workpiece",
+            "proxy_moving_geom": "workpiece_geom",
+            "policy_applied": "expected_contact_geometry_proxy",
+            "applied_threshold_m": 0.026000000000000002,
+            "passed": true
+          }
+        ],
+        "evidence_error": null
+      },
+      "physical_integrity_passed": true,
+      "video_complete": true,
+      "video": {
+        "requested": true,
+        "frame_count": 292,
+        "complete": true,
+        "error": null,
+        "width": 800,
+        "height": 600,
+        "duration": 29.2,
+        "decodable": true,
+        "path": "/Users/wangyifan/Projects/auto_adapter2.0/experiment/experiment1b_use/runs/formal-b2-v014-batch003-pick-place-company/episodes/b2__robotstudio_so101__mw_pick_place__M2__R1/videos/robotstudio_so101__mw_pick_place__R1.mp4"
+      }
+    }
+  },
+  "cost": {
+    "currency": "USD",
+    "original_execution_cost_usd": 0.8021365,
+    "additional_rejudication_model_cost_usd": 0.0,
+    "charged_again": false
+  }
+}
