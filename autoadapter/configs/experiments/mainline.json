@@ -17,11 +17,26 @@
     "skeleton-assisted",
     "from-scratch"
   ],
+  "formal": false,
+  "phase_turn_budgets": {
+    "study": 16,
+    "tgcd": 6,
+    "ivc": 6,
+    "generate_skeleton": 22,
+    "generate_from_scratch": 40,
+    "repair_skeleton": 22,
+    "repair_from_scratch": 20
+  },
   "max_driver_attempts_per_condition": 3,
-  "development_probe": {
-    "max_requests_per_stage": 14,
-    "wall_timeout_s_per_request": 30,
-    "max_output_chars_per_request": 12000
+  "execute_python": {
+    "wall_timeout_s_per_call": 30,
+    "max_output_chars_per_call": 12000,
+    "max_steps_per_phase": 4000,
+    "max_sim_time_s_per_phase": 20.0
+  },
+  "recap": {
+    "max_planning_turns_per_task": 16,
+    "max_capability_calls_per_task": 12
   },
   "validation": {
     "record_video": true,

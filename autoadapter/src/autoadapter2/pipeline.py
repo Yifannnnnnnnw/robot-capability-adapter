@@ -12,10 +12,11 @@ import copy
 import importlib.util
 import inspect
 import json
+import random
 import shutil
 import uuid
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -64,10 +65,10 @@ from autoadapter2.reporting import (
     write_json,
 )
 from autoadapter2.self_containment import check_self_contained
+from autoadapter2.task_demo.recap import RecapBudgets, run_recap
 from autoadapter2.validation_compiler import (
-    TASK_DEMO_TASK_COUNT,
+    IVCError,
     run_ivc,
-    sample_task_demo_suite,
     validate_capability_validation_suite,
     write_private_suite,
 )
@@ -82,9 +83,38 @@ _EXPERIENCE_USAGE_SCOPES = frozenset(
     {"next_independent_run_only", "later_matched_run_only"}
 )
 
+PHASE_TURN_BUDGETS: Mapping[str, int] = {
+    "study": 16,
+    "tgcd": 6,
+    "ivc": 6,
+    "generate_skeleton": 22,
+    "generate_from_scratch": 40,
+    "repair_skeleton": 22,
+    "repair_from_scratch": 20,
+}
+RECAP_PLANNING_TURNS = 16
+RECAP_CAPABILITY_CALLS = 12
+TASK_DEMO_TASK_COUNT = 5
+
 
 class PipelineError(RuntimeError):
     """Raised when the experiment cannot be admitted or composed."""
+
+
+def _call_supported(function: Callable[..., Any], /, *args: Any, **kwargs: Any) -> Any:
+    """Pass new stage context through old focused-test seams when possible."""
+
+    try:
+        signature = inspect.signature(function)
+    except (TypeError, ValueError):
+        return function(*args, **kwargs)
+    if any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    ):
+        return function(*args, **kwargs)
+    supported = {key: value for key, value in kwargs.items() if key in signature.parameters}
+    return function(*args, **supported)
 
 
 def _validated_model_manifest(value: Any) -> dict[str, Any]:
@@ -187,6 +217,12 @@ class ExperimentConfig:
     experiment_id: str
     robots: tuple[str, ...]
     generation_conditions: tuple[GenerationCondition, ...]
+    phase_turn_budgets: Mapping[str, int] = field(
+        default_factory=lambda: dict(PHASE_TURN_BUDGETS)
+    )
+    recap_max_planning_turns_per_task: int = RECAP_PLANNING_TURNS
+    recap_max_capability_calls_per_task: int = RECAP_CAPABILITY_CALLS
+    formal: bool = False
     max_driver_attempts_per_condition: int = MAX_TOTAL_ATTEMPTS
     probe_budget: ProbeBudget = ProbeBudget()
     record_video: bool = True
@@ -203,6 +239,7 @@ class ExperimentConfig:
     seeds_declared: bool = False
     evolution_declared: bool = False
     evolution_enabled: bool = True
+    evolution_max_attempts: int = 1
     evolution_model_manifest: Mapping[str, Any] | None = None
 
     @classmethod
@@ -239,6 +276,55 @@ class ExperimentConfig:
                 "unsupported generation_conditions: " + ", ".join(unsupported)
             )
 
+        phase_turns = value.get("phase_turn_budgets", {})
+        if not isinstance(phase_turns, Mapping):
+            raise PipelineError("phase_turn_budgets must be an object")
+        unknown_phase_budgets = sorted(set(phase_turns) - set(PHASE_TURN_BUDGETS))
+        if unknown_phase_budgets:
+            raise PipelineError(
+                "phase_turn_budgets has unexpected fields: "
+                + ", ".join(str(item) for item in unknown_phase_budgets)
+            )
+        for field_name, supplied in phase_turns.items():
+            expected = PHASE_TURN_BUDGETS[str(field_name)]
+            if supplied != expected:
+                raise PipelineError(
+                    f"phase_turn_budgets.{field_name} must equal {expected}"
+                )
+        fixed_phase_turns = dict(PHASE_TURN_BUDGETS)
+
+        recap = value.get("recap", {})
+        if not isinstance(recap, Mapping):
+            raise PipelineError("recap must be an object")
+        allowed_recap = {
+            "max_planning_turns_per_task",
+            "max_capability_calls_per_task",
+        }
+        unexpected_recap = sorted(set(recap) - allowed_recap)
+        if unexpected_recap:
+            raise PipelineError(
+                "recap has unexpected fields: "
+                + ", ".join(str(item) for item in unexpected_recap)
+            )
+        planning_turns = recap.get(
+            "max_planning_turns_per_task", RECAP_PLANNING_TURNS
+        )
+        capability_calls = recap.get(
+            "max_capability_calls_per_task", RECAP_CAPABILITY_CALLS
+        )
+        if planning_turns != RECAP_PLANNING_TURNS:
+            raise PipelineError(
+                f"recap.max_planning_turns_per_task must equal {RECAP_PLANNING_TURNS}"
+            )
+        if capability_calls != RECAP_CAPABILITY_CALLS:
+            raise PipelineError(
+                f"recap.max_capability_calls_per_task must equal {RECAP_CAPABILITY_CALLS}"
+            )
+
+        formal = value.get("formal", False)
+        if not isinstance(formal, bool):
+            raise PipelineError("formal must be boolean")
+
         max_attempts = value.get(
             "max_driver_attempts_per_condition", MAX_TOTAL_ATTEMPTS
         )
@@ -252,15 +338,49 @@ class ExperimentConfig:
         development = value.get("development_probe", {})
         if not isinstance(development, Mapping):
             raise PipelineError("development_probe must be an object")
+        execute_python = value.get("execute_python")
+        if execute_python is not None and not isinstance(execute_python, Mapping):
+            raise PipelineError("execute_python must be an object")
+        if isinstance(execute_python, Mapping):
+            expected_execute_fields = {
+                "wall_timeout_s_per_call",
+                "max_output_chars_per_call",
+                "max_steps_per_phase",
+                "max_sim_time_s_per_phase",
+            }
+            if set(execute_python) != expected_execute_fields:
+                raise PipelineError(
+                    "execute_python must declare wall timeout, output, step, "
+                    "and simulated-time limits"
+                )
         try:
             probe_budget = ProbeBudget(
-                max_requests=int(development.get("max_requests_per_stage", 12)),
+                # File-workflow phases have no aggregate tool-call ceiling.  The
+                # legacy development field is accepted but intentionally ignored;
+                # every actual call remains bounded by time/output/physics.
+                max_requests=None,
                 max_complete_driver_checks=int(
                     development.get("max_complete_driver_checks", 1)
                 ),
-                timeout_s=float(development.get("wall_timeout_s_per_request", 30)),
+                timeout_s=float(
+                    execute_python.get("wall_timeout_s_per_call", 30)
+                    if isinstance(execute_python, Mapping)
+                    else development.get("wall_timeout_s_per_request", 30)
+                ),
                 max_output_chars=int(
-                    development.get("max_output_chars_per_request", 12000)
+                    execute_python.get("max_output_chars_per_call", 12000)
+                    if isinstance(execute_python, Mapping)
+                    else development.get("max_output_chars_per_request", 12000)
+                ),
+                max_steps=int(
+                    execute_python.get("max_steps_per_phase", 4000)
+                    if isinstance(execute_python, Mapping)
+                    else development.get("max_steps_per_stage", 4000)
+                ),
+                max_sim_time_s=float(
+                    execute_python.get("max_sim_time_s_per_phase", 20.0)
+                    if isinstance(execute_python, Mapping)
+                    else development.get("max_sim_time_s_per_stage", 20.0)
                 ),
             )
         except (TypeError, ValueError) as exc:
@@ -410,12 +530,20 @@ class ExperimentConfig:
         if not isinstance(evolution, Mapping):
             raise PipelineError("evolution must be an object")
         evolution_enabled = True
+        evolution_max_attempts = 1
         evolution_model_manifest = None
         if evolution_declared:
             enabled_value = evolution.get("enabled", True)
             if not isinstance(enabled_value, bool):
                 raise PipelineError("evolution.enabled must be boolean")
             evolution_enabled = enabled_value
+            evolution_max_attempts = evolution.get("max_attempts", 1)
+            if (
+                isinstance(evolution_max_attempts, bool)
+                or not isinstance(evolution_max_attempts, int)
+                or evolution_max_attempts != 1
+            ):
+                raise PipelineError("evolution.max_attempts must equal 1")
             if "model_manifest" in evolution:
                 raise PipelineError(
                     "unsupported evolution.model_manifest; use evolution.model"
@@ -435,14 +563,20 @@ class ExperimentConfig:
                 actual_evolution = {
                     key: value
                     for key, value in evolution.items()
-                    if key not in {"enabled", "model", "model_manifest"}
+                    if key
+                    not in {"enabled", "model", "model_manifest", "max_attempts"}
                 }
                 if actual_evolution != expected_evolution:
                     raise PipelineError(
                         "evolution must require each terminal cell and the canonical outcome field"
                     )
             else:
-                allowed_disabled = {"enabled", "model", "model_manifest"}
+                allowed_disabled = {
+                    "enabled",
+                    "model",
+                    "model_manifest",
+                    "max_attempts",
+                }
                 unexpected_disabled = sorted(
                     str(key) for key in evolution if key not in allowed_disabled
                 )
@@ -456,6 +590,10 @@ class ExperimentConfig:
             experiment_id=experiment_id.strip(),
             robots=robots,
             generation_conditions=conditions,  # type: ignore[arg-type]
+            phase_turn_budgets=fixed_phase_turns,
+            recap_max_planning_turns_per_task=planning_turns,
+            recap_max_capability_calls_per_task=capability_calls,
+            formal=formal,
             max_driver_attempts_per_condition=max_attempts,
             probe_budget=probe_budget,
             record_video=record_video,
@@ -474,6 +612,7 @@ class ExperimentConfig:
             seeds_declared=seeds_declared,
             evolution_declared=evolution_declared,
             evolution_enabled=evolution_enabled,
+            evolution_max_attempts=evolution_max_attempts,
             evolution_model_manifest=evolution_model_manifest,
         )
 
@@ -493,14 +632,18 @@ class ExperimentConfig:
             "experiment_id": self.experiment_id,
             "robots": list(self.robots),
             "generation_conditions": list(self.generation_conditions),
+            "formal": self.formal,
+            "phase_turn_budgets": dict(self.phase_turn_budgets),
+            "recap": {
+                "max_planning_turns_per_task": self.recap_max_planning_turns_per_task,
+                "max_capability_calls_per_task": self.recap_max_capability_calls_per_task,
+            },
             "max_driver_attempts_per_condition": self.max_driver_attempts_per_condition,
-            "development_probe": {
-                "max_requests_per_stage": self.probe_budget.max_requests,
-                "max_complete_driver_checks": (
-                    self.probe_budget.max_complete_driver_checks
-                ),
-                "wall_timeout_s_per_request": self.probe_budget.timeout_s,
-                "max_output_chars_per_request": self.probe_budget.max_output_chars,
+            "execute_python": {
+                "wall_timeout_s_per_call": self.probe_budget.timeout_s,
+                "max_output_chars_per_call": self.probe_budget.max_output_chars,
+                "max_steps_per_phase": self.probe_budget.max_steps,
+                "max_sim_time_s_per_phase": self.probe_budget.max_sim_time_s,
             },
             "validation": {
                 "record_video": self.record_video,
@@ -532,13 +675,17 @@ class ExperimentConfig:
                 result["evolution"] = {
                     "after_each_terminal_cell": True,
                     "outcome_field": "cells[].outcomes.Evolution",
+                    "max_attempts": self.evolution_max_attempts,
                 }
                 if self.evolution_model_manifest is not None:
                     result["evolution"]["model"] = _copy(
                         dict(self.evolution_model_manifest)
                     )
             else:
-                result["evolution"] = {"enabled": False}
+                result["evolution"] = {
+                    "enabled": False,
+                    "max_attempts": self.evolution_max_attempts,
+                }
         return result
 
 
@@ -567,6 +714,8 @@ class PipelineHooks:
     harness_runner: Callable[..., Mapping[str, Any]] = run_private_suite
     reference_renderer: Callable[..., Any] | None = None
     reference_runner: Callable[..., Mapping[str, Any]] | None = None
+    recap_runner: Callable[..., Any] = run_recap
+    task_demo_runner: Callable[..., Mapping[str, Any]] | None = None
     evolution_runner: Callable[..., Mapping[str, Any]] = run_evolution
 
 
@@ -600,141 +749,6 @@ def _read_object(path: Path, *, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise PipelineError(f"{label} must contain one JSON object")
     return value
-
-
-def _reuse_sealed_inputs(
-    *,
-    source_dir: str | Path,
-    mainline_root: Path,
-    destination: Path,
-    config: ExperimentConfig,
-    packages: Mapping[str, RobotPackage],
-    hooks: PipelineHooks,
-) -> tuple[
-    dict[str, Mapping[str, Any]],
-    dict[str, Mapping[str, Any]],
-    dict[str, Mapping[str, Any]],
-    list[dict[str, Any]],
-    dict[str, Any],
-]:
-    source = Path(source_dir).resolve()
-    runs_root = (mainline_root / "runs").resolve()
-    try:
-        source.relative_to(runs_root)
-    except ValueError as exc:
-        raise PipelineError(
-            "reused sealed inputs must come from the mainline runs directory"
-        ) from exc
-    if source == destination.resolve():
-        raise PipelineError("sealed-input source and destination run must differ")
-
-    report = _read_object(source / "experiment_report.json", label="source run report")
-    source_run_id = report.get("run_id")
-    if not isinstance(source_run_id, str) or not source_run_id.strip():
-        raise PipelineError("source run report lacks run_id")
-    source_evidence = report.get("stage_evidence")
-    if not isinstance(source_evidence, list):
-        raise PipelineError("source run report lacks stage_evidence")
-
-    designs: dict[str, Mapping[str, Any]] = {}
-    capability_suites: dict[str, Mapping[str, Any]] = {}
-    task_demo_suites: dict[str, Mapping[str, Any]] = {}
-    reused_evidence: list[dict[str, Any]] = []
-    for robot in config.robots:
-        for stage in ("tgcd", "ivc"):
-            evidence = next(
-                (
-                    item
-                    for item in source_evidence
-                    if isinstance(item, Mapping)
-                    and item.get("robot") == robot
-                    and item.get("stage") == stage
-                    and item.get("completed") is True
-                ),
-                None,
-            )
-            if evidence is None:
-                raise PipelineError(
-                    f"source run lacks completed {stage} evidence for {robot!r}"
-                )
-            reused_evidence.append(
-                {
-                    **_copy(dict(evidence)),
-                    "reused": True,
-                    "reused_from_run_id": source_run_id,
-                }
-            )
-
-        package = packages[robot]
-        design_path = source / "designs" / robot / "capability_design.json"
-        private_dir = source / "private" / robot
-        capability_path = private_dir / "capability_validation_suite.json"
-        task_demo_path = private_dir / "task_demo_suite.json"
-        legacy_capability_path = private_dir / "private_case_pool.json"
-        legacy_demo_path = private_dir / "private_validation_suite.json"
-        design = dict(
-            hooks.capability_design_validator(
-                _read_object(design_path, label=f"{robot} capability design"),
-                package,
-            )
-        )
-        capability_source = (
-            capability_path if capability_path.is_file() else legacy_capability_path
-        )
-        capability_raw = _read_object(
-            capability_source, label=f"{robot} capability validation suite"
-        )
-        if capability_raw.get("artifact_type") == "private_validation_suite":
-            capability_raw["artifact_type"] = "capability_validation_suite"
-        capability_suite = dict(
-            hooks.capability_suite_validator(
-                capability_raw,
-                package=package,
-                design=design,
-            )
-        )
-        task_demo_source = task_demo_path if task_demo_path.is_file() else legacy_demo_path
-        task_demo_suite = _read_object(
-            task_demo_source, label=f"{robot} Task Demo suite"
-        )
-        if task_demo_suite.get("artifact_type") == "private_validation_suite":
-            task_demo_suite["artifact_type"] = "task_demo_suite"
-        selection = task_demo_suite.get("selection")
-        seed = selection.get("seed") if isinstance(selection, Mapping) else None
-        if not isinstance(seed, str) or not seed:
-            raise PipelineError(f"{robot} Task Demo suite lacks its selection seed")
-        if sample_task_demo_suite(
-            package=package,
-            design=design,
-            seed=seed,
-        ) != task_demo_suite:
-            raise PipelineError(
-                f"{robot} Task Demo suite differs from its Task Library selection"
-            )
-
-        write_capability_design(
-            destination / "designs" / robot / "capability_design.json", design
-        )
-        write_private_suite(
-            destination / "private" / robot / "capability_validation_suite.json",
-            capability_suite,
-        )
-        write_private_suite(
-            destination / "private" / robot / "task_demo_suite.json",
-            task_demo_suite,
-        )
-        designs[robot] = design
-        capability_suites[robot] = capability_suite
-        task_demo_suites[robot] = task_demo_suite
-
-    provenance = {
-        "reused": True,
-        "source_run_id": source_run_id,
-        "source_run_directory": str(source),
-        "robots": list(config.robots),
-    }
-    _write(destination / "sealed_input_reuse.json", provenance)
-    return designs, capability_suites, task_demo_suites, reused_evidence, provenance
 
 
 def _default_root() -> Path:
@@ -1365,6 +1379,7 @@ def _default_reference_run(
         suite=_copy(dict(capability_suite)),
         driver_path=driver_path,
         condition=condition,
+        trusted_reference_driver=True,
         output_dir=output_dir,
         record_video=config.record_video,
         wall_timeout_s=config.worker_wall_timeout_s,
@@ -1416,6 +1431,77 @@ def _failure_record(error: BaseException) -> dict[str, str]:
     return {"type": type(error).__name__, "message": str(error)[:2000]}
 
 
+def _without_experience(value: Any) -> Any:
+    """Remove later-run Experience lineage from stages outside its visibility set."""
+
+    if isinstance(value, Mapping):
+        return {
+            str(key): _without_experience(child)
+            for key, child in value.items()
+            if str(key)
+            not in {
+                "eligible_experience",
+                "experience_input_ids",
+                "experience_input_count",
+                "experience_ids",
+            }
+        }
+    if isinstance(value, list):
+        return [_without_experience(child) for child in value]
+    if isinstance(value, tuple):
+        return [_without_experience(child) for child in value]
+    return _copy(value)
+
+
+def _private_artifact_event_summaries(
+    events: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Describe private IVC trace structure without exposing its payloads."""
+
+    summaries: list[dict[str, Any]] = []
+    for event in events:
+        summary: dict[str, Any] = {
+            "stage": str(event.get("stage", "ivc")),
+            "artifact_present": isinstance(event.get("artifact"), Mapping),
+            "reference_calibration_present": isinstance(
+                event.get("result"), Mapping
+            ),
+        }
+        turn = event.get("turn")
+        if isinstance(turn, int) and not isinstance(turn, bool) and turn >= 0:
+            summary["turn"] = turn
+        completion = event.get("completion")
+        if isinstance(completion, str):
+            summary["completion"] = completion
+        tool_calls = event.get("tool_calls")
+        if isinstance(tool_calls, int) and not isinstance(tool_calls, bool):
+            summary["tool_call_count"] = max(0, tool_calls)
+        trace = event.get("trace")
+        if isinstance(trace, list):
+            summary["trace_event_count"] = len(trace)
+        summaries.append(summary)
+    return summaries
+
+
+def _artifact_error_trace(error: BaseException) -> list[dict[str, Any]]:
+    """Recover a bounded ReAct trace retained on a wrapped phase error."""
+
+    current: BaseException | None = error
+    for _ in range(4):
+        if current is None:
+            break
+        for attribute in ("react_trace", "trace"):
+            value = getattr(current, attribute, None)
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+                return [
+                    _json_safe(dict(item))
+                    for item in value
+                    if isinstance(item, Mapping)
+                ]
+        current = current.__cause__ or current.__context__
+    return []
+
+
 def _has_successful_physics_probe(results: Sequence[Mapping[str, Any]]) -> bool:
     return any(
         result.get("exit_code") == 0
@@ -1446,12 +1532,502 @@ def _canonical_liveness_probe() -> tuple[dict[str, str], ...]:
     )
 
 
+def _passed_capability_ids(
+    *,
+    suite: Mapping[str, Any],
+    report: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """Return only capabilities whose nominal and boundary cases both passed."""
+
+    cases = suite.get("cases")
+    trials = report.get("trials")
+    if not isinstance(cases, list) or not isinstance(trials, list):
+        return ()
+    by_case: dict[str, list[Mapping[str, Any]]] = {}
+    for trial in trials:
+        if isinstance(trial, Mapping) and isinstance(trial.get("case_id"), str):
+            by_case.setdefault(str(trial["case_id"]), []).append(trial)
+    roles: dict[str, dict[str, bool]] = {}
+    for case in cases:
+        if not isinstance(case, Mapping):
+            continue
+        capability_id = case.get("capability_id")
+        case_id = case.get("case_id")
+        role = case.get("case_role")
+        if (
+            not isinstance(capability_id, str)
+            or not isinstance(case_id, str)
+            or role not in {"nominal", "calibrated_boundary"}
+        ):
+            continue
+        values = by_case.get(case_id, [])
+        roles.setdefault(capability_id, {})[str(role)] = bool(values) and all(
+            bool(value.get("trial_passed")) for value in values
+        )
+    return tuple(
+        sorted(
+            capability_id
+            for capability_id, outcomes in roles.items()
+            if outcomes.get("nominal") is True
+            and outcomes.get("calibrated_boundary") is True
+        )
+    )
+
+
+def _whitelisted_design(
+    design: Mapping[str, Any], capability_ids: Sequence[str]
+) -> dict[str, Any]:
+    allowed = set(capability_ids)
+    result = _copy(dict(design))
+    capabilities = result.get("capabilities")
+    result["capabilities"] = (
+        [
+            capability
+            for capability in capabilities
+            if isinstance(capability, Mapping)
+            and capability.get("capability_id") in allowed
+        ]
+        if isinstance(capabilities, list)
+        else []
+    )
+    support = result.get("task_support")
+    result["task_support"] = (
+        [
+            relation
+            for relation in support
+            if isinstance(relation, Mapping)
+            and relation.get("capability_id") in allowed
+        ]
+        if isinstance(support, list)
+        else []
+    )
+    return result
+
+
+class _LegacyRecapJsonAdapter:
+    """Retain the pre-native JSON seam for explicitly legacy test clients."""
+
+    def __init__(self, client: Any) -> None:
+        self.client = client
+
+    def generate_recap_json(
+        self,
+        *,
+        stage: str,
+        system_prompt: str,
+        messages: Sequence[Mapping[str, Any]],
+        response_schema: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        direct = getattr(self.client, "generate_recap_json", None)
+        if callable(direct):
+            return direct(
+                stage=stage,
+                system_prompt=system_prompt,
+                messages=messages,
+                response_schema=response_schema,
+            )
+        message_json = getattr(self.client, "generate_message_json", None)
+        if callable(message_json):
+            schema_message = {
+                "role": "user",
+                "content": (
+                    "Return exactly one JSON object matching this schema: "
+                    + json.dumps(response_schema, sort_keys=True)
+                ),
+            }
+            return message_json(
+                stage=stage,
+                system_prompt=system_prompt,
+                messages=[*_copy(list(messages)), schema_message],
+            )
+        generate_json = getattr(self.client, "generate_json", None)
+        if callable(generate_json):
+            return generate_json(
+                stage=stage,
+                prompt=system_prompt,
+                inputs={
+                    "messages": _copy(list(messages)),
+                    "response_schema": _copy(dict(response_schema)),
+                },
+            )
+        raise PipelineError("unified model client has no ReCAP JSON turn")
+
+
+class _RecapClientAdapter(_LegacyRecapJsonAdapter):
+    """Forward the unified client's native dynamic-tool turn unchanged."""
+
+    def generate_tool_turn(
+        self,
+        *,
+        stage: str,
+        system_prompt: str,
+        messages: Sequence[Mapping[str, Any]],
+        tools: Sequence[Mapping[str, Any]],
+    ) -> Any:
+        native = getattr(self.client, "generate_tool_turn", None)
+        if not callable(native):
+            raise PipelineError("unified model client has no native tool-use turn")
+        return native(
+            stage=stage,
+            system_prompt=system_prompt,
+            messages=messages,
+            tools=tools,
+        )
+
+
+def _indexed_private(
+    document: Mapping[str, Any], field: str, id_field: str
+) -> dict[str, Mapping[str, Any]]:
+    values = document.get(field)
+    if not isinstance(values, list):
+        raise PipelineError(f"private {field} must be an array")
+    result: dict[str, Mapping[str, Any]] = {}
+    for value in values:
+        if not isinstance(value, Mapping) or not isinstance(value.get(id_field), str):
+            raise PipelineError(f"private {field} has an invalid {id_field}")
+        identifier = str(value[id_field])
+        if identifier in result:
+            raise PipelineError(f"private {field} duplicates {identifier!r}")
+        result[identifier] = value
+    return result
+
+
+def _compile_task_demo_inputs(
+    *,
+    package: RobotPackage,
+    design: Mapping[str, Any],
+    seed: str,
+    record_video: bool,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Select up to five supported public tasks and seal their trusted inputs."""
+
+    supported = {
+        str(relation["task_id"])
+        for relation in design.get("task_support", [])
+        if isinstance(relation, Mapping) and isinstance(relation.get("task_id"), str)
+    }
+    eligible = [
+        task
+        for task in package.tasks
+        if isinstance(task, Mapping) and str(task.get("task_id")) in supported
+    ]
+    if not eligible:
+        raise PipelineError("no Task Demo task is supported by the passed capability whitelist")
+    selected = (
+        random.Random(seed).sample(eligible, TASK_DEMO_TASK_COUNT)
+        if len(eligible) >= TASK_DEMO_TASK_COUNT
+        else list(eligible)
+    )
+    instances_document = _read_object(
+        package.private_dir / "instances.json", label="Task Demo private instances"
+    )
+    bindings_document = _read_object(
+        package.private_dir / "bindings.json", label="Task Demo private bindings"
+    )
+    guards_document = _read_object(
+        package.private_dir / "guards.json", label="Task Demo private guards"
+    )
+    instances = list(_indexed_private(instances_document, "instances", "instance_id").values())
+    bindings = _indexed_private(bindings_document, "bindings", "binding_id")
+    guards = _indexed_private(guards_document, "guards", "guard_id")
+    source_by_id = {
+        str(source.get("source_id")): source
+        for source in package.sources
+        if isinstance(source, Mapping) and isinstance(source.get("source_id"), str)
+    }
+    task_records: list[dict[str, Any]] = []
+    runtime_records: list[dict[str, Any]] = []
+    for task in selected:
+        task_id = str(task["task_id"])
+        matches = sorted(
+            (
+                instance
+                for instance in instances
+                if instance.get("task_id") == task_id
+            ),
+            key=lambda value: str(value.get("instance_id", "")),
+        )
+        if not matches:
+            raise PipelineError(f"Task Demo task {task_id!r} has no private instance")
+        instance = matches[0]
+        variants = instance.get("repetition_variants")
+        variant = variants[0] if isinstance(variants, list) and variants else {}
+        if not isinstance(variant, Mapping):
+            raise PipelineError(f"Task Demo task {task_id!r} has an invalid variant")
+        public_arguments = variant.get(
+            "public_arguments", instance.get("public_arguments", {})
+        )
+        if not isinstance(public_arguments, Mapping) or not isinstance(
+            public_arguments.get("request"), Mapping
+        ):
+            raise PipelineError(f"Task Demo task {task_id!r} lacks public arguments")
+        request = _copy(dict(public_arguments["request"]))
+        clause_bindings = instance.get("clause_bindings")
+        guard_ids = instance.get("guard_ids")
+        scoring = task.get("scoring")
+        if (
+            not isinstance(clause_bindings, Mapping)
+            or not isinstance(guard_ids, list)
+            or not isinstance(scoring, list)
+            or not scoring
+        ):
+            raise PipelineError(f"Task Demo task {task_id!r} has incomplete trusted inputs")
+        binding_records = []
+        for binding_id in clause_bindings.values():
+            if not isinstance(binding_id, str) or binding_id not in bindings:
+                raise PipelineError(f"Task Demo task {task_id!r} has an invalid binding")
+            binding_records.append(_copy(dict(bindings[binding_id])))
+        guard_records = []
+        for guard_id in guard_ids:
+            if not isinstance(guard_id, str) or guard_id not in guards:
+                raise PipelineError(f"Task Demo task {task_id!r} has an invalid guard")
+            guard_records.append(_copy(dict(guards[guard_id])))
+        source_ids = {
+            str(reference.get("source_id"))
+            for clause in scoring
+            if isinstance(clause, Mapping)
+            for reference in clause.get("source_refs", [])
+            if isinstance(reference, Mapping) and isinstance(reference.get("source_id"), str)
+        }
+        source_records = [
+            _copy(dict(source_by_id[source_id]))
+            for source_id in sorted(source_ids)
+            if source_id in source_by_id
+        ]
+        scene_entrypoint = str(
+            variant.get(
+                "scene_entrypoint",
+                instance.get(
+                    "scene_entrypoint", package.morphology["mjcf_entrypoint"]
+                ),
+            )
+        )
+        reset = variant.get("reset", instance.get("reset", {"kind": "default"}))
+        public_task = {
+            "task_id": task_id,
+            "task_name": str(task.get("name", task_id)),
+            "objective": str(task.get("description", task.get("name", task_id))),
+            "task_parameters": _copy(request.get("task_parameters", {})),
+        }
+        task_record = {
+            "task_id": task_id,
+            "private_instance_id": str(instance["instance_id"]),
+            "public_projection": {
+                "task_id": task_id,
+                "name": public_task["task_name"],
+                "objective": public_task["objective"],
+                "request": request,
+            },
+            "private_scoring_clauses": _copy(scoring),
+            "private_clause_bindings": _copy(dict(clause_bindings)),
+            "private_measurement_bindings": binding_records,
+            "private_guards": guard_records,
+            "source_records": source_records,
+            "episode_budget": {
+                "timeout_sim_s": float(instance.get("timeout_sim_s", 20.0)),
+                "max_steps": int(instance.get("max_steps", 10_000)),
+                "sample_hz": float(instance.get("sample_hz", 20.0)),
+            },
+            "rendering": {
+                "enabled": record_video,
+                "continuous_episode_video_required": record_video,
+                "video_fps": float(instance.get("video_fps", 10.0)),
+                "video_width": int(instance.get("video_width", 800)),
+                "video_height": int(instance.get("video_height", 600)),
+                "camera": instance.get("camera", -1),
+            },
+            "replicate_inputs": [
+                {
+                    "replicate_id": "mainline",
+                    "scene_entrypoint": scene_entrypoint,
+                    "reset": _copy(reset),
+                    "reset_seed": None,
+                    "reset_seed_applied": False,
+                }
+            ],
+        }
+        task_records.append(task_record)
+        runtime_records.append(
+            {
+                "task_id": task_id,
+                "instance_id": str(instance["instance_id"]),
+                "public_task": public_task,
+                "scene_entrypoint": scene_entrypoint,
+                "reset": _copy(reset),
+                "max_steps": int(instance.get("max_steps", 10_000)),
+                "max_sim_time_s": float(instance.get("timeout_sim_s", 20.0)),
+                "sample_hz": float(instance.get("sample_hz", 20.0)),
+                "render": task_record["rendering"],
+            }
+        )
+    suite = {
+        "artifact_type": "b2_recap_task_suite",
+        "schema_version": "1.0",
+        "authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
+        "robot_suites": [
+            {
+                "robot_configuration_id": package.robot_configuration_id,
+                "package_version": package.package_version,
+                "task_snapshot_id": package.snapshot_id,
+                "tasks": task_records,
+            }
+        ],
+    }
+    return suite, runtime_records
+
+
+def _default_task_demo_run(
+    *,
+    package: RobotPackage,
+    design: Mapping[str, Any],
+    driver_path: Path,
+    client: Any,
+    recap_runner: Callable[..., Any],
+    budgets: RecapBudgets,
+    selection_seed: str,
+    output_dir: Path,
+    record_video: bool,
+    wall_timeout_s: float,
+    **_: Any,
+) -> Mapping[str, Any]:
+    """Run canonical ReCAP in persistent workers, then a trusted task Harness."""
+
+    # The compatibility session runner imports the same function object re-exported
+    # from task_demo.recap.  Fail closed if a caller replaces the canonical hook.
+    if recap_runner is not run_recap:
+        raise PipelineError("Task Demo must use canonical task_demo.recap.run_recap")
+    from autoadapter2.b2.session_runner import (
+        RecapWorkerSessionConfig,
+        run_recap_worker_session,
+    )
+    from autoadapter2.b2.task_harness import evaluate_b2_task_harness
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    suite, tasks = _compile_task_demo_inputs(
+        package=package,
+        design=design,
+        seed=selection_seed,
+        record_video=record_video,
+    )
+    suite_path = output_dir / "framework_task_inputs.json"
+    _write(suite_path, suite)
+    write_capability_design(output_dir / "capability_design.json", design)
+    model = (
+        _RecapClientAdapter(client)
+        if callable(getattr(client, "generate_tool_turn", None))
+        else _LegacyRecapJsonAdapter(client)
+    )
+    trials: list[dict[str, Any]] = []
+    planning_turns = 0
+    capability_calls = 0
+    controller_completed: list[bool] = []
+    for task in tasks:
+        scene_path = (package.root / str(task["scene_entrypoint"])).resolve()
+        try:
+            scene_path.relative_to((package.root / "assets").resolve())
+        except ValueError as exc:
+            raise PipelineError("Task Demo scene escapes package assets") from exc
+        video_path = (
+            output_dir / "videos" / f"{task['task_id']}__mainline.mp4"
+            if record_video
+            else None
+        )
+        session = run_recap_worker_session(
+            config=RecapWorkerSessionConfig(
+                driver_path=driver_path,
+                scene_path=scene_path,
+                robot_configuration_id=package.robot_configuration_id,
+                reset=task["reset"],
+                max_steps=int(task["max_steps"]),
+                max_sim_time_s=float(task["max_sim_time_s"]),
+                sample_hz=float(task["sample_hz"]),
+                wall_timeout_s=wall_timeout_s,
+                render={
+                    "enabled": record_video,
+                    "width": int(task["render"].get("video_width", 800)),
+                    "height": int(task["render"].get("video_height", 600)),
+                    "fps": float(task["render"].get("video_fps", 10.0)),
+                    "camera": task["render"].get("camera", -1),
+                },
+                video_path=video_path,
+            ),
+            capability_design=design,
+            public_task=task["public_task"],
+            model=model,
+            budgets=budgets,
+        )
+        harness = evaluate_b2_task_harness(
+            package=package,
+            task_suite_path=suite_path,
+            instance_id=str(task["instance_id"]),
+            replicate_id="mainline",
+            session_result=session,
+        )
+        controller = session.get("controller", {})
+        if isinstance(controller, Mapping):
+            planning_turns += int(
+                controller.get("planning_turns", controller.get("model_turns", 0))
+            )
+            capability_calls += int(
+                controller.get(
+                    "capability_calls", controller.get("tool_calls", 0)
+                )
+            )
+            controller_completed.append(
+                controller.get("status") == "CONTROLLER_FINISHED"
+                and int(
+                    controller.get(
+                        "capability_calls", controller.get("tool_calls", 0)
+                    )
+                )
+                >= 1
+            )
+        trials.append(
+            {
+                "case_id": f"task-demo-{task['task_id']}",
+                "task_id": task["task_id"],
+                "source_clause_id": "all-task-clauses",
+                "trial_passed": harness.get("physical_harness_verdict") == "PASS",
+                "physical_execution_passed": bool(harness.get("physical_execution_passed")),
+                "video": (
+                    _copy(dict(harness.get("video", {})))
+                    if isinstance(harness.get("video"), Mapping)
+                    else {}
+                ),
+                "controller": _copy(dict(controller)) if isinstance(controller, Mapping) else {},
+                "harness": _copy(dict(harness)),
+            }
+        )
+    physical_executed = bool(trials) and all(
+        bool(item["physical_execution_passed"]) for item in trials
+    )
+    video_complete = bool(trials) and all(
+        (not record_video) or bool(item["video"].get("complete")) for item in trials
+    )
+    return {
+        "pipeline_completed": bool(trials),
+        "physical_validation_executed": physical_executed,
+        "validation_passed": bool(trials) and all(bool(item["trial_passed"]) for item in trials),
+        "video_complete": video_complete,
+        "task_count": len(trials),
+        "passed_task_count": sum(bool(item["trial_passed"]) for item in trials),
+        "trials": trials,
+        "video_manifest": [item["video"] for item in trials],
+        "high_level_controller": {
+            "kind": "task_demo_recap",
+            "path_enabled": True,
+            "completed": bool(controller_completed) and all(controller_completed),
+            "model_turn_count": planning_turns,
+            "capability_call_count": capability_calls,
+        },
+    }
+
+
 def _run_cell(
     *,
     package: RobotPackage,
     design: Mapping[str, Any],
     capability_suite: Mapping[str, Any],
-    task_demo_suite: Mapping[str, Any],
     robot: str,
     condition: GenerationCondition,
     config: ExperimentConfig,
@@ -1462,6 +2038,8 @@ def _run_cell(
     run_id: str,
     hooks: PipelineHooks,
     model_stage_log: list[dict[str, Any]],
+    completed_study: StudyResult | None = None,
+    completed_probe_results: Sequence[Mapping[str, Any]] = (),
     evolution_client: Any | None = None,
     evolution_enabled: bool = True,
 ) -> dict[str, Any]:
@@ -1475,127 +2053,24 @@ def _run_cell(
     runtime_contract = _runtime_contract(package)
     public_design = _copy(dict(design))
     sealed_capability_suite = _copy(dict(capability_suite))
-    sealed_task_demo_suite = _copy(dict(task_demo_suite))
     attempts: list[dict[str, Any]] = []
     development_rejections: list[dict[str, Any]] = []
     driver_generated = False
-    dynamic_model_called = False
+    dynamic_model_called = True
     initial_pass: bool | None = None
     terminal_validation: dict[str, Any] | None = None
     current_driver: Path | None = None
     current_source: str | None = None
-    study_result: StudyResult | None = None
-    probe_results: tuple[Mapping[str, Any], ...] = ()
+    if completed_study is None:
+        raise PipelineError("Driver generation requires the completed pre-TGCD STUDY")
+    study_result = completed_study
+    probe_results: tuple[Mapping[str, Any], ...] = tuple(
+        _copy(dict(item)) for item in completed_probe_results
+    )
     failure: dict[str, Any] | None = None
-
-    try:
-        before = _call_count(client)
-        study_result = hooks.study_runner(
-            client,
-            package,
-            public_design,
-            condition=condition,
-            experience=experience,
-            runtime_contract=runtime_contract,
-            workspace=workspace,
-            probe_budget=config.probe_budget,
-            source_root=_default_root() / "src",
-        )
-        evidence = _stage_evidence(client, stage="study", before=before, completed=True)
-        model_stage_log.append(
-            {
-                "robot": robot,
-                "condition": condition,
-                **_with_experience_trace(evidence, experience),
-            }
-        )
-        _write(
-            workspace / "study.json",
-            {
-                "output": study_result.output,
-                "evidence": evidence,
-                "model_conversation": study_result.call_evidence,
-                "probe_results": list(getattr(study_result, "probe_results", ())),
-            },
-        )
-        dynamic_model_called = True
-    except Exception as exc:
-        evidence = _stage_evidence(
-            client,
-            stage="study",
-            before=locals().get("before"),
-            completed=False,
-            error=exc,
-        )
-        model_stage_log.append(
-            {
-                "robot": robot,
-                "condition": condition,
-                **_with_experience_trace(evidence, experience),
-            }
-        )
-        dynamic_model_called = True
-        failure = {"stage": "study", **_failure_record(exc)}
-        _write(
-            workspace / "study_error.json",
-            {"failure": failure, "evidence": evidence},
-        )
-
-    if study_result is not None:
-        try:
-            try:
-                if not study_result.probe_requests:
-                    raise ProbeError(
-                        "STUDY returned no real local MuJoCo development probe"
-                    )
-                in_conversation = getattr(study_result, "probe_results", ())
-                if in_conversation:
-                    probe_results = tuple(
-                        _copy(dict(item))
-                        for item in in_conversation
-                        if isinstance(item, Mapping)
-                    )
-                else:
-                    probe_value = hooks.probe_runner(
-                        study_result.probe_requests,
-                        package=package,
-                        workspace=workspace / "probe",
-                        condition=condition,
-                        budget=config.probe_budget,
-                        source_root=_default_root() / "src",
-                    )
-                    probe_results = tuple(_copy(dict(item)) for item in probe_value)
-                    if not _has_successful_physics_probe(probe_results):
-                        fallback_value = hooks.probe_runner(
-                            _canonical_liveness_probe(),
-                            package=package,
-                            workspace=workspace / "probe-fallback",
-                            condition=condition,
-                            budget=config.probe_budget,
-                            source_root=_default_root() / "src",
-                        )
-                        fallback_results = tuple(
-                            {
-                                **_copy(dict(item)),
-                                "framework_canonical_liveness": True,
-                            }
-                            for item in fallback_value
-                        )
-                        probe_results = (*probe_results, *fallback_results)
-                if not _has_successful_physics_probe(probe_results):
-                    raise ProbeError(
-                        "STUDY produced no successful probe with real MuJoCo physics steps"
-                    )
-            except ProbeError as exc:
-                probe_results = (
-                    *probe_results,
-                    {"probe_error": _failure_record(exc)},
-                )
-                failure = {"stage": "probe", **_failure_record(exc)}
-            _write(workspace / "probe_results.json", {"results": list(probe_results)})
-        except Exception as exc:
-            failure = {"stage": "probe", **_failure_record(exc)}
-            _write(workspace / "probe_results.json", {"error": failure})
+    if not _has_successful_physics_probe(probe_results):
+        raise PipelineError("completed STUDY has no successful real-MuJoCo probe")
+    _write(workspace / "probe_results.json", {"results": list(probe_results)})
 
     if study_result is not None and failure is None:
         for attempt in range(config.max_driver_attempts_per_condition):
@@ -1607,18 +2082,26 @@ def _run_cell(
             try:
                 if attempt == 0:
                     before = _call_count(client)
-                    generated = hooks.generate_runner(
+                    generated = _call_supported(
+                        hooks.generate_runner,
                         client,
                         package,
                         public_design,
                         study_result,
                         condition=condition,
-                        workspace=attempt_dir,
+                        workspace=workspace / "files",
                         probe_results=probe_results,
                         experience=experience,
                         runtime_contract=runtime_contract,
                         probe_budget=config.probe_budget,
                         source_root=_default_root() / "src",
+                        max_turns=int(
+                            config.phase_turn_budgets[
+                                "generate_skeleton"
+                                if condition == "skeleton-assisted"
+                                else "generate_from_scratch"
+                            ]
+                        ),
                     )
                     generation_evidence = _stage_evidence(
                         client,
@@ -1656,8 +2139,15 @@ def _run_cell(
                         "public_inputs": public_inputs,
                         "condition": condition,
                         "previous_attempt": attempt - 1,
-                        "workspace": attempt_dir,
+                        "workspace": workspace / "files",
                         "max_total_attempts": config.max_driver_attempts_per_condition,
+                        "max_turns": int(
+                            config.phase_turn_budgets[
+                                "repair_skeleton"
+                                if condition == "skeleton-assisted"
+                                else "repair_from_scratch"
+                            ]
+                        ),
                         "capability_methods": tuple(
                             str(capability["method_name"])
                             for capability in public_design["capabilities"]
@@ -1671,7 +2161,11 @@ def _run_cell(
                                 "source_root": _default_root() / "src",
                             }
                         )
-                    repaired = hooks.repair_runner(client, **repair_kwargs)
+                    repaired = _call_supported(
+                        hooks.repair_runner,
+                        client,
+                        **repair_kwargs,
+                    )
                     repair_evidence = _stage_evidence(
                         client,
                         stage="repair",
@@ -1695,8 +2189,12 @@ def _run_cell(
                     generated = repaired
                     driver_generated = True
 
-                current_driver = Path(generated.driver_path).resolve()
+                candidate_driver = Path(generated.driver_path).resolve()
                 current_source = str(generated.driver_source)
+                frozen_dir = workspace / "frozen-driver-attempts" / f"attempt-{attempt + 1}"
+                frozen_dir.mkdir(parents=True, exist_ok=True)
+                current_driver = frozen_dir / "driver.py"
+                shutil.copyfile(candidate_driver, current_driver)
                 _write(
                     attempt_dir / "generation_evidence.json",
                     {
@@ -1711,7 +2209,8 @@ def _run_cell(
                         "development_probe_results": list(
                             getattr(generated, "probe_results", ())
                         ),
-                        "formal_attempt_submitted": True,
+                        "driver_frozen": True,
+                        "frozen_driver_path": str(current_driver),
                     },
                 )
                 failure = None
@@ -1883,6 +2382,8 @@ def _run_cell(
             attempt_record: dict[str, Any] = {
                 "attempt": attempt,
                 "driver_generated": True,
+                "driver_frozen": True,
+                "frozen_driver_path": str(current_driver),
                 "capability_validation": validation,
             }
             if generation_evidence is not None:
@@ -1912,6 +2413,10 @@ def _run_cell(
         )
 
     final_pass = bool(terminal_validation.get("validation_passed"))
+    passed_capability_ids = _passed_capability_ids(
+        suite=sealed_capability_suite,
+        report=terminal_validation,
+    )
     task_demo = _normalise_validation_report(
         {
             "pipeline_completed": False,
@@ -1919,7 +2424,7 @@ def _run_cell(
             "validation_passed": False,
             "video_complete": not config.record_video,
             "skipped": True,
-            "skip_reason": "capability validation did not pass",
+            "skip_reason": "no capability passed both nominal and calibrated-boundary cases",
             "trials": [],
             "video_manifest": [],
         },
@@ -1929,22 +2434,33 @@ def _run_cell(
         record_video=config.record_video,
         evaluation_role="task_demo",
     )
-    if final_pass and current_driver is not None:
+    if passed_capability_ids and current_driver is not None:
         task_demo_attempt = int(terminal_validation.get("attempt", 0))
         controller_before = _call_count(client)
         try:
-            task_demo_raw = hooks.harness_runner(
+            task_demo_runner = hooks.task_demo_runner or _default_task_demo_run
+            task_demo_raw = _call_supported(
+                task_demo_runner,
                 package=package,
-                design=_copy(public_design),
-                suite=_copy(sealed_task_demo_suite),
+                design=_whitelisted_design(public_design, passed_capability_ids),
                 driver_path=current_driver,
+                client=client,
+                recap_runner=hooks.recap_runner,
+                budgets=RecapBudgets(
+                    max_planning_turns=config.recap_max_planning_turns_per_task,
+                    max_capability_calls=config.recap_max_capability_calls_per_task,
+                ),
+                selection_seed=config.task_demo_seed_template.format(
+                    run_id=run_id,
+                    robot_configuration_id=robot,
+                ),
+                capability_whitelist=passed_capability_ids,
                 condition=condition,
                 output_dir=workspace / "task-demo",
                 record_video=config.record_video,
                 wall_timeout_s=config.worker_wall_timeout_s,
                 run_id=run_id,
                 attempt=task_demo_attempt,
-                controller_client=client,
             )
             controller_summary = task_demo_raw.get("high_level_controller")
             controller_stage_completed = (
@@ -1956,15 +2472,14 @@ def _run_cell(
                 {
                     "robot": robot,
                     "condition": condition,
-                    **_with_experience_trace(
-                        _stage_evidence(
-                            client,
-                            stage="task_demo_controller",
-                            before=controller_before,
-                            completed=controller_stage_completed,
-                        ),
-                        experience,
+                    **_stage_evidence(
+                        client,
+                        stage="task_demo_recap",
+                        before=controller_before,
+                        completed=controller_stage_completed,
                     ),
+                    "experience_ids": [],
+                    "capability_whitelist": list(passed_capability_ids),
                 }
             )
             task_demo = _normalise_validation_report(
@@ -1980,16 +2495,15 @@ def _run_cell(
                 {
                     "robot": robot,
                     "condition": condition,
-                    **_with_experience_trace(
-                        _stage_evidence(
-                            client,
-                            stage="task_demo_controller",
-                            before=controller_before,
-                            completed=False,
-                            error=exc,
-                        ),
-                        experience,
+                    **_stage_evidence(
+                        client,
+                        stage="task_demo_recap",
+                        before=controller_before,
+                        completed=False,
+                        error=exc,
                     ),
+                    "experience_ids": [],
+                    "capability_whitelist": list(passed_capability_ids),
                 }
             )
             task_demo = _normalise_validation_report(
@@ -2011,7 +2525,7 @@ def _run_cell(
         _write(workspace / "task-demo" / "task_demo_report.json", task_demo)
 
     cell_pipeline_completed = bool(terminal_validation.get("pipeline_completed")) and (
-        not final_pass or bool(task_demo.get("pipeline_completed"))
+        not passed_capability_ids or bool(task_demo.get("pipeline_completed"))
     )
     capabilities = [
         capability
@@ -2028,9 +2542,10 @@ def _run_cell(
         "designed_capability_count": len(capabilities),
         "covered_task_count": len(
             {
-                str(task_id)
-                for capability in capabilities
-                for task_id in capability.get("covered_task_ids", [])
+                str(relation["task_id"])
+                for relation in public_design.get("task_support", [])
+                if isinstance(relation, Mapping)
+                and isinstance(relation.get("task_id"), str)
             }
         ),
         "condition": condition,
@@ -2059,6 +2574,8 @@ def _run_cell(
         "video_required": config.record_video,
         "video_complete": bool(terminal_validation.get("video_complete")),
         "attempts": attempts,
+        "frozen_driver_attempt_count": len(attempts),
+        "passed_capability_whitelist": list(passed_capability_ids),
         "development_rejections": development_rejections,
         "development_probe": {
             "attempted": bool(study_result and study_result.probe_requests),
@@ -2069,6 +2586,10 @@ def _run_cell(
         "video_manifest": terminal_validation.get("video_manifest", []),
         "capability_validation": _copy(terminal_validation),
         "task_demo": _copy(task_demo),
+        "task_demo_task_counts": {
+            "passed": int(task_demo.get("passed_task_count", 0)),
+            "total": int(task_demo.get("task_count", 0)),
+        },
         "task_demo_trials": task_demo.get("trials", []),
         "task_demo_video_manifest": task_demo.get("video_manifest", []),
         "failure": failure,
@@ -2077,7 +2598,9 @@ def _run_cell(
                 (
                     item
                     for item in reversed(model_stage_log)
-                    if item.get("stage") == "tgcd" and item.get("robot") == robot
+                    if item.get("stage") == "tgcd"
+                    and item.get("robot") == robot
+                    and item.get("condition") == condition
                 ),
                 None,
             ),
@@ -2085,16 +2608,30 @@ def _run_cell(
                 (
                     item
                     for item in reversed(model_stage_log)
-                    if item.get("stage") == "ivc" and item.get("robot") == robot
+                    if item.get("stage") == "ivc"
+                    and item.get("robot") == robot
+                    and item.get("condition") == condition
                 ),
                 None,
             ),
             "STUDY": next(
-                (item for item in reversed(model_stage_log) if item.get("stage") == "study" and item.get("robot") == robot and item.get("condition") == condition),
+                (
+                    item
+                    for item in reversed(model_stage_log)
+                    if item.get("stage") == "study"
+                    and item.get("robot") == robot
+                    and item.get("condition") == condition
+                ),
                 None,
             ),
             "GENERATE": next(
-                (item for item in reversed(model_stage_log) if item.get("stage") == "generate" and item.get("robot") == robot and item.get("condition") == condition),
+                (
+                    item
+                    for item in reversed(model_stage_log)
+                    if item.get("stage") == "generate"
+                    and item.get("robot") == robot
+                    and item.get("condition") == condition
+                ),
                 None,
             ),
             "CapabilityValidation": _copy(terminal_validation),
@@ -2102,7 +2639,7 @@ def _run_cell(
                 (
                     item
                     for item in reversed(model_stage_log)
-                    if item.get("stage") == "task_demo_controller"
+                    if item.get("stage") == "task_demo_recap"
                     and item.get("robot") == robot
                     and item.get("condition") == condition
                 ),
@@ -2121,7 +2658,10 @@ def _run_cell(
 
     if evolution_enabled:
         try:
-            evolution = hooks.evolution_runner(terminal_evolution_client, raw_report)
+            evolution = hooks.evolution_runner(
+                terminal_evolution_client,
+                _without_experience(raw_report),
+            )
             if not isinstance(evolution, Mapping):
                 raise PipelineError("Evolution result must be an object")
             raw_report["evolution"] = _copy(dict(evolution))
@@ -2217,6 +2757,140 @@ def _new_run_id(experiment_id: str) -> str:
     return f"{experiment_id}-{timestamp}-{uuid.uuid4().hex[:8]}"
 
 
+def _run_study_phase(
+    *,
+    package: RobotPackage,
+    robot: str,
+    condition: GenerationCondition,
+    config: ExperimentConfig,
+    client: Any,
+    experience: Sequence[Mapping[str, Any]],
+    workspace: Path,
+    hooks: PipelineHooks,
+    stage_log: list[dict[str, Any]],
+) -> tuple[StudyResult, tuple[Mapping[str, Any], ...]]:
+    """Execute package-only STUDY before any fresh TGCD call."""
+
+    before = _call_count(client)
+    try:
+        result = _call_supported(
+            hooks.study_runner,
+            client,
+            package,
+            design=None,
+            condition=condition,
+            experience=experience,
+            runtime_contract=_runtime_contract(package),
+            workspace=workspace / "files",
+            probe_budget=config.probe_budget,
+            source_root=_default_root() / "src",
+            max_turns=int(config.phase_turn_budgets["study"]),
+        )
+        if not isinstance(result, StudyResult):
+            raise PipelineError("STUDY runner must return StudyResult")
+        probe_results = tuple(
+            _copy(dict(item))
+            for item in getattr(result, "probe_results", ())
+            if isinstance(item, Mapping)
+        )
+        if not probe_results:
+            raw = hooks.probe_runner(
+                result.probe_requests,
+                package=package,
+                workspace=workspace / "files" / "study-probe",
+                condition=condition,
+                budget=config.probe_budget,
+                source_root=_default_root() / "src",
+            )
+            probe_results = tuple(_copy(dict(item)) for item in raw)
+        if not _has_successful_physics_probe(probe_results):
+            raise ProbeError("STUDY produced no successful real-MuJoCo physics probe")
+        canonical_path = workspace / "files" / "study.json"
+        if not canonical_path.is_file():
+            _write(canonical_path, result.output)
+        evidence = _with_experience_trace(
+            _stage_evidence(client, stage="study", before=before, completed=True),
+            experience,
+        )
+        stage_log.append({"robot": robot, "condition": condition, **evidence})
+        _write(
+            workspace / "study_evidence.json",
+            {
+                "artifact": str(canonical_path),
+                "evidence": evidence,
+                "probe_results": list(probe_results),
+            },
+        )
+        return result, probe_results
+    except Exception as exc:
+        evidence = _with_experience_trace(
+            _stage_evidence(
+                client,
+                stage="study",
+                before=before,
+                completed=False,
+                error=exc,
+            ),
+            experience,
+        )
+        stage_log.append({"robot": robot, "condition": condition, **evidence})
+        raise
+
+
+def _run_reference_positive_control(
+    *,
+    package: RobotPackage,
+    design: Mapping[str, Any],
+    suite: Mapping[str, Any],
+    config: ExperimentConfig,
+    hooks: PipelineHooks,
+    output_dir: Path,
+    run_id: str,
+) -> dict[str, Any]:
+    driver_path = render_reference_driver(
+        package,
+        design,
+        output_dir,
+        renderer=hooks.reference_renderer,
+    )
+    if hooks.reference_runner is None:
+        raw = _default_reference_run(
+            package=package,
+            design=design,
+            capability_suite=suite,
+            driver_path=driver_path,
+            output_dir=output_dir / "validation",
+            config=config,
+            run_id=run_id,
+        )
+    else:
+        raw = _call_supported(
+            hooks.reference_runner,
+            package=package,
+            design=_copy(dict(design)),
+            suite=_copy(dict(suite)),
+            driver_path=driver_path,
+            trusted_reference_driver=True,
+            output_dir=output_dir / "validation",
+            record_video=config.record_video,
+            wall_timeout_s=config.worker_wall_timeout_s,
+            run_id=run_id,
+            attempt=0,
+        )
+    report = _copy(dict(raw))
+    report.update(
+        {
+            "evaluation_role": "ivc_reference_positive_control",
+            "reference_driver": str(driver_path),
+            "passed": _reference_passed(report, video_required=config.record_video),
+        }
+    )
+    _write(output_dir / "reference_positive_control.json", report)
+    if not report["passed"]:
+        raise IVCError("private reference positive control did not pass the complete IVC suite")
+    return report
+
+
 def run_experiment(
     mainline_root: str | Path,
     *,
@@ -2277,7 +2951,11 @@ def run_experiment(
     if selected_run_id in experience_source_ids:
         raise PipelineError("same-round Experience input is not permitted")
     selected_hooks = hooks or PipelineHooks()
-    destination = Path(output_dir).resolve() if output_dir is not None else root / "runs" / selected_run_id
+    destination = (
+        Path(output_dir).resolve()
+        if output_dir is not None
+        else root / "runs" / selected_run_id
+    )
     destination.mkdir(parents=True, exist_ok=True)
 
     environment = check_environment()
@@ -2332,238 +3010,326 @@ def run_experiment(
         )
         if evolution_model_preflight is not None:
             _write(destination / "evolution_model_preflight.json", evolution_model_preflight)
-    stage_log: list[dict[str, Any]] = []
-    designs: dict[str, Mapping[str, Any]] = {}
-    capability_suites: dict[str, Mapping[str, Any]] = {}
-    task_demo_suites: dict[str, Mapping[str, Any]] = {}
-    sealed_input_provenance: dict[str, Any] | None = None
     if sealed_inputs_from is not None:
-        (
-            designs,
-            capability_suites,
-            task_demo_suites,
-            reused_evidence,
-            sealed_input_provenance,
-        ) = _reuse_sealed_inputs(
-            source_dir=sealed_inputs_from,
-            mainline_root=root,
-            destination=destination,
-            config=config,
-            packages=packages,
-            hooks=selected_hooks,
+        raise PipelineError(
+            "sealed TGCD/IVC reuse is incompatible with fresh per-cell design and validation"
         )
-        stage_log.extend(reused_evidence)
-    # Every robot completes TGCD and IVC before any condition receives a driver workspace.
-    for robot in (() if sealed_inputs_from is not None else config.robots):
-        package = packages[robot]
-        robot_design_dir = destination / "designs" / robot
-        robot_private_dir = destination / "private" / robot
-        robot_design_dir.mkdir(parents=True, exist_ok=True)
-        robot_private_dir.mkdir(parents=True, exist_ok=True)
-        robot_experience = _public_experience(experience, robot)
-        try:
-            before = _call_count(client)
-            design = selected_hooks.tgcd_runner(
-                client,
-                package,
-                experience=robot_experience,
-            )
-            design = _copy(dict(design))
-            evidence = _stage_evidence(client, stage="tgcd", before=before, completed=True)
-            evidence = _with_experience_trace(evidence, robot_experience)
-            stage_log.append({"robot": robot, **evidence})
-            write_capability_design(robot_design_dir / "capability_design.json", design)
-            designs[robot] = design
-        except Exception as exc:
-            evidence = _stage_evidence(
-                client,
-                stage="tgcd",
-                before=locals().get("before"),
-                completed=False,
-                error=exc,
-            )
-            evidence = _with_experience_trace(
-                evidence,
-                _public_experience(experience, robot),
-            )
-            stage_log.append({"robot": robot, **evidence})
-            failure = {
-                "pipeline_completed": False,
-                "dynamic_model_called": bool(stage_log),
-                "driver_generated_in_run": False,
-                "capability_validation_executed": False,
-                "initial_capability_validation_passed": False,
-                "final_capability_validation_passed": False,
-                "task_demo_executed": False,
-                "task_demo_passed": False,
-                "physical_validation_executed": False,
-                "initial_validation_passed": False,
-                "final_validation_passed": False,
-                "failure": {"stage": "tgcd", "robot": robot, **_failure_record(exc)},
-                "stage_evidence": stage_log,
-            }
-            _write(destination / "experiment_report.json", failure)
-            raise PipelineError(
-                f"TGCD failed for {robot!r}; no dynamic driver generation started: {exc}"
-            ) from exc
+    if config.formal and skip_reference_calibration:
+        raise PipelineError("formal cells cannot skip the IVC private reference positive control")
 
-        try:
-            before = _call_count(client)
-            capability_suite = selected_hooks.ivc_runner(
-                client,
-                package=package,
-                design=_copy(dict(design)),
-            )
-            capability_suite = _copy(dict(capability_suite))
-            selection_seed = config.task_demo_seed_template.format(
-                run_id=selected_run_id,
-                robot_configuration_id=robot,
-            )
-            task_demo_suite = sample_task_demo_suite(
-                package=package,
-                design=design,
-                seed=selection_seed,
-            )
-            evidence = _stage_evidence(client, stage="ivc", before=before, completed=True)
-            evidence = _with_experience_trace(
-                evidence,
-                _public_experience(experience, robot),
-            )
-            evidence["compiled_capability_validation_case_count"] = len(
-                capability_suite.get("cases", [])
-            )
-            evidence["selected_task_demo_task_count"] = TASK_DEMO_TASK_COUNT
-            evidence["compiled_task_demo_case_count"] = len(
-                task_demo_suite.get("cases", [])
-            )
-            stage_log.append({"robot": robot, **evidence})
-            write_private_suite(
-                robot_private_dir / "capability_validation_suite.json",
-                capability_suite,
-            )
-            write_private_suite(
-                robot_private_dir / "task_demo_suite.json", task_demo_suite
-            )
-            capability_suites[robot] = capability_suite
-            task_demo_suites[robot] = task_demo_suite
-        except Exception as exc:
-            evidence = _stage_evidence(
-                client,
-                stage="ivc",
-                before=locals().get("before"),
-                completed=False,
-                error=exc,
-            )
-            evidence = _with_experience_trace(
-                evidence,
-                _public_experience(experience, robot),
-            )
-            stage_log.append({"robot": robot, **evidence})
-            failure = {
-                "pipeline_completed": False,
-                "dynamic_model_called": True,
-                "driver_generated_in_run": False,
-                "capability_validation_executed": False,
-                "initial_capability_validation_passed": False,
-                "final_capability_validation_passed": False,
-                "task_demo_executed": False,
-                "task_demo_passed": False,
-                "physical_validation_executed": False,
-                "initial_validation_passed": False,
-                "final_validation_passed": False,
-                "failure": {"stage": "ivc", "robot": robot, **_failure_record(exc)},
-                "stage_evidence": stage_log,
-            }
-            _write(destination / "experiment_report.json", failure)
-            raise PipelineError(
-                f"IVC failed for {robot!r}; no dynamic driver generation started: {exc}"
-            ) from exc
-
+    stage_log: list[dict[str, Any]] = []
+    sealed_input_provenance: dict[str, Any] | None = None
     references: dict[str, Any] = {}
-    if skip_reference_calibration:
-        for robot in config.robots:
-            reference = {
-                "robot_configuration_id": robot,
-                "reference_driver": None,
-                "skipped": True,
-                "skip_reason": "optional hidden reference diagnostics were skipped",
-                "evaluation_role": "diagnostic_reference",
-                "pipeline_completed": False,
-                "physical_validation_executed": False,
-                "validation_passed": False,
-                "video_complete": False,
-                "passed": False,
-            }
-            references[robot] = reference
-            _write(destination / "references" / robot / "reference_report.json", reference)
-    else:
-        # Optional hidden diagnostics complete before STUDY and never gate dynamic cells.
-        for robot in config.robots:
-            package = packages[robot]
-            reference_dir = destination / "references" / robot
-            try:
-                driver_path = render_reference_driver(
-                    package,
-                    designs[robot],
-                    reference_dir,
-                    renderer=selected_hooks.reference_renderer,
-                )
-                if selected_hooks.reference_runner is None:
-                    reference = _default_reference_run(
-                        package=package,
-                        design=designs[robot],
-                        capability_suite=capability_suites[robot],
-                        driver_path=driver_path,
-                        output_dir=reference_dir / "validation",
-                        config=config,
-                        run_id=selected_run_id,
-                    )
-                else:
-                    reference = selected_hooks.reference_runner(
-                        package=package,
-                        design=_copy(dict(designs[robot])),
-                        suite=_copy(dict(capability_suites[robot])),
-                        driver_path=driver_path,
-                        output_dir=reference_dir / "validation",
-                        record_video=config.record_video,
-                        wall_timeout_s=config.worker_wall_timeout_s,
-                        run_id=selected_run_id,
-                        attempt=0,
-                    )
-                reference = _copy(dict(reference))
-                reference["evaluation_role"] = "diagnostic_reference"
-                reference["robot_configuration_id"] = robot
-                reference["reference_driver"] = str(driver_path)
-                reference["passed"] = _reference_passed(
-                    reference,
-                    video_required=config.record_video,
-                )
-            except Exception as exc:
-                reference = {
-                    "robot_configuration_id": robot,
-                    "reference_driver": None,
-                    "evaluation_role": "diagnostic_reference",
-                    "pipeline_completed": False,
-                    "physical_validation_executed": False,
-                    "validation_passed": False,
-                    "video_complete": not config.record_video,
-                    "passed": False,
-                    "failure": _failure_record(exc),
-                }
-            references[robot] = reference
-            _write(reference_dir / "reference_report.json", reference)
-
-    references_passed = all(bool(references[robot].get("passed")) for robot in config.robots)
-
     cell_reports: list[dict[str, Any]] = []
     for robot in config.robots:
         for condition in config.generation_conditions:
             cell_workspace = destination / "cells" / robot / condition
+            cell_id = f"{robot}::{condition}"
+            package = packages[robot]
+            robot_experience = _public_experience(experience, robot)
+            current_stage = "study"
+            stage_before: int | None = None
+            tgcd_events: list[dict[str, Any]] = []
+            ivc_events: list[dict[str, Any]] = []
+            try:
+                completed_study, study_probe_results = _run_study_phase(
+                    package=package,
+                    robot=robot,
+                    condition=condition,
+                    config=config,
+                    client=client,
+                    experience=robot_experience,
+                    workspace=cell_workspace,
+                    hooks=selected_hooks,
+                    stage_log=stage_log,
+                )
+
+                current_stage = "tgcd"
+                stage_before = _call_count(client)
+
+                def record_tgcd_event(event: Mapping[str, Any]) -> None:
+                    tgcd_events.append(_json_safe(dict(event)))
+
+                design = _call_supported(
+                    selected_hooks.tgcd_runner,
+                    client,
+                    package,
+                    experience=robot_experience,
+                    study=completed_study.output,
+                    max_turns=int(config.phase_turn_budgets["tgcd"]),
+                    probe_budget=config.probe_budget,
+                    callback=record_tgcd_event,
+                    artifact_path=cell_workspace / "design" / "capability_design.json",
+                )
+                design = _copy(
+                    dict(
+                        _call_supported(
+                            selected_hooks.capability_design_validator,
+                            design,
+                            package,
+                        )
+                    )
+                )
+                design_path = cell_workspace / "design" / "capability_design.json"
+                if not design_path.is_file():
+                    write_capability_design(design_path, design)
+                tgcd_evidence = _with_experience_trace(
+                    _stage_evidence(
+                        client,
+                        stage="tgcd",
+                        before=stage_before,
+                        completed=True,
+                    ),
+                    robot_experience,
+                )
+                tgcd_evidence["artifact_trace"] = _copy(tgcd_events)
+                stage_log.append(
+                    {"robot": robot, "condition": condition, **tgcd_evidence}
+                )
+                _write(
+                    cell_workspace / "design" / "tgcd_artifact_trace.json",
+                    {"events": tgcd_events},
+                )
+
+                reference_box: dict[str, Any] = {}
+
+                def positive_control_hook(
+                    *,
+                    capability_design: Mapping[str, Any],
+                    validation_suite: Mapping[str, Any],
+                ) -> Mapping[str, Any]:
+                    report = _run_reference_positive_control(
+                        package=package,
+                        design=capability_design,
+                        suite=validation_suite,
+                        config=config,
+                        hooks=selected_hooks,
+                        output_dir=cell_workspace / "private" / "reference-positive-control",
+                        run_id=selected_run_id,
+                    )
+                    reference_box["report"] = report
+                    return report
+
+                current_stage = "ivc"
+                stage_before = _call_count(client)
+
+                def record_ivc_event(event: Mapping[str, Any]) -> None:
+                    ivc_events.append(_json_safe(dict(event)))
+
+                capability_suite = _call_supported(
+                    selected_hooks.ivc_runner,
+                    client,
+                    package=package,
+                    design=_copy(dict(design)),
+                    max_turns=int(config.phase_turn_budgets["ivc"]),
+                    probe_budget=config.probe_budget,
+                    callback=record_ivc_event,
+                    reference_positive_control_hook=(
+                        None if skip_reference_calibration else positive_control_hook
+                    ),
+                    artifact_path=(
+                        cell_workspace
+                        / "private"
+                        / "capability_validation_suite.json"
+                    ),
+                )
+                capability_suite = _copy(
+                    dict(
+                        _call_supported(
+                            selected_hooks.capability_suite_validator,
+                            capability_suite,
+                            package=package,
+                            design=design,
+                        )
+                    )
+                )
+                suite_path = (
+                    cell_workspace
+                    / "private"
+                    / "capability_validation_suite.json"
+                )
+                if not suite_path.is_file():
+                    write_private_suite(suite_path, capability_suite)
+                ivc_trace_path = (
+                    cell_workspace / "private" / "ivc_artifact_trace.json"
+                )
+                if skip_reference_calibration:
+                    reference = {
+                        "robot_configuration_id": robot,
+                        "evaluation_role": "ivc_reference_positive_control",
+                        "skipped": True,
+                        "skip_reason": (
+                            "diagnostic caller explicitly skipped the private "
+                            "positive control"
+                        ),
+                        "passed": False,
+                    }
+                else:
+                    if "report" not in reference_box:
+                        positive_control_hook(
+                            capability_design=design,
+                            validation_suite=capability_suite,
+                        )
+                    reference = _copy(dict(reference_box["report"]))
+                references[cell_id] = reference
+                ivc_evidence = _stage_evidence(
+                    client,
+                    stage="ivc",
+                    before=stage_before,
+                    completed=True,
+                )
+                private_model_calls = ivc_evidence.pop("model_calls", [])
+                _write(
+                    ivc_trace_path,
+                    {
+                        "events": ivc_events,
+                        "model_calls": private_model_calls,
+                    },
+                )
+                ivc_evidence.update(
+                    {
+                        "experience_ids": [],
+                        "candidate_driver_visible": False,
+                        "compiled_capability_validation_case_count": len(
+                            capability_suite.get("cases", [])
+                        ),
+                        "reference_positive_control_passed": bool(
+                            reference.get("passed")
+                        ),
+                        "artifact_trace_summary": (
+                            _private_artifact_event_summaries(ivc_events)
+                        ),
+                        "private_artifact_trace_path": str(ivc_trace_path),
+                    }
+                )
+                stage_log.append(
+                    {"robot": robot, "condition": condition, **ivc_evidence}
+                )
+            except Exception as exc:
+                failed_stage = current_stage
+                if current_stage in {"tgcd", "ivc"}:
+                    failed_evidence = _stage_evidence(
+                        client,
+                        stage=current_stage,
+                        before=stage_before,
+                        completed=False,
+                        error=exc,
+                    )
+                    wrapped_trace = _artifact_error_trace(exc)
+                    if current_stage == "tgcd":
+                        failed_evidence = _with_experience_trace(
+                            failed_evidence,
+                            robot_experience,
+                        )
+                        if wrapped_trace:
+                            tgcd_events.append(
+                                {
+                                    "stage": "tgcd-failed",
+                                    "trace": wrapped_trace,
+                                }
+                            )
+                        failed_evidence["artifact_trace"] = _copy(tgcd_events)
+                        _write(
+                            cell_workspace
+                            / "design"
+                            / "tgcd_artifact_trace.json",
+                            {"events": tgcd_events},
+                        )
+                    else:
+                        ivc_trace_path = (
+                            cell_workspace
+                            / "private"
+                            / "ivc_artifact_trace.json"
+                        )
+                        private_model_calls = failed_evidence.pop(
+                            "model_calls", []
+                        )
+                        private_react_trace = failed_evidence.pop(
+                            "react_trace", []
+                        )
+                        if not private_react_trace:
+                            private_react_trace = wrapped_trace
+                        private_probe_results = failed_evidence.pop(
+                            "probe_results", []
+                        )
+                        error = failed_evidence.get("error")
+                        if isinstance(error, Mapping):
+                            failed_evidence["error"] = {
+                                "type": str(error.get("type", "IVCError")),
+                                "message": (
+                                    "IVC failed; inspect the private artifact trace"
+                                ),
+                            }
+                        _write(
+                            ivc_trace_path,
+                            {
+                                "events": ivc_events,
+                                "model_calls": private_model_calls,
+                                "react_trace": private_react_trace,
+                                "probe_results": private_probe_results,
+                            },
+                        )
+                        failed_evidence.update(
+                            {
+                                "experience_ids": [],
+                                "candidate_driver_visible": False,
+                                "artifact_trace_summary": (
+                                    _private_artifact_event_summaries(ivc_events)
+                                ),
+                                "private_react_trace_event_count": len(
+                                    private_react_trace
+                                ),
+                                "private_artifact_trace_path": str(
+                                    ivc_trace_path
+                                ),
+                            }
+                        )
+                    stage_log.append(
+                        {
+                            "robot": robot,
+                            "condition": condition,
+                            **failed_evidence,
+                        }
+                    )
+                failure_detail = _failure_record(exc)
+                if failed_stage == "ivc":
+                    failure_detail["message"] = (
+                        "IVC failed; inspect the private artifact trace"
+                    )
+                failure = {
+                    "pipeline_completed": False,
+                    "dynamic_model_called": True,
+                    "driver_generated_in_run": False,
+                    "capability_validation_executed": False,
+                    "initial_capability_validation_passed": False,
+                    "final_capability_validation_passed": False,
+                    "task_demo_executed": False,
+                    "task_demo_passed": False,
+                    "physical_validation_executed": False,
+                    "initial_validation_passed": False,
+                    "final_validation_passed": False,
+                    "failure": {
+                        "stage": failed_stage,
+                        "robot": robot,
+                        "condition": condition,
+                        **failure_detail,
+                    },
+                    "stage_evidence": stage_log,
+                }
+                _write(destination / "experiment_report.json", failure)
+                public_error = (
+                    "IVC failed; inspect its private artifact trace"
+                    if failed_stage == "ivc"
+                    else str(exc)
+                )
+                raise PipelineError(
+                    f"fresh cell {cell_id} failed before Driver generation: {public_error}"
+                ) from exc
+
             raw_cell = _run_cell(
-                package=packages[robot],
-                design=designs[robot],
-                capability_suite=capability_suites[robot],
-                task_demo_suite=task_demo_suites[robot],
+                package=package,
+                design=design,
+                capability_suite=capability_suite,
                 robot=robot,
                 condition=condition,
                 config=config,
@@ -2571,14 +3337,26 @@ def run_experiment(
                 evolution_client=evolution_client,
                 evolution_enabled=config.evolution_enabled,
                 identity=identity,
-                experience=_public_experience(experience, robot),
+                experience=robot_experience,
                 workspace=cell_workspace,
                 run_id=selected_run_id,
                 hooks=selected_hooks,
                 model_stage_log=stage_log,
+                completed_study=completed_study,
+                completed_probe_results=study_probe_results,
             )
             cell = build_cell_report(raw_cell)
+            cell["frozen_driver_attempt_count"] = int(
+                raw_cell.get("frozen_driver_attempt_count", 0)
+            )
+            cell["passed_capability_whitelist"] = _copy(
+                list(raw_cell.get("passed_capability_whitelist", []))
+            )
             cell_reports.append(cell)
+
+    references_passed = bool(references) and all(
+        bool(reference.get("passed")) for reference in references.values()
+    )
 
     paired = build_paired_report(
         cell_reports,
