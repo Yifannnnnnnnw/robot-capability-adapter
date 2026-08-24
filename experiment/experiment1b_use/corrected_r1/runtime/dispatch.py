@@ -41,6 +41,8 @@ EXPECTED_TASK_ORDER = (
 EXPECTED_DISPATCH_ORDER = (*EXPECTED_TASK_ORDER, "M2_REPLACEMENTS")
 R23_AUDIT_ID = "AA2-B2-CORRECTED-R23"
 R23_AUDIT_REVISION = "1.0.0"
+R123_V2_AUDIT_ID = "AA2-B2-CORRECTED-R123-V2"
+R123_V2_AUDIT_REVISION = "1.0.0"
 R23_TASK_ORDER = (
     "mw_push_to_goal",
     "mw_sweep_into_goal",
@@ -52,6 +54,16 @@ R23_TASK_ORDER = (
     "GO2-T17",
     "mw_pick_place_wall",
     "mw_dial_turn",
+)
+R123_V2_TASK_ORDER = R23_TASK_ORDER
+R123_V2_DISPATCH_ORDER = (
+    "R1/GO2-T17",
+    "R1/mw_dial_turn",
+    *tuple(
+        f"{replicate_id}/{task_id}"
+        for task_id in R123_V2_TASK_ORDER
+        for replicate_id in ("R2", "R3")
+    ),
 )
 COMPANY_MODELS = tuple(model_id for model_id in EXPECTED_MODELS if model_id != "M5")
 
@@ -72,9 +84,10 @@ class CorrectedUnit:
     model_id: str
     replicate_id: str
     execution_origin: str
+    superseded_terminal_path: str | None = None
 
-    def as_dict(self) -> dict[str, str]:
-        return {
+    def as_dict(self) -> dict[str, Any]:
+        value: dict[str, Any] = {
             "unit_id": self.unit_id,
             "robot_configuration_id": self.robot_configuration_id,
             "task_id": self.task_id,
@@ -82,6 +95,9 @@ class CorrectedUnit:
             "replicate_id": self.replicate_id,
             "execution_origin": self.execution_origin,
         }
+        if self.superseded_terminal_path is not None:
+            value["superseded_terminal_path"] = self.superseded_terminal_path
+        return value
 
 
 @dataclass(frozen=True)
@@ -102,6 +118,11 @@ class ResolvedCorrectedManifest:
     suite_artifact_type: str = "b2_corrected_r1_task_suite"
     positive_control_artifact_type: str = "b2_corrected_r1_positive_control_index"
     expected_task_order: tuple[str, ...] = EXPECTED_TASK_ORDER
+    # The original corrected-R1 control index predates explicit replicate
+    # coverage metadata.  Later profiles pin it; ``None`` preserves that
+    # historical index without weakening the newer profile gates.
+    positive_control_replicate_id: str | None = None
+    positive_control_covered_replicates: tuple[str, ...] = ()
 
     @property
     def audit_identity(self) -> dict[str, str]:
@@ -176,14 +197,26 @@ def _identity(
         raise CorrectedDispatchError(f"{label} audit identity is invalid")
 
 
-def _selection_document(path: Path) -> dict[str, Mapping[str, Any]]:
+def _selection_document(
+    path: Path,
+    *,
+    artifact_type: str = "b2_corrected_r1_reference_selection",
+    document_id: str = AUDIT_ID,
+    revision: str = AUDIT_REVISION,
+    expected_versions: Mapping[str, str] | None = None,
+) -> dict[str, Mapping[str, Any]]:
     document = _read_object(path, label="corrected reference selection")
     if (
-        document.get("artifact_type") != "b2_corrected_r1_reference_selection"
+        document.get("artifact_type") != artifact_type
         or document.get("schema_version") != "1.0"
     ):
         raise CorrectedDispatchError("corrected reference selection identity is invalid")
-    _identity(document.get("audit_identity"), label="corrected reference selection")
+    _identity(
+        document.get("audit_identity"),
+        label="corrected reference selection",
+        document_id=document_id,
+        revision=revision,
+    )
     values = document.get("robots")
     expected_robots = ("robotstudio_so101", "unitree-go2-stock-12dof")
     if (
@@ -198,11 +231,22 @@ def _selection_document(path: Path) -> dict[str, Mapping[str, Any]]:
     ):
         raise CorrectedDispatchError("corrected reference selection robot set is invalid")
     selections: dict[str, Mapping[str, Any]] = {}
+    versions = dict(
+        expected_versions
+        or {
+            "robotstudio_so101": "1.0.2",
+            "unitree-go2-stock-12dof": "1.0.1",
+        }
+    )
     for item in values:
         if not isinstance(item, Mapping):
             raise CorrectedDispatchError("corrected reference selection entry is invalid")
         robot_id = str(item["robot_configuration_id"])
-        expected_version = "1.0.2" if robot_id == "robotstudio_so101" else "1.0.1"
+        expected_version = versions.get(robot_id)
+        if expected_version is None:
+            raise CorrectedDispatchError(
+                f"no expected corrected package version for {robot_id}"
+            )
         if item.get("package_version") != expected_version:
             raise CorrectedDispatchError(f"{robot_id} corrected package version is invalid")
         if item.get("condition") != "skeleton-assisted":
@@ -219,8 +263,8 @@ def _selection_document(path: Path) -> dict[str, Mapping[str, Any]]:
                 expected_package / "reference/fixed_capability_driver.py"
             ).resolve(),
             "capability_design_path": (
-                Path(__file__).resolve().parents[1]
-                / "config/reference/resolved"
+                path.parent
+                / "resolved"
                 / robot_id
                 / "capability_design.json"
             ).resolve(),
@@ -373,15 +417,127 @@ def _r23_units(value: Any) -> tuple[CorrectedUnit, ...]:
     return tuple(units)
 
 
+def _r123_v2_units(value: Any) -> tuple[CorrectedUnit, ...]:
+    if not isinstance(value, list) or len(value) != 154:
+        raise CorrectedDispatchError(
+            "corrected-R123-v2 manifest must enumerate 154 execution units"
+        )
+    units: list[CorrectedUnit] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, Mapping):
+            raise CorrectedDispatchError(f"fresh_units[{index}] must be an object")
+        superseded = item.get("superseded_terminal_path")
+        unit = CorrectedUnit(
+            unit_id=_required_string(
+                item.get("unit_id"), label=f"fresh_units[{index}].unit_id"
+            ),
+            robot_configuration_id=_required_string(
+                item.get("robot_configuration_id"),
+                label=f"fresh_units[{index}].robot_configuration_id",
+            ),
+            task_id=_required_string(
+                item.get("task_id"), label=f"fresh_units[{index}].task_id"
+            ),
+            model_id=_required_string(
+                item.get("model_id"), label=f"fresh_units[{index}].model_id"
+            ),
+            replicate_id=_required_string(
+                item.get("replicate_id"),
+                label=f"fresh_units[{index}].replicate_id",
+            ),
+            execution_origin=_required_string(
+                item.get("execution_origin"),
+                label=f"fresh_units[{index}].execution_origin",
+            ),
+            superseded_terminal_path=(
+                _required_string(
+                    superseded,
+                    label=f"fresh_units[{index}].superseded_terminal_path",
+                )
+                if superseded is not None
+                else None
+            ),
+        )
+        expected_robot = (
+            "unitree-go2-stock-12dof"
+            if unit.task_id.startswith("GO2-")
+            else "robotstudio_so101"
+        )
+        expected_id = (
+            f"b2-corrected-r123-v2::{expected_robot}::{unit.task_id}::"
+            f"{unit.model_id}::{unit.replicate_id}"
+        )
+        if (
+            unit.unit_id != expected_id
+            or unit.robot_configuration_id != expected_robot
+            or unit.task_id not in R123_V2_TASK_ORDER
+            or unit.model_id not in EXPECTED_MODELS
+            or unit.replicate_id not in {"R1", "R2", "R3"}
+        ):
+            raise CorrectedDispatchError(
+                f"corrected-R123-v2 unit identity is invalid: {unit.unit_id}"
+            )
+        is_replacement = unit.replicate_id == "R1"
+        if is_replacement:
+            if (
+                unit.task_id not in {"GO2-T17", "mw_dial_turn"}
+                or unit.execution_origin != "replacement_new_definition"
+                or unit.superseded_terminal_path is None
+            ):
+                raise CorrectedDispatchError(
+                    f"invalid corrected-R123-v2 R1 replacement: {unit.unit_id}"
+                )
+            source = _repository_path(
+                unit.superseded_terminal_path,
+                label=f"{unit.unit_id}.superseded_terminal_path",
+            )
+            if not source.is_file():
+                raise CorrectedDispatchError(
+                    f"superseded R1 terminal is absent: {source}"
+                )
+        elif (
+            unit.execution_origin != "fresh_corrected"
+            or unit.superseded_terminal_path is not None
+        ):
+            raise CorrectedDispatchError(
+                f"invalid corrected-R123-v2 fresh unit: {unit.unit_id}"
+            )
+        units.append(unit)
+    if len({unit.unit_id for unit in units}) != 154:
+        raise CorrectedDispatchError(
+            "corrected-R123-v2 manifest contains duplicate units"
+        )
+    expected_cells = {
+        (task_id, model_id, replicate_id)
+        for replicate_id in ("R2", "R3")
+        for task_id in R123_V2_TASK_ORDER
+        for model_id in EXPECTED_MODELS
+    } | {
+        (task_id, model_id, "R1")
+        for task_id in ("GO2-T17", "mw_dial_turn")
+        for model_id in EXPECTED_MODELS
+    }
+    actual_cells = {
+        (unit.task_id, unit.model_id, unit.replicate_id) for unit in units
+    }
+    if actual_cells != expected_cells:
+        raise CorrectedDispatchError(
+            "corrected-R123-v2 manifest is not the complete replacement/repeat block"
+        )
+    return tuple(units)
+
+
 def resolve_corrected_manifest(
     path: str | Path = DEFAULT_MANIFEST_PATH,
 ) -> ResolvedCorrectedManifest:
-    """Resolve one of the two sealed corrected execution profiles."""
+    """Resolve one supported sealed corrected execution profile."""
 
     manifest_path = Path(path).resolve()
     document = _read_object(manifest_path, label="corrected manifest")
     if document.get("artifact_type") == "b2_corrected_r23_manifest":
         return _resolve_r23_manifest(manifest_path, document)
+    if document.get("artifact_type") == "b2_corrected_r123_v2_manifest":
+        return _resolve_r123_v2_manifest(manifest_path, document)
     if (
         document.get("artifact_type") != "b2_corrected_r1_manifest"
         or document.get("schema_version") != "1.0"
@@ -572,6 +728,146 @@ def _resolve_r23_manifest(
         suite_artifact_type="b2_corrected_r23_task_suite",
         positive_control_artifact_type="b2_corrected_r23_positive_control_index",
         expected_task_order=R23_TASK_ORDER,
+        positive_control_replicate_id="R2",
+        positive_control_covered_replicates=("R2", "R3"),
+    )
+
+
+def _resolve_r123_v2_manifest(
+    manifest_path: Path, document: dict[str, Any]
+) -> ResolvedCorrectedManifest:
+    if (
+        document.get("schema_version") != "1.0"
+        or document.get("formal_episode") is not False
+        or document.get("formal_denominator_entry") is not False
+    ):
+        raise CorrectedDispatchError(
+            "corrected-R123-v2 manifest claim boundary is invalid"
+        )
+    _identity(
+        document.get("audit_identity"),
+        label="corrected-R123-v2 manifest",
+        document_id=R123_V2_AUDIT_ID,
+        revision=R123_V2_AUDIT_REVISION,
+    )
+    if (
+        document.get("models") != list(EXPECTED_MODELS)
+        or document.get("replicate_ids") != ["R1", "R2", "R3"]
+        or document.get("execution_units") != 154
+        or document.get("fresh_execution_units") != 140
+        or document.get("replacement_units") != 14
+        or document.get("retained_selected_units") != 56
+        or document.get("selected_combined_plan") != 210
+        or document.get("superseded_r1_units") != 14
+        or document.get("source_formal_plan_modified") is not False
+        or document.get("positive_control_gate")
+        != {
+            "control_replicate_id": "R2",
+            "covered_replicates": ["R1", "R2", "R3"],
+            "required_task_ids": list(R123_V2_TASK_ORDER),
+            "required_pass_count": 10,
+            "user_reacceptance_required_before_paid_dispatch": True,
+        }
+        or tuple(document.get("dispatch_order", ())) != R123_V2_DISPATCH_ORDER
+        or document.get("retry_policy")
+        != {
+            "controller_or_model_failure": "no_retry",
+            "confirmed_infrastructure_failure": "same_input_once",
+        }
+    ):
+        raise CorrectedDispatchError(
+            "corrected-R123-v2 cohort declaration is invalid"
+        )
+    paths = document.get("paths")
+    if not isinstance(paths, Mapping):
+        raise CorrectedDispatchError(
+            "corrected-R123-v2 manifest paths are absent"
+        )
+    task_suite_path = _repository_path(
+        paths.get("task_suite"), label="paths.task_suite"
+    )
+    provider_manifest_path = _repository_path(
+        paths.get("provider_manifest"), label="paths.provider_manifest"
+    )
+    reference_selection_path = _repository_path(
+        paths.get("reference_selection"), label="paths.reference_selection"
+    )
+    positive_control_index_path = _repository_path(
+        paths.get("positive_control_index"), label="paths.positive_control_index"
+    )
+    for label, file_path in (
+        ("corrected-R123-v2 task suite", task_suite_path),
+        ("provider manifest", provider_manifest_path),
+        ("reference selection", reference_selection_path),
+    ):
+        if not file_path.is_file():
+            raise CorrectedDispatchError(f"{label} is absent: {file_path}")
+    suite = _read_object(task_suite_path, label="corrected-R123-v2 task suite")
+    if (
+        suite.get("artifact_type") != "b2_corrected_r123_v2_task_suite"
+        or suite.get("schema_version") != "1.0"
+        or suite.get("formal_episode") is not False
+        or suite.get("task_count") != 10
+        or suite.get("replicate_plan")
+        != {"replicate_ids": ["R1", "R2", "R3"]}
+    ):
+        raise CorrectedDispatchError(
+            "corrected-R123-v2 task suite identity is invalid"
+        )
+    _identity(
+        suite.get("audit_identity"),
+        label="corrected-R123-v2 task suite",
+        document_id=R123_V2_AUDIT_ID,
+        revision=R123_V2_AUDIT_REVISION,
+    )
+    selections = _selection_document(
+        reference_selection_path,
+        artifact_type="b2_corrected_r123_v2_reference_selection",
+        document_id=R123_V2_AUDIT_ID,
+        revision=R123_V2_AUDIT_REVISION,
+        expected_versions={
+            "robotstudio_so101": "1.0.3",
+            "unitree-go2-stock-12dof": "1.0.2",
+        },
+    )
+    embedded = document.get("reference_selection")
+    if not isinstance(embedded, Mapping) or embedded.get("robots") != [
+        dict(selections[robot_id])
+        for robot_id in ("robotstudio_so101", "unitree-go2-stock-12dof")
+    ]:
+        raise CorrectedDispatchError(
+            "embedded corrected-R123-v2 reference selection changed"
+        )
+    try:
+        pins, source_paths, provider_ready = base_b2._validate_provider_manifest(
+            provider_manifest_path,
+            models=EXPECTED_MODELS,
+        )
+    except base_b2.B2FormalError as exc:
+        raise CorrectedDispatchError(str(exc)) from exc
+    if not provider_ready:
+        raise CorrectedDispatchError("source B2 provider pins are not dispatch-ready")
+    return ResolvedCorrectedManifest(
+        manifest_path=manifest_path,
+        document=document,
+        task_suite_path=task_suite_path,
+        provider_manifest_path=provider_manifest_path,
+        reference_selection_path=reference_selection_path,
+        positive_control_index_path=positive_control_index_path,
+        provider_pins=pins,
+        provider_source_paths=source_paths,
+        selections=selections,
+        units=_r123_v2_units(document.get("fresh_units")),
+        audit_document_id=R123_V2_AUDIT_ID,
+        audit_revision=R123_V2_AUDIT_REVISION,
+        evidence_prefix="b2_corrected_r123_v2",
+        suite_artifact_type="b2_corrected_r123_v2_task_suite",
+        positive_control_artifact_type=(
+            "b2_corrected_r123_v2_positive_control_index"
+        ),
+        expected_task_order=R123_V2_TASK_ORDER,
+        positive_control_replicate_id="R2",
+        positive_control_covered_replicates=("R1", "R2", "R3"),
     )
 
 
@@ -596,12 +892,14 @@ def assert_positive_control_gate(manifest: ResolvedCorrectedManifest) -> dict[st
             document_id=manifest.audit_document_id,
             revision=manifest.audit_revision,
         )
-        if manifest.evidence_prefix == "b2_corrected_r23" and (
-            document.get("control_replicate_id") != "R2"
-            or document.get("covered_replicates") != ["R2", "R3"]
+        if manifest.positive_control_replicate_id is not None and (
+            document.get("control_replicate_id")
+            != manifest.positive_control_replicate_id
+            or document.get("covered_replicates")
+            != list(manifest.positive_control_covered_replicates)
         ):
             raise CorrectedDispatchError(
-                "corrected-R23 positive-control replicate coverage is invalid"
+                "corrected positive-control replicate coverage is invalid"
             )
         if tuple(document.get("required_task_ids", ())) != manifest.expected_task_order:
             raise CorrectedDispatchError("positive-control required_task_ids changed")
@@ -622,11 +920,11 @@ def assert_positive_control_gate(manifest: ResolvedCorrectedManifest) -> dict[st
             task_ids.append(task_id)
             if (
                 (
-                    manifest.evidence_prefix == "b2_corrected_r23"
-                    and item.get("replicate_id") != "R2"
+                    manifest.positive_control_replicate_id is not None
+                    and item.get("replicate_id")
+                    != manifest.positive_control_replicate_id
                 )
-                or
-                item.get("status") != "PASS"
+                or item.get("status") != "PASS"
                 or item.get("passed") is not True
                 or item.get("trusted_harness") is not True
                 or item.get("video_complete") is not True
@@ -710,6 +1008,9 @@ def _fixed_input_record(
         "original_incomplete_terminal_path": str(_replacement_source_path(unit))
         if unit.execution_origin == "replacement"
         else None,
+        "superseded_terminal_path": str(_superseded_terminal_path(unit))
+        if unit.superseded_terminal_path is not None
+        else None,
     }
 
 
@@ -732,6 +1033,20 @@ def _replacement_source_path(unit: CorrectedUnit) -> Path:
         / "terminals"
         / f"{old_unit_id.replace('::', '__')}.json"
     ).resolve()
+
+
+def _superseded_terminal_path(unit: CorrectedUnit) -> Path:
+    if unit.superseded_terminal_path is None:
+        raise CorrectedDispatchError(
+            "only new-definition replacements have superseded terminals"
+        )
+    path = _repository_path(
+        unit.superseded_terminal_path,
+        label=f"{unit.unit_id}.superseded_terminal_path",
+    )
+    if not path.is_file():
+        raise CorrectedDispatchError(f"superseded terminal is absent: {path}")
+    return path
 
 
 def _write_secret_free_record(
@@ -907,6 +1222,9 @@ def run_corrected_unit(
             "original_incomplete_terminal_path": str(_replacement_source_path(unit))
             if unit.execution_origin == "replacement"
             else None,
+            "superseded_terminal_path": str(_superseded_terminal_path(unit))
+            if unit.superseded_terminal_path is not None
+            else None,
             "code_version": code_version,
             "utc_started_at": started_at,
             "utc_finished_at": _utc_now(),
@@ -974,6 +1292,9 @@ def run_corrected_unit(
             **unit.as_dict(),
             "original_incomplete_terminal_path": str(_replacement_source_path(unit))
             if unit.execution_origin == "replacement"
+            else None,
+            "superseded_terminal_path": str(_superseded_terminal_path(unit))
+            if unit.superseded_terminal_path is not None
             else None,
             "code_version": code_version,
             "utc_started_at": started_at,
@@ -1076,6 +1397,9 @@ def _scheduler_failure_terminal(
         **unit.as_dict(),
         "original_incomplete_terminal_path": str(_replacement_source_path(unit))
         if unit.execution_origin == "replacement"
+        else None,
+        "superseded_terminal_path": str(_superseded_terminal_path(unit))
+        if unit.superseded_terminal_path is not None
         else None,
         "code_version": _code_version(),
         "utc_started_at": None,

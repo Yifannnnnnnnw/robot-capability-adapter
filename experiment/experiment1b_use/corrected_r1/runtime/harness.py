@@ -21,6 +21,9 @@ SUITE_ARTIFACT_TYPE = "b2_corrected_r1_task_suite"
 R23_AUDIT_ID = "AA2-B2-CORRECTED-R23"
 R23_AUDIT_REVISION = "1.0.0"
 R23_SUITE_ARTIFACT_TYPE = "b2_corrected_r23_task_suite"
+R123_V2_AUDIT_ID = "AA2-B2-CORRECTED-R123-V2"
+R123_V2_AUDIT_REVISION = "1.0.0"
+R123_V2_SUITE_ARTIFACT_TYPE = "b2_corrected_r123_v2_task_suite"
 
 _SUPPORTED_SUITES = {
     SUITE_ARTIFACT_TYPE: {
@@ -30,6 +33,10 @@ _SUPPORTED_SUITES = {
     R23_SUITE_ARTIFACT_TYPE: {
         "document_id": R23_AUDIT_ID,
         "revision": R23_AUDIT_REVISION,
+    },
+    R123_V2_SUITE_ARTIFACT_TYPE: {
+        "document_id": R123_V2_AUDIT_ID,
+        "revision": R123_V2_AUDIT_REVISION,
     },
 }
 

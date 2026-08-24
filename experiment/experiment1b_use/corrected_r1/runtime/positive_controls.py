@@ -80,10 +80,24 @@ def _hold(duration_s: float = 2.0) -> dict[str, Any]:
     return _leaf("hold_stable_stance", {"duration_s": duration_s})
 
 
-def _plans() -> dict[str, list[dict[str, Any]]]:
+def _trace_planar(
+    waypoints: Sequence[Sequence[float]], max_duration_s: float
+) -> dict[str, Any]:
+    return _leaf(
+        "trace_planar_path",
+        {
+            "waypoints_initial_yaw_m": [list(point) for point in waypoints],
+            "max_duration_s": max_duration_s,
+        },
+    )
+
+
+def _plans(
+    artifact_prefix: str = "b2_corrected_r1",
+) -> dict[str, list[dict[str, Any]]]:
     wall_pregrasp = (0.35 + 0.17453) / 1.91986
     wall_grasp = (0.25 + 0.17453) / 1.91986
-    return {
+    plans = {
         "mw_push_to_goal": [
             _leaf("set_gripper_opening", {"opening_fraction": 0.0, "max_duration_s": 0.5}),
             _leaf(
@@ -230,6 +244,45 @@ def _plans() -> dict[str, list[dict[str, Any]]]:
             ),
         ],
     }
+    if artifact_prefix == "b2_corrected_r123_v2":
+        # The corrected-R123-v2 fixtures are isolated package revisions.  Keep
+        # the older corrected-R1/R23 controls byte-for-byte equivalent while
+        # moving only the two revised positive-control trajectories.
+        plans["GO2-T17"] = [
+            _trace_planar([[0.38, 0.18], [0.40, 0.20]], 2.0),
+            _trace_planar([[0.23, -0.02], [0.25, 0.0]], 1.25),
+            _trace_planar([[0.38, -0.33], [0.40, -0.35]], 2.0),
+            _trace_planar([[0.38, -0.13], [0.40, -0.15]], 2.0),
+            _trace_planar([[0.38, 0.38], [0.40, 0.40]], 2.0),
+            _trace_planar([[0.38, 0.22], [0.40, 0.24]], 2.0),
+            _trace_planar([[0.38, -0.38], [0.40, -0.40]], 2.0),
+            _trace_planar([[0.38, -0.22], [0.40, -0.24]], 2.0),
+            _trace_planar([[0.38, 0.38], [0.40, 0.40]], 2.0),
+            _trace_planar([[0.38, 0.10], [0.40, 0.12]], 2.0),
+            _trace_planar([[0.18, -0.02], [0.20, 0.0]], 0.75),
+        ]
+        plans["mw_dial_turn"] = [
+            _leaf("set_gripper_opening", {"opening_fraction": 0.0, "max_duration_s": 1.0}),
+            _leaf("move_end_effector_to_position", {"target_position_m": [0.347, 0.07, 0.37], "max_duration_s": 3.0}),
+            _leaf(
+                "approach_until_contact",
+                {
+                    "precontact_position_m": [0.347, 0.07, 0.31],
+                    "approach_direction_unit": [0.0, 0.0, -1.0],
+                    "max_travel_m": 0.04,
+                    "max_approach_speed_m_s": 0.03,
+                    "max_duration_s": 3.0,
+                },
+            ),
+            _leaf(
+                "trace_cartesian_path",
+                {
+                    "waypoints_m": [[0.347, 0.0875, 0.2335], [0.347, 0.134, 0.197]],
+                    "max_duration_per_segment_s": 4.0,
+                },
+            ),
+        ]
+    return plans
 
 
 class ScriptedPositiveControlModel:
@@ -301,7 +354,7 @@ def run_task(
     audit_identity: Mapping[str, str] | None = None,
     artifact_prefix: str = "b2_corrected_r1",
 ) -> dict[str, Any]:
-    plans = _plans()
+    plans = _plans(artifact_prefix)
     if task_id not in plans:
         raise ValueError(f"unknown corrected positive-control task {task_id!r}")
     robot_id = TASK_ROBOT[task_id]
@@ -468,15 +521,18 @@ def main() -> int:
         selection_path = manifest.reference_selection_path
         audit_identity = manifest.audit_identity
         artifact_prefix = manifest.evidence_prefix
-        replicate_id = args.replicate_id or (
-            "R2" if manifest.evidence_prefix == "b2_corrected_r23" else "R1"
-        )
-        if manifest.evidence_prefix == "b2_corrected_r23" and replicate_id != "R2":
-            parser.error("corrected-R23 positive controls are fixed to replicate R2")
+        declared_control_replicate = manifest.positive_control_replicate_id
+        replicate_id = args.replicate_id or declared_control_replicate or "R1"
+        if (
+            declared_control_replicate is not None
+            and replicate_id != declared_control_replicate
+        ):
+            parser.error(
+                "positive controls are fixed to replicate "
+                f"{declared_control_replicate}"
+            )
         covered_replicates = (
-            ("R2", "R3")
-            if manifest.evidence_prefix == "b2_corrected_r23"
-            else ("R1",)
+            manifest.positive_control_covered_replicates or ("R1",)
         )
         default_output = manifest.manifest_path.parent.parent / "runs/positive-controls"
     selected = list(required_task_ids) if args.task is None else args.task
