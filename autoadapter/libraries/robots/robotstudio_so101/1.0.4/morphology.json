@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "robot_model_id": "robotstudio-so101",
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.4",
+  "morphology_kind": "fixed_base_serial_manipulator",
+  "degrees_of_freedom": {
+    "arm": 5,
+    "gripper": 1
+  },
+  "mjcf_entrypoint": "assets/reach_scene.xml",
+  "public_control": {
+    "actuation": "joint_position",
+    "joint_names": [
+      "shoulder_pan",
+      "shoulder_lift",
+      "elbow_flex",
+      "wrist_flex",
+      "wrist_roll",
+      "gripper"
+    ],
+    "actuator_names": [
+      "shoulder_pan",
+      "shoulder_lift",
+      "elbow_flex",
+      "wrist_flex",
+      "wrist_roll",
+      "gripper"
+    ],
+    "arm_joint_limits_rad": {
+      "shoulder_pan": [-1.91986, 1.91986],
+      "shoulder_lift": [-1.7453293, 1.7453293],
+      "elbow_flex": [-1.69, 1.69],
+      "wrist_flex": [-1.658063, 1.658063],
+      "wrist_roll": [-2.7438473, 2.7438473]
+    },
+    "gripper_ctrl_range_rad": [-0.17453, 1.74533]
+  },
+  "public_observations": {
+    "end_effector_site": "gripperframe",
+    "end_effector_body": "gripper",
+    "base_site": "baseframe",
+    "object_bodies": [],
+    "frames": ["world", "robot_base", "joint"]
+  },
+  "public_affordances": {
+    "actions": [
+      "joint_position_control",
+      "gripper_position_control"
+    ],
+    "observations": [
+      "joint_positions",
+      "joint_velocities",
+      "end_effector_pose",
+      "named_body_pose",
+      "named_site_pose",
+      "contact_state",
+      "simulation_time"
+    ]
+  },
+  "invocation_abi": {
+    "envelope": "request",
+    "method_call": "generated_method(request=request)",
+    "request_required": ["task_id", "task_parameters"],
+    "task_id": "selected public task identifier",
+    "task_parameters": "validated by the selected task invocation schema"
+  },
+  "reset_fact": {
+    "owner": "framework",
+    "default": "model_qpos0"
+  },
+  "asset_provenance": {
+    "model_title": "The Robot Studio SO101 Description (MJCF)",
+    "upstream": "https://github.com/TheRobotStudio/SO-ARM100/tree/608122e9ac330a753735f2e18aee73338e9ac407/Simulation/SO101",
+    "derived_revision": "aec17bbc256d1a7342d53aaa4950595d4c30b40d",
+    "license_file": "assets/LICENSE"
+  }
+}
