@@ -1,203 +1,167 @@
-# Experiment 3 — Exact Eleven-Configuration Direct-MuJoCo Cohort Authority
+# Experiment 3 Direct-MuJoCo cohort authority
 
 > **Document ID:** `AA2-EXP3`<br>
-> **Document role:** sole normative document for Experiment 3<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.34`<br>
-> **Normative language:** English<br>
-> **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.2`<br>
-> **Effective date:** 2026-08-23<br>
-> **Design status:** active and prospectively fixed; ready for formal dispatch after final preflight
+> **Revision:** `0.2.0`<br>
+> **Effective date:** 2026-08-24<br>
+> **Parent authority:** `AUTOADAPTER_2_AUTHORITY.md`<br>
+> **Status:** configuration and zero-model preflight only; formal dispatch is not authorised in this preparation round
 
-Revision `0.1.2` changes no cohort member, replicate, model, condition,
-submitted-driver attempt budget, denominator, resume rule, or claim. Before
-the first Experiment 3 cell, it fixes the observed shared pre-submission
-deadlock by reserving two complete current-revision public checks plus three
-discretionary probes and by exposing the ordinary-Mapping request ABI.
+This document is the bounded authority for Experiment 3. The parent Authority
+continues to govern the shared Framework, isolation, trusted-Harness and
+physical-evidence boundaries. If this document is silent, the parent Authority
+applies. Experiment 1b evidence is retained unchanged, and Experiment 2 is not
+an input, gate or activity of this preparation round.
 
-## 0. Authority, scope, and precedence
+## 1. Question and claim boundary
 
-This is the only normative source for Experiment 3's exact Direct-MuJoCo
-cohort, Sonnet-only model role, skeleton-assisted condition, replicate plan,
-fresh TGCD/IVC rule, denominator, stop point, Evolution exclusion, and
-descriptive analysis boundary. It is delegated by
-`AUTOADAPTER_2_AUTHORITY.md` Section 0.1. The parent Authority continues to
-govern canonical packages, candidate isolation, trusted Harness verdicts,
-physical integrity, authenticity, and evidence. A conflict blocks this
-experiment until it is prospectively corrected.
+Experiment 3 records whether the current AutoAdapter construction route can be
+executed on the exact declared Direct-MuJoCo cohort. It is a descriptive cohort,
+not a factorial morphology study.
 
-Experiment 3 is a bounded construction-cohort run, not a two-condition
-shakedown and not an Experience study. It contains one cell for each exact
-declared robot configuration and replicate. There is no Producer-backbone
-factor, no from-scratch condition, no matched Experience control, and no
-Evolution sidecar. The experiment stops after the separately recorded Task
-Demo for an admitted driver.
+It may report per-cell construction, Capability Validation, Repair and ReCAP
+Task Demo outcomes. It must not claim a morphology effect, quadruped transfer,
+an Experience effect, a model comparison, a generation-condition comparison,
+hardware fidelity or universal robot support.
 
-Manifests, protocol files, code, run records, analysis, and thesis prose
-implement or report this design but cannot change it. A later revision may fix
-an infrastructure prerequisite before dispatch; it may not silently omit,
-replace, add, or relabel a cohort configuration or change the 33-cell
-denominator after outcomes are inspected.
+## 2. Fixed cohort and denominator
 
-## 1. Research object and claim boundary
-
-Experiment 3 records whether the complete declared Direct-MuJoCo package and
-real model path can execute one bounded skeleton-assisted end-to-end run per
-replicate across the project construction cohort. Every cell independently
-performs fresh model-authored TGCD and implementation-blind IVC, then Sonnet
-STUDY, skeleton-assisted GENERATE, trusted capability validation, and bounded
-Repair. If an admitted driver is available, the Framework executes the sealed
-five-task Task Demo and then stops.
-
-The exact statistical unit is one `robot_configuration × replicate` cell. The
-denominator is exactly 33 cells:
+The matrix is exactly:
 
 ```text
-11 declared configurations × 3 replicates (`r01`, `r02`, `r03`) = 33 cells
+11 robot configurations × 3 replicates × 1 model × 1 condition = 33 cells
 ```
 
-Every cell starts with empty Experience. No cell runs Evolution, creates a
-proposal, receives another cell's output, or receives a same-round Experience
-record. A cell may record a truthful Task Demo not-run reason when its final
-driver is not admitted; it may not turn that absence into a Task Demo pass.
+The configuration order is:
 
-Experiment 3 supports descriptive mechanism evidence: per-configuration
-TGCD/IVC execution, driver-validation and Repair outcomes, Task Demo outcomes,
-failure classes, resource use, and evidence completeness. Morphology is a
-public package fact and a descriptive grouping label only. It is not an
-experimental factor, treatment, causal variable, effect estimate, or basis for
-a morphology-superiority claim. The experiment does not support an Experience
-effect, improvement claim, all-model comparison, from-scratch comparison,
-hardware or SDK claim, or generalisation beyond the 33 declared cells.
+1. `robotstudio_so101`
+2. `unitree-go2-stock-12dof`
+3. `franka_panda`
+4. `kinova_gen3_robotiq_2f85`
+5. `ufactory_xarm7`
+6. `universal_robots_ur5e_robotiq_2f85`
+7. `piper`
+8. `kuka_iiwa_14`
+9. `leap_hand`
+10. `hello_robot_stretch_2`
+11. `aloha_2`
 
-## 2. Exact cohort and fixed factors
+Each configuration is crossed once with `r01`, `r02` and `r03`. Every cell
+uses Sonnet 4.6, skeleton assistance and empty Experience. The 33 rows remain
+the denominator even when a row ends in a model, transport, package, Harness,
+video or infrastructure failure. A failed row is never replaced.
 
-The cohort is the exact eleven configurations declared in parent Authority
-Section 1.3. Their IDs, categories, and required task-library snapshot are:
+For reporting only, the six SO-101/Go2 rows are `reference-seen controls`:
+their complete capability references are present in the model-visible TGCD
+reference. The remaining 27 rows are `transfer cells`. This label records
+reference exposure; it is not a transfer-effect factor and must not be
+interpreted as a quadruped-transfer result.
 
-| Morphology category | Exact robot configuration | Public Task Library requirement |
-|---|---|---|
-| Fixed serial arm | `robotstudio_so101` | 20 or more applicable source-backed tasks |
-| Quadruped | `unitree-go2-stock-12dof` | 20 or more applicable source-backed tasks |
-| Fixed serial arm | `franka_panda` | 20 or more applicable source-backed tasks |
-| Fixed serial arm | `kinova_gen3_robotiq_2f85` | 20 or more applicable source-backed tasks |
-| Fixed serial arm | `ufactory_xarm7` | 20 or more applicable source-backed tasks |
-| Fixed serial arm | `universal_robots_ur5e_robotiq_2f85` | 20 or more applicable source-backed tasks |
-| Fixed serial arm | `piper` | 20 or more applicable source-backed tasks |
-| Fixed serial arm | `kuka_iiwa_14` | 20 or more applicable source-backed tasks |
-| Dexterous hand | `leap_hand` | 20 or more applicable source-backed tasks |
-| Mobile manipulator | `hello_robot_stretch_2` | 20 or more applicable source-backed tasks |
-| Bimanual manipulator | `aloha_2` | 20 or more applicable source-backed tasks |
+## 3. Fresh per-cell route
 
-Every cell uses:
+Each cell receives a new workspace, model conversation, canonical MuJoCo
+session, STUDY artifact, TGCD design, IVC suite, candidate and evidence record.
+No cell may read another cell's artifacts.
 
-- the exact canonical package selected for its configuration;
-- Sonnet 4.6 for every model-authored stage;
-- `skeleton-assisted` and no `from-scratch` cell;
-- an empty Experience input;
-- one fresh `r01`, `r02`, or `r03` run with a fresh canonical reset and
-  independent workspace; and
-- at most three submitted drivers: initial attempt `0` and no more than two
-  bounded Repair attempts.
+```text
+STUDY -> TGCD -> IVC -> Generate -> Capability Validation
+      -> at most two Repair revisions -> ReCAP Task Demo -> stop
+```
 
-For `C` sealed capabilities, each Generate or Repair stage receives at most
-`2 × (C + 1) + 3` local probe calls: two complete import/all-capability physics
-bundles plus no more than three discretionary probes. The manifest explicitly
-pins `max_complete_driver_checks = 2` and 25 as the ten-capability ceiling.
-Candidate methods read request fields with mapping
-item access or mapping methods, never `request.field`. This local recovery
-capacity does not increase the twelve model turns or three formal submissions.
+- STUDY writes and seals `study.json` before TGCD.
+- TGCD writes and seals `capability_design.json`.
+- IVC writes and seals `capability_validation_suite.json` and passes the
+  package reference-driver positive control before Driver generation.
+- Generate/Repair writes `driver.py`. A revision becomes a formal attempt only
+  after source and import checks freeze it successfully.
+- The trusted private Harness runs only on a frozen Driver. There are at most
+  three frozen and validated Driver attempts in total.
+- ReCAP receives only capabilities for which both the nominal and calibrated
+  boundary cases passed. Its completion text is not a verdict; the Task Demo
+  Harness owns the verdict and required videos.
+- The cell stops after Task Demo, or after a truthful Task Demo not-run record
+  when no Driver was admitted. Evolution and Experience output are disabled.
 
-The model and inference settings are fixed as follows:
+## 4. File-delivery and phase budgets
 
-| Role | Family | Exact model identifier | Temperature | Context limit | Max output |
-|---|---|---|---:|---:|---:|
-| All model-authored stages | Sonnet 4.6 | `eu.anthropic.claude-sonnet-4-6` | `0.0` | `1,000,000` tokens | `16,384` tokens |
+There are no `submit_study`, `submit_capability_design`,
+`submit_validation_suite` or `submit_driver` tools. A phase ends by normal
+model completion followed by Framework validation of its canonical artifact.
+An invalid artifact is returned as a deterministic tool observation to the
+same conversation while turns remain. A valid artifact written on the last
+turn is accepted without another closing message.
 
-The provider, endpoint/region, transport, timeout, retry policy, dated price
-snapshot, and returned identity are pinned before the first formal call. An
-unavailable provider is a visible infrastructure blocker and does not remove a
-cell from the denominator or permit a substitute model.
+| Phase | Maximum model turns |
+|---|---:|
+| STUDY | 16 |
+| TGCD | 6 |
+| IVC | 6 |
+| Skeleton Generate | 22 |
+| Skeleton Repair | 22 |
+| ReCAP, per task | 16 planning turns |
 
-## 3. Fresh end-to-end per-cell route
+ReCAP additionally permits at most 12 capability calls per task. There is no
+aggregate tool-call ceiling for STUDY, TGCD, IVC, Generate or Repair. Each
+individual file and Python tool call remains constrained by workspace paths,
+execution timeout, MuJoCo step/simulated-time limits, output size and the
+credential-free environment.
 
-Experiment 3 deliberately does not reuse a design or validation bundle across
-replicates. Each cell performs:
+## 5. Capability and IVC contract
 
-1. real Sonnet TGCD from that robot's public Morphology and complete admitted
-   source-backed Task Library, without a pre-authored capability catalogue or
-   task-to-capability mapping;
-2. implementation-blind IVC audit and compilation of that cell's model-authored
-   source-grounded criteria and private capability-validation suite;
-3. Sonnet STUDY and skeleton-assisted GENERATE using that cell's sealed public
-   Capability Design and trusted task-neutral skeleton;
-4. trusted Direct-MuJoCo capability validation and bounded Repair, with no more
-   than three submitted drivers and the same private suite across attempts; and
-5. the separately recorded random five-task Task Demo after a final driver is
-   admitted, followed immediately by the stop point.
+TGCD autonomously creates three to ten reusable capabilities. Every capability
+defines its method, description, physical effect, closed request schema,
+units, frames, calibrated bounds and evidence sources, preconditions, temporal
+semantics, invariants, public failure behaviour and structured capability
+criteria. Numeric values must resolve to a public source or retained real
+calibration.
 
-The complete TGCD output and IVC suite are cell-local evidence. A later
-replicate may not inspect, copy, or use an earlier replicate's candidate,
-capability design, suite, trace, private report, Task Demo, or failure report.
-The two generation conditions are not both run: only skeleton-assisted is
-declared. The Task Demo verdict is separate from driver synthesis and never
-triggers Repair. Evolution is disabled, so there is no terminal proposal,
-human disposition, Experience snapshot, or post-round feedback path.
+The top-level many-to-many `task_support` relation records only which
+capabilities can support which source tasks and why. It cannot encode a call
+order, waypoint sequence, task macro or oracle plan. Candidate requests and
+Driver code cannot contain `task_id` dispatch, scene/reset construction, a
+complete task or private criteria.
 
-A host, operator, or Python-process interruption may be continued only from
-the same formal run record under the exact recorded Authority, manifest,
-protocol, and Git revisions. The continuation leaves every `completed` or
-`failed` row unchanged and makes no model call for it. Any non-terminal row
-whose cell workspace already exists is retained as an interrupted
-infrastructure failure and is not rerun. Only a `predeclared` row with no
-workspace may begin. Continuation never retries, replaces, adds, or removes a
-formal cell and never changes the denominator of 33.
+The complete model-visible reference contains the six SO-101 and five Go2
+capability designs, parameters and real criteria only. It contains no task
+mapping, `task_support`, oracle plan or concrete call programme.
 
-## 4. Evidence and analysis boundary
+IVC sees the sealed design, Framework-private instances/bindings/guards and
+sanitised validation examples. It never sees candidate code, Repair history or
+candidate verdicts. It creates exactly one nominal and one calibrated-boundary
+case per capability, copies the sealed public criteria exactly, passes the
+Framework schema/count/binding audit and then passes the private package
+reference-driver positive control before sealing.
 
-The top-level experiment record and each of its 33 cell rows must retain the
-exact Authority, manifest, protocol, and Git revisions used for dispatch.
-Each cell must also retain a concise run record containing:
+## 6. Isolation, evidence and analysis
 
-- exact robot/configuration, morphology label, package and Task Library
-  snapshots, replicate ID, run ID, Authority revision, manifest revision,
-  protocol revision, and Git commit;
-- Sonnet provider/model identity and settings, model calls, tokens, cost inputs,
-  and wall-time measurements;
-- TGCD and implementation-blind IVC traces and artifact identities;
-- generation condition and skeleton inspection evidence;
-- submitted-driver attempts, initial/final capability-validation verdicts,
-  private case outcomes, Repair transitions, failure class, and Task Demo
-  verdict or truthful not-run reason; and
-- complete Framework-controlled videos and video manifest entries for every
-  required capability-validation and Task Demo case/repetition.
+Experience is empty and invisible in every Experiment 3 cell. IVC, the private
+Harness and ReCAP never receive Experience. Candidate workers and public
+Python/MuJoCo sessions contain no model, cloud or repository credentials.
+Private suites, bindings, guards, reference source and Harness implementation
+remain unavailable to STUDY, TGCD, Generate, Repair, Driver and ReCAP.
 
-Report the 33-cell denominator explicitly. Keep blocked or non-evaluable cells
-visible and distinguish package, provider, Harness, video, candidate, and
-model failures. Summaries may group outcomes by robot configuration and may
-show morphology labels descriptively, but no aggregate may be called a
-morphology effect or interpreted causally.
+Every formal row must retain exact model and returned-model identity, token and
+wall-time evidence, canonical artifacts and traces, frozen Driver-attempt
+count, Capability Validation reports, Task Demo report or truthful not-run
+reason, and complete per-trial videos when execution occurred. Results are
+summarised by exact configuration and by the reference-seen/transfer exposure
+labels only; morphology remains descriptive metadata.
 
-The experiment stops after Task Demo. Do not report Evolution outcomes,
-Experience dispositions, later-run effects, pass rates for a missing condition,
-or a model ranking from this protocol. A Task Demo not-run condition is not a
-pass and not silently imputed.
+## 7. Preparation gate and dispatch boundary
 
-## 5. Readiness blockers
+Before any formal request, zero-model checks must establish:
 
-Formal dispatch is authorised only while:
+- the manifest expands to all and only the 33 declared rows;
+- all eleven indexed packages and their `public_observations` load;
+- SO-101 1.0.4 and the remaining ten package references pass their retained
+  positive controls;
+- canonical artifact completion, invalid-artifact recovery, final-turn
+  acceptance and frozen-attempt accounting pass focused checks;
+- IVC is candidate-blind and candidate source rejects `task_id` dispatch;
+- skeleton visibility, empty Experience, ReCAP 16/12 and Evolution exclusion
+  are enforced.
 
-1. all eleven exact packages resolve with complete local MJCF closure,
-   twenty or more source-backed tasks, private instances/bindings/guards,
-   trusted skeleton, and package/simulator-integrity checks;
-2. the exact Sonnet model identity and settings are pinned and callable;
-3. candidate-worker isolation, canonical-scene/actuator authenticity,
-   independent Harness verdicting, and recorder checks pass; and
-4. focused runtime/path checks enforce a fresh singleton workspace and client,
-   cell-local completed TGCD and IVC traces, empty Experience, at most three
-   driver submissions, required Task Demo/video evidence, and no Evolution
-   call or review queue.
-
-Focused package checks and canaries are diagnostic. A missing or incomplete
-configuration is an explicit blocker, not a failed model cell; the 33-cell
-denominator is not reduced.
+Passing this preparation gate does not authorise the 33 model cells. Formal
+dispatch requires a later explicit project-owner approval. The runner's
+`design-check` and `preflight` commands are allowed now; `formal` and `resume`
+remain present for the later approved run but must not be invoked in this
+preparation round.

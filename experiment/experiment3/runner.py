@@ -22,14 +22,6 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
-from autoadapter2.pipeline import (
-    ExperimentConfig,
-    PipelineError,
-    check_packages,
-    run_experiment,
-)
-
-
 EXPERIMENT_ID = "experiment3-direct-mujoco-cohort-r3"
 MODEL_ID = "eu.anthropic.claude-sonnet-4-6"
 CONDITION = "skeleton-assisted"
@@ -67,11 +59,24 @@ EXPECTED_RETRY_POLICY = {
 }
 ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
-AUTHORITY_REVISION = "0.1.2"
-MANIFEST_REVISION = "0.1.1"
-PROTOCOL_REVISION = "0.1.1"
-DRIVER_PROBE_CALLS_PER_STAGE = 25
-COMPLETE_DRIVER_CHECKS_PER_STAGE = 2
+AUTHORITY_REVISION = "0.2.0"
+MANIFEST_REVISION = "0.2.0"
+PROTOCOL_REVISION = "0.2.0"
+PHASE_TURN_BUDGETS = {
+    "study": 16,
+    "tgcd": 6,
+    "ivc": 6,
+    "generate_skeleton": 22,
+    "repair_skeleton": 22,
+}
+RECAP_BUDGET = {
+    "max_planning_turns_per_task": 16,
+    "max_capability_calls_per_task": 12,
+}
+REFERENCE_SEEN_ROBOTS = {
+    "robotstudio_so101",
+    "unitree-go2-stock-12dof",
+}
 FORMAL_GIT_PATHS = (
     "AUTOADAPTER_2_AUTHORITY.md",
     "experiment/experiment3",
@@ -171,7 +176,7 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     """Validate only the prospectively fixed 33-cell experimental design."""
 
     _require(isinstance(manifest, Mapping), "manifest must be one object")
-    _require(manifest.get("schema_version") == 1, "schema_version must be 1")
+    _require(manifest.get("schema_version") == 2, "schema_version must be 2")
     _require(
         manifest.get("authority_revision") == AUTHORITY_REVISION,
         f"authority_revision must be {AUTHORITY_REVISION}",
@@ -185,6 +190,11 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
         f"protocol_revision must be {PROTOCOL_REVISION}",
     )
     _require(manifest.get("experiment_id") == EXPERIMENT_ID, "unexpected experiment_id")
+    _require(manifest.get("status") == "preflight-only", "status must be preflight-only")
+    _require(
+        manifest.get("formal_dispatch_authorised") is False,
+        "the checked-in manifest must keep formal dispatch unauthorised",
+    )
     _require(
         tuple(manifest.get("robot_configurations", ())) == ROBOT_CONFIGURATIONS,
         "robot_configurations must be the exact declared eleven in authority order",
@@ -196,10 +206,10 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     _require(manifest.get("generation_condition") == CONDITION, "generation condition must be skeleton-assisted")
     _require(manifest.get("conditions") == [CONDITION], "conditions must contain skeleton-assisted only")
     _require(manifest.get("experience_input") == "empty", "Experience input must be empty")
-    _require(manifest.get("maximum_submitted_driver_attempts") == 3, "maximum submitted drivers must be three")
+    _require(manifest.get("maximum_frozen_driver_attempts") == 3, "maximum frozen drivers must be three")
     _require(manifest.get("repair_attempts_after_initial") == 2, "Repair allowance must be two after attempt 0")
     _require(manifest.get("run_task_demo") is True, "Task Demo must be enabled")
-    _require(manifest.get("stop_after") == "Task-Demo", "Experiment 3 must stop after Task Demo")
+    _require(manifest.get("stop_after") == "ReCAP-Task-Demo", "Experiment 3 must stop after ReCAP Task Demo")
     _require(manifest.get("morphology_role") == "descriptive-only", "morphology must be descriptive-only")
     _require(
         manifest.get("morphology_labels") == MORPHOLOGY_LABELS,
@@ -214,6 +224,48 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     _require(model.get("temperature") == 0.0, "temperature must be 0")
     _require(model.get("context_limit_tokens") == 1_000_000, "context limit must be 1,000,000")
     _require(model.get("max_output_tokens") == 16_384, "max output must be 16,384")
+
+    workflow = manifest.get("workflow")
+    _require(isinstance(workflow, Mapping), "workflow must be pinned")
+    assert isinstance(workflow, Mapping)
+    _require(
+        workflow.get("order")
+        == [
+            "STUDY",
+            "TGCD",
+            "IVC",
+            "GENERATE",
+            "Capability-Validation",
+            "Repair",
+            "ReCAP-Task-Demo",
+        ],
+        "workflow must use the STUDY-first file-artifact route",
+    )
+    _require(
+        workflow.get("aggregate_tool_call_limit") is None,
+        "workflow must not impose an aggregate tool-call limit",
+    )
+    _require(
+        workflow.get("maximum_frozen_driver_attempts") == 3,
+        "workflow must freeze at most three drivers",
+    )
+
+    groups = manifest.get("reporting_groups")
+    _require(isinstance(groups, Mapping), "reporting_groups must be pinned")
+    assert isinstance(groups, Mapping)
+    expected_controls = [
+        f"{robot}::{replicate}"
+        for robot in ("robotstudio_so101", "unitree-go2-stock-12dof")
+        for replicate in REPLICATE_IDS
+    ]
+    _require(
+        groups.get("reference_seen_controls") == expected_controls
+        and groups.get("reference_seen_control_count") == 6
+        and groups.get("transfer_cell_count") == 27
+        and groups.get("effect_claim") is False
+        and groups.get("quadruped_transfer_claim") is False,
+        "reporting groups must be six reference-seen controls and 27 transfer cells without an effect claim",
+    )
 
     evolution = manifest.get("evolution")
     _require(isinstance(evolution, Mapping), "evolution exclusion must be explicit")
@@ -251,6 +303,11 @@ def expand_cells(manifest: Mapping[str, Any]) -> list[dict[str, str]]:
             "replicate_id": replicate_id,
             "robot_configuration_id": robot,
             "morphology_label": MORPHOLOGY_LABELS[robot],
+            "reference_exposure_group": (
+                "reference-seen-control"
+                if robot in REFERENCE_SEEN_ROBOTS
+                else "transfer"
+            ),
             "generation_condition": CONDITION,
             "run_id": f"{experiment_id}-{replicate_id}-{robot}",
         }
@@ -260,6 +317,8 @@ def expand_cells(manifest: Mapping[str, Any]) -> list[dict[str, str]]:
 
 
 def _pipeline_model(value: Any, *, label: str) -> dict[str, Any]:
+    from autoadapter2.pipeline import ExperimentConfig, PipelineError
+
     _require(isinstance(value, Mapping), f"runtime.{label} must be a pipeline model manifest")
     assert isinstance(value, Mapping)
     # ExperimentConfig is the single runtime authority for this exact shape,
@@ -310,34 +369,40 @@ def _transport_pin(value: Any, *, label: str) -> dict[str, Any]:
 def _resources(value: Any) -> dict[str, Any]:
     _require(isinstance(value, Mapping), "runtime.resources must be pinned")
     assert isinstance(value, Mapping)
-    _require(set(value) == {"development_probe", "validation"}, "runtime.resources must pin development_probe and validation")
-    development = value.get("development_probe")
+    _require(
+        set(value) == {"phase_turn_budgets", "execute_python", "recap", "validation"},
+        "runtime.resources must pin phase turns, execute_python, ReCAP and validation",
+    )
+    phase_turns = value.get("phase_turn_budgets")
+    execute_python = value.get("execute_python")
+    recap = value.get("recap")
     validation = value.get("validation")
-    _require(isinstance(development, Mapping), "runtime.resources.development_probe must be an object")
+    _require(
+        phase_turns == PHASE_TURN_BUDGETS,
+        "runtime.resources.phase_turn_budgets must match the file-workflow budgets",
+    )
+    _require(isinstance(execute_python, Mapping), "runtime.resources.execute_python must be an object")
+    _require(recap == RECAP_BUDGET, "runtime.resources.recap must be 16 planning turns and 12 capability calls")
     _require(isinstance(validation, Mapping), "runtime.resources.validation must be an object")
-    assert isinstance(development, Mapping) and isinstance(validation, Mapping)
+    assert isinstance(execute_python, Mapping) and isinstance(validation, Mapping)
     _require(
-        set(development)
+        set(execute_python)
         == {
-            "max_requests_per_stage",
-            "max_complete_driver_checks",
-            "wall_timeout_s_per_request",
-            "max_output_chars_per_request",
+            "wall_timeout_s_per_call",
+            "max_output_chars_per_call",
+            "max_steps_per_phase",
+            "max_sim_time_s_per_phase",
         },
-        "development_probe resource fields are incomplete",
+        "execute_python resource fields are incomplete",
     )
-    for key in development:
-        number = development[key]
-        _require(isinstance(number, (int, float)) and not isinstance(number, bool) and float(number) > 0, f"development_probe.{key} must be positive")
-    _require(
-        development.get("max_requests_per_stage") == DRIVER_PROBE_CALLS_PER_STAGE,
-        "development_probe.max_requests_per_stage must reserve 25 calls",
-    )
-    _require(
-        development.get("max_complete_driver_checks")
-        == COMPLETE_DRIVER_CHECKS_PER_STAGE,
-        "development_probe.max_complete_driver_checks must be 2",
-    )
+    for key in execute_python:
+        number = execute_python[key]
+        _require(
+            isinstance(number, (int, float))
+            and not isinstance(number, bool)
+            and float(number) > 0,
+            f"execute_python.{key} must be positive",
+        )
     _require(set(validation) == {"record_video", "worker_wall_timeout_s"}, "validation resource fields are incomplete")
     _require(validation.get("record_video") is True, "formal Experiment 3 requires video")
     timeout = validation.get("worker_wall_timeout_s")
@@ -827,7 +892,7 @@ def _assert_formal_cell_evidence(
     outcomes = cell.get("outcomes")
     _require(isinstance(outcomes, Mapping), "singleton result lacks stage outcomes")
     assert isinstance(outcomes, Mapping)
-    for stage in ("TGCD", "IVC"):
+    for stage in ("STUDY", "TGCD", "IVC"):
         evidence = outcomes.get(stage)
         _require(
             isinstance(evidence, Mapping) and evidence.get("completed") is True,
@@ -857,7 +922,9 @@ def _cell_config(preflight: Mapping[str, Any], robot: str) -> dict[str, Any]:
         "robots": [robot],
         "generation_conditions": [CONDITION],
         "max_driver_attempts_per_condition": 3,
-        "development_probe": copy.deepcopy(resources["development_probe"]),
+        "phase_turn_budgets": copy.deepcopy(resources["phase_turn_budgets"]),
+        "execute_python": copy.deepcopy(resources["execute_python"]),
+        "recap": copy.deepcopy(resources["recap"]),
         "validation": copy.deepcopy(resources["validation"]),
         "model": copy.deepcopy(preflight["producer_model"]),
         "experience": {
@@ -875,12 +942,14 @@ def run_preflight(
     *,
     manifest: Mapping[str, Any] | None = None,
     manifest_path: str | Path | None = None,
-    package_check_fn: Callable[..., Mapping[str, Any]] = check_packages,
+    package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
     check_self_containment: bool = True,
 ) -> dict[str, Any]:
     """Validate retained pins and execute the current all-eleven package check."""
 
     source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
+    if package_check_fn is None:
+        from autoadapter2.pipeline import check_packages as package_check_fn
     preflight = validate_executable_preflight(source, mainline_root=mainline_root)
     all_robot_config = _cell_config(preflight, ROBOT_CONFIGURATIONS[0])
     all_robot_config["robots"] = list(ROBOT_CONFIGURATIONS)
@@ -1046,8 +1115,8 @@ def run_formal(
         [str, Mapping[str, Any], Mapping[str, Any], Mapping[str, str]], Any
     ]
     | None = None,
-    run_experiment_fn: Callable[..., Mapping[str, Any]] = run_experiment,
-    package_check_fn: Callable[..., Mapping[str, Any]] = check_packages,
+    run_experiment_fn: Callable[..., Mapping[str, Any]] | None = None,
+    package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
     hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
     check_self_containment: bool = True,
     git_commit_fn: Callable[[str | Path], str] | None = None,
@@ -1055,6 +1124,15 @@ def run_formal(
     """Execute each predeclared cell once, retaining failures in denominator 33."""
 
     source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
+    _require(
+        source.get("formal_dispatch_authorised") is True,
+        "formal Experiment 3 dispatch is not authorised by the current manifest",
+    )
+    if run_experiment_fn is None or package_check_fn is None:
+        from autoadapter2.pipeline import check_packages, run_experiment
+
+        run_experiment_fn = run_experiment_fn or run_experiment
+        package_check_fn = package_check_fn or check_packages
     declared = expand_cells(source)
     commit = (git_commit_fn or _current_git_commit)(mainline_root)
     revisions = _revision_evidence(source, git_commit=commit)
@@ -1172,8 +1250,8 @@ def run_resume(
         [str, Mapping[str, Any], Mapping[str, Any], Mapping[str, str]], Any
     ]
     | None = None,
-    run_experiment_fn: Callable[..., Mapping[str, Any]] = run_experiment,
-    package_check_fn: Callable[..., Mapping[str, Any]] = check_packages,
+    run_experiment_fn: Callable[..., Mapping[str, Any]] | None = None,
+    package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
     hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
     check_self_containment: bool = True,
     git_commit_fn: Callable[[str | Path], str] | None = None,
@@ -1181,6 +1259,15 @@ def run_resume(
     """Continue untouched cells in the same fixed formal run without retries."""
 
     source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
+    _require(
+        source.get("formal_dispatch_authorised") is True,
+        "formal Experiment 3 resume is not authorised by the current manifest",
+    )
+    if run_experiment_fn is None or package_check_fn is None:
+        from autoadapter2.pipeline import check_packages, run_experiment
+
+        run_experiment_fn = run_experiment_fn or run_experiment
+        package_check_fn = package_check_fn or check_packages
     declared = expand_cells(source)
     commit = (git_commit_fn or _current_git_commit)(mainline_root)
     revisions = _revision_evidence(source, git_commit=commit)
