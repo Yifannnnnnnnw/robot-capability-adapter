@@ -1,11 +1,11 @@
 {
   "artifact_type": "b1_fixed_validation_suite",
   "schema_version": "1.0",
-  "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v4",
-  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v3",
+  "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v6",
+  "pass_standard_id": "experiment1-b1-driver-validation-criteria-v4",
   "robot_configuration_id": "robotstudio_so101",
-  "package_version": "1.0.0",
-  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v6",
+  "package_version": "1.0.4",
+  "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
   "whole_suite_aggregation": {
     "kind": "all_capabilities_two_of_three_cases"
   },
@@ -619,11 +619,11 @@
         "kind": "default",
         "joint_positions": {
           "shoulder_pan": -1.84,
-          "gripper": 1.0
+          "gripper": -0.17453
         },
         "actuator_controls": {
           "shoulder_pan": -1.84,
-          "gripper": 1.0
+          "gripper": -0.17453
         }
       },
       "max_steps": 5000,
@@ -852,7 +852,7 @@
       "scene_entrypoint": "assets/button_front_scene.xml",
       "request": {
         "precontact_position_m": [
-          0.39,
+          0.38,
           0.065,
           0.22
         ],

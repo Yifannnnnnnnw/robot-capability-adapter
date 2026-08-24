@@ -25,7 +25,7 @@ PACKAGE_ROOT = (
     / "libraries"
     / "robots"
     / "robotstudio_so101"
-    / "1.0.0"
+    / "1.0.4"
 )
 
 

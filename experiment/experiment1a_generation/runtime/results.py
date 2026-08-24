@@ -11,7 +11,7 @@ from .b1 import EXPERIMENT_ROOT, REPOSITORY_ROOT, resolve_experiment_manifest
 
 
 EXPERIMENT_ID = "experiment1-b1-core-r3"
-CURRENT_AUTHORITY_REVISION = "0.1.19"
+CURRENT_AUTHORITY_REVISION = "0.2.0"
 EXPECTED_ROBOT_IDS = ("robotstudio_so101", "unitree-go2-stock-12dof")
 EXPECTED_BACKBONE_IDS = ("M1", "M2", "M3", "M4", "M5", "M6", "M8")
 EXPECTED_REPLICATE_IDS = ("r01", "r02", "r03")
@@ -149,14 +149,14 @@ def discover_cell_records(
             attempts = record.get("attempts")
             if not isinstance(attempts, list):
                 raise ResultsError(f"cell record has no attempt list: {cell_path}")
-            accepted = sum(
+            frozen = sum(
                 1
                 for attempt in attempts
                 if isinstance(attempt, Mapping)
-                and attempt.get("submission_accepted") is True
+                and attempt.get("driver_frozen") is True
             )
-            if accepted > 3 or terminal.get("submitted_attempt_count") != accepted:
-                raise ResultsError(f"submitted-attempt count mismatch: {cell_path}")
+            if frozen > 3 or terminal.get("frozen_driver_attempt_count") != frozen:
+                raise ResultsError(f"frozen-Driver attempt count mismatch: {cell_path}")
             candidates.append(
                 {
                     "record": record,
@@ -177,7 +177,7 @@ def _eligibility(candidate: Mapping[str, Any]) -> tuple[bool, str | None]:
     backbone = identity.get("backbone_id")
     revision = identity.get("authority_revision")
     if revision != CURRENT_AUTHORITY_REVISION:
-        return False, "superseded_pre_0119"
+        return False, "superseded_pre_020"
     if backbone == "M2":
         model = _require_mapping(record.get("model"), label="M2 model record")
         if float(model.get("timeout_s", -1)) != 600.0:
@@ -194,7 +194,7 @@ def select_cell_records(
     expected_unit_ids: Sequence[str],
     preexcluded: Sequence[Mapping[str, Any]] = (),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Apply the current 0.1.19 compatibility rule without outcome selection."""
+    """Apply the current 0.2.0 compatibility rule without outcome selection."""
 
     expected = list(expected_unit_ids)
     if len(expected) != len(set(expected)):
@@ -282,14 +282,14 @@ def _validated_attempts(record: Mapping[str, Any], *, unit_id: str) -> list[Mapp
         if not isinstance(index, int) or isinstance(index, bool) or index not in range(3):
             raise ResultsError(f"{unit_id}: attempt index must be 0, 1, or 2")
         indices.append(index)
-        if attempt.get("submission_accepted") is not True:
+        if attempt.get("driver_frozen") is not True:
             continue
         report = attempt.get("validation_report")
         counts = attempt.get("validation_case_counts")
         if not isinstance(report, Mapping) or not isinstance(counts, Mapping):
-            raise ResultsError(f"{unit_id}: accepted attempt lacks validation evidence")
+            raise ResultsError(f"{unit_id}: frozen attempt lacks validation evidence")
         if not isinstance(attempt.get("validation_verdict"), bool):
-            raise ResultsError(f"{unit_id}: accepted attempt lacks validation verdict")
+            raise ResultsError(f"{unit_id}: frozen attempt lacks validation verdict")
         numeric_counts: dict[str, int] = {}
         for name in ("passed", "failed", "incomplete", "total"):
             value = counts.get(name)
@@ -332,12 +332,18 @@ def _verified_derived(record: Mapping[str, Any], *, unit_id: str) -> Mapping[str
             for action in actions
             if isinstance(action, Mapping) and action.get("action_type") == name
         )
-        for name in ("observe_or_plan", "execute_clean", "execute_error", "submit")
+        for name in (
+            "observe_or_plan",
+            "execute_clean",
+            "execute_error",
+            "artifact_complete",
+        )
     }
     stacked = {
         "read_or_plan": action_type_counts["observe_or_plan"],
         "execute_clean": (
-            action_type_counts["execute_clean"] + action_type_counts["submit"]
+            action_type_counts["execute_clean"]
+            + action_type_counts["artifact_complete"]
         ),
         "execute_error": action_type_counts["execute_error"],
     }
@@ -463,8 +469,10 @@ def build_results(
                 "replicate_id": identity["replicate_id"],
                 "terminal_stop_reason": terminal.get("stop_reason"),
                 "terminal_failure_class": terminal.get("terminal_failure_class"),
-                "submitted_attempt_count": terminal.get("submitted_attempt_count"),
-                "final_submitted_attempt_index": (
+                "frozen_driver_attempt_count": terminal.get(
+                    "frozen_driver_attempt_count"
+                ),
+                "final_frozen_attempt_index": (
                     final_attempt.get("attempt_index") if final_attempt else None
                 ),
                 "validation_passed": (
@@ -518,7 +526,7 @@ def build_results(
                     "tool_names": action.get("tool_names"),
                     "tool_outcome": action.get("tool_outcome"),
                     "target_attempt": action.get("target_attempt"),
-                    "submission_event": action.get("submission_event"),
+                    "artifact_event": action.get("artifact_event"),
                     "stage_transition": action.get("stage_transition"),
                 }
             )
@@ -716,7 +724,7 @@ def build_results(
             "selected_cell_count": len(cell_rows),
             "terminal_counts": dict(sorted(terminal_counts.items())),
             "validation_cell_count": sum(
-                1 for row in cell_rows if row["final_submitted_attempt_index"] is not None
+                1 for row in cell_rows if row["final_frozen_attempt_index"] is not None
             ),
             "passed_driver_count": sum(
                 1 for row in cell_rows if row["validation_passed"] is True
@@ -791,7 +799,7 @@ def aggregate_formal_results(
         or resolved.get("cumulative_unit_count") != EXPECTED_CUMULATIVE_UNIT_COUNT
     ):
         raise ResultsError(
-            "manifest must resolve the exact 84-cell Experiment 1 revision 0.1.19 design"
+            "manifest must resolve the exact 84-cell Experiment 1 revision 0.2.0 design"
         )
     expected = [str(unit["unit_id"]) for unit in resolved["units"]]
     candidates, discovery_exclusions = discover_cell_records(scheduler_paths)

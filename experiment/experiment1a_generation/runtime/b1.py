@@ -7,6 +7,7 @@ import copy
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -19,6 +20,11 @@ from typing import Any
 
 from autoadapter2.capability_design import validate_capability_design
 from autoadapter2.driver_synthesis.generation import (
+    GENERATE_SCRATCH_MAX_TURNS,
+    GENERATE_SKELETON_MAX_TURNS,
+    REPAIR_SCRATCH_MAX_TURNS,
+    REPAIR_SKELETON_MAX_TURNS,
+    STUDY_REACT_MAX_TURNS,
     build_public_generation_inputs,
     generate,
     study,
@@ -38,6 +44,15 @@ EXPERIMENT_ROOT = REPOSITORY_ROOT / "experiment" / "experiment1a_generation"
 AUTOADAPTER_ROOT = REPOSITORY_ROOT / "autoadapter"
 AUTOADAPTER_SOURCE_ROOT = AUTOADAPTER_ROOT / "src"
 MAX_ACCEPTED_ATTEMPTS = 3
+AUTHORITY_REVISION = "0.2.0"
+EXPECTED_PHASE_TURN_BUDGETS = {
+    "study_skeleton": 16,
+    "study_from_scratch": 16,
+    "generate_skeleton": 22,
+    "generate_from_scratch": 40,
+    "repair_skeleton": 22,
+    "repair_from_scratch": 20,
+}
 ALLOWED_CONDITIONS = {"skeleton-assisted", "from-scratch"}
 EXPECTED_ROBOT_IDS = ("robotstudio_so101", "unitree-go2-stock-12dof")
 EXPECTED_BACKBONE_IDS = ("M1", "M2", "M3", "M4", "M5", "M6", "M8")
@@ -145,6 +160,12 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
 
     manifest_path = manifest_path.resolve()
     recipe = _read_json(manifest_path, label="Experiment 1 manifest")
+    if recipe.get("schema_version") != 2:
+        raise B1RunError(f"{manifest_path}: schema_version must be 2")
+    if recipe.get("authority_revision") != AUTHORITY_REVISION:
+        raise B1RunError(
+            f"{manifest_path}: authority_revision must be {AUTHORITY_REVISION}"
+        )
     if recipe.get("track") != "B1":
         raise B1RunError(f"{manifest_path}: track must be B1")
     for flag in FORBIDDEN_RUN_FLAGS:
@@ -169,6 +190,24 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
         raise B1RunError(
             f"{manifest_path}: formal dispatch cannot be enabled while blockers remain"
         )
+
+    workflow = recipe.get("workflow")
+    if not isinstance(workflow, Mapping):
+        raise B1RunError(f"{manifest_path}: workflow must be an object")
+    if workflow.get("phase_turn_budgets") != EXPECTED_PHASE_TURN_BUDGETS:
+        raise B1RunError(f"{manifest_path}: phase turn budgets do not match Authority 0.2.0")
+    if workflow.get("aggregate_tool_call_limit") is not None:
+        raise B1RunError(f"{manifest_path}: aggregate tool-call limit must be null")
+    if workflow.get("maximum_frozen_driver_attempts_per_cell") != MAX_ACCEPTED_ATTEMPTS:
+        raise B1RunError(f"{manifest_path}: each cell must freeze at most three Drivers")
+    if workflow.get("reported_driver") != "final-frozen-driver":
+        raise B1RunError(f"{manifest_path}: results must use the final frozen Driver")
+    if workflow.get("forbidden_submission_tools") != [
+        "submit_study",
+        "submit_driver",
+        "check_driver",
+    ]:
+        raise B1RunError(f"{manifest_path}: legacy submission tools must be forbidden")
 
     protocol_path, protocol = _reference_json(
         manifest_path, recipe.get("protocol"), field="protocol"
@@ -304,7 +343,7 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
     expected_core_count = recipe.get("expected_generation_condition_replicates")
     if expected_core_count != EXPECTED_CORE_UNIT_COUNT or expected_core_count != len(units):
         raise B1RunError(f"{manifest_path}: expected unit count does not match matrix")
-    if recipe.get("maximum_submitted_driver_attempts") != len(units) * MAX_ACCEPTED_ATTEMPTS:
+    if recipe.get("maximum_frozen_driver_attempts") != len(units) * MAX_ACCEPTED_ATTEMPTS:
         raise B1RunError(f"{manifest_path}: maximum attempt count does not match matrix")
     extension_counts = {
         replicate_id: sum(
@@ -320,7 +359,7 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
         raise B1RunError(
             f"{manifest_path}: extension unit counts do not match matrix"
         )
-    declared_extension_attempts = recipe.get("maximum_extension_submitted_driver_attempts")
+    declared_extension_attempts = recipe.get("maximum_extension_frozen_driver_attempts")
     expected_extension_attempts = {
         replicate_id: count * MAX_ACCEPTED_ATTEMPTS
         for replicate_id, count in extension_counts.items()
@@ -337,7 +376,7 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
     ):
         raise B1RunError(f"{manifest_path}: cumulative unit count does not match matrix")
     if (
-        recipe.get("maximum_cumulative_submitted_driver_attempts")
+        recipe.get("maximum_cumulative_frozen_driver_attempts")
         != cumulative_count * MAX_ACCEPTED_ATTEMPTS
     ):
         raise B1RunError(f"{manifest_path}: cumulative attempt count does not match matrix")
@@ -385,9 +424,10 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
             )
             for condition in sorted(allowed)
         },
-        "maximum_submitted_driver_attempts": recipe.get(
-            "maximum_submitted_driver_attempts"
+        "maximum_frozen_driver_attempts": recipe.get(
+            "maximum_frozen_driver_attempts"
         ),
+        "phase_turn_budgets": copy.deepcopy(EXPECTED_PHASE_TURN_BUDGETS),
         "fixed_validation_bundle_set": recipe.get("fixed_validation_bundle_set"),
         "extension_unit_counts": extension_counts,
         "cumulative_unit_count": cumulative_count,
@@ -1185,12 +1225,12 @@ def _evidence_traces(result_or_error: Any) -> dict[str, list[list[Mapping[str, A
 def _classify_turn(items: Sequence[Mapping[str, Any]]) -> tuple[str, list[str], Any, str | None]:
     tool_items = [item for item in items if isinstance(item.get("tool"), str)]
     tools = [str(item["tool"]) for item in tool_items]
-    submission = next(
+    artifact = next(
         (
-            str(item["tool"])
-            for item in tool_items
-            if item["tool"] in {"submit_study", "submit_driver"}
-            and item.get("ok") is True
+            str(item["artifact"])
+            for item in items
+            if isinstance(item.get("artifact"), str)
+            and item.get("artifact_valid") is True
         ),
         None,
     )
@@ -1207,19 +1247,20 @@ def _classify_turn(items: Sequence[Mapping[str, Any]]) -> tuple[str, list[str], 
     ]
     has_error = any(
         item.get("ok") is False
+        or item.get("artifact_valid") is False
         or _observable_error(_decode_observation(item.get("observation")))
         for item in items
-        if "tool" in item
+        if "tool" in item or "artifact_valid" in item
     )
-    if submission is not None:
-        action_type = "submit"
+    if artifact is not None:
+        action_type = "artifact_complete"
     elif has_error:
         action_type = "execute_error"
-    elif any(tool in {"run_mujoco_probe", "check_driver"} for tool in tools):
+    elif any(tool in {"write_file", "execute_python"} for tool in tools):
         action_type = "execute_clean"
     else:
         action_type = "observe_or_plan"
-    return action_type, tools, outcomes, submission
+    return action_type, tools, outcomes, artifact
 
 
 def _append_actions(
@@ -1229,7 +1270,7 @@ def _append_actions(
     outer_stage: str,
     target_attempt: int | None,
     result_or_error: Any,
-    accepted_submission: str | None,
+    accepted_artifact: str | None,
     transition: str,
 ) -> None:
     new_calls = record["provider_calls"][calls_start:]
@@ -1243,7 +1284,7 @@ def _append_actions(
         offset = trace_offsets.get(raw_stage, 0)
         items = groups[offset] if offset < len(groups) else []
         trace_offsets[raw_stage] = offset + 1
-        action_type, tools, outcome, submission = _classify_turn(items)
+        action_type, tools, outcome, artifact = _classify_turn(items)
         appended.append(
             {
                 "iteration": len(record["actions"]) + len(appended) + 1,
@@ -1275,16 +1316,16 @@ def _append_actions(
                         else "execute_clean"
                     )
                 ),
-                "submission_event": submission,
+                "artifact_event": artifact,
                 "stage_transition": None,
             }
         )
-    if accepted_submission and appended and not any(
-        action["submission_event"] for action in appended
+    if accepted_artifact and appended and not any(
+        action["artifact_event"] for action in appended
     ):
-        appended[-1]["action_type"] = "submit"
+        appended[-1]["action_type"] = "artifact_complete"
         appended[-1]["plot_action_type"] = "execute_clean"
-        appended[-1]["submission_event"] = accepted_submission
+        appended[-1]["artifact_event"] = accepted_artifact
     if appended:
         appended[-1]["stage_transition"] = transition
     record["actions"].extend(appended)
@@ -1360,13 +1401,14 @@ def _refresh_derived(record: dict[str, Any]) -> None:
             "observe_or_plan",
             "execute_clean",
             "execute_error",
-            "submit",
+            "artifact_complete",
         )
     }
     stacked_action_counts = {
         "read_or_plan": action_type_counts["observe_or_plan"],
         "execute_clean": (
-            action_type_counts["execute_clean"] + action_type_counts["submit"]
+            action_type_counts["execute_clean"]
+            + action_type_counts["artifact_complete"]
         ),
         "execute_error": action_type_counts["execute_error"],
     }
@@ -1380,8 +1422,8 @@ def _refresh_derived(record: dict[str, Any]) -> None:
     iteration_count = len(actions)
     execution_error_count = action_type_counts["execute_error"]
     record["derived"] = {
-        "submitted_attempt_count": sum(
-            1 for attempt in attempts if attempt.get("submission_accepted") is True
+        "frozen_driver_attempt_count": sum(
+            1 for attempt in attempts if attempt.get("driver_frozen") is True
         ),
         "iteration_count": iteration_count,
         "execution_error_count": execution_error_count,
@@ -1429,7 +1471,7 @@ def _normalise_validation(
     return result
 
 
-def _validation_case_counts(
+def validation_case_counts(
     suite: Mapping[str, Any], report: Mapping[str, Any]
 ) -> dict[str, int]:
     """Partition every expected suite case into pass, fail, or incomplete."""
@@ -1474,6 +1516,36 @@ def _validation_case_counts(
     return counts
 
 
+def fully_validated(
+    suite: Mapping[str, Any],
+    report: Mapping[str, Any],
+    *,
+    video_required: bool = True,
+) -> bool:
+    """Apply the official final-Driver rule: every fixed case must pass.
+
+    Some historical fixed bundles retain their original capability-level
+    aggregation metadata.  Exp1a's reported outcome is intentionally stricter
+    and robot-independent: SO-101 is 18/18 and Go2 is 15/15, with real physics
+    and complete required video.  This predicate controls Repair/termination
+    and therefore cannot silently select a best earlier attempt.
+    """
+
+    counts = validation_case_counts(suite, report)
+    return (
+        counts["total"] > 0
+        and counts["passed"] == counts["total"]
+        and counts["failed"] == 0
+        and counts["incomplete"] == 0
+        and bool(report.get("physical_validation_executed"))
+        and (not video_required or bool(report.get("video_complete")))
+    )
+
+
+# Compatibility alias for focused tests and already-written diagnostic tools.
+_validation_case_counts = validation_case_counts
+
+
 def _select_unit(resolved: Mapping[str, Any], unit_id: str) -> dict[str, Any]:
     units = resolved.get("units")
     if not isinstance(units, Sequence) or isinstance(units, (str, bytes)):
@@ -1497,13 +1569,67 @@ def _select_unit(resolved: Mapping[str, Any], unit_id: str) -> dict[str, Any]:
     return unit
 
 
+def check_single_cell(
+    *,
+    manifest_path: str | Path,
+    unit_id: str,
+    hooks: RunnerHooks = RunnerHooks(),
+) -> dict[str, Any]:
+    """Resolve one prospective cell without credentials or model requests."""
+
+    manifest = Path(manifest_path).resolve()
+    resolved = dict(hooks.manifest_resolver(manifest))
+    unit = _select_unit(resolved, unit_id)
+    robot_ids = tuple(str(value) for value in resolved["robot_ids"])
+    package = hooks.package_loader(
+        AUTOADAPTER_ROOT, str(unit["robot_configuration_id"])
+    )
+    bundle = hooks.bundle_loader(
+        manifest,
+        robot_ids,
+        str(unit["robot_configuration_id"]),
+        package,
+    )
+    runtime_budgets = {
+        "study_skeleton": STUDY_REACT_MAX_TURNS,
+        "study_from_scratch": STUDY_REACT_MAX_TURNS,
+        "generate_skeleton": GENERATE_SKELETON_MAX_TURNS,
+        "generate_from_scratch": GENERATE_SCRATCH_MAX_TURNS,
+        "repair_skeleton": REPAIR_SKELETON_MAX_TURNS,
+        "repair_from_scratch": REPAIR_SCRATCH_MAX_TURNS,
+    }
+    if runtime_budgets != resolved["phase_turn_budgets"]:
+        raise B1RunError("runtime file-phase budgets differ from the Exp1a manifest")
+    reference_driver = package.root / "reference" / "fixed_capability_driver.py"
+    if not reference_driver.is_file():
+        raise B1RunError(f"fixed reference positive control is unavailable: {reference_driver}")
+    return {
+        "check_only": True,
+        "model_client_constructed": False,
+        "model_requests": 0,
+        "unit": copy.deepcopy(unit),
+        "formal_dispatch_enabled": bool(resolved["formal_dispatch_enabled"]),
+        "blocked_reasons": list(resolved["blocked_reasons"]),
+        "robot_configuration_id": package.robot_configuration_id,
+        "package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+        "fixed_capability_interface_id": bundle.fixed_capability_interface_id,
+        "fixed_capability_pass_standard_id": bundle.fixed_capability_pass_standard_id,
+        "validation_suite_id": bundle.validation_suite_id,
+        "capability_count": len(bundle.design["capabilities"]),
+        "validation_case_count": len(bundle.suite["cases"]),
+        "phase_turn_budgets": runtime_budgets,
+        "reference_driver": str(reference_driver),
+    }
+
+
 def run_single_cell(
     *,
     manifest_path: str | Path,
     unit_id: str,
     output_dir: str | Path,
     hooks: RunnerHooks = RunnerHooks(),
-    probe_budget: ProbeBudget = ProbeBudget(),
+    probe_budget: ProbeBudget = ProbeBudget(max_requests=None),
     worker_wall_timeout_s: float = 120.0,
     use_existing_fixed_route: bool = False,
 ) -> dict[str, Any]:
@@ -1559,6 +1685,8 @@ def run_single_cell(
     output.mkdir(parents=True, exist_ok=True)
     workspace = output / "workspace"
     workspace.mkdir()
+    model_workspace = workspace / "files"
+    model_workspace.mkdir()
     record_path = output / "cell_record.json"
     run_id = (
         f"{unit_id}::{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}::"
@@ -1567,7 +1695,7 @@ def run_single_cell(
     started_utc = _utc_now()
     started_monotonic = time.monotonic()
     record: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment_id": resolved.get("experiment_id"),
         "track": "B1",
         "run_id": run_id,
@@ -1648,7 +1776,7 @@ def run_single_cell(
         target_attempt: int | None,
         operation: Callable[[], Any],
         *,
-        submission: str,
+        artifact_name: str,
         transition: str,
         postprocess: Callable[[Any], None] | None = None,
     ) -> Any:
@@ -1691,7 +1819,7 @@ def run_single_cell(
                 outer_stage=stage_name,
                 target_attempt=target_attempt,
                 result_or_error=exc,
-                accepted_submission=None,
+                accepted_artifact=None,
                 transition="terminal_error",
             )
             persist()
@@ -1705,7 +1833,8 @@ def run_single_cell(
                 ),
                 "tool_probe_elapsed_s": _probe_elapsed(result),
                 "completed": True,
-                "submission": submission,
+                "canonical_artifact": artifact_name,
+                "artifact_valid": True,
             }
         )
         _append_actions(
@@ -1714,7 +1843,7 @@ def run_single_cell(
             outer_stage=stage_name,
             target_attempt=target_attempt,
             result_or_error=result,
-            accepted_submission=submission,
+            accepted_artifact=artifact_name,
             transition=transition,
         )
         persist()
@@ -1760,9 +1889,18 @@ def run_single_cell(
             }
         elapsed = max(0.0, time.monotonic() - stage_monotonic)
         validation = _normalise_validation(raw, unit=unit, attempt=attempt)
-        validation["validation_case_counts"] = _validation_case_counts(
+        validation["validation_case_counts"] = validation_case_counts(
             bundle.suite, validation
         )
+        validation["harness_aggregation_passed"] = bool(
+            validation["validation_passed"]
+        )
+        validation["fully_validated"] = fully_validated(
+            bundle.suite,
+            validation,
+            video_required=True,
+        )
+        validation["validation_passed"] = validation["fully_validated"]
         report_path = workspace / f"attempt-{attempt}" / "validation_report.json"
         _write_json(report_path, validation)
         record["evidence"]["report_paths"].append(str(report_path))
@@ -1812,18 +1950,18 @@ def run_single_cell(
                 "harness_wall_time_s": stage_totals.get("validation", 0.0),
             }
         )
-        submitted = sum(
+        frozen = sum(
             1
             for attempt in record["attempts"]
-            if attempt.get("submission_accepted") is True
+            if attempt.get("driver_frozen") is True
         )
         record["terminal_verdict"] = {
             "validation_passed": passed,
-            "validation_executed": submitted > 0,
+            "validation_executed": frozen > 0,
             "attempt_index": attempt_index,
-            "submitted_attempt_count": submitted,
+            "frozen_driver_attempt_count": frozen,
             "stop_reason": stop_reason,
-            "no_valid_submission_reason": stop_reason if submitted == 0 else None,
+            "no_frozen_driver_reason": stop_reason if frozen == 0 else None,
             "terminal_failure_class": None if passed is True else stop_reason,
             "failure": copy.deepcopy(dict(failure)) if failure is not None else None,
         }
@@ -1868,11 +2006,11 @@ def run_single_cell(
                 copy.deepcopy(dict(bundle.design)),
                 condition=condition,
                 experience=(),
-                workspace=workspace / "study",
+                workspace=model_workspace,
                 probe_budget=probe_budget,
                 source_root=AUTOADAPTER_SOURCE_ROOT,
             ),
-            submission="submit_study",
+            artifact_name="study.json",
             transition=generation_stage,
             postprocess=complete_study_probes,
         )
@@ -1920,7 +2058,7 @@ def run_single_cell(
             "utc_finished_at": None,
             "elapsed_s": None,
             "stage": generation_stage if attempt_index == 0 else "repair",
-            "submission_accepted": False,
+            "driver_frozen": False,
             "validation_verdict": None,
             "transition_or_stop": None,
             "model_wall_time_s": None,
@@ -1941,13 +2079,13 @@ def run_single_cell(
                         copy.deepcopy(dict(bundle.design)),
                         study_result,
                         condition=condition,
-                        workspace=workspace / f"attempt-{attempt_index}",
+                        workspace=model_workspace,
                         probe_results=tuple(study_probe_results),
                         experience=(),
                         probe_budget=probe_budget,
                         source_root=AUTOADAPTER_SOURCE_ROOT,
                     ),
-                    submission="submit_driver",
+                    artifact_name="driver.py",
                     transition=f"validation_{attempt_index}",
                 )
             else:
@@ -1973,7 +2111,7 @@ def run_single_cell(
                         public_inputs=public_inputs,
                         condition=condition,
                         previous_attempt=attempt_index - 1,
-                        workspace=workspace / f"attempt-{attempt_index}",
+                        workspace=model_workspace,
                         max_total_attempts=MAX_ACCEPTED_ATTEMPTS,
                         capability_methods=tuple(
                             str(capability["method_name"])
@@ -1982,7 +2120,7 @@ def run_single_cell(
                         probe_budget=probe_budget,
                         source_root=AUTOADAPTER_SOURCE_ROOT,
                     ),
-                    submission="submit_driver",
+                    artifact_name="driver.py",
                     transition=f"validation_{attempt_index}",
                 )
         except Exception as exc:
@@ -2024,11 +2162,36 @@ def run_single_cell(
                 failure=_failure(exc),
             )
 
-        current_source = str(generated.driver_source)
-        current_driver = Path(generated.driver_path).resolve()
+        try:
+            current_source = str(generated.driver_source)
+            live_driver = Path(generated.driver_path).resolve()
+            if live_driver != (model_workspace / "driver.py").resolve():
+                raise B1RunError(
+                    "file workflow must return the condition workspace driver.py"
+                )
+            frozen_dir = workspace / f"attempt-{attempt_index}"
+            frozen_dir.mkdir(parents=True, exist_ok=True)
+            current_driver = (frozen_dir / "driver.py").resolve()
+            shutil.copyfile(live_driver, current_driver)
+        except Exception as exc:
+            attempt_record.update(
+                {
+                    "utc_finished_at": _utc_now(),
+                    "elapsed_s": max(0.0, time.monotonic() - attempt_monotonic),
+                    "transition_or_stop": "terminal_freeze_error",
+                    "failure": _failure(exc),
+                }
+            )
+            persist()
+            return finish(
+                passed=False,
+                stop_reason="driver_freeze_error",
+                attempt_index=attempt_index,
+                failure=_failure(exc),
+            )
         attempt_record.update(
             {
-                "submission_accepted": True,
+                "driver_frozen": True,
                 "candidate_path": str(current_driver),
                 "source_audit_outcome": _json_safe(
                     getattr(generated, "source_audit", None)
@@ -2038,6 +2201,8 @@ def run_single_cell(
                 ),
             }
         )
+        record["stages"][-1]["driver_frozen"] = True
+        record["stages"][-1]["frozen_driver_path"] = str(current_driver)
         record["evidence"]["candidate_paths"].append(str(current_driver))
         persist()
 
@@ -2102,8 +2267,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        required=True,
+        required=False,
         help="new per-cell output directory",
+    )
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="resolve the exact cell, package, bundle and budgets without a model client",
     )
     parser.add_argument(
         "--use-existing-fixed-route",
@@ -2112,6 +2282,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     arguments = parser.parse_args(argv)
     try:
+        if arguments.check_only:
+            checked = check_single_cell(
+                manifest_path=arguments.manifest,
+                unit_id=arguments.unit_id,
+            )
+            print(json.dumps(checked, sort_keys=True))
+            return 0
+        if arguments.output is None:
+            parser.error("--output is required unless --check-only is used")
         record = run_single_cell(
             manifest_path=arguments.manifest,
             unit_id=arguments.unit_id,
@@ -2123,7 +2302,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     summary = {
         "unit_id": record["identity"]["unit_id"],
-        "submitted_attempt_count": record["derived"]["submitted_attempt_count"],
+        "frozen_driver_attempt_count": record["derived"]["frozen_driver_attempt_count"],
         "validation_passed": record["terminal_verdict"]["validation_passed"],
         "cell_record": record["evidence"]["cell_record_path"],
     }
@@ -2136,8 +2315,11 @@ __all__ = [
     "FixedBundle",
     "RunnerHooks",
     "RecordingClient",
+    "check_single_cell",
     "load_fixed_bundle",
     "load_existing_fixed_route",
+    "fully_validated",
+    "validation_case_counts",
     "resolve_experiment_manifest",
     "run_single_cell",
     "main",

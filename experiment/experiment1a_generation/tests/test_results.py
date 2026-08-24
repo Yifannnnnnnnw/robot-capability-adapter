@@ -35,7 +35,7 @@ def minimal_record(
 ) -> dict:
     parts = unit_id.split("::")
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment_id": "experiment1-b1-core-r3",
         "track": "B1",
         "run_id": f"run::{unit_id}",
@@ -55,7 +55,7 @@ def minimal_record(
         "attempts": [
             {
                 "attempt_index": 0,
-                "submission_accepted": False,
+                "driver_frozen": False,
                 "validation_report": None,
                 "validation_verdict": None,
             }
@@ -64,7 +64,7 @@ def minimal_record(
             "iteration_count": 0,
             "execution_error_count": 0,
             "provider_error_count": 0,
-            "submitted_attempt_count": 0,
+            "frozen_driver_attempt_count": 0,
             "stacked_action_counts": {
                 "read_or_plan": 0,
                 "execute_clean": 0,
@@ -76,7 +76,7 @@ def minimal_record(
         "terminal_verdict": {
             "stop_reason": "study_error",
             "terminal_failure_class": "study_error",
-            "submitted_attempt_count": 0,
+            "frozen_driver_attempt_count": 0,
         },
         "timing": {
             "utc_finished_at": "2026-08-22T00:00:01Z",
@@ -132,7 +132,7 @@ class Experiment1ResultTests(unittest.TestCase):
         self.assertIn("84 missing units", stdout.getvalue())
         self.assertFalse(output.exists())
 
-    def test_selection_excludes_pre_0119_records_and_rejects_eligible_duplicates(self) -> None:
+    def test_selection_excludes_pre_020_records_and_rejects_eligible_duplicates(self) -> None:
         m2_unit = "b1::unitree-go2-stock-12dof::M2::r01::from-scratch"
         m1_unit = "b1::unitree-go2-stock-12dof::M1::r01::from-scratch"
         so_unit = "b1::robotstudio_so101::M4::r01::from-scratch"
@@ -144,13 +144,13 @@ class Experiment1ResultTests(unittest.TestCase):
             minimal_record(
                 m2_unit,
                 backbone_id="M2",
-                revision="0.1.19",
+                revision="0.2.0",
                 timeout_s=600,
             ),
             "/formal/new-m2.json",
         )
         m1 = candidate(
-            minimal_record(m1_unit, backbone_id="M1", revision="0.1.19"),
+            minimal_record(m1_unit, backbone_id="M1", revision="0.2.0"),
             "/formal/m1.json",
         )
         old_so = candidate(
@@ -158,7 +158,7 @@ class Experiment1ResultTests(unittest.TestCase):
             "/formal/old-so.json",
         )
         new_so = candidate(
-            minimal_record(so_unit, backbone_id="M4", revision="0.1.19"),
+            minimal_record(so_unit, backbone_id="M4", revision="0.2.0"),
             "/formal/new-so.json",
         )
 
@@ -174,7 +174,7 @@ class Experiment1ResultTests(unittest.TestCase):
         self.assertEqual(audit["missing_unit_count"], 0)
         self.assertEqual(
             {row["reason"] for row in audit["excluded"]},
-            {"superseded_pre_0119"},
+            {"superseded_pre_020"},
         )
         with self.assertRaisesRegex(ResultsError, "ambiguous eligible formal records"):
             select_cell_records(
@@ -182,7 +182,7 @@ class Experiment1ResultTests(unittest.TestCase):
                 expected_unit_ids=[m2_unit],
             )
 
-    def test_build_results_uses_final_submission_but_inventories_all_attempts(self) -> None:
+    def test_build_results_uses_final_frozen_driver_but_inventories_all_attempts(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
@@ -219,7 +219,7 @@ class Experiment1ResultTests(unittest.TestCase):
                 "elapsed_s": 1.0,
                 "tool_names": [],
                 "target_attempt": None,
-                "submission_event": None,
+                "artifact_event": None,
                 "stage_transition": None,
             },
             {
@@ -232,7 +232,7 @@ class Experiment1ResultTests(unittest.TestCase):
                 "elapsed_s": 2.0,
                 "tool_names": ["write_file"],
                 "target_attempt": 1,
-                "submission_event": None,
+                "artifact_event": None,
                 "stage_transition": None,
             },
         ]
@@ -244,7 +244,7 @@ class Experiment1ResultTests(unittest.TestCase):
             attempts.append(
                 {
                     "attempt_index": attempt_index,
-                    "submission_accepted": True,
+                    "driver_frozen": True,
                     "validation_verdict": passed,
                     "validation_case_counts": {
                         "passed": 1 if passed else 0,
@@ -298,7 +298,7 @@ class Experiment1ResultTests(unittest.TestCase):
             {
                 "iteration_count": 2,
                 "execution_error_count": 1,
-                "submitted_attempt_count": 2,
+                "frozen_driver_attempt_count": 2,
                 "stacked_action_counts": {
                     "read_or_plan": 1,
                     "execute_clean": 0,
@@ -311,7 +311,7 @@ class Experiment1ResultTests(unittest.TestCase):
         record["terminal_verdict"] = {
             "stop_reason": "validation_passed",
             "terminal_failure_class": None,
-            "submitted_attempt_count": 2,
+            "frozen_driver_attempt_count": 2,
         }
 
         results, inventory = build_results(
@@ -328,7 +328,7 @@ class Experiment1ResultTests(unittest.TestCase):
         self.assertEqual(results["summary"]["video_trial_count"], 2)
         self.assertEqual(results["summary"]["uploadable_video_count"], 1)
         self.assertEqual(results["summary"]["missing_video_count"], 1)
-        self.assertEqual(results["cell_rows"][0]["final_submitted_attempt_index"], 1)
+        self.assertEqual(results["cell_rows"][0]["final_frozen_attempt_index"], 1)
         self.assertTrue(results["cell_rows"][0]["token_usage_complete"])
         self.assertEqual([row["stage"] for row in results["action_rows"]], ["study", "generate"])
         self.assertEqual([row["stage_start"] for row in results["action_rows"]], [True, True])

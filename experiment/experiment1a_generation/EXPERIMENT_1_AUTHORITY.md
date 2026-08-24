@@ -2,12 +2,47 @@
 
 > **Document ID:** `AA2-EXP1`<br>
 > **Document role:** sole normative document for Experiment 1a — B1<br>
-> **Parent authority:** `AA2-AUTH` revision `0.19.33`<br>
+> **Parent authority:** `AA2-AUTH` revision `0.20.0`<br>
 > **Normative language:** English<br>
 > **Chinese text:** auxiliary reading support only<br>
-> **Revision:** `0.1.19`<br>
-> **Effective date:** 2026-08-23<br>
-> **Design status:** active and prospectively fixed; formal dispatch authorised but not started
+> **Revision:** `0.2.0`<br>
+> **Effective date:** 2026-08-25<br>
+> **Design status:** active and prospectively fixed; zero-model preflight only; formal dispatch not authorised
+
+Revision `0.2.0` adapts the unchanged 84-cell fixed-input comparison to the
+AA1-style file-delivery workflow. STUDY writes `study.json`; Generate and
+Repair write `driver.py`. The current model tool surface contains no
+`submit_study`, `submit_driver` or `check_driver`. A normal phase end triggers
+Framework validation of the canonical artifact, and a valid artifact written
+on the final available turn is accepted without an extra closing turn. A
+Driver becomes one formal attempt only after source and import checks freeze
+it; missing, invalid, stub or non-importable files consume no attempt. The
+private Harness runs only after a successful freeze, and the cell reports the
+verdict of the final frozen Driver, never the best intermediate attempt.
+
+Both conditions receive 16 STUDY turns. Skeleton Generate/Repair receive
+22/22 turns; from-scratch Generate/Repair receive 40/20 turns. There is no
+aggregate tool-call ceiling. Individual file and Python/MuJoCo operations
+retain their workspace, timeout, step, simulated-time, output and permission
+limits. Skeleton discovery is visible only to skeleton-assisted Generate and
+Repair.
+
+The fixed matrix remains exactly two robots × seven LLMs × two conditions ×
+three core replicates = 84 cells. The SO-101 fixed bundle is prospectively
+rebound and reference-calibrated to package `1.0.4`; the Go2 bundle remains
+frozen. This preparation round permits manifest checks, check-only runner
+tests and reference positive controls only. It sends no formal Experiment 1a
+model request; a later explicit project-owner approval is required before
+dispatch.
+
+**中文辅助说明。** 修订 `0.2.0` 不改变 84-cell 固定输入比较，只把执行合同改为 AA1 风格的
+文件交付：STUDY 写 `study.json`，Generate/Repair 写 `driver.py`；当前工具中没有任何
+`submit_*` 或 `check_driver`。Framework 在 phase 正常结束时审核 canonical artifact，最后一回合
+已写出有效文件也直接接受。只有通过 source/import 边界并封存的 Driver 才计入最多三次正式
+attempt，私有 Harness 只验证封存版本，统计使用最后一个封存 Driver 而不是 best attempt。
+STUDY 两条件均为 16 turns；skeleton Generate/Repair 为 22/22，scratch 为 40/20；不设置总工具
+调用上限。SO-101 fixed bundle 迁移并校准到 `1.0.4`，Go2 保持冻结。本轮只允许零模型 preflight，
+正式 84 cells 必须等待项目负责人另行批准。
 
 Revision `0.1.19` completes the synchronized pre-formal B1 configuration and
 authorises, but does not start, the fresh 84-cell core. The two robots, active
@@ -311,7 +346,7 @@ Every concrete experiment authority fixes exactly three classes of information:
 |---|---|---|
 | Experimental object | Research claim, two robots, seven active backbones, two conditions, statistical unit, and replicate plan | Sections 1–3 |
 | Required preparation | Clear Driver contracts and criteria plus a usable, isolated, recorded STUDY-to-terminal-validation route | Sections 4, 5, 7, and 8 |
-| Required records | Outcomes, evidence, timings, submitted attempts, model/provider calls, tokens, costs, errors, and observable action trace | Section 6 |
+| Required records | Outcomes, evidence, timings, frozen Driver attempts, model/provider calls, tokens, costs, errors, and observable action trace | Section 6 |
 
 No subordinate manifest, benchmark file, implementation, or report may add or
 change an Experiment 1-specific object, preparation requirement, or recording
@@ -412,7 +447,7 @@ The primary design uses fresh `r01`, `r02`, and `r03` cells:
 
 ```text
 2 robots × 7 active backbones × 2 conditions × 3 replicates = 84 cells
-84 cells × at most 3 submitted drivers = at most 252 submissions
+84 cells × at most 3 frozen drivers = at most 252 Harness validations
 ```
 
 Each active backbone has a 12-cell core denominator (`2 robots × 2 conditions ×
@@ -428,10 +463,11 @@ complete balanced block:
 
 ```text
 2 robots × 7 active backbones × 2 conditions = 28 additional cells
-28 cells × at most 3 submitted drivers = at most 84 additional submissions
+28 cells × at most 3 frozen drivers = at most 84 additional Harness validations
 ```
 
-Completing both produces 140 cumulative cells and at most 420 submissions.
+Completing both produces 140 cumulative cells and at most 420 frozen-Driver
+Harness validations.
 An extension decision may depend only on recorded operational facts such as
 remaining calendar time, budget, provider availability, and unchanged frozen
 configuration. It may not depend on success rates, backbone rankings, condition
@@ -450,10 +486,10 @@ The independent seed map and randomized execution order for `r01` through
 
 ## 4. Fixed input and execution path
 
-Under revision `0.1.19`, the active manifest, all active provider/model pins,
-the fixed validation inputs, and both generation routes are synchronized and
-their zero-model readiness checks pass. The requirements below remain the
-fixed input and execution path for every subsequently dispatched formal cell.
+Under revision `0.2.0`, the active manifest, all active provider/model pins,
+the fixed validation inputs, and both file-based generation routes must pass
+their zero-model readiness checks before a later dispatch can be authorised.
+The requirements below are the fixed path for every future formal cell.
 
 Before the first cell starts, every selected robot must have one fixed
 Driver-and-criteria definition containing:
@@ -481,20 +517,37 @@ Each cell follows exactly this path:
 ```text
 load fixed bundle
   -> STUDY
+  -> Framework validates and seals study.json
   -> GENERATE (skeleton-assisted) or GEN_ALGO (from-scratch)
-  -> submit attempt 0
+  -> Framework source/import audit freezes driver.py as attempt 0
   -> complete private validation 0
-  -> if failed: Repair 1 -> submit attempt 1 -> complete validation 1
-  -> if failed: Repair 2 -> submit attempt 2 -> complete validation 2
+  -> if failed: Repair 1 -> freeze driver.py as attempt 1 -> complete validation 1
+  -> if failed: Repair 2 -> freeze driver.py as attempt 2 -> complete validation 2
   -> terminal verdict
 ```
 
-The first pass stops the cell. At most three generated drivers may be
-submitted. Development probes and edits before an explicit submission do not
-create additional attempts. Repair may change only `driver.py` and receives
+The first pass stops the cell. At most three generated drivers may be frozen
+and validated. Development file edits, invalid artifacts and source/import
+failures do not create attempts. Repair modifies the prior `driver.py` in its
+condition-local file workspace and receives
 the immediately preceding driver plus the complete candidate-facing report
 allowed by `AA2-AUTH` Section 3.5. It never receives the private suite
 definition, the other condition's artifacts, or another cell's evidence.
+
+The phase budgets are fixed as follows:
+
+| Phase | Skeleton-assisted | From-scratch |
+|---|---:|---:|
+| STUDY | 16 turns | 16 turns |
+| Generate | 22 turns | 40 turns |
+| Repair, per frozen-attempt slot | 22 turns | 20 turns |
+
+There is no aggregate tool-call limit. Both conditions can use `read_file`,
+`write_file`, and the bounded persistent `execute_python` session. Only
+skeleton-assisted Generate and Repair can use `list_skeletons` and
+`inspect_skeleton`. A normal model phase end asks the Framework to validate the
+canonical artifact; an invalid artifact returns a deterministic error in the
+same conversation while turns remain. No explicit submission tool exists.
 
 Experiment 1 begins at STUDY and stops at the terminal driver-validation
 verdict. It does not run TGCD, IVC, Task Demo, a high-level controller, or
@@ -502,14 +555,20 @@ Evolution, and none of those resources or outcomes enter its denominator.
 
 ## 5. Validation, isolation, and retained evidence
 
-Every submitted driver runs every case and repetition in the same complete
+Every frozen driver runs every case and repetition in the same complete
 robot-specific suite. Each case passes only when its conjunctive public metric,
 temporal/order, closed-loop, canonical actuator-plus-physics,
 physical-integrity, source/import/build, and complete-video requirements
-inherited from the parent Authority all pass. A capability passes when at least
-two of its three H1/H2/H3 cases pass. A Driver passes only when every capability
-assigned to its robot passes; there is no compensation between capabilities or
-model self-report substitute for a Harness verdict.
+inherited from the parent Authority all pass. Historical bundle metadata may
+still expose the earlier two-of-three capability aggregation for diagnostic
+continuity, especially because the Go2 bundle remains frozen. It does not
+define the active cell verdict. The official `fully_validated` and
+`validation_passed` outcome requires every case of the final frozen Driver to
+pass: SO-101 requires 18/18 and Go2 requires 15/15, with complete physical and
+video evidence. A 17/18 (or 14/15) Driver therefore proceeds to Repair when an
+attempt remains and is a failure at the terminal attempt. There is no best-
+attempt selection, compensation between capabilities, or model self-report
+substitute for this Harness verdict.
 
 Each condition and attempt uses the required isolated workspace and candidate
 worker. Every formal validation case/repetition retains a continuous,
@@ -529,7 +588,7 @@ as a separate follow-up wave.
 Primary driver-validation outcomes are:
 
 - `pass@0`;
-- final pass within at most three submitted drivers;
+- final pass of the last frozen Driver within at most three attempts;
 - Repair gain;
 - attempts to first pass;
 - valid-driver count and rate; and
@@ -554,13 +613,13 @@ to terminal verdict, time to the attempt-0 verdict, queue and active time when
 concurrent, and separate STUDY, GENERATE/GEN_ALGO, Repair, tool/probe, and
 validation times where measurable.
 
-STUDY is not a submitted-driver attempt. Each bounded generation or Repair
+STUDY is not a frozen-Driver attempt. Each bounded generation or Repair
 slot records its target `attempt_index` (0, 1, or 2), start/end and monotonic
-wall time, model/tool/validation time, whether `submit_driver` was accepted,
-the validation verdict when submitted, and its transition or stop reason. The
-cell's actual submitted-attempt count is the number of accepted submission
-events and may be zero through three; failed development that never submits a
-driver does not inflate that count.
+wall time, model/tool/validation time, whether the canonical `driver.py` passed
+source/import audit and was frozen, the Harness verdict when frozen, and its
+transition or stop reason. The cell's actual attempt count is the number of
+successful freeze events and may be zero through three; failed development
+that never freezes a Driver does not inflate that count.
 
 Every physical provider request is a separate ordered call record, including
 successes, failures, timeouts, 429/503 responses, and retries. Each record
@@ -573,11 +632,11 @@ snapshot. A retry is another provider call but is not another plotted iteration
 unless it returns a completed observable model turn.
 
 Every completed observable model turn records its ordered iteration, stage,
-target attempt, elapsed time, tool name/outcome, submission event, and
+target attempt, elapsed time, tool name/outcome, artifact-review/freeze event, and
 stage/attempt transition. Its raw action type is one of `observe_or_plan`,
-`execute_clean`, `execute_error`, or `submit`, classified only from observable
-tool behaviour. For the reference visualization, `observe_or_plan` is the grey
-read/plan segment, `execute_clean` and successful `submit` are green,
+`execute_clean`, `execute_error`, or `artifact_complete`, classified only from observable
+tool and Framework-review behaviour. For the reference visualization, `observe_or_plan` is the grey
+read/plan segment, `execute_clean` and successful `artifact_complete` are green,
 `execute_error` is red, and each stage transition supplies the black boundary.
 
 Iteration count, execution-error count, provider-error count, retry count,
@@ -611,12 +670,12 @@ not change the matrix or statistical unit.
 
 ## 8. Sole start prerequisite
 
-Revision `0.1.19` records that the active manifest, provider/model pins
-(including M8's exact returned identity and public reference price), fixed
-validation inputs, and both generation routes are synchronized and pass their
-required zero-model readiness checks. Formal dispatch is authorised under that
-exact manifest, but no cell starts merely because the gate is enabled. Both
-parts below remain mandatory during execution:
+Revision `0.2.0` requires the active manifest, provider/model pins (including
+M8's exact returned identity and public reference price), SO-101 1.0.4 and
+frozen Go2 inputs, and both file-based generation routes to pass the declared
+zero-model readiness checks. This preparation does not authorise formal
+dispatch. Both parts below remain mandatory before and during any later
+approved execution:
 
 1. both selected robots have clear fixed Driver interfaces and clear
    Harness-evaluable validation criteria, including the private values needed
@@ -625,8 +684,9 @@ parts below remain mandatory during execution:
    `GENERATE`/`GEN_ALGO`, conditional bounded Repair, complete validation, and
    terminal verdict, while retaining the records required by Section 6.
 
-There is no task-blind reference-calibration gate and no additional global
-admission workflow, and no additional pre-formal LLM canary is required.
+SO-101 1.0.4 and Go2 reference positive controls are mandatory zero-model
+preflight diagnostics for this revision. They do not enter the denominator or
+replace any generated Driver. No additional pre-formal LLM canary is required.
 Exact provider/model settings remain fixed and recorded for each affected
 active backbone; a transport or account problem becomes a visible affected
 cell terminal rather than a silent substitution. The already frozen seed/order

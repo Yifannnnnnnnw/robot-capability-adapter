@@ -1,10 +1,10 @@
 {
   "artifact_type": "b1_fixed_capability_design",
   "schema_version": "1.0",
-  "capability_design_id": "experiment1-b1-fixed-interface::robotstudio_so101::v3",
+  "capability_design_id": "experiment1-b1-fixed-interface::robotstudio_so101::v4",
   "robot_configuration_id": "robotstudio_so101",
-  "package_version": "1.0.0",
-  "task_snapshot_id": "robotstudio-so101-source-protocols-2026-08-18-v6",
+  "package_version": "1.0.4",
+  "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
   "invocation_abi": {
     "kind": "capability_request",
     "method_call": "method(request=request)"

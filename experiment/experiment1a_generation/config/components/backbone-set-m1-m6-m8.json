@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "../../EXPERIMENT_1_AUTHORITY.md",
-  "authority_revision": "0.1.19",
+  "authority_revision": "0.2.0",
   "backbone_set_id": "experiment1-active-m1-m6-m8",
   "backbone_ids": [
     "M1",

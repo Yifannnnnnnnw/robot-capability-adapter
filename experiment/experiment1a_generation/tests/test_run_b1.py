@@ -30,6 +30,7 @@ from experiment.experiment1a_generation.runtime.b1 import (  # noqa: E402
     _refresh_derived,
     _validation_case_counts,
     _validated_runtime_model_config,
+    check_single_cell,
     run_single_cell,
 )
 from autoadapter2.model_api import JsonModelClient, ModelConfig  # noqa: E402
@@ -193,6 +194,20 @@ class ScriptedRoute:
 
 
 class Experiment1B1RunnerTests(unittest.TestCase):
+    def test_check_only_resolves_current_so101_without_constructing_a_model(self) -> None:
+        checked = check_single_cell(
+            manifest_path=EXPERIMENT_ROOT / "manifest.json",
+            unit_id=UNIT_ID,
+        )
+
+        self.assertTrue(checked["check_only"])
+        self.assertFalse(checked["model_client_constructed"])
+        self.assertEqual(checked["model_requests"], 0)
+        self.assertEqual(checked["package_version"], "1.0.4")
+        self.assertEqual(checked["capability_count"], 6)
+        self.assertEqual(checked["validation_case_count"], 18)
+        self.assertFalse(checked["formal_dispatch_enabled"])
+
     def test_plot_ready_iteration_summary_is_derived_from_raw_records(self) -> None:
         record = {
             "provider_calls": [
@@ -213,9 +228,13 @@ class Experiment1B1RunnerTests(unittest.TestCase):
                 {"iteration": 1, "stage": "study", "action_type": "observe_or_plan"},
                 {"iteration": 2, "stage": "generate", "action_type": "execute_clean"},
                 {"iteration": 3, "stage": "generate", "action_type": "execute_error"},
-                {"iteration": 4, "stage": "repair", "action_type": "submit"},
+                {
+                    "iteration": 4,
+                    "stage": "repair",
+                    "action_type": "artifact_complete",
+                },
             ],
-            "attempts": [{"submission_accepted": True}],
+            "attempts": [{"driver_frozen": True}],
         }
 
         _refresh_derived(record)
@@ -226,7 +245,7 @@ class Experiment1B1RunnerTests(unittest.TestCase):
                 "observe_or_plan": 1,
                 "execute_clean": 1,
                 "execute_error": 1,
-                "submit": 1,
+                "artifact_complete": 1,
             },
         )
         self.assertEqual(
@@ -296,7 +315,7 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         record, route, output = self._run([True])
 
         self.assertTrue(record["terminal_verdict"]["validation_passed"])
-        self.assertEqual(record["derived"]["submitted_attempt_count"], 1)
+        self.assertEqual(record["derived"]["frozen_driver_attempt_count"], 1)
         self.assertEqual(len(record["attempts"]), 1)
         self.assertEqual(route.client_creations, 1)
         self.assertEqual(route.generate_calls, 1)
@@ -317,7 +336,7 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         record, route, _ = self._run([False, True])
 
         self.assertTrue(record["terminal_verdict"]["validation_passed"])
-        self.assertEqual(record["derived"]["submitted_attempt_count"], 2)
+        self.assertEqual(record["derived"]["frozen_driver_attempt_count"], 2)
         self.assertEqual(
             [attempt["attempt_index"] for attempt in record["attempts"]], [0, 1]
         )
@@ -337,14 +356,14 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         self.assertEqual(record["attempts"][0]["transition_or_stop"], "repair_1")
         self.assertEqual(record["attempts"][1]["transition_or_stop"], "passed")
 
-    def test_three_failures_stop_at_the_accepted_attempt_budget(self) -> None:
+    def test_three_failures_stop_at_the_frozen_attempt_budget(self) -> None:
         record, route, _ = self._run([False, False, False])
 
         self.assertFalse(record["terminal_verdict"]["validation_passed"])
         self.assertEqual(
             record["terminal_verdict"]["stop_reason"], "maximum_attempts_reached"
         )
-        self.assertEqual(record["derived"]["submitted_attempt_count"], 3)
+        self.assertEqual(record["derived"]["frozen_driver_attempt_count"], 3)
         self.assertEqual(len(record["attempts"]), 3)
         self.assertEqual(route.generate_calls, 1)
         self.assertEqual(route.repair_calls, 2)

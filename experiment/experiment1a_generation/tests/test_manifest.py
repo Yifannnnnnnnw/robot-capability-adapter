@@ -34,10 +34,10 @@ class Experiment1ManifestTests(unittest.TestCase):
             {"from-scratch": 42, "skeleton-assisted": 42},
         )
         self.assertEqual(resolved["unit_count"], 84)
-        self.assertEqual(resolved["maximum_submitted_driver_attempts"], 252)
+        self.assertEqual(resolved["maximum_frozen_driver_attempts"], 252)
         self.assertEqual(resolved["extension_unit_counts"], {"r04": 28, "r05": 28})
         self.assertEqual(resolved["cumulative_unit_count"], 140)
-        self.assertTrue(resolved["formal_dispatch_enabled"])
+        self.assertFalse(resolved["formal_dispatch_enabled"])
 
     def test_every_core_block_contains_both_isolated_conditions(self) -> None:
         resolved = resolve_experiment_manifest(EXPERIMENT_ROOT / "manifest.json")
@@ -55,21 +55,37 @@ class Experiment1ManifestTests(unittest.TestCase):
             )
         )
 
-    def test_manifest_points_to_the_fixed_bundle_set_and_enables_ready_dispatch(self) -> None:
+    def test_manifest_points_to_the_fixed_bundle_set_and_keeps_dispatch_locked(self) -> None:
         recipe = json.loads(
             (EXPERIMENT_ROOT / "manifest.json").read_text(encoding="utf-8")
         )
         resolved = resolve_experiment_manifest(EXPERIMENT_ROOT / "manifest.json")
 
-        self.assertNotIn("status", recipe)
-        self.assertEqual(recipe["authority_revision"], "0.1.19")
+        self.assertEqual(recipe["schema_version"], 2)
+        self.assertEqual(recipe["authority_revision"], "0.2.0")
         self.assertEqual(recipe["execution_concurrency"]["status"], "operational")
-        self.assertTrue(resolved["formal_dispatch_enabled"])
+        self.assertFalse(resolved["formal_dispatch_enabled"])
         self.assertEqual(
             resolved["fixed_validation_bundle_set"],
             "validation/fixed_validation_bundles/index.json",
         )
-        self.assertEqual(resolved["blocked_reasons"], [])
+        self.assertEqual(
+            resolved["blocked_reasons"],
+            ["formal LLM cells require later project-owner approval"],
+        )
+        self.assertEqual(
+            resolved["phase_turn_budgets"],
+            {
+                "study_skeleton": 16,
+                "study_from_scratch": 16,
+                "generate_skeleton": 22,
+                "generate_from_scratch": 40,
+                "repair_skeleton": 22,
+                "repair_from_scratch": 20,
+            },
+        )
+        self.assertIsNone(recipe["workflow"]["aggregate_tool_call_limit"])
+        self.assertEqual(recipe["workflow"]["reported_driver"], "final-frozen-driver")
 
     def test_derived_files_lock_the_authority_selection(self) -> None:
         recipe = json.loads(
@@ -230,9 +246,9 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertEqual(replicates, ["r01", "r02", "r03"])
         self.assertEqual(recipe["extension_replicate_ids"], ["r04", "r05"])
         self.assertEqual(recipe["maximum_cumulative_generation_condition_replicates"], 140)
-        self.assertEqual(recipe["maximum_cumulative_submitted_driver_attempts"], 420)
+        self.assertEqual(recipe["maximum_cumulative_frozen_driver_attempts"], 420)
         self.assertEqual(recipe["extension_generation_condition_replicates"], {"r04": 28, "r05": 28})
-        self.assertEqual(recipe["maximum_extension_submitted_driver_attempts"], {"r04": 84, "r05": 84})
+        self.assertEqual(recipe["maximum_extension_frozen_driver_attempts"], {"r04": 84, "r05": 84})
         self.assertFalse(recipe["run_task_demo"])
         self.assertFalse(recipe["run_high_level_controller"])
         self.assertFalse(recipe["run_evolution"])

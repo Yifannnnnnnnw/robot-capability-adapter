@@ -10,7 +10,7 @@
     "calibration_kind": "retained real MuJoCo fixed-bundle calibration",
     "interface_id": "experiment1-b1-fixed-interface::robotstudio_so101::v4",
     "pass_standard_id": "experiment1-b1-driver-validation-criteria-v4",
-    "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v5"
+    "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v6"
   },
   "capabilities": [
     {

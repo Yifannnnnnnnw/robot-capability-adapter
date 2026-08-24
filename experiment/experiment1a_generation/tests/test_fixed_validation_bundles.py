@@ -40,13 +40,14 @@ class Experiment1FixedBundleTests(unittest.TestCase):
         )["robot_configuration_ids"]
         cls.packages = {}
         for robot_id in cls.robot_ids:
+            package_version = "1.0.4" if robot_id == "robotstudio_so101" else "1.0.0"
             root = (
                 REPOSITORY_ROOT
                 / "autoadapter"
                 / "libraries"
                 / "robots"
                 / robot_id
-                / "1.0.0"
+                / package_version
             )
             morphology = json.loads(
                 (root / "morphology.json").read_text(encoding="utf-8")
@@ -91,7 +92,7 @@ class Experiment1FixedBundleTests(unittest.TestCase):
             )
         )
 
-    def test_index_is_two_robot_v6_and_historical_bundles_remain_unindexed(self) -> None:
+    def test_index_is_two_robot_v7_and_historical_bundles_remain_unindexed(self) -> None:
         index_path = (
             EXPERIMENT_ROOT
             / "validation"
@@ -100,7 +101,7 @@ class Experiment1FixedBundleTests(unittest.TestCase):
         )
         index = json.loads(index_path.read_text(encoding="utf-8"))
         self.assertEqual(
-            index["bundle_set_id"], "experiment1-b1-two-robot-fixed-bundles-v6"
+            index["bundle_set_id"], "experiment1-b1-two-robot-fixed-bundles-v7"
         )
         self.assertEqual(
             set(index["robots"]),
@@ -149,10 +150,10 @@ class Experiment1FixedBundleTests(unittest.TestCase):
 
     def test_corrected_artifacts_use_new_matching_identities(self) -> None:
         for robot_id, bundle in self.bundles.items():
-            design_version = "v3" if robot_id == "robotstudio_so101" else "v2"
-            suite_version = "v4" if robot_id == "robotstudio_so101" else "v3"
+            design_version = "v4" if robot_id == "robotstudio_so101" else "v2"
+            suite_version = "v6" if robot_id == "robotstudio_so101" else "v3"
             pass_standard_version = (
-                "v3" if robot_id == "robotstudio_so101" else "v2"
+                "v4" if robot_id == "robotstudio_so101" else "v2"
             )
             self.assertEqual(
                 bundle.design["capability_design_id"],
@@ -178,6 +179,31 @@ class Experiment1FixedBundleTests(unittest.TestCase):
                 bundle.validation_suite_id,
                 bundle.suite["suite_id"],
             )
+
+    def test_official_final_driver_verdict_requires_every_case(self) -> None:
+        for robot_id, expected_total in (
+            ("robotstudio_so101", 18),
+            ("unitree-go2-stock-12dof", 15),
+        ):
+            bundle = self.bundles[robot_id]
+            trials = [
+                {
+                    "case_id": case["case_id"],
+                    "worker_completed": True,
+                    "trial_passed": True,
+                }
+                for case in bundle.suite["cases"]
+            ]
+            self.assertEqual(len(trials), expected_total)
+            report = {
+                "physical_validation_executed": True,
+                "video_complete": True,
+                "validation_passed": True,
+                "trials": trials,
+            }
+            self.assertTrue(b1_runtime.fully_validated(bundle.suite, report))
+            report["trials"][-1]["trial_passed"] = False
+            self.assertFalse(b1_runtime.fully_validated(bundle.suite, report))
 
     def test_so101_a6_wrist_roll_contract_is_closed_and_crosses_both_signs(self) -> None:
         bundle = self.bundles["robotstudio_so101"]

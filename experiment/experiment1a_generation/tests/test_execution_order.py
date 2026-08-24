@@ -55,8 +55,8 @@ class Experiment1ExecutionOrderTests(unittest.TestCase):
         self.assertEqual(
             replicate_set["execution_order"], "execution-order-r1-r5.json"
         )
-        self.assertEqual(replicate_set["authority_revision"], "0.1.19")
-        self.assertEqual(execution_order["authority_revision"], "0.1.19")
+        self.assertEqual(replicate_set["authority_revision"], "0.2.0")
+        self.assertEqual(execution_order["authority_revision"], "0.2.0")
 
         robots = [
             "robotstudio_so101",
