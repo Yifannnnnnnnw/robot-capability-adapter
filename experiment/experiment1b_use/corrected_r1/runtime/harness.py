@@ -18,6 +18,20 @@ from .contact_policy import build_geom_metadata, evaluate_contact_integrity
 AUDIT_ID = "AA2-B2-CORRECTED-R1"
 AUDIT_REVISION = "1.0.0"
 SUITE_ARTIFACT_TYPE = "b2_corrected_r1_task_suite"
+R23_AUDIT_ID = "AA2-B2-CORRECTED-R23"
+R23_AUDIT_REVISION = "1.0.0"
+R23_SUITE_ARTIFACT_TYPE = "b2_corrected_r23_task_suite"
+
+_SUPPORTED_SUITES = {
+    SUITE_ARTIFACT_TYPE: {
+        "document_id": AUDIT_ID,
+        "revision": AUDIT_REVISION,
+    },
+    R23_SUITE_ARTIFACT_TYPE: {
+        "document_id": R23_AUDIT_ID,
+        "revision": R23_AUDIT_REVISION,
+    },
+}
 
 _GO2_FIXTURES: dict[str, tuple[set[str], set[str]]] = {
     "GO2-T02": ({"floor", "lee_step"}, set()),
@@ -63,6 +77,7 @@ def evaluate_corrected_task_harness(
 
     suite_path = Path(task_suite_path).resolve()
     suite = _read_object(suite_path)
+    suite_identity = corrected_suite_identity(suite)
     if suite.get("formal_episode") is not False:
         raise HarnessError(
             "corrected R1 task suite must explicitly declare formal_episode=false"
@@ -73,10 +88,10 @@ def evaluate_corrected_task_harness(
         instance_id=instance_id,
         replicate_id=replicate_id,
         session_result=session_result,
-        suite_artifact_type=SUITE_ARTIFACT_TYPE,
+        suite_artifact_type=str(suite["artifact_type"]),
         suite_identity_field="audit_identity",
-        suite_document_id=AUDIT_ID,
-        suite_revision=AUDIT_REVISION,
+        suite_document_id=suite_identity["document_id"],
+        suite_revision=suite_identity["revision"],
     )
     worker = session_result.get("worker")
     if not isinstance(worker, Mapping):
@@ -108,8 +123,7 @@ def evaluate_corrected_task_harness(
     report.update(
         {
             "audit_identity": {
-                "document_id": AUDIT_ID,
-                "revision": AUDIT_REVISION,
+                **suite_identity,
             },
             "formal_episode": False,
             "contact_integrity": contact_integrity,
@@ -118,6 +132,14 @@ def evaluate_corrected_task_harness(
         }
     )
     return report
+
+
+def corrected_suite_identity(suite: Mapping[str, Any]) -> dict[str, str]:
+    artifact_type = suite.get("artifact_type")
+    expected = _SUPPORTED_SUITES.get(artifact_type)
+    if expected is None or suite.get("audit_identity") != expected:
+        raise HarnessError("corrected task suite has an incompatible identity")
+    return dict(expected)
 
 
 def evaluate_scene_contact_integrity(
@@ -239,6 +261,9 @@ def _body_has_ancestor(model: Any, body_id: int, ancestor_name: str) -> bool:
 __all__ = [
     "AUDIT_ID",
     "AUDIT_REVISION",
+    "R23_AUDIT_ID",
+    "R23_AUDIT_REVISION",
+    "corrected_suite_identity",
     "evaluate_corrected_task_harness",
     "evaluate_scene_contact_integrity",
 ]

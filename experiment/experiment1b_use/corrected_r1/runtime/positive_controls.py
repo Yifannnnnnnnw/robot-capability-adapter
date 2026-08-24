@@ -32,7 +32,16 @@ REQUIRED_TASK_IDS = (
     "mw_pick_place_wall",
     "mw_dial_turn",
 )
+R23_REQUIRED_TASK_IDS = (
+    "mw_push_to_goal",
+    "mw_sweep_into_goal",
+    "mw_pick_place",
+    *REQUIRED_TASK_IDS,
+)
 TASK_ROBOT = {
+    "mw_push_to_goal": "robotstudio_so101",
+    "mw_sweep_into_goal": "robotstudio_so101",
+    "mw_pick_place": "robotstudio_so101",
     "GO2-T02": "unitree-go2-stock-12dof",
     "GO2-T03": "unitree-go2-stock-12dof",
     "GO2-T06": "unitree-go2-stock-12dof",
@@ -75,6 +84,75 @@ def _plans() -> dict[str, list[dict[str, Any]]]:
     wall_pregrasp = (0.35 + 0.17453) / 1.91986
     wall_grasp = (0.25 + 0.17453) / 1.91986
     return {
+        "mw_push_to_goal": [
+            _leaf("set_gripper_opening", {"opening_fraction": 0.0, "max_duration_s": 0.5}),
+            _leaf(
+                "approach_until_contact",
+                {
+                    "precontact_position_m": [0.38, 0.03, 0.188],
+                    "approach_direction_unit": [0.0, 1.0, 0.0],
+                    "max_travel_m": 0.08,
+                    "max_approach_speed_m_s": 0.04,
+                    "max_duration_s": 3.0,
+                },
+            ),
+            _leaf(
+                "trace_cartesian_path",
+                {
+                    "waypoints_m": [[0.38, 0.12, 0.188], [0.38, 0.18, 0.188]],
+                    "max_duration_per_segment_s": 3.0,
+                },
+            ),
+        ],
+        "mw_sweep_into_goal": [
+            _leaf("set_gripper_opening", {"opening_fraction": 0.0, "max_duration_s": 0.5}),
+            _leaf(
+                "approach_until_contact",
+                {
+                    "precontact_position_m": [0.38, 0.03, 0.2],
+                    "approach_direction_unit": [0.0, 1.0, 0.0],
+                    "max_travel_m": 0.08,
+                    "max_approach_speed_m_s": 0.04,
+                    "max_duration_s": 3.0,
+                },
+            ),
+            _leaf(
+                "trace_cartesian_path",
+                {
+                    "waypoints_m": [[0.38, 0.14, 0.2], [0.38, 0.21, 0.2]],
+                    "max_duration_per_segment_s": 3.0,
+                },
+            ),
+        ],
+        "mw_pick_place": [
+            _leaf("set_gripper_opening", {"opening_fraction": 1.0, "max_duration_s": 0.5}),
+            _leaf(
+                "set_wrist_roll",
+                {"target_roll_rad": -math.pi / 2.0, "max_duration_s": 2.0},
+            ),
+            _leaf(
+                "move_end_effector_to_position",
+                {"target_position_m": [0.34, 0.08, 0.255], "max_duration_s": 4.0},
+            ),
+            _leaf(
+                "move_end_effector_to_position",
+                {"target_position_m": [0.34, 0.08, 0.195], "max_duration_s": 3.0},
+            ),
+            _leaf("set_gripper_opening", {"opening_fraction": 0.26, "max_duration_s": 1.5}),
+            _leaf(
+                "trace_cartesian_path",
+                {
+                    "waypoints_m": [
+                        [0.34, 0.08, 0.28],
+                        [0.36, 0.03, 0.29],
+                        [0.371, -0.03, 0.29],
+                        [0.371, -0.078, 0.272],
+                    ],
+                    "max_duration_per_segment_s": 5.0,
+                },
+            ),
+            _leaf("set_gripper_opening", {"opening_fraction": 1.0, "max_duration_s": 0.5}),
+        ],
         "GO2-T02": [_twist(0.20, 0.0, 3.0), _twist(0.20, 0.0, 3.0), _twist(0.20, 0.0, 2.0)],
         "GO2-T03": [_twist(0.20, 0.0, 3.0), _twist(0.20, 0.0, 3.0), _twist(0.20, 0.0, 2.0)],
         "GO2-T06": [
@@ -187,8 +265,8 @@ def _write_object(path: Path, value: Mapping[str, Any]) -> None:
     )
 
 
-def _selection(robot_id: str) -> dict[str, Any]:
-    selection = _read_object(CONFIG_ROOT / "reference" / "selection.json")
+def _selection(robot_id: str, *, selection_path: Path) -> dict[str, Any]:
+    selection = _read_object(selection_path)
     matches = [
         item
         for item in selection.get("robots", [])
@@ -217,12 +295,17 @@ def run_task(
     output_root: Path,
     record_video: bool,
     wall_timeout_s: float,
+    task_suite_path: Path = CONFIG_ROOT / "task_suite.json",
+    selection_path: Path = CONFIG_ROOT / "reference" / "selection.json",
+    replicate_id: str = "R1",
+    audit_identity: Mapping[str, str] | None = None,
+    artifact_prefix: str = "b2_corrected_r1",
 ) -> dict[str, Any]:
     plans = _plans()
     if task_id not in plans:
         raise ValueError(f"unknown corrected positive-control task {task_id!r}")
     robot_id = TASK_ROBOT[task_id]
-    selection = _selection(robot_id)
+    selection = _selection(robot_id, selection_path=selection_path)
     package = load_robot_package(
         _resolve_repository_path(selection.get("package_root"), "package_root")
     )
@@ -230,10 +313,10 @@ def run_task(
     task_output = (output_root / "work" / task_id).resolve()
     result = run_corrected_episode(
         config=CorrectedEpisodeConfig(
-            task_suite_path=CONFIG_ROOT / "task_suite.json",
+            task_suite_path=task_suite_path,
             robot_configuration_id=robot_id,
             task_id=task_id,
-            replicate_id="R1",
+            replicate_id=replicate_id,
             driver_path=_resolve_repository_path(
                 selection.get("driver_path"), "driver_path"
             ),
@@ -270,9 +353,12 @@ def run_task(
     passed = trusted_harness and video_complete
     record_path = output_root / "records" / f"{task_id}.json"
     record = {
-        "artifact_type": "b2_corrected_r1_positive_control_record",
+        "artifact_type": f"{artifact_prefix}_positive_control_record",
         "schema_version": "1.0",
-        "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+        "audit_identity": dict(
+            audit_identity
+            or {"document_id": AUDIT_ID, "revision": AUDIT_REVISION}
+        ),
         "created_at": datetime.now(UTC).isoformat(),
         "formal_episode": False,
         "task_id": task_id,
@@ -299,9 +385,15 @@ def run_task(
     }
 
 
-def _index(output_root: Path) -> dict[str, Any]:
+def _index(
+    output_root: Path,
+    *,
+    required_task_ids: Sequence[str] = REQUIRED_TASK_IDS,
+    audit_identity: Mapping[str, str] | None = None,
+    artifact_prefix: str = "b2_corrected_r1",
+) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
-    for task_id in REQUIRED_TASK_IDS:
+    for task_id in required_task_ids:
         record_path = output_root / "records" / f"{task_id}.json"
         if not record_path.is_file():
             continue
@@ -317,7 +409,7 @@ def _index(output_root: Path) -> dict[str, Any]:
                 "video_path": record.get("video_path"),
             }
         )
-    passed = len(results) == len(REQUIRED_TASK_IDS) and all(
+    passed = len(results) == len(required_task_ids) and all(
         item.get("status") == "PASS"
         and item.get("passed") is True
         and item.get("trusted_harness") is True
@@ -325,12 +417,15 @@ def _index(output_root: Path) -> dict[str, Any]:
         for item in results
     )
     return {
-        "artifact_type": "b2_corrected_r1_positive_control_index",
+        "artifact_type": f"{artifact_prefix}_positive_control_index",
         "schema_version": "1.0",
-        "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+        "audit_identity": dict(
+            audit_identity
+            or {"document_id": AUDIT_ID, "revision": AUDIT_REVISION}
+        ),
         "created_at": datetime.now(UTC).isoformat(),
         "formal_episode": False,
-        "required_task_ids": list(REQUIRED_TASK_IDS),
+        "required_task_ids": list(required_task_ids),
         "results": results,
         "gate_passed": passed,
     }
@@ -338,29 +433,64 @@ def _index(output_root: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--task", action="append", choices=REQUIRED_TASK_IDS)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--replicate-id")
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--task", action="append")
     parser.add_argument("--wall-timeout-s", type=float, default=180.0)
     parser.add_argument("--no-video", action="store_true")
     args = parser.parse_args()
     if args.wall_timeout_s <= 0.0:
         parser.error("wall timeout must be positive")
-    selected = list(REQUIRED_TASK_IDS) if args.task is None else args.task
+    if args.manifest is None:
+        required_task_ids = REQUIRED_TASK_IDS
+        task_suite_path = CONFIG_ROOT / "task_suite.json"
+        selection_path = CONFIG_ROOT / "reference" / "selection.json"
+        audit_identity = {"document_id": AUDIT_ID, "revision": AUDIT_REVISION}
+        artifact_prefix = "b2_corrected_r1"
+        replicate_id = args.replicate_id or "R1"
+        default_output = DEFAULT_OUTPUT
+    else:
+        from .dispatch import resolve_corrected_manifest
+
+        manifest = resolve_corrected_manifest(args.manifest)
+        required_task_ids = manifest.expected_task_order
+        task_suite_path = manifest.task_suite_path
+        selection_path = manifest.reference_selection_path
+        audit_identity = manifest.audit_identity
+        artifact_prefix = manifest.evidence_prefix
+        replicate_id = args.replicate_id or (
+            "R2" if manifest.evidence_prefix == "b2_corrected_r23" else "R1"
+        )
+        default_output = manifest.manifest_path.parent.parent / "runs/positive-controls"
+    selected = list(required_task_ids) if args.task is None else args.task
+    if any(task_id not in required_task_ids for task_id in selected):
+        parser.error("task selection is outside the manifest profile")
     if len(selected) != len(set(selected)):
         parser.error("each task may be selected only once")
-    output_root = args.output.resolve()
+    output_root = (args.output or default_output).resolve()
     for task_id in selected:
         result = run_task(
             task_id,
             output_root=output_root,
             record_video=not args.no_video,
             wall_timeout_s=args.wall_timeout_s,
+            task_suite_path=task_suite_path,
+            selection_path=selection_path,
+            replicate_id=replicate_id,
+            audit_identity=audit_identity,
+            artifact_prefix=artifact_prefix,
         )
         print(
             f"{task_id}: harness={result['trusted_harness']} "
             f"video={result['video_complete']} status={result['status']}"
         )
-    index = _index(output_root)
+    index = _index(
+        output_root,
+        required_task_ids=required_task_ids,
+        audit_identity=audit_identity,
+        artifact_prefix=artifact_prefix,
+    )
     _write_object(output_root / "positive_control_index.json", index)
     print(f"gate_passed={index['gate_passed']}")
     return 0 if all(item["passed"] for item in index["results"] if item["task_id"] in selected) else 1

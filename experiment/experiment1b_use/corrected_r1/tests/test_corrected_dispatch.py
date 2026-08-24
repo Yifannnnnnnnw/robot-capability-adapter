@@ -267,6 +267,10 @@ def test_scheduler_retries_only_infrastructure_once_and_uses_fixed_lanes(
             json.dumps(
                 {
                     "artifact_type": "b2_corrected_r1_unit_terminal",
+                    "audit_identity": {
+                        "document_id": "AA2-B2-CORRECTED-R1",
+                        "revision": "1.0.0",
+                    },
                     "formal_episode": False,
                     "formal_denominator_entry": False,
                     "unit_id": unit_id,

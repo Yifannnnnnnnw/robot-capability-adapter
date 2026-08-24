@@ -30,9 +30,7 @@ from autoadapter2.harness.runner import HarnessError
 from autoadapter2.libraries import RobotPackage
 
 from .harness import (
-    AUDIT_ID,
-    AUDIT_REVISION,
-    SUITE_ARTIFACT_TYPE,
+    corrected_suite_identity,
     evaluate_corrected_task_harness,
 )
 
@@ -137,10 +135,7 @@ def run_corrected_episode(
     )
     return _finite_json_object(
         {
-            "audit_identity": {
-                "document_id": AUDIT_ID,
-                "revision": AUDIT_REVISION,
-            },
+            "audit_identity": episode["audit_identity"],
             "formal_episode": False,
             "episode": {
                 "robot_configuration_id": config.robot_configuration_id,
@@ -168,16 +163,9 @@ def _sealed_episode(
     task_id: str,
     replicate_id: str,
 ) -> dict[str, Any]:
-    identity = suite.get("audit_identity")
-    if (
-        suite.get("artifact_type") != SUITE_ARTIFACT_TYPE
-        or suite.get("schema_version") != "1.0"
-        or not isinstance(identity, Mapping)
-        or identity.get("document_id") != AUDIT_ID
-        or identity.get("revision") != AUDIT_REVISION
-        or suite.get("formal_episode") is not False
-    ):
+    if suite.get("schema_version") != "1.0" or suite.get("formal_episode") is not False:
         raise HarnessError("corrected task suite has an incompatible identity")
+    audit_identity = corrected_suite_identity(suite)
     robot = _unique_mapping(
         suite.get("robot_suites"),
         key="robot_configuration_id",
@@ -242,6 +230,7 @@ def _sealed_episode(
     if not scene_path.is_file():
         raise HarnessError(f"corrected scene is absent: {scene_path}")
     return {
+        "audit_identity": audit_identity,
         "instance_id": instance_id,
         "scene_path": scene_path,
         "reset": _finite_json_object(reset, label="corrected reset"),

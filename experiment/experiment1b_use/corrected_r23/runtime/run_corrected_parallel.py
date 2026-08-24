@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run selected corrected-R1 tasks with the fixed 3+1 worker split."""
+"""Run one corrected-R23 replicate/task batch with the fixed 3+1 split."""
 
 from __future__ import annotations
 
@@ -18,28 +18,18 @@ for root in (REPOSITORY_ROOT, SOURCE_ROOT):
 from experiment.experiment1b_use.corrected_r1.runtime.dispatch import (  # noqa: E402
     CorrectedDispatchBlocked,
     CorrectedDispatchError,
-    DEFAULT_MANIFEST_PATH,
     run_corrected_scheduler,
 )
 
 
+DEFAULT_MANIFEST = Path(__file__).resolve().parents[1] / "config/manifest.json"
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Schedule corrected-R1 units")
-    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST_PATH)
-    parser.add_argument(
-        "--task-id",
-        action="append",
-        help=(
-            "task filter; repeatable. Use M2_REPLACEMENTS for the two replacement "
-            "units"
-        ),
-    )
-    parser.add_argument("--unit-id", action="append", help="exact fresh unit ID")
-    parser.add_argument(
-        "--replicate-id",
-        action="append",
-        help="replicate filter; repeatable (for example R2 or R3)",
-    )
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--replicate-id", choices=("R2", "R3"), required=True)
+    parser.add_argument("--task-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--company-env-file", type=Path, required=True)
     parser.add_argument("--m5-env-file", type=Path, required=True)
@@ -50,9 +40,8 @@ def main() -> int:
             output_root=args.output,
             company_env_file=args.company_env_file,
             m5_env_file=args.m5_env_file,
-            task_ids=args.task_id,
-            unit_ids=args.unit_id,
-            replicate_ids=args.replicate_id,
+            task_ids=[args.task_id],
+            replicate_ids=[args.replicate_id],
             company_workers=3,
             m5_workers=1,
         )

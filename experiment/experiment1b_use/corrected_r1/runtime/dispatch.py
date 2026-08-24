@@ -1,8 +1,9 @@
-"""Dispatch the isolated, non-formal Exp1b corrected-R1 executions.
+"""Dispatch isolated, non-formal corrected Exp1b executions.
 
 This module deliberately reuses the versioned B2 provider transport, ReCAP
-budgets, identity checks, and cost accounting.  Its only inputs are the
-corrected-R1 manifest and the seven-task positive-control gate.
+budgets, identity checks, and cost accounting.  The original corrected-R1
+profile remains the default; the isolated corrected-R23 profile adds only the
+two fresh repeatability replicates requested by the project owner.
 """
 
 from __future__ import annotations
@@ -38,6 +39,20 @@ EXPECTED_TASK_ORDER = (
     "mw_dial_turn",
 )
 EXPECTED_DISPATCH_ORDER = (*EXPECTED_TASK_ORDER, "M2_REPLACEMENTS")
+R23_AUDIT_ID = "AA2-B2-CORRECTED-R23"
+R23_AUDIT_REVISION = "1.0.0"
+R23_TASK_ORDER = (
+    "mw_push_to_goal",
+    "mw_sweep_into_goal",
+    "mw_pick_place",
+    "GO2-T02",
+    "GO2-T03",
+    "GO2-T06",
+    "GO2-T16",
+    "GO2-T17",
+    "mw_pick_place_wall",
+    "mw_dial_turn",
+)
 COMPANY_MODELS = tuple(model_id for model_id in EXPECTED_MODELS if model_id != "M5")
 
 
@@ -81,12 +96,28 @@ class ResolvedCorrectedManifest:
     provider_source_paths: Mapping[str, Path]
     selections: Mapping[str, Mapping[str, Any]]
     units: tuple[CorrectedUnit, ...]
+    audit_document_id: str = AUDIT_ID
+    audit_revision: str = AUDIT_REVISION
+    evidence_prefix: str = "b2_corrected_r1"
+    suite_artifact_type: str = "b2_corrected_r1_task_suite"
+    positive_control_artifact_type: str = "b2_corrected_r1_positive_control_index"
+    expected_task_order: tuple[str, ...] = EXPECTED_TASK_ORDER
+
+    @property
+    def audit_identity(self) -> dict[str, str]:
+        return {
+            "document_id": self.audit_document_id,
+            "revision": self.audit_revision,
+        }
+
+    def artifact_type(self, suffix: str) -> str:
+        return f"{self.evidence_prefix}_{suffix}"
 
     def unit(self, unit_id: str) -> CorrectedUnit:
         for unit in self.units:
             if unit.unit_id == unit_id:
                 return unit
-        raise CorrectedDispatchError(f"unknown corrected-R1 fresh unit: {unit_id}")
+        raise CorrectedDispatchError(f"unknown corrected fresh unit: {unit_id}")
 
     def reference_paths(self, robot_configuration_id: str) -> tuple[Path, Path, Path]:
         try:
@@ -131,10 +162,16 @@ def _repository_path(value: Any, *, label: str) -> Path:
     return path.resolve() if path.is_absolute() else (REPOSITORY_ROOT / path).resolve()
 
 
-def _identity(value: Any, *, label: str) -> None:
+def _identity(
+    value: Any,
+    *,
+    label: str,
+    document_id: str = AUDIT_ID,
+    revision: str = AUDIT_REVISION,
+) -> None:
     if not isinstance(value, Mapping) or dict(value) != {
-        "document_id": AUDIT_ID,
-        "revision": AUDIT_REVISION,
+        "document_id": document_id,
+        "revision": revision,
     }:
         raise CorrectedDispatchError(f"{label} audit identity is invalid")
 
@@ -272,13 +309,79 @@ def _fresh_units(value: Any) -> tuple[CorrectedUnit, ...]:
     return tuple(units)
 
 
+def _r23_units(value: Any) -> tuple[CorrectedUnit, ...]:
+    if not isinstance(value, list) or len(value) != 140:
+        raise CorrectedDispatchError("corrected-R23 manifest must enumerate 140 fresh units")
+    units: list[CorrectedUnit] = []
+    expected_pairs = {
+        "mw_push_to_goal": "robotstudio_so101",
+        "mw_sweep_into_goal": "robotstudio_so101",
+        "mw_pick_place": "robotstudio_so101",
+        "mw_pick_place_wall": "robotstudio_so101",
+        "mw_dial_turn": "robotstudio_so101",
+        "GO2-T02": "unitree-go2-stock-12dof",
+        "GO2-T03": "unitree-go2-stock-12dof",
+        "GO2-T06": "unitree-go2-stock-12dof",
+        "GO2-T16": "unitree-go2-stock-12dof",
+        "GO2-T17": "unitree-go2-stock-12dof",
+    }
+    for index, item in enumerate(value):
+        if not isinstance(item, Mapping):
+            raise CorrectedDispatchError(f"fresh_units[{index}] must be an object")
+        unit = CorrectedUnit(
+            unit_id=_required_string(item.get("unit_id"), label=f"fresh_units[{index}].unit_id"),
+            robot_configuration_id=_required_string(
+                item.get("robot_configuration_id"),
+                label=f"fresh_units[{index}].robot_configuration_id",
+            ),
+            task_id=_required_string(item.get("task_id"), label=f"fresh_units[{index}].task_id"),
+            model_id=_required_string(item.get("model_id"), label=f"fresh_units[{index}].model_id"),
+            replicate_id=_required_string(
+                item.get("replicate_id"), label=f"fresh_units[{index}].replicate_id"
+            ),
+            execution_origin=_required_string(
+                item.get("execution_origin"),
+                label=f"fresh_units[{index}].execution_origin",
+            ),
+        )
+        expected_id = (
+            f"b2-corrected-r23::{unit.robot_configuration_id}::{unit.task_id}::"
+            f"{unit.model_id}::{unit.replicate_id}"
+        )
+        if (
+            unit.unit_id != expected_id
+            or unit.replicate_id not in {"R2", "R3"}
+            or unit.model_id not in EXPECTED_MODELS
+            or unit.execution_origin != "fresh_corrected"
+            or expected_pairs.get(unit.task_id) != unit.robot_configuration_id
+        ):
+            raise CorrectedDispatchError(f"corrected-R23 unit identity is invalid: {unit.unit_id}")
+        units.append(unit)
+    if len({unit.unit_id for unit in units}) != 140:
+        raise CorrectedDispatchError("corrected-R23 manifest contains duplicate units")
+    expected_cells = {
+        (task_id, model_id, replicate_id)
+        for task_id in R23_TASK_ORDER
+        for model_id in EXPECTED_MODELS
+        for replicate_id in ("R2", "R3")
+    }
+    actual_cells = {
+        (unit.task_id, unit.model_id, unit.replicate_id) for unit in units
+    }
+    if actual_cells != expected_cells:
+        raise CorrectedDispatchError("corrected-R23 manifest is not the complete balanced block")
+    return tuple(units)
+
+
 def resolve_corrected_manifest(
     path: str | Path = DEFAULT_MANIFEST_PATH,
 ) -> ResolvedCorrectedManifest:
-    """Resolve the exact 51-unit corrected execution block."""
+    """Resolve one of the two sealed corrected execution profiles."""
 
     manifest_path = Path(path).resolve()
-    document = _read_object(manifest_path, label="corrected-R1 manifest")
+    document = _read_object(manifest_path, label="corrected manifest")
+    if document.get("artifact_type") == "b2_corrected_r23_manifest":
+        return _resolve_r23_manifest(manifest_path, document)
     if (
         document.get("artifact_type") != "b2_corrected_r1_manifest"
         or document.get("schema_version") != "1.0"
@@ -365,8 +468,111 @@ def resolve_corrected_manifest(
     )
 
 
+def _resolve_r23_manifest(
+    manifest_path: Path, document: dict[str, Any]
+) -> ResolvedCorrectedManifest:
+    if (
+        document.get("schema_version") != "1.0"
+        or document.get("formal_episode") is not False
+        or document.get("formal_denominator_entry") is not False
+    ):
+        raise CorrectedDispatchError("corrected-R23 manifest claim boundary is invalid")
+    _identity(
+        document.get("audit_identity"),
+        label="corrected-R23 manifest",
+        document_id=R23_AUDIT_ID,
+        revision=R23_AUDIT_REVISION,
+    )
+    if (
+        document.get("models") != list(EXPECTED_MODELS)
+        or document.get("replicate_ids") != ["R2", "R3"]
+        or document.get("fresh_execution_units") != 140
+        or document.get("retained_rejudication_units") != 0
+        or document.get("replacement_units") != 0
+        or document.get("corrected_combined_plan") != 210
+        or document.get("source_formal_plan_modified") is not False
+        or tuple(document.get("dispatch_order", ())) != R23_TASK_ORDER
+        or document.get("retry_policy")
+        != {
+            "controller_or_model_failure": "no_retry",
+            "confirmed_infrastructure_failure": "same_input_once",
+        }
+    ):
+        raise CorrectedDispatchError("corrected-R23 cohort declaration is invalid")
+    paths = document.get("paths")
+    if not isinstance(paths, Mapping):
+        raise CorrectedDispatchError("corrected-R23 manifest paths are absent")
+    task_suite_path = _repository_path(paths.get("task_suite"), label="paths.task_suite")
+    provider_manifest_path = _repository_path(
+        paths.get("provider_manifest"), label="paths.provider_manifest"
+    )
+    reference_selection_path = _repository_path(
+        paths.get("reference_selection"), label="paths.reference_selection"
+    )
+    positive_control_index_path = _repository_path(
+        paths.get("positive_control_index"), label="paths.positive_control_index"
+    )
+    for label, file_path in (
+        ("corrected-R23 task suite", task_suite_path),
+        ("provider manifest", provider_manifest_path),
+        ("reference selection", reference_selection_path),
+    ):
+        if not file_path.is_file():
+            raise CorrectedDispatchError(f"{label} is absent: {file_path}")
+    suite = _read_object(task_suite_path, label="corrected-R23 task suite")
+    if (
+        suite.get("artifact_type") != "b2_corrected_r23_task_suite"
+        or suite.get("schema_version") != "1.0"
+        or suite.get("formal_episode") is not False
+        or suite.get("task_count") != 10
+        or suite.get("replicate_plan")
+        != {"replicate_ids": ["R1", "R2", "R3"]}
+    ):
+        raise CorrectedDispatchError("corrected-R23 task suite identity is invalid")
+    _identity(
+        suite.get("audit_identity"),
+        label="corrected-R23 task suite",
+        document_id=R23_AUDIT_ID,
+        revision=R23_AUDIT_REVISION,
+    )
+    selections = _selection_document(reference_selection_path)
+    embedded = document.get("reference_selection")
+    if not isinstance(embedded, Mapping) or embedded.get("robots") != [
+        dict(selections[robot_id])
+        for robot_id in ("robotstudio_so101", "unitree-go2-stock-12dof")
+    ]:
+        raise CorrectedDispatchError("embedded corrected reference selection changed")
+    try:
+        pins, source_paths, provider_ready = base_b2._validate_provider_manifest(
+            provider_manifest_path,
+            models=EXPECTED_MODELS,
+        )
+    except base_b2.B2FormalError as exc:
+        raise CorrectedDispatchError(str(exc)) from exc
+    if not provider_ready:
+        raise CorrectedDispatchError("source B2 provider pins are not dispatch-ready")
+    return ResolvedCorrectedManifest(
+        manifest_path=manifest_path,
+        document=document,
+        task_suite_path=task_suite_path,
+        provider_manifest_path=provider_manifest_path,
+        reference_selection_path=reference_selection_path,
+        positive_control_index_path=positive_control_index_path,
+        provider_pins=pins,
+        provider_source_paths=source_paths,
+        selections=selections,
+        units=_r23_units(document.get("fresh_units")),
+        audit_document_id=R23_AUDIT_ID,
+        audit_revision=R23_AUDIT_REVISION,
+        evidence_prefix="b2_corrected_r23",
+        suite_artifact_type="b2_corrected_r23_task_suite",
+        positive_control_artifact_type="b2_corrected_r23_positive_control_index",
+        expected_task_order=R23_TASK_ORDER,
+    )
+
+
 def assert_positive_control_gate(manifest: ResolvedCorrectedManifest) -> dict[str, Any]:
-    """Require all seven fixed-driver/Harness/video controls before credentials."""
+    """Require the profile's fixed-driver/Harness/video controls before credentials."""
 
     path = manifest.positive_control_index_path
     try:
@@ -376,16 +582,25 @@ def assert_positive_control_gate(manifest: ResolvedCorrectedManifest) -> dict[st
     try:
         if (
             document.get("artifact_type")
-            != "b2_corrected_r1_positive_control_index"
+            != manifest.positive_control_artifact_type
             or document.get("schema_version") != "1.0"
         ):
             raise CorrectedDispatchError("positive-control index identity is invalid")
-        _identity(document.get("audit_identity"), label="positive-control index")
-        if tuple(document.get("required_task_ids", ())) != EXPECTED_TASK_ORDER:
+        _identity(
+            document.get("audit_identity"),
+            label="positive-control index",
+            document_id=manifest.audit_document_id,
+            revision=manifest.audit_revision,
+        )
+        if tuple(document.get("required_task_ids", ())) != manifest.expected_task_order:
             raise CorrectedDispatchError("positive-control required_task_ids changed")
         results = document.get("results")
-        if not isinstance(results, list) or len(results) != 7:
-            raise CorrectedDispatchError("positive-control index must contain seven results")
+        if not isinstance(results, list) or len(results) != len(
+            manifest.expected_task_order
+        ):
+            raise CorrectedDispatchError(
+                "positive-control index has the wrong number of results"
+            )
         task_ids: list[str] = []
         for index, item in enumerate(results):
             if not isinstance(item, Mapping):
@@ -413,7 +628,9 @@ def assert_positive_control_gate(manifest: ResolvedCorrectedManifest) -> dict[st
                 raise CorrectedDispatchError(
                     f"positive-control evidence is absent for {task_id}"
                 )
-        if tuple(task_ids) != EXPECTED_TASK_ORDER or len(set(task_ids)) != 7:
+        if tuple(task_ids) != manifest.expected_task_order or len(set(task_ids)) != len(
+            manifest.expected_task_order
+        ):
             raise CorrectedDispatchError("positive-control results changed order/set")
     except CorrectedDispatchError as exc:
         raise CorrectedDispatchBlocked(str(exc)) from exc
@@ -618,8 +835,8 @@ def run_corrected_unit(
         )
         phase = "evidence"
         provider_evidence = {
-            "artifact_type": "b2_corrected_r1_provider_record",
-            "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+            "artifact_type": manifest.artifact_type("provider_record"),
+            "audit_identity": manifest.audit_identity,
             "source_formal_authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
             "formal_episode": False,
             "execution_origin": unit.execution_origin,
@@ -634,8 +851,8 @@ def run_corrected_unit(
             manifest.provider_manifest_path, label="source B2 provider manifest"
         )
         episode_record = {
-            "artifact_type": "b2_corrected_r1_episode_record",
-            "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+            "artifact_type": manifest.artifact_type("episode_record"),
+            "audit_identity": manifest.audit_identity,
             "source_formal_authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
             "formal_episode": False,
             "execution_origin": unit.execution_origin,
@@ -665,8 +882,8 @@ def run_corrected_unit(
             expected_model=str(provider_pin["exact_model_id"]),
         )
         terminal = {
-            "artifact_type": "b2_corrected_r1_unit_terminal",
-            "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+            "artifact_type": manifest.artifact_type("unit_terminal"),
+            "audit_identity": manifest.audit_identity,
             "source_formal_authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
             "formal_episode": False,
             "formal_denominator_entry": False,
@@ -712,11 +929,8 @@ def run_corrected_unit(
                     _write_secret_free_record(
                         provider_record_path,
                         {
-                            "artifact_type": "b2_corrected_r1_provider_record",
-                            "audit_identity": {
-                                "document_id": AUDIT_ID,
-                                "revision": AUDIT_REVISION,
-                            },
+                            "artifact_type": manifest.artifact_type("provider_record"),
+                            "audit_identity": manifest.audit_identity,
                             "formal_episode": False,
                             "execution_origin": unit.execution_origin,
                             "unit": unit.as_dict(),
@@ -736,8 +950,8 @@ def run_corrected_unit(
             else (False, [])
         )
         terminal = {
-            "artifact_type": "b2_corrected_r1_unit_terminal",
-            "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+            "artifact_type": manifest.artifact_type("unit_terminal"),
+            "audit_identity": manifest.audit_identity,
             "source_formal_authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
             "formal_episode": False,
             "formal_denominator_entry": False,
@@ -787,29 +1001,42 @@ def select_units(
     *,
     task_ids: Sequence[str] | None = None,
     unit_ids: Sequence[str] | None = None,
+    replicate_ids: Sequence[str] | None = None,
 ) -> list[CorrectedUnit]:
     if task_ids is not None and unit_ids is not None:
         raise CorrectedDispatchError("select task_ids or unit_ids, not both")
     if unit_ids is not None:
         if not unit_ids or len(unit_ids) != len(set(unit_ids)):
             raise CorrectedDispatchError("unit selection is empty or contains duplicates")
-        return [manifest.unit(unit_id) for unit_id in unit_ids]
-    if task_ids is None:
-        return list(manifest.units)
-    if not task_ids or len(task_ids) != len(set(task_ids)):
-        raise CorrectedDispatchError("task selection is empty or contains duplicates")
-    expanded: list[str] = []
-    for task_id in task_ids:
-        if task_id == "M2_REPLACEMENTS":
-            expanded.extend(("mw_push_to_goal", "mw_sweep_into_goal"))
-        elif task_id in EXPECTED_TASK_ORDER or task_id in {
-            "mw_push_to_goal",
-            "mw_sweep_into_goal",
-        }:
-            expanded.append(task_id)
-        else:
-            raise CorrectedDispatchError(f"unknown corrected task filter: {task_id}")
-    selected = [unit for unit in manifest.units if unit.task_id in expanded]
+        selected = [manifest.unit(unit_id) for unit_id in unit_ids]
+    elif task_ids is None:
+        selected = list(manifest.units)
+    else:
+        if not task_ids or len(task_ids) != len(set(task_ids)):
+            raise CorrectedDispatchError("task selection is empty or contains duplicates")
+        expanded: list[str] = []
+        for task_id in task_ids:
+            if task_id == "M2_REPLACEMENTS" and manifest.evidence_prefix == "b2_corrected_r1":
+                expanded.extend(("mw_push_to_goal", "mw_sweep_into_goal"))
+            elif task_id in manifest.expected_task_order or (
+                manifest.evidence_prefix == "b2_corrected_r1"
+                and task_id in {"mw_push_to_goal", "mw_sweep_into_goal"}
+            ):
+                expanded.append(task_id)
+            else:
+                raise CorrectedDispatchError(f"unknown corrected task filter: {task_id}")
+        selected = [unit for unit in manifest.units if unit.task_id in expanded]
+    if replicate_ids is not None:
+        if not replicate_ids or len(replicate_ids) != len(set(replicate_ids)):
+            raise CorrectedDispatchError(
+                "replicate selection is empty or contains duplicates"
+            )
+        available = {unit.replicate_id for unit in manifest.units}
+        if any(replicate_id not in available for replicate_id in replicate_ids):
+            raise CorrectedDispatchError("replicate selection is outside the manifest")
+        selected = [
+            unit for unit in selected if unit.replicate_id in set(replicate_ids)
+        ]
     if not selected:
         raise CorrectedDispatchError("corrected scheduler selection is empty")
     return selected
@@ -818,14 +1045,15 @@ def select_units(
 def _scheduler_failure_terminal(
     *,
     unit: CorrectedUnit,
+    manifest: ResolvedCorrectedManifest,
     expected_model: str,
     terminal_path: Path,
     reason: str,
     process_returncode: int | None,
 ) -> dict[str, Any]:
     terminal = {
-        "artifact_type": "b2_corrected_r1_unit_terminal",
-        "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+        "artifact_type": manifest.artifact_type("unit_terminal"),
+        "audit_identity": manifest.audit_identity,
         "source_formal_authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
         "formal_episode": False,
         "formal_denominator_entry": False,
@@ -868,8 +1096,7 @@ def _scheduler_failure_terminal(
 def _invoke_attempt(
     *,
     unit: CorrectedUnit,
-    expected_model: str,
-    manifest_path: Path,
+    manifest: ResolvedCorrectedManifest,
     attempt_root: Path,
     env_file: Path,
     process_runner: Callable[..., Any],
@@ -879,7 +1106,7 @@ def _invoke_attempt(
         sys.executable,
         str(Path(__file__).resolve().with_name("run_corrected.py")),
         "--manifest",
-        str(manifest_path),
+        str(manifest.manifest_path),
         "--unit-id",
         unit.unit_id,
         "--output",
@@ -898,7 +1125,8 @@ def _invoke_attempt(
     except Exception as exc:
         terminal = _scheduler_failure_terminal(
             unit=unit,
-            expected_model=expected_model,
+            manifest=manifest,
+            expected_model=str(manifest.provider_pins[unit.model_id]["exact_model_id"]),
             terminal_path=terminal_path,
             reason=f"scheduler could not spawn unit process: {type(exc).__name__}",
             process_returncode=None,
@@ -913,7 +1141,8 @@ def _invoke_attempt(
     except (FileNotFoundError, json.JSONDecodeError):
         terminal = _scheduler_failure_terminal(
             unit=unit,
-            expected_model=expected_model,
+            manifest=manifest,
+            expected_model=str(manifest.provider_pins[unit.model_id]["exact_model_id"]),
             terminal_path=terminal_path,
             reason=(
                 "unit process exited without a readable terminal record "
@@ -931,7 +1160,8 @@ def _invoke_attempt(
     }
     if not (
         isinstance(terminal, dict)
-        and terminal.get("artifact_type") == "b2_corrected_r1_unit_terminal"
+        and terminal.get("artifact_type") == manifest.artifact_type("unit_terminal")
+        and terminal.get("audit_identity") == manifest.audit_identity
         and terminal.get("formal_episode") is False
         and terminal.get("formal_denominator_entry") is False
         and terminal.get("unit_id") == unit.unit_id
@@ -940,7 +1170,8 @@ def _invoke_attempt(
     ):
         terminal = _scheduler_failure_terminal(
             unit=unit,
-            expected_model=expected_model,
+            manifest=manifest,
+            expected_model=str(manifest.provider_pins[unit.model_id]["exact_model_id"]),
             terminal_path=terminal_path,
             reason="unit process returned an incompatible corrected terminal",
             process_returncode=completed.returncode,
@@ -965,8 +1196,7 @@ def _run_with_retry(
         attempt_root = output_root / "attempts" / f"attempt-{attempt_number}"
         result = _invoke_attempt(
             unit=unit,
-            expected_model=str(manifest.provider_pins[unit.model_id]["exact_model_id"]),
-            manifest_path=manifest.manifest_path,
+            manifest=manifest,
             attempt_root=attempt_root,
             env_file=env_file,
             process_runner=process_runner,
@@ -1005,6 +1235,7 @@ def run_corrected_scheduler(
     m5_env_file: str | Path,
     task_ids: Sequence[str] | None = None,
     unit_ids: Sequence[str] | None = None,
+    replicate_ids: Sequence[str] | None = None,
     company_workers: int = 3,
     m5_workers: int = 1,
     process_runner: Callable[..., Any] = subprocess.run,
@@ -1017,7 +1248,12 @@ def run_corrected_scheduler(
         )
     manifest = resolve_corrected_manifest(manifest_path)
     assert_positive_control_gate(manifest)
-    selected = select_units(manifest, task_ids=task_ids, unit_ids=unit_ids)
+    selected = select_units(
+        manifest,
+        task_ids=task_ids,
+        unit_ids=unit_ids,
+        replicate_ids=replicate_ids,
+    )
     output_path = Path(output_root).resolve()
     if output_path.exists():
         raise CorrectedDispatchError(
@@ -1081,9 +1317,9 @@ def run_corrected_scheduler(
     selection_order = {unit.unit_id: index for index, unit in enumerate(selected)}
     records.sort(key=lambda record: selection_order[record["unit_id"]])
     scheduler = {
-        "artifact_type": "b2_corrected_r1_scheduler",
+        "artifact_type": manifest.artifact_type("scheduler"),
         "schema_version": "1.0",
-        "audit_identity": {"document_id": AUDIT_ID, "revision": AUDIT_REVISION},
+        "audit_identity": manifest.audit_identity,
         "source_formal_authority": {"document_id": "AA2-B2", "revision": "0.1.4"},
         "formal_episode": False,
         "formal_denominator_entry": False,
@@ -1091,6 +1327,9 @@ def run_corrected_scheduler(
         "positive_control_index_path": str(manifest.positive_control_index_path),
         "planned_unit_ids": [unit.unit_id for unit in selected],
         "task_filters": list(task_ids) if task_ids is not None else None,
+        "replicate_filters": list(replicate_ids)
+        if replicate_ids is not None
+        else None,
         "company_workers": company_workers,
         "m5_workers": m5_workers,
         "total_worker_limit": company_workers + m5_workers,
