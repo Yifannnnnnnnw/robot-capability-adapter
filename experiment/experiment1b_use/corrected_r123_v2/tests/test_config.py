@@ -236,6 +236,7 @@ def test_t17_has_five_full_collision_poles_and_supersedes_old_terminals() -> Non
     for pole in poles:
         assert pole.get("type") == "cylinder"
         assert pole.get("size") == "0.025 0.50"
+        assert pole.get("group") == "0"
         assert pole.get("contype") == pole.get("conaffinity") == "1"
 
     manifest = _read(MANIFEST_PATH)
