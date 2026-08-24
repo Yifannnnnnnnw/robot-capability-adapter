@@ -883,6 +883,13 @@ def measure(
         actual = _body_position(final, str(parameters["body_name"]))
         target = _vector(_argument(public_arguments, str(parameters["target_argument"])), size=3)
         return _distance(actual, target)
+    if kind == "body_planar_target_error":
+        actual = _body_position(final, str(parameters["body_name"]))
+        target = _vector(
+            _argument(public_arguments, str(parameters["target_argument"])),
+            size=3,
+        )
+        return _distance(actual[:2], target[:2])
     if kind == "final_joint_position_error":
         actual = _joint_position(final, str(parameters["joint_name"]))
         target = float(_argument(public_arguments, str(parameters["target_argument"])))
@@ -1134,6 +1141,7 @@ _STATE_BINDING_KINDS = {
     "final_site_axis_error",
     "final_weighted_site_position_error",
     "final_body_position_error",
+    "body_planar_target_error",
     "final_joint_position_error",
     "body_height",
     "body_yaw_change_deg",

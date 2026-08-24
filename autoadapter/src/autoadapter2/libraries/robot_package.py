@@ -21,6 +21,7 @@ _SUPPORTED_BINDING_KINDS = {
     "final_site_axis_error",
     "final_weighted_site_position_error",
     "final_body_position_error",
+    "body_planar_target_error",
     "final_joint_position_error",
     "joint_range",
     "body_height",

@@ -34,6 +34,10 @@ def evaluate_b2_task_harness(
     instance_id: str,
     replicate_id: str,
     session_result: Mapping[str, Any],
+    suite_artifact_type: str = "b2_recap_task_suite",
+    suite_identity_field: str = "authority",
+    suite_document_id: str = "AA2-B2",
+    suite_revision: str = "0.1.4",
 ) -> dict[str, Any]:
     """Issue the physical task verdict for one B2 controller episode.
 
@@ -64,6 +68,10 @@ def evaluate_b2_task_harness(
         task_suite_path=task_suite_path,
         instance_id=instance_id,
         replicate_id=replicate_id,
+        suite_artifact_type=suite_artifact_type,
+        suite_identity_field=suite_identity_field,
+        suite_document_id=suite_document_id,
+        suite_revision=suite_revision,
     )
     task_id = sealed["task_id"]
     scoring = sealed["scoring"]
@@ -195,15 +203,19 @@ def _sealed_task_definition(
     task_suite_path: str | Path,
     instance_id: str,
     replicate_id: str,
+    suite_artifact_type: str = "b2_recap_task_suite",
+    suite_identity_field: str = "authority",
+    suite_document_id: str = "AA2-B2",
+    suite_revision: str = "0.1.4",
 ) -> dict[str, Any]:
     suite = _read_object(Path(task_suite_path).resolve())
-    authority = suite.get("authority")
+    identity = suite.get(suite_identity_field)
     if (
-        suite.get("artifact_type") != "b2_recap_task_suite"
+        suite.get("artifact_type") != suite_artifact_type
         or suite.get("schema_version") != "1.0"
-        or not isinstance(authority, Mapping)
-        or authority.get("document_id") != "AA2-B2"
-        or authority.get("revision") != "0.1.4"
+        or not isinstance(identity, Mapping)
+        or identity.get("document_id") != suite_document_id
+        or identity.get("revision") != suite_revision
     ):
         raise HarnessError("B2 task suite has an incompatible identity")
 

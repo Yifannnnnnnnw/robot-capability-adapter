@@ -51,6 +51,12 @@ _SO_PICK_PARAMETERS = (
     ("grasp_wrist_roll", "number"),
     ("grasp_gripper", "number"),
 )
+_SO_DIAL_PARAMETERS = (
+    ("contact_position", "vector3"),
+    ("target_position", "vector3"),
+    ("tool_target_position", "vector3"),
+    ("route_position", "vector3"),
+)
 
 _TASK_SPECS: dict[str, _TaskSpec] = {
     "mw_push_to_goal": _TaskSpec(_SO101, "so_object", _SO_PUSH_PARAMETERS),
@@ -66,12 +72,13 @@ _TASK_SPECS: dict[str, _TaskSpec] = {
         "so_object",
         _SO_PICK_PARAMETERS + (("route_position", "vector3"),),
     ),
+    "mw_dial_turn": _TaskSpec(_SO101, "so_dial", _SO_DIAL_PARAMETERS),
     "GO2-T02": _TaskSpec(
         _GO2,
         "go2_step_up",
         (
             ("duration_s", "positive_number"),
-            ("command_speed_m_s", "number"),
+            ("command_speed_m_s", "optional_number"),
             ("step_height_m", "positive_number"),
         ),
     ),
@@ -80,7 +87,7 @@ _TASK_SPECS: dict[str, _TaskSpec] = {
         "go2_step_down",
         (
             ("duration_s", "positive_number"),
-            ("command_speed_m_s", "number"),
+            ("command_speed_m_s", "optional_number"),
             ("step_height_m", "positive_number"),
         ),
     ),
@@ -206,6 +213,14 @@ def project_task_public_observation(
             data=data,
             robot_state=robot_state,
         )
+    elif spec.observation_kind == "so_dial":
+        task_state = _project_so_dial_task(
+            parameters=parameters,
+            mujoco=mujoco,
+            model=model,
+            data=data,
+            robot_state=robot_state,
+        )
     elif spec.observation_kind.startswith("go2_"):
         task_state = _project_go2_task(
             observation_kind=spec.observation_kind,
@@ -258,12 +273,17 @@ def _validate_parameters(spec: _TaskSpec, value: Any) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise TaskPublicObservationError("task_parameters must be an object")
     expected = {name for name, _kind in spec.parameter_kinds}
-    if set(value) != expected:
+    optional = {
+        name for name, kind in spec.parameter_kinds if kind.startswith("optional_")
+    }
+    if not expected - optional <= set(value) or not set(value) <= expected:
         raise TaskPublicObservationError(
             "task_parameters do not match the fixed public task projection"
         )
     result: dict[str, Any] = {}
     for name, kind in spec.parameter_kinds:
+        if name not in value and kind.startswith("optional_"):
+            continue
         raw = value[name]
         if kind == "number":
             result[name] = _number(raw, name=name)
@@ -272,6 +292,8 @@ def _validate_parameters(spec: _TaskSpec, value: Any) -> dict[str, Any]:
             if number <= 0.0:
                 raise TaskPublicObservationError(f"{name} must be positive")
             result[name] = number
+        elif kind == "optional_number":
+            result[name] = _number(raw, name=name)
         elif kind == "vector3":
             result[name] = _vector(raw, length=3, name=name)
         elif kind == "path2":
@@ -351,6 +373,50 @@ def _project_so_object_task(
     }
 
 
+def _project_so_dial_task(
+    *,
+    parameters: Mapping[str, Any],
+    mujoco: Any,
+    model: Any,
+    data: Any,
+    robot_state: Mapping[str, Any],
+) -> dict[str, Any]:
+    dial_tip_site_id = _name_id(
+        mujoco, model, mujoco.mjtObj.mjOBJ_SITE, "dial_tip_site"
+    )
+    dial_body_id = _name_id(mujoco, model, mujoco.mjtObj.mjOBJ_BODY, "dial")
+    gripper_body_id = _name_id(
+        mujoco, model, mujoco.mjtObj.mjOBJ_BODY, "gripper"
+    )
+    dial_tip_position = [
+        float(value) for value in data.site_xpos[dial_tip_site_id]
+    ]
+    target_position = list(parameters["target_position"])
+    end_effector_position = robot_state["end_effector_position_world_m"]
+    waypoint_distances = {
+        output_name: _distance(end_effector_position, parameters[public_name])
+        for public_name, output_name in (
+            ("contact_position", "contact"),
+            ("route_position", "route"),
+            ("tool_target_position", "tool_target"),
+        )
+    }
+    return {
+        "dial_tip": {
+            "position_world_m": dial_tip_position,
+            "target_distance_m": _distance(dial_tip_position, target_position),
+            "gripper_contact_detected": _bodies_in_contact(
+                model=model,
+                data=data,
+                first_body_id=dial_body_id,
+                second_body_id=gripper_body_id,
+            ),
+        },
+        "public_goal": {"position_world_m": target_position},
+        "end_effector_public_waypoint_distances_m": waypoint_distances,
+    }
+
+
 def _project_go2_task(
     *,
     observation_kind: str,
@@ -383,9 +449,12 @@ def _project_go2_task(
     if observation_kind in {"go2_step_up", "go2_step_down"}:
         task_state["step_command"] = {
             "direction": "up" if observation_kind == "go2_step_up" else "down",
-            "forward_speed_m_s": float(parameters["command_speed_m_s"]),
             "step_height_m": float(parameters["step_height_m"]),
         }
+        if "command_speed_m_s" in parameters:
+            task_state["step_command"]["forward_speed_m_s"] = float(
+                parameters["command_speed_m_s"]
+            )
     elif observation_kind == "go2_point_goal":
         goal = list(parameters["end_table_center_m"])
         base = robot_state["base_position_world_m"]
