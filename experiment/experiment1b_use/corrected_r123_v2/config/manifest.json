@@ -1,0 +1,1402 @@
+{
+  "artifact_type": "b2_corrected_r123_v2_manifest",
+  "schema_version": "1.0",
+  "audit_identity": {
+    "document_id": "AA2-B2-CORRECTED-R123-V2",
+    "revision": "1.0.0"
+  },
+  "source_formal_authority": {
+    "document_id": "AA2-B2",
+    "revision": "0.1.4"
+  },
+  "formal_episode": false,
+  "formal_denominator_entry": false,
+  "models": [
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M8"
+  ],
+  "replicate_ids": [
+    "R1",
+    "R2",
+    "R3"
+  ],
+  "execution_units": 154,
+  "fresh_execution_units": 140,
+  "replacement_units": 14,
+  "retained_selected_units": 56,
+  "selected_combined_plan": 210,
+  "superseded_r1_units": 14,
+  "execution_origin_counts": {
+    "replacement_new_definition": 14,
+    "fresh_corrected": 140
+  },
+  "selected_composition": {
+    "source_corrected_r1_semantic_equivalent": 56,
+    "replacement_new_definition": 14,
+    "fresh_corrected_r2_r3": 140
+  },
+  "source_corrected_r1_filter": {
+    "aggregate_path": "experiment/experiment1b_use/corrected_r1/analysis/corrected_r1_aggregate.json",
+    "retain_replicate_id": "R1",
+    "exclude_task_ids": [
+      "GO2-T17",
+      "mw_dial_turn"
+    ],
+    "retained_units": 56,
+    "superseded_units": 14
+  },
+  "positive_control_gate": {
+    "control_replicate_id": "R2",
+    "covered_replicates": [
+      "R1",
+      "R2",
+      "R3"
+    ],
+    "required_task_ids": [
+      "mw_push_to_goal",
+      "mw_sweep_into_goal",
+      "mw_pick_place",
+      "GO2-T02",
+      "GO2-T03",
+      "GO2-T06",
+      "GO2-T16",
+      "GO2-T17",
+      "mw_pick_place_wall",
+      "mw_dial_turn"
+    ],
+    "required_pass_count": 10,
+    "user_reacceptance_required_before_paid_dispatch": true
+  },
+  "source_formal_plan_modified": false,
+  "claim_boundary": "This is a formal_episode=false corrected audit. Its selected 210 outcomes do not replace the source AA2-B2 formal record.",
+  "paths": {
+    "task_suite": "experiment/experiment1b_use/corrected_r123_v2/config/task_suite.json",
+    "provider_manifest": "experiment/experiment1b_use/config/providers/manifest.json",
+    "reference_selection": "experiment/experiment1b_use/corrected_r123_v2/config/reference/selection.json",
+    "positive_control_index": "experiment/experiment1b_use/corrected_r123_v2/runs/positive-controls/positive_control_index.json",
+    "source_corrected_r1_aggregate": "experiment/experiment1b_use/corrected_r1/analysis/corrected_r1_aggregate.json"
+  },
+  "reference_selection": {
+    "artifact_type": "b2_corrected_r123_v2_reference_selection",
+    "schema_version": "1.0",
+    "audit_identity": {
+      "document_id": "AA2-B2-CORRECTED-R123-V2",
+      "revision": "1.0.0"
+    },
+    "robots": [
+      {
+        "robot_configuration_id": "robotstudio_so101",
+        "package_root": "autoadapter/libraries/robots/robotstudio_so101/1.0.3",
+        "driver_path": "autoadapter/libraries/robots/robotstudio_so101/1.0.3/reference/fixed_capability_driver.py",
+        "capability_design_path": "experiment/experiment1b_use/corrected_r123_v2/config/reference/resolved/robotstudio_so101/capability_design.json",
+        "package_version": "1.0.3",
+        "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
+        "condition": "skeleton-assisted"
+      },
+      {
+        "robot_configuration_id": "unitree-go2-stock-12dof",
+        "package_root": "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.2",
+        "driver_path": "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.2/reference/fixed_capability_driver.py",
+        "capability_design_path": "experiment/experiment1b_use/corrected_r123_v2/config/reference/resolved/unitree-go2-stock-12dof/capability_design.json",
+        "package_version": "1.0.2",
+        "task_snapshot_id": "unitree-go2-corrected-r123-v2-2026-08-24-v1",
+        "condition": "skeleton-assisted"
+      }
+    ]
+  },
+  "fresh_units": [
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M1::R1",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M1",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::unitree-go2-stock-12dof::GO2-T17::M1::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-t17/attempts/attempt-1/terminals/b2-corrected-r1__unitree-go2-stock-12dof__GO2-T17__M1__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M2::R1",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M2",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::unitree-go2-stock-12dof::GO2-T17::M2::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-t17/attempts/attempt-1/terminals/b2-corrected-r1__unitree-go2-stock-12dof__GO2-T17__M2__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M3::R1",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M3",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::unitree-go2-stock-12dof::GO2-T17::M3::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-t17/attempts/attempt-1/terminals/b2-corrected-r1__unitree-go2-stock-12dof__GO2-T17__M3__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M4::R1",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M4",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::unitree-go2-stock-12dof::GO2-T17::M4::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-t17/attempts/attempt-1/terminals/b2-corrected-r1__unitree-go2-stock-12dof__GO2-T17__M4__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M5::R1",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M5",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::unitree-go2-stock-12dof::GO2-T17::M5::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-t17/attempts/attempt-1/terminals/b2-corrected-r1__unitree-go2-stock-12dof__GO2-T17__M5__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M6::R1",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M6",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::unitree-go2-stock-12dof::GO2-T17::M6::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-t17/attempts/attempt-1/terminals/b2-corrected-r1__unitree-go2-stock-12dof__GO2-T17__M6__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M8::R1",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M8",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::unitree-go2-stock-12dof::GO2-T17::M8::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-t17/attempts/attempt-1/terminals/b2-corrected-r1__unitree-go2-stock-12dof__GO2-T17__M8__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M1::R1",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M1",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::robotstudio_so101::mw_dial_turn::M1::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-dial/attempts/attempt-1/terminals/b2-corrected-r1__robotstudio_so101__mw_dial_turn__M1__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M2::R1",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M2",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::robotstudio_so101::mw_dial_turn::M2::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-dial/attempts/attempt-1/terminals/b2-corrected-r1__robotstudio_so101__mw_dial_turn__M2__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M3::R1",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M3",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::robotstudio_so101::mw_dial_turn::M3::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-dial/attempts/attempt-1/terminals/b2-corrected-r1__robotstudio_so101__mw_dial_turn__M3__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M4::R1",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M4",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::robotstudio_so101::mw_dial_turn::M4::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-dial/attempts/attempt-1/terminals/b2-corrected-r1__robotstudio_so101__mw_dial_turn__M4__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M5::R1",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M5",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::robotstudio_so101::mw_dial_turn::M5::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-dial/attempts/attempt-1/terminals/b2-corrected-r1__robotstudio_so101__mw_dial_turn__M5__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M6::R1",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M6",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::robotstudio_so101::mw_dial_turn::M6::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-dial/attempts/attempt-1/terminals/b2-corrected-r1__robotstudio_so101__mw_dial_turn__M6__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M8::R1",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M8",
+      "replicate_id": "R1",
+      "execution_origin": "replacement_new_definition",
+      "superseded_unit_id": "b2-corrected-r1::robotstudio_so101::mw_dial_turn::M8::R1",
+      "superseded_terminal_path": "experiment/experiment1b_use/corrected_r1/runs/corrected-r1-20260824-dial/attempts/attempt-1/terminals/b2-corrected-r1__robotstudio_so101__mw_dial_turn__M8__R1.json"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M1::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M2::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M3::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M4::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M5::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M6::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M8::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M1::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M2::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M3::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M4::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M5::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M6::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_push_to_goal::M8::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_push_to_goal",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M1::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M2::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M3::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M4::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M5::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M6::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M8::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M1::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M2::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M3::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M4::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M5::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M6::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_sweep_into_goal::M8::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_sweep_into_goal",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M1::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M2::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M3::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M4::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M5::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M6::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M8::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M1::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M2::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M3::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M4::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M5::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M6::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place::M8::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M1::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M2::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M3::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M4::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M5::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M6::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M8::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M1::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M2::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M3::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M4::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M5::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M6::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T02::M8::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T02",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M1::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M2::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M3::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M4::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M5::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M6::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M8::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M1::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M2::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M3::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M4::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M5::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M6::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T03::M8::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T03",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M1::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M2::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M3::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M4::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M5::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M6::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M8::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M1::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M2::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M3::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M4::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M5::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M6::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T06::M8::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T06",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M1::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M2::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M3::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M4::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M5::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M6::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M8::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M1::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M2::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M3::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M4::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M5::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M6::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T16::M8::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T16",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M1::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M2::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M3::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M4::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M5::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M6::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M8::R2",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M1::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M2::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M3::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M4::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M5::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M6::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::unitree-go2-stock-12dof::GO2-T17::M8::R3",
+      "robot_configuration_id": "unitree-go2-stock-12dof",
+      "task_id": "GO2-T17",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M1::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M2::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M3::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M4::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M5::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M6::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M8::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M1::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M2::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M3::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M4::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M5::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M6::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_pick_place_wall::M8::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_pick_place_wall",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M1::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M1",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M2::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M2",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M3::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M3",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M4::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M4",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M5::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M5",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M6::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M6",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M8::R2",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M8",
+      "replicate_id": "R2",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M1::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M1",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M2::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M2",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M3::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M3",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M4::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M4",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M5::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M5",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M6::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M6",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    },
+    {
+      "unit_id": "b2-corrected-r123-v2::robotstudio_so101::mw_dial_turn::M8::R3",
+      "robot_configuration_id": "robotstudio_so101",
+      "task_id": "mw_dial_turn",
+      "model_id": "M8",
+      "replicate_id": "R3",
+      "execution_origin": "fresh_corrected"
+    }
+  ],
+  "dispatch_order": [
+    "R1/GO2-T17",
+    "R1/mw_dial_turn",
+    "R2/mw_push_to_goal",
+    "R3/mw_push_to_goal",
+    "R2/mw_sweep_into_goal",
+    "R3/mw_sweep_into_goal",
+    "R2/mw_pick_place",
+    "R3/mw_pick_place",
+    "R2/GO2-T02",
+    "R3/GO2-T02",
+    "R2/GO2-T03",
+    "R3/GO2-T03",
+    "R2/GO2-T06",
+    "R3/GO2-T06",
+    "R2/GO2-T16",
+    "R3/GO2-T16",
+    "R2/GO2-T17",
+    "R3/GO2-T17",
+    "R2/mw_pick_place_wall",
+    "R3/mw_pick_place_wall",
+    "R2/mw_dial_turn",
+    "R3/mw_dial_turn"
+  ],
+  "retry_policy": {
+    "controller_or_model_failure": "no_retry",
+    "confirmed_infrastructure_failure": "same_input_once"
+  }
+}
