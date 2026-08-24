@@ -40,7 +40,7 @@ inputs.  Do not invent private validation definitions or secrets.  A proposal is
 Return exactly one JSON object.  Return {} when the retained public report contains no reusable
 lesson.  Otherwise return exactly these five fields and no Framework wrapper or labels:
 {"observation": "...", "lesson": "...", "recommendation": "...",
-"scope": "...", "evidence": ["..."]}
+"scope": "...", "public_evidence": ["..."]}
 
 The proposal must describe a possible future Experience record only.  It must never contain an
 instruction to mutate the current run.  Keep observations tied to facts present in the report.
@@ -110,8 +110,30 @@ _PUBLIC_PROPOSAL_FIELDS = {
     "lesson",
     "recommendation",
     "scope",
+    "public_evidence",
+}
+
+# Historical snapshots used flat Framework labels and the model field
+# ``evidence``.  They remain readable evidence, but new Evolution responses and
+# snapshots are authored only with the contract above.
+_LEGACY_PUBLIC_PROPOSAL_FIELDS = {
+    "observation",
+    "lesson",
+    "recommendation",
+    "scope",
     "evidence",
 }
+
+_EXPERIENCE_RECORD_FIELDS = _PUBLIC_PROPOSAL_FIELDS | {"provenance", "outcome"}
+_EXPERIENCE_PROVENANCE_FIELDS = {
+    "experience_id",
+    "source_run_id",
+    "source_robot",
+    "generation_condition",
+    "review",
+}
+_EXPERIENCE_OUTCOME_FIELDS = {"terminal_label"}
+_EXPERIENCE_REVIEW_FIELDS = {"decision", "reason"}
 
 _SNAPSHOT_FRAMEWORK_FIELDS = frozenset(
     {
@@ -655,14 +677,98 @@ def _validate_public_proposal(proposal: Mapping[str, Any]) -> dict[str, Any]:
             raise EvolutionError(
                 f"Evolution proposal.{field} must be a non-empty string"
             )
+    public_evidence = proposal["public_evidence"]
+    if not isinstance(public_evidence, list) or not public_evidence or not all(
+        isinstance(item, str) and item.strip() for item in public_evidence
+    ):
+        raise EvolutionError(
+            "Evolution proposal.public_evidence must be a non-empty public string list"
+        )
+    return copy.deepcopy(dict(proposal))
+
+
+def _validate_legacy_public_proposal(proposal: Mapping[str, Any]) -> None:
+    """Read-only validator for snapshots written before the public_evidence schema."""
+
+    if set(proposal) != _LEGACY_PUBLIC_PROPOSAL_FIELDS:
+        raise EvolutionError("legacy Experience proposal has invalid fields")
+    for field in ("observation", "lesson", "recommendation", "scope"):
+        value = proposal[field]
+        if not isinstance(value, str) or not value.strip():
+            raise EvolutionError(
+                f"legacy Experience proposal.{field} must be a non-empty string"
+            )
     evidence = proposal["evidence"]
     if not isinstance(evidence, list) or not evidence or not all(
         isinstance(item, str) and item.strip() for item in evidence
     ):
         raise EvolutionError(
-            "Evolution proposal.evidence must be a non-empty public string list"
+            "legacy Experience proposal.evidence must be a non-empty public string list"
         )
-    return copy.deepcopy(dict(proposal))
+
+
+def _validate_experience_record_v2(
+    record: Mapping[str, Any], *, source_run_id: str, index: int
+) -> None:
+    if set(record) != _EXPERIENCE_RECORD_FIELDS:
+        missing = sorted(_EXPERIENCE_RECORD_FIELDS - set(record))
+        unexpected = sorted(set(record) - _EXPERIENCE_RECORD_FIELDS)
+        detail: list[str] = []
+        if missing:
+            detail.append("missing " + ", ".join(missing))
+        if unexpected:
+            detail.append("unexpected " + ", ".join(str(item) for item in unexpected))
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}] has invalid fields: "
+            + "; ".join(detail)
+        )
+    _validate_public_proposal(
+        {field: record[field] for field in _PUBLIC_PROPOSAL_FIELDS}
+    )
+    provenance = record.get("provenance")
+    if not isinstance(provenance, Mapping) or set(provenance) != _EXPERIENCE_PROVENANCE_FIELDS:
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}].provenance has invalid fields"
+        )
+    for field in (
+        "experience_id",
+        "source_run_id",
+        "source_robot",
+        "generation_condition",
+    ):
+        value = provenance.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise EvolutionError(
+                f"Experience snapshot.records[{index}].provenance.{field} "
+                "must be non-empty text"
+            )
+    if provenance["source_run_id"] != source_run_id:
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}] has mismatched source_run_id"
+        )
+    review = provenance.get("review")
+    if not isinstance(review, Mapping) or set(review) != _EXPERIENCE_REVIEW_FIELDS:
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}].provenance.review has invalid fields"
+        )
+    if review.get("decision") != "accept":
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}] is not an accepted review"
+        )
+    reason = review.get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}] requires a review reason"
+        )
+    outcome = record.get("outcome")
+    if not isinstance(outcome, Mapping) or set(outcome) != _EXPERIENCE_OUTCOME_FIELDS:
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}].outcome has invalid fields"
+        )
+    if outcome.get("terminal_label") not in {"positive", "negative"}:
+        raise EvolutionError(
+            f"Experience snapshot.records[{index}].outcome.terminal_label is invalid"
+        )
 
 
 def validate_experience_snapshot(snapshot: Mapping[str, Any]) -> None:
@@ -679,10 +785,18 @@ def validate_experience_snapshot(snapshot: Mapping[str, Any]) -> None:
     for index, record in enumerate(records):
         if not isinstance(record, Mapping):
             raise EvolutionError(f"Experience snapshot.records[{index}] must be an object")
+        if set(record) == _EXPERIENCE_RECORD_FIELDS:
+            _validate_experience_record_v2(
+                record, source_run_id=source_run_id, index=index
+            )
+            continue
+        # Historical flat records remain readable so retained Exp1b/Exp2
+        # artifacts are not rewritten.  New writers never take this branch.
         unexpected = sorted(
             str(key)
             for key in record
-            if str(key) not in _SNAPSHOT_FRAMEWORK_FIELDS | _PUBLIC_PROPOSAL_FIELDS
+            if str(key)
+            not in _SNAPSHOT_FRAMEWORK_FIELDS | _LEGACY_PUBLIC_PROPOSAL_FIELDS
         )
         if unexpected:
             raise EvolutionError(
@@ -732,8 +846,8 @@ def validate_experience_snapshot(snapshot: Mapping[str, Any]) -> None:
             raise EvolutionError(
                 f"Experience snapshot.records[{index}] requires a review reason"
             )
-        _validate_public_proposal(
-            {field: record.get(field) for field in _PUBLIC_PROPOSAL_FIELDS}
+        _validate_legacy_public_proposal(
+            {field: record.get(field) for field in _LEGACY_PUBLIC_PROPOSAL_FIELDS}
         )
 
 
@@ -1278,23 +1392,20 @@ def _snapshot_record(record: Mapping[str, Any]) -> dict[str, Any] | None:
         if not _is_queue_private_field(key)
     }
     public_proposal = _validate_public_proposal(public_proposal)
-    result: dict[str, Any] = {
-        "experience_id": f"{source_run_id}:{cell_id}",
-        "reviewed": True,
-        "review_decision": "accept",
-        "review_reason": copy.deepcopy(record.get("reason")),
-        "source_run_id": source_run_id,
-        "source_robot": source_robot,
-        "generation_condition": generation_condition,
-        "terminal_outcome_label": terminal_outcome_label,
-        "source_condition": generation_condition,
-        "source_outcome": terminal_outcome_label,
-        "source_robot_configuration_id": source_robot,
-        "source_generation_condition": generation_condition,
-        "outcome_label": terminal_outcome_label,
+    return {
+        **public_proposal,
+        "provenance": {
+            "experience_id": f"{source_run_id}:{cell_id}",
+            "source_run_id": source_run_id,
+            "source_robot": source_robot,
+            "generation_condition": generation_condition,
+            "review": {
+                "decision": "accept",
+                "reason": copy.deepcopy(record.get("reason")),
+            },
+        },
+        "outcome": {"terminal_label": terminal_outcome_label},
     }
-    result.update(public_proposal)
-    return result
 
 
 def build_experience_snapshot(
@@ -1302,7 +1413,7 @@ def build_experience_snapshot(
     reviews: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None,
     *,
     snapshot_id: str | None = None,
-    version: str = "1.0.0",
+    version: str = "2.0.0",
 ) -> dict[str, Any]:
     """Freeze accepted public proposals for the next independent run only."""
 

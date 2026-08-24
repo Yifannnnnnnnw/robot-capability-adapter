@@ -876,13 +876,17 @@ def _call_count(client: Any) -> int | None:
 
 
 def _experience_ids(experience: Sequence[Mapping[str, Any]]) -> list[str]:
-    return [
-        str(item["experience_id"])
-        for item in experience
-        if isinstance(item, Mapping)
-        and isinstance(item.get("experience_id"), str)
-        and item.get("experience_id")
-    ]
+    result: list[str] = []
+    for item in experience:
+        if not isinstance(item, Mapping):
+            continue
+        value = item.get("experience_id")
+        provenance = item.get("provenance")
+        if not isinstance(value, str) and isinstance(provenance, Mapping):
+            value = provenance.get("experience_id")
+        if isinstance(value, str) and value.strip():
+            result.append(value)
+    return result
 
 
 def _with_experience_trace(
@@ -1012,6 +1016,24 @@ def _public_experience(
     for index, item in enumerate(value):
         if not isinstance(item, Mapping):
             raise PipelineError(f"experience for {robot!r}[{index}] must be an object")
+        if {
+            "observation",
+            "lesson",
+            "recommendation",
+            "scope",
+            "public_evidence",
+            "provenance",
+            "outcome",
+        } == set(item):
+            if not frozen_snapshot:
+                raise PipelineError(
+                    f"experience for {robot!r}[{index}] must come from a reviewed snapshot"
+                )
+            # Frozen v2 records have already passed the exact validator above.
+            # Keep the Framework-owned provenance/outcome wrappers intact; the
+            # stage boundary, not a lossy schema rewrite, controls visibility.
+            records.append(_copy(dict(item)))
+            continue
         unexpected = sorted(str(key) for key in item if str(key) not in allowed_fields)
         if unexpected:
             raise PipelineError(
@@ -1116,7 +1138,11 @@ def _flatten_experience_records(value: Any) -> list[Mapping[str, Any]]:
     if isinstance(value, Mapping):
         if "records" in value:
             return _flatten_experience_records(value.get("records"))
-        if "experience_id" in value or "source_run_id" in value:
+        if (
+            "experience_id" in value
+            or "source_run_id" in value
+            or isinstance(value.get("provenance"), Mapping)
+        ):
             return [value]
         records: list[Mapping[str, Any]] = []
         for child in value.values():
@@ -1139,10 +1165,21 @@ def _experience_source_run_ids(
     """Return source IDs carried by a public Experience input."""
 
     source_ids = {
-        str(item.get("source_run_id"))
+        str(
+            item.get("source_run_id")
+            if isinstance(item.get("source_run_id"), str)
+            else item.get("provenance", {}).get("source_run_id")
+        )
         for item in _flatten_experience_records(experience)
-        if isinstance(item.get("source_run_id"), str)
-        and item.get("source_run_id")
+        if (
+            isinstance(item.get("source_run_id"), str)
+            and item.get("source_run_id")
+        )
+        or (
+            isinstance(item.get("provenance"), Mapping)
+            and isinstance(item["provenance"].get("source_run_id"), str)
+            and item["provenance"].get("source_run_id")
+        )
     }
     if isinstance(experience, Mapping):
         top_level_source_run_id = experience.get("source_run_id")
