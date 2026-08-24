@@ -1,0 +1,37 @@
+<mujoco model="go2_shi_stones">
+  <include file="go2.xml"/>
+  <visual>
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0"/>
+  </visual>
+  <worldbody>
+    <light pos="2.5 -3 6" dir="0 0 -1" directional="true"/>
+    <geom name="lower_floor" type="plane" pos="0 0 -0.18" size="8 3 0.05"
+          friction="1 0.01 0.001" rgba="0.17 0.19 0.21 1"/>
+    <body name="terrain_frame">
+    <!-- Repeating source gap widths: 0.085, 0.17, and 0.255 m. -->
+    <geom name="stone_0" type="box" pos="0.20 0 -0.025" size="0.35 0.62 0.025"
+          friction="1 0.01 0.001" rgba="0.42 0.47 0.51 1"/>
+    <geom name="stone_1" type="box" pos="0.985 0.12 -0.025" size="0.35 0.52 0.025"
+          friction="1 0.01 0.001" rgba="0.18 0.59 0.78 1"/>
+    <geom name="stone_2" type="box" pos="1.855 -0.10 -0.025" size="0.35 0.54 0.025"
+          friction="1 0.01 0.001" rgba="0.25 0.68 0.46 1"/>
+    <geom name="stone_3" type="box" pos="2.810 0.10 -0.025" size="0.35 0.50 0.025"
+          friction="1 0.01 0.001" rgba="0.92 0.56 0.13 1"/>
+    <geom name="stone_4" type="box" pos="3.595 -0.12 -0.025" size="0.35 0.54 0.025"
+          friction="1 0.01 0.001" rgba="0.69 0.29 0.59 1"/>
+    <geom name="stone_5" type="box" pos="4.465 0.08 -0.025" size="0.35 0.52 0.025"
+          friction="1 0.01 0.001" rgba="0.18 0.59 0.78 1"/>
+    <geom name="stone_finish" type="box" pos="5.25 0 -0.025" size="0.35 0.62 0.025"
+          friction="1 0.01 0.001" rgba="0.25 0.68 0.46 1"/>
+    <geom name="map_limit" type="box" pos="5 0 0.002" size="0.02 0.65 0.002"
+          contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
+    </body>
+    <camera name="evidence" mode="trackcom" pos="0 -1.9 1.1"
+            zaxis="0 -0.923 0.385" fovy="34"/>
+  </worldbody>
+  <keyframe>
+    <key name="task_start"
+         qpos="0 0 0.29 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
+         ctrl="0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"/>
+  </keyframe>
+</mujoco>

@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.2",
+  "sources": [
+    {
+      "source_id": "SRC-GO2-OFFICIAL",
+      "title": "Unitree Go2",
+      "organization": "Unitree Robotics",
+      "version_or_date": "n.d. (retrieved 2026-08-18)",
+      "locator": "https://www.unitree.com/go2/",
+      "specific_reference": "Mechanical Specifications and Performance Parameters tables: 12 knee joint motors, standing and crouching dimensions, nominal body weight, maximum climb/drop height, and maximum climb angle."
+    },
+    {
+      "source_id": "SRC-LEE-2020",
+      "title": "Learning Quadrupedal Locomotion over Challenging Terrain",
+      "organization": "Science Robotics",
+      "version_or_date": "2020, Science Robotics 5(47), eabc5986; DOI 10.1126/scirobotics.abc5986",
+      "locator": "https://doi.org/10.1126/scirobotics.abc5986",
+      "specific_reference": "Main text Fig. 3D-G and Results pp. 4-5: ten 10 s trials per step height, with success defined as both front and hind legs traversing the step; 0.2 m/s and 0.6 m/s step commands; eight-direction 0.4 m/s flat-ground tracking; average heading error within 10 degrees with and without a 10 kg payload that is 22.7% of total robot mass."
+    },
+    {
+      "source_id": "SRC-MIKI-2022",
+      "title": "Learning robust perceptive locomotion for quadrupedal robots in the wild",
+      "organization": "Science Robotics",
+      "version_or_date": "2022, Science Robotics 7(62), eabk2822; DOI 10.1126/scirobotics.abk2822",
+      "locator": "https://doi.org/10.1126/scirobotics.abk2822",
+      "specific_reference": "Results Fig. 4 and text: ten trials for each fixed-height step from 12 cm to 36.5 cm, successful when overcome within 5 s; a fixed pure-pursuit path over an inclined platform, 20 cm raised platform, stairs 17 cm high by 29 cm deep, and 20 cm block pile; measured 1.2 m/s forward/lateral and 3 rad/s turning commands."
+    },
+    {
+      "source_id": "SRC-SHI-2023",
+      "title": "Terrain-Aware Quadrupedal Locomotion via Reinforcement Learning",
+      "organization": "arXiv",
+      "version_or_date": "2023-10-11, arXiv:2310.04675v2",
+      "locator": "https://arxiv.org/abs/2310.04675v2",
+      "specific_reference": "Section IV-A, Fig. 3-5, and Table I: block, stair, stepping-stone, and pole terrains; six commands [0, pi/4, -pi/4, -pi, -5pi/4, -3pi/4], three runs per direction, and maximum travel distance capped at 5 m; stair heights to 15 cm, pole diameters 10-15 cm, and stepping-stone gaps 8.5, 17, and 25.5 cm."
+    },
+    {
+      "source_id": "SRC-QRC-2023",
+      "title": "Taking the First Step Toward Autonomous Quadruped Robots: The Quadruped Robot Challenge at ICRA 2023 in London",
+      "organization": "IEEE Robotics & Automation Magazine and NIST",
+      "version_or_date": "2023-09-11, IEEE Robotics & Automation Magazine 30(3); DOI 10.1109/MRA.2023.3293296",
+      "locator": "https://doi.org/10.1109/MRA.2023.3293296",
+      "specific_reference": "Fig. 2-3 and competition description pp. 155-157: five 7.2 m lanes for small quadrupeds including Unitree Go1, namely 15 degree crossing ramps, 10 cm soft floor with 5 x 10 cm step-overs, 15 cm pallet elevation changes with rolling pipes, 10 x 10 cm K-rails at 45 degrees, and crate terrain with a diagonal negative obstacle; one point is awarded for a run from section start to end without intervention."
+    },
+    {
+      "source_id": "SRC-BARKOUR-2023",
+      "title": "Barkour: Benchmarking Animal-level Agility with Quadruped Robots",
+      "organization": "Google DeepMind",
+      "version_or_date": "2023-05-24, arXiv:2305.14654v1",
+      "locator": "https://arxiv.org/abs/2305.14654v1",
+      "specific_reference": "Section III, Table I, Fig. 2, and Appendix B-C: 1 x 1 x 0.1 m pause tables, five weave poles spaced 0.5-0.8 m with 0.1 m torso clearance, a 30 degree 1 m-high A-frame, and a 0.5 x 1 m broad-jump board that must not be touched; full-course score and 10.64 s allotted time; a valid run ends with 5 s standing on the end table."
+    },
+    {
+      "source_id": "SRC-ANYMAL-2016",
+      "title": "ANYmal - a Highly Mobile and Dynamic Quadrupedal Robot",
+      "organization": "IEEE/RSJ International Conference on Intelligent Robots and Systems",
+      "version_or_date": "2016; DOI 10.1109/IROS.2016.7758092",
+      "locator": "https://doi.org/10.1109/IROS.2016.7758092",
+      "specific_reference": "Abstract and platform description: the source ANYmal platform is 0.5 m tall. This dimension is used only to make the recorded 0.54 morphology scale conversion to the Go2 package's 0.27 m nominal base height."
+    },
+    {
+      "source_id": "SRC-MENAGERIE-GO2",
+      "title": "MuJoCo Menagerie: Unitree Go2 model",
+      "organization": "Google DeepMind",
+      "version_or_date": "commit 71f066ad0be9cd271f7ed58c030243ef157af9f4",
+      "locator": "https://github.com/google-deepmind/mujoco_menagerie/blob/71f066ad0be9cd271f7ed58c030243ef157af9f4/unitree_go2/go2.xml",
+      "specific_reference": "Pinned unitree_go2/go2.xml: stock Go2 free-base quadruped body, four three-joint legs, actuator names and joint limits used by the local MJCF closure."
+    }
+  ]
+}

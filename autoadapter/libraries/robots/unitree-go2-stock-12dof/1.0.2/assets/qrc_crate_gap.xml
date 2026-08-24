@@ -1,0 +1,35 @@
+<mujoco model="go2_qrc_crate_gap">
+  <include file="go2.xml"/>
+  <visual>
+    <headlight diffuse="0.75 0.75 0.75" ambient="0.35 0.35 0.35" specular="0 0 0"/>
+  </visual>
+  <worldbody>
+    <light pos="0 -4 7" dir="0 0 -1" directional="true"/>
+    <geom name="lower_floor" type="box" pos="0 0 -0.03" size="4.5 0.72 0.03"
+          friction="1 0.01 0.001" rgba="0.18 0.20 0.22 1"/>
+    <!-- Three staggered crate rows leave a diagonal 0.30 m negative obstacle. -->
+    <geom name="crate_left_before" type="box" pos="-2.05 0.48 0.075" size="1.55 0.23 0.075"
+          friction="1 0.01 0.001" rgba="0.71 0.42 0.18 1"/>
+    <geom name="crate_left_after" type="box" pos="2.05 0.48 0.075" size="1.75 0.23 0.075"
+          friction="1 0.01 0.001" rgba="0.71 0.42 0.18 1"/>
+    <geom name="crate_mid_before" type="box" pos="-1.90 0 0.075" size="1.70 0.23 0.075"
+          friction="1 0.01 0.001" rgba="0.78 0.48 0.20 1"/>
+    <geom name="crate_mid_after" type="box" pos="1.90 0 0.075" size="1.70 0.23 0.075"
+          friction="1 0.01 0.001" rgba="0.78 0.48 0.20 1"/>
+    <geom name="crate_right_before" type="box" pos="-1.75 -0.48 0.075" size="1.85 0.23 0.075"
+          friction="1 0.01 0.001" rgba="0.85 0.53 0.22 1"/>
+    <geom name="crate_right_after" type="box" pos="1.75 -0.48 0.075" size="1.55 0.23 0.075"
+          friction="1 0.01 0.001" rgba="0.85 0.53 0.22 1"/>
+    <geom name="start_line" type="box" pos="-3.6 0 0.152" size="0.02 0.74 0.002"
+          contype="0" conaffinity="0" rgba="0.24 0.64 0.94 1"/>
+    <geom name="finish_line" type="box" pos="3.6 0 0.152" size="0.02 0.74 0.002"
+          contype="0" conaffinity="0" rgba="0.14 0.80 0.46 1"/>
+    <camera name="evidence" mode="trackcom" pos="0 -1.9 1.1"
+            zaxis="0 -0.923 0.385" fovy="34"/>
+  </worldbody>
+  <keyframe>
+    <key name="task_start"
+         qpos="-3.6 0 0.44 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
+         ctrl="0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"/>
+  </keyframe>
+</mujoco>

@@ -1,0 +1,14 @@
+<mujoco model="go2_mixed_course">
+  <include file="go2.xml"/>
+  <worldbody>
+    <light pos="0 0 5" dir="0 0 -1" diffuse="1 1 1"/>
+    <geom name="floor" type="plane" size="12 12 0.05" friction="1 0.01 0.001"/>
+    <geom name="course_ramp" type="box" pos="0.65 0 0.05" size="0.65 1.5 0.05" euler="0 -4 0" friction="1 0.01 0.001"/>
+    <geom name="course_stair_1" type="box" pos="1.45 0 0.015" size="0.22 1.5 0.015" friction="1 0.01 0.001"/>
+    <geom name="course_stair_2" type="box" pos="1.82 0 0.03" size="0.22 1.5 0.03" friction="1 0.01 0.001"/>
+    <geom name="course_stair_3" type="box" pos="2.19 0 0.045" size="0.22 1.5 0.045" friction="1 0.01 0.001"/>
+    <geom name="course_block_a" type="box" pos="2.75 0.22 0.025" size="0.20 0.35 0.025" friction="1 0.01 0.001"/>
+    <geom name="course_block_b" type="box" pos="3.20 -0.20 0.04" size="0.22 0.35 0.04" friction="1 0.01 0.001"/>
+    <geom name="course_block_c" type="box" pos="3.70 0.18 0.03" size="0.20 0.35 0.03" friction="1 0.01 0.001"/>
+  </worldbody>
+</mujoco>
