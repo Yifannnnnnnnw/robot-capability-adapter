@@ -10,7 +10,7 @@ from autoadapter2.trusted_skeletons import ArmSerialDLSSkeleton
 
 class GeneratedDriver(ArmSerialDLSSkeleton):
     def reach_target(self, request):
-        return self.move_cartesian(request["task_parameters"]["target"])
+        return self.move_cartesian(request["target"])
 
 def build(model, data, spec):
     return GeneratedDriver.from_session(model=model, data=data, spec=spec)
@@ -25,7 +25,7 @@ class GeneratedDriver:
         self.data = data
 
     def hold_posture(self, request):
-        target = request["task_parameters"]["target"]
+        target = request["target"]
         self.data.ctrl[:] = target
         mujoco.mj_step(self.model, self.data)
 
@@ -161,6 +161,35 @@ class DriverSourceCheckTests(unittest.TestCase):
                 condition="skeleton-assisted",
                 capability_methods=["different_capability"],
             )
+
+    def test_candidate_cannot_dispatch_on_task_or_private_fields(self) -> None:
+        for field in ("task_id", "task_parameters", "scene", "reset", "criteria"):
+            with self.subTest(field=field):
+                source = FROM_SCRATCH_DRIVER.replace(
+                    'target = request["target"]',
+                    f'target = request[{field!r}]',
+                )
+                with self.assertRaisesRegex(
+                    DriverSourceError, "candidate capability request field"
+                ):
+                    audit_driver_source(
+                        source,
+                        condition="from-scratch",
+                        capability_methods=["hold_posture"],
+                        candidate_request_boundary=True,
+                    )
+
+    def test_private_reference_may_keep_internal_task_dispatch(self) -> None:
+        source = FROM_SCRATCH_DRIVER.replace(
+            'target = request["target"]',
+            'target = request["task_parameters"]["target"]',
+        )
+        audit = audit_driver_source(
+            source,
+            condition="from-scratch",
+            capability_methods=["hold_posture"],
+        )
+        self.assertGreater(audit.ctrl_references, 0)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Focused source checks for one submitted model-generated driver.py."""
+"""Focused source checks for one frozen model-generated ``driver.py``."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ GenerationCondition = Literal["skeleton-assisted", "from-scratch"]
 
 
 class DriverSourceError(ValueError):
-    """Raised when submitted source violates a formal generation condition."""
+    """Raised when candidate source violates a generation boundary."""
 
 
 @dataclass(frozen=True)
@@ -95,6 +95,19 @@ _FORBIDDEN_STATE_ATTRIBUTES = {
     "eq_active",
 }
 _MUTATING_METHODS = {"fill", "itemset", "place", "put", "resize", "sort"}
+_FORBIDDEN_CANDIDATE_REQUEST_KEYS = {
+    "criteria",
+    "private_criteria",
+    "reset",
+    "scene",
+    "task",
+    "task_id",
+    "task_parameters",
+}
+
+
+def _constant_text(node: ast.AST) -> str | None:
+    return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None
 
 
 def _contains_forbidden_state_attribute(node: ast.AST) -> bool:
@@ -160,7 +173,7 @@ def _has_request_abi(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
 
 
 class _AuditVisitor(ast.NodeVisitor):
-    def __init__(self) -> None:
+    def __init__(self, *, candidate_request_boundary: bool) -> None:
         self.errors: list[str] = []
         self.function_names: list[str] = []
         self.function_nodes: dict[str, list[ast.FunctionDef | ast.AsyncFunctionDef]] = {}
@@ -171,6 +184,7 @@ class _AuditVisitor(ast.NodeVisitor):
         self._scope_depth = 0
         self._physics_step_aliases: set[str] = set()
         self._mujoco_module_aliases: set[str] = set()
+        self._candidate_request_boundary = candidate_request_boundary
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -227,6 +241,14 @@ class _AuditVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         self._scope_depth -= 1
 
+    def visit_Subscript(self, node: ast.Subscript) -> None:
+        key = _constant_text(node.slice)
+        if self._candidate_request_boundary and key in _FORBIDDEN_CANDIDATE_REQUEST_KEYS:
+            self.errors.append(
+                f"candidate capability request field is forbidden: {key!r}"
+            )
+        self.generic_visit(node)
+
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.visit_FunctionDef(node)
 
@@ -242,6 +264,16 @@ class _AuditVisitor(ast.NodeVisitor):
         elif isinstance(node.func, ast.Attribute):
             name = node.func.attr
             path = _attribute_path(node.func)
+            if (
+                self._candidate_request_boundary
+                and
+                name == "get"
+                and node.args
+                and _constant_text(node.args[0]) in _FORBIDDEN_CANDIDATE_REQUEST_KEYS
+            ):
+                self.errors.append(
+                    "candidate capability request may not read task/scene/reset/private-criteria fields"
+                )
             if name in _FORBIDDEN_CALL_ATTRIBUTES:
                 self.errors.append(f"candidate-owned model/reset call is forbidden: {path}")
             if name in _FORBIDDEN_CONSTRUCTORS:
@@ -323,8 +355,14 @@ def audit_driver_source(
     *,
     condition: GenerationCondition,
     capability_methods: tuple[str, ...] | list[str],
+    candidate_request_boundary: bool = False,
 ) -> DriverSourceAudit:
-    """Audit the submitted source, not its trusted dependencies or the repository."""
+    """Audit one Driver source file.
+
+    ``candidate_request_boundary`` is deliberately explicit.  Package-private
+    reference Drivers may dispatch internally on task fixtures, while a model
+    candidate may only consume the closed request schema of each capability.
+    """
 
     if condition not in {"skeleton-assisted", "from-scratch"}:
         raise DriverSourceError(f"unknown generation condition {condition!r}")
@@ -337,7 +375,7 @@ def audit_driver_source(
     except SyntaxError as exc:
         raise DriverSourceError(f"driver.py is not valid Python: {exc.msg}") from exc
 
-    visitor = _AuditVisitor()
+    visitor = _AuditVisitor(candidate_request_boundary=candidate_request_boundary)
     visitor.visit(tree)
     if "build" not in visitor.top_level_functions:
         visitor.errors.append("driver.py must define top-level build()")

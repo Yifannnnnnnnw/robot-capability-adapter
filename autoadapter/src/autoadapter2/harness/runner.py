@@ -502,10 +502,15 @@ def run_private_suite(
     run_id: str = "unassigned",
     attempt: int = 0,
     controller_client: ToolModelClient | None = None,
+    trusted_reference_driver: bool = False,
 ) -> dict[str, Any]:
     """Run every repetition independently and issue the authoritative verdict."""
 
     candidate = Path(driver_path).resolve()
+    package_reference_dir = package.reference_driver.resolve().parent
+    is_package_reference = candidate == package.reference_driver.resolve() or candidate.is_relative_to(
+        package_reference_dir
+    )
     capability_methods = tuple(
         str(capability["method_name"]) for capability in design["capabilities"]
     )
@@ -513,6 +518,7 @@ def run_private_suite(
         candidate.read_text(encoding="utf-8"),
         condition=condition,  # type: ignore[arg-type]
         capability_methods=capability_methods,
+        candidate_request_boundary=not (trusted_reference_driver or is_package_reference),
     )
     is_b1_suite = suite.get("artifact_type") == "b1_fixed_validation_suite"
     if is_b1_suite:
