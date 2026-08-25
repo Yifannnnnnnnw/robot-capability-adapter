@@ -41,6 +41,17 @@ _FORBIDDEN_IMPORT_ROOTS = {
     "tempfile",
     "urllib",
 }
+_CANDIDATE_ALLOWED_IMPORT_ROOTS = {
+    "__future__",
+    "autoadapter2",
+    "collections",
+    "dataclasses",
+    "json",
+    "math",
+    "mujoco",
+    "numpy",
+    "typing",
+}
 _FORBIDDEN_CALL_NAMES = {
     "getattr",
     "globals",
@@ -104,6 +115,14 @@ _FORBIDDEN_CANDIDATE_REQUEST_KEYS = {
     "task_id",
     "task_parameters",
 }
+_FORBIDDEN_CANDIDATE_NAMES = {
+    "__builtins__",
+    "__import__",
+    "__loader__",
+    "__package__",
+    "__spec__",
+}
+_ALLOWED_CANDIDATE_DUNDER_ATTRIBUTES = {"__init__"}
 
 
 def _constant_text(node: ast.AST) -> str | None:
@@ -172,6 +191,39 @@ def _has_request_abi(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     )
 
 
+def _is_dunder(value: str) -> bool:
+    return len(value) > 4 and value.startswith("__") and value.endswith("__")
+
+
+def _is_placeholder_function(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    body = list(node.body)
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        body = body[1:]
+    if len(body) != 1:
+        return not body
+    statement = body[0]
+    if isinstance(statement, ast.Pass):
+        return True
+    if isinstance(statement, ast.Expr):
+        return isinstance(statement.value, ast.Constant) and statement.value.value is Ellipsis
+    if isinstance(statement, ast.Raise):
+        exception = statement.exc
+        if isinstance(exception, ast.Call):
+            exception = exception.func
+        return isinstance(exception, ast.Name) and exception.id == "NotImplementedError"
+    if isinstance(statement, ast.Return):
+        return statement.value is None or (
+            isinstance(statement.value, ast.Name)
+            and statement.value.id == "NotImplemented"
+        )
+    return False
+
+
 class _AuditVisitor(ast.NodeVisitor):
     def __init__(self, *, candidate_request_boundary: bool) -> None:
         self.errors: list[str] = []
@@ -189,6 +241,13 @@ class _AuditVisitor(ast.NodeVisitor):
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             root = alias.name.split(".", 1)[0]
+            if (
+                self._candidate_request_boundary
+                and root not in _CANDIDATE_ALLOWED_IMPORT_ROOTS
+            ):
+                self.errors.append(
+                    f"candidate import is outside the closed allowlist: {alias.name}"
+                )
             if root in _FORBIDDEN_IMPORT_ROOTS:
                 self.errors.append(f"candidate runtime import is forbidden: {alias.name}")
             if alias.name.startswith("autoadapter2.trusted_skeletons"):
@@ -206,6 +265,17 @@ class _AuditVisitor(ast.NodeVisitor):
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         module = node.module or ""
         root = module.split(".", 1)[0]
+        if (
+            self._candidate_request_boundary
+            and root not in _CANDIDATE_ALLOWED_IMPORT_ROOTS
+        ):
+            self.errors.append(
+                f"candidate import is outside the closed allowlist: {module}"
+            )
+        if self._candidate_request_boundary and any(
+            alias.name == "*" for alias in node.names
+        ):
+            self.errors.append(f"candidate wildcard import is forbidden: {module}")
         if node.level:
             self.errors.append("relative imports are forbidden in submitted driver.py")
         if root in _FORBIDDEN_IMPORT_ROOTS:
@@ -243,6 +313,8 @@ class _AuditVisitor(ast.NodeVisitor):
 
     def visit_Subscript(self, node: ast.Subscript) -> None:
         key = _constant_text(node.slice)
+        if self._candidate_request_boundary and isinstance(key, str) and _is_dunder(key):
+            self.errors.append(f"candidate dunder lookup is forbidden: {key}")
         if self._candidate_request_boundary and key in _FORBIDDEN_CANDIDATE_REQUEST_KEYS:
             self.errors.append(
                 f"candidate capability request field is forbidden: {key!r}"
@@ -297,6 +369,12 @@ class _AuditVisitor(ast.NodeVisitor):
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         path = _attribute_path(node)
+        if (
+            self._candidate_request_boundary
+            and _is_dunder(node.attr)
+            and node.attr not in _ALLOWED_CANDIDATE_DUNDER_ATTRIBUTES
+        ):
+            self.errors.append(f"candidate dunder introspection is forbidden: {path}")
         if node.attr in _FORBIDDEN_CONSTRUCTORS:
             self.errors.append(
                 f"candidate-owned MuJoCo construction is forbidden: {path}"
@@ -349,6 +427,15 @@ class _AuditVisitor(ast.NodeVisitor):
                     self.errors.append(f"direct state write is forbidden: {attribute}")
         self.generic_visit(node)
 
+    def visit_Name(self, node: ast.Name) -> None:
+        if (
+            self._candidate_request_boundary
+            and node.id in _FORBIDDEN_CANDIDATE_NAMES
+        ):
+            self.errors.append(
+                f"candidate builtins/introspection name is forbidden: {node.id}"
+            )
+
 
 def audit_driver_source(
     source: str,
@@ -388,6 +475,10 @@ def audit_driver_source(
                 visitor.errors.append(
                     f"capability method {method_name!r} must explicitly accept keyword request"
                 )
+            if candidate_request_boundary and _is_placeholder_function(function):
+                visitor.errors.append(
+                    f"capability method {method_name!r} is still a placeholder"
+                )
     if condition == "skeleton-assisted" and not visitor.imports_trusted_skeleton:
         visitor.errors.append("skeleton-assisted driver must import the trusted skeleton family")
     if condition == "from-scratch" and visitor.imports_trusted_skeleton:
@@ -397,7 +488,7 @@ def audit_driver_source(
     if condition == "from-scratch" and visitor.physics_step_references == 0:
         visitor.errors.append("from-scratch driver.py contains no physics-step path")
     if visitor.errors:
-        raise DriverSourceError("; ".join(visitor.errors))
+        raise DriverSourceError("; ".join(dict.fromkeys(visitor.errors)))
     return DriverSourceAudit(
         condition=condition,
         capability_methods=required_methods,

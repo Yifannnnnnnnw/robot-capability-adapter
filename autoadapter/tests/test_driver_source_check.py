@@ -191,6 +191,70 @@ class DriverSourceCheckTests(unittest.TestCase):
         )
         self.assertGreater(audit.ctrl_references, 0)
 
+    def test_candidate_cannot_recover_tracked_mujoco_step(self) -> None:
+        exploits = (
+            FROM_SCRATCH_DRIVER.replace(
+                "mujoco.mj_step(self.model, self.data)",
+                "mujoco.mj_step.__globals__['_original_step'](self.model, self.data)",
+            ),
+            FROM_SCRATCH_DRIVER.replace(
+                "mujoco.mj_step(self.model, self.data)",
+                "mujoco.mj_step.__closure__[0].cell_contents(self.model, self.data)",
+            ),
+            "import operator\n" + FROM_SCRATCH_DRIVER,
+            FROM_SCRATCH_DRIVER.replace(
+                'target = request["target"]',
+                "target = __builtins__['float'](request['target'])",
+            ),
+        )
+
+        for source in exploits:
+            with self.subTest(source=source), self.assertRaises(DriverSourceError):
+                audit_driver_source(
+                    source,
+                    condition="from-scratch",
+                    capability_methods=["hold_posture"],
+                    candidate_request_boundary=True,
+                )
+
+    def test_candidate_capability_cannot_remain_a_placeholder(self) -> None:
+        source = FROM_SCRATCH_DRIVER.replace(
+            '        target = request["target"]\n'
+            "        self.data.ctrl[:] = target\n"
+            "        mujoco.mj_step(self.model, self.data)",
+            '        raise NotImplementedError("implement hold_posture")',
+        )
+        source += (
+            "\ndef development_only(model, data):\n"
+            "    data.ctrl[0] = 0.0\n"
+            "    mujoco.mj_step(model, data)\n"
+        )
+
+        with self.assertRaisesRegex(DriverSourceError, "still a placeholder"):
+            audit_driver_source(
+                source,
+                condition="from-scratch",
+                capability_methods=["hold_posture"],
+                candidate_request_boundary=True,
+            )
+
+    def test_candidate_may_build_through_an_explicit_factory(self) -> None:
+        source = FROM_SCRATCH_DRIVER.replace(
+            "def build(model, data):\n    return GeneratedDriver(model, data)",
+            "def make_driver(model, data):\n"
+            "    return GeneratedDriver(model, data)\n\n"
+            "def build(model, data):\n"
+            "    return make_driver(model, data)",
+        )
+
+        audit = audit_driver_source(
+            source,
+            condition="from-scratch",
+            capability_methods=["hold_posture"],
+            candidate_request_boundary=True,
+        )
+        self.assertGreater(audit.physics_step_references, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

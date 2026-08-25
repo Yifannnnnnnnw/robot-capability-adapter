@@ -76,6 +76,8 @@ name and is an instance method on the object returned by build(), with exact sig
 ``def <method_name>(self, request)``. Top-level functions do not satisfy the ABI. ``request`` is the
 closed mapping declared by that capability's sealed request_schema; read only its declared fields and
 do not add task, scene, reset, private-criteria, or whole-task fields.
+Candidate imports are closed to __future__, math, json, typing, collections, dataclasses, numpy,
+mujoco, and, only in skeleton-assisted mode, autoadapter2.trusted_skeletons.
 Change only driver.py. Keep the requested generation condition boundary: skeleton-assisted may use
 the supplied trusted skeleton family; from-scratch must not import or call it. The Framework still
 owns canonical model/data and trial reset. Use direct, statically auditable syntax: mapping fields
@@ -103,7 +105,9 @@ credential-free public Python/MuJoCo execute_python session. Skeleton discovery 
 skeleton-assisted Repair; from-scratch must not read or import skeleton source. Preserve sealed
 method names and the exact (self, request) ABI; request is always the closed mapping declared by the
 sealed request_schema. Read only schema-declared fields and do not add task, scene, reset,
-private-criteria, or whole-task fields. End a turn after writing a corrected driver.py; the
+private-criteria, or whole-task fields. Candidate imports are closed to __future__, math, json,
+typing, collections, dataclasses, numpy, mujoco, and, only in skeleton-assisted mode,
+autoadapter2.trusted_skeletons. End a turn after writing a corrected driver.py; the
 Framework validates its source and public import/build boundary. Never access or infer private suite
 construction, reference code, the other condition, credentials, or a final Harness verdict.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT

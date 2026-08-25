@@ -142,6 +142,8 @@ fields, and do not invent a different public signature or task/effect allowlist.
 return an instance of it, and define every capability as an instance method with the exact signature
 ``def <method_name>(self, request)``; top-level functions do not satisfy the ABI. ``request`` is a
 plain dict; read only the fields declared by the sealed ABI and capability request schema.
+Candidate imports are closed to __future__, math, json, typing, collections, dataclasses, numpy,
+mujoco, and, only in skeleton-assisted mode, autoadapter2.trusted_skeletons.
 Skeleton-assisted may import and use only the supplied trusted skeleton family. From-scratch must
 not import, copy, or call any skeleton and must implement actuator mapping, control, and physics
 stepping with the supplied runtime primitives. The Framework owns the canonical model/data session;
@@ -176,8 +178,10 @@ Use read_file and execute_python on the supplied public projection and use write
 canonical condition-workspace artifact driver.py. The interface-only stub, when present, is only a
 starting point: replace every placeholder with a complete executable driver. Follow the sealed
 invocation ABI and each capability's closed request_schema directly. Read only schema-declared fields;
-do not add task, scene, reset, private-criteria, or whole-task fields. Skeleton-assisted may
-list_skeletons and inspect_skeleton, while
+do not add task, scene, reset, private-criteria, or whole-task fields. Candidate imports are closed
+to __future__, math, json, typing, collections, dataclasses, numpy, mujoco, and, only in
+skeleton-assisted mode, autoadapter2.trusted_skeletons. Skeleton-assisted may list_skeletons and
+inspect_skeleton, while
 from-scratch must not read or import skeleton source. Use one persistent credential-free public
 Python/MuJoCo session for bounded development probes. Do not use private Harness definitions,
 reference code, the other condition, credentials, or network. Finish by ending a turn once driver.py

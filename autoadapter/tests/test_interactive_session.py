@@ -522,6 +522,27 @@ class InteractiveFileSessionTests(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertTrue(result["import"]["successful"])
 
+    def test_driver_import_boundary_rejects_methods_not_on_built_object(self) -> None:
+        fake_source = '''
+import mujoco
+
+
+def drive(self, request):
+    self.data.ctrl[0] = float(request["target"])
+    mujoco.mj_step(self.model, self.data)
+
+
+def build(model, data):
+    return object()
+'''
+        self.session.write_file({"path": "driver.py", "content": fake_source})
+
+        with self.assertRaisesRegex(
+            DevelopmentSessionError,
+            "does not explicitly define capability method",
+        ):
+            self.session.validate_driver_artifact()
+
     def test_driver_validation_imports_latest_execute_python_revision(self) -> None:
         first_source = DRIVER_SOURCE.replace(
             "class CapabilityDriver:",
