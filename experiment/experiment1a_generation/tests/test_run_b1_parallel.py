@@ -17,10 +17,72 @@ for path in (REPOSITORY_ROOT, AUTOADAPTER_SOURCE_ROOT):
     if value not in sys.path:
         sys.path.insert(0, value)
 
-from experiment.experiment1a_generation.runtime.parallel import launch_parallel  # noqa: E402
+from experiment.experiment1a_generation.runtime.parallel import (  # noqa: E402
+    launch_parallel,
+    materialized_units,
+)
+from experiment.experiment1a_generation.runtime.b1 import B1RunError  # noqa: E402
 
 
 class Experiment1ParallelRunnerTests(unittest.TestCase):
+    def test_descriptive_slice_materializes_only_its_allowlist(self) -> None:
+        units, resolved = materialized_units(
+            manifest_path=(
+                EXPERIMENT_ROOT
+                / "manifest-so101-skeleton-r01-six-model-descriptive.json"
+            ),
+            order_path=(
+                EXPERIMENT_ROOT
+                / "config"
+                / "components"
+                / "execution-order-r1-r5.json"
+            ),
+            wave_id="core-r3",
+            backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6", "M8"],
+            robot_ids=["robotstudio_so101", "unitree-go2-stock-12dof"],
+        )
+
+        self.assertEqual(len(units), 6)
+        self.assertEqual(
+            {unit["unit_id"] for unit in units},
+            set(resolved["dispatch_unit_allowlist"]),
+        )
+        self.assertTrue(
+            all(
+                unit["robot_configuration_id"] == "robotstudio_so101"
+                and unit["replicate_id"] == "r01"
+                and unit["generation_condition"] == "skeleton-assisted"
+                for unit in units
+            )
+        )
+
+    def test_parallel_exact_selection_cannot_escape_the_allowlist(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        output = Path(temporary.name) / "scheduler"
+
+        with self.assertRaisesRegex(B1RunError, "absent.*admitted"):
+            launch_parallel(
+                manifest_path=(
+                    EXPERIMENT_ROOT
+                    / "manifest-so101-skeleton-r01-six-model-descriptive.json"
+                ),
+                order_path=(
+                    EXPERIMENT_ROOT
+                    / "config"
+                    / "components"
+                    / "execution-order-r1-r5.json"
+                ),
+                output_dir=output,
+                backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6", "M8"],
+                robot_ids=["robotstudio_so101"],
+                exact_unit_ids=[
+                    "b1::robotstudio_so101::M1::r01::skeleton-assisted"
+                ],
+            )
+
+        self.assertFalse(output.exists())
+
     def test_eight_workers_get_unique_process_outputs_and_scheduler_records(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

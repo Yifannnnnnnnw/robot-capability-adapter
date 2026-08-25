@@ -534,6 +534,25 @@ class Experiment1B1RunnerTests(unittest.TestCase):
             )
         self.assertEqual(route.client_creations, 0)
 
+    def test_descriptive_slice_rejects_unapproved_cell_before_output(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        output = Path(temporary.name) / "run"
+
+        with self.assertRaisesRegex(B1RunError, "outside.*dispatch allowlist"):
+            run_single_cell(
+                manifest_path=(
+                    EXPERIMENT_ROOT
+                    / "manifest-so101-skeleton-r01-six-model-descriptive.json"
+                ),
+                unit_id=(
+                    "b1::robotstudio_so101::M1::r01::skeleton-assisted"
+                ),
+                output_dir=output,
+            )
+
+        self.assertFalse(output.exists())
+
     def test_default_bundle_loader_refuses_a_missing_criteria_path(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

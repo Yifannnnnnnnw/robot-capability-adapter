@@ -170,9 +170,16 @@ def materialized_units(
             + ", ".join(unavailable)
         )
     selected_robots = set(robot_ids)
+    dispatch_unit_allowlist = resolved.get("dispatch_unit_allowlist")
+    allowed_unit_ids = (
+        None
+        if dispatch_unit_allowlist is None
+        else set(dispatch_unit_allowlist)
+    )
     manifest_units = {
         str(unit["unit_id"]): dict(unit)
         for unit in resolved["units"]
+        if allowed_unit_ids is None or unit["unit_id"] in allowed_unit_ids
     }
     order = _read_json(order_path.resolve(), label="materialized execution order")
     waves = order.get("waves")
@@ -354,6 +361,8 @@ def launch_parallel(
         "schema_version": 1,
         "scheduler_run_id": f"b1-scheduler::{uuid.uuid4().hex[:12]}",
         "experiment_id": resolved.get("experiment_id"),
+        "result_classification": resolved.get("result_classification"),
+        "dispatch_unit_allowlist": resolved.get("dispatch_unit_allowlist"),
         "manifest_path": str(Path(manifest_path).resolve()),
         "execution_order_path": str(Path(order_path).resolve()),
         "wave_id": wave_id,

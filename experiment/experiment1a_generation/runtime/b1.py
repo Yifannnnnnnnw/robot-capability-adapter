@@ -61,6 +61,10 @@ EXPECTED_EXTENSION_REPLICATE_IDS = ("r04", "r05")
 EXPECTED_CORE_UNIT_COUNT = 84
 EXPECTED_EXTENSION_UNIT_COUNT = 28
 EXPECTED_CUMULATIVE_UNIT_COUNT = 140
+ALLOWED_RESULT_CLASSIFICATIONS = {
+    "formal-authority-matrix",
+    "descriptive-slice",
+}
 EXISTING_FIXED_ROUTES = {
     "robotstudio_so101": AUTOADAPTER_ROOT
     / "runs"
@@ -173,6 +177,15 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
             raise B1RunError(f"{manifest_path}: B1 requires {flag}=false")
     if recipe.get("experience_input") != "empty":
         raise B1RunError(f"{manifest_path}: B1 requires empty Experience input")
+
+    result_classification = recipe.get(
+        "result_classification", "formal-authority-matrix"
+    )
+    if result_classification not in ALLOWED_RESULT_CLASSIFICATIONS:
+        raise B1RunError(
+            f"{manifest_path}: unsupported result_classification "
+            f"{result_classification!r}"
+        )
 
     formal_dispatch_enabled = recipe.get("formal_dispatch_enabled")
     if not isinstance(formal_dispatch_enabled, bool):
@@ -336,6 +349,36 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
     unit_ids = [str(unit["unit_id"]) for unit in units + extension_units]
     if len(unit_ids) != len(set(unit_ids)):
         raise B1RunError(f"{manifest_path}: duplicate B1 unit IDs")
+    dispatch_allowlist_value = recipe.get("dispatch_unit_allowlist")
+    dispatch_unit_allowlist = (
+        None
+        if dispatch_allowlist_value is None
+        else _string_list(
+            dispatch_allowlist_value,
+            field="dispatch_unit_allowlist",
+            source=manifest_path,
+        )
+    )
+    if result_classification == "descriptive-slice":
+        if dispatch_unit_allowlist is None:
+            raise B1RunError(
+                f"{manifest_path}: descriptive-slice requires dispatch_unit_allowlist"
+            )
+    elif dispatch_unit_allowlist is not None:
+        raise B1RunError(
+            f"{manifest_path}: formal-authority-matrix cannot use a dispatch allowlist"
+        )
+    core_unit_ids = {str(unit["unit_id"]) for unit in units}
+    unknown_dispatch_units = [
+        unit_id
+        for unit_id in (dispatch_unit_allowlist or [])
+        if unit_id not in core_unit_ids
+    ]
+    if unknown_dispatch_units:
+        raise B1RunError(
+            f"{manifest_path}: dispatch allowlist contains non-core unit(s): "
+            + ", ".join(unknown_dispatch_units)
+        )
     if tuple(robot_ids) != EXPECTED_ROBOT_IDS:
         raise B1RunError(
             f"{manifest_path}: active robots must be SO-101 and Unitree Go2"
@@ -403,6 +446,7 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
 
     return {
         "experiment_id": recipe.get("experiment_id"),
+        "result_classification": result_classification,
         "authority_revision": recipe.get("authority_revision"),
         "manifest_path": str(manifest_path),
         "protocol_path": str(protocol_path),
@@ -433,6 +477,7 @@ def resolve_experiment_manifest(manifest_path: Path) -> dict[str, Any]:
         "cumulative_unit_count": cumulative_count,
         "formal_dispatch_enabled": formal_dispatch_enabled,
         "blocked_reasons": list(blocked_reasons),
+        "dispatch_unit_allowlist": dispatch_unit_allowlist,
     }
 
 
@@ -1566,6 +1611,14 @@ def _select_unit(resolved: Mapping[str, Any], unit_id: str) -> dict[str, Any]:
         raise B1RunError("selected unit lacks required identities")
     if unit["generation_condition"] not in ALLOWED_CONDITIONS:
         raise B1RunError("selected unit has an unsupported generation condition")
+    dispatch_unit_allowlist = resolved.get("dispatch_unit_allowlist")
+    if (
+        dispatch_unit_allowlist is not None
+        and unit_id not in dispatch_unit_allowlist
+    ):
+        raise B1RunError(
+            f"unit-id is outside the manifest dispatch allowlist: {unit_id}"
+        )
     return unit
 
 
@@ -1608,6 +1661,12 @@ def check_single_cell(
         "model_client_constructed": False,
         "model_requests": 0,
         "unit": copy.deepcopy(unit),
+        "result_classification": resolved.get(
+            "result_classification", "formal-authority-matrix"
+        ),
+        "dispatch_unit_allowlist": copy.deepcopy(
+            resolved.get("dispatch_unit_allowlist")
+        ),
         "formal_dispatch_enabled": bool(resolved["formal_dispatch_enabled"]),
         "blocked_reasons": list(resolved["blocked_reasons"]),
         "robot_configuration_id": package.robot_configuration_id,
@@ -1702,6 +1761,12 @@ def run_single_cell(
         "identity": {
             **copy.deepcopy(unit),
             "cell_id": unit_id,
+            "result_classification": resolved.get(
+                "result_classification", "formal-authority-matrix"
+            ),
+            "dispatch_unit_allowlist": copy.deepcopy(
+                resolved.get("dispatch_unit_allowlist")
+            ),
             "protocol_id": resolved.get("protocol_id"),
             "protocol_version": resolved.get("protocol_version"),
             "experiment_recipe": str(manifest),

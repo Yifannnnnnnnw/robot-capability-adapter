@@ -16,11 +16,17 @@ for path in (REPOSITORY_ROOT, REPOSITORY_ROOT / "autoadapter" / "src"):
 
 from experiment.experiment1a_generation.runtime.b1 import (  # noqa: E402
     B1RunError,
+    _select_unit,
     resolve_experiment_manifest,
 )
 
 
 class Experiment1ManifestTests(unittest.TestCase):
+    DESCRIPTIVE_SLICE = (
+        EXPERIMENT_ROOT
+        / "manifest-so101-skeleton-r01-six-model-descriptive.json"
+    )
+
     def test_core_manifest_matches_the_authority_matrix(self) -> None:
         resolved = resolve_experiment_manifest(EXPERIMENT_ROOT / "manifest.json")
 
@@ -38,6 +44,33 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertEqual(resolved["extension_unit_counts"], {"r04": 28, "r05": 28})
         self.assertEqual(resolved["cumulative_unit_count"], 140)
         self.assertFalse(resolved["formal_dispatch_enabled"])
+        self.assertEqual(
+            resolved["result_classification"], "formal-authority-matrix"
+        )
+        self.assertIsNone(resolved["dispatch_unit_allowlist"])
+
+    def test_descriptive_slice_allows_only_the_six_approved_units(self) -> None:
+        resolved = resolve_experiment_manifest(self.DESCRIPTIVE_SLICE)
+
+        self.assertTrue(resolved["formal_dispatch_enabled"])
+        self.assertEqual(resolved["blocked_reasons"], [])
+        self.assertEqual(resolved["result_classification"], "descriptive-slice")
+        self.assertEqual(
+            resolved["dispatch_unit_allowlist"],
+            [
+                "b1::robotstudio_so101::M6::r01::skeleton-assisted",
+                "b1::robotstudio_so101::M5::r01::skeleton-assisted",
+                "b1::robotstudio_so101::M4::r01::skeleton-assisted",
+                "b1::robotstudio_so101::M3::r01::skeleton-assisted",
+                "b1::robotstudio_so101::M8::r01::skeleton-assisted",
+                "b1::robotstudio_so101::M2::r01::skeleton-assisted",
+            ],
+        )
+        with self.assertRaisesRegex(B1RunError, "outside.*dispatch allowlist"):
+            _select_unit(
+                resolved,
+                "b1::robotstudio_so101::M1::r01::skeleton-assisted",
+            )
 
     def test_every_core_block_contains_both_isolated_conditions(self) -> None:
         resolved = resolve_experiment_manifest(EXPERIMENT_ROOT / "manifest.json")
@@ -307,6 +340,19 @@ class Experiment1ManifestTests(unittest.TestCase):
             path = Path(directory) / "blocked-formal-dispatch.json"
             path.write_text(json.dumps(recipe), encoding="utf-8")
             with self.assertRaisesRegex(B1RunError, "while blockers remain"):
+                resolve_experiment_manifest(path)
+
+    def test_descriptive_slice_rejects_an_unknown_allowlisted_unit(self) -> None:
+        recipe = self._temporary_recipe(
+            result_classification="descriptive-slice",
+            dispatch_unit_allowlist=[
+                "b1::robotstudio_so101::M6::r99::skeleton-assisted"
+            ],
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid-descriptive-slice.json"
+            path.write_text(json.dumps(recipe), encoding="utf-8")
+            with self.assertRaisesRegex(B1RunError, "non-core unit"):
                 resolve_experiment_manifest(path)
 
 
