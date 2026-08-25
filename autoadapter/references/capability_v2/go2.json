@@ -28,6 +28,19 @@
         "required": ["linear_velocity_body_m_s", "yaw_rate_rad_s", "duration_s"],
         "additionalProperties": false
       },
+      "preconditions": [
+        "The public base state is available and finite before twist tracking starts.",
+        "The requested body-frame velocity, yaw rate, and duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "fixed_duration_twist_tracking",
+        "completion": "Track the requested twist for the declared duration and evaluate the criterion-defined terminal window."
+      },
+      "invariants": [
+        "The commanded planar velocity remains expressed in the current body frame.",
+        "Actuator commands remain within the public control limits while maintaining support integrity."
+      ],
+      "failure_behavior": "Stop the commanded twist and return a bounded capability error if public state becomes unavailable or support integrity cannot be maintained within public limits.",
       "criteria": [{"metric": "planar_velocity_error", "unit": "m/s", "comparator": "<=", "threshold": 0.1, "temporal": {"kind": "final_window", "duration_s": 1.0}, "aggregation": {"kind": "mean_velocity_and_yaw_rate"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G1: final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s"}], "checks": [{"metric": "yaw_rate_error", "unit": "rad/s", "comparator": "<=", "threshold": 0.3}, {"metric": "direction_error", "unit": "deg", "comparator": "<=", "threshold": 10.0}]}],
       "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G1"}]
     },
@@ -46,6 +59,19 @@
         "required": ["translation_initial_yaw_m", "yaw_delta_rad", "max_duration_s"],
         "additionalProperties": false
       },
+      "preconditions": [
+        "The public base state is available and finite so the initial position and yaw can be captured.",
+        "The requested relative translation, yaw change, and duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "relative_pose_then_terminal_hold",
+        "completion": "Regulate the pose relative to the initial-yaw frame, then maintain the terminal state for the criterion-defined hold."
+      },
+      "invariants": [
+        "The initial-yaw reference captured at call start remains fixed throughout the call.",
+        "Actuator commands remain within the public control limits while maintaining support integrity."
+      ],
+      "failure_behavior": "Stop planar motion and return a bounded capability error if the relative pose cannot be settled within the declared duration or support and public limits cannot be maintained.",
       "criteria": [{"metric": "terminal_planar_position_error", "unit": "m", "comparator": "<=", "threshold": 0.1, "temporal": {"kind": "continuous_terminal_hold", "duration_s": 0.5}, "aggregation": {"kind": "position_yaw_and_speed"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G2: position error <= 0.10 m, yaw error <= 0.0873 rad, speed <= 0.10 m/s for 0.5 s"}], "checks": [{"metric": "wrapped_yaw_error", "unit": "rad", "comparator": "<=", "threshold": 0.0873}, {"metric": "planar_speed", "unit": "m/s", "comparator": "<=", "threshold": 0.1}]}],
       "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G2"}]
     },
@@ -63,6 +89,19 @@
         "required": ["waypoints_initial_yaw_m", "max_duration_s"],
         "additionalProperties": false
       },
+      "preconditions": [
+        "The public base state is available and finite so the initial-yaw frame can be captured.",
+        "Every requested planar waypoint and the duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "ordered_planar_waypoints_then_hold",
+        "completion": "Visit the supplied waypoints in order in the captured initial-yaw frame, then settle at the endpoint."
+      },
+      "invariants": [
+        "Waypoint order and the initial-yaw frame captured at call start remain fixed throughout the call.",
+        "Actuator commands remain within the public control limits while maintaining support integrity."
+      ],
+      "failure_behavior": "Stop planar motion and return a bounded capability error if a waypoint cannot be visited in order within the declared duration or support and public limits cannot be maintained.",
       "criteria": [{"metric": "planar_path_error", "unit": "m", "comparator": "<=", "threshold": 0.1, "temporal": {"kind": "ordered_waypoints_and_terminal_hold", "duration_s": 0.5}, "aggregation": {"kind": "waypoints_cross_track_endpoint_and_speed"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G3: waypoint error <= 0.10 m, cross-track <= 0.15 m, endpoint error/speed <= 0.10"}], "checks": [{"metric": "cross_track_error", "unit": "m", "comparator": "<=", "threshold": 0.15}, {"metric": "endpoint_speed", "unit": "m/s", "comparator": "<=", "threshold": 0.1}]}],
       "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G3"}]
     },
@@ -80,6 +119,19 @@
         "required": ["target_height_m", "max_duration_s"],
         "additionalProperties": false
       },
+      "preconditions": [
+        "The public base and attitude state is available and finite before height regulation starts.",
+        "The requested body height and duration satisfy the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "height_regulation_then_terminal_hold",
+        "completion": "Regulate body height while retaining the local stance, then maintain the terminal state for the criterion-defined hold."
+      },
+      "invariants": [
+        "The local planar pose and yaw captured at call start are retained except for bounded stabilization motion.",
+        "Actuator commands remain within the public control limits while maintaining support integrity."
+      ],
+      "failure_behavior": "Stop changing the height target and return a bounded capability error if height cannot be settled within the declared duration or attitude, support, and public limits cannot be maintained.",
       "criteria": [{"metric": "body_height_error", "unit": "m", "comparator": "<=", "threshold": 0.03, "temporal": {"kind": "continuous_terminal_hold", "duration_s": 0.5}, "aggregation": {"kind": "height_attitude_displacement_and_yaw"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G4: height <= 0.03 m, roll/pitch <= 0.1745 rad, displacement <= 0.05 m, yaw drift <= 0.0873 rad"}], "checks": [{"metric": "absolute_roll_pitch", "unit": "rad", "comparator": "<=", "threshold": 0.1745}, {"metric": "planar_displacement", "unit": "m", "comparator": "<=", "threshold": 0.05}, {"metric": "yaw_drift", "unit": "rad", "comparator": "<=", "threshold": 0.0873}]}],
       "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G4"}]
     },
@@ -96,6 +148,19 @@
         "required": ["duration_s"],
         "additionalProperties": false
       },
+      "preconditions": [
+        "The declared disturbance has been applied and the public base, attitude, velocity, and contact state is available and finite.",
+        "The requested stabilization duration satisfies the closed request schema."
+      ],
+      "temporal_semantics": {
+        "kind": "disturbance_recovery_then_bounded_hold",
+        "completion": "Recover a supported stance, then maintain it for the requested duration under the structured criterion."
+      },
+      "invariants": [
+        "Support contacts are retained or recovered without intentionally creating forbidden contacts.",
+        "Actuator commands remain within the public control limits while stabilizing the base."
+      ],
+      "failure_behavior": "Stop recovery motion and return a bounded capability error if a supported stance cannot be recovered or public state and control limits cannot be maintained.",
       "criteria": [{"metric": "stable_stance_integrity", "unit": "mixed", "comparator": "==", "threshold": 1, "temporal": {"kind": "disturbance_recovery_then_hold", "recovery_s": 0.5}, "aggregation": {"kind": "all_stability_support_and_contact_gates"}, "source_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G5: recover roll/pitch <= 0.0524 rad within 0.5 s, then stability/drift/support/forbidden-contact gates"}], "checks": [{"metric": "recovery_roll_pitch", "unit": "rad", "comparator": "<=", "threshold": 0.0524}, {"metric": "hold_roll_pitch", "unit": "rad", "comparator": "<=", "threshold": 0.0873}, {"metric": "height_drift", "unit": "m", "comparator": "<=", "threshold": 0.03}, {"metric": "planar_drift", "unit": "m", "comparator": "<=", "threshold": 0.05}, {"metric": "mean_planar_speed", "unit": "m/s", "comparator": "<=", "threshold": 0.05}, {"metric": "terminal_vertical_speed", "unit": "m/s", "comparator": "<=", "threshold": 0.05}]}],
       "evidence_refs": [{"source_id": "b1_driver_validation_criteria", "specific_reference": "Go2 G5"}]
     }

@@ -293,6 +293,10 @@ def test_public_reference_projection_has_only_so101_and_go2_designs() -> None:
     for reference in references:
         for capability in reference["capabilities"]:
             assert capability["criteria"][0]["source_refs"]
+            assert capability["preconditions"]
+            assert capability["temporal_semantics"]
+            assert capability["invariants"]
+            assert capability["failure_behavior"]
 
 
 def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
@@ -317,6 +321,19 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
     assert inputs["validator_contract"][
         "bounded_schema_fields_require_evidence_refs"
     ] is True
+    assert "bounds" not in inputs["validator_contract"][
+        "request_schema_supported_keywords"
+    ]
+    assert inputs["validator_contract"]["criterion_required_fields"] == [
+        "metric",
+        "unit",
+        "comparator",
+        "threshold",
+        "temporal",
+        "aggregation",
+        "source_refs",
+    ]
+    assert inputs["matching_capability_references"] == []
     assert inputs["task_index"] == [
         {
             key: task[key]
@@ -331,6 +348,10 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
     matching_package["robot_configuration_id"] = "robotstudio_so101"
     matching_inputs = build_public_tgcd_inputs(matching_package)
     assert matching_inputs["matching_reference_indices"] == [0]
+    assert [
+        reference["robot_configuration_id"]
+        for reference in matching_inputs["matching_capability_references"]
+    ] == ["robotstudio_so101"]
 
 
 class _TGCDModel:
@@ -447,6 +468,9 @@ def test_tgcd_real_client_uses_exact_file_tools_and_accepts_final_turn_write(
 
     assert result["artifact_type"] == "capability_design"
     assert model.tool_names == [{"write_file"}]
+    assert '"artifact_header"' in model.messages[0][0]["content"]
+    assert '"validator_contract"' in model.messages[0][0]["content"]
+    assert '"matching_capability_references":[]' in model.messages[0][0]["content"]
     assert (tmp_path / "sealed" / "capability_design.json").is_file()
 
 

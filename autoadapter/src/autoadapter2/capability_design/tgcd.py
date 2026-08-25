@@ -200,6 +200,28 @@ def load_public_reference_catalog(
                     )
                 except CapabilityProtocolError as exc:
                     raise CapabilityDesignError(str(exc)) from None
+            for field in ("preconditions", "invariants"):
+                statements = capability.get(field)
+                if not isinstance(statements, list) or not statements or any(
+                    not isinstance(statement, str) or not statement.strip()
+                    for statement in statements
+                ):
+                    raise CapabilityDesignError(
+                        f"{relative}.capabilities[{capability_index}].{field} "
+                        "must be a non-empty text array"
+                    )
+            temporal = capability.get("temporal_semantics")
+            if not isinstance(temporal, Mapping) or not temporal:
+                raise CapabilityDesignError(
+                    f"{relative}.capabilities[{capability_index}].temporal_semantics "
+                    "must be a non-empty object"
+                )
+            failure = capability.get("failure_behavior")
+            if not isinstance(failure, (str, Mapping)) or not failure:
+                raise CapabilityDesignError(
+                    f"{relative}.capabilities[{capability_index}].failure_behavior "
+                    "must be non-empty text or an object"
+                )
         result.append(json_copy(value, label=relative))
     _assert_reference_public(result)
     return result
@@ -369,6 +391,10 @@ def build_public_tgcd_inputs(
             label="capability_invocation_abi",
         ),
     }
+    matching_references = [
+        json_copy(references[index], label=f"matching_reference[{index}]")
+        for index in matching_reference_indices
+    ]
     return {
         "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
         "invocation_abi": json_copy(
@@ -379,11 +405,57 @@ def build_public_tgcd_inputs(
         "validator_contract": {
             "capability_count_min": 3,
             "capability_count_max": 10,
+            "capability_required_fields": [
+                "capability_id",
+                "method_name",
+                "description",
+                "effect",
+                "request_schema",
+                "preconditions",
+                "temporal_semantics",
+                "invariants",
+                "failure_behavior",
+                "criteria",
+                "evidence_refs",
+            ],
             "criteria_count_per_capability": 1,
+            "criterion_required_fields": [
+                "metric",
+                "unit",
+                "comparator",
+                "threshold",
+                "temporal",
+                "aggregation",
+                "source_refs",
+            ],
+            "criterion_comparators": ["<", "<=", ">", ">=", "==", "between"],
+            "request_schema_supported_keywords": [
+                "type",
+                "properties",
+                "required",
+                "additionalProperties",
+                "items",
+                "minItems",
+                "maxItems",
+                "minimum",
+                "maximum",
+                "exclusiveMinimum",
+                "exclusiveMaximum",
+                "enum",
+                "const",
+                "description",
+                "unit",
+                "frame",
+                "evidence_refs",
+            ],
             "bounded_schema_fields_require_evidence_refs": True,
+            "evidence_ref_required_fields": ["source_id", "specific_reference"],
+            "preconditions_and_invariants_are_nonempty_text_arrays": True,
+            "temporal_semantics_is_nonempty_object": True,
             "task_support_must_cover_every_task": True,
             "task_support_must_cover_every_capability": True,
         },
+        "matching_capability_references": matching_references,
         "robot_package": {
             **ids,
             "morphology": json_copy(dict(morphology), label="morphology"),
@@ -506,6 +578,18 @@ def run_tgcd(
                     package,
                 )
 
+            authoring_brief = json.dumps(
+                {
+                    "artifact_header": inputs["artifact_header"],
+                    "validator_contract": inputs["validator_contract"],
+                    "task_index": inputs["task_index"],
+                    "matching_capability_references": inputs[
+                        "matching_capability_references"
+                    ],
+                },
+                ensure_ascii=True,
+                separators=(",", ":"),
+            )
             try:
                 result = run_artifact_react(
                     client=client,
@@ -514,15 +598,19 @@ def run_tgcd(
                     user_prompt=(
                         "Read tgcd_inputs.json, which is raw JSON in the phase-workspace root "
                         "and is also directly openable as ./tgcd_inputs.json from execute_python. "
+                        f"The compact authoring brief is included here verbatim: {authoring_brief}. "
                         "Its top-level invocation_abi is the exact required capability-v2 ABI; "
                         "copy every artifact_header field unchanged at the artifact top level, "
                         "not under package_identity, and do not use the legacy task invocation "
                         "ABI nested in morphology. Follow validator_contract exactly. Use the "
-                        "compact task_index for coverage and matching_reference_indices to locate "
-                        "same-configuration public capability records without printing the full "
-                        "Task Library or reference catalog. You may adapt those source-grounded "
-                        "records; when reusing one, copy its request_schema, criteria, and all "
-                        "evidence_refs without abridging them. You must independently add the "
+                        "compact task_index for coverage. matching_capability_references contains "
+                        "the same-configuration records directly; do not print the full Task Library "
+                        "or reference catalog. When this matching list is non-empty, use its "
+                        "calibrated records as the source for numeric request bounds and criteria "
+                        "rather than inventing replacements. Copy any selected request_schema, "
+                        "criteria, and evidence_refs without abridging them. Keep capabilities as "
+                        "reusable single physical effects, not task operations such as whole-object "
+                        "push/grasp/release or fixture-specific macros. You must independently add the "
                         "required preconditions, temporal semantics, invariants, failure behavior, "
                         "and task_support. "
                         f"Author the complete canonical {TGCD_ARTIFACT_NAME} with write_file. "
