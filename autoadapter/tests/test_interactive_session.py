@@ -165,6 +165,33 @@ class InteractiveFileSessionTests(unittest.TestCase):
         inspected = assisted.inspect_skeleton({"name": "motion.py"})
         self.assertIn("PublicMotion", inspected["source"])
 
+    def test_file_tool_cannot_mutate_staged_scene_or_skeleton(self) -> None:
+        assisted = PublicDevelopmentSession(
+            package=self.package,
+            condition="skeleton-assisted",
+            workspace=Path(self.temporary.name) / "assisted-read-only-session",
+            budget=ProbeBudget(max_requests=None, timeout_s=10),
+            source_root=SOURCE_ROOT,
+            capability_methods=("drive",),
+        )
+        self.extra_sessions.append(assisted)
+        scene = assisted.public_workspace.scene_path
+        skeleton = assisted.public_workspace.skeleton_root / "motion.py"
+        originals = {
+            scene: scene.read_text(encoding="utf-8"),
+            skeleton: skeleton.read_text(encoding="utf-8"),
+        }
+
+        for target, relative in (
+            (scene, "assets/scene.xml"),
+            (skeleton, "skeleton/motion.py"),
+        ):
+            with self.subTest(target=relative), self.assertRaisesRegex(
+                DevelopmentSessionError, "read-only"
+            ):
+                assisted.write_file({"path": relative, "content": "MUTATED\n"})
+            self.assertEqual(target.read_text(encoding="utf-8"), originals[target])
+
     def test_persistent_python_session_executes_real_mujoco_without_credentials(self) -> None:
         with mock.patch.dict(
             os.environ,
@@ -317,6 +344,37 @@ class InteractiveFileSessionTests(unittest.TestCase):
         self.assertFalse(denied_native["successful"], denied_native)
         self.assertNotIn("NATIVE_PATH_LOADED", denied_native["stdout"])
 
+    def test_execute_python_cannot_mutate_staged_scene_or_skeleton(self) -> None:
+        assisted = PublicDevelopmentSession(
+            package=self.package,
+            condition="skeleton-assisted",
+            workspace=Path(self.temporary.name) / "assisted-python-read-only-session",
+            budget=ProbeBudget(max_requests=None, timeout_s=10),
+            source_root=SOURCE_ROOT,
+            capability_methods=("drive",),
+        )
+        self.extra_sessions.append(assisted)
+        scene = assisted.public_workspace.scene_path
+        skeleton = assisted.public_workspace.skeleton_root / "motion.py"
+        originals = {
+            scene: scene.read_text(encoding="utf-8"),
+            skeleton: skeleton.read_text(encoding="utf-8"),
+        }
+
+        for target in (scene, skeleton):
+            result = assisted.execute_python(
+                {
+                    "code": (
+                        f"target = {str(target)!r}\n"
+                        "open(target, 'w', encoding='utf-8').write('MUTATED\\n')\n"
+                    )
+                }
+            )
+            with self.subTest(target=target):
+                self.assertFalse(result["successful"], result)
+                self.assertEqual(result["error"]["type"], "PermissionError")
+                self.assertEqual(target.read_text(encoding="utf-8"), originals[target])
+
     def test_persistent_python_session_blocks_dynamic_network_and_native_loading(self) -> None:
         for module_name, action in (
             ("socket", "module.socket()"),
@@ -463,6 +521,32 @@ class InteractiveFileSessionTests(unittest.TestCase):
         result = self.session.validate_driver_artifact()
         self.assertTrue(result["valid"])
         self.assertTrue(result["import"]["successful"])
+
+    def test_driver_validation_imports_latest_execute_python_revision(self) -> None:
+        first_source = DRIVER_SOURCE.replace(
+            "class CapabilityDriver:",
+            "REVISION = 'old'\n\n\nclass CapabilityDriver:",
+        )
+        latest_source = first_source.replace("REVISION = 'old'", "REVISION = 'latest'")
+        self.session.write_file({"path": "driver.py", "content": first_source})
+        self.session.validate_driver_artifact()
+
+        rewritten = self.session.execute_python(
+            {
+                "code": (
+                    f"latest_source = {latest_source!r}\n"
+                    "open('driver.py', 'w', encoding='utf-8').write(latest_source)\n"
+                )
+            }
+        )
+        self.assertTrue(rewritten["successful"], rewritten)
+        validation = self.session.validate_driver_artifact()
+        self.assertTrue(validation["valid"], validation)
+        imported = self.session.execute_python(
+            {"code": "import driver\nprint('revision=' + driver.REVISION)\n"}
+        )
+        self.assertTrue(imported["successful"], imported)
+        self.assertIn("revision=latest", imported["stdout"])
 
     def test_driver_import_failure_reports_structured_root_cause_before_traceback(self) -> None:
         self.session.write_file({"path": "driver.py", "content": DRIVER_SOURCE})

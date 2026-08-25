@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from autoadapter2.libraries import RobotPackage
@@ -112,12 +113,24 @@ class PublicDevelopmentSession:
         self.condition = condition
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
-        self.public_workspace: PublicProbeWorkspace = prepare_public_probe_workspace(
-            package,
-            self.workspace / "staged",
-            condition=condition,
-            framework_source_root=Path(source_root).resolve(),
+        # Keep Framework-staged public inputs outside the model-writable
+        # artifact workspace.  The file tool, Python audit hook, and Seatbelt
+        # profile can therefore share one simple writable root without an
+        # overlapping read-only subtree.
+        self._staging_directory = TemporaryDirectory(
+            prefix=f".{self.workspace.name}-public-",
+            dir=self.workspace.parent,
         )
+        try:
+            self.public_workspace: PublicProbeWorkspace = prepare_public_probe_workspace(
+                package,
+                Path(self._staging_directory.name),
+                condition=condition,
+                framework_source_root=Path(source_root).resolve(),
+            )
+        except BaseException:
+            self._staging_directory.cleanup()
+            raise
         self.candidate_path = self.workspace / "driver.py"
         self.capability_methods = (
             validate_capability_names(capability_methods)
@@ -158,19 +171,57 @@ class PublicDevelopmentSession:
         if python_session is not None:
             python_session.close()
             self._python_session = None
+        staging_directory = getattr(self, "_staging_directory", None)
+        if staging_directory is not None:
+            staging_directory.cleanup()
+            self._staging_directory = None
 
     def __del__(self) -> None:  # pragma: no cover - best-effort cleanup
         self.close()
 
-    def _sync_candidate_to_public(self) -> None:
+    def _sync_candidate_to_public(self, source: str | None = None) -> None:
         """Expose only the current candidate to the public probe process."""
 
         destination = self.public_workspace.root / "driver.py"
-        if self.candidate_path.is_file():
-            destination.write_text(self.candidate_path.read_text(encoding="utf-8"), encoding="utf-8")
+        if source is not None:
+            destination.write_text(source, encoding="utf-8")
+        elif self.candidate_path.is_file():
+            destination.write_text(
+                self.candidate_path.read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
         else:
             destination.unlink(missing_ok=True)
         self._driver_dirty = True
+
+    def _require_writable_path(self, relative: str, destination: Path) -> None:
+        """Reject model writes into the Framework-owned public projection."""
+
+        if Path(relative).parts[0] == "staged":
+            raise DevelopmentSessionError(
+                "public package, scene, and trusted skeleton inputs are read-only"
+            )
+        protected_roots = [self.public_workspace.root]
+        if self.public_workspace.python_root is not None:
+            protected_roots.append(self.public_workspace.python_root)
+        for protected_root in protected_roots:
+            try:
+                destination.resolve().relative_to(protected_root.resolve())
+            except ValueError:
+                continue
+            raise DevelopmentSessionError(
+                "public package, scene, and trusted skeleton inputs are read-only"
+            )
+        if relative != "driver.py":
+            public_candidate = self._under(
+                self.public_workspace.root,
+                relative,
+                label="public file path",
+            )
+            if public_candidate.exists():
+                raise DevelopmentSessionError(
+                    "public package, scene, and trusted skeleton inputs are read-only"
+                )
 
     def _ensure_python_session(self) -> PersistentPythonSession:
         if self._python_session is None:
@@ -265,6 +316,7 @@ class PublicDevelopmentSession:
         if len(content) > MAX_FILE_CHARS:
             raise DevelopmentSessionError("file exceeds the 200000-character limit")
         destination = self._under(self.workspace, relative, label="workspace file path")
+        self._require_writable_path(relative, destination)
         before = destination.read_text(encoding="utf-8") if destination.is_file() else None
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(content, encoding="utf-8")
@@ -341,7 +393,7 @@ class PublicDevelopmentSession:
             raise DevelopmentSessionError("skeleton source is too large for the model tool")
         return {"name": relative, "source": path.read_text(encoding="utf-8")}
 
-    def _audit_candidate(self) -> DriverSourceAudit:
+    def _audit_candidate(self) -> tuple[DriverSourceAudit, str]:
         source = self._candidate_source()
         audit = audit_driver_source(
             source,
@@ -351,7 +403,7 @@ class PublicDevelopmentSession:
         )
         audit_public_source(source, condition=self.condition)
         compile(source, "driver.py", "exec")
-        return audit
+        return audit, source
 
     def validate_driver_artifact(self, _path: Path | str | None = None) -> dict[str, Any]:
         """Apply source and public import/build checks to ``driver.py``.
@@ -361,7 +413,12 @@ class PublicDevelopmentSession:
         private Harness, a validation suite, or capability verdict logic.
         """
 
-        audit = self._audit_candidate()
+        audit, audited_source = self._audit_candidate()
+        # ``execute_python`` may have edited the canonical workspace file
+        # without going through ``write_file``.  Synchronise immediately before
+        # the import/build boundary and force the persistent worker to discard
+        # any cached ``driver`` module so the audited and imported bytes match.
+        self._sync_candidate_to_public(audited_source)
         result = self.execute_python(
             {
                 "code": (
@@ -410,7 +467,7 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "write_file",
-                "Write one UTF-8 file under the condition workspace. Use study.json and driver.py for canonical artifacts.",
+                "Write one UTF-8 file under the condition workspace. Framework-staged public package, scene, and trusted skeleton inputs are read-only. Use study.json and driver.py for canonical artifacts.",
                 _object_schema(
                     {"path": {"type": "string"}, "content": {"type": "string"}},
                     required=("path", "content"),
