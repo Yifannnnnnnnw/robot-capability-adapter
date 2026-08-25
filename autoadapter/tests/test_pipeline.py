@@ -1015,8 +1015,91 @@ def test_failed_study_still_records_that_the_dynamic_model_was_called(tmp_path: 
         check_self_containment=False,
     )
 
+    assert len(result["cells"]) == 4
+    assert len([item for item in events if item[0] == "study"]) == 4
+    assert not any(item[0] in {"tgcd", "ivc", "generate", "harness"} for item in events)
     assert all(cell["dynamic_model_called"] is True for cell in result["cells"])
     assert all(cell["driver_generated_in_run"] is False for cell in result["cells"])
+    assert all(cell["attempt_count"] == 0 for cell in result["cells"])
+    assert all(cell["frozen_driver_attempt_count"] == 0 for cell in result["cells"])
+    assert all(cell["failure"]["stage"] == "study" for cell in result["cells"])
+    assert all(cell["outcomes"]["STUDY"]["completed"] is False for cell in result["cells"])
+    for cell in result["cells"]:
+        path = (
+            tmp_path
+            / "run"
+            / "cells"
+            / cell["robot_configuration_id"]
+            / cell["condition"]
+            / "cell_report.json"
+        )
+        assert path.is_file()
+
+
+@pytest.mark.parametrize("failed_stage", ("tgcd", "ivc"))
+def test_failed_pre_driver_cell_does_not_abort_later_cells(
+    tmp_path: Path,
+    failed_stage: str,
+) -> None:
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
+    hook_values = dict(vars(hooks))
+    calls = 0
+
+    if failed_stage == "tgcd":
+        original_tgcd = hooks.tgcd_runner
+
+        def fail_first_tgcd(
+            model: Any,
+            package: Any,
+            *,
+            experience: Any,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise RuntimeError("first TGCD artifact is invalid")
+            return original_tgcd(model, package, experience=experience)
+
+        hook_values["tgcd_runner"] = fail_first_tgcd
+    else:
+        original_ivc = hooks.ivc_runner
+
+        def fail_first_ivc(
+            model: Any,
+            *,
+            package: Any,
+            design: Any,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise RuntimeError("first IVC artifact is invalid")
+            return original_ivc(model, package=package, design=design)
+
+        hook_values["ivc_runner"] = fail_first_ivc
+
+    result = run_experiment(
+        tmp_path,
+        config=_config(),
+        output_dir=tmp_path / "run",
+        run_id=f"{failed_stage}-failure-continues",
+        client=state["client"],
+        hooks=PipelineHooks(**hook_values),
+        check_self_containment=False,
+        skip_reference_calibration=True,
+    )
+
+    assert len(result["cells"]) == 4
+    failed = result["cells"][0]
+    assert failed["cell_id"] == "r-arm::skeleton-assisted"
+    assert failed["failure"]["stage"] == failed_stage
+    assert failed["pipeline_completed"] is False
+    assert failed["attempt_count"] == 0
+    assert all(cell["pipeline_completed"] is True for cell in result["cells"][1:])
+    assert len([item for item in events if item[0] == "generate"]) == 3
 
 
 def test_failed_reference_diagnostic_does_not_block_dynamic_cells(tmp_path: Path) -> None:

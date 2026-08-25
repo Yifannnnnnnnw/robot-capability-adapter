@@ -2700,6 +2700,180 @@ def _run_cell(
     return raw_report
 
 
+def _pre_driver_failure_cell(
+    *,
+    package: RobotPackage,
+    robot: str,
+    condition: GenerationCondition,
+    config: ExperimentConfig,
+    identity: Mapping[str, str],
+    experience: Sequence[Mapping[str, Any]],
+    workspace: Path,
+    failed_stage: str,
+    failure_detail: Mapping[str, str],
+    model_stage_log: Sequence[Mapping[str, Any]],
+    completed_study: StudyResult | None,
+    completed_probe_results: Sequence[Mapping[str, Any]],
+    design: Mapping[str, Any] | None,
+    hooks: PipelineHooks,
+    evolution_client: Any | None,
+    evolution_enabled: bool,
+) -> dict[str, Any]:
+    """Retain one failed pre-Driver cell without aborting later cells."""
+
+    failure = {
+        "stage": failed_stage,
+        "robot": robot,
+        "condition": condition,
+        **_copy(dict(failure_detail)),
+    }
+    skip_reason = f"{failed_stage.upper()} did not complete; Driver generation was not run"
+    capability_validation = _normalise_validation_report(
+        {
+            "pipeline_completed": False,
+            "physical_validation_executed": False,
+            "validation_passed": False,
+            "skipped": True,
+            "skip_reason": skip_reason,
+            "failure": _copy(failure),
+            "trials": [],
+            "video_manifest": [],
+        },
+        robot=robot,
+        condition=condition,
+        attempt=0,
+        record_video=config.record_video,
+        evaluation_role="capability_validation",
+    )
+    task_demo = _normalise_validation_report(
+        {
+            "pipeline_completed": False,
+            "physical_validation_executed": False,
+            "validation_passed": False,
+            "skipped": True,
+            "skip_reason": skip_reason,
+            "trials": [],
+            "video_manifest": [],
+        },
+        robot=robot,
+        condition=condition,
+        attempt=0,
+        record_video=config.record_video,
+        evaluation_role="task_demo",
+    )
+    stage_outcomes = {
+        stage: next(
+            (
+                _copy(dict(item))
+                for item in reversed(model_stage_log)
+                if item.get("stage") == stage
+                and item.get("robot") == robot
+                and item.get("condition") == condition
+            ),
+            None,
+        )
+        for stage in ("study", "tgcd", "ivc")
+    }
+    capabilities = (
+        [item for item in design.get("capabilities", []) if isinstance(item, Mapping)]
+        if isinstance(design, Mapping)
+        else []
+    )
+    support = design.get("task_support", []) if isinstance(design, Mapping) else []
+    probe_results = [
+        _copy(dict(item))
+        for item in completed_probe_results
+        if isinstance(item, Mapping)
+    ]
+    experience_ids = _experience_ids(experience)
+    raw_report: dict[str, Any] = {
+        "cell_id": f"{robot}::{condition}",
+        "code_version": __version__,
+        "robot_configuration_id": robot,
+        "robot_package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+        "admitted_task_count": len(package.tasks),
+        "designed_capability_count": len(capabilities),
+        "covered_task_count": len(
+            {
+                str(item["task_id"])
+                for item in support
+                if isinstance(item, Mapping) and isinstance(item.get("task_id"), str)
+            }
+        ),
+        "condition": condition,
+        "provider": identity["provider"],
+        "model": identity["model"],
+        "experience_input_ids": experience_ids,
+        "experience_input_count": len(experience_ids),
+        "pipeline_completed": False,
+        "dynamic_model_called": True,
+        "driver_generated_in_run": False,
+        "capability_validation_executed": False,
+        "initial_capability_validation_passed": False,
+        "final_capability_validation_passed": False,
+        "task_demo_executed": False,
+        "task_demo_passed": False,
+        "task_demo_pipeline_completed": False,
+        "task_demo_video_complete": bool(task_demo.get("video_complete")),
+        "physical_validation_executed": False,
+        "initial_validation_passed": False,
+        "final_validation_passed": False,
+        "video_required": config.record_video,
+        "video_complete": bool(capability_validation.get("video_complete")),
+        "attempts": [],
+        "frozen_driver_attempt_count": 0,
+        "passed_capability_whitelist": [],
+        "development_rejections": [],
+        "development_probe": {
+            "attempted": bool(completed_study and completed_study.probe_requests),
+            "successful_physics_probe": _has_successful_physics_probe(probe_results),
+            "results": probe_results,
+        },
+        "trials": [],
+        "video_manifest": [],
+        "capability_validation": capability_validation,
+        "task_demo": task_demo,
+        "task_demo_trials": [],
+        "task_demo_video_manifest": [],
+        "failure": failure,
+        "outcomes": {
+            "TGCD": stage_outcomes["tgcd"],
+            "IVC": stage_outcomes["ivc"],
+            "STUDY": stage_outcomes["study"],
+            "GENERATE": None,
+            "CapabilityValidation": _copy(capability_validation),
+            "Repair": [],
+            "TaskDemoController": None,
+            "TaskDemo": _copy(task_demo),
+        },
+    }
+    if evolution_enabled:
+        try:
+            evolution = hooks.evolution_runner(
+                evolution_client,
+                _without_experience(raw_report),
+            )
+            if not isinstance(evolution, Mapping):
+                raise PipelineError("Evolution result must be an object")
+            raw_report["evolution"] = _copy(dict(evolution))
+        except Exception as exc:
+            raw_report["evolution"] = {
+                "non_blocking": True,
+                "evolution_attempted": True,
+                "evolution_completed": False,
+                "proposal_created": False,
+                "current_run_unchanged": True,
+                "failure": _failure_record(exc),
+            }
+    else:
+        raw_report["evolution"] = None
+        raw_report["evolution_disabled"] = True
+    raw_report["outcomes"]["Evolution"] = _copy(raw_report["evolution"])
+    _write(workspace / "cell_report.json", raw_report)
+    return raw_report
+
+
 def load_experiment_packages(
     mainline_root: str | Path,
     config: ExperimentConfig,
@@ -3050,6 +3224,9 @@ def run_experiment(
             stage_before: int | None = None
             tgcd_events: list[dict[str, Any]] = []
             ivc_events: list[dict[str, Any]] = []
+            completed_study: StudyResult | None = None
+            study_probe_results: tuple[Mapping[str, Any], ...] = ()
+            design: dict[str, Any] | None = None
             try:
                 completed_study, study_probe_results = _run_study_phase(
                     package=package,
@@ -3225,6 +3402,8 @@ def run_experiment(
                     {"robot": robot, "condition": condition, **ivc_evidence}
                 )
             except Exception as exc:
+                if isinstance(exc, OSError):
+                    raise
                 failed_stage = current_stage
                 if current_stage in {"tgcd", "ivc"}:
                     failed_evidence = _stage_evidence(
@@ -3315,35 +3494,29 @@ def run_experiment(
                     failure_detail["message"] = (
                         "IVC failed; inspect the private artifact trace"
                     )
-                failure = {
-                    "pipeline_completed": False,
-                    "dynamic_model_called": True,
-                    "driver_generated_in_run": False,
-                    "capability_validation_executed": False,
-                    "initial_capability_validation_passed": False,
-                    "final_capability_validation_passed": False,
-                    "task_demo_executed": False,
-                    "task_demo_passed": False,
-                    "physical_validation_executed": False,
-                    "initial_validation_passed": False,
-                    "final_validation_passed": False,
-                    "failure": {
-                        "stage": failed_stage,
-                        "robot": robot,
-                        "condition": condition,
-                        **failure_detail,
-                    },
-                    "stage_evidence": stage_log,
-                }
-                _write(destination / "experiment_report.json", failure)
-                public_error = (
-                    "IVC failed; inspect its private artifact trace"
-                    if failed_stage == "ivc"
-                    else str(exc)
+                raw_failed_cell = _pre_driver_failure_cell(
+                    package=package,
+                    robot=robot,
+                    condition=condition,
+                    config=config,
+                    identity=identity,
+                    experience=robot_experience,
+                    workspace=cell_workspace,
+                    failed_stage=failed_stage,
+                    failure_detail=failure_detail,
+                    model_stage_log=stage_log,
+                    completed_study=completed_study,
+                    completed_probe_results=study_probe_results,
+                    design=design,
+                    hooks=selected_hooks,
+                    evolution_client=evolution_client,
+                    evolution_enabled=config.evolution_enabled,
                 )
-                raise PipelineError(
-                    f"fresh cell {cell_id} failed before Driver generation: {public_error}"
-                ) from exc
+                failed_cell = build_cell_report(raw_failed_cell)
+                failed_cell["frozen_driver_attempt_count"] = 0
+                failed_cell["passed_capability_whitelist"] = []
+                cell_reports.append(failed_cell)
+                continue
 
             raw_cell = _run_cell(
                 package=package,
