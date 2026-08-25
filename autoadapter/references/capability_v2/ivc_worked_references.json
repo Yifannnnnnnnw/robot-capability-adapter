@@ -1,0 +1,3175 @@
+{
+  "artifact_type": "ivc_worked_reference_bank",
+  "schema_version": "2.0",
+  "description": "Complete SO-101 six-capability and Go2 five-capability authoring references. These are examples, never selectable hidden cases.",
+  "worked_references": [
+    {
+      "reference_id": "robotstudio_so101-complete-capability-v2",
+      "description": "Complete worked reference: capability contracts, one nominal and one calibrated-boundary request per capability, semantic trusted inline measurement operators, exact criteria, scenes, and guards. It contains no task_support relation or task execution plan.",
+      "capability_design": {
+        "artifact_type": "capability_v2_public_reference",
+        "protocol_version": "capability-v2",
+        "robot_configuration_id": "robotstudio_so101",
+        "package_version": "1.0.4",
+        "reference_source": {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Experiment 1 B1 Driver Validation Criteria, SO-101 A1-A6 and fixed capability bundle",
+          "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101",
+          "calibration_kind": "retained real MuJoCo fixed-bundle calibration",
+          "interface_id": "experiment1-b1-fixed-interface::robotstudio_so101::v4",
+          "pass_standard_id": "experiment1-b1-driver-validation-criteria-v4",
+          "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v6"
+        },
+        "capabilities": [
+          {
+            "capability_id": "A1",
+            "method_name": "move_end_effector_to_position",
+            "description": "Move the SO-101 end effector to one bounded world-frame position.",
+            "effect": "Bounded closed-loop end-effector position regulation.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "target_position_m": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "unit": "m",
+                  "frame": "world",
+                  "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "world",
+                    "minimum": -1.0,
+                    "maximum": 1.0,
+                    "evidence_refs": [
+                      {
+                        "source_id": "b1_driver_validation_criteria",
+                        "specific_reference": "SO-101 A1 request bounds: target_position_m"
+                      }
+                    ]
+                  }
+                },
+                "max_duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 8.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "target_position_m",
+                "max_duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public robot state is available and finite before motion starts.",
+              "The requested world-frame target and duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "bounded_closed_loop_regulation",
+              "completion": "Regulate until the terminal hold criterion is satisfied or the requested duration expires."
+            },
+            "invariants": [
+              "Commands remain within the public actuator and joint limits.",
+              "The gripper aperture is not intentionally changed while the arm target is regulated."
+            ],
+            "failure_behavior": "Stop active motion and return a bounded capability error when the request cannot be completed within its declared duration or public limits.",
+            "criteria": [
+              {
+                "metric": "end_effector_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.015,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "all_samples"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A1: position error <= 0.015 m continuously for 0.5 s"
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1"
+              }
+            ]
+          },
+          {
+            "capability_id": "A2",
+            "method_name": "trace_cartesian_path",
+            "description": "Trace bounded SO-101 world-frame Cartesian waypoints in order.",
+            "effect": "Ordered Cartesian path tracking with bounded cross-track error.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "waypoints_m": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 8,
+                  "unit": "m",
+                  "frame": "world",
+                  "items": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "unit": "m",
+                    "frame": "world",
+                    "items": {
+                      "type": "number",
+                      "unit": "m",
+                      "frame": "world",
+                      "minimum": -1.0,
+                      "maximum": 1.0,
+                      "evidence_refs": [
+                        {
+                          "source_id": "b1_driver_validation_criteria",
+                          "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "max_duration_per_segment_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 5.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "waypoints_m",
+                "max_duration_per_segment_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public robot state is available and finite before path execution starts.",
+              "Every requested world-frame waypoint and segment duration satisfies the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "ordered_bounded_segments",
+              "completion": "Visit the supplied waypoints in order, then maintain the terminal waypoint for the criterion-defined hold."
+            },
+            "invariants": [
+              "Waypoint order is preserved throughout the call.",
+              "Commands remain within the public actuator and joint limits."
+            ],
+            "failure_behavior": "Stop active path motion and return a bounded capability error if a waypoint cannot be reached in sequence within the declared segment durations or public limits.",
+            "criteria": [
+              {
+                "metric": "cartesian_path_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.02,
+                "temporal": {
+                  "kind": "ordered_waypoints_and_terminal_hold",
+                  "terminal_hold_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "maximum_cross_track_and_terminal_error"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A2: ordered waypoints, cross-track <= 0.020 m, final error <= 0.015 m for 0.5 s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "cross_track_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.02
+                  },
+                  {
+                    "metric": "terminal_position_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.015
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2"
+              }
+            ]
+          },
+          {
+            "capability_id": "A3",
+            "method_name": "set_gripper_opening",
+            "description": "Set the SO-101 physical gripper aperture by normalised opening fraction.",
+            "effect": "Bounded gripper aperture regulation without changing the arm target.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "opening_fraction": {
+                  "type": "number",
+                  "unit": "ratio",
+                  "frame": "none",
+                  "minimum": 0.0,
+                  "maximum": 1.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+                    }
+                  ]
+                },
+                "max_duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 8.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "opening_fraction",
+                "max_duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public gripper state is available and finite before aperture regulation starts.",
+              "The requested opening fraction and duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "bounded_aperture_regulation",
+              "completion": "Regulate the aperture until the criterion-defined hold is satisfied or the requested duration expires."
+            },
+            "invariants": [
+              "The active arm pose target is not intentionally changed by this call.",
+              "Gripper commands remain within the public actuator limits."
+            ],
+            "failure_behavior": "Stop changing the gripper command and return a bounded capability error if the requested aperture cannot be established within the declared duration or public limits.",
+            "criteria": [
+              {
+                "metric": "normalised_aperture_error",
+                "unit": "ratio",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.25
+                },
+                "aggregation": {
+                  "kind": "all_samples_and_bidirectional_excursion"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A3: aperture error <= 0.10 for 0.25 s and excursion >= 50%"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "bidirectional_excursion",
+                    "unit": "ratio",
+                    "comparator": ">=",
+                    "threshold": 0.5
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3"
+              }
+            ]
+          },
+          {
+            "capability_id": "A4",
+            "method_name": "approach_until_contact",
+            "description": "Approach a reachable target along a bounded ray until controlled contact.",
+            "effect": "Bounded axial approach with controlled target contact and penetration.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "precontact_position_m": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "unit": "m",
+                  "frame": "world",
+                  "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "world",
+                    "minimum": -1.0,
+                    "maximum": 1.0,
+                    "evidence_refs": [
+                      {
+                        "source_id": "b1_driver_validation_criteria",
+                        "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+                      }
+                    ]
+                  }
+                },
+                "approach_direction_unit": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "unit": "unitless",
+                  "frame": "world",
+                  "items": {
+                    "type": "number",
+                    "unit": "unitless",
+                    "frame": "world",
+                    "minimum": -1.0,
+                    "maximum": 1.0,
+                    "evidence_refs": [
+                      {
+                        "source_id": "b1_driver_validation_criteria",
+                        "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+                      }
+                    ]
+                  }
+                },
+                "max_travel_m": {
+                  "type": "number",
+                  "unit": "m",
+                  "frame": "none",
+                  "exclusiveMinimum": 0.0,
+                  "maximum": 0.08,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+                    }
+                  ]
+                },
+                "max_approach_speed_m_s": {
+                  "type": "number",
+                  "unit": "m/s",
+                  "frame": "none",
+                  "exclusiveMinimum": 0.0,
+                  "maximum": 0.05,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+                    }
+                  ]
+                },
+                "max_duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 8.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "precontact_position_m",
+                "approach_direction_unit",
+                "max_travel_m",
+                "max_approach_speed_m_s",
+                "max_duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public robot and contact observations are available and finite before approach starts.",
+              "The precontact pose, approach direction, travel, speed, and duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "precontact_then_contact_hold",
+              "completion": "Reach the precontact state, advance along the declared ray, and stop advancing once controlled contact is established."
+            },
+            "invariants": [
+              "Motion proceeds along the declared approach direction after the precontact state.",
+              "Commands remain within the requested travel, speed, public actuator, and joint limits.",
+              "Unrelated contact is not intentionally created."
+            ],
+            "failure_behavior": "Stop the approach and return a bounded capability error on unavailable contact observations, unrelated contact, exhausted travel or duration, or a public-limit violation.",
+            "criteria": [
+              {
+                "metric": "contact_integrity",
+                "unit": "mixed",
+                "comparator": "==",
+                "threshold": 1,
+                "temporal": {
+                  "kind": "ordered_precontact_ray_contact",
+                  "contact_hold_s": 0.1
+                },
+                "aggregation": {
+                  "kind": "all_gates"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A4: contact 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, unrelated contacts 0"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "post_contact_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.02
+                  },
+                  {
+                    "metric": "penetration",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.005
+                  },
+                  {
+                    "metric": "unrelated_contact_count",
+                    "unit": "count",
+                    "comparator": "==",
+                    "threshold": 0
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4"
+              }
+            ]
+          },
+          {
+            "capability_id": "A5",
+            "method_name": "move_cartesian_offset_and_return",
+            "description": "Move the SO-101 end effector by a base-frame offset and return.",
+            "effect": "Ordered outbound and return displacement tracking in the robot-base frame.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "offset_robot_base_m": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "unit": "m",
+                  "frame": "robot_base",
+                  "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "robot_base",
+                    "minimum": -0.06,
+                    "maximum": 0.06,
+                    "evidence_refs": [
+                      {
+                        "source_id": "b1_driver_validation_criteria",
+                        "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+                      }
+                    ]
+                  }
+                },
+                "max_duration_per_leg_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 5.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "offset_robot_base_m",
+                "max_duration_per_leg_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public robot state is available and finite before the outbound leg starts.",
+              "The requested robot-base offset and per-leg duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "ordered_outbound_and_return",
+              "completion": "Establish the requested outbound displacement before returning to the captured start pose."
+            },
+            "invariants": [
+              "The call uses the robot-base frame captured at its start.",
+              "The return leg is not started before the outbound leg has completed.",
+              "Commands remain within the public actuator and joint limits."
+            ],
+            "failure_behavior": "Stop active motion and return a bounded capability error if either ordered leg cannot complete within its declared duration or public limits.",
+            "criteria": [
+              {
+                "metric": "ordered_outbound_return_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.015,
+                "temporal": {
+                  "kind": "ordered_phase_holds",
+                  "outbound_hold_s": 0.25,
+                  "return_hold_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "both_legs_and_displacement"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A5: outbound/return errors <= 0.015 m and displacement >= 80%"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "requested_displacement_fraction",
+                    "unit": "ratio",
+                    "comparator": ">=",
+                    "threshold": 0.8
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5"
+              }
+            ]
+          },
+          {
+            "capability_id": "A6",
+            "method_name": "set_wrist_roll",
+            "description": "Set the SO-101 wrist-roll joint to one bounded absolute angle while holding the other joints.",
+            "effect": "Absolute non-wrapped wrist-roll regulation with whole-arm hold.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "target_roll_rad": {
+                  "type": "number",
+                  "unit": "rad",
+                  "frame": "joint",
+                  "minimum": -2.7438473,
+                  "maximum": 2.7438473,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A6 request bounds: target_roll_rad"
+                    }
+                  ]
+                },
+                "max_duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 8.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "SO-101 A6 request bounds: max_duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "target_roll_rad",
+                "max_duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public arm and gripper joint state is available and finite before wrist regulation starts.",
+              "The requested absolute wrist-roll angle and duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "bounded_absolute_joint_regulation",
+              "completion": "Regulate the non-wrapped wrist-roll target until the criterion-defined hold is satisfied or the requested duration expires."
+            },
+            "invariants": [
+              "All non-wrist arm joints and the gripper retain their captured targets.",
+              "Commands remain within the public actuator and joint limits."
+            ],
+            "failure_behavior": "Stop changing the wrist target and return a bounded capability error if the requested angle cannot be held within the declared duration or public limits.",
+            "criteria": [
+              {
+                "metric": "wrist_roll_error",
+                "unit": "rad",
+                "comparator": "<=",
+                "threshold": 0.03,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.25
+                },
+                "aggregation": {
+                  "kind": "target_and_other_joint_hold"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A6: wrist-roll error <= 0.03 rad and all other arm joints/gripper held"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "other_joint_or_gripper_drift",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.03
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A6"
+              }
+            ]
+          }
+        ]
+      },
+      "validation_suite": {
+        "artifact_type": "capability_validation_suite",
+        "schema_version": "2.0",
+        "capability_protocol_version": "capability-v2",
+        "robot_configuration_id": "robotstudio_so101",
+        "package_version": "1.0.4",
+        "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
+        "whole_suite_aggregation": {
+          "kind": "all_cases"
+        },
+        "cases": [
+          {
+            "case_id": "robotstudio_so101-a1-nominal",
+            "case_role": "nominal",
+            "capability_id": "A1",
+            "method_name": "move_end_effector_to_position",
+            "request": {
+              "target_position_m": [
+                0.4,
+                0.1,
+                0.2
+              ],
+              "max_duration_s": 4.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1 request bounds: target_position_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a1-nominal",
+            "measurement_binding": {
+              "metric": "end_effector_position_error",
+              "unit": "m",
+              "kind": "so101_end_effector_regulation",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "end_effector_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.015,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "all_samples"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A1: position error <= 0.015 m continuously for 0.5 s"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a1-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "A1",
+            "method_name": "move_end_effector_to_position",
+            "request": {
+              "target_position_m": [
+                0.38,
+                0.12,
+                0.19
+              ],
+              "max_duration_s": 5.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1 request bounds: target_position_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A1 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a1-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "end_effector_position_error",
+              "unit": "m",
+              "kind": "so101_end_effector_regulation",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "end_effector_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.015,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "all_samples"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A1: position error <= 0.015 m continuously for 0.5 s"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a2-nominal",
+            "case_role": "nominal",
+            "capability_id": "A2",
+            "method_name": "trace_cartesian_path",
+            "request": {
+              "waypoints_m": [
+                [
+                  0.36,
+                  0.08,
+                  0.2
+                ],
+                [
+                  0.4,
+                  0.1,
+                  0.2
+                ]
+              ],
+              "max_duration_per_segment_s": 3.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+              }
+            ],
+            "instance_id": "so101-a2-nominal",
+            "measurement_binding": {
+              "metric": "cartesian_path_error",
+              "unit": "m",
+              "kind": "so101_cartesian_path_tracking",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "cartesian_path_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.02,
+                "temporal": {
+                  "kind": "ordered_waypoints_and_terminal_hold",
+                  "terminal_hold_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "maximum_cross_track_and_terminal_error"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A2: ordered waypoints, cross-track <= 0.020 m, final error <= 0.015 m for 0.5 s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "cross_track_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.02
+                  },
+                  {
+                    "metric": "terminal_position_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.015
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a2-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "A2",
+            "method_name": "trace_cartesian_path",
+            "request": {
+              "waypoints_m": [
+                [
+                  0.34,
+                  0.06,
+                  0.19
+                ],
+                [
+                  0.38,
+                  0.08,
+                  0.2
+                ],
+                [
+                  0.4,
+                  0.12,
+                  0.19
+                ]
+              ],
+              "max_duration_per_segment_s": 4.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2 request bounds: waypoints_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A2 request bounds: max_duration_per_segment_s"
+              }
+            ],
+            "instance_id": "so101-a2-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "cartesian_path_error",
+              "unit": "m",
+              "kind": "so101_cartesian_path_tracking",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "cartesian_path_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.02,
+                "temporal": {
+                  "kind": "ordered_waypoints_and_terminal_hold",
+                  "terminal_hold_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "maximum_cross_track_and_terminal_error"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A2: ordered waypoints, cross-track <= 0.020 m, final error <= 0.015 m for 0.5 s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "cross_track_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.02
+                  },
+                  {
+                    "metric": "terminal_position_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.015
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a3-nominal",
+            "case_role": "nominal",
+            "capability_id": "A3",
+            "method_name": "set_gripper_opening",
+            "request": {
+              "opening_fraction": 0.2,
+              "max_duration_s": 2.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a3-nominal",
+            "measurement_binding": {
+              "metric": "normalised_aperture_error",
+              "unit": "ratio",
+              "kind": "so101_gripper_aperture_regulation",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "joint_name": "gripper",
+                "closed_position": -0.17453,
+                "open_position": 1.74533
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "normalised_aperture_error",
+                "unit": "ratio",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.25
+                },
+                "aggregation": {
+                  "kind": "all_samples_and_bidirectional_excursion"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A3: aperture error <= 0.10 for 0.25 s and excursion >= 50%"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "bidirectional_excursion",
+                    "unit": "ratio",
+                    "comparator": ">=",
+                    "threshold": 0.5
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a3-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "A3",
+            "method_name": "set_gripper_opening",
+            "request": {
+              "opening_fraction": 0.5,
+              "max_duration_s": 3.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: opening_fraction"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A3 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a3-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "normalised_aperture_error",
+              "unit": "ratio",
+              "kind": "so101_gripper_aperture_regulation",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "joint_name": "gripper",
+                "closed_position": -0.17453,
+                "open_position": 1.74533
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "normalised_aperture_error",
+                "unit": "ratio",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.25
+                },
+                "aggregation": {
+                  "kind": "all_samples_and_bidirectional_excursion"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A3: aperture error <= 0.10 for 0.25 s and excursion >= 50%"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "bidirectional_excursion",
+                    "unit": "ratio",
+                    "comparator": ">=",
+                    "threshold": 0.5
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a4-nominal",
+            "case_role": "nominal",
+            "capability_id": "A4",
+            "method_name": "approach_until_contact",
+            "request": {
+              "precontact_position_m": [
+                0.38,
+                0.07,
+                0.22
+              ],
+              "approach_direction_unit": [
+                0.0,
+                1.0,
+                0.0
+              ],
+              "max_travel_m": 0.06,
+              "max_approach_speed_m_s": 0.02,
+              "max_duration_s": 4.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a4-nominal",
+            "measurement_binding": {
+              "metric": "contact_integrity",
+              "unit": "mixed",
+              "kind": "so101_controlled_contact_approach",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe",
+                "tool_body_names": [
+                  "gripper"
+                ],
+                "tool_geom_names": [
+                  "geom_29",
+                  "geom_30",
+                  "geom_31",
+                  "fixed_jaw_box1",
+                  "fixed_jaw_box2",
+                  "fixed_jaw_sph_tip1",
+                  "fixed_jaw_sph_tip2",
+                  "fixed_jaw_sph_tip3",
+                  "geom_37",
+                  "fixed_jaw_box3",
+                  "fixed_jaw_box4",
+                  "fixed_jaw_box5",
+                  "fixed_jaw_box6",
+                  "fixed_jaw_box7",
+                  "geom_43",
+                  "camera_box1",
+                  "camera_box2",
+                  "geom_46",
+                  "geom_47",
+                  "geom_48",
+                  "moving_jaw_box1",
+                  "moving_jaw_sph_tip1",
+                  "moving_jaw_sph_tip2",
+                  "moving_jaw_sph_tip3",
+                  "moving_jaw_box2",
+                  "moving_jaw_box3"
+                ],
+                "target_geom_names": [
+                  "front_button_geom"
+                ],
+                "precontact_gate": "held_window_then_ray"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "contact_integrity",
+                "unit": "mixed",
+                "comparator": "==",
+                "threshold": 1,
+                "temporal": {
+                  "kind": "ordered_precontact_ray_contact",
+                  "contact_hold_s": 0.1
+                },
+                "aggregation": {
+                  "kind": "all_gates"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A4: contact 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, unrelated contacts 0"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "post_contact_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.02
+                  },
+                  {
+                    "metric": "penetration",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.005
+                  },
+                  {
+                    "metric": "unrelated_contact_count",
+                    "unit": "count",
+                    "comparator": "==",
+                    "threshold": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a4-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "A4",
+            "method_name": "approach_until_contact",
+            "request": {
+              "precontact_position_m": [
+                0.38,
+                0.065,
+                0.22
+              ],
+              "approach_direction_unit": [
+                0.0,
+                1.0,
+                0.0
+              ],
+              "max_travel_m": 0.07,
+              "max_approach_speed_m_s": 0.03,
+              "max_duration_s": 5.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: precontact_position_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: approach_direction_unit"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_travel_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_approach_speed_m_s"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A4 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a4-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "contact_integrity",
+              "unit": "mixed",
+              "kind": "so101_controlled_contact_approach",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe",
+                "tool_body_names": [
+                  "gripper"
+                ],
+                "tool_geom_names": [
+                  "geom_29",
+                  "geom_30",
+                  "geom_31",
+                  "fixed_jaw_box1",
+                  "fixed_jaw_box2",
+                  "fixed_jaw_sph_tip1",
+                  "fixed_jaw_sph_tip2",
+                  "fixed_jaw_sph_tip3",
+                  "geom_37",
+                  "fixed_jaw_box3",
+                  "fixed_jaw_box4",
+                  "fixed_jaw_box5",
+                  "fixed_jaw_box6",
+                  "fixed_jaw_box7",
+                  "geom_43",
+                  "camera_box1",
+                  "camera_box2",
+                  "geom_46",
+                  "geom_47",
+                  "geom_48",
+                  "moving_jaw_box1",
+                  "moving_jaw_sph_tip1",
+                  "moving_jaw_sph_tip2",
+                  "moving_jaw_sph_tip3",
+                  "moving_jaw_box2",
+                  "moving_jaw_box3"
+                ],
+                "target_geom_names": [
+                  "front_button_geom"
+                ],
+                "precontact_gate": "held_window_then_ray"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "contact_integrity",
+                "unit": "mixed",
+                "comparator": "==",
+                "threshold": 1,
+                "temporal": {
+                  "kind": "ordered_precontact_ray_contact",
+                  "contact_hold_s": 0.1
+                },
+                "aggregation": {
+                  "kind": "all_gates"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A4: contact 0.1 s, post-contact speed <= 0.02 m/s, penetration <= 0.005 m, unrelated contacts 0"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "post_contact_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.02
+                  },
+                  {
+                    "metric": "penetration",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.005
+                  },
+                  {
+                    "metric": "unrelated_contact_count",
+                    "unit": "count",
+                    "comparator": "==",
+                    "threshold": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a5-nominal",
+            "case_role": "nominal",
+            "capability_id": "A5",
+            "method_name": "move_cartesian_offset_and_return",
+            "request": {
+              "offset_robot_base_m": [
+                0.02,
+                0.0,
+                0.0
+              ],
+              "max_duration_per_leg_s": 3.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+              }
+            ],
+            "instance_id": "so101-a5-nominal",
+            "measurement_binding": {
+              "metric": "ordered_outbound_return_error",
+              "unit": "m",
+              "kind": "so101_outbound_return_motion",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe",
+                "base_body_name": "base"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "ordered_outbound_return_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.015,
+                "temporal": {
+                  "kind": "ordered_phase_holds",
+                  "outbound_hold_s": 0.25,
+                  "return_hold_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "both_legs_and_displacement"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A5: outbound/return errors <= 0.015 m and displacement >= 80%"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "requested_displacement_fraction",
+                    "unit": "ratio",
+                    "comparator": ">=",
+                    "threshold": 0.8
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a5-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "A5",
+            "method_name": "move_cartesian_offset_and_return",
+            "request": {
+              "offset_robot_base_m": [
+                0.0,
+                0.0,
+                0.02
+              ],
+              "max_duration_per_leg_s": 4.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5 request bounds: offset_robot_base_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A5 request bounds: max_duration_per_leg_s"
+              }
+            ],
+            "instance_id": "so101-a5-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "ordered_outbound_return_error",
+              "unit": "m",
+              "kind": "so101_outbound_return_motion",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "site_name": "gripperframe",
+                "base_body_name": "base"
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "ordered_outbound_return_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.015,
+                "temporal": {
+                  "kind": "ordered_phase_holds",
+                  "outbound_hold_s": 0.25,
+                  "return_hold_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "both_legs_and_displacement"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A5: outbound/return errors <= 0.015 m and displacement >= 80%"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "requested_displacement_fraction",
+                    "unit": "ratio",
+                    "comparator": ">=",
+                    "threshold": 0.8
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a6-nominal",
+            "case_role": "nominal",
+            "capability_id": "A6",
+            "method_name": "set_wrist_roll",
+            "request": {
+              "target_roll_rad": 1.2,
+              "max_duration_s": 2.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A6 request bounds: target_roll_rad"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A6 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a6-nominal",
+            "measurement_binding": {
+              "metric": "wrist_roll_error",
+              "unit": "rad",
+              "kind": "so101_wrist_roll_regulation",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "joint_name": "wrist_roll",
+                "target_request_key": "target_roll_rad",
+                "target_tolerance_rad": 0.03,
+                "continuous_hold_s": 0.25,
+                "guarded_joint_names": [
+                  "shoulder_pan",
+                  "shoulder_lift",
+                  "elbow_flex",
+                  "wrist_flex",
+                  "gripper"
+                ],
+                "guarded_joint_tolerance_rad": 0.03
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "wrist_roll_error",
+                "unit": "rad",
+                "comparator": "<=",
+                "threshold": 0.03,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.25
+                },
+                "aggregation": {
+                  "kind": "target_and_other_joint_hold"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A6: wrist-roll error <= 0.03 rad and all other arm joints/gripper held"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "other_joint_or_gripper_drift",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.03
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "robotstudio_so101-a6-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "A6",
+            "method_name": "set_wrist_roll",
+            "request": {
+              "target_roll_rad": 0.75,
+              "max_duration_s": 3.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A6 request bounds: target_roll_rad"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "SO-101 A6 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "so101-a6-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "wrist_roll_error",
+              "unit": "rad",
+              "kind": "so101_wrist_roll_regulation",
+              "parameters": {
+                "side_effect_guard_profile": "so101",
+                "joint_name": "wrist_roll",
+                "target_request_key": "target_roll_rad",
+                "target_tolerance_rad": 0.03,
+                "continuous_hold_s": 0.25,
+                "guarded_joint_names": [
+                  "shoulder_pan",
+                  "shoulder_lift",
+                  "elbow_flex",
+                  "wrist_flex",
+                  "gripper"
+                ],
+                "guarded_joint_tolerance_rad": 0.03
+              }
+            },
+            "guard_ids": [
+              "so101-control",
+              "so101-no-direct-write",
+              "so101-canonical",
+              "so101-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "wrist_roll_error",
+                "unit": "rad",
+                "comparator": "<=",
+                "threshold": 0.03,
+                "temporal": {
+                  "kind": "continuous",
+                  "duration_s": 0.25
+                },
+                "aggregation": {
+                  "kind": "target_and_other_joint_hold"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "SO-101 A6: wrist-roll error <= 0.03 rad and all other arm joints/gripper held"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "other_joint_or_gripper_drift",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.03
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "source_lineage": {
+        "design": "autoadapter/references/capability_v2/so101.json",
+        "fixed_request_calibration": "experiment/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101/capability_validation_suite.json",
+        "private_scene_guard_calibration": "autoadapter/libraries/robots/robotstudio_so101/1.0.4/capability_validation/private"
+      }
+    },
+    {
+      "reference_id": "unitree-go2-stock-12dof-complete-capability-v2",
+      "description": "Complete worked reference: capability contracts, one nominal and one calibrated-boundary request per capability, semantic trusted inline measurement operators, exact criteria, scenes, and guards. It contains no task_support relation or task execution plan.",
+      "capability_design": {
+        "artifact_type": "capability_v2_public_reference",
+        "protocol_version": "capability-v2",
+        "robot_configuration_id": "unitree-go2-stock-12dof",
+        "package_version": "1.0.0",
+        "reference_source": {
+          "source_id": "b1_driver_validation_criteria",
+          "specific_reference": "Experiment 1 B1 Driver Validation Criteria, Unitree Go2 G1-G5 and fixed capability bundle",
+          "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof",
+          "calibration_kind": "retained real MuJoCo fixed-bundle calibration",
+          "interface_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2",
+          "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
+          "suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3"
+        },
+        "capabilities": [
+          {
+            "capability_id": "G1",
+            "method_name": "track_planar_twist",
+            "description": "Track a bounded planar body-frame twist for a fixed duration.",
+            "effect": "Planar body-frame velocity and yaw-rate tracking.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "linear_velocity_body_m_s": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "unit": "m/s",
+                  "frame": "body",
+                  "items": {
+                    "type": "number",
+                    "unit": "m/s",
+                    "frame": "body",
+                    "minimum": -0.4,
+                    "maximum": 0.4,
+                    "evidence_refs": [
+                      {
+                        "source_id": "b1_driver_validation_criteria",
+                        "specific_reference": "Go2 G1 request bounds: linear_velocity_body_m_s"
+                      }
+                    ]
+                  }
+                },
+                "yaw_rate_rad_s": {
+                  "type": "number",
+                  "unit": "rad/s",
+                  "frame": "none",
+                  "minimum": -1.0,
+                  "maximum": 1.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G1 request bounds: yaw_rate_rad_s"
+                    }
+                  ]
+                },
+                "duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 2.0,
+                  "maximum": 4.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G1 request bounds: duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "linear_velocity_body_m_s",
+                "yaw_rate_rad_s",
+                "duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public base state is available and finite before twist tracking starts.",
+              "The requested body-frame velocity, yaw rate, and duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "fixed_duration_twist_tracking",
+              "completion": "Track the requested twist for the declared duration and evaluate the criterion-defined terminal window."
+            },
+            "invariants": [
+              "The commanded planar velocity remains expressed in the current body frame.",
+              "Actuator commands remain within the public control limits while maintaining support integrity."
+            ],
+            "failure_behavior": "Stop the commanded twist and return a bounded capability error if public state becomes unavailable or support integrity cannot be maintained within public limits.",
+            "criteria": [
+              {
+                "metric": "planar_velocity_error",
+                "unit": "m/s",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "final_window",
+                  "duration_s": 1.0
+                },
+                "aggregation": {
+                  "kind": "mean_velocity_and_yaw_rate"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G1: final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "yaw_rate_error",
+                    "unit": "rad/s",
+                    "comparator": "<=",
+                    "threshold": 0.3
+                  },
+                  {
+                    "metric": "direction_error",
+                    "unit": "deg",
+                    "comparator": "<=",
+                    "threshold": 10.0
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1"
+              }
+            ]
+          },
+          {
+            "capability_id": "G2",
+            "method_name": "move_body_relative_pose",
+            "description": "Move the Go2 base to a pose relative to its initial yaw frame.",
+            "effect": "Planar relative-pose regulation with terminal settling.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "translation_initial_yaw_m": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "unit": "m",
+                  "frame": "initial_body_yaw",
+                  "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "initial_body_yaw",
+                    "minimum": -0.3,
+                    "maximum": 0.3,
+                    "evidence_refs": [
+                      {
+                        "source_id": "b1_driver_validation_criteria",
+                        "specific_reference": "Go2 G2 request bounds: translation_initial_yaw_m"
+                      }
+                    ]
+                  }
+                },
+                "yaw_delta_rad": {
+                  "type": "number",
+                  "unit": "rad",
+                  "frame": "none",
+                  "minimum": -0.6,
+                  "maximum": 0.6,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G2 request bounds: yaw_delta_rad"
+                    }
+                  ]
+                },
+                "max_duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 8.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G2 request bounds: max_duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "translation_initial_yaw_m",
+                "yaw_delta_rad",
+                "max_duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public base state is available and finite so the initial position and yaw can be captured.",
+              "The requested relative translation, yaw change, and duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "relative_pose_then_terminal_hold",
+              "completion": "Regulate the pose relative to the initial-yaw frame, then maintain the terminal state for the criterion-defined hold."
+            },
+            "invariants": [
+              "The initial-yaw reference captured at call start remains fixed throughout the call.",
+              "Actuator commands remain within the public control limits while maintaining support integrity."
+            ],
+            "failure_behavior": "Stop planar motion and return a bounded capability error if the relative pose cannot be settled within the declared duration or support and public limits cannot be maintained.",
+            "criteria": [
+              {
+                "metric": "terminal_planar_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "continuous_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "position_yaw_and_speed"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G2: position error <= 0.10 m, yaw error <= 0.0873 rad, speed <= 0.10 m/s for 0.5 s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "wrapped_yaw_error",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  },
+                  {
+                    "metric": "planar_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.1
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2"
+              }
+            ]
+          },
+          {
+            "capability_id": "G3",
+            "method_name": "trace_planar_path",
+            "description": "Trace bounded planar waypoints in the initial-yaw frame.",
+            "effect": "Ordered planar waypoint and cross-track path following.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "waypoints_initial_yaw_m": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 8,
+                  "unit": "m",
+                  "frame": "initial_body_yaw",
+                  "items": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "unit": "m",
+                    "frame": "initial_body_yaw",
+                    "items": {
+                      "type": "number",
+                      "unit": "m",
+                      "frame": "initial_body_yaw",
+                      "minimum": -0.4,
+                      "maximum": 0.4,
+                      "evidence_refs": [
+                        {
+                          "source_id": "b1_driver_validation_criteria",
+                          "specific_reference": "Go2 G3 request bounds: waypoints_initial_yaw_m"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "max_duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 8.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G3 request bounds: max_duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "waypoints_initial_yaw_m",
+                "max_duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public base state is available and finite so the initial-yaw frame can be captured.",
+              "Every requested planar waypoint and the duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "ordered_planar_waypoints_then_hold",
+              "completion": "Visit the supplied waypoints in order in the captured initial-yaw frame, then settle at the endpoint."
+            },
+            "invariants": [
+              "Waypoint order and the initial-yaw frame captured at call start remain fixed throughout the call.",
+              "Actuator commands remain within the public control limits while maintaining support integrity."
+            ],
+            "failure_behavior": "Stop planar motion and return a bounded capability error if a waypoint cannot be visited in order within the declared duration or support and public limits cannot be maintained.",
+            "criteria": [
+              {
+                "metric": "planar_path_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "ordered_waypoints_and_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "waypoints_cross_track_endpoint_and_speed"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G3: waypoint error <= 0.10 m, cross-track <= 0.15 m, endpoint error/speed <= 0.10"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "cross_track_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.15
+                  },
+                  {
+                    "metric": "endpoint_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.1
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G3"
+              }
+            ]
+          },
+          {
+            "capability_id": "G4",
+            "method_name": "set_body_height",
+            "description": "Set Go2 body height while retaining a stable local stance.",
+            "effect": "Body-height regulation with bounded attitude and planar drift.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "target_height_m": {
+                  "type": "number",
+                  "unit": "m",
+                  "frame": "world",
+                  "minimum": 0.22,
+                  "maximum": 0.36,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G4 request bounds: target_height_m"
+                    }
+                  ]
+                },
+                "max_duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 0.25,
+                  "maximum": 8.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G4 request bounds: max_duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "target_height_m",
+                "max_duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The public base and attitude state is available and finite before height regulation starts.",
+              "The requested body height and duration satisfy the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "height_regulation_then_terminal_hold",
+              "completion": "Regulate body height while retaining the local stance, then maintain the terminal state for the criterion-defined hold."
+            },
+            "invariants": [
+              "The local planar pose and yaw captured at call start are retained except for bounded stabilization motion.",
+              "Actuator commands remain within the public control limits while maintaining support integrity."
+            ],
+            "failure_behavior": "Stop changing the height target and return a bounded capability error if height cannot be settled within the declared duration or attitude, support, and public limits cannot be maintained.",
+            "criteria": [
+              {
+                "metric": "body_height_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.03,
+                "temporal": {
+                  "kind": "continuous_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "height_attitude_displacement_and_yaw"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G4: height <= 0.03 m, roll/pitch <= 0.1745 rad, displacement <= 0.05 m, yaw drift <= 0.0873 rad"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "absolute_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.1745
+                  },
+                  {
+                    "metric": "planar_displacement",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "yaw_drift",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4"
+              }
+            ]
+          },
+          {
+            "capability_id": "G5",
+            "method_name": "hold_stable_stance",
+            "description": "Recover from one Framework reset disturbance and hold stable stance.",
+            "effect": "Post-disturbance quadruped stabilization with support integrity.",
+            "request_schema": {
+              "type": "object",
+              "properties": {
+                "duration_s": {
+                  "type": "number",
+                  "unit": "s",
+                  "frame": "none",
+                  "minimum": 1.0,
+                  "maximum": 2.0,
+                  "evidence_refs": [
+                    {
+                      "source_id": "b1_driver_validation_criteria",
+                      "specific_reference": "Go2 G5 request bounds: duration_s"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "duration_s"
+              ],
+              "additionalProperties": false
+            },
+            "preconditions": [
+              "The declared disturbance has been applied and the public base, attitude, velocity, and contact state is available and finite.",
+              "The requested stabilization duration satisfies the closed request schema."
+            ],
+            "temporal_semantics": {
+              "kind": "disturbance_recovery_then_bounded_hold",
+              "completion": "Recover a supported stance, then maintain it for the requested duration under the structured criterion."
+            },
+            "invariants": [
+              "Support contacts are retained or recovered without intentionally creating forbidden contacts.",
+              "Actuator commands remain within the public control limits while stabilizing the base."
+            ],
+            "failure_behavior": "Stop recovery motion and return a bounded capability error if a supported stance cannot be recovered or public state and control limits cannot be maintained.",
+            "criteria": [
+              {
+                "metric": "stable_stance_integrity",
+                "unit": "mixed",
+                "comparator": "==",
+                "threshold": 1,
+                "temporal": {
+                  "kind": "disturbance_recovery_then_hold",
+                  "recovery_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "all_stability_support_and_contact_gates"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G5: recover roll/pitch <= 0.0524 rad within 0.5 s, then stability/drift/support/forbidden-contact gates"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "recovery_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0524
+                  },
+                  {
+                    "metric": "hold_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  },
+                  {
+                    "metric": "height_drift",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.03
+                  },
+                  {
+                    "metric": "planar_drift",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "mean_planar_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "terminal_vertical_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  }
+                ]
+              }
+            ],
+            "evidence_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G5"
+              }
+            ]
+          }
+        ]
+      },
+      "validation_suite": {
+        "artifact_type": "capability_validation_suite",
+        "schema_version": "2.0",
+        "capability_protocol_version": "capability-v2",
+        "robot_configuration_id": "unitree-go2-stock-12dof",
+        "package_version": "1.0.0",
+        "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
+        "whole_suite_aggregation": {
+          "kind": "all_cases"
+        },
+        "cases": [
+          {
+            "case_id": "unitree-go2-stock-12dof-g1-nominal",
+            "case_role": "nominal",
+            "capability_id": "G1",
+            "method_name": "track_planar_twist",
+            "request": {
+              "linear_velocity_body_m_s": [
+                0.2,
+                0.0
+              ],
+              "yaw_rate_rad_s": 0.0,
+              "duration_s": 2.2
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: linear_velocity_body_m_s"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: yaw_rate_rad_s"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: duration_s"
+              }
+            ],
+            "instance_id": "go2-g1-nominal",
+            "measurement_binding": {
+              "metric": "planar_velocity_error",
+              "unit": "m/s",
+              "kind": "go2_planar_twist_tracking",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "planar_velocity_error",
+                "unit": "m/s",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "final_window",
+                  "duration_s": 1.0
+                },
+                "aggregation": {
+                  "kind": "mean_velocity_and_yaw_rate"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G1: final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "yaw_rate_error",
+                    "unit": "rad/s",
+                    "comparator": "<=",
+                    "threshold": 0.3
+                  },
+                  {
+                    "metric": "direction_error",
+                    "unit": "deg",
+                    "comparator": "<=",
+                    "threshold": 10.0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g1-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "G1",
+            "method_name": "track_planar_twist",
+            "request": {
+              "linear_velocity_body_m_s": [
+                0.25,
+                0.0
+              ],
+              "yaw_rate_rad_s": -0.3,
+              "duration_s": 3.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: linear_velocity_body_m_s"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: yaw_rate_rad_s"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G1 request bounds: duration_s"
+              }
+            ],
+            "instance_id": "go2-g1-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "planar_velocity_error",
+              "unit": "m/s",
+              "kind": "go2_planar_twist_tracking",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "planar_velocity_error",
+                "unit": "m/s",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "final_window",
+                  "duration_s": 1.0
+                },
+                "aggregation": {
+                  "kind": "mean_velocity_and_yaw_rate"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G1: final-window mean planar velocity error <= 0.10 m/s and yaw-rate error <= 0.30 rad/s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "yaw_rate_error",
+                    "unit": "rad/s",
+                    "comparator": "<=",
+                    "threshold": 0.3
+                  },
+                  {
+                    "metric": "direction_error",
+                    "unit": "deg",
+                    "comparator": "<=",
+                    "threshold": 10.0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g2-nominal",
+            "case_role": "nominal",
+            "capability_id": "G2",
+            "method_name": "move_body_relative_pose",
+            "request": {
+              "translation_initial_yaw_m": [
+                0.08,
+                0.0
+              ],
+              "yaw_delta_rad": 0.1,
+              "max_duration_s": 5.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: translation_initial_yaw_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: yaw_delta_rad"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "go2-g2-nominal",
+            "measurement_binding": {
+              "metric": "terminal_planar_position_error",
+              "unit": "m",
+              "kind": "go2_relative_pose_motion",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "terminal_planar_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "continuous_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "position_yaw_and_speed"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G2: position error <= 0.10 m, yaw error <= 0.0873 rad, speed <= 0.10 m/s for 0.5 s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "wrapped_yaw_error",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  },
+                  {
+                    "metric": "planar_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g2-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "G2",
+            "method_name": "move_body_relative_pose",
+            "request": {
+              "translation_initial_yaw_m": [
+                0.06,
+                0.04
+              ],
+              "yaw_delta_rad": 0.15,
+              "max_duration_s": 6.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: translation_initial_yaw_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: yaw_delta_rad"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G2 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "go2-g2-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "terminal_planar_position_error",
+              "unit": "m",
+              "kind": "go2_relative_pose_motion",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "terminal_planar_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "continuous_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "position_yaw_and_speed"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G2: position error <= 0.10 m, yaw error <= 0.0873 rad, speed <= 0.10 m/s for 0.5 s"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "wrapped_yaw_error",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  },
+                  {
+                    "metric": "planar_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g3-nominal",
+            "case_role": "nominal",
+            "capability_id": "G3",
+            "method_name": "trace_planar_path",
+            "request": {
+              "waypoints_initial_yaw_m": [
+                [
+                  0.05,
+                  0.0
+                ],
+                [
+                  0.1,
+                  0.0
+                ]
+              ],
+              "max_duration_s": 5.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G3 request bounds: waypoints_initial_yaw_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G3 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "go2-g3-nominal",
+            "measurement_binding": {
+              "metric": "planar_path_error",
+              "unit": "m",
+              "kind": "go2_planar_path_tracking",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "planar_path_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "ordered_waypoints_and_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "waypoints_cross_track_endpoint_and_speed"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G3: waypoint error <= 0.10 m, cross-track <= 0.15 m, endpoint error/speed <= 0.10"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "cross_track_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.15
+                  },
+                  {
+                    "metric": "endpoint_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g3-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "G3",
+            "method_name": "trace_planar_path",
+            "request": {
+              "waypoints_initial_yaw_m": [
+                [
+                  0.04,
+                  -0.02
+                ],
+                [
+                  0.08,
+                  -0.04
+                ],
+                [
+                  0.12,
+                  0.0
+                ]
+              ],
+              "max_duration_s": 6.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G3 request bounds: waypoints_initial_yaw_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G3 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "go2-g3-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "planar_path_error",
+              "unit": "m",
+              "kind": "go2_planar_path_tracking",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "planar_path_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.1,
+                "temporal": {
+                  "kind": "ordered_waypoints_and_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "waypoints_cross_track_endpoint_and_speed"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G3: waypoint error <= 0.10 m, cross-track <= 0.15 m, endpoint error/speed <= 0.10"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "cross_track_error",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.15
+                  },
+                  {
+                    "metric": "endpoint_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g4-nominal",
+            "case_role": "nominal",
+            "capability_id": "G4",
+            "method_name": "set_body_height",
+            "request": {
+              "target_height_m": 0.26,
+              "max_duration_s": 3.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: target_height_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "go2-g4-nominal",
+            "measurement_binding": {
+              "metric": "body_height_error",
+              "unit": "m",
+              "kind": "go2_body_height_regulation",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "body_height_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.03,
+                "temporal": {
+                  "kind": "continuous_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "height_attitude_displacement_and_yaw"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G4: height <= 0.03 m, roll/pitch <= 0.1745 rad, displacement <= 0.05 m, yaw drift <= 0.0873 rad"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "absolute_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.1745
+                  },
+                  {
+                    "metric": "planar_displacement",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "yaw_drift",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g4-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "G4",
+            "method_name": "set_body_height",
+            "request": {
+              "target_height_m": 0.32,
+              "max_duration_s": 4.0
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: target_height_m"
+              },
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G4 request bounds: max_duration_s"
+              }
+            ],
+            "instance_id": "go2-g4-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "body_height_error",
+              "unit": "m",
+              "kind": "go2_body_height_regulation",
+              "parameters": {
+                "body_name": "base_link"
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "body_height_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.03,
+                "temporal": {
+                  "kind": "continuous_terminal_hold",
+                  "duration_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "height_attitude_displacement_and_yaw"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G4: height <= 0.03 m, roll/pitch <= 0.1745 rad, displacement <= 0.05 m, yaw drift <= 0.0873 rad"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "absolute_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.1745
+                  },
+                  {
+                    "metric": "planar_displacement",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "yaw_drift",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g5-nominal",
+            "case_role": "nominal",
+            "capability_id": "G5",
+            "method_name": "hold_stable_stance",
+            "request": {
+              "duration_s": 1.2
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G5 request bounds: duration_s"
+              }
+            ],
+            "instance_id": "go2-g5-nominal",
+            "measurement_binding": {
+              "metric": "stable_stance_integrity",
+              "unit": "mixed",
+              "kind": "go2_stable_stance_recovery",
+              "parameters": {
+                "body_name": "base_link",
+                "foot_geom_groups": [
+                  [
+                    "FL"
+                  ],
+                  [
+                    "FR"
+                  ],
+                  [
+                    "RL"
+                  ],
+                  [
+                    "RR"
+                  ]
+                ],
+                "floor_geom_names": [
+                  "floor"
+                ],
+                "forbidden_floor_geom_names": [
+                  "geom_1",
+                  "geom_2",
+                  "geom_3",
+                  "geom_4",
+                  "geom_5",
+                  "geom_6",
+                  "geom_7",
+                  "geom_8",
+                  "geom_9",
+                  "geom_10",
+                  "geom_11",
+                  "geom_12",
+                  "geom_13"
+                ]
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "stable_stance_integrity",
+                "unit": "mixed",
+                "comparator": "==",
+                "threshold": 1,
+                "temporal": {
+                  "kind": "disturbance_recovery_then_hold",
+                  "recovery_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "all_stability_support_and_contact_gates"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G5: recover roll/pitch <= 0.0524 rad within 0.5 s, then stability/drift/support/forbidden-contact gates"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "recovery_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0524
+                  },
+                  {
+                    "metric": "hold_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  },
+                  {
+                    "metric": "height_drift",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.03
+                  },
+                  {
+                    "metric": "planar_drift",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "mean_planar_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "terminal_vertical_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "case_id": "unitree-go2-stock-12dof-g5-calibrated_boundary",
+            "case_role": "calibrated_boundary",
+            "capability_id": "G5",
+            "method_name": "hold_stable_stance",
+            "request": {
+              "duration_s": 1.8
+            },
+            "request_grounding_refs": [
+              {
+                "source_id": "b1_driver_validation_criteria",
+                "specific_reference": "Go2 G5 request bounds: duration_s"
+              }
+            ],
+            "instance_id": "go2-g5-calibrated-boundary",
+            "measurement_binding": {
+              "metric": "stable_stance_integrity",
+              "unit": "mixed",
+              "kind": "go2_stable_stance_recovery",
+              "parameters": {
+                "body_name": "base_link",
+                "foot_geom_groups": [
+                  [
+                    "FL"
+                  ],
+                  [
+                    "FR"
+                  ],
+                  [
+                    "RL"
+                  ],
+                  [
+                    "RR"
+                  ]
+                ],
+                "floor_geom_names": [
+                  "floor"
+                ],
+                "forbidden_floor_geom_names": [
+                  "geom_1",
+                  "geom_2",
+                  "geom_3",
+                  "geom_4",
+                  "geom_5",
+                  "geom_6",
+                  "geom_7",
+                  "geom_8",
+                  "geom_9",
+                  "geom_10",
+                  "geom_11",
+                  "geom_12",
+                  "geom_13"
+                ]
+              }
+            },
+            "guard_ids": [
+              "go2-capability-control",
+              "go2-capability-no-direct-write",
+              "go2-capability-canonical",
+              "go2-capability-control-range"
+            ],
+            "repetitions": 1,
+            "timeout_sim_s": 8.0,
+            "criteria": [
+              {
+                "metric": "stable_stance_integrity",
+                "unit": "mixed",
+                "comparator": "==",
+                "threshold": 1,
+                "temporal": {
+                  "kind": "disturbance_recovery_then_hold",
+                  "recovery_s": 0.5
+                },
+                "aggregation": {
+                  "kind": "all_stability_support_and_contact_gates"
+                },
+                "source_refs": [
+                  {
+                    "source_id": "b1_driver_validation_criteria",
+                    "specific_reference": "Go2 G5: recover roll/pitch <= 0.0524 rad within 0.5 s, then stability/drift/support/forbidden-contact gates"
+                  }
+                ],
+                "checks": [
+                  {
+                    "metric": "recovery_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0524
+                  },
+                  {
+                    "metric": "hold_roll_pitch",
+                    "unit": "rad",
+                    "comparator": "<=",
+                    "threshold": 0.0873
+                  },
+                  {
+                    "metric": "height_drift",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.03
+                  },
+                  {
+                    "metric": "planar_drift",
+                    "unit": "m",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "mean_planar_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  },
+                  {
+                    "metric": "terminal_vertical_speed",
+                    "unit": "m/s",
+                    "comparator": "<=",
+                    "threshold": 0.05
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "source_lineage": {
+        "design": "autoadapter/references/capability_v2/go2.json",
+        "fixed_request_calibration": "experiment/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof/capability_validation_suite.json",
+        "private_scene_guard_calibration": "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.0/capability_validation/private"
+      }
+    }
+  ]
+}

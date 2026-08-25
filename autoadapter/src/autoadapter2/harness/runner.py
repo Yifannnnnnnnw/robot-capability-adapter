@@ -27,7 +27,11 @@ from .measurements import (
     evaluate_temporal,
     measure,
 )
-from .operators import MeasurementOperatorError, audit_inline_measurement_binding
+from .operators import (
+    MeasurementOperatorError,
+    audit_inline_measurement_binding,
+    measurement_operator_evaluation_mode,
+)
 
 
 class HarnessError(RuntimeError):
@@ -137,12 +141,23 @@ def _merged_private_index(
             "package-local IVC context is incomplete; missing "
             f"capability_validation/private/{', '.join(missing)}"
         )
-    if capability_v2 and len(present_capability_paths) == 3:
-        directories = [capability_dir]
+    if capability_v2:
+        # Dynamic IVC may use both dedicated capability calibration scenes and
+        # every task-backed scene.  Neither namespace prescribes a request or
+        # a measurement binding.
+        directories = []
+        if len(present_capability_paths) == 3:
+            directories.append(capability_dir)
+        if package.private_dir.is_dir():
+            task_paths = [package.private_dir / f"{name}.json" for name in (
+                "instances",
+                "bindings",
+                "guards",
+            )]
+            if not all(path.is_file() for path in task_paths):
+                raise HarnessError("package task-backed IVC context is incomplete")
+            directories.append(package.private_dir)
     else:
-        # A capability-v2 suite may use the package's existing trusted task
-        # fixtures as private execution contexts.  It still exposes only a native
-        # capability request to candidate code below.
         directories = [package.private_dir] if package.private_dir.is_dir() else []
     if not directories:
         raise HarnessError("package has no private Harness records")
@@ -160,20 +175,10 @@ def _merged_private_index(
     return result
 
 
-def _capability_uses_task_context(package: RobotPackage) -> bool:
-    capability_dir = package.root / "capability_validation" / "private"
-    paths = [
-        capability_dir / f"{name}.json"
-        for name in ("instances", "bindings", "guards")
-    ]
-    present = [path for path in paths if path.is_file()]
-    if present and len(present) != len(paths):
-        missing = [path.name for path in paths if not path.is_file()]
-        raise HarnessError(
-            "package-local IVC context is incomplete; missing "
-            f"capability_validation/private/{', '.join(missing)}"
-        )
-    return not present
+def _instance_uses_task_context(instance: Mapping[str, Any]) -> bool:
+    # Dedicated capability contexts may retain legacy-looking honeypot
+    # envelopes.  Only an actual task-backed instance declares task_id.
+    return isinstance(instance.get("task_id"), str)
 
 
 def _task_context_arguments(
@@ -619,9 +624,6 @@ def run_private_suite(
         and suite.get("capability_protocol_version") == "capability-v2"
     )
     reference_execution = trusted_reference_driver or is_package_reference
-    capability_uses_task_context = (
-        _capability_uses_task_context(package) if is_capability_v2 else False
-    )
     if is_b1_suite:
         # Experiment 1 cases are intentionally self-contained.  They must not
         # inherit task/private IDs or mutable package-side validation inputs.
@@ -723,6 +725,16 @@ def run_private_suite(
             scene_path.relative_to((package.root / "assets").resolve())
         except ValueError as exc:
             raise HarnessError("private instance scene escapes package assets") from exc
+        parameters = binding.get("parameters")
+        if (
+            is_b1_suite
+            or binding.get("kind") == "b1_contract"
+            or (
+                isinstance(parameters, Mapping)
+                and "tool_body_names" in parameters
+            )
+        ):
+            binding = _resolve_b1_body_geom_symbols(binding, scene_path)
         if is_capability_v2:
             capability_id = case.get("capability_id")
             capability = (
@@ -757,8 +769,6 @@ def run_private_suite(
                 )
             except MeasurementOperatorError as exc:
                 raise HarnessError(str(exc)) from None
-        if is_b1_suite or binding.get("kind") == "b1_contract":
-            binding = _resolve_b1_body_geom_symbols(binding, scene_path)
         for repetition in range(repetitions):
             variant = (
                 repetition_variants[repetition]
@@ -784,7 +794,7 @@ def run_private_suite(
                 # private adapter envelope, but that envelope is never used for
                 # candidate execution or public trial reporting.
                 authored_arguments = {"request": dict(capability_request)}
-                if capability_uses_task_context:
+                if _instance_uses_task_context(instance):
                     trusted_task_arguments = _task_context_arguments(
                         private_public_arguments,
                         authored_request=capability_request,
@@ -928,7 +938,9 @@ def run_private_suite(
                 if worker.get("candidate_exception") is None and worker.get("method_invoked"):
                     if not isinstance(criterion, Mapping):
                         raise ValueError("private case criterion must be an object")
-                    if is_capability_v2 and binding.get("kind") == "b1_contract":
+                    if is_capability_v2 and measurement_operator_evaluation_mode(
+                        binding.get("kind")
+                    ) == "trusted_criterion_verdict":
                         measurement_value = measure(
                             binding,
                             evidence=worker["physical_evidence"],
@@ -1039,7 +1051,9 @@ def run_private_suite(
                 "trial_passed": False,
                 "_criterion": criterion,
                 "_trusted_contract": bool(
-                    is_capability_v2 and binding.get("kind") == "b1_contract"
+                    is_capability_v2
+                    and measurement_operator_evaluation_mode(binding.get("kind"))
+                    == "trusted_criterion_verdict"
                 ),
                 "_base_passed": base_passed,
             }

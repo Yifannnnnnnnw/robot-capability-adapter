@@ -27,6 +27,7 @@ def _spec(
     optional: Mapping[str, str] = {},
     entities: Mapping[str, str] = {},
     request_paths: Sequence[str] = (),
+    evaluation_mode: str = "numeric_measurement",
 ) -> dict[str, Any]:
     return {
         "description": description,
@@ -42,6 +43,7 @@ def _spec(
         },
         "request_path_parameters": list(request_paths),
         "entity_parameters": dict(entities),
+        "evaluation_mode": evaluation_mode,
     }
 
 
@@ -418,6 +420,141 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "control_steps_argument",
         ),
     ),
+    # Complete SO-101/Go2 worked references use semantic, parameterized
+    # operators for their compound published criteria.  These operators reuse
+    # the existing trusted implementation but expose neither a contract_id nor
+    # a pre-written case selector to IVC.
+    "so101_end_effector_regulation": _spec(
+        "SO-101 terminal position regulation, hold, and side-effect gates.",
+        ["m"],
+        required={"side_effect_guard_profile": "string", "site_name": "string"},
+        entities={"site_name": "site"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "so101_cartesian_path_tracking": _spec(
+        "SO-101 ordered Cartesian path, cross-track, terminal hold, and side-effect gates.",
+        ["m"],
+        required={"side_effect_guard_profile": "string", "site_name": "string"},
+        entities={"site_name": "site"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "so101_gripper_aperture_regulation": _spec(
+        "SO-101 normalized aperture regulation, excursion, hold, and arm-stability gates.",
+        ["ratio"],
+        required={
+            "side_effect_guard_profile": "string",
+            "joint_name": "string",
+            "closed_position": "number",
+            "open_position": "number",
+        },
+        entities={"joint_name": "joint"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "so101_controlled_contact_approach": _spec(
+        "SO-101 ordered precontact, ray, speed, penetration, contact, and unrelated-contact gates.",
+        ["mixed"],
+        required={
+            "side_effect_guard_profile": "string",
+            "site_name": "string",
+            "tool_body_names": "string_array",
+            "tool_geom_names": "string_array",
+            "target_geom_names": "string_array",
+            "precontact_gate": "string",
+        },
+        entities={
+            "site_name": "site",
+            "tool_body_names": "body_array",
+            "tool_geom_names": "geom_array",
+            "target_geom_names": "geom_array",
+        },
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "so101_outbound_return_motion": _spec(
+        "SO-101 ordered base-frame outbound/return holds and side-effect gates.",
+        ["m"],
+        required={
+            "side_effect_guard_profile": "string",
+            "site_name": "string",
+            "base_body_name": "string",
+        },
+        entities={"site_name": "site", "base_body_name": "body"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "so101_wrist_roll_regulation": _spec(
+        "SO-101 wrist-roll regulation, hold, and non-target-joint gates.",
+        ["rad"],
+        required={
+            "side_effect_guard_profile": "string",
+            "joint_name": "string",
+            "target_request_key": "string",
+            "target_tolerance_rad": "number",
+            "continuous_hold_s": "number",
+            "guarded_joint_names": "string_array",
+            "guarded_joint_tolerance_rad": "number",
+        },
+        entities={"joint_name": "joint", "guarded_joint_names": "joint_array"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "go2_planar_twist_tracking": _spec(
+        "Go2 final-window planar velocity, yaw-rate, direction, and support-integrity gates.",
+        ["m/s"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "go2_relative_pose_motion": _spec(
+        "Go2 relative translation/yaw terminal hold and low-speed gates.",
+        ["m"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "go2_planar_path_tracking": _spec(
+        "Go2 ordered planar path, cross-track, endpoint, and speed gates.",
+        ["m"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "go2_body_height_regulation": _spec(
+        "Go2 height hold with attitude, displacement, yaw, and support gates.",
+        ["m"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+    "go2_stable_stance_recovery": _spec(
+        "Go2 disturbance recovery, stance stability, drift, support, and forbidden-contact gates.",
+        ["mixed"],
+        required={
+            "body_name": "string",
+            "foot_geom_groups": "string_matrix",
+            "floor_geom_names": "string_array",
+            "forbidden_floor_geom_names": "string_array",
+        },
+        entities={
+            "body_name": "body",
+            "foot_geom_groups": "geom_matrix",
+            "floor_geom_names": "geom_array",
+            "forbidden_floor_geom_names": "geom_array",
+        },
+        evaluation_mode="trusted_criterion_verdict",
+    ),
+}
+
+
+_REFERENCE_CONTRACT_IDS = {
+    "so101_end_effector_regulation": "A1",
+    "so101_cartesian_path_tracking": "A2",
+    "so101_gripper_aperture_regulation": "A3",
+    "so101_controlled_contact_approach": "A4",
+    "so101_outbound_return_motion": "A5",
+    "so101_wrist_roll_regulation": "A6",
+    "go2_planar_twist_tracking": "G1",
+    "go2_relative_pose_motion": "G2",
+    "go2_planar_path_tracking": "G3",
+    "go2_body_height_regulation": "G4",
+    "go2_stable_stance_recovery": "G5",
 }
 
 
@@ -433,6 +570,17 @@ def measurement_operator_catalog() -> dict[str, Any]:
             for kind, spec in sorted(_OPERATOR_SPECS.items())
         ],
     }
+
+
+def trusted_reference_contract_id(kind: Any) -> str | None:
+    """Resolve a semantic worked-reference operator to trusted implementation."""
+
+    return _REFERENCE_CONTRACT_IDS.get(kind) if isinstance(kind, str) else None
+
+
+def measurement_operator_evaluation_mode(kind: Any) -> str | None:
+    spec = _OPERATOR_SPECS.get(kind) if isinstance(kind, str) else None
+    return str(spec["evaluation_mode"]) if spec is not None else None
 
 
 def _is_number(value: Any) -> bool:
@@ -531,6 +679,34 @@ def _scene_model(scene_path: Path) -> Any:
         ) from exc
 
 
+def inspect_scene_entities(scene_path: str | Path) -> dict[str, list[str]]:
+    """Return the named entities available to trusted operators in one scene."""
+
+    model = _scene_model(Path(scene_path).resolve())
+    import mujoco
+
+    object_types = {
+        "bodies": (mujoco.mjtObj.mjOBJ_BODY, int(model.nbody)),
+        "sites": (mujoco.mjtObj.mjOBJ_SITE, int(model.nsite)),
+        "joints": (mujoco.mjtObj.mjOBJ_JOINT, int(model.njnt)),
+        "geoms": (mujoco.mjtObj.mjOBJ_GEOM, int(model.ngeom)),
+        "actuators": (mujoco.mjtObj.mjOBJ_ACTUATOR, int(model.nu)),
+        "keyframes": (mujoco.mjtObj.mjOBJ_KEY, int(model.nkey)),
+    }
+    result: dict[str, list[str]] = {}
+    for field, (object_type, count) in object_types.items():
+        names: list[str] = []
+        for index in range(count):
+            name = mujoco.mj_id2name(model, object_type, index)
+            if isinstance(name, str) and name:
+                names.append(name)
+            elif field == "geoms":
+                # Trusted evidence uses this stable alias for unnamed geoms.
+                names.append(f"geom_{index}")
+        result[field] = sorted(names)
+    return result
+
+
 def _entity_names(value: Any, entity_kind: str) -> list[str]:
     if entity_kind.endswith("_array"):
         return [str(item) for item in value]
@@ -543,7 +719,8 @@ def _validate_entities(
     parameters: Mapping[str, Any],
     entity_specs: Mapping[str, str],
     *,
-    scene_path: Path,
+    scene_path: Path | None,
+    scene_entities: Mapping[str, Any] | None,
 ) -> None:
     relevant = {
         field: entity_kind
@@ -552,20 +729,34 @@ def _validate_entities(
     }
     if not relevant:
         return
-    model = _scene_model(scene_path)
-    import mujoco
-
-    object_types = {
-        "body": mujoco.mjtObj.mjOBJ_BODY,
-        "site": mujoco.mjtObj.mjOBJ_SITE,
-        "joint": mujoco.mjtObj.mjOBJ_JOINT,
-        "geom": mujoco.mjtObj.mjOBJ_GEOM,
+    if scene_entities is None:
+        if scene_path is None:
+            raise MeasurementOperatorError(
+                "selected scene entities are unavailable for measurement audit"
+            )
+        scene_entities = inspect_scene_entities(scene_path)
+    entity_fields = {
+        "body": "bodies",
+        "site": "sites",
+        "joint": "joints",
+        "geom": "geoms",
     }
     for field, declared_kind in relevant.items():
+        if field == "tool_geom_names" and "tool_body_names" in parameters:
+            # The runner deterministically expands the named body subtrees to
+            # their real scene geoms before execution.
+            continue
         base_kind = declared_kind.split("_", 1)[0]
-        object_type = object_types[base_kind]
+        raw_available = scene_entities.get(entity_fields[base_kind])
+        if not isinstance(raw_available, list) or any(
+            not isinstance(item, str) for item in raw_available
+        ):
+            raise MeasurementOperatorError(
+                f"selected scene has no valid {entity_fields[base_kind]} catalog"
+            )
+        available = set(raw_available)
         for name in _entity_names(parameters[field], declared_kind):
-            if int(mujoco.mj_name2id(model, object_type, name)) < 0:
+            if name not in available:
                 raise MeasurementOperatorError(
                     f"measurement parameters.{field} references unknown "
                     f"{base_kind} {name!r} in selected scene"
@@ -577,7 +768,8 @@ def audit_inline_measurement_binding(
     *,
     criterion: Mapping[str, Any],
     request_schema: Mapping[str, Any],
-    scene_path: str | Path,
+    scene_path: str | Path | None = None,
+    scene_entities: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate and canonicalize an IVC-authored trusted measurement binding."""
 
@@ -642,7 +834,8 @@ def audit_inline_measurement_binding(
     _validate_entities(
         parameters,
         spec["entity_parameters"],
-        scene_path=Path(scene_path).resolve(),
+        scene_path=Path(scene_path).resolve() if scene_path is not None else None,
+        scene_entities=scene_entities,
     )
     return copy.deepcopy(dict(binding))
 
@@ -650,5 +843,8 @@ def audit_inline_measurement_binding(
 __all__ = [
     "MeasurementOperatorError",
     "audit_inline_measurement_binding",
+    "inspect_scene_entities",
     "measurement_operator_catalog",
+    "measurement_operator_evaluation_mode",
+    "trusted_reference_contract_id",
 ]

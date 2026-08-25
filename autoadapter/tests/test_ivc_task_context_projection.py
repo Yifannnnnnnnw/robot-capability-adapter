@@ -24,7 +24,7 @@ def _fixture() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         "unit": "m",
         "comparator": "<=",
         "threshold": 0.02,
-        "temporal": {"kind": "terminal"},
+        "temporal": {"kind": "terminal_state"},
         "aggregation": {"kind": "single_trial"},
         "source_refs": [
             {"source_id": "public-source", "specific_reference": "threshold"}
@@ -37,7 +37,17 @@ def _fixture() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
                 "method_name": "move_target",
                 "request_schema": {
                     "type": "object",
-                    "properties": {"target_m": {"type": "number"}},
+                    "properties": {
+                        "target_m": {
+                            "type": "number",
+                            "evidence_refs": [
+                                {
+                                    "source_id": "public-source",
+                                    "specific_reference": "target bound",
+                                }
+                            ],
+                        }
+                    },
                     "required": ["target_m"],
                     "additionalProperties": False,
                 },
@@ -57,7 +67,7 @@ def _fixture() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
                 "binding_id": f"binding-{suffix}",
                 "metric": "position_error",
                 "unit": "m",
-                "kind": "terminal_position_error",
+                "kind": "final_site_position_error",
                 "parameters": {
                     "site_name": f"site-{suffix}",
                     "target_argument": "request.task_parameters.target_m",
@@ -73,6 +83,14 @@ def _fixture() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
                 "task_id": f"private-task-{suffix}",
                 "source_case_id": f"source-case-{suffix}",
                 "scene_entrypoint": f"assets/{suffix}.xml",
+                "scene_entities": {
+                    "bodies": [],
+                    "sites": [f"site-{suffix}"],
+                    "joints": [],
+                    "geoms": [],
+                    "actuators": [],
+                    "keyframes": [],
+                },
                 "reset": {"kind": "default"},
                 "public_arguments": {
                     "request": {
@@ -128,18 +146,18 @@ def test_task_fallback_private_projection_hides_old_requests_and_rewrites_paths(
         "instance-a",
         "instance-b",
     }
-    assert {record["binding_id"] for record in inputs["private_bindings"]["bindings"]} == {
+    assert {record["example_id"] for record in inputs["trusted_measurement_examples"]["bindings"]} == {
         "binding-a",
         "binding-b",
     }
     assert {
         record["parameters"]["target_argument"]
-        for record in inputs["private_bindings"]["bindings"]
+        for record in inputs["trusted_measurement_examples"]["bindings"]
     } == {"request.target_m"}
     private_projection = json.dumps(
         {
             "instances": inputs["private_instances"],
-            "bindings": inputs["private_bindings"],
+            "bindings": inputs["trusted_measurement_examples"],
             "guards": inputs["private_guards"],
         }
     )
@@ -219,11 +237,25 @@ def test_ivc_authors_distinct_requests_without_copying_private_anchor() -> None:
                 "capability_id": "cap-a",
                 "method_name": capability["method_name"],
                 "instance_id": "instance-a",
-                "binding_id": "binding-a",
+                "measurement_binding": {
+                    "metric": "position_error",
+                    "unit": "m",
+                    "kind": "final_site_position_error",
+                    "parameters": {
+                        "site_name": "site-a",
+                        "target_argument": "request.target_m",
+                    },
+                },
                 "guard_ids": ["guard-a"],
                 "repetitions": 1,
                 "timeout_sim_s": 2.0,
                 "request": {"target_m": target},
+                "request_grounding_refs": [
+                    {
+                        "source_id": "public-source",
+                        "specific_reference": "target bound",
+                    }
+                ],
                 "criteria": copy.deepcopy(capability["criteria"]),
             }
         )
@@ -250,13 +282,12 @@ def test_ivc_authors_distinct_requests_without_copying_private_anchor() -> None:
     assert all(case["request"] != {"target_m": 0.5} for case in canonical["cases"])
 
 
-def test_selected_task_binding_requires_its_native_field_in_authored_request() -> None:
+def test_dynamic_suite_rejects_binding_id_even_when_example_exists() -> None:
     package, design, private = _fixture()
     capability = design["capabilities"][0]
-    capability["request_schema"]["required"] = []
     cases = []
     for role, request in (
-        ("nominal", {}),
+        ("nominal", {"target_m": 0.25}),
         ("calibrated_boundary", {"target_m": 0.75}),
     ):
         cases.append(
@@ -271,6 +302,12 @@ def test_selected_task_binding_requires_its_native_field_in_authored_request() -
                 "repetitions": 1,
                 "timeout_sim_s": 2.0,
                 "request": request,
+                "request_grounding_refs": [
+                    {
+                        "source_id": "public-source",
+                        "specific_reference": "target bound",
+                    }
+                ],
                 "criteria": copy.deepcopy(capability["criteria"]),
             }
         )
@@ -283,7 +320,7 @@ def test_selected_task_binding_requires_its_native_field_in_authored_request() -
         "cases": cases,
     }
 
-    with pytest.raises(IVCError, match="required by the selected task binding"):
+    with pytest.raises(IVCError, match="forbidden field 'binding_id'"):
         validate_capability_validation_suite(
             suite,
             package=package,

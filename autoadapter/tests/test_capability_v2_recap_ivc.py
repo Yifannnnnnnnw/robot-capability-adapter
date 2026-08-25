@@ -111,8 +111,8 @@ def _design() -> dict[str, Any]:
                         "unit": "m",
                         "comparator": "<=",
                         "threshold": 0.05 + index * 0.01,
-                        "temporal": {"kind": "terminal_hold", "duration_s": 0.2},
-                        "aggregation": {"kind": "all_samples"},
+                        "temporal": {"kind": "terminal_state"},
+                        "aggregation": {"kind": "single_trial"},
                         "source_refs": _evidence(f"criterion: C{index + 1}"),
                     }
                 ],
@@ -165,6 +165,14 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
                     "case_role": role,
                     "calibration_profile": profile,
                     "scene_entrypoint": f"assets/{suffix}.xml",
+                    "scene_entities": {
+                        "bodies": [],
+                        "sites": ["test-site"],
+                        "joints": [],
+                        "geoms": [],
+                        "actuators": [],
+                        "keyframes": [],
+                    },
                     "reset": {"kind": "default"},
                     "request_domain": domain,
                     "request_anchors": [
@@ -177,7 +185,7 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
                     "clause_bindings": {
                         "capability-criterion": f"binding-{suffix}"
                     },
-                    "guard_ids": [],
+                    "guard_ids": [f"guard-{suffix}"],
                     "repetitions": 2,
                     "timeout_sim_s": 5.0,
                 }
@@ -190,6 +198,17 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
                     "calibration_profile": profile,
                     "metric": criterion["metric"],
                     "unit": criterion["unit"],
+                    "kind": "final_site_position_error",
+                    "parameters": {
+                        "site_name": "test-site",
+                        "target_argument": f"request.{field}",
+                    },
+                }
+            )
+            guards.append(
+                {
+                    "guard_id": f"guard-{suffix}",
+                    "kind": "canonical_model_data",
                 }
             )
     return {"instances": instances, "bindings": bindings, "guards": guards}
@@ -198,7 +217,6 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
 def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
     cases = []
     instances = {item["instance_id"]: item for item in private["instances"]}
-    bindings = {item["binding_id"]: item for item in private["bindings"]}
     for capability in design["capabilities"]:
         cap_id = capability["capability_id"]
         method_name = capability["method_name"]
@@ -213,11 +231,22 @@ def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
                     "capability_id": cap_id,
                     "method_name": method_name,
                     "instance_id": instance["instance_id"],
-                    "binding_id": bindings[f"binding-{suffix}"]["binding_id"],
-                    "guard_ids": [],
+                    "measurement_binding": {
+                        "metric": capability["criteria"][0]["metric"],
+                        "unit": capability["criteria"][0]["unit"],
+                        "kind": "final_site_position_error",
+                        "parameters": {
+                            "site_name": "test-site",
+                            "target_argument": f"request.amount_{cap_id[1:]}",
+                        },
+                    },
+                    "guard_ids": list(instance["guard_ids"]),
                     "repetitions": 2,
                     "timeout_sim_s": 5.0,
                     "request": {f"amount_{cap_id[1:]}": authored_amount},
+                    "request_grounding_refs": _evidence(
+                        f"request bound: amount_{cap_id[1:]}"
+                    ),
                     "criteria": json.loads(json.dumps(capability["criteria"])),
                 }
             )
@@ -539,9 +568,10 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
     serialized = json.dumps(inputs).lower()
     assert "driver" not in serialized
     assert "repair" not in serialized
-    assert "candidate" not in serialized
+    assert "candidate_source" not in serialized
+    assert "candidate_verdict" not in serialized
     assert load_sanitized_ivc_examples()
-    assert inputs["sanitized_capability_validation_examples"]
+    assert inputs["complete_so101_go2_worked_references"]
     assert inputs["artifact_header"] == {
         "artifact_type": "capability_validation_suite",
         "schema_version": "2.0",
@@ -558,9 +588,8 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
     assert inputs["validator_contract"][
         "validate_authored_request_against_selected_instance_request_domain_when_supplied"
     ] is True
-    assert inputs["validator_contract"][
-        "request_anchors_are_calibration_evidence_not_prescribed_cases"
-    ] is True
+    assert inputs["validator_contract"]["measurement_binding_is_ivc_authored_inline"] is True
+    assert inputs["validator_contract"]["binding_id_is_forbidden"] is True
     model = _IVCModel(suite)
     events: list[dict[str, Any]] = []
     artifact_path = tmp_path / "capability_validation_suite.json"
@@ -658,7 +687,7 @@ def test_task_fallback_hides_go2_task_requests_but_executes_authored_requests(
                     "unit": "rad/s",
                     "comparator": ">=",
                     "threshold": 0.1,
-                    "temporal": {"kind": "bounded_window", "duration_s": 0.1},
+                    "temporal": {"kind": "terminal_state"},
                     "aggregation": {"kind": "single_trial"},
                     "source_refs": _evidence("Go2 task-context execution boundary"),
                 }
@@ -702,13 +731,21 @@ def test_task_fallback_hides_go2_task_requests_but_executes_authored_requests(
                 "capability_id": "G-test",
                 "method_name": "track_yaw_rate",
                 "instance_id": raw_instance["instance_id"],
-                "binding_id": "go2-t05-yaw-rate",
+                "measurement_binding": {
+                    "metric": "mean_body_yaw_rate",
+                    "unit": "rad/s",
+                    "kind": "mean_body_yaw_rate",
+                    "parameters": {"body_name": "base_link"},
+                },
                 "guard_ids": list(raw_instance["guard_ids"]),
                 "repetitions": raw_instance["repetitions"],
                 "timeout_sim_s": raw_instance["timeout_sim_s"],
                 "request": {
                     "target_yaw_rate_rad_s": 0.25 if role == "nominal" else 0.5
                 },
+                "request_grounding_refs": _evidence(
+                    "request bound: target_yaw_rate_rad_s"
+                ),
                 "criteria": json.loads(json.dumps(capability["criteria"])),
             }
             for role in IVC_CASE_ROLES
@@ -745,7 +782,8 @@ def test_task_fallback_hides_go2_task_requests_but_executes_authored_requests(
         if item["instance_id"] == raw_instance["instance_id"]
     )
     assert projected["scene_entrypoint"] == raw_instance["scene_entrypoint"]
-    assert projected["clause_bindings"] == raw_instance["clause_bindings"]
+    assert projected["context_namespace"] == "task"
+    assert "clause_bindings" not in projected
     assert [case["request"] for case in result["cases"]] == [
         {"target_yaw_rate_rad_s": 0.25},
         {"target_yaw_rate_rad_s": 0.5},
@@ -825,14 +863,9 @@ def test_task_fallback_hides_go2_task_requests_but_executes_authored_requests(
     assert [payload["public_arguments"] for payload in candidate_payloads] == [
         {"request": case["request"]} for case in result["cases"]
     ]
-    assert [
-        arguments["request"]["task_parameters"]
-        for arguments in trusted_measurement_arguments
-    ] == [case["request"] for case in result["cases"]]
-    assert {
-        arguments["request"]["task_id"]
-        for arguments in trusted_measurement_arguments
-    } == {"GO2-T05"}
+    assert trusted_measurement_arguments == [
+        {"request": case["request"]} for case in result["cases"]
+    ]
 
 
 def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
@@ -867,8 +900,8 @@ def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
         )
 
     wrong_binding = json.loads(json.dumps(suite))
-    wrong_binding["cases"][0]["binding_id"] = wrong_binding["cases"][2]["binding_id"]
-    with pytest.raises(IVCError, match="does not belong"):
+    wrong_binding["cases"][0]["binding_id"] = "historical-binding"
+    with pytest.raises(IVCError, match="forbidden field 'binding_id'"):
         validate_capability_validation_suite(
             wrong_binding, package=package, design=design, private_inputs=private
         )
@@ -880,14 +913,14 @@ def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
             wrong_role, package=package, design=design, private_inputs=private
         )
 
-    wrong_profile = json.loads(json.dumps(private))
-    wrong_profile["bindings"][0]["calibration_profile"] = "another-profile"
-    with pytest.raises(IVCError, match="calibration_profile differ"):
+    wrong_metric = json.loads(json.dumps(suite))
+    wrong_metric["cases"][0]["measurement_binding"]["metric"] = "another_metric"
+    with pytest.raises(IVCError, match="sealed criterion metric"):
         validate_capability_validation_suite(
-            suite,
+            wrong_metric,
             package=package,
             design=design,
-            private_inputs=wrong_profile,
+            private_inputs=private,
         )
 
 
@@ -896,7 +929,11 @@ def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
 ) -> None:
     package, design = _real_package_design()
     private = _private_inputs(design)
+    for instance in private["instances"]:
+        instance["scene_entrypoint"] = "assets/reach_scene.xml"
     suite = _suite(design, private)
+    for case in suite["cases"]:
+        case["measurement_binding"]["parameters"]["site_name"] = "gripperframe"
     for field, value in {
         "robot_configuration_id": package.robot_configuration_id,
         "package_version": package.package_version,

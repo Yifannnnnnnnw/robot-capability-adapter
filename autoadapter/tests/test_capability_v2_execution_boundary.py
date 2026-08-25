@@ -48,7 +48,11 @@ def _worker_result() -> dict[str, Any]:
 def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[str, Any]]:
     package_root = tmp_path / "package"
     (package_root / "assets").mkdir(parents=True)
-    (package_root / "assets" / "scene.xml").write_text("<mujoco/>", encoding="utf-8")
+    (package_root / "assets" / "scene.xml").write_text(
+        "<mujoco><worldbody><body name='tool'><site name='tool_site'/></body>"
+        "</worldbody></mujoco>",
+        encoding="utf-8",
+    )
     legacy = package_root / "tasks" / "private"
     capability = package_root / "capability_validation" / "private"
     guards = [
@@ -223,8 +227,8 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
         "unit": "m",
         "comparator": "<=",
         "threshold": 0.015,
-        "temporal": {"kind": "continuous", "duration_s": 0.5},
-        "aggregation": {"kind": "all_samples"},
+        "temporal": {"kind": "terminal_state"},
+        "aggregation": {"kind": "single_trial"},
         "source_refs": [
             {"source_id": "calibration", "specific_reference": "real threshold"}
         ],
@@ -234,6 +238,20 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
             {
                 "capability_id": "cap-a",
                 "method_name": "move_target",
+                "request_schema": {
+                    "type": "object",
+                    "properties": {
+                        "target_position_m": {
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": {"type": "number"},
+                        },
+                        "max_duration_s": {"type": "number"},
+                    },
+                    "required": ["target_position_m", "max_duration_s"],
+                    "additionalProperties": False,
+                },
                 "criteria": [criterion],
             }
         ]
@@ -249,7 +267,15 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
                 "capability_id": "cap-a",
                 "method_name": "move_target",
                 "instance_id": "cap-a-nominal",
-                "binding_id": "cap-a-binding",
+                "measurement_binding": {
+                    "metric": "end_effector_position_error",
+                    "unit": "m",
+                    "kind": "final_site_position_error",
+                    "parameters": {
+                        "site_name": "tool_site",
+                        "target_argument": "request.target_position_m",
+                    },
+                },
                 "guard_ids": ["cap-control", "cap-state", "cap-canonical"],
                 "repetitions": 1,
                 "timeout_sim_s": 1.0,
@@ -287,7 +313,11 @@ def test_capability_candidate_receives_only_native_request_and_plural_criterion_
 
     with (
         mock.patch.object(harness_runner, "_run_worker", side_effect=worker),
-        mock.patch.object(harness_runner, "measure", return_value=1.0),
+        mock.patch.object(
+            harness_runner,
+            "evaluate_temporal",
+            return_value={"kind": "terminal_state", "passed": True, "value": 0.0},
+        ),
         mock.patch.object(
             harness_runner,
             "_resolve_b1_body_geom_symbols",
@@ -316,10 +346,10 @@ def test_capability_candidate_receives_only_native_request_and_plural_criterion_
     assert "private-anchor" not in json.dumps(payloads[0]["public_arguments"])
     assert "SECRET-private-task" not in json.dumps(payloads[0]["public_arguments"])
     assert "task_id" not in json.dumps(report)
-    assert resolver.call_count == 1
+    assert resolver.call_count == 0
     assert report["validation_passed"] is True
-    assert report["trials"][0]["temporal_evidence"]["kind"] == "trusted_b1_contract"
-    assert report["trials"][0]["aggregation_value"] == 1.0
+    assert report["trials"][0]["temporal_evidence"]["kind"] == "terminal_state"
+    assert report["trials"][0]["aggregation_value"] == 0.0
 
 
 def test_trusted_reference_keeps_private_task_dispatch_but_measures_native_request(
@@ -333,19 +363,20 @@ def test_trusted_reference_keeps_private_task_dispatch_but_measures_native_reque
         payloads.append(dict(payload))
         return _worker_result()
 
-    def measured(
+    def temporal(
         _binding: Mapping[str, Any],
         *,
+        criterion: Mapping[str, Any],
         evidence: Mapping[str, Any],
         public_arguments: Mapping[str, Any],
-    ) -> float:
-        del evidence
+    ) -> dict[str, Any]:
+        del criterion, evidence
         measurement_arguments.append(public_arguments)
-        return 1.0
+        return {"kind": "terminal_state", "passed": True, "value": 0.0}
 
     with (
         mock.patch.object(harness_runner, "_run_worker", side_effect=worker),
-        mock.patch.object(harness_runner, "measure", side_effect=measured),
+        mock.patch.object(harness_runner, "evaluate_temporal", side_effect=temporal),
     ):
         report = run_private_suite(
             package=package,
@@ -378,22 +409,22 @@ def test_task_context_wraps_authored_request_only_for_trusted_consumers(
 
     case = suite["cases"][0]
     case["instance_id"] = "legacy-task-instance"
-    case["binding_id"] = "legacy-task-binding"
     case["guard_ids"] = ["control", "state", "canonical"]
 
     candidate_payloads: list[dict[str, Any]] = []
     reference_payloads: list[dict[str, Any]] = []
     measurement_arguments: list[Mapping[str, Any]] = []
 
-    def measured(
+    def temporal(
         _binding: Mapping[str, Any],
         *,
+        criterion: Mapping[str, Any],
         evidence: Mapping[str, Any],
         public_arguments: Mapping[str, Any],
-    ) -> float:
-        del evidence
+    ) -> dict[str, Any]:
+        del criterion, evidence
         measurement_arguments.append(public_arguments)
-        return 1.0
+        return {"kind": "terminal_state", "passed": True, "value": 0.0}
 
     with (
         mock.patch.object(
@@ -403,7 +434,7 @@ def test_task_context_wraps_authored_request_only_for_trusted_consumers(
                 candidate_payloads.append(dict(payload)) or _worker_result()
             ),
         ),
-        mock.patch.object(harness_runner, "measure", side_effect=measured),
+        mock.patch.object(harness_runner, "evaluate_temporal", side_effect=temporal),
     ):
         candidate_report = run_private_suite(
             package=package,
@@ -423,7 +454,7 @@ def test_task_context_wraps_authored_request_only_for_trusted_consumers(
                 reference_payloads.append(dict(payload)) or _worker_result()
             ),
         ),
-        mock.patch.object(harness_runner, "measure", side_effect=measured),
+        mock.patch.object(harness_runner, "evaluate_temporal", side_effect=temporal),
     ):
         reference_report = run_private_suite(
             package=package,
@@ -445,26 +476,32 @@ def test_task_context_wraps_authored_request_only_for_trusted_consumers(
     }
     assert candidate_payloads[0]["public_arguments"] == authored_arguments
     assert reference_payloads[0]["public_arguments"] == trusted_arguments
-    assert measurement_arguments == [trusted_arguments, trusted_arguments]
+    assert measurement_arguments == [authored_arguments, authored_arguments]
     assert candidate_report["trials"][0]["public_arguments"] == authored_arguments
     assert reference_report["trials"][0]["public_arguments"] == authored_arguments
     assert "private-task-identifier" not in json.dumps(candidate_report)
     assert "private-task-identifier" not in json.dumps(reference_report)
 
 
-def test_private_capability_context_is_a_closed_package_local_namespace(tmp_path: Path) -> None:
+def test_capability_context_merges_dedicated_and_task_backed_scenes(tmp_path: Path) -> None:
     package, _candidate, _design, _suite = _fixture(tmp_path)
     merged = _private_inputs_from_package(package)
     assert {item["instance_id"] for item in merged["instances"]["instances"]} == {
         "cap-a-nominal",
+        "legacy-task-instance",
     }
     assert {item["binding_id"] for item in merged["bindings"]["bindings"]} == {
         "cap-a-binding",
+        "legacy-task-binding",
     }
     assert {item["guard_id"] for item in merged["guards"]["guards"]} == {
         "cap-control",
         "cap-state",
         "cap-canonical",
+        "control",
+        "state",
+        "canonical",
+        "legacy-only",
     }
 
     assert set(
@@ -474,7 +511,7 @@ def test_private_capability_context_is_a_closed_package_local_namespace(tmp_path
             "instance_id",
             capability_v2=True,
         )
-    ) == {"cap-a-nominal"}
+    ) == {"cap-a-nominal", "legacy-task-instance"}
     assert set(
         harness_runner._merged_private_index(
             package,

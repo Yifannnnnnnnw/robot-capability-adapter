@@ -6,6 +6,8 @@ import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from .operators import trusted_reference_contract_id
+
 
 class MeasurementError(ValueError):
     """Raised when a private binding cannot be evaluated from trusted evidence."""
@@ -381,6 +383,24 @@ def measure(
     samples = _samples(evidence)
     first = samples[0]
     final = samples[-1]
+
+    reference_contract_id = trusted_reference_contract_id(kind)
+    if reference_contract_id is not None:
+        request = public_arguments.get("request")
+        if not isinstance(request, Mapping):
+            raise MeasurementError(
+                "trusted reference operator requires request public arguments"
+            )
+        from .b1_contracts import B1ContractError, evaluate_b1_contract
+
+        try:
+            return evaluate_b1_contract(
+                {**dict(parameters), "contract_id": reference_contract_id},
+                evidence=evidence,
+                request=request,
+            )
+        except B1ContractError as exc:
+            raise MeasurementError(str(exc)) from exc
 
     if kind == "b1_contract":
         request = public_arguments.get("request")

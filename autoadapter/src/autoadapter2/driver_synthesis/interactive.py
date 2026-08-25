@@ -525,13 +525,19 @@ class IsolatedArtifactSession:
     """Workspace-only file tools plus a credential-free Python/MuJoCo session.
 
     This is the narrower IVC boundary.  Unlike ``PublicDevelopmentSession``
-    it does not stage or expose morphology, tasks, assets, skeletons, Driver
-    source, or a package root.  ``execute_python`` runs in a tiny sandbox with
-    an empty MuJoCo scene so calculations can persist without creating a
-    second execution mechanism or opening the admitted robot package.
+    It never exposes private tasks, reference code, skeletons, or Driver
+    source.  IVC may explicitly supply one admitted package, in which case
+    ``execute_python`` receives read-only access to that package's public
+    ``assets/`` tree; other artifact phases retain the empty MuJoCo scene.
     """
 
-    def __init__(self, *, workspace: str | Path, budget: ProbeBudget) -> None:
+    def __init__(
+        self,
+        *,
+        workspace: str | Path,
+        budget: ProbeBudget,
+        package: RobotPackage | None = None,
+    ) -> None:
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         sandbox = self.workspace / ".python_sandbox"
@@ -541,12 +547,32 @@ class IsolatedArtifactSession:
             "<mujoco model=\"ivc_calculation_sandbox\"><worldbody/></mujoco>\n",
             encoding="utf-8",
         )
-        self.public_workspace = PublicProbeWorkspace(
-            root=sandbox,
-            scene_path=scene_path,
-            skeleton_root=None,
-            python_root=None,
-        )
+        if package is None:
+            self.public_workspace = PublicProbeWorkspace(
+                root=sandbox,
+                scene_path=scene_path,
+                skeleton_root=None,
+                python_root=None,
+            )
+        else:
+            assets_root = (package.root / "assets").resolve()
+            scene = package.mjcf_path.resolve()
+            try:
+                scene.relative_to(assets_root)
+            except ValueError as exc:
+                raise DevelopmentSessionError(
+                    "IVC package scene must remain inside public assets"
+                ) from exc
+            if not assets_root.is_dir() or not scene.is_file():
+                raise DevelopmentSessionError(
+                    "IVC package public assets are unavailable"
+                )
+            self.public_workspace = PublicProbeWorkspace(
+                root=assets_root,
+                scene_path=scene,
+                skeleton_root=None,
+                python_root=None,
+            )
         self.budget = budget
         self._python_session: PersistentPythonSession | None = None
         self._calls = 0
