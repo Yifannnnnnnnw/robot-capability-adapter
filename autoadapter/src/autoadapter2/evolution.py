@@ -976,6 +976,52 @@ def _truthful_task_demo_not_run(
     )
 
 
+def _has_passed_capability_whitelist(cell: Mapping[str, Any]) -> bool:
+    whitelist = cell.get("passed_capability_whitelist")
+    return (
+        isinstance(whitelist, list)
+        and bool(whitelist)
+        and all(isinstance(item, str) and bool(item.strip()) for item in whitelist)
+    )
+
+
+def _trusted_task_demo_outcome(
+    cell: Mapping[str, Any], task_demo: Mapping[str, Any]
+) -> str:
+    task_demo_executed = cell.get("task_demo_executed")
+    if not isinstance(task_demo_executed, bool):
+        task_demo_executed = task_demo.get(
+            "physical_validation_executed", task_demo.get("executed")
+        )
+    task_demo_passed = cell.get("task_demo_passed")
+    if not isinstance(task_demo_passed, bool):
+        task_demo_passed = task_demo.get(
+            "validation_passed", task_demo.get("passed")
+        )
+    task_demo_pipeline_completed = cell.get("task_demo_pipeline_completed")
+    if not isinstance(task_demo_pipeline_completed, bool):
+        task_demo_pipeline_completed = task_demo.get("pipeline_completed")
+    if task_demo_executed is not True or task_demo_pipeline_completed is not True:
+        return "indeterminate"
+    if (
+        task_demo.get("physical_validation_executed") is not True
+        or task_demo.get("pipeline_completed") is not True
+        or task_demo.get("validation_passed") is not task_demo_passed
+    ):
+        return "indeterminate"
+    if not _video_evidence_valid(
+        task_demo,
+        fallback=cell,
+        fallback_complete_field="task_demo_video_complete",
+    ):
+        return "indeterminate"
+    if task_demo_passed is True:
+        return "positive"
+    if task_demo_passed is False:
+        return "negative"
+    return "indeterminate"
+
+
 def _source_outcome_label(cell: Mapping[str, Any]) -> str:
     """Return a label only from complete, infrastructure-valid terminal evidence."""
 
@@ -992,6 +1038,13 @@ def _source_outcome_label(cell: Mapping[str, Any]) -> str:
         return "indeterminate"
     if capability.get("pipeline_completed") is not True:
         return "indeterminate"
+    # A nonempty whitelist is a Framework-owned fact that at least one
+    # capability passed both of its required cases.  The whole capability
+    # suite may still be a truthful failure (and may therefore report no
+    # whole-suite physical/video completion), but a subsequent trusted Task
+    # Demo remains a determinate terminal outcome for Experience review.
+    if _has_passed_capability_whitelist(cell):
+        return _trusted_task_demo_outcome(cell, task_demo)
     if not _video_evidence_valid(capability, fallback=cell):
         return "indeterminate"
     if (
@@ -1024,41 +1077,9 @@ def _source_outcome_label(cell: Mapping[str, Any]) -> str:
         )
     if final_capability is not True:
         return "indeterminate"
-
-    task_demo_executed = cell.get("task_demo_executed")
-    if not isinstance(task_demo_executed, bool):
-        task_demo_executed = task_demo.get(
-            "physical_validation_executed", task_demo.get("executed")
-        )
-    task_demo_passed = cell.get("task_demo_passed")
-    if not isinstance(task_demo_passed, bool):
-        task_demo_passed = task_demo.get(
-            "validation_passed", task_demo.get("passed")
-        )
-    task_demo_pipeline_completed = cell.get("task_demo_pipeline_completed")
-    if not isinstance(task_demo_pipeline_completed, bool):
-        task_demo_pipeline_completed = task_demo.get("pipeline_completed")
-    if task_demo_executed is not True or task_demo_pipeline_completed is not True:
-        return "indeterminate"
-    if (
-        task_demo.get("physical_validation_executed") is not True
-        or task_demo.get("pipeline_completed") is not True
-        or task_demo.get("validation_passed") is not task_demo_passed
-    ):
-        return "indeterminate"
-    if not _video_evidence_valid(
-        task_demo,
-        fallback=cell,
-        fallback_complete_field="task_demo_video_complete",
-    ):
-        return "indeterminate"
-    if task_demo_executed is True and task_demo_passed is True:
-        return "positive"
-    if task_demo_executed is True and task_demo_passed is False:
-        return "negative"
     # A passing capability check without an executed, determinate Task Demo is
     # not eligible for an accepted snapshot.
-    return "indeterminate"
+    return _trusted_task_demo_outcome(cell, task_demo)
 
 
 def _validate_review_queue_record(

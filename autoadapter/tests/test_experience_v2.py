@@ -120,6 +120,139 @@ def test_new_snapshot_adds_only_framework_provenance_and_outcome() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("task_demo_passed", "terminal_label"),
+    ((True, "positive"), (False, "negative")),
+)
+def test_partial_capability_closure_uses_trusted_task_demo_outcome(
+    task_demo_passed: bool,
+    terminal_label: str,
+) -> None:
+    proposal = {
+        "observation": "One whitelisted capability supported a physical Task Demo.",
+        "lesson": "Keep partial capability closure distinct from whole-suite success.",
+        "recommendation": "Retain the trusted Task Demo verdict for the later run.",
+        "scope": "SO-101 bounded reach",
+        "public_evidence": ["bounded_reach nominal and boundary passed"],
+    }
+    evolution = {
+        "evolution_completed": True,
+        "proposal_created": True,
+        "proposal": proposal,
+    }
+    cell = _terminal_cell(evolution)
+    cell.update(
+        {
+            "capability_validation_executed": False,
+            "final_capability_validation_passed": False,
+            "video_required": True,
+            "video_complete": False,
+            "capability_validation": {
+                "pipeline_completed": True,
+                "physical_validation_executed": False,
+                "validation_passed": False,
+                "video_required": True,
+                "video_complete": False,
+                "trials": [],
+            },
+            "passed_capability_whitelist": ["bounded_reach"],
+            "task_demo_executed": True,
+            "task_demo_passed": task_demo_passed,
+            "task_demo_pipeline_completed": True,
+            "task_demo_video_complete": True,
+            "task_demo": {
+                "pipeline_completed": True,
+                "physical_validation_executed": True,
+                "validation_passed": task_demo_passed,
+                "video_required": True,
+                "video_complete": True,
+                "trials": [],
+            },
+        }
+    )
+
+    queue = build_experience_review_queue(
+        run_id="partial-source",
+        experiment_id="diagnostic-canary",
+        expected_robots=["robotstudio_so101"],
+        expected_conditions=["skeleton-assisted"],
+        cells=[cell],
+    )
+    assert queue["records"][0]["terminal_outcome_label"] == terminal_label
+
+    reviewed = apply_experience_review(
+        queue,
+        {
+            "robotstudio_so101::skeleton-assisted": {
+                "decision": "accept",
+                "reason": "The Task Demo evidence is complete and physically executed.",
+            }
+        },
+    )
+    snapshot = build_experience_snapshot(reviewed)
+    assert snapshot["records"][0]["outcome"] == {
+        "terminal_label": terminal_label
+    }
+
+
+def test_partial_capability_closure_requires_trusted_task_demo_video() -> None:
+    evolution = {
+        "evolution_completed": True,
+        "proposal_created": True,
+        "proposal": {
+            "observation": "A partial run was observed.",
+            "lesson": "Missing video is not trusted terminal evidence.",
+            "recommendation": "Keep the outcome indeterminate.",
+            "scope": "SO-101 bounded reach",
+            "public_evidence": ["Task Demo video incomplete"],
+        },
+    }
+    cell = _terminal_cell(evolution)
+    cell.update(
+        {
+            "capability_validation_executed": False,
+            "final_capability_validation_passed": False,
+            "capability_validation": {
+                "pipeline_completed": True,
+                "physical_validation_executed": False,
+                "validation_passed": False,
+                "video_required": True,
+                "video_complete": False,
+            },
+            "passed_capability_whitelist": ["bounded_reach"],
+            "task_demo_video_complete": False,
+            "task_demo": {
+                "pipeline_completed": True,
+                "physical_validation_executed": True,
+                "validation_passed": True,
+                "video_required": True,
+                "video_complete": False,
+            },
+        }
+    )
+
+    queue = build_experience_review_queue(
+        run_id="partial-source-missing-video",
+        experiment_id="diagnostic-canary",
+        expected_robots=["robotstudio_so101"],
+        expected_conditions=["skeleton-assisted"],
+        cells=[cell],
+    )
+    assert queue["records"][0]["terminal_outcome_label"] == "indeterminate"
+
+    reviewed = apply_experience_review(
+        queue,
+        {
+            "robotstudio_so101::skeleton-assisted": {
+                "decision": "accept",
+                "reason": "Retained only to verify the fail-closed snapshot boundary.",
+            }
+        },
+    )
+    with pytest.raises(EvolutionError, match="determinate terminal outcome"):
+        build_experience_snapshot(reviewed)
+
+
 def test_old_model_field_name_is_rejected_for_new_evolution() -> None:
     client = _EvolutionClient(
         {
