@@ -1,0 +1,654 @@
+"""Machine-readable trusted measurement operators for capability-v2 IVC.
+
+The catalog is the complete executable vocabulary available to an IVC.  An
+IVC authors a binding from these operators; it never supplies Python and it
+never selects an opaque pre-written case.  The deterministic audit below runs
+before candidate code is started.
+"""
+
+from __future__ import annotations
+
+import copy
+import math
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
+
+
+class MeasurementOperatorError(ValueError):
+    """Raised when an inline capability measurement is not executable."""
+
+
+def _spec(
+    description: str,
+    units: Sequence[str],
+    *,
+    required: Mapping[str, str] = {},
+    optional: Mapping[str, str] = {},
+    entities: Mapping[str, str] = {},
+    request_paths: Sequence[str] = (),
+) -> dict[str, Any]:
+    return {
+        "description": description,
+        "output_units": list(units),
+        "parameter_schema": {
+            "type": "object",
+            "required": list(required),
+            "properties": {
+                **{name: {"type": kind} for name, kind in required.items()},
+                **{name: {"type": kind} for name, kind in optional.items()},
+            },
+            "additionalProperties": False,
+        },
+        "request_path_parameters": list(request_paths),
+        "entity_parameters": dict(entities),
+    }
+
+
+# Parameter types are deliberately a small closed DSL.  ``request_path`` is a
+# dotted path rooted at ``request``; entity types are resolved against the
+# selected MuJoCo scene by ``audit_inline_measurement_binding``.
+_OPERATOR_SPECS: dict[str, dict[str, Any]] = {
+    "final_site_position_error": _spec(
+        "Euclidean terminal position error for one named site.",
+        ["m"],
+        required={"site_name": "string", "target_argument": "request_path"},
+        entities={"site_name": "site"},
+        request_paths=("target_argument",),
+    ),
+    "final_site_axis_error": _spec(
+        "Absolute terminal axis error for one named site.",
+        ["m"],
+        required={
+            "site_name": "string",
+            "target_argument": "request_path",
+            "axis": "integer",
+        },
+        entities={"site_name": "site"},
+        request_paths=("target_argument",),
+    ),
+    "final_weighted_site_position_error": _spec(
+        "Weighted Euclidean terminal position error for one named site.",
+        ["m"],
+        required={
+            "site_name": "string",
+            "target_argument": "request_path",
+            "weights": "number_array",
+        },
+        entities={"site_name": "site"},
+        request_paths=("target_argument",),
+    ),
+    "final_body_position_error": _spec(
+        "Euclidean terminal world-position error for one named body.",
+        ["m"],
+        required={"body_name": "string", "target_argument": "request_path"},
+        entities={"body_name": "body"},
+        request_paths=("target_argument",),
+    ),
+    "body_planar_target_error": _spec(
+        "Terminal planar world-position error for one named body.",
+        ["m"],
+        required={"body_name": "string", "target_argument": "request_path"},
+        entities={"body_name": "body"},
+        request_paths=("target_argument",),
+    ),
+    "final_joint_position_error": _spec(
+        "Absolute terminal position error for one named joint.",
+        ["rad"],
+        required={"joint_name": "string", "target_argument": "request_path"},
+        entities={"joint_name": "joint"},
+        request_paths=("target_argument",),
+    ),
+    "joint_range": _spec(
+        "Observed position range of one named joint.",
+        ["rad"],
+        required={"joint_name": "string"},
+        entities={"joint_name": "joint"},
+    ),
+    "body_height": _spec(
+        "Terminal world-frame height of one named body.",
+        ["m"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+    ),
+    "minimum_body_height": _spec(
+        "Minimum observed world-frame height of one named body.",
+        ["m"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+    ),
+    "body_planar_displacement": _spec(
+        "Planar displacement of one named body over the evidence horizon.",
+        ["m"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+    ),
+    "body_axis_displacement": _spec(
+        "Signed displacement of one named body along a world axis.",
+        ["m"],
+        required={"body_name": "string"},
+        optional={"axis": "integer"},
+        entities={"body_name": "body"},
+    ),
+    "body_directional_displacement": _spec(
+        "Planar displacement projected onto a requested heading.",
+        ["m"],
+        required={
+            "body_name": "string",
+            "direction_argument": "request_path",
+        },
+        entities={"body_name": "body"},
+        request_paths=("direction_argument",),
+    ),
+    "body_directional_progress_until_corridor_exit": _spec(
+        "Maximum requested-direction progress before leaving a trusted corridor.",
+        ["m"],
+        required={
+            "body_name": "string",
+            "direction_argument": "request_path",
+            "limit_argument": "request_path",
+            "maximum_cross_track_m": "number",
+            "minimum_height_m": "number",
+        },
+        entities={"body_name": "body"},
+        request_paths=("direction_argument", "limit_argument"),
+    ),
+    "mean_body_planar_speed": _spec(
+        "Mean planar speed of one named body over the evidence horizon.",
+        ["m/s"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+    ),
+    "body_yaw_change_deg": _spec(
+        "Absolute yaw change of one named body.",
+        ["deg"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+    ),
+    "mean_body_heading_error_deg": _spec(
+        "Heading error inferred from body displacement.",
+        ["deg"],
+        required={
+            "body_name": "string",
+            "direction_argument": "request_path",
+        },
+        optional={"minimum_displacement": "number"},
+        entities={"body_name": "body"},
+        request_paths=("direction_argument",),
+    ),
+    "named_bodies_axis_completion": _spec(
+        "Binary completion of a shared coordinate gate by named bodies.",
+        ["binary"],
+        required={
+            "body_names": "string_array",
+            "finish_coordinate": "number",
+        },
+        optional={"axis": "integer", "direction": "integer"},
+        entities={"body_names": "body_array"},
+    ),
+    "mean_body_yaw_rate": _spec(
+        "Absolute mean yaw rate of one named body.",
+        ["rad/s"],
+        required={"body_name": "string"},
+        entities={"body_name": "body"},
+    ),
+    "ordered_body_waypoint_completion_ratio": _spec(
+        "Ordered planar waypoint completion ratio for one named body.",
+        ["ratio"],
+        required={
+            "body_name": "string",
+            "waypoints": "number_matrix",
+            "tolerance": "number",
+        },
+        entities={"body_name": "body"},
+    ),
+    "ordered_body_waypoint_completion_time": _spec(
+        "Elapsed time to complete ordered planar waypoints.",
+        ["s"],
+        required={
+            "body_name": "string",
+            "waypoints": "number_matrix",
+            "tolerance": "number",
+        },
+        entities={"body_name": "body"},
+    ),
+    "ordered_body_axis_gate_completion_ratio": _spec(
+        "Ordered axis-gate completion ratio for one named body.",
+        ["ratio"],
+        required={"body_name": "string", "gates": "object_array"},
+        entities={"body_name": "body"},
+    ),
+    "minimum_body_point_clearance": _spec(
+        "Minimum planar clearance between one named body and fixed points.",
+        ["m"],
+        required={"body_name": "string", "points": "number_matrix"},
+        entities={"body_name": "body"},
+    ),
+    "named_geom_contact_step_count": _spec(
+        "Physics-step contact count involving any selected geom.",
+        ["physics_steps", "count"],
+        required={"geom_names": "string_array"},
+        entities={"geom_names": "geom_array"},
+    ),
+    "contact_sample_count": _spec(
+        "Number of trusted samples containing contact.",
+        ["count"],
+    ),
+    "physics_step_count": _spec(
+        "Number of trusted MuJoCo physics steps.",
+        ["physics_steps", "count", "binary", "reward", "run"],
+    ),
+    "in_hand_object_pattern_success": _spec(
+        "Binary trusted in-hand contact and motion-pattern outcome.",
+        ["trial"],
+        required={
+            "body_name": "string",
+            "reference_body_name": "string",
+            "object_geom_names": "string_array",
+            "required_robot_geom_groups": "string_matrix",
+            "minimum_contact_steps": "integer",
+            "motion_kind": "string",
+        },
+        optional={
+            "minimum_simultaneous_contact_samples": "integer",
+            "minimum_contact_group_transitions": "integer",
+            "axis": "integer",
+            "minimum_translation_range_m": "number",
+            "translation_direction": "integer",
+            "maximum_return_error_m": "number",
+            "minimum_direction_changes": "integer",
+            "site_names": "string_array",
+            "minimum_site_translation_range_m": "number",
+            "minimum_cumulative_rotation_deg": "number",
+            "minimum_net_rotation_deg": "number",
+            "joint_name": "string",
+            "minimum_joint_range_rad": "number",
+        },
+        entities={
+            "body_name": "body",
+            "reference_body_name": "body",
+            "object_geom_names": "geom_array",
+            "required_robot_geom_groups": "geom_matrix",
+            "site_names": "site_array",
+            "joint_name": "joint",
+        },
+    ),
+    "final_concatenated_site_position_error": _spec(
+        "Terminal concatenated site-position error in a named body frame.",
+        ["m"],
+        required={
+            "site_names": "string_array",
+            "reference_body_name": "string",
+            "target_argument": "request_path",
+            "physics_steps_per_control_step": "integer",
+            "control_steps_argument": "request_path",
+        },
+        entities={"site_names": "site_array", "reference_body_name": "body"},
+        request_paths=("target_argument", "control_steps_argument"),
+    ),
+    "final_body_position_offset_error": _spec(
+        "Terminal body-offset error with a same-state orientation gate.",
+        ["m"],
+        required={
+            "body_name": "string",
+            "reference_body_name": "string",
+            "target_argument": "request_path",
+            "orientation_target_argument": "request_path",
+            "maximum_orientation_error_rad": "number",
+            "physics_steps_per_control_step": "integer",
+            "control_steps_argument": "request_path",
+        },
+        entities={"body_name": "body", "reference_body_name": "body"},
+        request_paths=(
+            "target_argument",
+            "orientation_target_argument",
+            "control_steps_argument",
+        ),
+    ),
+    "final_body_quaternion_error": _spec(
+        "Terminal relative quaternion error with a same-state position gate.",
+        ["rad"],
+        required={
+            "body_name": "string",
+            "reference_body_name": "string",
+            "target_argument": "request_path",
+            "position_target_argument": "request_path",
+            "maximum_position_error_m": "number",
+            "physics_steps_per_control_step": "integer",
+            "control_steps_argument": "request_path",
+        },
+        entities={"body_name": "body", "reference_body_name": "body"},
+        request_paths=(
+            "target_argument",
+            "position_target_argument",
+            "control_steps_argument",
+        ),
+    ),
+    "final_maximum_joint_position_error": _spec(
+        "Maximum terminal position error across named joints.",
+        ["rad"],
+        required={
+            "joint_names": "string_array",
+            "target_argument": "request_path",
+            "physics_steps_per_control_step": "integer",
+            "control_steps_argument": "request_path",
+        },
+        entities={"joint_names": "joint_array"},
+        request_paths=("target_argument", "control_steps_argument"),
+    ),
+    "final_wrapped_joint_position_error": _spec(
+        "Terminal wrapped position error for one named joint.",
+        ["rad"],
+        required={
+            "joint_name": "string",
+            "target_argument": "request_path",
+            "physics_steps_per_control_step": "integer",
+            "control_steps_argument": "request_path",
+        },
+        entities={"joint_name": "joint"},
+        request_paths=("target_argument", "control_steps_argument"),
+    ),
+    "maximum_joint_linear_trajectory_error": _spec(
+        "Maximum linear-trajectory tracking error for one named joint.",
+        ["rad"],
+        required={
+            "joint_name": "string",
+            "velocity_argument": "request_path",
+            "control_period_s": "number",
+            "control_steps_argument": "request_path",
+            "physics_steps_per_control_step": "integer",
+        },
+        entities={"joint_name": "joint"},
+        request_paths=("velocity_argument", "control_steps_argument"),
+    ),
+    "body_target_solved_sample_count": _spec(
+        "Count of control samples where a body is within target tolerance.",
+        ["control_step"],
+        required={
+            "body_name": "string",
+            "reference_body_name": "string",
+            "target_argument": "request_path",
+            "solved_distance_m": "number",
+            "drop_distance_m": "number",
+            "control_period_s": "number",
+            "control_steps_argument": "request_path",
+            "physics_steps_per_control_step": "integer",
+        },
+        entities={"body_name": "body", "reference_body_name": "body"},
+        request_paths=("target_argument", "control_steps_argument"),
+    ),
+    "body_target_drop_event_count": _spec(
+        "Count of target-drop events after a minimum solved horizon.",
+        ["event"],
+        required={
+            "body_name": "string",
+            "reference_body_name": "string",
+            "target_argument": "request_path",
+            "drop_distance_m": "number",
+            "solved_distance_m": "number",
+            "minimum_solved_steps": "integer",
+            "control_period_s": "number",
+            "control_steps_argument": "request_path",
+            "physics_steps_per_control_step": "integer",
+        },
+        entities={"body_name": "body", "reference_body_name": "body"},
+        request_paths=("target_argument", "control_steps_argument"),
+    ),
+    "mean_two_body_orbit_tracking_fraction": _spec(
+        "Mean two-body source-frame orbit tracking fraction.",
+        ["ratio"],
+        required={
+            "body_names": "string_array",
+            "reference_body_name": "string",
+            "orbit_center": "number_array",
+            "radii_argument": "request_path",
+            "period_argument": "request_path",
+            "initial_phase_rad": "number",
+            "maximum_tracking_error_m": "number",
+            "minimum_source_height": "number",
+            "source_height_offset_m": "number",
+            "control_period_s": "number",
+            "control_steps_argument": "request_path",
+            "physics_steps_per_control_step": "integer",
+        },
+        entities={"body_names": "body_array", "reference_body_name": "body"},
+        request_paths=(
+            "radii_argument",
+            "period_argument",
+            "control_steps_argument",
+        ),
+    ),
+}
+
+
+def measurement_operator_catalog() -> dict[str, Any]:
+    """Return the JSON-serializable trusted operator vocabulary."""
+
+    return {
+        "artifact_type": "measurement_operator_catalog",
+        "schema_version": "1.0",
+        "binding_fields": ["metric", "unit", "kind", "parameters"],
+        "operators": [
+            {"kind": kind, **copy.deepcopy(spec)}
+            for kind, spec in sorted(_OPERATOR_SPECS.items())
+        ],
+    }
+
+
+def _is_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
+
+
+def _matches_type(value: Any, kind: str) -> bool:
+    if kind in {"string", "request_path"}:
+        return isinstance(value, str) and bool(value.strip())
+    if kind == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if kind == "number":
+        return _is_number(value)
+    if kind == "string_array":
+        return (
+            isinstance(value, list)
+            and bool(value)
+            and all(isinstance(item, str) and bool(item.strip()) for item in value)
+        )
+    if kind == "number_array":
+        return isinstance(value, list) and bool(value) and all(_is_number(item) for item in value)
+    if kind == "string_matrix":
+        return (
+            isinstance(value, list)
+            and bool(value)
+            and all(_matches_type(item, "string_array") for item in value)
+        )
+    if kind == "number_matrix":
+        return (
+            isinstance(value, list)
+            and bool(value)
+            and all(_matches_type(item, "number_array") for item in value)
+        )
+    if kind == "object_array":
+        return isinstance(value, list) and bool(value) and all(isinstance(item, Mapping) for item in value)
+    return False
+
+
+def _assert_finite_json(value: Any, *, where: str) -> None:
+    if isinstance(value, bool) or value is None or isinstance(value, str):
+        return
+    if isinstance(value, (int, float)):
+        if not math.isfinite(float(value)):
+            raise MeasurementOperatorError(f"{where} contains a non-finite number")
+        return
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if not isinstance(key, str):
+                raise MeasurementOperatorError(f"{where} contains a non-string key")
+            _assert_finite_json(child, where=f"{where}.{key}")
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            _assert_finite_json(child, where=f"{where}[{index}]")
+        return
+    raise MeasurementOperatorError(f"{where} contains a non-JSON value")
+
+
+def _schema_at_request_path(request_schema: Mapping[str, Any], path: str) -> Mapping[str, Any]:
+    parts = path.split(".")
+    if len(parts) < 2 or parts[0] != "request" or any(not part for part in parts):
+        raise MeasurementOperatorError(
+            f"request path {path!r} must be rooted at request.<field>"
+        )
+    current: Any = request_schema
+    for part in parts[1:]:
+        if not isinstance(current, Mapping) or current.get("type") != "object":
+            raise MeasurementOperatorError(
+                f"request path {path!r} traverses a non-object schema"
+            )
+        properties = current.get("properties")
+        if not isinstance(properties, Mapping) or part not in properties:
+            raise MeasurementOperatorError(
+                f"request path {path!r} is absent from the sealed request schema"
+            )
+        current = properties[part]
+    if not isinstance(current, Mapping):
+        raise MeasurementOperatorError(
+            f"request path {path!r} does not resolve to a schema"
+        )
+    return current
+
+
+def _scene_model(scene_path: Path) -> Any:
+    try:
+        import mujoco
+
+        return mujoco.MjModel.from_xml_path(str(scene_path))
+    except Exception as exc:
+        raise MeasurementOperatorError(
+            f"cannot load selected MuJoCo scene {scene_path}: {exc}"
+        ) from exc
+
+
+def _entity_names(value: Any, entity_kind: str) -> list[str]:
+    if entity_kind.endswith("_array"):
+        return [str(item) for item in value]
+    if entity_kind.endswith("_matrix"):
+        return [str(item) for group in value for item in group]
+    return [str(value)]
+
+
+def _validate_entities(
+    parameters: Mapping[str, Any],
+    entity_specs: Mapping[str, str],
+    *,
+    scene_path: Path,
+) -> None:
+    relevant = {
+        field: entity_kind
+        for field, entity_kind in entity_specs.items()
+        if field in parameters
+    }
+    if not relevant:
+        return
+    model = _scene_model(scene_path)
+    import mujoco
+
+    object_types = {
+        "body": mujoco.mjtObj.mjOBJ_BODY,
+        "site": mujoco.mjtObj.mjOBJ_SITE,
+        "joint": mujoco.mjtObj.mjOBJ_JOINT,
+        "geom": mujoco.mjtObj.mjOBJ_GEOM,
+    }
+    for field, declared_kind in relevant.items():
+        base_kind = declared_kind.split("_", 1)[0]
+        object_type = object_types[base_kind]
+        for name in _entity_names(parameters[field], declared_kind):
+            if int(mujoco.mj_name2id(model, object_type, name)) < 0:
+                raise MeasurementOperatorError(
+                    f"measurement parameters.{field} references unknown "
+                    f"{base_kind} {name!r} in selected scene"
+                )
+
+
+def audit_inline_measurement_binding(
+    binding: Mapping[str, Any],
+    *,
+    criterion: Mapping[str, Any],
+    request_schema: Mapping[str, Any],
+    scene_path: str | Path,
+) -> dict[str, Any]:
+    """Validate and canonicalize an IVC-authored trusted measurement binding."""
+
+    if not isinstance(binding, Mapping):
+        raise MeasurementOperatorError("measurement_binding must be an object")
+    allowed_fields = {"metric", "unit", "kind", "parameters"}
+    if set(binding) != allowed_fields:
+        missing = sorted(allowed_fields - set(binding))
+        extra = sorted(set(binding) - allowed_fields)
+        raise MeasurementOperatorError(
+            f"measurement_binding fields are invalid; missing={missing}, extra={extra}"
+        )
+    for field in ("metric", "unit", "kind"):
+        if not isinstance(binding.get(field), str) or not str(binding[field]).strip():
+            raise MeasurementOperatorError(
+                f"measurement_binding.{field} must be a non-empty string"
+            )
+    if binding["metric"] != criterion.get("metric"):
+        raise MeasurementOperatorError(
+            "measurement_binding.metric must equal the sealed criterion metric"
+        )
+    if binding["unit"] != criterion.get("unit"):
+        raise MeasurementOperatorError(
+            "measurement_binding.unit must equal the sealed criterion unit"
+        )
+    kind = str(binding["kind"])
+    if kind == "b1_contract":
+        raise MeasurementOperatorError(
+            "capability-v2 measurement_binding cannot use b1_contract"
+        )
+    spec = _OPERATOR_SPECS.get(kind)
+    if spec is None:
+        raise MeasurementOperatorError(
+            f"measurement_binding.kind {kind!r} is not in the trusted operator catalog"
+        )
+    if binding["unit"] not in spec["output_units"]:
+        raise MeasurementOperatorError(
+            f"measurement_binding.unit {binding['unit']!r} is incompatible with "
+            f"trusted operator {kind!r}"
+        )
+    parameters = binding.get("parameters")
+    if not isinstance(parameters, Mapping):
+        raise MeasurementOperatorError("measurement_binding.parameters must be an object")
+    schema = spec["parameter_schema"]
+    required = set(schema["required"])
+    properties = schema["properties"]
+    missing = sorted(required - set(parameters))
+    extra = sorted(set(parameters) - set(properties))
+    if missing or extra:
+        raise MeasurementOperatorError(
+            f"measurement_binding.parameters are invalid; missing={missing}, extra={extra}"
+        )
+    for field, value in parameters.items():
+        expected = str(properties[field]["type"])
+        if not _matches_type(value, expected):
+            raise MeasurementOperatorError(
+                f"measurement_binding.parameters.{field} must have type {expected}"
+            )
+    _assert_finite_json(parameters, where="measurement_binding.parameters")
+    for field in spec["request_path_parameters"]:
+        _schema_at_request_path(request_schema, str(parameters[field]))
+    _validate_entities(
+        parameters,
+        spec["entity_parameters"],
+        scene_path=Path(scene_path).resolve(),
+    )
+    return copy.deepcopy(dict(binding))
+
+
+__all__ = [
+    "MeasurementOperatorError",
+    "audit_inline_measurement_binding",
+    "measurement_operator_catalog",
+]

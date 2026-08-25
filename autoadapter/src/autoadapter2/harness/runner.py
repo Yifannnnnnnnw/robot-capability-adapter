@@ -27,6 +27,7 @@ from .measurements import (
     evaluate_temporal,
     measure,
 )
+from .operators import MeasurementOperatorError, audit_inline_measurement_binding
 
 
 class HarnessError(RuntimeError):
@@ -602,6 +603,10 @@ def run_private_suite(
     capability_methods = tuple(
         str(capability["method_name"]) for capability in design["capabilities"]
     )
+    capabilities_by_id = {
+        str(capability["capability_id"]): capability
+        for capability in design["capabilities"]
+    }
     source_audit = audit_driver_source(
         candidate.read_text(encoding="utf-8"),
         condition=condition,  # type: ignore[arg-type]
@@ -630,11 +635,15 @@ def run_private_suite(
             "instance_id",
             capability_v2=is_capability_v2,
         )
-        private_bindings = _merged_private_index(
-            package,
-            "bindings",
-            "binding_id",
-            capability_v2=is_capability_v2,
+        private_bindings = (
+            {}
+            if is_capability_v2
+            else _merged_private_index(
+                package,
+                "bindings",
+                "binding_id",
+                capability_v2=False,
+            )
         )
         private_guards = _merged_private_index(
             package,
@@ -676,6 +685,19 @@ def run_private_suite(
                 raise HarnessError("B1 case request must be an object")
             binding = binding_value
             guards = list(guard_values)
+        elif is_capability_v2:
+            if "binding_id" in case:
+                raise HarnessError(
+                    "capability-v2 case must author measurement_binding, not binding_id"
+                )
+            instance = private_instances[str(case["instance_id"])]
+            binding_value = case.get("measurement_binding")
+            if not isinstance(binding_value, Mapping):
+                raise HarnessError(
+                    "capability-v2 case requires an inline measurement_binding"
+                )
+            binding = binding_value
+            guards = [private_guards[str(guard_id)] for guard_id in case["guard_ids"]]
         else:
             instance = private_instances[str(case["instance_id"])]
             binding = private_bindings[str(case["binding_id"])]
@@ -701,6 +723,40 @@ def run_private_suite(
             scene_path.relative_to((package.root / "assets").resolve())
         except ValueError as exc:
             raise HarnessError("private instance scene escapes package assets") from exc
+        if is_capability_v2:
+            capability_id = case.get("capability_id")
+            capability = (
+                capabilities_by_id.get(str(capability_id))
+                if isinstance(capability_id, str)
+                else None
+            )
+            criteria = case.get("criteria")
+            if capability is None:
+                raise HarnessError(
+                    "capability-v2 case references an unknown capability"
+                )
+            if (
+                not isinstance(criteria, list)
+                or len(criteria) != 1
+                or not isinstance(criteria[0], Mapping)
+            ):
+                raise HarnessError(
+                    "capability-v2 case requires exactly one sealed criterion"
+                )
+            request_schema = capability.get("request_schema")
+            if not isinstance(request_schema, Mapping):
+                raise HarnessError(
+                    "capability-v2 sealed request_schema must be an object"
+                )
+            try:
+                binding = audit_inline_measurement_binding(
+                    binding,
+                    criterion=criteria[0],
+                    request_schema=request_schema,
+                    scene_path=scene_path,
+                )
+            except MeasurementOperatorError as exc:
+                raise HarnessError(str(exc)) from None
         if is_b1_suite or binding.get("kind") == "b1_contract":
             binding = _resolve_b1_body_geom_symbols(binding, scene_path)
         for repetition in range(repetitions):
@@ -738,10 +794,10 @@ def run_private_suite(
                         if reference_execution
                         else authored_arguments
                     )
-                    # Legacy task bindings resolve paths beneath
-                    # request.task_parameters.  The values in that mapping are
-                    # nevertheless the authored request, not anchor values.
-                    measurement_arguments = trusted_task_arguments
+                    # Inline capability measurements always resolve against
+                    # the native IVC-authored request, even when a trusted
+                    # reference adapter needs a private task envelope.
+                    measurement_arguments = authored_arguments
                 else:
                     reference_arguments = variant.get(
                         "reference_arguments", instance.get("reference_arguments")
