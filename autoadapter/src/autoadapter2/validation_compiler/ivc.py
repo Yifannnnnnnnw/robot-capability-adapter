@@ -54,9 +54,9 @@ generated traces, Repair history, or a candidate verdict.
 Return one JSON object with artifact_type='capability_validation_suite', schema_version='2.0',
 capability_protocol_version='capability-v2', the supplied package identity, and exactly two cases
 for every sealed capability: one case_role='nominal' and one case_role='calibrated_boundary'.
-Choose only supplied private scene/reset context, binding, and guard IDs, but author each complete
-task-neutral request yourself. Supplied request_anchors are calibration evidence, not prescribed
-cases and need not be copied. Every authored request must satisfy the sealed request_schema and,
+For execution wiring, reference only supplied private scene/reset context, binding, and guard IDs,
+but author each complete task-neutral request yourself. Every authored request must satisfy the sealed
+request_schema and,
 when the selected private instance supplies one, its request_domain. A private context without a
 request_domain does not prescribe a request. The nominal and calibrated-boundary requests for one
 capability must differ. Copy the sealed capability criteria and every referenced numeric value
@@ -283,7 +283,6 @@ _TASK_INSTANCE_MODEL_FIELDS = frozenset(
         "scene_entrypoint",
         "reset",
         "request_domain",
-        "request_anchors",
         "calibration_profile",
         "clause_bindings",
         "guard_ids",
@@ -291,6 +290,37 @@ _TASK_INSTANCE_MODEL_FIELDS = frozenset(
         "timeout_sim_s",
     }
 )
+
+
+def _project_task_binding_for_model(
+    record: Mapping[str, Any],
+    *,
+    index: int,
+) -> dict[str, Any]:
+    """Rewrite trusted task-envelope argument paths to the native request ABI."""
+
+    projected = json_copy(dict(record), label=f"private bindings[{index}]")
+    parameters = projected.get("parameters")
+    if parameters is None:
+        return projected
+    if not isinstance(parameters, dict):
+        raise IVCError(f"private bindings[{index}].parameters must be an object")
+    prefix = "request.task_parameters."
+    for key, value in tuple(parameters.items()):
+        if not isinstance(key, str) or not key.endswith("_argument"):
+            continue
+        if (
+            not isinstance(value, str)
+            or not value.startswith(prefix)
+            or not value[len(prefix) :]
+            or "." in value[len(prefix) :]
+        ):
+            raise IVCError(
+                f"private bindings[{index}].parameters.{key} must reference "
+                "request.task_parameters.<field>"
+            )
+        parameters[key] = "request." + value[len(prefix) :]
+    return projected
 
 
 def _project_private_inputs_for_model(
@@ -310,10 +340,11 @@ def _project_private_inputs_for_model(
     instances_document = copied.get("instances")
     if not (
         isinstance(instances_document, Mapping)
-        and instances_document.get("calibration_namespace") == "task"
+        and instances_document.get("calibration_namespace")
+        in {"task", "capability"}
     ):
         return copied
-
+    calibration_namespace = instances_document.get("calibration_namespace")
     raw_instances = instances_document.get("instances")
     if not isinstance(raw_instances, list):
         raise IVCError("private instances must be an object array")
@@ -337,6 +368,30 @@ def _project_private_inputs_for_model(
     }
     projected_document["instances"] = projected_instances
     copied["instances"] = projected_document
+
+    if calibration_namespace != "task":
+        return copied
+
+    bindings_document = copied.get("bindings")
+    if not isinstance(bindings_document, Mapping):
+        raise IVCError("private bindings must be an object document")
+    raw_bindings = bindings_document.get("bindings")
+    if not isinstance(raw_bindings, list):
+        raise IVCError("private bindings must be an object array")
+    projected_bindings: list[dict[str, Any]] = []
+    for index, record in enumerate(raw_bindings):
+        if not isinstance(record, Mapping):
+            raise IVCError(f"private bindings[{index}] must be an object")
+        projected_bindings.append(
+            _project_task_binding_for_model(record, index=index)
+        )
+    projected_binding_document = {
+        key: json_copy(value, label=f"private bindings.{key}")
+        for key, value in bindings_document.items()
+        if key != "bindings"
+    }
+    projected_binding_document["bindings"] = projected_bindings
+    copied["bindings"] = projected_binding_document
     return copied
 
 
@@ -556,6 +611,11 @@ def validate_capability_validation_suite(
     bindings = _id_map(private.get("bindings"), field="bindings", id_field="binding_id")
     guards = _id_map(private.get("guards"), field="guards", id_field="guard_id")
     capabilities = _design_map(design)
+    instances_document = private.get("instances")
+    task_namespace = (
+        isinstance(instances_document, Mapping)
+        and instances_document.get("calibration_namespace") == "task"
+    )
     cases = suite.get("cases")
     expected_count = 2 * len(capabilities)
     if not isinstance(cases, list) or len(cases) != expected_count:
@@ -615,6 +675,25 @@ def validate_capability_validation_suite(
             or binding_id not in clause_bindings.values()
         ):
             raise IVCError(f"{where}.binding_id does not belong to the selected private instance")
+        if task_namespace:
+            parameters = binding.get("parameters")
+            if isinstance(parameters, Mapping):
+                prefix = "request.task_parameters."
+                for key, value in parameters.items():
+                    if not isinstance(key, str) or not key.endswith("_argument"):
+                        continue
+                    if (
+                        isinstance(value, str)
+                        and value.startswith(prefix)
+                        and value[len(prefix) :]
+                        and "." not in value[len(prefix) :]
+                    ):
+                        field = value[len(prefix) :]
+                        if not isinstance(request, Mapping) or field not in request:
+                            raise IVCError(
+                                f"{where}.request omits native field {field!r} required "
+                                "by the selected task binding"
+                            )
         for record, label in ((instance, "instance"), (binding, "binding")):
             declared_capability = record.get("capability_id")
             if declared_capability is not None and declared_capability != capability_id:
@@ -728,6 +807,7 @@ def build_ivc_inputs(
             "validate_authored_request_against_selected_instance_request_domain_when_supplied": True,
             "request_domain_format": "closed capability-v2 request schema",
             "request_anchors_are_calibration_evidence_not_prescribed_cases": True,
+            "exact_request_anchors_are_not_model_visible": True,
             "copy_instance_execution_fields_when_present": [
                 "repetitions",
                 "timeout_sim_s",
@@ -947,7 +1027,8 @@ def run_ivc(
                 "Keep exactly one nominal and one calibrated_boundary case per capability and "
                 "copy every criterion value exactly; each pair must use distinct task-neutral "
                 "requests that satisfy the sealed request schema and any request_domain supplied "
-                "by the selected private instance. Request anchors are evidence, not prescribed cases."
+                "by the referenced private instance. Framework-held request anchors are neither "
+                "model-visible nor prescribed cases."
             )
             continue
         if artifact_path is not None:
