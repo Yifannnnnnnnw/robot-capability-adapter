@@ -25,6 +25,7 @@ from .measurements import (
     aggregate_criterion,
     evaluate_guards,
     evaluate_temporal,
+    measure,
 )
 
 
@@ -107,7 +108,52 @@ def _indexed(document: Mapping[str, Any], field: str, id_field: str) -> dict[str
     for value in values:
         if not isinstance(value, Mapping) or not isinstance(value.get(id_field), str):
             raise HarnessError(f"private {field} contains an invalid item")
-        result[str(value[id_field])] = value
+        identifier = str(value[id_field])
+        if identifier in result:
+            raise HarnessError(f"private {field} contains conflicting ID {identifier!r}")
+        result[identifier] = value
+    return result
+
+
+def _merged_private_index(
+    package: RobotPackage,
+    field: str,
+    id_field: str,
+    *,
+    capability_v2: bool,
+) -> dict[str, Mapping[str, Any]]:
+    """Load the private namespace appropriate to this validation protocol."""
+
+    capability_dir = package.root / "capability_validation" / "private"
+    if (
+        capability_v2
+        and capability_dir.is_dir()
+        and field in {"instances", "bindings"}
+    ):
+        directories = [capability_dir]
+    elif capability_v2 and capability_dir.is_dir() and field == "guards":
+        directories = [
+            directory
+            for directory in (package.private_dir, capability_dir)
+            if directory.is_dir()
+        ]
+    else:
+        # Task Demo and legacy validation must not consume capability-bank
+        # records.  Capability-v2 falls back here only when no bank exists.
+        directories = [package.private_dir] if package.private_dir.is_dir() else []
+    if not directories:
+        raise HarnessError("package has no private Harness records")
+    result: dict[str, Mapping[str, Any]] = {}
+    for directory in directories:
+        records = _indexed(
+            _read_object(directory / f"{field}.json"), field, id_field
+        )
+        conflicts = sorted(set(result).intersection(records))
+        if conflicts:
+            raise HarnessError(
+                f"private {field} contains conflicting IDs {conflicts}"
+            )
+        result.update(records)
     return result
 
 
@@ -521,6 +567,11 @@ def run_private_suite(
         candidate_request_boundary=not (trusted_reference_driver or is_package_reference),
     )
     is_b1_suite = suite.get("artifact_type") == "b1_fixed_validation_suite"
+    is_capability_v2 = (
+        suite.get("artifact_type") == "capability_validation_suite"
+        and suite.get("capability_protocol_version") == "capability-v2"
+    )
+    reference_execution = trusted_reference_driver or is_package_reference
     if is_b1_suite:
         # Experiment 1 cases are intentionally self-contained.  They must not
         # inherit task/private IDs or mutable package-side validation inputs.
@@ -528,20 +579,23 @@ def run_private_suite(
         private_bindings: dict[str, Mapping[str, Any]] = {}
         private_guards: dict[str, Mapping[str, Any]] = {}
     else:
-        private_instances = _indexed(
-            _read_object(package.private_dir / "instances.json"),
+        private_instances = _merged_private_index(
+            package,
             "instances",
             "instance_id",
+            capability_v2=is_capability_v2,
         )
-        private_bindings = _indexed(
-            _read_object(package.private_dir / "bindings.json"),
+        private_bindings = _merged_private_index(
+            package,
             "bindings",
             "binding_id",
+            capability_v2=is_capability_v2,
         )
-        private_guards = _indexed(
-            _read_object(package.private_dir / "guards.json"),
+        private_guards = _merged_private_index(
+            package,
             "guards",
             "guard_id",
+            capability_v2=is_capability_v2,
         )
     cases = suite.get("cases")
     if not isinstance(cases, list) or not cases:
@@ -602,7 +656,7 @@ def run_private_suite(
             scene_path.relative_to((package.root / "assets").resolve())
         except ValueError as exc:
             raise HarnessError("private instance scene escapes package assets") from exc
-        if is_b1_suite:
+        if is_b1_suite or binding.get("kind") == "b1_contract":
             binding = _resolve_b1_body_geom_symbols(binding, scene_path)
         for repetition in range(repetitions):
             variant = (
@@ -612,13 +666,26 @@ def run_private_suite(
             )
             if not isinstance(variant, Mapping):
                 raise HarnessError("private repetition variant must be an object")
-            public_arguments = (
-                {"request": dict(case["request"])}
-                if is_b1_suite
-                else variant.get(
-                    "public_arguments", instance.get("public_arguments", {})
-                )
+            private_public_arguments = variant.get(
+                "public_arguments", instance.get("public_arguments", {})
             )
+            if is_b1_suite:
+                public_arguments = {"request": dict(case["request"])}
+                measurement_arguments = public_arguments
+            elif is_capability_v2:
+                capability_request = case.get("request")
+                if not isinstance(capability_request, Mapping):
+                    raise HarnessError("capability-v2 case request must be an object")
+                candidate_arguments = {"request": dict(capability_request)}
+                public_arguments = (
+                    private_public_arguments
+                    if reference_execution
+                    else candidate_arguments
+                )
+                measurement_arguments = candidate_arguments
+            else:
+                public_arguments = private_public_arguments
+                measurement_arguments = public_arguments
             reset = variant.get("reset", instance.get("reset", {"kind": "default"}))
             trial_id = f"{case['case_id']}-r{repetition:02d}"
             video_path = destination / "videos" / f"{trial_id}.mp4"
@@ -693,6 +760,16 @@ def run_private_suite(
             guard_outcomes: dict[str, bool] = {}
             measurement_error = None
             criterion = case.get("criterion")
+            if is_capability_v2:
+                criteria = case.get("criteria")
+                if (
+                    not isinstance(criteria, list)
+                    or len(criteria) != 1
+                    or not isinstance(criteria[0], Mapping)
+                ):
+                    criterion = None
+                else:
+                    criterion = criteria[0]
             if is_b1_suite and criterion is None:
                 criterion = {
                     "comparator": "==",
@@ -705,14 +782,32 @@ def run_private_suite(
                 if worker.get("candidate_exception") is None and worker.get("method_invoked"):
                     if not isinstance(criterion, Mapping):
                         raise ValueError("private case criterion must be an object")
-                    temporal_evidence = evaluate_temporal(
-                        binding,
-                        criterion=criterion,
-                        evidence=worker["physical_evidence"],
-                        public_arguments=public_arguments,
-                    )
-                    measurement_value = temporal_evidence.get("value")
-                    temporal_passed = bool(temporal_evidence.get("passed"))
+                    if is_capability_v2 and binding.get("kind") == "b1_contract":
+                        measurement_value = measure(
+                            binding,
+                            evidence=worker["physical_evidence"],
+                            public_arguments=measurement_arguments,
+                        )
+                        temporal_passed = math.isclose(
+                            float(measurement_value),
+                            1.0,
+                            rel_tol=0.0,
+                            abs_tol=1.0e-9,
+                        )
+                        temporal_evidence = {
+                            "kind": "trusted_b1_contract",
+                            "passed": temporal_passed,
+                            "value": measurement_value,
+                        }
+                    else:
+                        temporal_evidence = evaluate_temporal(
+                            binding,
+                            criterion=criterion,
+                            evidence=worker["physical_evidence"],
+                            public_arguments=measurement_arguments,
+                        )
+                        measurement_value = temporal_evidence.get("value")
+                        temporal_passed = bool(temporal_evidence.get("passed"))
             except Exception as exc:
                 measurement_error = f"{type(exc).__name__}: {exc}"
             physical_execution_passed = _physical_execution_completed(worker)
@@ -763,49 +858,53 @@ def run_private_suite(
                     "sim_end_s": sim_end_s,
                 }
             )
-            trials.append(
-                {
-                    "trial_id": trial_id,
-                    "case_id": case["case_id"],
-                    "capability_id": case.get(
-                        "capability_id", case.get("contract_id", case["case_id"])
-                    ),
-                    "task_id": case.get(
-                        "task_id", case.get("contract_id", case["case_id"])
-                    ),
-                    "source_clause_id": case.get(
-                        "source_clause_id", case.get("contract_id", case["case_id"])
-                    ),
-                    "worker_completed": bool(worker.get("worker_completed")),
-                    "method_invoked": bool(worker.get("method_invoked")),
-                    "public_arguments": public_arguments,
-                    "measurement_value": measurement_value,
-                    "measurement_error": measurement_error,
-                    "criterion_passed": False,
-                    "temporal_passed": temporal_passed,
-                    "temporal_evidence": temporal_evidence,
-                    "aggregation_passed": False,
-                    "aggregation_value": None,
-                    "guard_outcomes": guard_outcomes,
-                    "video": video_manifest,
-                    "candidate_exception": worker.get("candidate_exception"),
-                    "controller": (
-                        dict(worker["controller"])
-                        if isinstance(worker.get("controller"), Mapping)
-                        else None
-                    ),
-                    "candidate_log": worker.get("candidate_log", ""),
-                    "controller_completed": controller_completed,
-                    "physical_evidence": worker.get("physical_evidence", {}),
-                    "physical_execution_passed": physical_execution_passed,
-                    "contact_integrity": contact_integrity,
-                    "physical_integrity_passed": physical_integrity_passed,
-                    "task_metric_passed": False,
-                    "trial_passed": False,
-                    "_criterion": criterion,
-                    "_base_passed": base_passed,
-                }
-            )
+            trial = {
+                "trial_id": trial_id,
+                "case_id": case["case_id"],
+                "capability_id": case.get(
+                    "capability_id", case.get("contract_id", case["case_id"])
+                ),
+                "case_role": case.get("case_role"),
+                "worker_completed": bool(worker.get("worker_completed")),
+                "method_invoked": bool(worker.get("method_invoked")),
+                "public_arguments": public_arguments,
+                "measurement_value": measurement_value,
+                "measurement_error": measurement_error,
+                "criterion_passed": False,
+                "temporal_passed": temporal_passed,
+                "temporal_evidence": temporal_evidence,
+                "aggregation_passed": False,
+                "aggregation_value": None,
+                "guard_outcomes": guard_outcomes,
+                "video": video_manifest,
+                "candidate_exception": worker.get("candidate_exception"),
+                "controller": (
+                    dict(worker["controller"])
+                    if isinstance(worker.get("controller"), Mapping)
+                    else None
+                ),
+                "candidate_log": worker.get("candidate_log", ""),
+                "controller_completed": controller_completed,
+                "physical_evidence": worker.get("physical_evidence", {}),
+                "physical_execution_passed": physical_execution_passed,
+                "contact_integrity": contact_integrity,
+                "physical_integrity_passed": physical_integrity_passed,
+                "task_metric_passed": False,
+                "trial_passed": False,
+                "_criterion": criterion,
+                "_trusted_contract": bool(
+                    is_capability_v2 and binding.get("kind") == "b1_contract"
+                ),
+                "_base_passed": base_passed,
+            }
+            if not is_capability_v2:
+                trial["task_id"] = case.get(
+                    "task_id", case.get("contract_id", case["case_id"])
+                )
+                trial["source_clause_id"] = case.get(
+                    "source_clause_id", case.get("contract_id", case["case_id"])
+                )
+            trials.append(trial)
 
     case_trials: dict[str, list[dict[str, Any]]] = {}
     for trial in trials:
@@ -816,16 +915,35 @@ def run_private_suite(
         try:
             if not isinstance(criterion, Mapping):
                 raise ValueError("private case criterion must be an object")
-            aggregation = criterion.get("aggregation")
-            if not isinstance(aggregation, Mapping):
-                raise ValueError("criterion aggregation rule must be an object")
-            aggregation_result = aggregate_criterion(
-                aggregation,
-                comparator=str(criterion["comparator"]),
-                threshold=criterion["threshold"],
-                values=[trial["measurement_value"] for trial in values],
-                temporal_passes=[bool(trial["temporal_passed"]) for trial in values],
-            )
+            if all(bool(trial.get("_trusted_contract")) for trial in values):
+                passed = all(
+                    bool(trial["temporal_passed"])
+                    and isinstance(trial["measurement_value"], (int, float))
+                    and not isinstance(trial["measurement_value"], bool)
+                    and math.isclose(
+                        float(trial["measurement_value"]),
+                        1.0,
+                        rel_tol=0.0,
+                        abs_tol=1.0e-9,
+                    )
+                    for trial in values
+                )
+                aggregation_result = {
+                    "kind": "trusted_b1_contract_all_trials",
+                    "passed": passed,
+                    "value": 1.0 if passed else 0.0,
+                }
+            else:
+                aggregation = criterion.get("aggregation")
+                if not isinstance(aggregation, Mapping):
+                    raise ValueError("criterion aggregation rule must be an object")
+                aggregation_result = aggregate_criterion(
+                    aggregation,
+                    comparator=str(criterion["comparator"]),
+                    threshold=criterion["threshold"],
+                    values=[trial["measurement_value"] for trial in values],
+                    temporal_passes=[bool(trial["temporal_passed"]) for trial in values],
+                )
         except Exception as exc:
             aggregation_result = {
                 "kind": (
@@ -852,20 +970,25 @@ def run_private_suite(
                 and bool(trial["task_metric_passed"])
             )
             trial.pop("_criterion", None)
+            trial.pop("_trusted_contract", None)
             trial.pop("_base_passed", None)
 
     task_passes: Counter[str] = Counter()
     task_totals: Counter[str] = Counter()
     for trial in trials:
-        task_totals[str(trial["task_id"])] += 1
+        task_key = str(trial.get("task_id", trial["capability_id"]))
+        task_totals[task_key] += 1
         if trial["trial_passed"]:
-            task_passes[str(trial["task_id"])] += 1
+            task_passes[task_key] += 1
     passed_selected_tasks = sum(
         1 for task_id, total in task_totals.items() if task_passes[task_id] == total
     )
     clause_trials: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for trial in trials:
-        key = (str(trial["task_id"]), str(trial["source_clause_id"]))
+        key = (
+            str(trial.get("task_id", trial["capability_id"])),
+            str(trial.get("source_clause_id", trial["case_id"])),
+        )
         clause_trials.setdefault(key, []).append(trial)
     passed_cases = sum(
         1 for values in case_trials.values() if all(value["trial_passed"] for value in values)
@@ -876,7 +999,7 @@ def run_private_suite(
     selected_task_clauses: dict[str, set[str]] = {}
     for task_id, clause_id in clause_trials:
         selected_task_clauses.setdefault(task_id, set()).add(clause_id)
-    if is_b1_suite:
+    if is_b1_suite or is_capability_v2:
         designed_task_clauses = {
             task_id: set(clauses)
             for task_id, clauses in selected_task_clauses.items()

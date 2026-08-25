@@ -141,6 +141,9 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
                     "instance_id": f"instance-{suffix}",
                     "capability_id": capability_id,
                     "case_role": role,
+                    "clause_bindings": {
+                        "capability-criterion": f"binding-{suffix}"
+                    },
                     "guard_ids": [],
                     "repetitions": 2,
                     "timeout_sim_s": 5.0,
@@ -167,6 +170,7 @@ def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
         method_name = capability["method_name"]
         for role in IVC_CASE_ROLES:
             suffix = f"{cap_id.lower()}-{role}"
+            amount = -0.25 if role == "nominal" else 0.75
             cases.append(
                 {
                     "case_id": f"case-{suffix}",
@@ -178,6 +182,7 @@ def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
                     "guard_ids": [],
                     "repetitions": 2,
                     "timeout_sim_s": 5.0,
+                    "request": {f"amount_{cap_id[1:]}": amount},
                     "criteria": json.loads(json.dumps(capability["criteria"])),
                 }
             )
@@ -239,6 +244,28 @@ def test_recap_finish_name_is_reserved_at_capability_design_boundary() -> None:
     design = _design()
     design["capabilities"][0]["method_name"] = "finish"
     with pytest.raises(CapabilityDesignError, match="non-reserved"):
+        validate_capability_design(design, _package())
+
+
+@pytest.mark.parametrize(
+    "method_name",
+    ["class", "_private_method", "model", "close", "render", "step"],
+)
+def test_tgcd_rejects_every_generation_reserved_method_name(
+    method_name: str,
+) -> None:
+    design = _design()
+    design["capabilities"][0]["method_name"] = method_name
+    with pytest.raises(CapabilityDesignError, match="non-reserved"):
+        validate_capability_design(design, _package())
+
+
+def test_tgcd_rejects_multiple_top_level_criteria() -> None:
+    design = _design()
+    design["capabilities"][0]["criteria"].append(
+        json.loads(json.dumps(design["capabilities"][0]["criteria"][0]))
+    )
+    with pytest.raises(CapabilityDesignError, match="exactly one"):
         validate_capability_design(design, _package())
 
 
@@ -443,6 +470,45 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
     with pytest.raises(IVCError, match="criterion"):
         validate_capability_validation_suite(
             tampered, package=package, design=design, private_inputs=private
+        )
+
+
+def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
+    package = _package()
+    design = _design()
+    private = _private_inputs(design)
+    suite = _suite(design, private)
+
+    invalid_request = json.loads(json.dumps(suite))
+    invalid_request["cases"][0]["request"] = {"task_id": "task-a"}
+    with pytest.raises(IVCError, match="request"):
+        validate_capability_validation_suite(
+            invalid_request, package=package, design=design, private_inputs=private
+        )
+
+    duplicate_requests = json.loads(json.dumps(suite))
+    cap_id = duplicate_requests["cases"][0]["capability_id"]
+    pair = [
+        case for case in duplicate_requests["cases"] if case["capability_id"] == cap_id
+    ]
+    pair[1]["request"] = json.loads(json.dumps(pair[0]["request"]))
+    with pytest.raises(IVCError, match="requests must differ"):
+        validate_capability_validation_suite(
+            duplicate_requests, package=package, design=design, private_inputs=private
+        )
+
+    wrong_binding = json.loads(json.dumps(suite))
+    wrong_binding["cases"][0]["binding_id"] = wrong_binding["cases"][2]["binding_id"]
+    with pytest.raises(IVCError, match="does not belong"):
+        validate_capability_validation_suite(
+            wrong_binding, package=package, design=design, private_inputs=private
+        )
+
+    wrong_role = json.loads(json.dumps(suite))
+    wrong_role["cases"][0]["case_role"] = "calibrated_boundary"
+    with pytest.raises(IVCError, match="private instance role"):
+        validate_capability_validation_suite(
+            wrong_role, package=package, design=design, private_inputs=private
         )
 
 

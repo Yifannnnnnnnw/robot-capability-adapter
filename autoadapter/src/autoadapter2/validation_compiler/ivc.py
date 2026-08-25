@@ -25,6 +25,7 @@ from autoadapter2.capability_design.protocol import (
     CapabilityProtocolError,
     capability_records,
     json_copy,
+    validate_schema_value,
 )
 from autoadapter2.driver_synthesis.interactive import IsolatedArtifactSession
 from autoadapter2.driver_synthesis.probe import ProbeBudget
@@ -50,10 +51,12 @@ generated traces, Repair history, or a candidate verdict.
 Return one JSON object with artifact_type='capability_validation_suite', schema_version='2.0',
 capability_protocol_version='capability-v2', the supplied package identity, and exactly two cases
 for every sealed capability: one case_role='nominal' and one case_role='calibrated_boundary'.
-Choose only supplied private IDs. Copy the sealed capability criteria and every referenced numeric
-value exactly into each case. Keep private bindings, guards, repetitions, and timeout references
-unchanged. Set whole_suite_aggregation={'kind':'all_cases'}. Do not add task mappings, Driver or
-Repair material, implementation advice, a task plan, or a self-reported verdict."""
+Choose only supplied private IDs. Each case has a task-neutral request that exactly satisfies the
+sealed request_schema; the nominal and calibrated-boundary requests for one capability must differ.
+Copy the sealed capability criteria and every referenced numeric value exactly into each case. Keep
+private bindings, guards, repetitions, and timeout references unchanged. Set
+whole_suite_aggregation={'kind':'all_cases'}. Do not add task mappings, Driver or Repair material,
+implementation advice, a task plan, or a self-reported verdict."""
 
 
 class IVCError(ValueError):
@@ -144,19 +147,85 @@ def load_sanitized_ivc_examples(
 
 
 def _private_inputs_from_package(package: Any) -> dict[str, Any]:
-    private_dir = (
+    legacy_dir = (
         package.get("private_dir")
         if isinstance(package, Mapping)
         else getattr(package, "private_dir", None)
     )
-    if isinstance(private_dir, str):
-        private_dir = Path(private_dir)
-    if not isinstance(private_dir, Path):
-        raise IVCError("private_inputs must be supplied when package has no private_dir")
-    return {
-        name: _read_object(private_dir / f"{name}.json")
-        for name in ("instances", "bindings", "guards")
+    package_root = (
+        package.get("root")
+        if isinstance(package, Mapping)
+        else getattr(package, "root", None)
+    )
+    if isinstance(legacy_dir, str):
+        legacy_dir = Path(legacy_dir)
+    if isinstance(package_root, str):
+        package_root = Path(package_root)
+    capability_dir = (
+        package_root / "capability_validation" / "private"
+        if isinstance(package_root, Path)
+        else None
+    )
+
+    legacy_available = isinstance(legacy_dir, Path) and legacy_dir.is_dir()
+    capability_available = (
+        isinstance(capability_dir, Path) and capability_dir.is_dir()
+    )
+    if not legacy_available and not capability_available:
+        raise IVCError("private_inputs must be supplied when package has no private records")
+
+    id_fields = {
+        "instances": "instance_id",
+        "bindings": "binding_id",
+        "guards": "guard_id",
     }
+    result: dict[str, Any] = {}
+    for name, id_field in id_fields.items():
+        if capability_available and name in {"instances", "bindings"}:
+            # A capability-calibration bank is a closed IVC namespace.  Mixing
+            # task-demo records into it would expose task envelopes and let the
+            # compiler bind a capability case to an unrelated task instance.
+            directories = [capability_dir]
+        elif capability_available and name == "guards":
+            # Guards are shared physical-integrity contracts.  A calibration
+            # bank may add package-specific guards, but never override a task
+            # guard with the same identifier.
+            directories = [
+                directory
+                for directory in (legacy_dir, capability_dir)
+                if isinstance(directory, Path) and directory.is_dir()
+            ]
+        else:
+            directories = [legacy_dir]
+        documents = [
+            _read_object(directory / f"{name}.json") for directory in directories
+        ]
+        merged: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        identity: dict[str, Any] = {}
+        for document in documents:
+            records = document.get(name)
+            if not isinstance(records, list):
+                raise IVCError(f"private compiler input {name}.json must contain {name}[]")
+            for field in ("robot_configuration_id", "package_version", "task_snapshot_id"):
+                value = document.get(field)
+                if value is None:
+                    continue
+                if field in identity and identity[field] != value:
+                    raise IVCError(f"private {name} identity conflict for {field}")
+                identity[field] = value
+            for record in records:
+                if not isinstance(record, Mapping):
+                    raise IVCError(f"private {name} contains a non-object record")
+                identifier = record.get(id_field)
+                if not isinstance(identifier, str) or not identifier.strip():
+                    raise IVCError(f"private {name} contains an invalid {id_field}")
+                if identifier in seen:
+                    raise IVCError(f"private {name} contains conflicting ID {identifier!r}")
+                seen.add(identifier)
+                merged.append(json_copy(dict(record), label=f"private {name}"))
+        result[name] = {**identity, name: merged}
+    return result
 
 
 def _copy_private_inputs(private_inputs: Mapping[str, Any]) -> dict[str, Any]:
@@ -253,11 +322,9 @@ def _package_identity(package: Any) -> dict[str, Any]:
 
 def _criterion_list(capability: Mapping[str, Any], *, where: str) -> list[dict[str, Any]]:
     raw = capability.get("criteria")
-    if not isinstance(raw, list) or not raw:
-        raise IVCError(f"{where}.criteria must be a non-empty array")
-    if not all(isinstance(item, Mapping) for item in raw):
-        raise IVCError(f"{where}.criteria entries must be objects")
-    return [json_copy(dict(item), label=f"{where}.criteria[{index}]") for index, item in enumerate(raw)]
+    if not isinstance(raw, list) or len(raw) != 1 or not isinstance(raw[0], Mapping):
+        raise IVCError(f"{where}.criteria must contain exactly one executable criterion")
+    return [json_copy(dict(raw[0]), label=f"{where}.criteria[0]")]
 
 
 def _same_criteria(case: Mapping[str, Any], capability: Mapping[str, Any], *, where: str) -> bool:
@@ -316,6 +383,7 @@ def validate_capability_validation_suite(
 
     seen_cases: set[str] = set()
     roles: dict[tuple[str, str], int] = {}
+    requests: dict[tuple[str, str], Any] = {}
     canonical_cases: list[dict[str, Any]] = []
     for index, case in enumerate(cases):
         where = f"cases[{index}]"
@@ -337,6 +405,15 @@ def validate_capability_validation_suite(
             raise IVCError(f"{where}.method_name differs from the sealed design")
         if not _same_criteria(case, capability, where=where):
             raise IVCError(f"{where} changes sealed criterion or numeric values")
+        request = case.get("request")
+        try:
+            validate_schema_value(
+                request,
+                capability.get("request_schema", {}),
+                path=f"{where}.request",
+            )
+        except CapabilityProtocolError as exc:
+            raise IVCError(str(exc)) from None
         instance_id = case.get("instance_id")
         binding_id = case.get("binding_id")
         if not isinstance(instance_id, str) or instance_id not in instances:
@@ -345,6 +422,12 @@ def validate_capability_validation_suite(
             raise IVCError(f"{where}.binding_id is not a supplied private binding")
         instance = instances[instance_id]
         binding = bindings[binding_id]
+        clause_bindings = instance.get("clause_bindings")
+        if (
+            not isinstance(clause_bindings, Mapping)
+            or binding_id not in clause_bindings.values()
+        ):
+            raise IVCError(f"{where}.binding_id does not belong to the selected private instance")
         for record, label in ((instance, "instance"), (binding, "binding")):
             declared_capability = record.get("capability_id")
             if declared_capability is not None and declared_capability != capability_id:
@@ -374,12 +457,19 @@ def validate_capability_validation_suite(
             raise IVCError(f"{where}.binding unit is incompatible with sealed criteria")
         key = (capability_id, role)
         roles[key] = roles.get(key, 0) + 1
+        requests[key] = json_copy(request, label=f"{where}.request")
         canonical_cases.append(_normalise_case_criteria(case, capability))
 
     for capability_id in capabilities:
         for role in IVC_CASE_ROLES:
             if roles.get((capability_id, role), 0) != 1:
                 raise IVCError(f"capability {capability_id!r} must have exactly one {role} case")
+        if requests[(capability_id, "nominal")] == requests[
+            (capability_id, "calibrated_boundary")
+        ]:
+            raise IVCError(
+                f"capability {capability_id!r} nominal and calibrated-boundary requests must differ"
+            )
     result = json_copy(dict(suite), label="validation_suite")
     result["cases"] = canonical_cases
     return result
@@ -493,7 +583,7 @@ def run_ivc(
                 raise IVCError(
                     "reference calibration failed for at least one nominal or "
                     "calibrated-boundary case; revise only the supplied private "
-                    "case selections and bindings"
+                    "case selections, task-neutral requests and bindings"
                 ) from None
             if callback is not None:
                 callback(
@@ -598,7 +688,8 @@ def run_ivc(
             prompt = IVC_SYSTEM_PROMPT + (
                 "\nCorrect the previous artifact only enough to satisfy the deterministic audit. "
                 "Keep exactly one nominal and one calibrated_boundary case per capability and "
-                "copy every criterion value exactly."
+                "copy every criterion value exactly; each pair must use distinct task-neutral "
+                "requests that satisfy the sealed request schema."
             )
             continue
         if artifact_path is not None:

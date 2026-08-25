@@ -21,6 +21,11 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from autoadapter2.driver_synthesis.skeleton_contract import (
+    SkeletonContractError,
+    validate_capability_names,
+)
+
 
 CAPABILITY_PROTOCOL_VERSION = "capability-v2"
 CAPABILITY_INVOCATION_ABI = {
@@ -496,11 +501,11 @@ def validate_capability_design(
             raise CapabilityProtocolError(f"{where} must be an object")
         capability_id = _required_text(raw.get("capability_id", raw.get("id")), where=f"{where}.capability_id")
         method_name = _required_text(raw.get("method_name", raw.get("method")), where=f"{where}.method_name")
-        if not method_name.isidentifier() or method_name in {
-            "build",
-            "finish",
-            "finish_task_demo",
-        }:
+        try:
+            validate_capability_names((method_name,))
+        except SkeletonContractError:
+            raise CapabilityProtocolError(f"{where}.method_name must be a non-reserved identifier")
+        if method_name == "finish":
             raise CapabilityProtocolError(f"{where}.method_name must be a non-reserved identifier")
         if capability_id in seen_ids or method_name in seen_methods:
             raise CapabilityProtocolError(f"{where} capability ID and method names must be unique")
@@ -508,8 +513,10 @@ def validate_capability_design(
         effect = _required_text(raw.get("effect"), where=f"{where}.effect")
         schema = validate_schema_definition(raw.get("request_schema"), path=f"{where}.request_schema")
         criteria = raw.get("criteria", raw.get("validation_contract"))
-        if not isinstance(criteria, list) or not criteria:
-            raise CapabilityProtocolError(f"{where}.criteria must be a non-empty array")
+        if not isinstance(criteria, list) or len(criteria) != 1:
+            raise CapabilityProtocolError(
+                f"{where}.criteria must contain exactly one executable criterion"
+            )
         canonical_criteria = [
             _validate_structured_criterion(item, where=f"{where}.criteria[{criterion_index}]")
             for criterion_index, item in enumerate(criteria)
