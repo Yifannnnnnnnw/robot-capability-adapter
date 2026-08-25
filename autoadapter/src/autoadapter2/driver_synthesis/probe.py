@@ -244,6 +244,10 @@ _read_roots = {
     os.path.realpath(sys.prefix),
     os.path.realpath(sys.base_prefix),
 }
+_interpreter_roots = tuple(sorted({
+    os.path.realpath(sys.prefix),
+    os.path.realpath(sys.base_prefix),
+}))
 _python_root_for_audit = os.environ.get("AUTOADAPTER_PROBE_PYTHON_ROOT")
 if _python_root_for_audit:
     _read_roots.add(os.path.realpath(_python_root_for_audit))
@@ -257,6 +261,7 @@ _blocked_import_roots = {
     "telnetlib", "urllib",
 }
 _compile_authorised = False
+_trusted_dynamic_compile_modules = {"ast", "dataclasses"}
 
 
 def _normalise_audit_path(value):
@@ -353,6 +358,21 @@ def _runtime_audit(event, args):
             return
         if isinstance(filename, str) and not filename.startswith("<"):
             _require_path(filename, _read_roots, "compile")
+            return
+        # ``dataclasses`` creates generated methods with ``compile(...,
+        # '<string>', ...)`` and ``ast.parse`` compiles to an AST with an
+        # angle-bracket filename.  Both are required by the staged trusted
+        # skeletons and ordinary probe diagnostics.  Admit only calls whose
+        # executing frame is the immutable matching stdlib module; a
+        # model-authored frame cannot opt in by changing ``__name__``.
+        caller = sys._getframe(1)
+        caller_module = str(caller.f_globals.get("__name__", ""))
+        caller_path = os.path.realpath(caller.f_code.co_filename)
+        if (
+            caller_module in _trusted_dynamic_compile_modules
+            and os.path.basename(caller_path) == caller_module + ".py"
+            and _under_any(caller_path, _interpreter_roots)
+        ):
             return
         raise PermissionError("dynamic compilation is unavailable in execute_python")
     if event in {"builtins.input", "builtins.input/result"}:

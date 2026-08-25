@@ -346,6 +346,41 @@ class InteractiveFileSessionTests(unittest.TestCase):
         self.assertFalse(plugin_result["successful"], plugin_result)
         self.assertEqual(plugin_result["error"]["type"], "PermissionError")
 
+    def test_execute_python_allows_trusted_skeleton_dataclasses_but_not_model_compile(self) -> None:
+        assisted = PublicDevelopmentSession(
+            package=self.package,
+            condition="skeleton-assisted",
+            workspace=Path(self.temporary.name) / "assisted-import-session",
+            budget=ProbeBudget(max_requests=None, timeout_s=10),
+            source_root=SOURCE_ROOT,
+            capability_methods=("drive",),
+        )
+        self.extra_sessions.append(assisted)
+
+        trusted_import = assisted.execute_python(
+            {
+                "code": (
+                    "import ast\n"
+                    "from autoadapter2.trusted_skeletons.arm_serial_dls import ArmSpec\n"
+                    "tree = ast.parse('value = 1')\n"
+                    "print(type(tree).__name__, ArmSpec.__name__)\n"
+                )
+            }
+        )
+        self.assertTrue(trusted_import["successful"], trusted_import)
+        self.assertIn("Module ArmSpec", trusted_import["stdout"])
+
+        dynamic_compile = assisted.execute_python(
+            {
+                "code": (
+                    "compiler = getattr(__builtins__, 'com' + 'pile')\n"
+                    "compiler('value = 2', '<dynamic>', 'exec')\n"
+                )
+            }
+        )
+        self.assertFalse(dynamic_compile["successful"], dynamic_compile)
+        self.assertEqual(dynamic_compile["error"]["type"], "PermissionError")
+
     def test_persistent_python_session_fails_closed_without_os_sandbox(self) -> None:
         with mock.patch(
             "autoadapter2.driver_synthesis.probe._seatbelt_available",
