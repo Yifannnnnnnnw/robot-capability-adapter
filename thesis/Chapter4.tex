@@ -3,57 +3,36 @@
 
 \section{Introduction}
 
-\begin{quote}
-This chapter examines whether Auto-Adapter can transform public robot and task
-inputs into a reusable, independently validated robot-specific driver that,
-when invoked by a fixed high-level planner, achieves a higher task-success rate
-on matched tasks than the selected embodied-AI baselines.
-\end{quote}
+Large language models support task-level robot planning, yet high-level
+controllers cannot translate abstract actions into robot-specific actuation.
+Prominent methods advance skill selection, feedback-conditioned planning, and
+policy-code generation, but commonly begin from supplied skills, motion
+mechanisms, or control APIs
+\citep{ahn2022saycan,huang2023innermonologue,liang2023codeaspolicies}. Recent
+agentic systems use test, execution, or physical feedback to refine controller
+and policy code
+\citep{tripathi2026testdriven,xiao2026enpire,fu2026capx,lu2026aspire}.
 
-Chapter~\ref{chapter:autoadapter-bench} evaluates how LLM backbone choice
-affects driver synthesis and capability-interface use while holding the
-surrounding framework fixed. This chapter changes the object of analysis from
-the model to selected design choices and control boundaries in Auto-Adapter.
-The system designs a reusable robot capability interface and generates a
-robot-specific Python driver that implements its declared operations; the
-driver is not itself a task-specific policy. This distinction separates three
-kinds of evidence: producing source code, passing independent capability-level
-validation, and completing a downstream task through the interface. The three
-evidence blocks examine these stages without treating them as a single measure
-of success.
+This chapter presents Auto-Adapter, which transforms public robot metadata,
+canonical MJCF assets, and source-backed tasks into reusable capability
+contracts and robot-specific drivers. Its features are
+\textbf{Task-Grounded Capability Design}, an \textbf{implementation-blind
+Independent Validation Compiler}, and a \textbf{two-level, physics-grounded
+feedback architecture}. During GENERATE, an \textbf{inner physics-grounded
+generation loop} alternates between code synthesis, bounded public MuJoCo
+probes, and revision. An \textbf{outer validation--Repair cycle} then submits
+the generated driver to the trusted Harness, which runs private cases, issues
+behavioural verdicts, and returns bounded reports for Repair. Evolution
+proposes review-gated Experience for later matched runs.
 
-The first study isolates the information available during driver development.
-Test-driven controller synthesis can return structured \texttt{pytest}
-failures, including aggregate quantities derived from simulator execution, to
-guide code correction \citep{tripathi2026testdriven}. Auto-Adapter additionally
-exposes a bounded, candidate-visible projection of MuJoCo state from public
-development cases, such as actuator controls, joint states, and compact
-trajectory summaries. The comparison holds the generation protocol and
-revision opportunity fixed so that the feedback representation, rather than
-additional model interaction, is the object of analysis. It asks whether
-state-rich MuJoCo feedback changes synthesis outcomes beyond structured test
-diagnostics; both conditions may contain simulator-derived quantities. This
-public development signal remains separate from the private validation
-definitions and final verdict owned by the \emph{Harness}. Related work on
-simulation-based correction motivates testing simulator feedback, but does not
-establish its effect in this driver-synthesis setting
-\citep{kim2026physicalcorrection}.
-
-The remaining two studies move upstream from code generation to interface and
-acceptance-condition design. Task-Grounded Capability Design receives at least
-twenty source-backed tasks for each robot, but no pre-authored capability
-catalogue or task-to-capability mapping, and must propose five to ten capability
-contracts intended for reuse across tasks. The analysis assesses whether the
-resulting set remains traceable to sources, covers the source-backed task
-library, and expresses semantically coherent operations; it does not treat
-capability design as driver generation. The pass-criteria study examines
-whether a model can select and form capability-level criteria from existing
-task-level standards without weakening their source obligations. An
-implementation-blind Independent Validation Compiler (IVC) audits those
-criteria, binds them to private MuJoCo task instances and trusted measurement
-definitions, and compiles an executable validation suite. The \emph{Harness}
-retains verdict authority, so successful compilation is not itself behavioural
-validation.
+The chapter's central empirical objective is to establish whether Auto-Adapter
+produces effective robot-specific drivers whose quality, operationalised as
+matched-task success under the same fixed high-level controller, exceeds that
+of the selected embodied-AI baselines. This comparison does not extend to
+expert-written or manually tuned drivers. Its practical motivation is to reduce
+integration effort and dependence on low-level robotics expertise, thereby
+lowering the entry barrier for researchers specialising in high-level
+language-model policies.
 
 \section{Background}
 
@@ -85,54 +64,122 @@ measurement definitions, and compiles an executable validation suite; the
 the high-level controller a broader set of independently testable operations
 to select and compose.
 
-\section{Auto-Adapter Overview}
+\section{Auto-Adapter Framework}
 
-Auto-Adapter separates capability design, driver implementation, and
-behavioural validation. Its operation contains \textbf{two feedback loops at
-different levels}. The outer synthesis loop moves through
-\textbf{STUDY, GENERATE, validation, and bounded Repair}; the inner runtime
-loop continuously adjusts robot control from fresh physical observations.
+Auto-Adapter receives public robot information, a canonical MuJoCo XML (MJCF)
+model, and source-backed tasks. From these inputs, it produces a reusable robot
+capability interface and a robot-specific Python driver that implements it. The
+interface defines the operations available to a high-level planner, while the
+driver translates those operations into actuator commands for the selected
+robot. Capability design, driver generation, and behavioural validation remain
+separate so that generated code cannot define or determine its own success.
 
-\textbf{Task-Grounded Capability Design (TGCD)} first receives public robot
-facts and at least twenty source-backed tasks, without a capability catalogue
-or task-to-capability mapping. It produces five to ten reusable capability
-contracts specifying their effects, interfaces, task coverage, and
-source-backed pass criteria. Before implementation begins, the
-\textbf{Independent Validation Compiler (IVC)} audits these criteria, binds
-them to private MuJoCo measurements and task instances, and compiles a sealed
-executable validation suite. The IVC cannot inspect the candidate driver or
-its execution history.
+\textbf{Task-Grounded Capability Design (TGCD)} identifies requirements shared
+across the source-backed tasks, groups them into reusable capabilities, and
+specifies their public APIs and measurable pass criteria. Before driver
+generation begins, the \textbf{Independent Validation Compiler (IVC)} audits
+these criteria and binds them to private MuJoCo task instances, resets,
+measurements, guards, and verdict rules. The IVC is implementation-blind: it
+cannot inspect the candidate driver or its execution history. The resulting
+validation suite is sealed before generation and is accessible only to the
+trusted Harness.
 
-During \textbf{STUDY}, the coding agent examines the public robot package,
-capability design, MuJoCo model, and permitted implementation resources. A
-bounded probe in the canonical public scene allows it to inspect actuator
-behaviour, observations, coordinate conventions, and physical liveness. STUDY
-therefore produces an implementation strategy rather than executable or
-validated driver code, and it cannot access private validation cases.
+During \textbf{STUDY}, the coding agent examines the public robot description,
+canonical MuJoCo scene, capability definitions, and permitted implementation
+resources. A bounded physics probe verifies that the scene loads, exposes the
+expected robot state, and advances under actuator control. The probe may also
+inspect actuator behaviour, coordinate conventions, and public observations.
+STUDY produces an implementation plan rather than an executable or validated
+driver, and it cannot inspect or invoke the private validation suite.
 
-\textbf{GENERATE} starts from an interface-only driver stub. Through a bounded
-ReAct process, the model implements the capability methods and submits complete
-candidate revisions to \texttt{check\_driver}. The Framework checks the source,
-imports the driver, runs public physics-smoke cases, and returns structured
-diagnostics and selected MuJoCo state measurements. This forms the
-\textbf{candidate-visible development loop}: generate, execute, observe, and
-revise. Only an explicitly submitted revision becomes a formal validation
-attempt.
+The framework supports two driver-generation conditions. In the
+\textbf{skeleton-assisted condition}, the agent may inspect and instantiate a
+trusted family of task-neutral control primitives. These include, where
+applicable, damped-least-squares Cartesian tracking for serial manipulators and
+feedback-control primitives for quadrupeds. The primitives contain no task
+identity, private acceptance criterion, reset procedure, or verdict logic. In
+the \textbf{from-scratch condition}, the agent must construct the controller,
+kinematics or locomotion algorithm, actuator mapping, observations, physics
+stepping, and lifecycle behaviour using only permitted MuJoCo, NumPy, and
+Python functions. In both conditions, the generated driver remains the
+model-authored implementation of the capability interface.
 
-Inside each dynamic capability, the generated driver must implement a separate
-\textbf{runtime physical-feedback loop}. It repeatedly observes the current
-MuJoCo state, computes an actuator command, advances the simulation, and
-corrects its control until the requested effect is observed or a bounded
-timeout is reached. Open-loop trajectories and self-reported completion do not
-satisfy this contract.
+During \textbf{GENERATE}, the agent starts from a mechanically constructed
+interface-only \texttt{driver.py} template. The template exposes
+\texttt{build(model, data)} and the required capability methods, but contains
+no actuator mapping, control implementation, task dispatch, or
+reference-derived logic. The \textbf{inner generation loop} alternates between
+writing code, running bounded public MuJoCo checks, observing the resulting
+state, and revising the driver. These checks assess the source, import the
+driver, and execute capability-level physics smoke tests.
 
-After submission, the \textbf{trusted Harness} independently resets each
-private case, invokes the driver, advances MuJoCo physics, measures trusted
-state, and applies the sealed criteria. If validation fails, bounded Repair
-receives the previous driver and candidate-facing failure evidence, but not the
-private suite or measurement implementation. The revised driver is evaluated
-against the same suite, with one initial attempt and at most two Repair
-attempts. Only the Harness issues the final capability-admission verdict.
+This process provides \textbf{physics-grounded feedback}: revisions respond to
+observed simulator behaviour rather than the model's own assessment. Public
+development checks do not issue a validation verdict or consume the formal
+attempt budget. An attempt begins only when the agent explicitly submits a
+checked driver to the trusted Harness.
+
+At execution time, each capability that produces robot motion must update its
+commands from fresh simulator state. The driver reads the canonical
+\texttt{mujoco.MjData}, computes the next actuator command from the current
+state and public request, writes the command through \texttt{data.ctrl}, and
+advances physics through \texttt{mujoco.mj\_step}. This process continues until
+the requested effect is observed or a bounded timeout is reached. Fixed
+open-loop command sequences, pure polling, and candidate-reported completion do
+not satisfy this requirement.
+
+Once formally submitted, the driver enters the \textbf{outer
+validation--Repair loop}. For each private trial, the trusted Harness loads the
+canonical MJCF into \texttt{mujoco.MjModel}, creates a fresh
+\texttt{mujoco.MjData}, applies a Framework-owned reset, and invokes the
+required capability in an isolated worker. A Framework-owned tracker records a
+trusted state trajectory as physics advances. This trajectory includes
+\texttt{qpos}, \texttt{qvel}, and \texttt{ctrl}, together with named joint
+states, body and site poses, and contact pairs.
+
+The Harness evaluates this trajectory using the private rules compiled before
+driver generation. The measurement binding selects the physical quantity to
+evaluate, the temporal rule specifies when it must satisfy the criterion,
+guards reject invalid execution, and the aggregation rule combines repeated
+trials. Candidate return values, logs, textual explanations, and self-reported
+success are not treated as physical evidence. The Harness also rejects
+candidate-owned resets and direct writes to \texttt{qpos}, \texttt{qvel}, or
+body poses, because accepted motion must result from \texttt{data.ctrl}
+followed by MuJoCo physics stepping. It retains a structured report and video
+manifest for every trial so that measured outcomes, guard results, and
+execution integrity can be inspected independently.
+
+If validation fails, Repair receives the previous driver and a
+candidate-facing report containing the actual request, measured values,
+available state and trajectory diagnostics, exceptions, guard outcomes, and
+video evidence. The sealed cases, private stricter thresholds, hidden expected
+values, and executable measurement bindings remain inaccessible. Repair may
+modify only \texttt{driver.py} and may use the same bounded public development
+checks as initial generation.
+
+The protocol permits one initial submission, recorded as attempt~0, and at
+most two Repair submissions, recorded as attempts~1 and~2. Each generation
+condition therefore receives no more than three Harness-evaluated driver
+attempts. Every submitted revision is evaluated against the same sealed private
+suite, and the first passing attempt terminates the loop. Only the trusted
+Harness issues the final capability-validation verdict.
+
+After a driver passes capability validation, the fixed high-level planner
+invokes its capabilities on matched downstream tasks. Experiment~2 holds the
+planner, tasks, execution budgets, simulator configuration, and evaluation
+procedure constant. Only the robot-facing capability interface and driver vary
+between Auto-Adapter and the selected embodied-AI baselines. Task-success rate
+therefore measures the downstream quality of the produced capabilities and
+drivers under the matched setting. A higher success rate for Auto-Adapter would
+indicate that it produced more effective reusable robot capabilities than the
+selected baselines. This comparison does not include expert-written or
+manually tuned drivers.
+
+Finally, \textbf{Evolution} analyses the terminal driver, validation evidence,
+failure reports, and execution records to propose reusable Experience for
+later runs. A human reviewer decides whether to retain each proposal. Accepted
+Experience cannot modify the current driver, validation verdict, experimental
+inputs, or results.
 
 \section{Experiments and Results}
 

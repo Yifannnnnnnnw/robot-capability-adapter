@@ -1,14 +1,13 @@
 \chapter[Introduction]{Introduction}\label{chapter:introduction}
 
 \begin{quote}\itshape
-The purpose of this chapter is to introduce the research problem addressed by
-this thesis and explain how the study investigates it. It begins by motivating
-the need to synthesise robot-specific drivers that implement reusable software
-interfaces through which high-level controllers can operate different robots,
-rather than assuming that executable robot integrations already exist. The
-chapter then defines the research objectives and questions, outlines the three
-experiments used to answer them, and states the scientific contributions
-supported by the study.
+This chapter defines the robot-software synthesis problem addressed by the
+thesis and explains why successful use of an existing robot interface does not
+establish that an LLM can design and implement that interface. It then states
+three research questions: a fixed-input comparison of LLM backbones, an
+evaluation of task-grounded capability and validation design, and a matched
+test of Continued Evolution in later synthesis runs. The chapter concludes by
+stating the contributions, scope, and structure of the thesis.
 \end{quote}
 
 \section[Motivation]{Motivation}
@@ -72,76 +71,70 @@ driver, called \emph{Repair}; reviewed evidence from completed runs may instead 
 later runs through \emph{Evolution}, but cannot alter the run that produced
 it.
 
-Three uncertainties then become central. First, LLM backbones may differ both
-in synthesising a robot-specific driver that implements a capability interface and
-in using the same fixed interface backed by the same fixed and validated driver
-through the same high-level-controller implementation. Second, the value of
-task-grounded capability design, source-grounded capability-level pass-criteria
-design, and continued Evolution must be established rather than assumed.
-Third, different physical forms and joint arrangements---their
-\emph{morphologies}---may present different difficulties when the model
-synthesises robot-specific drivers that implement operations producing robot
-motion. This thesis terms these operations \emph{low-level motion-control
-capabilities}. With the available robot cases, this comparison can identify
-associations and failure patterns, but cannot establish a causal morphology
-effect.
+Three uncertainties then become central. First, when the robot capability
+interface and its validation requirements are held fixed, it remains uncertain
+how LLM backbone choice and access to a trusted implementation skeleton affect
+robot-specific driver synthesis. Second, it remains uncertain whether an LLM
+can construct those upstream inputs from source-backed tasks without receiving
+a pre-authored capability catalogue, task-to-capability mapping, or
+human-authored capability-level pass criteria. Third, after a synthesis run has
+reached its terminal verdict, it remains uncertain what effect human-reviewed
+evidence from that run has on later synthesis relative to an otherwise matched
+run without that Experience.
 
-These uncertainties motivate a controlled study of when Auto-Adapter can
-design reusable robot capability interfaces and generate and validate their
-robot-specific drivers. The thesis evaluates driver synthesis and
-capability-interface use separately, analyses the framework's principal
-components, and compares driver synthesis across robot morphologies under
-matched conditions. The next section converts this motivation into explicit
-research objectives and questions.
+These questions concern different points in the evidence chain. Capability and
+pass-criteria design determine what a driver must implement and how it will be
+judged; fixed-input driver synthesis determines whether a model can produce an
+implementation under those requirements; Continued Evolution can influence
+only a later run. Evidence for one question therefore cannot be substituted
+for evidence for another. The next section converts these uncertainties into
+explicit research objectives and questions.
 
 
 \section[Research Objectives]{Research Objectives}
 \label{sec:research-objectives}
 \label{sec:research-questions}
 
-The aim of this thesis is to determine, under controlled conditions, when LLMs
-can synthesise robot-specific drivers and use reusable robot capability interfaces.
-Auto-Adapter provides the experimental framework for examining three sources
-of variation: the LLM backbone, selected framework mechanisms, and robot
-morphology. Chapter~3 uses AutoAdapter-Bench to evaluate robot-specific driver
-synthesis and capability-interface use as separate outcomes. Evidence that a model
-can operate an available capability interface does not establish that it can
-synthesise a driver implementing that interface, or vice versa.
+The aim of this thesis is to determine, under controlled Direct-MuJoCo
+conditions, how LLM backbone choice and trusted-skeleton access affect
+robot-specific driver synthesis, whether the capability and validation inputs
+to that process can be constructed from source-backed tasks, and what effect
+reviewed terminal evidence has on subsequent synthesis. The research therefore
+separates upstream input design, synthesis under fixed inputs, and later-run
+Experience reuse.
 
 This aim is expressed through three research questions:
 
 \begin{enumerate}
-    \item \textbf{RQ1---Comparison of LLM backbones in robot-specific driver
-    synthesis and capability-interface use.}
-    To what extent do LLM backbones differ in synthesising a robot-specific
-    driver that implements a reusable robot capability interface under
-    skeleton-assisted and from-scratch generation conditions, and in using the
-    same fixed capability interface backed by the same fixed and validated driver
-    through the same high-level-controller implementation to complete matched
-    tasks?
+    \item \textbf{RQ1---Fixed-input comparison of LLM backbones for
+    robot-specific driver synthesis.}
 
-    \item \textbf{RQ2---Component analysis of the Auto-Adapter framework.}
-    Do selected Auto-Adapter mechanisms produce measurable differences in
-    robot-software synthesis quality?
-    \textbf{(a)} Can an LLM derive five to ten reusable capabilities from at
-    least twenty source-backed tasks without receiving a pre-authored
-    capability catalogue?
-    \textbf{(b)} Can it formulate source-grounded capability-level pass
-    criteria, without human predefinition at the capability level, that an
-    independent and implementation-blind process can audit and compile into
-    executable validation?
-    \textbf{(c)} Does reviewed evidence from completed runs improve
-    robot-software synthesis quality in matched later runs relative to the same
-    condition without that Experience?
+    With one prior-designed robot capability interface, capability-level pass
+    standards, complete private validation suite, Harness measurement and
+    verdict rules, robot inputs, evaluation protocol, and resource budget held
+    fixed for each selected robot, to what extent do LLM backbones differ in
+    synthesising robot-specific drivers under skeleton-assisted and
+    from-scratch generation?
 
-    \item \textbf{RQ3---Cross-morphology analysis of robot-specific driver
-    synthesis for low-level motion-control capabilities.}
-    With the LLM backbone, high-level-controller implementation, Auto-Adapter
-    configuration, generation condition, evaluation protocol, and resource
-    budget held fixed, what associations are observed between robot morphology
-    and the validation success, failure patterns, and resource use of
-    synthesised robot-specific drivers that implement low-level motion-control
-    capabilities?
+    \item \textbf{RQ2---Task-grounded capability and validation design.}
+
+    \textbf{(a)} To what extent can an LLM derive five to ten reusable
+    capabilities from at least twenty source-backed tasks without receiving a
+    pre-authored capability catalogue or task-to-capability mapping?
+
+    \textbf{(b)} Can the LLM formulate source-grounded capability-level pass
+    criteria from reviewed task-level standards without human predefinition at
+    the capability level, and can an implementation-blind Independent
+    Validation Compiler audit and compile those criteria into private
+    executable validation without weakening their source obligations?
+
+    \item \textbf{RQ3---Continued Evolution in later driver synthesis.}
+
+    With the robot, LLM backbone, fixed capability-and-validation inputs,
+    generation condition, evaluation protocol, and resource budget held
+    constant, what effect, if any, does access to human-reviewed Experience
+    derived from completed terminal runs have on later driver-synthesis
+    outcomes relative to matched runs without that Experience?
 \end{enumerate}
 
 \begin{figure}[htbp]
@@ -155,90 +148,96 @@ This aim is expressed through three research questions:
 \end{figure}
 
 \label{sec:intro-scope}
-These questions concern declared robot configurations evaluated through the
-Direct-MuJoCo simulation route. The resulting evidence can support controlled
-comparisons and cross-morphology associations within this scope, but not
-hardware validity, sim-to-real transfer, physical validation of unselected
-tasks, universal model or robot superiority, or a causal morphology effect.
-The following section translates these questions into three controlled
-experiments.
+These questions concern the declared LLM endpoints, robot configurations,
+tasks, generation conditions, and Direct-MuJoCo evaluation protocols. The
+selected robot configurations are experimental cases rather than a
+representative sample from which morphology effects can be estimated. The
+resulting evidence does not establish real-SDK fidelity, hardware performance
+or safety, sim-to-real transfer, physical validation of unselected tasks,
+downstream high-level-controller performance, universal model or robot
+superiority, autonomous self-improvement, or generalisation beyond the
+evaluated conditions. The following section translates the questions into
+three controlled experiments.
 
 
 \section[Research Experiments]{Research Experiments}
 \label{sec:research-experiments}
 \label{sec:research-programme}
 
-The thesis begins with a broad comparison of LLM backbones in
-robot-specific driver synthesis and capability-interface use through
-AutoAdapter-Bench. It then narrows the analysis to three mechanisms within
-Auto-Adapter: task-grounded capability design, source-grounded
-capability-level pass-criteria design, and Continued Evolution. Finally, it
-extends the driver-synthesis analysis across robot morphologies under matched
-conditions. The empirical programme is organised into three experiments,
-reported in Chapters~3--5:
+The empirical programme contains three experiments with distinct inputs and
+evidence boundaries. Their numbering follows the analytical questions and
+chapter order rather than the runtime production order. Experiment~1 consumes
+prior-designed and sealed capability-and-validation inputs. Experiment~2
+evaluates the upstream process used to create that type of input, whose
+accepted outputs must be fixed before Experiment~1 begins. Experiment~3 can
+affect only later runs after terminal evidence has been reviewed.
 
 \begin{enumerate}[leftmargin=*,itemsep=1em]
-    \item \textbf{Experiment 1---Comparison of LLM backbones in
-    robot-specific driver synthesis and capability-interface use
-    (AutoAdapter-Bench, Chapter~3).}
-    AutoAdapter-Bench compares the same set of LLM backbones in two tracks.
-    The \textbf{driver-synthesis track} holds the Auto-Adapter framework,
-    robot inputs, source-backed Task Library, source-task pass standards,
-    private-case construction policy, Harness measurement and verdict rules,
-    and resource budget fixed within each generation condition. For each
-    backbone and robot configuration, one robot capability interface design is
-    sealed and used in both generation conditions; the backbone then
-    synthesises a corresponding robot-specific driver in each condition. The
-    conditions differ only in authorised access to the trusted skeleton. We
-    compare independent driver-validation outcomes, failure patterns, and
-    resource use; the capability-level pass criteria authored by each model
-    remain evaluated outputs rather than fixed inputs. The \textbf{use track}
-    gives the same backbones a fixed capability interface backed by the same fixed
-    and validated robot-specific driver, the same high-level-controller
-    implementation, matched tasks, evaluation protocol, and budget. It compares
-    task completion while preventing successful capability-interface use from
-    being interpreted as driver-synthesis evidence.
+    \item \textbf{Experiment 1---Fixed-input comparison of LLM backbones for
+    robot-specific driver synthesis (AutoAdapter-Bench, Chapter~3).}
 
-    \item \textbf{Experiment 2---Component analysis of the Auto-Adapter
-    framework (Chapter~4).}
-    This experiment examines three framework mechanisms and the evidence each
-    must produce.
-    \textbf{(a) Task-grounded capability design.} We test whether an LLM can
-    derive five to ten reusable capabilities from at least twenty
-    source-backed tasks without receiving a pre-authored capability catalogue
-    or task-to-capability mapping. The analysis measures coverage of the
-    source-backed tasks and assesses whether the grouping represents reusable
-    robot operations rather than task-specific programs.
-    \textbf{(b) Source-grounded capability-level pass-criteria design.} The
-    Task Library supplies human-reviewed task-level pass standards derived from
-    traceable primary robotics benchmarks or industrial-production standards.
-    We test whether an LLM can translate these obligations into
-    source-preserving criteria for the capabilities it designs, without
-    receiving human-authored capability-level criteria. An independent,
-    implementation-blind process then audits the criteria against their source
-    obligations and compiles the accepted criteria into executable validation
-    cases.
-    \textbf{(c) Continued Evolution.} We compare matched later runs with and
-    without reviewed Experience derived from completed runs, and measure
-    whether access to that Experience improves robot-software synthesis quality
-    in later runs.
+    Experiment~1 compares seven LLM backbones across five robot configurations,
+    two generation conditions, and three independent replicates, producing a
+    primary matrix of 210 experimental cells. For each robot, one public
+    capability interface, its capability-level pass standards, and the complete
+    private validation suite are fixed across all backbones, conditions,
+    replicates, and submitted attempts. The skeleton-assisted condition may
+    inspect the trusted implementation skeleton, whereas the from-scratch
+    condition may not. Each cell begins with empty Experience and permits at
+    most three submitted driver attempts.
 
-    \item \textbf{Experiment 3---Cross-morphology analysis of robot-specific
-    driver synthesis for low-level motion-control capabilities (Chapter~5).}
-    We compare the synthesis of robot-specific drivers that implement
-    low-level motion-control capabilities across declared robot configurations
-    with different morphologies, while holding the LLM backbone,
-    high-level-controller implementation, Auto-Adapter configuration,
-    generation condition, evaluation protocol, and resource budget fixed.
-    Validation success, failure patterns, and resource use are compared across
-    morphologies. This design identifies descriptive associations between
-    morphology and driver-synthesis outcomes; it does not establish that
-    morphology causes those differences.
+    The experiment reports initial and final driver-validation outcomes, Repair
+    recovery, failure classes, model calls, token use, cost, and wall-clock
+    time. It begins with driver study and generation and stops at the terminal
+    Harness verdict. It does not run Task-Grounded Capability Design, the
+    Independent Validation Compiler, a high-level controller, or Evolution.
+
+    \item \textbf{Experiment 2---Task-grounded capability and validation
+    design (Chapter~4).}
+
+    Experiment~2 evaluates the upstream production of the capability and
+    validation inputs consumed by fixed-input driver synthesis. The first part
+    examines whether an LLM can derive five to ten reusable capabilities from
+    at least twenty source-backed tasks without receiving a pre-authored
+    catalogue or task-to-capability mapping. The analysis distinguishes
+    complete task coverage from evidence that the grouping represents shared
+    robot effects rather than renamed task-specific programs.
+
+    The second part examines whether the LLM can formulate measurable
+    capability-level pass criteria that preserve the obligations in the
+    reviewed task-level standards. An implementation-blind Independent
+    Validation Compiler audits those criteria without access to a candidate
+    driver, synthesis trace, Repair history, or validation result, and binds
+    accepted criteria to private MuJoCo cases, measurements, resets, and
+    guards. Compilation success is reported separately from Harness calibration
+    and false-success checks. The Independent Validation Compiler does not issue
+    final driver verdicts, and a generated or compilable criterion is not
+    treated by itself as reliable validation.
+
+    \item \textbf{Experiment 3---Matched evaluation of Continued Evolution
+    (Chapter~5).}
+
+    After an eligible run reaches a terminal verdict, Evolution reads a bounded
+    projection of its terminal report and proposes either one candidate
+    Experience record or an explicit \texttt{no-reusable-lesson} outcome. Human
+    review determines whether a proposal is accepted or rejected. Only
+    accepted, public, non-private content may enter a versioned Experience
+    snapshot supplied to a later run.
+
+    Evolution cannot alter the originating driver, validation suite, criterion,
+    Repair decision, retry decision, run inputs, or terminal verdict.
+    Experiment~3 compares later driver-synthesis runs supplied with reviewed
+    Experience against matched runs without Experience. The comparison reports
+    driver-validation, Repair, failure, model-use, cost, and time outcomes under
+    the matching factors fixed prospectively for Experiment~3. The existence of
+    an Evolution proposal is not itself treated as evidence of improvement.
 \end{enumerate}
 
-Together, the experiments provide the evidence used to answer the three
-research questions. The following section states the scientific contributions
-that this evidence is designed to support.
+Together, the experiments separate three claims: whether different LLM
+backbones can implement a fixed robot interface, whether the interface and its
+validation can be designed from source-backed tasks, and whether reviewed
+evidence from completed runs changes later synthesis outcomes. The following
+section states the contributions that this evidence is designed to support.
 
 
 \section[Contributions]{Contributions}
@@ -378,51 +377,42 @@ The structure of this thesis is organised as follows:
 
 \begin{itemize}[leftmargin=*,itemsep=0.7em]
 
-  \item Chapter~2---Background and Literature Review. This chapter
-  establishes the concepts and literature needed for the study. It defines the
-  relationship between high-level controllers, robot capability interfaces, and
-  robot-specific drivers, then reviews LLM tool use, robot-software synthesis,
-  independent validation, repair, and cross-embodiment research. It concludes
-  by identifying the assumption that robot capability interfaces, the robot-specific
-  drivers that implement them, capability-level pass criteria, and executable
-  validation already exist, thereby motivating the three experiments.
+  \item Chapter~2---Background and Literature Review. This chapter defines the
+  relationship between high-level controllers, robot capability interfaces,
+  and robot-specific drivers. It reviews LLM tool use, robot-software
+  synthesis, task-grounded abstraction, independent validation, iterative
+  Repair, and cross-run evidence reuse. It concludes by identifying the
+  assumptions that reusable capability interfaces, robot-specific
+  implementations, capability-level pass criteria, and executable validation
+  already exist.
 
-  \item Chapter~3---AutoAdapter-Bench: Comparing LLM Backbones in Driver
-  Synthesis and Capability-Interface Use. This chapter presents Experiment~1. The
-  driver-synthesis track compares LLM backbones under skeleton-assisted and
-  from-scratch conditions. Within each condition, the Auto-Adapter framework,
-  robot inputs, source-backed Task Library, source-task pass standards, Harness
-  measurement and verdict rules, and resource budget are fixed; only
-  trusted-skeleton access differs. Each backbone designs a capability interface and
-  synthesises its robot-specific driver, while model-authored capability-level
-  pass criteria remain evaluated outputs. The use track compares the same
-  backbones using a fixed capability interface backed by the same fixed and
-  validated robot-specific driver, the same high-level-controller
-  implementation, and matched tasks. The two outcomes are reported separately
-  and motivate Chapter~4.
+  \item Chapter~3---AutoAdapter-Bench: Fixed-Input Comparison of LLM Backbones
+  in Robot-Specific Driver Synthesis. This chapter presents Experiment~1. It
+  compares seven LLM backbones across five robot configurations under
+  skeleton-assisted and from-scratch generation. For each robot, the capability
+  interface, pass standards, complete private validation suite, Harness rules,
+  and resource budget remain fixed. The chapter reports initial and final
+  validation, Repair, failure, model-use, cost, and time outcomes across the
+  210-cell primary matrix.
 
-  \item Chapter~4---Component Analysis of the Auto-Adapter Framework.
-  This chapter presents Experiment~2. First, it tests whether an LLM can derive
+  \item Chapter~4---Task-Grounded Capability and Validation Design. This
+  chapter presents Experiment~2. It first evaluates whether an LLM can derive
   five to ten reusable capabilities from at least twenty source-backed tasks
-  without a pre-authored catalogue or mapping. Second, it tests whether an LLM
-  can transform reviewed task-level pass standards from traceable primary
-  benchmarks or industrial-production standards into source-grounded
-  capability-level pass criteria, which an implementation-blind process
-  independently audits and compiles. Third, matched later runs with and without
-  reviewed Experience test Continued Evolution. The evidence for each part is
-  reported separately, and a generated or compilable criterion is not treated
-  as reliable by itself.
+  without a pre-authored catalogue or mapping. It then evaluates whether the
+  LLM can formulate source-preserving capability-level pass criteria that an
+  implementation-blind Independent Validation Compiler can audit and compile.
+  Harness calibration and false-success evidence are reported separately from
+  compilation success. Although the chapter follows Experiment~1 in the thesis,
+  accepted outputs of this upstream process must be fixed before
+  Experiment~1 begins.
 
-  \item Chapter~5---Cross-Morphology Analysis of Robot-Specific Driver
-  Synthesis for Low-Level Motion-Control Capabilities. This chapter presents
-  Experiment~3. It compares the synthesis of robot-specific drivers that
-  implement low-level motion-control capabilities across the declared
-  morphology cohort while holding the LLM backbone, high-level-controller
-  implementation, Auto-Adapter configuration, generation condition,
-  evaluation protocol, and resource budget fixed. Validation outcomes, failure
-  patterns, and resource use characterise morphology-associated differences.
-  Because morphology co-varies with actuation and control structure, the
-  chapter interprets these as associations rather than causal effects.
+  \item Chapter~5---Continued Evolution: Matched Evaluation of Reviewed
+  Experience. This chapter presents Experiment~3. It describes how terminal
+  reports are projected into bounded Evolution proposals, how human review
+  determines which proposals become Experience, and how accepted Experience is
+  versioned for later runs. It then compares matched driver-synthesis runs with
+  and without reviewed Experience. Evolution cannot alter the run from which
+  its evidence was derived.
 
   \item Chapter~6---Conclusion and Future Work. The final chapter
   answers the research questions in order and synthesises the evidence from
