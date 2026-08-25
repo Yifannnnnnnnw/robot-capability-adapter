@@ -1,0 +1,12 @@
+{
+  "artifact_type": "capability_validation_private_guards",
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.4",
+  "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
+  "guards": [
+    {"guard_id": "so101-control", "kind": "actuator_and_physics_step_required"},
+    {"guard_id": "so101-no-direct-write", "kind": "no_direct_state_write"},
+    {"guard_id": "so101-canonical", "kind": "canonical_model_data"},
+    {"guard_id": "so101-control-range", "kind": "control_range"}
+  ]
+}

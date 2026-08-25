@@ -1,0 +1,125 @@
+{
+  "artifact_type": "capability_validation_private_bindings",
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.4",
+  "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
+  "bindings": [
+    {
+      "binding_id": "so101-a1-contract",
+      "calibration_profile": "A1",
+      "metric": "end_effector_position_error",
+      "unit": "m",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "A1",
+        "side_effect_guard_profile": "so101",
+        "site_name": "gripperframe"
+      }
+    },
+    {
+      "binding_id": "so101-a2-contract",
+      "calibration_profile": "A2",
+      "metric": "cartesian_path_error",
+      "unit": "m",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "A2",
+        "side_effect_guard_profile": "so101",
+        "site_name": "gripperframe"
+      }
+    },
+    {
+      "binding_id": "so101-a3-contract",
+      "calibration_profile": "A3",
+      "metric": "normalised_aperture_error",
+      "unit": "ratio",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "A3",
+        "side_effect_guard_profile": "so101",
+        "joint_name": "gripper",
+        "closed_position": -0.17453,
+        "open_position": 1.74533
+      }
+    },
+    {
+      "binding_id": "so101-a4-contract",
+      "calibration_profile": "A4",
+      "metric": "contact_integrity",
+      "unit": "mixed",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "A4",
+        "side_effect_guard_profile": "so101",
+        "site_name": "gripperframe",
+        "tool_body_names": ["gripper"],
+        "tool_geom_names": [
+          "geom_29",
+          "geom_30",
+          "geom_31",
+          "fixed_jaw_box1",
+          "fixed_jaw_box2",
+          "fixed_jaw_sph_tip1",
+          "fixed_jaw_sph_tip2",
+          "fixed_jaw_sph_tip3",
+          "geom_37",
+          "fixed_jaw_box3",
+          "fixed_jaw_box4",
+          "fixed_jaw_box5",
+          "fixed_jaw_box6",
+          "fixed_jaw_box7",
+          "geom_43",
+          "camera_box1",
+          "camera_box2",
+          "geom_46",
+          "geom_47",
+          "geom_48",
+          "moving_jaw_box1",
+          "moving_jaw_sph_tip1",
+          "moving_jaw_sph_tip2",
+          "moving_jaw_sph_tip3",
+          "moving_jaw_box2",
+          "moving_jaw_box3"
+        ],
+        "target_geom_names": ["front_button_geom"],
+        "precontact_gate": "held_window_then_ray"
+      }
+    },
+    {
+      "binding_id": "so101-a5-contract",
+      "calibration_profile": "A5",
+      "metric": "ordered_outbound_return_error",
+      "unit": "m",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "A5",
+        "side_effect_guard_profile": "so101",
+        "site_name": "gripperframe",
+        "base_body_name": "base"
+      }
+    },
+    {
+      "binding_id": "so101-a6-contract",
+      "calibration_profile": "A6",
+      "metric": "wrist_roll_error",
+      "unit": "rad",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "A6",
+        "side_effect_guard_profile": "so101",
+        "joint_name": "wrist_roll",
+        "target_request_key": "target_roll_rad",
+        "target_tolerance_rad": 0.03,
+        "continuous_hold_s": 0.25,
+        "guarded_joint_names": [
+          "shoulder_pan",
+          "shoulder_lift",
+          "elbow_flex",
+          "wrist_flex",
+          "gripper"
+        ],
+        "guarded_joint_tolerance_rad": 0.03
+      }
+    }
+  ]
+}

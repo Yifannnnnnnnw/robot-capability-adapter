@@ -1,0 +1,334 @@
+{
+  "artifact_type": "capability_validation_private_instances",
+  "robot_configuration_id": "robotstudio_so101",
+  "package_version": "1.0.4",
+  "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
+  "calibration_source": {
+    "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v6",
+    "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101/capability_validation_suite.json",
+    "role_mapping": {
+      "nominal": "H1",
+      "calibrated_boundary": "H3"
+    }
+  },
+  "instances": [
+    {
+      "instance_id": "so101-a1-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "A1",
+      "source_case_id": "A1-H1",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.82, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.82, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {"target_position_m": [0.4, 0.1, 0.2], "max_duration_s": 4.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a1-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a1-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A1",
+      "source_case_id": "A1-H3",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.84, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.84, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {"target_position_m": [0.38, 0.12, 0.19], "max_duration_s": 5.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a1-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a2-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "A2",
+      "source_case_id": "A2-H1",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.82, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.82, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {
+          "waypoints_m": [[0.36, 0.08, 0.2], [0.4, 0.1, 0.2]],
+          "max_duration_per_segment_s": 3.0
+        }
+      },
+      "clause_bindings": {"criterion-0": "so101-a2-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a2-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A2",
+      "source_case_id": "A2-H3",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.84, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.84, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {
+          "waypoints_m": [[0.34, 0.06, 0.19], [0.38, 0.08, 0.2], [0.4, 0.12, 0.19]],
+          "max_duration_per_segment_s": 4.0
+        }
+      },
+      "clause_bindings": {"criterion-0": "so101-a2-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a3-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "A3",
+      "source_case_id": "A3-H1",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.82, "gripper": 1.5},
+        "actuator_controls": {"shoulder_pan": -1.82, "gripper": 1.5}
+      },
+      "public_arguments": {
+        "request": {"opening_fraction": 0.2, "max_duration_s": 2.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a3-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a3-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A3",
+      "source_case_id": "A3-H3",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.84, "gripper": -0.17453},
+        "actuator_controls": {"shoulder_pan": -1.84, "gripper": -0.17453}
+      },
+      "public_arguments": {
+        "request": {"opening_fraction": 0.5, "max_duration_s": 3.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a3-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a4-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "A4",
+      "source_case_id": "A4-H1",
+      "scene_entrypoint": "assets/button_front_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.82, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.82, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {
+          "precontact_position_m": [0.38, 0.07, 0.22],
+          "approach_direction_unit": [0.0, 1.0, 0.0],
+          "max_travel_m": 0.06,
+          "max_approach_speed_m_s": 0.02,
+          "max_duration_s": 4.0
+        }
+      },
+      "clause_bindings": {"criterion-0": "so101-a4-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a4-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A4",
+      "source_case_id": "A4-H3",
+      "scene_entrypoint": "assets/button_front_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.84, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.84, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {
+          "precontact_position_m": [0.38, 0.065, 0.22],
+          "approach_direction_unit": [0.0, 1.0, 0.0],
+          "max_travel_m": 0.07,
+          "max_approach_speed_m_s": 0.03,
+          "max_duration_s": 5.0
+        }
+      },
+      "clause_bindings": {"criterion-0": "so101-a4-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a5-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "A5",
+      "source_case_id": "A5-H1",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.82, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.82, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {"offset_robot_base_m": [0.02, 0.0, 0.0], "max_duration_per_leg_s": 3.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a5-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a5-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A5",
+      "source_case_id": "A5-H3",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.84, "gripper": 0.0},
+        "actuator_controls": {"shoulder_pan": -1.84, "gripper": 0.0}
+      },
+      "public_arguments": {
+        "request": {"offset_robot_base_m": [0.0, 0.0, 0.02], "max_duration_per_leg_s": 4.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a5-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a6-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "A6",
+      "source_case_id": "A6-H1",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.82, "gripper": 0.0, "wrist_roll": -0.6},
+        "actuator_controls": {"shoulder_pan": -1.82, "gripper": 0.0, "wrist_roll": -0.6}
+      },
+      "public_arguments": {
+        "request": {"target_roll_rad": 1.2, "max_duration_s": 2.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a6-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    },
+    {
+      "instance_id": "so101-a6-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "A6",
+      "source_case_id": "A6-H3",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "default",
+        "joint_positions": {"shoulder_pan": -1.84, "gripper": 0.0, "wrist_roll": -0.75},
+        "actuator_controls": {"shoulder_pan": -1.84, "gripper": 0.0, "wrist_roll": -0.75}
+      },
+      "public_arguments": {
+        "request": {"target_roll_rad": 0.75, "max_duration_s": 3.0}
+      },
+      "clause_bindings": {"criterion-0": "so101-a6-contract"},
+      "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0,
+      "video_fps": 10.0,
+      "video_width": 800,
+      "video_height": 600,
+      "camera": -1
+    }
+  ]
+}
