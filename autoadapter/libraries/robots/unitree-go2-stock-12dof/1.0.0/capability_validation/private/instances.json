@@ -1,0 +1,302 @@
+{
+  "artifact_type": "capability_validation_private_instances",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
+  "calibration_source": {
+    "suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3",
+    "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof/capability_validation_suite.json",
+    "role_mapping": {
+      "nominal": "H1",
+      "calibrated_boundary": "H3"
+    }
+  },
+  "instances": [
+    {
+      "instance_id": "go2-g1-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "G1",
+      "request_domain": {"type":"object","properties":{"linear_velocity_body_m_s":{"type":"array","minItems":2,"maxItems":2,"unit":"m/s","frame":"body","items":{"type":"number","unit":"m/s","frame":"body","minimum":-0.4,"maximum":0.4,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G1 request bounds: linear_velocity_body_m_s"}]}},"yaw_rate_rad_s":{"type":"number","unit":"rad/s","frame":"none","minimum":-1.0,"maximum":1.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G1 request bounds: yaw_rate_rad_s"}]},"duration_s":{"type":"number","unit":"s","frame":"none","minimum":2.0,"maximum":4.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G1 request bounds: duration_s"}]}},"required":["linear_velocity_body_m_s","yaw_rate_rad_s","duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g1-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g1-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G1",
+      "request_domain": {"type":"object","properties":{"linear_velocity_body_m_s":{"type":"array","minItems":2,"maxItems":2,"unit":"m/s","frame":"body","items":{"type":"number","unit":"m/s","frame":"body","minimum":-0.4,"maximum":0.4,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G1 request bounds: linear_velocity_body_m_s"}]}},"yaw_rate_rad_s":{"type":"number","unit":"rad/s","frame":"none","minimum":-1.0,"maximum":1.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G1 request bounds: yaw_rate_rad_s"}]},"duration_s":{"type":"number","unit":"s","frame":"none","minimum":2.0,"maximum":4.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G1 request bounds: duration_s"}]}},"required":["linear_velocity_body_m_s","yaw_rate_rad_s","duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g1-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g2-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "G2",
+      "request_domain": {"type":"object","properties":{"translation_initial_yaw_m":{"type":"array","minItems":2,"maxItems":2,"unit":"m","frame":"initial_body_yaw","items":{"type":"number","unit":"m","frame":"initial_body_yaw","minimum":-0.3,"maximum":0.3,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G2 request bounds: translation_initial_yaw_m"}]}},"yaw_delta_rad":{"type":"number","unit":"rad","frame":"none","minimum":-0.6,"maximum":0.6,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G2 request bounds: yaw_delta_rad"}]},"max_duration_s":{"type":"number","unit":"s","frame":"none","minimum":0.25,"maximum":8.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G2 request bounds: max_duration_s"}]}},"required":["translation_initial_yaw_m","yaw_delta_rad","max_duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g2-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g2-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G2",
+      "request_domain": {"type":"object","properties":{"translation_initial_yaw_m":{"type":"array","minItems":2,"maxItems":2,"unit":"m","frame":"initial_body_yaw","items":{"type":"number","unit":"m","frame":"initial_body_yaw","minimum":-0.3,"maximum":0.3,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G2 request bounds: translation_initial_yaw_m"}]}},"yaw_delta_rad":{"type":"number","unit":"rad","frame":"none","minimum":-0.6,"maximum":0.6,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G2 request bounds: yaw_delta_rad"}]},"max_duration_s":{"type":"number","unit":"s","frame":"none","minimum":0.25,"maximum":8.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G2 request bounds: max_duration_s"}]}},"required":["translation_initial_yaw_m","yaw_delta_rad","max_duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g2-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g3-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "G3",
+      "request_domain": {"type":"object","properties":{"waypoints_initial_yaw_m":{"type":"array","minItems":2,"maxItems":8,"unit":"m","frame":"initial_body_yaw","items":{"type":"array","minItems":2,"maxItems":2,"unit":"m","frame":"initial_body_yaw","items":{"type":"number","unit":"m","frame":"initial_body_yaw","minimum":-0.4,"maximum":0.4,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G3 request bounds: waypoints_initial_yaw_m"}]}}},"max_duration_s":{"type":"number","unit":"s","frame":"none","minimum":0.25,"maximum":8.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G3 request bounds: max_duration_s"}]}},"required":["waypoints_initial_yaw_m","max_duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g3-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g3-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G3",
+      "request_domain": {"type":"object","properties":{"waypoints_initial_yaw_m":{"type":"array","minItems":2,"maxItems":8,"unit":"m","frame":"initial_body_yaw","items":{"type":"array","minItems":2,"maxItems":2,"unit":"m","frame":"initial_body_yaw","items":{"type":"number","unit":"m","frame":"initial_body_yaw","minimum":-0.4,"maximum":0.4,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G3 request bounds: waypoints_initial_yaw_m"}]}}},"max_duration_s":{"type":"number","unit":"s","frame":"none","minimum":0.25,"maximum":8.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G3 request bounds: max_duration_s"}]}},"required":["waypoints_initial_yaw_m","max_duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g3-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g4-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "G4",
+      "request_domain": {"type":"object","properties":{"target_height_m":{"type":"number","unit":"m","frame":"world","minimum":0.22,"maximum":0.36,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G4 request bounds: target_height_m"}]},"max_duration_s":{"type":"number","unit":"s","frame":"none","minimum":0.25,"maximum":8.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G4 request bounds: max_duration_s"}]}},"required":["target_height_m","max_duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g4-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g4-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G4",
+      "request_domain": {"type":"object","properties":{"target_height_m":{"type":"number","unit":"m","frame":"world","minimum":0.22,"maximum":0.36,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G4 request bounds: target_height_m"}]},"max_duration_s":{"type":"number","unit":"s","frame":"none","minimum":0.25,"maximum":8.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G4 request bounds: max_duration_s"}]}},"required":["target_height_m","max_duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g4-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g5-nominal",
+      "case_role": "nominal",
+      "calibration_profile": "G5",
+      "request_domain": {"type":"object","properties":{"duration_s":{"type":"number","unit":"s","frame":"none","minimum":1.0,"maximum":2.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G5 request bounds: duration_s"}]}},"required":["duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": 0.0
+        },
+        "body_quaternions": {
+          "base_link": [
+            0.9987502604,
+            0.0499791693,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g5-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    },
+    {
+      "instance_id": "go2-g5-calibrated-boundary",
+      "case_role": "calibrated_boundary",
+      "calibration_profile": "G5",
+      "request_domain": {"type":"object","properties":{"duration_s":{"type":"number","unit":"s","frame":"none","minimum":1.0,"maximum":2.0,"evidence_refs":[{"source_id":"b1_driver_validation_criteria","specific_reference":"Go2 G5 request bounds: duration_s"}]}},"required":["duration_s"],"additionalProperties":false},
+      "scene_entrypoint": "assets/go2_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "home",
+        "joint_positions": {
+          "FL_hip_joint": -0.02
+        },
+        "body_quaternions": {
+          "base_link": [
+            0.9975510003,
+            -0.0699428473,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "clause_bindings": {
+        "criterion-0": "go2-g5-contract"
+      },
+      "guard_ids": [
+        "go2-capability-control",
+        "go2-capability-no-direct-write",
+        "go2-capability-canonical",
+        "go2-capability-control-range"
+      ],
+      "repetitions": 1,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "timeout_sim_s": 8.0
+    }
+  ]
+}

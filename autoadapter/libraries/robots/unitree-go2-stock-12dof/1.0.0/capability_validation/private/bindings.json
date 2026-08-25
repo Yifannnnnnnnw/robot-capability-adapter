@@ -1,0 +1,95 @@
+{
+  "artifact_type": "capability_validation_private_bindings",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
+  "bindings": [
+    {
+      "binding_id": "go2-g1-contract",
+      "calibration_profile": "G1",
+      "metric": "planar_velocity_error",
+      "unit": "m/s",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "G1",
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-g2-contract",
+      "calibration_profile": "G2",
+      "metric": "terminal_planar_position_error",
+      "unit": "m",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "G2",
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-g3-contract",
+      "calibration_profile": "G3",
+      "metric": "planar_path_error",
+      "unit": "m",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "G3",
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-g4-contract",
+      "calibration_profile": "G4",
+      "metric": "body_height_error",
+      "unit": "m",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "G4",
+        "body_name": "base_link"
+      }
+    },
+    {
+      "binding_id": "go2-g5-contract",
+      "calibration_profile": "G5",
+      "metric": "stable_stance_integrity",
+      "unit": "mixed",
+      "kind": "b1_contract",
+      "parameters": {
+        "contract_id": "G5",
+        "body_name": "base_link",
+        "foot_geom_groups": [
+          [
+            "FL"
+          ],
+          [
+            "FR"
+          ],
+          [
+            "RL"
+          ],
+          [
+            "RR"
+          ]
+        ],
+        "floor_geom_names": [
+          "floor"
+        ],
+        "forbidden_floor_geom_names": [
+          "geom_1",
+          "geom_2",
+          "geom_3",
+          "geom_4",
+          "geom_5",
+          "geom_6",
+          "geom_7",
+          "geom_8",
+          "geom_9",
+          "geom_10",
+          "geom_11",
+          "geom_12",
+          "geom_13"
+        ]
+      }
+    }
+  ]
+}

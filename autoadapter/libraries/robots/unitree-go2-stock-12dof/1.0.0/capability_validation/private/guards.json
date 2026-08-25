@@ -1,0 +1,24 @@
+{
+  "artifact_type": "capability_validation_private_guards",
+  "robot_configuration_id": "unitree-go2-stock-12dof",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
+  "guards": [
+    {
+      "guard_id": "go2-capability-control",
+      "kind": "actuator_and_physics_step_required"
+    },
+    {
+      "guard_id": "go2-capability-no-direct-write",
+      "kind": "no_direct_state_write"
+    },
+    {
+      "guard_id": "go2-capability-canonical",
+      "kind": "canonical_model_data"
+    },
+    {
+      "guard_id": "go2-capability-control-range",
+      "kind": "control_range"
+    }
+  ]
+}
