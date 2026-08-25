@@ -44,8 +44,9 @@ Each capability is one single-call physical effect and must have a unique capabi
 Python method_name, a concise description and effect, a closed task-neutral request_schema,
 preconditions, temporal_semantics, invariants, failure_behavior, and source-grounded structured
 criteria. Each capability has exactly one top-level criterion. Every non-object request-schema
-field has an explicit unit and frame and numeric bounds are finite where relevant. A request
-schema must not contain task_id, task_parameters, scene,
+field has an explicit unit and frame, numeric bounds are finite where relevant, and every field
+carrying a numeric bound also carries its public evidence_refs. A request schema must not contain
+task_id, task_parameters, scene,
 reset, private values, criteria, oracle fields, or a task/macro plan.
 
 Return one JSON object with artifact_type='capability_design', schema_version='2.0',
@@ -358,12 +359,31 @@ def build_public_tgcd_inputs(
         for index, reference in enumerate(references)
         if reference.get("robot_configuration_id") == ids["robot_configuration_id"]
     ]
+    artifact_header = {
+        "artifact_type": "capability_design",
+        "schema_version": "2.0",
+        "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        **ids,
+        "invocation_abi": json_copy(
+            CAPABILITY_INVOCATION_ABI,
+            label="capability_invocation_abi",
+        ),
+    }
     return {
         "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
         "invocation_abi": json_copy(
             CAPABILITY_INVOCATION_ABI,
             label="capability_invocation_abi",
         ),
+        "artifact_header": artifact_header,
+        "validator_contract": {
+            "capability_count_min": 3,
+            "capability_count_max": 10,
+            "criteria_count_per_capability": 1,
+            "bounded_schema_fields_require_evidence_refs": True,
+            "task_support_must_cover_every_task": True,
+            "task_support_must_cover_every_capability": True,
+        },
         "robot_package": {
             **ids,
             "morphology": json_copy(dict(morphology), label="morphology"),
@@ -495,16 +515,21 @@ def run_tgcd(
                         "Read tgcd_inputs.json, which is raw JSON in the phase-workspace root "
                         "and is also directly openable as ./tgcd_inputs.json from execute_python. "
                         "Its top-level invocation_abi is the exact required capability-v2 ABI; "
-                        "do not use the legacy task invocation ABI nested in morphology. Use the "
+                        "copy every artifact_header field unchanged at the artifact top level, "
+                        "not under package_identity, and do not use the legacy task invocation "
+                        "ABI nested in morphology. Follow validator_contract exactly. Use the "
                         "compact task_index for coverage and matching_reference_indices to locate "
                         "same-configuration public capability records without printing the full "
                         "Task Library or reference catalog. You may adapt those source-grounded "
-                        "records, but must independently add the required preconditions, temporal "
-                        "semantics, invariants, failure behavior, and task_support. "
+                        "records; when reusing one, copy its request_schema, criteria, and all "
+                        "evidence_refs without abridging them. You must independently add the "
+                        "required preconditions, temporal semantics, invariants, failure behavior, "
+                        "and task_support. "
                         f"Author the complete canonical {TGCD_ARTIFACT_NAME} with write_file. "
                         "Conserve the six-turn budget: use at most two turns for inspection and call "
-                        "write_file with an initial complete artifact by turn three, early enough "
-                        "to receive deterministic validation feedback. You may use execute_python "
+                        "write_file with an initial complete artifact by turn three. Turns five and "
+                        "six are reserved for deterministic delivery and one validation correction. "
+                        "You may use execute_python "
                         "for credential-free public MuJoCo checks. "
                         "End the turn when the artifact is ready; there is no submit tool."
                     ),

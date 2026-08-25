@@ -304,6 +304,19 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
         "method_call": "method(request=request)",
         "request_required": ["request"],
     }
+    assert inputs["artifact_header"] == {
+        "artifact_type": "capability_design",
+        "schema_version": "2.0",
+        "capability_protocol_version": "capability-v2",
+        "robot_configuration_id": "test_robot",
+        "package_version": "1.0.0",
+        "task_snapshot_id": "test-tasks-v1",
+        "invocation_abi": inputs["invocation_abi"],
+    }
+    assert inputs["validator_contract"]["criteria_count_per_capability"] == 1
+    assert inputs["validator_contract"][
+        "bounded_schema_fields_require_evidence_refs"
+    ] is True
     assert inputs["task_index"] == [
         {
             key: task[key]
@@ -611,7 +624,7 @@ def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
 
     assert len(result["cases"]) == 2 * len(design["capabilities"])
     assert model.tool_names == [
-        {"read_file", "write_file", "execute_python"},
+        {"write_file"},
         {"write_file"},
     ]
     correction_messages = json.dumps(model.messages[1])

@@ -536,10 +536,10 @@ def run_artifact_react(
     There is intentionally no aggregate tool-call limit here.  Tool handlers
     retain their own path, execution-time, output, and stage-local resource
     limits; a long-lived development conversation must not be cut off by a
-    second, unrelated call counter.  The final model turn exposes only
-    ``write_file`` so optional inspection cannot consume the artifact deadline;
-    a valid artifact already written on an earlier turn may also be accepted by
-    ending that final turn without another tool call.
+    second, unrelated call counter.  The final two model turns are the bounded
+    delivery window and expose only ``write_file``: the penultimate turn gives
+    the validator one chance to return a repairable error, and the final turn
+    accepts a corrected artifact without requiring another closing response.
     """
 
     if max_turns < 1 or tool_output_chars < 256:
@@ -586,9 +586,10 @@ def run_artifact_react(
 
     for turn_number in range(1, max_turns + 1):
         final_turn = turn_number == max_turns
+        delivery_turn = turn_number >= max(1, max_turns - 1)
         model_started = time.monotonic()
         available_tools = [tool for tool in tools if tool.is_available()]
-        if final_turn:
+        if delivery_turn:
             available_tools = [tool for tool in available_tools if tool.name == "write_file"]
         available_tool_names = {tool.name for tool in available_tools}
         turn = client.generate_tool_turn(
@@ -684,14 +685,17 @@ def run_artifact_react(
                     "observation": observation,
                 }
             )
-        # A final turn may contain the write itself and therefore cannot wait
-        # for an additional end_turn response.  Earlier tool turns continue
-        # the conversation unless the model explicitly ended the turn.
-        if final_turn:
-            result = validate(turn_number=turn_number, event="final_turn")
+        # The penultimate delivery turn is audited immediately so one final
+        # correction turn remains.  The final write is accepted without a
+        # separate closing response.
+        if delivery_turn:
+            event = "final_turn" if final_turn else "artifact_delivery_turn"
+            result = validate(turn_number=turn_number, event=event)
             if result is not None:
                 return result
-            break
+            if final_turn:
+                break
+            continue
         if turn.finish_reason in {"end_turn", "stop"}:
             result = validate(turn_number=turn_number, event="end_turn")
             if result is not None:

@@ -191,7 +191,6 @@ class ArtifactWorkflowTests(unittest.TestCase):
                             ),
                         ),
                     ),
-                    ToolTurn(content="artifact ready", finish_reason="stop"),
                 ]
             )
             result = run_artifact_react(
@@ -215,7 +214,7 @@ class ArtifactWorkflowTests(unittest.TestCase):
                 if message.get("role") == "user"
             )
             self.assertIn("Artifact deadline: 2 model turns remain", warning)
-            self.assertEqual(client.tools[2], [{
+            self.assertEqual(client.tools[1], [{
                 "type": "function",
                 "function": {
                     "name": "write_file",
@@ -223,7 +222,7 @@ class ArtifactWorkflowTests(unittest.TestCase):
                     "parameters": {"type": "object"},
                 },
             }])
-            self.assertEqual(result.completed_on, "end_turn")
+            self.assertEqual(result.completed_on, "artifact_delivery_turn")
 
     def test_final_turn_rejects_a_hallucinated_non_write_tool(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -294,7 +293,7 @@ class ArtifactWorkflowTests(unittest.TestCase):
                 artifact_name="study.json",
                 artifact_path=artifact,
                 validate_artifact=_json_validator,
-                max_turns=2,
+                max_turns=3,
             )
             self.assertEqual(result.tool_calls, 100)
             self.assertEqual(result.completed_on, "end_turn")

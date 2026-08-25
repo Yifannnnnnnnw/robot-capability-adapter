@@ -668,8 +668,8 @@ def run_ivc(
                         f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
                         "for credential-free calibration calculations. Use at most two turns for "
                         "inspection, then call write_file with an initial complete artifact by "
-                        "turn three so there is time to receive and apply "
-                        "deterministic validation feedback. End the turn when the "
+                        "turn three. Turns five and six are reserved for delivery and one "
+                        "correction after deterministic validation feedback. End the turn when the "
                         "artifact is ready; there is no submit or check tool."
                     ),
                     tools=session.artifact_tools(),
