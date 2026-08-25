@@ -415,7 +415,7 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "execute_python",
-                "Execute credential-free public-only Python/MuJoCo code in one persistent stage-local session. State survives across calls; time, output, and control-step budgets remain bounded.",
+                "Execute credential-free public-only Python/MuJoCo code in one persistent stage-local session. Its current directory is this same condition workspace, so relative paths match write_file paths; public scene/package paths are available through the supplied environment. State survives across calls; time, output, and control-step budgets remain bounded.",
                 _object_schema({"code": {"type": "string"}}, required=("code",)),
                 self.execute_python,
             ),
@@ -553,7 +553,7 @@ class IsolatedArtifactSession:
             ),
             ToolSpec(
                 "execute_python",
-                "Execute credential-free Python/MuJoCo calculations in one persistent isolated session. Time, output and physics remain bounded.",
+                "Execute credential-free Python/MuJoCo calculations in one persistent isolated session. Its current directory is this same phase workspace, so relative paths match read_file/write_file paths. Time, output and physics remain bounded.",
                 _object_schema({"code": {"type": "string"}}, required=("code",)),
                 self.execute_python,
             ),

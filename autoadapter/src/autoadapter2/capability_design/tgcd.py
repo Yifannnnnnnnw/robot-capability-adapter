@@ -470,9 +470,16 @@ def run_tgcd(
                     stage="tgcd",
                     system_prompt=TGCD_SYSTEM_PROMPT,
                     user_prompt=(
-                        "Read tgcd_inputs.json, inspect the public robot package as needed, and "
+                        "Read tgcd_inputs.json, which is raw JSON in the phase-workspace root "
+                        "and is also directly openable as ./tgcd_inputs.json from execute_python. "
+                        "Its top-level keys include robot_package, capability_v2_public_references, "
+                        "completed_public_study, and eligible_experience; there is no result wrapper. "
+                        "Inspect the public robot package only as needed, and "
                         f"author the complete canonical {TGCD_ARTIFACT_NAME} with write_file. "
-                        "You may use execute_python for credential-free public MuJoCo checks. "
+                        "Conserve the six-turn budget: inspect structured inputs with Python rather "
+                        "than searching paths, and write an initial complete artifact early enough "
+                        "to receive deterministic validation feedback. You may use execute_python "
+                        "for credential-free public MuJoCo checks. "
                         "End the turn when the artifact is ready; there is no submit tool."
                     ),
                     tools=session.artifact_tools(include_skeleton=False),

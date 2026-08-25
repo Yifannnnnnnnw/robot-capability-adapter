@@ -494,7 +494,11 @@ class PersistentPythonSession:
                 workspace=self.workspace,
                 arguments=("-I", "-B", "-u", "-c", _PERSISTENT_BOOTSTRAP),
             ),
-            cwd=str(public_workspace.root),
+            # AA1 file-workspace semantics require ``read_file``/``write_file``
+            # paths and ordinary relative Python paths to resolve from the
+            # same phase workspace.  Public assets stay available through
+            # their absolute environment paths and staged import roots.
+            cwd=str(self.workspace),
             env=env,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

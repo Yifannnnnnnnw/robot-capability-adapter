@@ -662,9 +662,13 @@ def run_ivc(
                     stage="ivc",
                     system_prompt=IVC_SYSTEM_PROMPT,
                     user_prompt=(
-                        "Read ivc_inputs.json and author the complete canonical "
+                        "Read ivc_inputs.json, which is raw JSON in the phase-workspace root "
+                        "and is directly openable as ./ivc_inputs.json from execute_python; "
+                        "there is no result wrapper. Author the complete canonical "
                         f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
-                        "for credential-free calibration calculations. End the turn when the "
+                        "for credential-free calibration calculations. Conserve the six-turn "
+                        "budget and write an initial complete artifact early enough to receive "
+                        "deterministic validation feedback. End the turn when the "
                         "artifact is ready; there is no submit or check tool."
                     ),
                     tools=session.artifact_tools(),

@@ -195,6 +195,23 @@ class InteractiveFileSessionTests(unittest.TestCase):
         self.assertIsNone(second["development_status"]["probe_calls_limit"])
         self.assertIsNone(second["development_status"]["probe_calls_remaining"])
 
+    def test_execute_python_relative_paths_share_the_file_tool_workspace(self) -> None:
+        self.session.write_file(
+            {"path": "notes/input.json", "content": '{"value": 41}\n'}
+        )
+        result = self.session.execute_python(
+            {
+                "code": (
+                    "import json\n"
+                    "with open('notes/input.json', encoding='utf-8') as stream:\n"
+                    "    value = json.load(stream)['value']\n"
+                    "print('value=' + str(value + 1))\n"
+                )
+            }
+        )
+        self.assertTrue(result["successful"], result)
+        self.assertIn("value=42", result["stdout"])
+
     def test_persistent_python_session_cannot_read_outside_phase_workspace(self) -> None:
         outside = Path(self.temporary.name) / "outside-secret.txt"
         outside.write_text("DO_NOT_READ", encoding="utf-8")
@@ -410,8 +427,19 @@ class InteractiveFileSessionTests(unittest.TestCase):
             isolated.read_file({"path": "morphology.json"})
         first = isolated.execute_python({"code": "value = 6\nprint(value)"})
         second = isolated.execute_python({"code": "value += 1\nprint(value)"})
+        relative = isolated.execute_python(
+            {
+                "code": (
+                    "import json\n"
+                    "with open('ivc_inputs.json', encoding='utf-8') as stream:\n"
+                    "    print('ivc=' + str(json.load(stream)))\n"
+                )
+            }
+        )
         self.assertTrue(first["successful"])
         self.assertIn("7", second["stdout"])
+        self.assertTrue(relative["successful"], relative)
+        self.assertIn("ivc={}", relative["stdout"])
         self.assertFalse((isolated.workspace / "staged").exists())
 
 
