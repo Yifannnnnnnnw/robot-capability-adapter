@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -20,6 +21,9 @@ def test_sonnet_diagnostic_is_single_robot_nonformal_and_uses_exp3_pin() -> None
     assert config.max_driver_attempts_per_condition == 3
     assert config.model_manifest is not None
     assert config.model_manifest["model_id"] == "eu.anthropic.claude-sonnet-4-6"
+
+    manifest = json.loads(diagnostic.DEFAULT_MANIFEST.read_text(encoding="utf-8"))
+    assert manifest["runtime"]["producer_transport"]["request_timeout_s"] == 300
 
     with pytest.raises(diagnostic.DiagnosticRunError, match="not one of the remaining"):
         diagnostic._single_robot_config(diagnostic.DEFAULT_CONFIG, "robotstudio_so101")
@@ -52,3 +56,26 @@ def test_sonnet_diagnostic_usage_sums_all_physical_calls() -> None:
     assert usage["tokens"]["output_tokens"] == 5
     assert usage["tokens"]["total_tokens"] == 35
     assert usage["returned_models"] == ["eu.anthropic.claude-sonnet-4-6"]
+
+
+def test_sonnet_diagnostic_summary_reports_nested_failure_stage(tmp_path) -> None:
+    report = {
+        "experiment_id": "diagnostic",
+        "run_id": "run-1",
+        "reference_calibration_skipped": True,
+        "pipeline_completed": False,
+        "cells": [
+            {
+                "robot_configuration_id": "unitree-go2-stock-12dof",
+                "failure": {"stage": "tgcd", "type": "ModelInvocationError"},
+            }
+        ],
+    }
+
+    summary = diagnostic._summary(
+        report,
+        client=SimpleNamespace(calls=[]),
+        output_dir=tmp_path,
+    )
+
+    assert summary["failed_stage"] == "tgcd"

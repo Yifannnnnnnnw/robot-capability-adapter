@@ -105,6 +105,10 @@ def _summary(
     cell = cells[0] if isinstance(cells, list) and cells else {}
     if not isinstance(cell, Mapping):
         cell = {}
+    failure = cell.get("failure")
+    failed_stage = cell.get("failed_stage")
+    if failed_stage is None and isinstance(failure, Mapping):
+        failed_stage = failure.get("stage")
     return {
         "experiment_id": report.get("experiment_id"),
         "run_id": report.get("run_id"),
@@ -114,7 +118,7 @@ def _summary(
         ),
         "pipeline_completed": report.get("pipeline_completed"),
         "robot_configuration_id": cell.get("robot_configuration_id"),
-        "failed_stage": cell.get("failed_stage"),
+        "failed_stage": failed_stage,
         "frozen_driver_attempt_count": cell.get("frozen_driver_attempt_count"),
         "final_capability_validation_passed": cell.get(
             "final_capability_validation_passed"
