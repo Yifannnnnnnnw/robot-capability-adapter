@@ -481,8 +481,9 @@ class PersistentPythonSession:
 
     The process speaks a tiny JSON-lines protocol.  Each ``execute`` call is
     evaluated in the same globals dictionary, so model-authored exploratory
-    state survives across calls while the parent still enforces the existing
-    timeout, output, and MuJoCo step budgets.
+    state survives across successful calls. A timeout or worker loss discards
+    that state; the next explicit call gets a clean worker while the parent
+    preserves call accounting and conservatively exhausts unknown step use.
     """
 
     def __init__(
@@ -500,17 +501,31 @@ class PersistentPythonSession:
         self._calls = 0
         self._closed = False
         self._process: subprocess.Popen[bytes] | None = None
+        self._steps_used = 0
+        self._worker_step_offset = 0
+        self._restart_pending = False
+        self._start_process()
+
+    def _start_process(self) -> bool:
+        """Start one confined worker and report whether it replaces a lost one."""
+
+        if self._closed:
+            raise ProbeError("persistent execute_python session is closed")
+        restarted = self._restart_pending
+        self._restart_pending = False
+        self._worker_step_offset = self._steps_used
         env = _probe_environment(
-            public_workspace=public_workspace,
+            public_workspace=self.public_workspace,
             workspace=self.workspace,
-            budget=budget,
+            budget=self.budget,
+            max_steps=max(0, self.budget.max_steps - self._steps_used),
         )
         # Never inherit cloud credentials, proxy credentials, or unrelated
         # host state.  The existing probe environment intentionally contains
         # only interpreter/runtime variables and public workspace paths.
         self._process = subprocess.Popen(
             _sandboxed_python_command(
-                public_workspace=public_workspace,
+                public_workspace=self.public_workspace,
                 workspace=self.workspace,
                 arguments=("-I", "-B", "-u", "-c", _PERSISTENT_BOOTSTRAP),
             ),
@@ -524,6 +539,31 @@ class PersistentPythonSession:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+        return restarted
+
+    def _lose_process(self) -> None:
+        """Discard a wedged worker without replenishing its physics budget."""
+
+        # A killed or desynchronised child cannot report how many native
+        # MuJoCo steps completed. Conservatively exhaust the phase budget; the
+        # replacement remains useful for file import/build checks but cannot
+        # gain another physical-control allowance.
+        self._steps_used = self.budget.max_steps
+        self._restart_pending = True
+        self._stop_process()
+
+    def _ensure_process(self) -> bool:
+        process = self._process
+        if (
+            process is not None
+            and process.poll() is None
+            and process.stdin is not None
+            and process.stdout is not None
+        ):
+            return False
+        if process is not None:
+            self._lose_process()
+        return self._start_process()
 
     @property
     def calls(self) -> int:
@@ -562,8 +602,9 @@ class PersistentPythonSession:
             condition=self.condition,
             allow_probe_utilities=True,
         )
+        session_restarted = self._ensure_process()
         process = self._process
-        if process is None or process.poll() is not None or process.stdin is None or process.stdout is None:
+        if process is None or process.stdin is None or process.stdout is None:
             raise ProbeError("persistent execute_python session is unavailable")
         self._calls += 1
         started = time.monotonic()
@@ -575,12 +616,12 @@ class PersistentPythonSession:
             process.stdin.write(request)
             process.stdin.flush()
         except (BrokenPipeError, OSError) as exc:
-            self._stop_process()
+            self._lose_process()
             raise ProbeError(f"persistent execute_python transport failed: {exc}") from exc
 
         ready, _, _ = select.select([process.stdout], [], [], self.budget.timeout_s)
         if not ready:
-            self._stop_process()
+            self._lose_process()
             return {
                 "ok": False,
                 "successful": False,
@@ -590,48 +631,67 @@ class PersistentPythonSession:
                 "stdout": "",
                 "stderr": "",
                 "physics_steps": None,
+                "physics_steps_total": self._steps_used,
+                "physics_step_budget_exhausted": True,
                 "elapsed_wall_s": time.monotonic() - started,
+                "session_restarted": session_restarted,
+                "session_lost": True,
             }
         try:
             line = process.stdout.readline()
         except OSError as exc:
+            self._lose_process()
             raise ProbeError(f"persistent execute_python read failed: {exc}") from exc
         if not line:
+            exit_code = process.poll()
             stderr = b""
             if process.stderr is not None:
                 try:
                     stderr = process.stderr.read()
                 except OSError:
                     pass
+            self._lose_process()
             return {
                 "ok": False,
                 "successful": False,
                 "timed_out": False,
-                "exit_code": process.poll(),
+                "exit_code": exit_code,
                 "spawn_error": "persistent execute_python process exited",
                 "stdout": "",
                 "stderr": stderr.decode("utf-8", errors="replace")[-self.budget.max_output_chars :],
                 "physics_steps": None,
+                "physics_steps_total": self._steps_used,
+                "physics_step_budget_exhausted": True,
                 "elapsed_wall_s": time.monotonic() - started,
+                "session_restarted": session_restarted,
+                "session_lost": True,
             }
         text = line.decode("utf-8", errors="replace").rstrip("\n")
         if not text.startswith(_PERSISTENT_RESULT_PREFIX):
+            exit_code = process.poll()
+            self._lose_process()
             return {
                 "ok": False,
                 "successful": False,
                 "timed_out": False,
-                "exit_code": process.poll(),
+                "exit_code": exit_code,
                 "spawn_error": "persistent execute_python protocol error",
                 "stdout": "",
                 "stderr": text[: self.budget.max_output_chars],
                 "physics_steps": None,
+                "physics_steps_total": self._steps_used,
+                "physics_step_budget_exhausted": True,
                 "elapsed_wall_s": time.monotonic() - started,
+                "session_restarted": session_restarted,
+                "session_lost": True,
             }
         try:
             payload = json.loads(text.split("=", 1)[1])
         except json.JSONDecodeError as exc:
+            self._lose_process()
             raise ProbeError("persistent execute_python returned malformed JSON") from exc
         if not isinstance(payload, Mapping):
+            self._lose_process()
             raise ProbeError("persistent execute_python response must be an object")
         stdout_value = payload.get("stdout", "")
         stderr_value = payload.get("stderr", "")
@@ -645,6 +705,16 @@ class PersistentPythonSession:
         )
         ok = bool(payload.get("ok"))
         error = payload.get("error")
+        worker_steps_total = payload.get("physics_steps_total")
+        if (
+            isinstance(worker_steps_total, int)
+            and not isinstance(worker_steps_total, bool)
+            and worker_steps_total >= 0
+        ):
+            self._steps_used = min(
+                self.budget.max_steps,
+                max(self._steps_used, self._worker_step_offset + worker_steps_total),
+            )
         return {
             "ok": ok,
             "successful": ok,
@@ -658,8 +728,11 @@ class PersistentPythonSession:
             "output_truncated": stdout_truncated or stderr_truncated,
             "elapsed_wall_s": time.monotonic() - started,
             "physics_steps": payload.get("physics_steps"),
-            "physics_steps_total": payload.get("physics_steps_total"),
+            "physics_steps_total": self._steps_used,
+            "physics_step_budget_exhausted": self._steps_used >= self.budget.max_steps,
             "error": error,
+            "session_restarted": session_restarted,
+            "session_lost": False,
         }
 
 
@@ -1145,7 +1218,11 @@ def _probe_environment(
     public_workspace: PublicProbeWorkspace,
     workspace: Path,
     budget: ProbeBudget,
+    max_steps: int | None = None,
 ) -> dict[str, str]:
+    effective_max_steps = budget.max_steps if max_steps is None else int(max_steps)
+    if effective_max_steps < 0:
+        raise ProbeError("remaining execute_python step budget must not be negative")
     environment: dict[str, str] = {}
     mujoco_gl = os.environ.get("MUJOCO_GL")
     if mujoco_gl in {"glfw", "egl", "osmesa", "cgl", "disable"}:
@@ -1159,7 +1236,7 @@ def _probe_environment(
             "AUTOADAPTER_PROBE_WORKSPACE": str(workspace.resolve()),
             "AUTOADAPTER_PROBE_PUBLIC_PACKAGE": str(public_workspace.root),
             "AUTOADAPTER_PROBE_SCENE": str(public_workspace.scene_path),
-            "AUTOADAPTER_PROBE_MAX_STEPS": str(budget.max_steps),
+            "AUTOADAPTER_PROBE_MAX_STEPS": str(effective_max_steps),
             "AUTOADAPTER_PROBE_MAX_SIM_TIME_S": str(budget.max_sim_time_s),
         }
     )

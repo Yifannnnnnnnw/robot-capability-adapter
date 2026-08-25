@@ -297,7 +297,8 @@ class PublicDevelopmentSession:
         self._probe_calls += 1
         session = self._ensure_python_session()
         result = dict(session.execute(code, invalidate_driver=self._driver_dirty))
-        self._driver_dirty = False
+        if not bool(result.get("session_lost")):
+            self._driver_dirty = False
         result.update(
             {
                 "probe_id": f"execute-python-{self._probe_calls}",
@@ -415,7 +416,7 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "execute_python",
-                "Execute credential-free public-only Python/MuJoCo code in one persistent stage-local session. Its current directory is this same condition workspace, so relative paths match write_file paths; public scene/package paths are available through the supplied environment. State survives across calls; time, output, and control-step budgets remain bounded.",
+                "Execute credential-free public-only Python/MuJoCo code in one persistent stage-local session. Its current directory is this same condition workspace, so relative paths match write_file paths; public scene/package paths are available through the supplied environment. State survives across successful calls. After a timeout or worker exit, the next call uses a clean session and reports session_restarted=true; the phase control-step budget is not replenished. Time, output, and control-step budgets remain bounded.",
                 _object_schema({"code": {"type": "string"}}, required=("code",)),
                 self.execute_python,
             ),

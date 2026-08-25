@@ -381,6 +381,43 @@ class InteractiveFileSessionTests(unittest.TestCase):
         self.assertFalse(dynamic_compile["successful"], dynamic_compile)
         self.assertEqual(dynamic_compile["error"]["type"], "PermissionError")
 
+    def test_timed_out_worker_restarts_for_driver_artifact_audit_without_new_steps(self) -> None:
+        recovering = PublicDevelopmentSession(
+            package=self.package,
+            condition="from-scratch",
+            workspace=Path(self.temporary.name) / "timeout-recovery-session",
+            budget=ProbeBudget(max_requests=None, timeout_s=1.0, max_steps=20),
+            source_root=SOURCE_ROOT,
+            capability_methods=("drive",),
+        )
+        self.extra_sessions.append(recovering)
+
+        timed_out = recovering.execute_python({"code": "while True:\n    pass\n"})
+        self.assertTrue(timed_out["timed_out"], timed_out)
+        self.assertTrue(timed_out["session_lost"], timed_out)
+        self.assertEqual(timed_out["physics_steps_total"], 20)
+        self.assertTrue(timed_out["physics_step_budget_exhausted"])
+
+        recovering.write_file({"path": "driver.py", "content": DRIVER_SOURCE})
+        validation = recovering.validate_driver_artifact()
+        self.assertTrue(validation["valid"], validation)
+        self.assertTrue(recovering.probe_results[-1]["session_restarted"])
+
+        no_replenished_steps = recovering.execute_python(
+            {
+                "code": (
+                    "import os\n"
+                    "import mujoco\n"
+                    "model = mujoco.MjModel.from_xml_path(os.environ['AUTOADAPTER_PROBE_SCENE'])\n"
+                    "data = mujoco.MjData(model)\n"
+                    "mujoco.mj_step(model, data)\n"
+                )
+            }
+        )
+        self.assertFalse(no_replenished_steps["successful"], no_replenished_steps)
+        self.assertEqual(no_replenished_steps["physics_steps_total"], 20)
+        self.assertIn("control-step budget exceeded", no_replenished_steps["stderr"])
+
     def test_persistent_python_session_fails_closed_without_os_sandbox(self) -> None:
         with mock.patch(
             "autoadapter2.driver_synthesis.probe._seatbelt_available",
