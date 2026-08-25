@@ -68,120 +68,148 @@ to select and compose.
 
 \section{Auto-Adapter Framework}
 
-Auto-Adapter receives public robot information, a canonical MuJoCo XML (MJCF)
-model, and source-backed tasks. From these inputs, it produces a reusable robot
-capability interface and a robot-specific Python driver that implements it. The
-interface defines the operations available to a high-level planner, while the
-driver translates those operations into actuator commands for the selected
-robot. Capability design, driver generation, and behavioural validation remain
-separate so that generated code cannot define or determine its own success.
+\subsection{Pipeline Overview}
 
-\textbf{Task-Grounded Capability Design (TGCD)} identifies requirements shared
-across the source-backed tasks, groups them into reusable capabilities, and
-specifies their public APIs and measurable pass criteria. Before driver
-generation begins, the \textbf{Independent Validation Compiler (IVC)} audits
-these criteria and binds them to private MuJoCo task instances, resets,
-measurements, guards, and verdict rules. The IVC is implementation-blind: it
-cannot inspect the candidate driver or its execution history. The resulting
-validation suite is sealed before generation and is accessible only to the
-trusted Harness.
+Auto-Adapter operates on an isolated working directory containing public robot
+documentation, a canonical MuJoCo model, and a library of source-backed tasks.
+The pipeline proceeds through six ordered stages: STUDY, Task-Grounded
+Capability Design, Independent Validation Compilation, driver generation,
+capability validation and Repair, and Task Demo. Stage transitions are
+controlled by the framework, whereas the work within each model-authored stage
+is performed through an iterative ReAct process. The principal model-authored
+artefacts are \texttt{study.json}, \texttt{capability\_design.json},
+\texttt{capability\_validation\_suite.json}, and \texttt{driver.py}.
 
-During \textbf{STUDY}, the coding agent examines the public robot description,
-canonical MuJoCo scene, capability definitions, and permitted implementation
-resources. A bounded physics probe verifies that the scene loads, exposes the
-expected robot state, and advances under actuator control. The probe may also
-inspect actuator behaviour, coordinate conventions, and public observations.
-STUDY produces an implementation plan rather than an executable or validated
-driver, and it cannot inspect or invoke the private validation suite.
+The stages separate three responsibilities. Capability design specifies which
+task-neutral operations the robot should expose. Validation compilation
+determines how the physical effects of those operations will be measured.
+Driver generation implements the operations for the selected robot. Because
+the validation cases are fixed before driver generation, the generated code
+cannot define its own success criteria or determine the final verdict.
 
-The framework supports two driver-generation conditions. In the
-\textbf{skeleton-assisted condition}, the agent may inspect and instantiate a
-trusted family of task-neutral control primitives. These include, where
-applicable, damped-least-squares Cartesian tracking for serial manipulators and
-feedback-control primitives for quadrupeds. The primitives contain no task
-identity, private acceptance criterion, reset procedure, or verdict logic. In
-the \textbf{from-scratch condition}, the agent must construct the controller,
-kinematics or locomotion algorithm, actuator mapping, observations, physics
-stepping, and lifecycle behaviour using only permitted MuJoCo, NumPy, and
-Python functions. In both conditions, the generated driver remains the
-model-authored implementation of the capability interface.
+\subsection{ReAct Agent and Study}
 
-During \textbf{GENERATE}, the agent starts from a mechanically constructed
-interface-only \texttt{driver.py} template. The template exposes
-\texttt{build(model, data)} and the required capability methods, but contains
-no actuator mapping, control implementation, task dispatch, or
-reference-derived logic. The \textbf{inner generation loop} alternates between
-writing code, running bounded public MuJoCo checks, observing the resulting
-state, and revising the driver. These checks assess the source, import the
-driver, and execute capability-level physics smoke tests.
+Within each model-authored stage, a ReAct agent alternates between reasoning,
+tool use, and revision \citep{yao2023react}. Its common interface contains
+three tools: \texttt{read\_file} for inspecting permitted inputs,
+\texttt{write\_file} for revising the stage artefact, and
+\texttt{execute\_python} for running bounded Python and MuJoCo probes. Tool
+outputs, including execution errors and simulator observations, return to the
+same conversation so that the agent can revise its current artefact. The
+Python session persists within the stage, although each execution remains
+subject to path, time, simulation-step, and output limits.
 
-This process provides \textbf{physics-grounded feedback}: revisions respond to
-observed simulator behaviour rather than the model's own assessment. Public
-development checks do not issue a validation verdict or consume the formal
-attempt budget. An attempt begins only when the agent explicitly submits a
-checked driver to the trusted Harness.
+STUDY uses this workspace to inspect the robot before either capabilities or
+driver code are written. The agent examines the public documentation and
+canonical model to identify joints, actuators, limits, body and site names,
+coordinate conventions, and relevant control interfaces. It may load the model
+and run bounded probes to confirm that the scene advances under actuator
+control. The resulting \texttt{study.json} records these observations,
+implementation constraints, and unresolved risks. It does not contain the
+driver and cannot inspect the later validation cases.
 
-At execution time, each capability that produces robot motion must update its
-commands from fresh simulator state. The driver reads the canonical
-\texttt{mujoco.MjData}, computes the next actuator command from the current
-state and public request, writes the command through \texttt{data.ctrl}, and
-advances physics through \texttt{mujoco.mj\_step}. This process continues until
-the requested effect is observed or a bounded timeout is reached. Fixed
-open-loop command sequences, pure polling, and candidate-reported completion do
-not satisfy this requirement.
+\subsection{Capability and Validation Design}
 
-Once formally submitted, the driver enters the \textbf{outer
-validation--Repair loop}. For each private trial, the trusted Harness loads the
-canonical MJCF into \texttt{mujoco.MjModel}, creates a fresh
-\texttt{mujoco.MjData}, applies a Framework-owned reset, and invokes the
-required capability in an isolated worker. A Framework-owned tracker records a
-trusted state trajectory as physics advances. This trajectory includes
-\texttt{qpos}, \texttt{qvel}, and \texttt{ctrl}, together with named joint
-states, body and site poses, and contact pairs.
+Task-Grounded Capability Design uses the study and source-backed task library
+to define between three and ten reusable capabilities. Each capability
+describes one composable physical effect through a closed, task-neutral
+request. The associated task records justify which tasks the capability may
+support, but they do not prescribe an execution sequence, waypoint plan, or
+complete task solution.
 
-The Harness evaluates this trajectory using the private rules compiled before
-driver generation. The measurement binding selects the physical quantity to
-evaluate, the temporal rule specifies when it must satisfy the criterion,
-guards reject invalid execution, and the aggregation rule combines repeated
-trials. Candidate return values, logs, textual explanations, and self-reported
-success are not treated as physical evidence. The Harness also rejects
-candidate-owned resets and direct writes to \texttt{qpos}, \texttt{qvel}, or
-body poses, because accepted motion must result from \texttt{data.ctrl}
-followed by MuJoCo physics stepping. It retains a structured report and video
-manifest for every trial so that measured outcomes, guard results, and
-execution integrity can be inspected independently.
+For example, reaching above an object, positioning the gripper for grasping,
+and moving an object towards a destination all require controlled Cartesian
+placement. These tasks may motivate an end-effector capability that accepts a
+target position. Its criterion can require the measured end-effector site to
+enter and remain within a stated tolerance of that target. The capability
+therefore captures a reusable physical effect without embedding the identity
+or action sequence of any one task.
 
-If validation fails, Repair receives the previous driver and a
-candidate-facing report containing the actual request, measured values,
-available state and trajectory diagnostics, exceptions, guard outcomes, and
-video evidence. The sealed cases, private stricter thresholds, hidden expected
-values, and executable measurement bindings remain inaccessible. Repair may
-modify only \texttt{driver.py} and may use the same bounded public development
-checks as initial generation.
+Before driver generation, the Independent Validation Compiler converts each
+capability criterion into executable simulation cases. It can inspect the
+sealed capability design and private execution information needed to initialise
+and measure a case, but it cannot inspect the eventual driver, its development
+traces, or any Repair history. For every capability, it authors one nominal
+request and one calibrated-boundary request near the declared operating limit.
+In a formal run, both cases are first executed with a private known-working
+driver. This positive control establishes that the compiled requests and
+criteria are achievable in the canonical model before the suite is sealed.
+The sealed cases are subsequently hidden from driver generation and Repair.
 
-The protocol permits one initial submission, recorded as attempt~0, and at
-most two Repair submissions, recorded as attempts~1 and~2. Each generation
-condition therefore receives no more than three Harness-evaluated driver
-attempts. Every submitted revision is evaluated against the same sealed private
-suite, and the first passing attempt terminates the loop. Only the trusted
-Harness issues the final capability-validation verdict.
+\subsection{Driver Generation and Physics-Grounded Feedback}
 
-After a driver passes capability validation, the fixed high-level planner
-invokes its capabilities on matched downstream tasks. Experiment~2 holds the
-planner, tasks, execution budgets, simulator configuration, and evaluation
-procedure constant. Only the robot-facing capability interface and driver vary
-between Auto-Adapter and the selected embodied-AI baselines. Task-success rate
-therefore measures the downstream quality of the produced capabilities and
-drivers under the matched setting. A higher success rate for Auto-Adapter would
-indicate that it produced more effective reusable robot capabilities than the
-selected baselines. This comparison does not include expert-written or
-manually tuned drivers.
+GENERATE begins with an interface-only \texttt{driver.py} containing the
+required construction function and capability method signatures. The template
+contains no robot-specific actuator mapping, controller implementation, task
+dispatch, or validation logic. The ReAct agent reads the permitted robot
+artefacts, writes an implementation, and uses \texttt{execute\_python} to run
+public source, import, and simulation checks. It may inspect observations such
+as joint positions and velocities, actuator commands, body or site positions,
+and contacts before revising the code.
 
-Finally, \textbf{Evolution} analyses the terminal driver, validation evidence,
-failure reports, and execution records to propose reusable Experience for
-later runs. A human reviewer decides whether to retain each proposal. Accepted
-Experience cannot modify the current driver, validation verdict, experimental
-inputs, or results.
+This creates a write--run--observe--revise development loop. A failed import,
+an unexpected actuator response, or a large simulated tracking error supplies
+concrete evidence for the next revision. These development simulations help
+the agent debug its implementation, but they cannot issue an acceptance
+verdict because they do not contain the sealed validation cases.
+
+The experiment in this chapter uses skeleton-assisted generation. The agent
+may inspect task-neutral controller structures appropriate to the robot
+family, such as a generic Cartesian controller for a serial arm. A skeleton
+does not provide the robot-specific joint or actuator mapping, task identity,
+private thresholds, reset state, or verdict logic; these remain outside the
+generated implementation.
+
+During execution, a motion-producing capability reads the current
+\texttt{mujoco.MjData}, computes actuator commands from the observed state and
+public request, and writes them through \texttt{data.ctrl}. Subsequent MuJoCo
+steps generate the evaluated trajectory \citep{todorov2012mujoco}. This
+closed-loop interaction allows the implementation to respond to tracking error
+and state changes rather than relying on a fixed command sequence.
+
+\subsection{Independent Validation and Repair}
+
+When GENERATE ends with a source- and import-valid \texttt{driver.py}, the
+framework freezes an immutable copy as a driver attempt. Each validation trial
+then loads the canonical MJCF into a fresh \texttt{mujoco.MjModel}, creates a
+fresh \texttt{mujoco.MjData}, applies the prescribed reset, and executes the
+driver in an isolated process. State acquisition remains outside the generated
+code. As simulation advances, the evaluator samples \texttt{qpos},
+\texttt{qvel}, and \texttt{ctrl}, together with named joint states, body and
+site poses, and contact information.
+
+The independently recorded trajectory is evaluated against the cases compiled
+before generation. Driver return values, printed messages, textual
+explanations, and self-reported success do not count as physical evidence.
+Execution-integrity checks also reject direct modification of evaluated
+positions, velocities, poses, contacts, or simulation time. Accepted motion
+must instead arise from actuator commands followed by MuJoCo physics.
+
+If a case fails, Repair receives the previous driver and a bounded report
+containing the request, measured outcomes, available trajectory diagnostics,
+execution errors, and guard results. The executable measurement logic and
+other private case information remain hidden. Repair may modify only
+\texttt{driver.py} and uses the same ReAct tools and public development
+simulations as GENERATE. The protocol permits one initial frozen driver and at
+most two repaired drivers. Files that fail the source or import checks are not
+counted as submitted attempts.
+
+\subsection{Task Demonstration and Scope}
+
+Capability validation reports each capability separately. A capability becomes
+available to Task Demo only when both its nominal and calibrated-boundary cases
+pass. The final driver may therefore expose a truthful subset of validated
+capabilities even when another capability fails. A separate task-level
+controller may compose only this validated subset when attempting the
+source-backed tasks.
+
+Task completion is determined independently from the recorded MuJoCo state and
+continuous execution video, rather than from the controller's declaration that
+it has finished. The resulting evidence supports claims about simulated
+capability execution and task completion only; it does not establish hardware
+performance or sim-to-real transfer. Experiment~2 reported in this chapter
+terminates after Task Demo and disables the optional Evolution stage, so no
+later Experience proposal can affect its drivers or results.
 
 \section{Experiments and Results}
 
