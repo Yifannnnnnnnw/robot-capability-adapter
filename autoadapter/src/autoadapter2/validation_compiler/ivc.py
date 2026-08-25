@@ -282,16 +282,14 @@ def _copy_private_inputs(private_inputs: Mapping[str, Any]) -> dict[str, Any]:
         "verdict",
         "candidate_verdict",
     }
-    forbidden_tokens = {"driver", "repair", "candidate", "trace", "verdict"}
-
     def walk(value: Any, where: str) -> None:
         if isinstance(value, Mapping):
             for key, child in value.items():
                 normalized = str(key).lower()
-                tokens = {
-                    token for token in re.split(r"[^a-z0-9]+", normalized) if token
-                }
-                if normalized in forbidden or tokens.intersection(forbidden_tokens):
+                # MuJoCo symbol maps legitimately use names such as
+                # ``right_driver_joint``.  Privacy checks apply to protocol
+                # fields, not substrings inside package-owned entity names.
+                if normalized in forbidden:
                     raise IVCError(f"{where} exposes candidate field {key!r}")
                 walk(child, f"{where}.{key}")
         elif isinstance(value, list):

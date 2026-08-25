@@ -120,17 +120,6 @@ def _executable_manifest(tmp_path: Path) -> dict[str, Any]:
             )
             for index, robot in enumerate(runner.ROBOT_CONFIGURATIONS)
         },
-        "reference_positive_controls": {
-            robot: _evidence(
-                tmp_path,
-                f"reference-{index}",
-                {
-                    "artifact_type": "experiment3_reference_positive_control",
-                    "robot_configuration_id": robot,
-                },
-            )
-            for index, robot in enumerate(runner.ROBOT_CONFIGURATIONS)
-        },
         "producer_model_canary": _evidence(
             tmp_path,
             "producer-model",
@@ -298,7 +287,7 @@ def test_task_demo_and_formal_evidence_postchecks_reject_false_terminal_success(
             run_id="declared-run",
         )
 
-def test_checked_in_preflight_accepts_the_current_so101_reference_control() -> None:
+def test_checked_in_preflight_accepts_the_current_inline_ivc_contract() -> None:
     mainline_root = Path(__file__).resolve().parents[2] / "autoadapter"
 
     manifest = runner.load_manifest()
@@ -318,13 +307,10 @@ def test_checked_in_preflight_accepts_the_current_so101_reference_control() -> N
     with pytest.raises(runner.Experiment3RunnerError, match="16 planning turns and 12"):
         runner.validate_executable_preflight(drifted, mainline_root=mainline_root)
 
-    so101 = checked["readiness_evidence"]["reference_positive_controls"][
-        "robotstudio_so101"
-    ]
-    assert so101["passed"] is True
-    assert so101["artifact_type"].startswith(
-        "experiment3_reference_positive_control"
-    )
+    assert len(checked["readiness_evidence"]["packages"]) == 11
+    assert manifest["ivc_contract"]["inline_measurement_binding_required"] is True
+    assert manifest["ivc_contract"]["binding_id_forbidden"] is True
+    assert manifest["ivc_contract"]["worked_reference_case_count"] == 22
 
 
 def test_readiness_rejects_passed_evidence_with_the_wrong_semantic_scope(
@@ -476,7 +462,7 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
         assert config["max_driver_attempts_per_condition"] == 3
         assert config["experience"]["input"] == []
         assert config["evolution"] == {"enabled": False}
-        assert kwargs["skip_reference_calibration"] is False
+        assert kwargs["skip_reference_calibration"] is True
         assert kwargs["producer_client"].config.api_key == "manifest-pinned-secret"
         assert kwargs["hooks"].cell_id.endswith(f"::{replicate}::{robot}")
         if replicate == "r02" and robot == "piper":
@@ -1029,9 +1015,6 @@ def test_cli_dispatches_preflight_formal_and_summarise_without_a_test_factory(
             "producer_model": {"model_id": runner.MODEL_ID},
             "readiness_evidence": {
                 "packages": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
-                "reference_positive_controls": {
-                    robot: {} for robot in runner.ROBOT_CONFIGURATIONS
-                },
             },
             "current_package_check": {"package_check_passed": True},
             "package_ivc_context_check": _passing_ivc_context_check(),

@@ -4,23 +4,53 @@
 > **Document role / 文档角色：** sole project-wide normative document; bounded experiment authorities require explicit delegation in Section 0.1 / 项目范围唯一规范性文档；限定实验权威必须由第 0.1 节明确委派<br>
 > **Normative language / 规范语言：** English / 英文<br>
 > **Chinese text / 中文文本：** auxiliary reading support only / 仅作辅助阅读<br>
-> **Document revision / 文档版本：** `0.20.0`<br>
+> **Document revision / 文档版本：** `0.20.1`<br>
 > **Effective date / 生效日期：** 2026-08-25<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
 
-Revision `0.20.0` clarifies the IVC authorship boundary. IVC authors each exact
-task-neutral nominal and calibrated-boundary request and the complete private
-suite; it does not select or copy a pre-authored case. Framework-private
-instances supply only trusted physical execution context such as scene/reset,
-measurement binding, guards and optional calibrated request domains or
-anchors. The Harness passes the IVC-authored native request to a candidate and
-keeps any task envelope or reference adapter private.
+Revision `0.20.1` completes the executable IVC authorship boundary. For every
+dynamic `capability-v2` case, IVC authors the exact task-neutral request and an
+inline `measurement_binding` drawn from the Framework's closed trusted
+operator catalogue. It does not select a pre-authored case or `binding_id`.
+Framework-private instances supply scene/reset mechanics, mandatory guards,
+execution limits and optional calibrated request domains or anchors; existing
+private bindings are model-visible only as non-addressable measurement and
+calibration examples. The Framework audits request paths, metric/unit,
+operator parameters, real scene entities, guards and finite source-grounded
+numbers before starting candidate code. The Harness sends only
+`method(request=<IVC-authored request>)` to a candidate and evaluates the
+inline measurement, criteria and guards in the trusted parent process.
+`binding_id` remains valid only in the separately frozen Experiment 1a B1 and
+historical suite paths.
 
-**中文辅助说明。** 修订 `0.20.0` 明确 IVC 的创作边界：IVC 自己写每个 nominal 与
-calibrated-boundary case 的精确 task-neutral request 及完整私有 suite，不选择或复制预写 case。
-Framework 私有 instance 只提供可信 scene/reset、measurement binding、guard，以及可选的已校准
-request domain/anchor；Harness 对 candidate 只传 IVC 写出的 native request，task envelope 或
-reference adapter 始终保持私有。
+The same revision installs complete SO-101 six-capability and Go2
+five-capability worked IVC references: twenty-two nominal/boundary cases in
+total. These references include real requests, inline measurements, criteria,
+sources and guards, but no task mapping, task plan or expected verdict. Dynamic
+IVC receives all task-backed scenes and measurement examples in addition to
+any dedicated capability contexts; a dedicated reference context may not hide
+the rest of the package. IVC may inspect the admitted asset closure with its
+credential-free Python/MuJoCo session, but it receives no candidate Driver,
+Repair material, candidate trace or verdict. This implementation revision does
+not itself authorise model execution: every diagnostic model run requires an
+explicit user approval, and formal experiment dispatch requires its separate
+scoped approval.
+
+**中文辅助说明。** 修订 `0.20.1` 完成可执行 IVC 创作边界：动态 `capability-v2`
+中的 request 与 inline `measurement_binding` 均由本次 IVC 写出，operator 只能来自 Framework
+封闭的可信目录，不得选择预写 case 或 `binding_id`。私有 instance 只提供 scene/reset mechanics、
+mandatory guards、执行限制和可选真实 request domain/anchor；原有 binding 只能作为不可按 ID
+选择的测量/calibration 范例。Framework 在 candidate 启动前审核 request path、metric/unit、
+operator 参数、真实 scene entity、guards 和有来源的有限数值。candidate 只收到
+`method(request=<IVC-authored request>)`；inline measurement、criteria 与 guards 始终在可信
+parent 执行。`binding_id` 只保留给独立冻结的 Experiment 1a B1 与历史路径。
+
+同一修订加入完整 SO-101 六项、Go2 五项 IVC worked references，共二十二个
+nominal/boundary cases，含真实 request、inline measurement、criteria、来源与 guards，但不含
+task mapping、task plan 或预期 verdict。动态 IVC 同时获得全部 task-backed scenes/measurement
+examples 和专用 capability contexts，后者不得遮蔽前者；其无凭证 Python/MuJoCo session 只能检查
+准入 asset closure，不能看到 candidate Driver、Repair、candidate trace 或 verdict。本修订本身不授权
+模型执行；每次诊断模型 run 都须用户明确批准，正式实验 dispatch 还须单独的 scoped 批准。
 
 The same revision replaces the unintegrated `primitive-v1` draft with the one
 canonical `capability-v2` mainline and restores the observable AutoAdapter 1.0
@@ -49,12 +79,13 @@ support-only many-to-many `task_support` relation. Candidate requests are
 closed and task-neutral: they contain no task ID, whole task, scene/reset,
 private criterion, macro, or call plan. Every numeric bound or threshold has a
 public-standard or retained real-calibration source. IVC sees the sealed
-design, private instances/bindings/guards, and sanitised validation examples;
-it never sees a candidate Driver, Repair history, or verdict. It compiles
-exactly one nominal and one calibrated-boundary case per capability and must
-pass both through the package-private reference Driver before sealing in a
-formal run. A `formal=false` diagnostic may explicitly skip this positive
-control and remains non-formal evidence.
+design, sanitized instance/guard contexts, non-addressable measurement
+examples, the trusted operator/entity catalogues and complete worked
+references; it never sees a candidate Driver, Repair history, or verdict. It
+authors exactly one distinct native nominal and calibrated-boundary request
+plus inline measurement per capability. The Framework audits both before
+candidate execution; any separately scoped reference calibration remains an
+independent diagnostic rather than the IVC binding mechanism.
 
 Experience model output contains exactly `observation`, `lesson`,
 `recommendation`, `scope`, and `public_evidence`; the Framework appends
@@ -62,9 +93,10 @@ Experience model output contains exactly `observation`, `lesson`,
 nonempty reason and no content editing. An accepted snapshot is visible only
 to a later run's STUDY, TGCD, Generate, and Repair, never IVC, Harness, or
 ReCAP. This implementation batch prepares Experiment 1a and Experiment 3 and
-runs only zero-model checks plus a non-formal DeepSeek canary. It does not run
-formal Experiment 1a or Experiment 3 cells, does not rerun Experiment 1b, and
-does not treat retained Experiment 2 files or tests as an acceptance gate.
+permits only zero-model checks plus individually approved non-formal canaries.
+It does not run formal Experiment 1a or Experiment 3 cells, does not rerun
+Experiment 1b, and does not treat retained Experiment 2 files or tests as an
+acceptance gate.
 
 **中文辅助说明。** 修订 `0.20.0` 用唯一的 `capability-v2` 主线取代未接通的
 `primitive-v1` 草稿，并在现有 AutoAdapter 2.0 模块内恢复 AA1 的文件工作区语义；不建立
@@ -74,13 +106,14 @@ does not treat retained Experiment 2 files or tests as an acceptance gate.
 Generate/Repair 22/22、scratch Generate/Repair 40/20；ReCAP 每 task 为 16 turns/12 capability
 calls。TGCD 生成 3--10 个 capability 和仅表示支持关系的 many-to-many `task_support`；request
 不得包含 task dispatch、scene/reset、私有标准或 task macro。IVC 对实现不可见，每项 capability
-恰好生成 nominal 与 calibrated-boundary case；正式 run 经私有 reference Driver 正控后封存，
-`formal=false` diagnostic 可显式跳过且仍只属于非正式证据。Experience
-只在后续 run 的 STUDY/TGCD/Generate/Repair 可见。本批仅准备 Exp1a/Exp3、运行零模型检查及
-非正式 DeepSeek canary；不启动正式 cell、不重跑 Exp1b，也不把保留的 Exp2 文件或测试作为验收门禁。
+恰好生成 nominal 与 calibrated-boundary case，并自行写 distinct native request 和 inline trusted
+measurement；Framework 在 candidate 前审核 schema/source/operator/entity/unit/guards，动态 suite
+不得含 `binding_id`。Experience 只在后续 run 的 STUDY/TGCD/Generate/Repair 可见。本批仅准备
+Exp1a/Exp3 并运行零模型检查；模型 canary 必须逐次获得明确批准，不启动正式 cell、不重跑 Exp1b，
+也不把保留的 Exp2 文件或测试作为验收门禁。
 
 All revision notes below this paragraph and before Section 0 are retained only
-as historical change records. They are non-normative under revision `0.20.0`.
+as historical change records. They are non-normative under revision `0.20.1`.
 
 Revision `0.19.33` completes the prospective Chapter 3 pre-formal
 configuration without starting either formal matrix. Experiment 1a/B1 remains
@@ -812,10 +845,10 @@ names its exact path and bounded scope. The current delegations are:
   B2 is not Experiment 2. Within B2 only, `AA2-B2` selects its fixed ReCAP controller consistently
   with the active capability and isolation boundaries in Sections 0.1.1, 3.0, and 4; and
 - `experiment/experiment2/EXPERIMENT_2_AUTHORITY.md` (`AA2-EXP2`, revision `0.2.0`), retained as a
-  historical scoped protocol only. It is not active under revision `0.20.0`; its pre-capability-v2
+  historical scoped protocol only. It is not active under revision `0.20.1`; its pre-capability-v2
   terms do not govern the current mainline, and it may not be dispatched or used as an input, test
   gate, or acceptance gate until a separately approved migration reactivates it; and
-- `experiment/experiment3/EXPERIMENT_3_AUTHORITY.md` (`AA2-EXP3`, revision `0.2.0`), which governs
+- `experiment/experiment3/EXPERIMENT_3_AUTHORITY.md` (`AA2-EXP3`, revision `0.2.1`), which governs
   the exact capability-v2 eleven Direct-MuJoCo configurations, Sonnet-only skeleton-assisted condition,
   `r01`--`r03` fresh STUDY/TGCD/IVC cells, three-frozen-Driver budget, ReCAP Task Demo stop point, 33-cell
   denominator, descriptive morphology boundary, and execution blockers.
@@ -848,7 +881,7 @@ benchmark 文档都不能覆盖相应权威。英文条款具有规范效力；�
 设计；仓库不得创建未经委派的并行权威、同一实验或扩展的第二份有效权威，或把旧设计保留为并行规范来源。
 
 `experiment/experiment2/EXPERIMENT_2_AUTHORITY.md`（`AA2-EXP2`）只作为历史 scoped protocol
-保留，在修订 `0.20.0` 下不生效；其中 capability-v2 之前的条款不约束当前主线，未经另行批准的迁移
+保留，在修订 `0.20.1` 下不生效；其中 capability-v2 之前的条款不约束当前主线，未经另行批准的迁移
 不得 dispatch，也不是输入、测试 gate 或验收 gate；
 `experiment/experiment3/EXPERIMENT_3_AUTHORITY.md`（`AA2-EXP3`）负责精确十一配置、
 Sonnet-only skeleton-assisted、`r01`--`r03`、每 cell 新鲜 STUDY/TGCD/IVC、最多三个 frozen Driver、
@@ -868,9 +901,9 @@ ordered calls, waypoints, a task macro, or a dispatch table.
 The request schema is closed and task-neutral. Candidate Driver code may not
 read or branch on `task_id`, an entire task/request envelope, scene/reset data,
 private criteria, an oracle plan, or a task macro. Package-private reference
-Drivers may internally dispatch on private task fixtures solely for IVC
-positive control and Harness calibration; their source, task IDs, calls, and
-plans are never exposed to TGCD, Driver Synthesis, Repair, or ReCAP.
+Drivers may internally dispatch on private task fixtures for an explicitly
+scoped diagnostic or experiment calibration; their source, task IDs, calls,
+and plans are never exposed to TGCD, IVC, Driver Synthesis, Repair, or ReCAP.
 
 The four model-authored phase products are the canonical files `study.json`,
 `capability_design.json`, `capability_validation_suite.json`, and `driver.py`.
@@ -882,13 +915,18 @@ the final turn. No `submit_study`, `submit_capability_design`,
 the active protocol. Invalid JSON, a stub, missing capability methods, source
 boundary failure, or import failure is not a formal Driver attempt.
 
-IVC is implementation-blind and receives the sealed design plus private
-instances, bindings, guards, and sanitised validation examples. It compiles
-exactly one nominal and one calibrated-boundary case for every capability,
-copies the sealed criteria without weakening them, and runs both case types
-against the private package reference Driver before sealing in a formal run.
-A `formal=false` diagnostic may explicitly skip that positive control; the
-result remains diagnostic and cannot be counted as formal evidence. ReCAP derives its
+IVC is implementation-blind and receives the sealed design and `task_support`,
+source lineage, sanitized private instances/guards, all task-backed physical
+contexts, non-addressable measurement examples, the trusted operator catalogue,
+complete SO-101/Go2 worked references, and a read-only admitted asset closure.
+It compiles exactly one nominal and one calibrated-boundary case for every
+capability, authors a distinct closed request and inline measurement binding
+for each case, and copies the sealed criteria without weakening them. Dynamic
+`capability-v2` suites containing `binding_id`, code, task dispatch or a
+self-reported verdict fail closed. A scoped experiment may separately require
+a reference-driver diagnostic, but that is not the source of the authored
+measurement contract and cannot replace the deterministic inline audit.
+ReCAP derives its
 tools dynamically from only those capabilities for which both case types pass.
 It composes capability calls for the current Task Demo task but does not persist
 that composition as a capability. A controller `finish` or self-report is never
@@ -991,9 +1029,9 @@ Build the simplest experiment-grade Auto-Adapter 2.0 framework and evaluation ne
 under controlled Direct-MuJoCo conditions, how LLM backbones differ in fixed-input robot-specific
 driver synthesis, whether reusable capability and validation contracts can be derived from
 source-backed tasks, and how the exact declared construction cohort behaves under a bounded
-end-to-end route. The generic Evolution/Experience handoff remains implemented for a separately
-authorised later run and the non-formal DeepSeek diagnostic, but no formal Experiment 2 claim is
-active under revision `0.20.0`.
+end-to-end route. The generic Evolution/Experience handoff and the non-formal DeepSeek diagnostic
+configuration remain implemented, but neither a source nor later model run is currently authorised,
+and no formal Experiment 2 claim is active under revision `0.20.1`.
 
 The research programme separates three objects that must not be conflated. Upstream capability and
 pass-criteria design determines the fixed contract that a driver must implement and how its outcomes
@@ -1019,7 +1057,7 @@ or morphology effect.
 Direct-MuJoCo 条件下研究：不同 LLM backbone 在固定输入 robot-specific driver synthesis 中有何
 差异；能否从有来源任务中产生可复用 capability 与 validation contract；以及精确声明 cohort 在
 有界端到端 route 下如何表现。通用 Evolution/Experience handoff 只为另行授权的 later run 与
-非正式 DeepSeek 诊断保留；修订 `0.20.0` 下没有 active formal Experiment 2 claim。研究必须区分
+非正式 DeepSeek 配置保留但未获执行授权；修订 `0.20.1` 下没有 active formal Experiment 2 claim。研究必须区分
 三个不能混为一谈的
 对象：上游 capability 与 pass-criteria 设计决定 driver 必须实现什么以及如何判定；固定输入 driver
 synthesis 研究生成 driver 能否实现封存 contract 并通过独立 validation；Evolution 只能在 terminal
@@ -1223,10 +1261,10 @@ The project evaluates three controlled research questions:
 
 3. **RQ3—Cross-configuration evaluation.** With Sonnet 4.6, the skeleton-assisted generation condition, Framework version, resource budget, and evidence protocol held fixed, how do end-to-end synthesis, validation, Repair, and Task Demo outcomes vary across the eleven declared Direct-MuJoCo robot configurations?
 
-Under revision `0.20.0`, the framework-construction portion of RQ2 is active.
-Its formal Experiment 2 operationalisation is inactive and historical; only
-the non-formal DeepSeek canary may exercise the cross-run machinery within the
-separate user-approval boundary in Section 5.2.
+Under revision `0.20.1`, the framework-construction portion of RQ2 is active.
+Its formal Experiment 2 operationalisation is inactive and historical. The
+retained non-formal DeepSeek canary may exercise the cross-run machinery only
+after a new explicit user approval under Section 5.2.
 
 For RQ1 driver synthesis, each robot has one prior-designed and fixed B1 Driver-and-criteria definition:
 the public capability interface and capability-level pass standards plus the complete private task
@@ -1258,7 +1296,7 @@ the interface-binding, validation, isolation, and controller-execution requireme
 and active Sections 0.1.1, 3.0, and 4;
 its calibration result alone is not capability-interface-use evidence. B2 is the bounded Chapter
 3/RQ1 use subexperiment and is not Experiment 2 or RQ2. No formal Experiment 2 report or dispatch is
-authorised under revision `0.20.0`.
+authorised under revision `0.20.1`.
 
 **中文辅助说明。** 项目评估三个受控研究问题：
 
@@ -1279,7 +1317,7 @@ authorised under revision `0.20.0`.
    Framework version、resource budget 和 evidence protocol 时，十一个声明的 Direct-MuJoCo robot
    configuration 之间的 end-to-end synthesis、validation、Repair 和 Task Demo outcome 如何变化？
 
-修订 `0.20.0` 只激活 RQ2 的 Framework construction 部分；formal Experiment 2 具体化属于历史且
+修订 `0.20.1` 只激活 RQ2 的 Framework construction 部分；formal Experiment 2 具体化属于历史且
 不生效，只有第 5.2 节的非正式 DeepSeek canary 可在用户另行批准边界内测试 cross-run machinery。
 
 在 RQ1 driver synthesis 中，每台机器人只有一套由前序实验设计并固定的 B1 Driver 与 criteria
@@ -1553,9 +1591,9 @@ run 选择，必须 fail closed。
 
 ## 3. Mainline end-to-end contract / 主线端到端合同
 
-### 3.0 Revision 0.20 active workflow / 修订 0.20 当前工作流
+### 3.0 Revision 0.20.1 active workflow / 修订 0.20.1 当前工作流
 
-The following revision-0.20 contract supersedes every inconsistent earlier
+The following revision-0.20.1 contract supersedes every inconsistent earlier
 statement remaining in Sections 3.1--3.7, including the former three-turn
 STUDY, submit/check tools, pre-STUDY TGCD ordering, package `primitive_family`,
 exactly-one task coverage, primary/robustness case vocabulary, and the rule
@@ -1566,8 +1604,8 @@ public package + eligible prior-run Experience
   -> STUDY / study.json
   -> TGCD / capability_design.json
   -> implementation-blind IVC
-       + private reference positive control in formal runs
-       (explicitly skippable only when formal=false)
+       + IVC-authored native requests and inline trusted measurements
+       + deterministic pre-worker audit against real scene entities
        / capability_validation_suite.json
   -> Generate / frozen driver.py / trusted capability Harness
   -> up to two in-place Repairs, never more than three frozen Drivers total
@@ -1575,6 +1613,12 @@ public package + eligible prior-run Experience
        / trusted Task Demo Harness verdict and videos
   -> at most one Evolution call when the selected protocol enables it
 ```
+
+A separately scoped formal experiment may require an additional private
+reference-driver calibration before candidate generation. That diagnostic is
+not part of IVC authorship, is not a `binding_id` lookup, and cannot substitute
+for inline request/operator/entity/guard audit. The current implementation
+acceptance gate does not depend on such a positive control.
 
 Each model-authored phase uses one isolated file workspace and persistent,
 credential-free Python/MuJoCo session. `read_file`, `write_file`, and
@@ -1634,7 +1678,7 @@ Experience 只进入后续 run 的 STUDY/TGCD/Generate/Repair。本轮 Exp1a 只
 
 > **Historical-only block / 仅历史文本：** Everything from the
 > pre-0.20 diagram below through the end of Section 3.7 is retained only to
-> interpret historical records. It is non-normative under revision `0.20.0`;
+> interpret historical records. It is non-normative under revision `0.20.1`;
 > none of its old ordering, tool, capability-count, coverage, case-role,
 > attempt, admission, Task Demo, Experiment 2, or Evolution-schema rules
 > applies to the current mainline. The active contract is Sections 0.1.1 and
@@ -1858,77 +1902,79 @@ case、预期结果、validation report 或 candidate 实现信息。
 
 ### 3.2 Independent Validation Compiler / 独立验证编译器
 
-The Independent Validation Compiler (`IVC`) consumes the sealed Capability Design, the same
-source-backed task records, and Framework-private task instances and execution bindings. Before
-initial Driver Synthesis begins, it audits and compiles the designed public validation contracts
-into the complete private `capability_validation_suite.json`. It is implementation-blind: it cannot inspect `driver.py`,
-candidate traces, candidate output, Repair history, or validation results.
+The Independent Validation Compiler (`IVC`) consumes the sealed Capability
+Design, including `task_support`, together with public source lineage and a
+Framework-projected private authoring context. It creates the complete private
+`capability_validation_suite.json` before Driver Synthesis. It is
+implementation-blind: it cannot inspect `driver.py`, candidate traces or
+output, Repair history, candidate verdicts, or Experience.
 
-For every designed capability, the IVC must:
+The authoring context contains all of the following for the current package:
 
-1. verify exactly one primary contract and at most one justified robustness contract, each copied
-   from a covered task's source pass-standard clause;
-2. reject an invented, missing, incomparable, or weaker metric, comparator, threshold, temporal
-   rule, or aggregation;
-3. bind the public metric semantics to trusted MuJoCo observations and Framework-owned measurement
-   code;
-4. author each exact task-neutral case request while referencing concrete private scene/reset
-   state, repetitions, termination, measurement binding, and anti-false-pass guards; and
-5. produce deterministic per-case, per-capability, and whole-suite verdict rules.
+- sanitized scene/reset instances, execution limits, optional request domains
+  and mandatory guard IDs from both `capability_validation/private/` and
+  `tasks/private/` when both exist;
+- observable body, site, joint, geom, actuator and keyframe names parsed from
+  each admitted scene;
+- the closed machine-readable trusted measurement-operator catalogue,
+  including parameter types, request-path parameters, output units and
+  required MuJoCo entity types;
+- existing private measurement records projected only as non-addressable
+  examples, with task request envelopes and execution plans removed;
+- the complete SO-101 six-capability and Go2 five-capability worked
+  references, totalling twenty-two real nominal/boundary examples; and
+- read-only access to the package's admitted MJCF asset closure through a
+  credential-free Python/MuJoCo session.
 
-The IVC may preserve a TGCD threshold or make a private case stricter when justified, but
-it cannot silently relax a selected source obligation. A structural/reference checker must confirm
-five to ten capabilities, exactly one primary and at most one justified robustness case per
-capability, valid simulator bindings, and no weaker-standard substitutions before Driver Synthesis
-receives the sealed Capability Design.
+For every designed capability IVC authors exactly one `nominal` and one
+`calibrated_boundary` case. Each case contains the exact sealed capability and
+method IDs, one native closed request, resolvable request-grounding references,
+one supplied physical instance, one inline `measurement_binding`, the complete
+mandatory guard list, unchanged repetitions/timeout and an exact copy of the
+sealed criterion. The two requests must differ. A boundary value must resolve
+to the sealed request schema or a real supplied calibration source. IVC may
+choose only a trusted operator and its closed parameters; it may not emit
+Python, code, task dispatch, a task ID, a waypoint/task macro, an expected
+outcome or a self-reported verdict.
 
-The complete capability validation suite is sealed before STUDY and must remain identical for the
-robot's reference calibration, both generation conditions, and every Repair attempt. Its
-whole-suite verdict requires every compiled case to pass, so every designed capability primary
-case and every selected robustness case is exercised before the generated driver is admitted.
+Before any candidate worker starts, the Framework rejects an unknown operator,
+metric/unit mismatch, invalid operator parameter, request path absent from the
+closed request schema, MuJoCo entity absent from the chosen scene, missing or
+changed mandatory guard, non-finite number, unresolved grounding reference,
+weakened criterion, duplicate request pair, or dynamic `binding_id`. An
+unsupported criterion returns a bounded, correctable audit error to the same
+IVC conversation while turns remain; the Framework never substitutes the
+nearest historical binding. If the artifact remains invalid after six turns,
+IVC fails truthfully and Driver generation does not start.
 
-After the audit and before STUDY, the Framework also uniformly samples exactly five original Task
-Library task IDs without replacement using a recorded run seed. It compiles every scoring clause
-of those five tasks through their existing private instances, bindings, and guards and seals the
-result as `task_demo_suite.json`. The selected task IDs and seed remain Harness-private. This
-artifact is not sampled from or treated as a reduced capability-validation suite: it is held for
-the post-admission Task Demo and is not executed during generation or Repair.
+After a source/import-valid candidate Driver is frozen, the capability Harness
+invokes only `method(request=<IVC-authored request>)` in the candidate worker.
+Measurement operators, sealed criteria, scene mechanics and guards remain in
+the Framework parent. The trusted Harness alone computes temporal and
+aggregation results, videos and verdicts. The fixed Experiment 1a B1 suite and
+historical paths retain their own `binding_id` contracts and are not migrated
+by this dynamic `capability-v2` rule.
 
-The executable suite, concrete cases, bindings, and guards remain Harness-private. Driver Synthesis
-may see the public capability interfaces and validation-contract semantics from the sealed
-Capability Design, but not the private realization of those standards. Creating the suite before
-Driver Synthesis is not sufficient isolation if candidate code can later read it. The final
-pass/fail verdict belongs only to the trusted Harness, never to TGCD or IVC model self-report.
+**中文辅助说明。** IVC 接收封存 Design（含 `task_support`）、公开来源 lineage，以及
+Framework 投影的私有创作上下文；在 Driver Synthesis 前生成完整
+`capability_validation_suite.json`。它看不到 `driver.py`、candidate trace/output、Repair、
+candidate verdict 或 Experience。上下文同时包含 capability 与 task 两个私有 namespace 中脱敏的
+scene/reset、执行限制、request domain 与 mandatory guard ID；每个真实 scene 中可观察的
+body/site/joint/geom/actuator/keyframe；封闭的可信 measurement operator catalogue；不可按 ID
+选择且已移除 task envelope/plan 的测量范例；SO-101 六项与 Go2 五项共 22 个完整 worked cases；
+以及无凭证 session 对准入 MJCF asset closure 的只读检查能力。
 
-**中文辅助说明。** Independent Validation Compiler（`IVC`）接收已封存 Capability Design、
-同一批有来源 task record，以及 Framework 私有的任务实例和执行 binding。在首次 Driver
-Synthesis 开始前，它审计并把 TGCD 设计的公开 validation contract 编译成完整的私有 case
-suite，即 `capability_validation_suite.json`。IVC 对实现不可见，不得检查 `driver.py`、
-candidate trace、candidate 输出、Repair 历史或验证结果。
-
-对每项设计 capability，IVC 必须：确认恰好一个 primary contract 和最多一个有明确理由的
-robustness contract，且各自精确复制某项被覆盖 task 的来源通过标准；拒绝
-虚构、缺失、不可比较或更宽松的 metric、comparator、threshold、时间规则或 aggregation；把公开
-metric 语义绑定到可信 MuJoCo observation 和 Framework measurement 代码；自行写出精确且
-task-neutral 的 case request，同时引用具体私有 scene/reset 状态、重复次数、终止条件、measurement
-binding 和 anti-false-pass guard；并生成逐 case、
-逐 capability 及整套 suite 的确定性 verdict 规则。
-
-有依据时 IVC 可以保留 TGCD threshold 或让私有 case 更严格，但不能悄悄放宽被选来源义务。
-Driver Synthesis 收到封存 Capability Design 前，结构/reference checker 必须确认 capability 数量
-为五至十、每项 capability 恰好有一个 primary case 且最多有一个有明确理由的 robustness case、
-simulator binding 有效且不存在弱化标准的替换。完整 capability validation suite 在 STUDY 前封存，并在该机器人 reference
-校准、两种生成条件及全部 Repair attempt 间保持完全一致；整套 verdict 要求所有编译 case
-通过，因此 driver 准入前会执行每项 capability 的 primary case 及所有被选 robustness case。
-
-完成审计后且在 STUDY 前，Framework 还使用已记录的 run seed，从原始 Task Library 中无放回
-均匀随机抽取恰好五项 task，并通过现有私有 instance、binding 和 guard 编译这些 task 的全部
-scoring clause，封存为 `task_demo_suite.json`。被选 task ID 和 seed 仅对 Harness 可见。这份
-artifact 不是缩减版 capability validation suite，只供 driver 准入后的 Task Demo 使用，在生成和
-Repair 阶段都不执行。可执行 suite、具体 case、binding 和 guard
-始终属于 Harness 私有数据。Driver Synthesis 可以看到封存 Capability Design
-中公开的 capability 接口及 validation-contract 语义，但不能看到这些标准的私有实现。最终
-pass/fail verdict 只属于可信 Harness，不能来自 TGCD 或 IVC 模型自述。
+每项 capability 恰好写一个 `nominal` 和一个 `calibrated_boundary` case。每个 case 均由 IVC
+写 native closed request、可解析 grounding refs 与 inline `measurement_binding`，并引用一个给定
+instance、完整 mandatory guards、原样 repetitions/timeout 和 sealed criterion；同一 capability 的
+两个 request 必须不同，boundary 数值必须解析到 sealed schema 或真实 calibration。动态 suite
+出现 `binding_id`、Python/code、task dispatch/task ID、task macro、expected outcome 或自报 verdict
+即拒绝。Framework 在 candidate 前审核 operator、metric/unit、参数、request path、真实 entity、
+guards、有限数值、grounding 与 criteria copy；无法表达的 criterion 会在六回合内返回可修正错误，
+绝不匹配“最接近”的旧 binding。封存 Driver 后，candidate worker 只收到
+`method(request=<IVC-authored request>)`；measurement、criteria、scene mechanics、guards、视频和
+verdict 都由可信 parent/Harness 处理。Experiment 1a B1 与历史路径的固定 `binding_id` 合同保持
+不变。
 
 Sections 3.1 and 3.2 define the Framework mechanisms evaluated in Experiment 2 and produce the
 class of upstream input consumed by the fixed-input Experiment 1 B1 comparison. They are not B1
@@ -2601,10 +2647,12 @@ TGCD/IVC、STUDY、GENERATE、Capability Validation、Repair、Task Demo 和 Evo
 
 ### 5.1 Current evidence boundary / 当前证据边界
 
-As of revision `0.20.0`, tracked package/reference runs, Demo2 runs, earlier
+As of revision `0.20.1`, tracked package/reference runs, Demo2 runs, earlier
 shakedowns, and any `formal=false` canary are diagnostic or historical evidence
-only. A diagnostic IVC may explicitly skip its reference positive control; that
-skip is recorded and the run cannot enter a formal denominator. Experiment 1b
+only. The inline-IVC zero-model preflight proves local input construction and
+execution wiring only; it creates no experiment cell and makes no model claim.
+A diagnostic or a scoped formal protocol may separately record a reference
+calibration, but that is not the dynamic IVC authoring contract. Experiment 1b
 is completed historical evidence and is neither rerun nor modified by this
 round. Retained Experiment 2 files and results are historical and out of scope;
 this Authority authorises no corrected Experiment 2 dispatch. Experiment 3
@@ -2614,41 +2662,35 @@ authorise model dispatch: all 33 formal cells await separate user approval.
 No retained diagnostic, reference result, proposal, or preflight may be
 relabeled as an Experiment 1a or Experiment 3 result.
 
-**中文辅助说明。** 在修订 `0.20.0` 下，现有 package/reference run、Demo2、早期 shakedown 与
-任何 `formal=false` canary 都只属于诊断或历史证据。诊断 IVC 可以显式跳过 reference 正控，但必须
-记录该事实，且不得进入正式 denominator。Experiment 1b 已完成，本轮不重跑也不修改。保留的
+**中文辅助说明。** 在修订 `0.20.1` 下，现有 package/reference run、Demo2、早期 shakedown 与
+任何 `formal=false` canary 都只属于诊断或历史证据。inline-IVC 零模型 preflight 只证明本地输入
+构建和执行连线，不创建实验 cell，也不产生模型证据；单独记录的 reference calibration 不属于
+动态 IVC 创作合同。Experiment 1b 已完成，本轮不重跑也不修改。保留的
 Experiment 2 文件和结果属于历史且超出本轮范围；本 Authority 不授权 corrected Exp2 dispatch。
 Experiment 3 仍为 0/33，本轮只可准备和 preflight 精确 manifest/runner；preflight 通过不等于授权
 模型请求，33 个正式 cell 均等待用户另行批准。任何诊断、reference 结果、proposal 或 preflight
 都不得改写成 Experiment 1a 或 Experiment 3 的正式结果。
 
-### 5.2 Non-formal DeepSeek mainline canary / 非正式 DeepSeek 主线 canary
+### 5.2 Model-execution approval boundary / 模型执行批准边界
 
-The only model run authorised by this implementation round is one independent
-DeepSeek diagnostic using SO-101 `1.0.4`, skeleton-assisted generation, empty
-Experience, and `formal=false`. It executes the real
-STUDY→TGCD→IVC→Generate/Repair→ReCAP→Evolution mainline and calls no other LLM.
-The diagnostic may explicitly skip IVC reference positive control. It need not
-pass the whole capability suite, but its final frozen Driver must pass both the
-nominal and calibrated-boundary case for at least one capability. ReCAP receives
-only that final whitelist and must make at least one real capability call. Task
-Demo may FAIL, but it must execute real MuJoCo physics and retain a trusted
-Harness verdict plus required video. Evolution then produces either the exact
-five-field proposal or an explicit no-lesson/failure outcome. The source run
-stops after that Evolution outcome is shown to the user. A later Experience-enabled run is
-not authorised until the user explicitly accepts the unedited proposal with a
-nonempty reason; rejection ends the diagnostic. Neither run enters an
-Experiment 1a or Experiment 3 denominator.
+Revision `0.20.1` does not by itself authorise any LLM execution. A bounded
+non-formal canary may construct one provider client only after explicit user
+approval for that run; it remains diagnostic and does not unlock Experiment 1a
+or Experiment 3. Formal dispatch always requires its separate scoped approval.
+The executable zero-model gate is
+`autoadapter/scripts/check_ivc_inline_mainline.py`: it builds all eleven IVC
+input projections, runs deterministic artifact audits, executes real SO-101
+and Go2 inline-measurement MuJoCo pairs, constructs the double-pass whitelist,
+and exercises a scripted ReCAP capability call plus trusted Task Demo Harness.
+Its output remains a local diagnostic even when every check passes.
 
-**中文辅助说明。** 本轮唯一获准的模型运行是一条独立 DeepSeek 诊断：SO-101 `1.0.4`、
-skeleton-assisted、空 Experience、`formal=false`，真实执行 STUDY→TGCD→IVC→
-Generate/Repair→ReCAP→Evolution，且不调用其他 LLM。诊断可显式跳过 IVC reference 正控；
-不要求整套 capability 通过，但最终 frozen Driver 至少有一项 capability 的 nominal 与
-calibrated-boundary 都通过。ReCAP 只获得该最终白名单，且至少真实调用一次 capability。Task Demo
-可以 FAIL，但必须真实执行 MuJoCo、保留可信 Harness verdict 和必需视频。Evolution 后向用户展示
-五字段 proposal 或明确 no-lesson/failure，然后 source run 停止；只有用户以非空理由明确 accept
-未编辑 proposal 后，才可启动独立 Experience-enabled later run，reject 则结束。两轮均不进入
-Experiment 1a 或 Experiment 3 denominator。
+**中文辅助说明。** 修订 `0.20.1` 本身不授权任何 LLM 执行。一次限定范围的非正式 canary 只有在
+用户针对该次 run 明确批准后才可创建一个 provider client；它仍是 diagnostic，不会解锁 Exp1a
+或 Exp3。正式 dispatch 始终需要独立的 scoped 批准。
+当前可执行零模型 gate 为 `autoadapter/scripts/check_ivc_inline_mainline.py`：构建 11 台机器的 IVC
+输入投影，审核确定性 artifact，真实执行 SO-101/Go2 inline-measurement MuJoCo pair，构建双 case
+通过白名单，并用 scripted ReCAP 真实调用 capability 后交由可信 Task Demo Harness 判定。全部通过
+也仍只属于本地诊断。
 
 ---
 
@@ -2678,9 +2720,10 @@ implementation work must satisfy each obligation when the affected component or 
 8. report pipeline execution, model calls, in-run generation, capability validation, the final-only
    capability whitelist, Task Demo execution/verdict, task-metric verdict, physical-integrity verdict,
    case counts, frozen attempts, development rejections, and video completeness separately;
-9. keep package reference Drivers hidden from TGCD, candidates, Repair, and ReCAP. Their formal IVC
-   positive-control role does not make them candidate input; a `formal=false` diagnostic may explicitly
-   skip the control and remains non-formal; and
+9. keep package reference Drivers hidden from TGCD, IVC, candidates, Repair,
+   and ReCAP. A separately requested reference-driver diagnostic is optional,
+   is not an IVC seal or formal-cell gate, and never substitutes for inline
+   operator/entity/guard audit; and
 10. keep Evolution terminal and non-blocking, restrict model output to the five public fields, add
     Framework provenance/outcome, require accept/reject plus a nonempty reason without editing, and
     expose an accepted snapshot only to a separately launched later run's STUDY/TGCD/Generate/Repair.
@@ -2790,7 +2833,7 @@ a descriptive package label, and makes no morphology-effect, model-ranking,
 Experience-effect, from-scratch, quadruped-transfer, SDK, hardware, or universal
 support claim. Completion is distinct from success: failures remain in the
 denominator. Experiment 2 remains historical and out of scope under revision
-`0.20.0`; no Experiment 2 completion or dispatch rule is active here.
+`0.20.1`; no Experiment 2 completion or dispatch rule is active here.
 
 **中文辅助说明。** 只有用户另行批准正式 dispatch 后，Experiment 3 才可能完成。完成要求全部
 33 个 manifest cell 都有真实终态：精确 11 个 package ID×`r01`--`r03`、Sonnet 4.6、
@@ -2799,11 +2842,11 @@ skeleton-assisted、空 Experience、每 cell 新鲜 STUDY/TGCD/IVC、最多三�
 Evolution 禁用。报告区分 6 个 SO/Go reference-seen control 与 27 个 transfer cell；morphology
 只作描述标签，不声称 morphology effect、model ranking、Experience effect、from-scratch、
 quadruped transfer、SDK、hardware 或 universal support。完成不等于成功，失败仍留在 denominator。
-修订 `0.20.0` 下 Experiment 2 属于历史且超出范围，本节不授权其 completion 或 dispatch。
+修订 `0.20.1` 下 Experiment 2 属于历史且超出范围，本节不授权其 completion 或 dispatch。
 
 > **Historical-only remainder / 以下仅历史文本：** Everything after
 > this marker through the end of Section 6.2 is retained solely to interpret
-> pre-0.20 plans and is non-normative under revision `0.20.0`.
+> pre-0.20 plans and is non-normative under revision `0.20.1`.
 
 1. Experiment 2 has one SO-101 source run with empty Experience that reaches
    the real Sonnet skeleton-assisted route through the Task Demo stage, records

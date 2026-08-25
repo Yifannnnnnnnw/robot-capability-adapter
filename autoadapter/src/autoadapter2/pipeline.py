@@ -3098,10 +3098,15 @@ def run_experiment(
     experience: Mapping[str, Any] | Sequence[Mapping[str, Any]] | None = None,
     hooks: PipelineHooks | None = None,
     check_self_containment: bool = True,
-    skip_reference_calibration: bool = False,
+    skip_reference_calibration: bool = True,
     sealed_inputs_from: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run TGCD/IVC, optional hidden reference diagnostics, and dynamic cells."""
+    """Run TGCD/IVC, optional hidden reference diagnostics, and dynamic cells.
+
+    Dynamic capability-v2 IVC is admitted by deterministic inline-suite audit.
+    A caller may still opt into the historical reference-driver diagnostic by
+    passing ``skip_reference_calibration=False``; it is not a mainline gate.
+    """
 
     root = Path(mainline_root).resolve()
     if config is None:
@@ -3207,9 +3212,6 @@ def run_experiment(
         raise PipelineError(
             "sealed TGCD/IVC reuse is incompatible with fresh per-cell design and validation"
         )
-    if config.formal and skip_reference_calibration:
-        raise PipelineError("formal cells cannot skip the IVC private reference positive control")
-
     stage_log: list[dict[str, Any]] = []
     sealed_input_provenance: dict[str, Any] | None = None
     references: dict[str, Any] = {}
@@ -3355,8 +3357,8 @@ def run_experiment(
                         "evaluation_role": "ivc_reference_positive_control",
                         "skipped": True,
                         "skip_reason": (
-                            "diagnostic caller explicitly skipped the private "
-                            "positive control"
+                            "dynamic inline-suite audit does not require an "
+                            "independent reference-driver diagnostic"
                         ),
                         "passed": False,
                     }
@@ -3389,6 +3391,7 @@ def run_experiment(
                         "compiled_capability_validation_case_count": len(
                             capability_suite.get("cases", [])
                         ),
+                        "inline_suite_audit_passed": True,
                         "reference_positive_control_passed": bool(
                             reference.get("passed")
                         ),

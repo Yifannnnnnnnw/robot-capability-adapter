@@ -1,7 +1,7 @@
 # Experiment 3 execution protocol
 
-> **Protocol revision:** `0.2.0`<br>
-> **Authority:** `EXPERIMENT_3_AUTHORITY.md` revision `0.2.0`<br>
+> **Protocol revision:** `0.2.1`<br>
+> **Authority:** `EXPERIMENT_3_AUTHORITY.md` revision `0.2.1`<br>
 > **Current permission:** design and zero-model preflight only
 
 ## 1. Fixed design
@@ -34,8 +34,9 @@ PYTHONPATH=autoadapter/src python3 -m experiment.experiment3.runner \
 
 Neither command constructs a model client or sends a model request. The first
 checks the fixed matrix and protocol pins. The second also loads all eleven
-packages, checks public observations and validates retained reference and
-Framework evidence.
+packages, checks public observations, builds their complete IVC contexts and
+validates retained Framework evidence. Reference-driver positive controls are
+not a preparation or IVC gate.
 
 Do not invoke `formal` or `resume` in this preparation round. A later explicit
 project-owner approval is required before either command may create a model
@@ -50,8 +51,9 @@ client. Run:
 2. TGCD, at most 6 turns, sealing `capability_design.json` with 3–10
    capabilities and a many-to-many `task_support` relation.
 3. IVC, at most 6 turns, sealing
-   `capability_validation_suite.json` only after schema/count/binding audit
-   and a real private reference-driver positive control.
+   `capability_validation_suite.json` only after schema/count, distinct native
+   request, inline trusted measurement, source, entity, guard and exact-criteria
+   audit. Dynamic `binding_id` is rejected.
 4. Skeleton Generate, at most 22 turns, freezing `driver.py` only after source
    and import checks.
 5. Trusted Capability Validation with complete video evidence.
@@ -76,8 +78,14 @@ individual tools retain their path, timeout, simulation-step and output limits.
 - STUDY sees public package inputs, its condition and empty Experience.
 - TGCD sees the completed public STUDY artifact, public package/task inputs,
   empty Experience and only the SO-101/Go2 capability reference.
-- IVC sees no Experience or candidate material. It receives sealed design and
-  private instances/bindings/guards plus sanitised examples.
+- IVC sees no Experience or candidate material. It receives the complete
+  sealed design, source-task lineage, sanitised scene/reset/guard context,
+  observable scene entities, the trusted operator catalogue, all task-backed
+  non-addressable measurement examples, 22 complete SO-101/Go2 worked cases,
+  and read-only access to the admitted MJCF asset closure.
+- Candidate validation workers receive only the IVC-authored native request.
+  Inline measurement, criteria, guards, scene mechanics and verdicts remain in
+  the trusted Framework parent.
 - Generate/Repair sees the sealed public design and its own condition-local
   files. Skeleton files are visible only in this experiment's skeleton
   condition.

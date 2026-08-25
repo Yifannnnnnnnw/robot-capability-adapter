@@ -1,6 +1,6 @@
 # AutoAdapter 2.0
 
-For the current Authority `0.20.0` implementation, stage interfaces, tools,
+For the current Authority `0.20.1` implementation, stage interfaces, tools,
 visibility boundaries, artifacts, and experiment-preparation commands, see
 [`AUTOADAPTER_2_PIPELINE_GUIDE.md`](AUTOADAPTER_2_PIPELINE_GUIDE.md). The
 Authority remains normative; older interface descriptions below are retained
@@ -10,7 +10,26 @@ only as historical context where they conflict with the current guide.
 It does not import or copy runtime code from `demo2/`, `demo3/`,
 `general_demo/`, or `extensions/`.
 
-## Experiment
+The active dynamic path is file-delivered STUDY → TGCD → implementation-blind
+IVC → Generate/Repair → trusted Capability Harness → double-pass whitelist →
+ReCAP Task Demo Harness → optional Evolution. Dynamic IVC authors each native
+nominal/boundary request and inline trusted `measurement_binding`; it cannot
+select `binding_id`, see candidate code, or run arbitrary measurement Python.
+The fixed Experiment 1a B1 path is unchanged.
+
+The executable no-credential gate is:
+
+```bash
+PYTHONPATH=autoadapter/src pyenv exec python \
+  autoadapter/scripts/check_ivc_inline_mainline.py --root autoadapter
+```
+
+It builds all eleven package projections and runs local SO-101/Go2 MuJoCo plus
+ReCAP orchestration without constructing an external model client. It is a
+diagnostic, not an experiment cell. A model canary requires explicit per-run
+approval; formal Exp1a and Exp3 dispatch remain separately locked.
+
+## Historical experiment description (superseded where inconsistent)
 
 - The formal mainline cohort is the exact eleven-configuration set in
   `AUTOADAPTER_2_AUTHORITY.md` Section 1.3: SO-101, Go2, Franka Panda, Kinova

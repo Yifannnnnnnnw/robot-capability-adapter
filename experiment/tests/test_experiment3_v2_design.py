@@ -66,7 +66,7 @@ def test_design_rejects_quadruped_transfer_claim_or_dispatch_unlock() -> None:
         runner.validate_design_manifest(unlocked)
 
 
-def test_formal_cell_config_is_fresh_reference_calibrated_and_evolution_free() -> None:
+def test_formal_cell_config_is_fresh_inline_ivc_and_evolution_free() -> None:
     manifest = runner.load_manifest()
     preflight = runner.validate_executable_preflight(
         manifest,

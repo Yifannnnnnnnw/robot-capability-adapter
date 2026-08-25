@@ -1,8 +1,8 @@
 # Experiment 3 Direct-MuJoCo cohort authority
 
 > **Document ID:** `AA2-EXP3`<br>
-> **Revision:** `0.2.0`<br>
-> **Effective date:** 2026-08-24<br>
+> **Revision:** `0.2.1`<br>
+> **Effective date:** 2026-08-25<br>
 > **Parent authority:** `AUTOADAPTER_2_AUTHORITY.md`<br>
 > **Status:** configuration and zero-model preflight only; formal dispatch is not authorised in this preparation round
 
@@ -69,8 +69,9 @@ STUDY -> TGCD -> IVC -> Generate -> Capability Validation
 
 - STUDY writes and seals `study.json` before TGCD.
 - TGCD writes and seals `capability_design.json`.
-- IVC writes and seals `capability_validation_suite.json` and passes the
-  package reference-driver positive control before Driver generation.
+- IVC writes and seals `capability_validation_suite.json` only after the
+  Framework accepts its inline request, measurement, source, entity, guard
+  and exact-criteria audit. No reference-driver positive control is a gate.
 - Generate/Repair writes `driver.py`. A revision becomes a formal attempt only
   after source and import checks freeze it successfully.
 - The trusted private Harness runs only on a frozen Driver. There are at most
@@ -124,14 +125,25 @@ The complete model-visible reference contains the six SO-101 and five Go2
 capability designs, parameters and real criteria only. It contains no task
 mapping, `task_support`, oracle plan or concrete call programme.
 
-IVC sees the sealed design, Framework-private instances/bindings/guards and
-sanitised validation examples. It never sees candidate code, Repair history or
-candidate verdicts. It authors the exact task-neutral request and complete case
-for exactly one nominal and one calibrated-boundary case per capability; private
-instances provide trusted execution context, not pre-authored cases. IVC copies
-the sealed public criteria exactly, passes the
-Framework schema/count/binding audit and then passes the private package
-reference-driver positive control before sealing.
+IVC sees the complete sealed design including `task_support`, source-task
+lineage, sanitised scene/reset and mandatory-guard context, observable MuJoCo
+entities, the closed trusted measurement-operator catalogue, all task-backed
+measurement examples, and the complete SO-101/Go2 worked references (22 cases).
+It may inspect the admitted MJCF asset closure with credential-free
+`execute_python`. It never sees candidate code, Repair history, candidate
+traces or verdicts, Experience, old task/reference requests, or an execution
+plan.
+
+For every capability, IVC authors exactly one `nominal` and one
+`calibrated_boundary` case with different closed native requests and an inline
+`measurement_binding`. It copies the sealed criteria exactly and resolves the
+boundary request to the sealed schema or retained real calibration. Dynamic
+`binding_id`, arbitrary code, task dispatch, expected outcomes and self-reported
+verdicts are forbidden. Before candidate code starts, the Framework checks the
+request paths, sources, operator and closed parameters, metric/unit, selected
+scene entities, mandatory guards, finite numbers and exact criteria copy. The
+Harness then sends only `method(request=<IVC-authored request>)` to the candidate;
+measurements, guards, criteria and verdicts stay in the trusted parent.
 
 ## 6. Isolation, evidence and analysis
 
@@ -154,8 +166,10 @@ Before any formal request, zero-model checks must establish:
 
 - the manifest expands to all and only the 33 declared rows;
 - all eleven indexed packages and their `public_observations` load;
-- SO-101 1.0.4 and the remaining ten package references pass their retained
-  positive controls;
+- all eleven package scene/entity/operator inputs build, with task and
+  capability contexts merged rather than one hiding the other;
+- deterministic artifacts pass TGCD-to-IVC audit, and real SO-101 plus Go2
+  nominal/boundary inline-measurement smokes produce trusted Harness verdicts;
 - canonical artifact completion, invalid-artifact recovery, final-turn
   acceptance and frozen-attempt accounting pass focused checks;
 - IVC is candidate-blind and candidate source rejects `task_id` dispatch;

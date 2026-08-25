@@ -584,6 +584,7 @@ def test_pipeline_orders_ivc_and_reference_diagnostics_before_dynamic_cells(
         client=state["client"],
         hooks=hooks,
         check_self_containment=False,
+        skip_reference_calibration=False,
     )
 
     assert success_claim(result)
@@ -1118,6 +1119,7 @@ def test_failed_reference_diagnostic_does_not_block_dynamic_cells(tmp_path: Path
         client=state["client"],
         hooks=hooks,
         check_self_containment=False,
+        skip_reference_calibration=False,
     )
 
     assert result["reference_calibration_passed"] is False
@@ -1131,14 +1133,16 @@ def test_failed_reference_diagnostic_does_not_block_dynamic_cells(tmp_path: Path
     assert success_claim(result) is True
 
 
-def test_explicit_reference_skip_runs_formal_dynamic_cells(
+def test_inline_ivc_runs_formal_dynamic_cells_without_reference_diagnostic(
     tmp_path: Path,
 ) -> None:
     events: list[tuple[Any, ...]] = []
     hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
+    formal_config = _config().as_dict()
+    formal_config["formal"] = True
     result = run_experiment(
         tmp_path,
-        config=_config(),
+        config=formal_config,
         output_dir=tmp_path / "run",
         run_id="dynamic-only",
         client=state["client"],
@@ -1153,11 +1157,8 @@ def test_explicit_reference_skip_runs_formal_dynamic_cells(
     assert result["reference_calibration_skipped"] is True
     assert result["reference_calibration_passed"] is False
     assert result["final_capability_validation_passed"] is True
-    assert result["task_demo_executed"] is True
-    assert result["success"] is True
-    assert success_claim(result) is True
-    assert result["claim"] == (
-        "driver-synthesis mainline succeeded; Task Demo results reported separately"
+    assert all(
+        cell["outcomes"]["IVC"]["completed"] is True for cell in result["cells"]
     )
 
 

@@ -1,10 +1,10 @@
 {
   "schema_version": 2,
-  "manifest_revision": "0.2.0",
-  "protocol_revision": "0.2.0",
+  "manifest_revision": "0.2.1",
+  "protocol_revision": "0.2.1",
   "authority": "EXPERIMENT_3_AUTHORITY.md",
-  "authority_revision": "0.2.0",
-  "parent_authority_revision": "0.20.0",
+  "authority_revision": "0.2.1",
+  "parent_authority_revision": "0.20.1",
   "experiment_id": "experiment3-direct-mujoco-cohort-r3",
   "status": "preflight-only",
   "formal_dispatch_authorised": false,
@@ -118,7 +118,10 @@
     "candidate_blind": true,
     "experience_visible": false,
     "cases_per_capability": ["nominal", "calibrated_boundary"],
-    "private_reference_positive_control_required": true
+    "inline_measurement_binding_required": true,
+    "binding_id_forbidden": true,
+    "trusted_operator_catalog_required": true,
+    "worked_reference_case_count": 22
   },
   "robot_configurations": [
     "robotstudio_so101",
@@ -217,19 +220,6 @@
       "leap_hand": {"path": "../experiment/experiment3/diagnostics/all_11_package_check_2026-08-23.json", "passed": true},
       "hello_robot_stretch_2": {"path": "../experiment/experiment3/diagnostics/all_11_package_check_2026-08-23.json", "passed": true},
       "aloha_2": {"path": "../experiment/experiment3/diagnostics/all_11_package_check_2026-08-23.json", "passed": true}
-    },
-    "reference_positive_controls": {
-      "robotstudio_so101": {"path": "../experiment/experiment3/diagnostics/reference_positive_control_so101_1_0_4.json", "passed": true},
-      "unitree-go2-stock-12dof": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "franka_panda": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "kinova_gen3_robotiq_2f85": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "ufactory_xarm7": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "universal_robots_ur5e_robotiq_2f85": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "piper": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "kuka_iiwa_14": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "leap_hand": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "hello_robot_stretch_2": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true},
-      "aloha_2": {"path": "../experiment/experiment3/diagnostics/reference_positive_controls_10_pass_2026-08-23.json", "passed": true}
     },
     "producer_model_canary": {"path": "../experiment/experiment3/diagnostics/sonnet_exact_runtime_pin_canary_2026-08-23.json", "passed": true},
     "candidate_isolation": {"path": "../experiment/experiment3/diagnostics/framework_harness_boundary_checks_2026-08-23.json", "passed": true},

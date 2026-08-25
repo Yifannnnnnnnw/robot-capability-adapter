@@ -4,7 +4,7 @@
 > 项目级规则仍以仓库根目录的 `AUTOADAPTER_2_AUTHORITY.md` 为准，Exp1a 与 Exp3
 > 分别以各自的 scoped Authority 为准。若本文与适用 Authority 冲突，以 Authority 为准。
 
-本文对应 `AA2-AUTH` revision `0.20.0` 的原地改造：没有 `aa1_runtime`，也没有另一套
+本文对应 `AA2-AUTH` revision `0.20.1` 的原地改造：没有 `aa1_runtime`，也没有另一套
 并行协议。AA1 commit `585eb1f1fde33f17f5f9a1e169a18dd41f97b586` 中有用的
 ReAct、文件工作区、持久 Python/MuJoCo session 和 expected-artifact 完成语义，被合并到
 现有 AutoAdapter 2.0 模块；多模型、自动 Capability Design、自动 IVC、可信 Harness、
@@ -17,8 +17,7 @@ ReCAP 和 Experience 仍由 AA2 当前模块负责。
 - Exp1b 已完成。本轮不重跑，不修改其 Authority、配置或结果。
 - Exp2 本轮不作为活动、输入或验收门禁；保留的文件和测试不因此被改写。
 - Exp3 只允许 `design-check` 和 `preflight`。正式 33 cells 仍锁定。
-- DeepSeek 只用于独立、`formal=false` 的全线诊断 canary，不进入 Exp1a 或 Exp3
-  denominator。
+- 模型 canary 只有在用户针对该次 run 明确批准后才可执行；正式 Exp1a/Exp3 仍需独立批准。
 
 ## 1. 一张图看完整主线
 
@@ -36,7 +35,8 @@ TGCD (capability_design.json, 3--10 capabilities, 6 turns)
           v
 IVC (capability_validation_suite.json, implementation-blind, 6 turns)
           |
-          +--> private reference Driver positive control --FAIL--> stop before candidate
+          +--> audit request/schema/source + inline operator/entity/unit/guards
+          |       --invalid--> same IVC conversation correction; exhausted --> IVC failure
           |
           v
 Generate (driver.py; skeleton 22 turns / scratch 40 turns)
@@ -73,7 +73,7 @@ optional one-call Evolution --> proposal only --> human accept/reject + reason
 |---|---|---|---|
 | STUDY | `study.json` | 模型 | Framework 的 STUDY validator |
 | TGCD | `capability_design.json` | 模型 | `capability_design.protocol` |
-| IVC | `capability_validation_suite.json` | 模型 | IVC audit + private reference positive control |
+| IVC | `capability_validation_suite.json` | 模型 | inline request/operator/entity/guard/criteria audit |
 | Generate / Repair | `driver.py` | 模型 | source audit + public import/build boundary |
 
 不存在模型可见的 `submit_study`、`submit_capability_design`、
@@ -85,15 +85,16 @@ optional one-call Evolution --> proposal only --> human accept/reject + reason
 |---|---|
 | `src/autoadapter2/model_api.py` | 统一模型调用层：JSON、带消息历史的 JSON、原生 tool-use、认证、超时、有限传输重试和脱敏调用证据 |
 | `src/autoadapter2/react.py` | 多轮 trace、同 turn 多工具、工具错误回传、普通 terminal-tool ReAct，以及 canonical artifact 完成循环 |
-| `src/autoadapter2/driver_synthesis/interactive.py` | condition-local public 文件工作区、IVC isolated artifact workspace 和模型工具 |
+| `src/autoadapter2/driver_synthesis/interactive.py` | condition-local public 文件工作区、IVC isolated artifact workspace、只读 admitted asset closure 和模型工具 |
 | `src/autoadapter2/driver_synthesis/probe.py` | 公开投影、持久 Python/MuJoCo 进程、源码隔离、超时/步数/输出边界 |
 | `src/autoadapter2/driver_synthesis/generation.py` | STUDY、Generate/GEN_ALGO、公开输入投影和 interface-only stub |
 | `src/autoadapter2/driver_synthesis/repair.py` | candidate-facing 报告脱敏/压缩，以及在旧 `driver.py` 上持续 Repair |
 | `src/autoadapter2/driver_synthesis/source_check.py` | candidate Driver 的静态来源、ABI、状态写入和 task-dispatch 边界 |
 | `src/autoadapter2/capability_design/` | 唯一的 `capability-v2` TGCD schema、审核和阶段执行 |
-| `references/capability_v2/` | 模型可见的 SO-101 六项与 Go2 五项完整 capability 参考；不含 task mapping/plan |
-| `src/autoadapter2/validation_compiler/` | implementation-blind IVC、两类 case 审核和 reference-positive-control seam |
-| `src/autoadapter2/harness/` | 私有 suite 执行、canonical MuJoCo worker、measurement/guard/aggregation、视频和权威 verdict |
+| `references/capability_v2/` | SO-101/Go2 capability 参考，以及 22-case 完整 IVC worked references；不含 task mapping/plan/verdict |
+| `src/autoadapter2/validation_compiler/` | implementation-blind IVC 输入投影、inline suite 审核和六回合 artifact workflow |
+| `src/autoadapter2/harness/operators.py` | 可信 measurement operator catalog、参数/request path/unit/entity 的 pre-worker 审核 |
+| `src/autoadapter2/harness/` | inline suite 执行、canonical MuJoCo worker、parent-side measurement/guard/aggregation、视频和权威 verdict |
 | `src/autoadapter2/task_demo/recap.py` | canonical ReCAP Task Demo controller |
 | `src/autoadapter2/b2/` | ReCAP worker/adapter/Harness 的薄兼容入口；不再拥有第二份 controller |
 | `src/autoadapter2/evolution.py` | 一次 terminal proposal、人工 disposition、review queue 和 later-run snapshot |
@@ -273,9 +274,11 @@ fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，
 - STUDY、TGCD、Generate、Repair 使用 public development session：环境只保留解释器/MuJoCo
   所需的最小 host 值和公开 staging path；canonical public scene 通过
   `AUTOADAPTER_PROBE_SCENE` 提供，公开 package 和获准的 skeleton 使用隔离 staging roots。
-- IVC 使用 isolated artifact session：没有 robot package、public assets、skeleton 或 Driver staging；
-  `AUTOADAPTER_PROBE_SCENE` 只指向 workspace 内的空 MuJoCo scene，供有界的数值/校准计算使用。
-  真实 robot reference execution 由 Framework positive-control hook 完成，不由 IVC 模型进程完成。
+- IVC 使用 isolated artifact session：没有 skeleton、Driver、Repair、private package 或模型凭证；
+  `read_file` 仍只能访问 phase workspace，但 `AUTOADAPTER_PROBE_PUBLIC_PACKAGE` 指向只读复制的
+  admitted `assets/` closure。IVC 可用 MuJoCo 检查真实 MJCF 和 model entity，不能读取
+  `tasks/private/`、reference source 或候选实现；Framework 另把脱敏 instance、guard、operator
+  catalog、scene entity catalog 和 worked references 写入 `ivc_inputs.json`。
 - 两种 session 都不继承 API key、cloud/proxy credential 或 host `TMPDIR`；Framework 把 `TMPDIR`
   重定向到 phase workspace。子进程环境只保留解释器/MuJoCo 必需值和上面的公开 staging paths。
 - parent AST audit 先拒绝 network/process imports、dynamic import/compilation、Framework/Harness/
@@ -363,9 +366,9 @@ canonical 结果保留 `status`、`planning_turns`、`capability_calls`、`inval
 |---|---|---|---|---:|
 | STUDY | public package projection、morphology、sources、Task Library、runtime facts、eligible Experience | capability design、skeleton source、private suite/reference | `study.json` | 16 turns，两 condition 相同 |
 | TGCD | completed public STUDY、public package/tasks/sources、SO/Go capability reference、eligible Experience | candidate Driver、private IVC inputs、reference source | `capability_design.json` | 6 turns |
-| IVC | sealed design、private instances/bindings/guards、sanitised examples | Experience、candidate/Repair/history/verdict | `capability_validation_suite.json` | 6 turns |
+| IVC | sealed design/`task_support`、source lineage、脱敏 capability+task instances/guards、non-addressable measurement examples、46-kind trusted operator catalog、scene entities、22-case SO/Go worked references、只读 assets | Experience、candidate/Repair/history/verdict、task/reference request、waypoint/task plan、reference source | `capability_validation_suite.json` | 6 turns |
 | Generate | sealed public design、STUDY、public package、runtime/probe facts、eligible Experience；skeleton condition 另见 skeleton | private suite/bindings/guards/reference/Harness | `driver.py` | skeleton 22；scratch 40 turns |
-| Capability Harness | frozen Driver、sealed design、private suite/package | 模型上下文、Experience | report + videos | 最多 3 frozen attempts |
+| Capability Harness | frozen Driver、sealed design、IVC-authored inline suite、private scene mechanics/guards | 模型上下文、Experience；candidate 看不到 measurement/criteria/guards/task envelope | report + videos | 最多 3 frozen attempts |
 | Repair | prior Driver、紧前 attempt 的 candidate-facing report/media、public inputs、eligible Experience；按 condition 见 skeleton | private definitions/reference/Harness source | 修改同一 `driver.py` | skeleton 22；scratch 20 turns |
 | ReCAP Task Demo | public task、whitelisted capability schemas、public observations | Experience、未通过 capability、private criteria/guards/reference/verdict | controller trace | 每 task 16 planning turns / 12 capability calls |
 | Task Demo Harness | persistent worker evidence、private task clauses/bindings/guards | controller 无权读的私有定义 | task verdict + video | package task budget |
@@ -444,39 +447,69 @@ contexts，自己写出每个 capability 恰好两个完整 cases：
 - `nominal`：典型有效范围；
 - `calibrated_boundary`：真实校准边界附近、仍符合 contract 的范围。
 
-这里的“脱敏示例”特指
-`references/capability_v2/ivc_examples.json` 中的 structure-only pair example：它只示范
-nominal/boundary 两个 case 应包含哪些字段、怎样引用 Framework 已提供的 scene/reset
-instance、binding 与 guard ID，以及怎样原样复制 sealed `criteria[]`。它不含真实 ID、request、数值、threshold、task mapping、
-waypoint、call sequence 或 expected verdict，因此不是候选 Driver 的 oracle。
+IVC 的完整输入由 `build_ivc_inputs()` 建立：
 
-确定性审核要求 case 数量准确、capability/method 对应、criteria 原样复制、request 严格符合
-sealed closed schema；如果所引用的 private instance 还给出了真实 `request_domain`，request 也必须
-落在该 domain 内。`request_anchors` 只提供私有物理参考，既不是预写 case，也不要求 IVC 复制。
-同一 capability 的 nominal/boundary request 必须不同；instance/binding/guard IDs 来自 supplied private records、binding
-确实属于所选 instance、role/capability binding 不被改变、
-binding 声明的 metric/unit 与 sealed criterion 一致，以及 repetitions/timeout 不被弱化。审核通过后，Framework 用
-package-private reference Driver 执行完整 suite；正控失败时不
-封存 IVC artifact，而把脱敏 calibration error 返回同一 IVC conversation（仍有 turns 时可修正）。
+- `sealed_capability_design`：包含 `task_support`，只用于理解支持关系，不提供调用顺序；
+- `source_task_lineage`：公开 sources 与 task 描述/评分来源；
+- `private_instances`：脱敏 scene/reset、request domain、calibration profile、mandatory guard IDs、
+  repetitions 与 timeout；task request envelope、`task_id`、preinvoke 和 task plan 被移除；
+- `trusted_measurement_examples`：现有 private binding 的参数化范例，其中 `binding_id` 改成不可引用的
+  `example_id`；历史 `b1_contract` opaque dispatch 不进入模型上下文；
+- `private_guards`、`measurement_operator_catalog` 与从每个真实 MJCF 解析出的
+  `scene_entity_catalog`；
+- `complete_so101_go2_worked_references`：
+  `references/capability_v2/ivc_worked_references.json` 中 SO-101 12 cases + Go2 10 cases，合计
+  22 个真实 request/measurement/criteria/source/guard 范例。它们不含 `task_support`、task mapping、
+  task plan 或 expected verdict。
 
-Package 可以在 `capability_validation/private/` 提供专用 capability execution context；若没有，
-IVC/Harness 使用现有 `tasks/private/` 的可信 scene/reset、binding 与 guards。两种路径都只给
-Framework 提供物理执行和测量上下文，不给 IVC 预写 request。Task Demo Harness 始终按原来的
-task-private records 执行，candidate 也始终看不到 private task ID。
+若 package 同时有 `capability_validation/private/` 和 `tasks/private/`，两者按 ID 无冲突合并；专用
+五项/六项 context 不能遮蔽其他 task-backed scenes。若只有 task namespace，则 Framework 向 IVC
+隐藏 task envelope 后使用其 scene/reset/measurement calibration。Task Demo 仍使用原始
+`tasks/private/`，与 capability suite 是两条不同的可信执行路径。
 
-SO-101 `1.0.4` 的专用 context 保留 Exp1 fixed suite v6 的 A1--A6 `H1`/`H3` 场景、reset 与
-物理参考 anchors，共 12 个 nominal/boundary fixtures 和 6 个 trusted `b1_contract` bindings；
-最终 request 仍由本次 IVC 写出。其 native reference renderer
-接受 3--6 项已知 profile 子集，但每项 request-schema 物理签名与 criterion metric/unit 必须唯一
-匹配 A1--A6 之一；随后把 TGCD 的 method names 包装到 fixed task-blind capability Driver。未知、
-重复、混合新旧协议或其他 open-world schema 都会 fail closed，不能据此声称任意 TGCD design 已被
-正控覆盖。
+每个动态 case 必须精确包含：
 
-Capability Harness 对 candidate 只传 native `{"request": <case.request>}`，capability-v2 report
-也不写 `task_id`。trusted reference boundary 可以使用 Framework-private execution envelope，但不会
-因此放松 candidate 的 `candidate_request_boundary=True`。对于 SO-101 的 `b1_contract`，Harness
-执行可信物理合同并以 `0/1` 结果做 all-trials 判定；它仍要求 suite 的单项 sealed criterion 与
-binding metric/unit 一致，而不会把二进制合同结果错误地拿去和公开的 metre/radian threshold 比较。
+```json
+{
+  "case_id": "A1-nominal",
+  "case_role": "nominal",
+  "capability_id": "A1",
+  "method_name": "move_end_effector_to_position",
+  "request": {"target_position_m": [0.4, 0.1, 0.2], "max_duration_s": 4.0},
+  "request_grounding_refs": [
+    {"source_id": "...", "specific_reference": "..."}
+  ],
+  "instance_id": "so101-a1-nominal",
+  "measurement_binding": {
+    "metric": "end_effector_position_error",
+    "unit": "m",
+    "kind": "so101_end_effector_regulation",
+    "parameters": {"site_name": "gripperframe", "side_effect_guard_profile": "so101"}
+  },
+  "guard_ids": ["so101-control", "so101-no-direct-write", "so101-canonical", "so101-control-range"],
+  "repetitions": 1,
+  "timeout_sim_s": 8.0,
+  "criteria": ["<sealed criterion copied byte-for-byte as JSON value>"]
+}
+```
+
+`measurement_binding` 不是模型代码。当前 catalog 把每个 kind 的 description、closed parameter
+schema、允许输出 unit、request-path parameters、MuJoCo entity parameters 和 evaluation mode 都写成
+机器可读 JSON。IVC 可以为 reference bank 之外的新 capability 组合已有可信 operator；若真实
+criterion 无法由 catalog 表达，Framework 返回可修正错误，六回合耗尽后如实 `IVC failure`，不会
+选择“最接近”的旧 binding，也不允许 IVC 写任意 Python measurement。
+
+Framework 在 candidate worker 前依次审核：case fields/count/roles、method 与 criteria exact copy、
+closed request schema 和可选 request domain、grounding ref、nominal/boundary request 不同、instance
+role、mandatory guards、repetitions/timeout、operator kind/parameters、metric/unit、`request.*` path，
+以及所选 scene 中的真实 body/site/joint/geom/actuator/keyframe。任何非有限数、`binding_id`、code、
+task dispatch/`task_id`、Driver/Repair/verdict/self-PASS material 都拒绝。
+
+封存后的 candidate Harness 只把 native `{"request": <case.request>}` 交给 Driver method。inline
+measurement、sealed criteria、scene mechanics、guards、temporal/aggregation、视频和 verdict 均在
+Framework parent side。reference-only adapter 若在单独诊断中需要私有 task envelope，也不能改变
+candidate payload 或 report。Exp1a B1 fixed suite 继续使用自己的冻结 `binding_id`/contract，不受
+动态 `capability-v2` 接口迁移影响。
 
 ### 7.4 Generate / GEN_ALGO
 
@@ -646,18 +679,22 @@ whole_suite_aggregation = {kind: all_cases}
 cases[]  # exact 2 * capability_count
 ```
 
-每项 case 至少绑定：
+每项 case 字段必须精确为：
 
 ```text
 case_id, case_role, capability_id, method_name,
-request,
-instance_id, binding_id, guard_ids[],
+request, request_grounding_refs[],
+instance_id, measurement_binding{}, guard_ids[],
 criteria[], repetitions, timeout_sim_s
 ```
 
 `case_role` 只能为 `nominal` 或 `calibrated_boundary`，每个 capability 每种恰好一个；criteria 与
 sealed design 完全相等，不能调 threshold；`request` 必须严格满足该 capability 的 closed
-`request_schema`，且同一 capability 的 nominal 与 boundary requests 不能相同。
+`request_schema` 和所选 instance 的可选 `request_domain`，且同一 capability 的 nominal 与 boundary
+requests 不能相同。`request_grounding_refs` 必须解析到 sealed schema 或真实 calibration evidence。
+`measurement_binding` 精确包含 `metric`、`unit`、`kind`、`parameters`；前两项与 sealed criterion
+一致，kind/parameters 通过 trusted operator catalog 和真实 scene entity 审核。动态 suite 中
+`binding_id` 是 forbidden field。
 
 ### 8.3 `driver.py`
 
@@ -702,14 +739,16 @@ controller evidence，不是 Harness verdict。
 
 | 数据 | STUDY | TGCD | IVC | Generate | Repair | Cap Harness | ReCAP | Task Harness | Evolution |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| public package/tasks/sources | ✓ | ✓ | design identity only | ✓ | ✓ | ✓ | public task only | ✓ | compact facts only |
+| public package/tasks/sources | ✓ | ✓ | source lineage + read-only assets | ✓ | ✓ | ✓ | public task only | ✓ | compact facts only |
 | STUDY | writer | ✓ | — | ✓ | ✓ | — | — | — | compact facts only |
 | eligible Experience | ✓ | ✓ | — | ✓ | ✓ | — | — | — | — |
 | trusted skeleton source | — | — | — | skeleton only | skeleton only | worker import only | — | — | — |
 | sealed capability design | — | writer | ✓ | ✓ | ✓ | ✓ | whitelist projection | ✓ | compact facts only |
-| private instances/bindings/guards | — | — | ✓ | — | — | ✓ | — | ✓ | — |
+| private instances/bindings/guards | — | — | sanitized instances/guards + non-addressable examples | — | — | full parent-side | — | task path full | — |
+| operator + scene entity catalog | — | — | ✓ | — | — | parent-side executor | — | — | — |
+| SO/Go 22-case worked references | — | public capability refs only | ✓ | — | — | — | — | — | — |
 | validation suite | — | — | writer | — | definition redacted | ✓ | — | — | — |
-| reference Driver source | — | — | Framework hook only | — | — | — | — | — | — |
+| reference Driver source | — | — | — | — | — | optional separate diagnostic only | — | — | — |
 | candidate Driver | — | — | — | writer | prior source | ✓ | worker only | worker only | source omitted |
 | candidate verdict/history | — | — | — | — | immediate public report | owner | — | owner | compact public facts |
 
@@ -740,9 +779,7 @@ runs/<run-id>/
     │   ├── workspace/
     │   │   ├── ivc_inputs.json                 # sealed design + private compiler inputs
     │   │   └── capability_validation_suite.json # working canonical artifact
-    │   └── reference-positive-control/
-    │       ├── reference_positive_control.json
-    │       └── validation/...                 # private reference Harness evidence/videos
+    │   └── reference-positive-control/...     # only when a scoped protocol separately requests it
     ├── experience_input.json                  # IDs/records visible only to allowed phases
     ├── probe_results.json
     ├── frozen-driver-attempts/
@@ -770,7 +807,7 @@ runs/<run-id>/
 | public Robot Package | package author + loader | STUDY, TGCD, Generate/Repair projection, Harness, Task Demo |
 | `study.json` | STUDY model | TGCD, Generate, Repair, evidence reader |
 | `capability_design.json` + TGCD trace | TGCD model + validator | IVC, stub generator, source audit, Harness, whitelist/ReCAP, public evidence reader |
-| private suite | IVC model + deterministic audit | private reference positive control，随后 candidate capability Harness |
+| private suite | IVC model + deterministic inline audit | candidate capability Harness；可选 scoped reference diagnostic 不改变 suite |
 | private IVC trace | Framework callback/model-call recorder | private compiler audit only；aggregate 只保留 summary/count/path |
 | mutable `driver.py` | Generate/Repair model | source/import validator, then freezer |
 | frozen Driver | Framework | one Harness attempt；final copy 仅以双过 whitelist 的 capability 喂给 Task Demo worker |
@@ -802,14 +839,13 @@ runs/<run-id>/
 - Harness infrastructure/worker/video failure：保留其真实类别和证据，不改写成 candidate PASS。
 - 三个 frozen attempts 用尽：final frozen report 是 terminal Capability Validation。
 
-### 11.4 Reference failure
+### 11.4 Inline audit 与可选 reference diagnostic failure
 
-正式 run 中，IVC private reference positive control 是 suite seal gate。它验证 Framework、case binding、scene、
-reference Driver 和 Harness 的组合，不是模型 candidate 成绩。正控失败时 candidate generation 不应
-开始；错误归于 IVC/reference calibration 路径。通用 `full` CLI 不提供 skip 参数；本项目的显式
-`formal=false` Sonnet/DeepSeek diagnostic runner 可以调用底层 diagnostic-only skip，而 scoped formal
-runner 不允许跳过。任何 skip 记录都必须是 `skipped=true`、有 reason、
-`passed=false`，且不能进入正式 denominator。
+动态 IVC 的 seal gate 是 request/schema/source、inline operator、metric/unit、真实 entity、mandatory
+guards 和 criteria-copy 审核；其中任一项不成立就把可修正错误返回同一 IVC conversation，六回合耗尽
+则停在 IVC failure，不启动 candidate。某个 scoped protocol 若另外运行 private reference diagnostic，
+其失败只说明 reference adapter/calibration 路径没有闭合，不能用来改写 IVC case，也不能让 Framework
+回退到旧 `binding_id`。该 diagnostic 不是本轮主线实现的验收门禁。
 
 ### 11.5 Partial diagnostic
 
@@ -921,8 +957,9 @@ frozen attempts，ReCAP Task Demo 后停止，Evolution disabled。SO-101/Go2 �
 morphology 或 quadruped-transfer effect。
 
 runner 为未来获批的正式 row 机械写入 `formal=true`，并固定
-`skip_reference_calibration=false`；因此每个 fresh IVC 都必须在 candidate generation 前通过自己的
-private reference positive control，不能拿 preflight 的历史 readiness 文件代替。final Driver 只要有
+`skip_reference_calibration=true`；每个 fresh IVC 依靠本次 artifact 的 inline
+request/operator/entity/guard/criteria 审核封存，不依赖 reference Driver，也不能拿历史 readiness
+文件代替本次审核。final Driver 只要有
 至少一个 nominal+boundary 双过 capability，就必须用该 whitelist 运行 ReCAP；正式 evidence gate
 要求执行的 Task Demo 有 1--5 个由该 whitelist 支持的 tasks 和完整视频（有至少五个 eligible tasks
 时由 pipeline 取五个）。若 whitelist 为空，则必须保留非空 not-run
@@ -943,9 +980,10 @@ PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment3.runner \
 `manifest.json` 保持 `formal_dispatch_authorised=false`。本轮不要调用 runner 中为将来保留的
 `formal` 或 `resume` 子命令。
 
-这里的 preflight 证明 11 个 indexed packages、配置和既有 reference-readiness evidence 可用；它
-不能预先证明任意未来 TGCD 自创的 criterion metric 都能匹配 package-private binding。这个兼容性
-只能由每个 fresh cell 的 IVC schema/binding audit 与随后真实 reference positive control 判定。
+Exp3 自己的 preflight 只证明 scoped manifest 与 package pins。当前 dynamic IVC 的额外可执行 gate
+见下一节：它会真实构建 11 个 package 的全部 scene/entity/operator inputs。即使该 gate 通过，也不
+预先保证未来任意 TGCD criterion 一定可表达；无法由 trusted catalog 表达时，IVC 必须收到明确错误
+并在六回合内修正或如实失败，不能回退到旧 `binding_id`。
 
 ## 15. 通用零模型检查和主线 CLI
 
@@ -959,6 +997,20 @@ PYTHONPATH=autoadapter/src pyenv exec python -m autoadapter2 check-only \
 ```
 
 `package`/`check-only` 只加载 config、环境、自包含边界和 indexed packages，不创建模型 client。
+inline IVC 的完整零模型主线 preflight 是：
+
+```bash
+PYTHONPATH=autoadapter/src pyenv exec python \
+  autoadapter/scripts/check_ivc_inline_mainline.py --root autoadapter
+```
+
+它逐一解析 11 个 indexed packages 的 capability+task contexts、真实 MJCF entities 和同一 trusted
+operator catalog；随后用确定性 artifact 执行 TGCD audit → IVC audit → SO-101 capability Harness →
+双 case whitelist → scripted ReCAP/Task Harness，并另跑 Go2 inline nominal/boundary MuJoCo smoke。
+输出必须明确为 `external_model_requests=0`、`experiment_cells_created=0` 和
+`evidence_class=local zero-model diagnostic only`。Task Demo verdict 可以 FAIL，但必须有真实 capability
+call、physics 和 Harness verdict。
+
 当前真实主线入口是：
 
 ```bash
@@ -973,10 +1025,16 @@ PYTHONPATH=autoadapter/src pyenv exec python -m autoadapter2 full \
 cohort 配置代替 Exp1a 或 Exp3 scoped runner，也不能把它的输出升级成正式 evidence。正式实验的
 matrix 和 dispatch gate 由各自 Authority/manifest 控制。
 当前 `full` CLI 不提供 `--reuse-sealed-inputs-from` 或 `--skip-reference-calibration`：每个 cell 都使用
-fresh TGCD/IVC artifact，并在 candidate generation 前运行本 cell 的 private reference positive
-control。
+fresh TGCD/IVC artifact；动态主线默认依靠 inline suite 的 deterministic audit，不运行 reference
+Driver diagnostic。
 
-## 16. DeepSeek SO-101 `1.0.4` 全线 canary
+以上 `full` 命令只说明程序入口；只有获得针对某次 diagnostic run 的明确批准后才可实际调用，且
+它不会因此成为 Exp1a/Exp3 正式 evidence。
+
+## 16. DeepSeek SO-101 `1.0.4` 全线 canary（配置保留，当前锁定）
+
+> revision `0.20.1` 未授权下面的真实 source/later run。只有零模型 config/evidence checker 可以
+> 执行；不得读取 credential、创建 provider client 或发送 DeepSeek 请求，直到用户再次明确批准。
 
 专用配置是 `configs/experiments/deepseek-so101-1.0.4-canary.json`，证据检查器是
 `scripts/check_deepseek_so101_canary.py`。以下命令都从仓库根目录运行。先做零模型 gate：
@@ -989,13 +1047,12 @@ PYTHONPATH=autoadapter/src:. pyenv exec python \
 ```
 
 该命令必须报告 `model_client_constructed=false`、`model_requests=0`、indexed package
-`1.0.4`、empty Experience、一个 sanitised IVC example，以及所有固定预算。它不读取 credential，
+`1.0.4`、empty Experience、完整 IVC worked references，以及所有固定预算。它不读取 credential，
 也不证明未来任意 TGCD design 一定可以通过 IVC。这个零模型 checker 不启动 probe child；真实
 source run 还要求当前 host 可以应用第 5.3 节的 macOS Seatbelt profile，不能从禁止 nested Seatbelt
 的外层 sandbox 中启动。
 
-真实 source run 前，私下设置 `AUTOADAPTER_MODEL_API_KEY`，并把其他 runtime identity 与 config
-对齐；不要把 key 写进 shell history、config 或输出目录：
+以下环境变量与 `full` 命令仅记录以后获批时的操作接口，当前不得执行：
 
 ```bash
 export AUTOADAPTER_MODEL_PROVIDER=openai-compatible
@@ -1032,8 +1089,8 @@ DeepSeek canary 的判读条件不是“整套必须 PASS”，而是同时检�
 
 1. 使用 indexed SO-101 `1.0.4`、skeleton-assisted、`formal=false`；
 2. 真实执行 STUDY → TGCD → IVC → Generate/Repair → ReCAP → Evolution；
-3. IVC suite 在 candidate 之前完成 schema/binding audit；`formal=false` canary 可显式跳过 private
-   reference positive control，但必须在报告中记录 skip，且仍只算 diagnostic；
+3. IVC suite 在 candidate 之前完成 request/schema/source + inline operator/entity/unit/guard audit；
+   任何单独 reference diagnostic 状态均需如实记录，但不能代替该 audit；
 4. 至少一个 capability 的 nominal 和 boundary 都 PASS；
 5. ReCAP 只获得双过 whitelist，并至少真实调用一个 capability；
 6. Task Demo 有真实 physics、可信 Harness verdict 和视频；其 verdict 可以 FAIL；
@@ -1046,13 +1103,13 @@ source evidence gate 通过后先在对话里展示打印出的 proposal。此�
 给出 `accept`/`reject` 和非空理由后，才能调用第 7.7 节的 review/snapshot API。若接受，later run
 也必须由用户另行启动；上述 canary 命令不会自动创建或消费 Experience snapshot。
 
-### 16.1 Sonnet 其余机器人 skeleton 诊断
+### 16.1 Sonnet 其余机器人 skeleton 诊断（配置保留，当前锁定）
 
 `configs/experiments/sonnet-exp3-remaining-skeleton-diagnostic.json` 固定 Exp3 的 Sonnet 4.6
 model、file-workflow budgets、skeleton-assisted、empty Experience 和 Evolution disabled，但明确
 保持 `formal=false`。它包含除 SO-101 外的 10 台机器人。诊断入口每次只取其中一台，显式从
 `.env.company-api` 加载 company credential，调用 fresh STUDY/TGCD/IVC/Generate/Repair/ReCAP
-主线，并按本轮指示跳过 reference positive control：
+主线；下面命令当前仅保留作获批后的接口说明：
 
 ```bash
 PYTHONPATH=autoadapter/src pyenv exec python \
@@ -1066,7 +1123,8 @@ PYTHONPATH=autoadapter/src pyenv exec python \
 `universal_robots_ur5e_robotiq_2f85`、`piper`、`kuka_iiwa_14`、`leap_hand`、
 `hello_robot_stretch_2` 和 `aloha_2`。入口在发出模型请求前先验证 exact model pin、credential
 来源和单机器人 package；结束时打印 stage/Driver/ReCAP 摘要、requested/returned model、累计 token
-以及 evidence path。这些运行不占 Exp3 的 33-cell denominator，也不授权正式 dispatch。
+以及 evidence path。这些运行不占 Exp3 的 33-cell denominator，也不授权正式 dispatch；revision
+`0.20.1` 下诊断本身同样等待用户再次批准，当前不得执行该命令。
 
 ## 17. 怎样读一份运行证据
 
@@ -1081,8 +1139,9 @@ PYTHONPATH=autoadapter/src pyenv exec python \
    完整 callbacks 与 model-call records 留在 private `ivc_artifact_trace.json`，避免把 compiler 私有
    payload 复制到公共 aggregate。
 4. `study_evidence.json`：是否真的有成功 physics steps，而不只是模型描述。
-5. sealed TGCD/IVC artifacts：capability 数、task support、case roles、criteria copy，以及 reference
-   positive control 是通过还是在 `formal=false` 诊断中被显式跳过。
+5. sealed TGCD/IVC artifacts：capability 数、task support、case roles、distinct requests、grounding
+   refs、inline operator/entity/unit/guard audit 和 criteria exact copy；若 scoped run 另有 reference
+   diagnostic，再单独读取其结果。
 6. `frozen_driver_attempt_count` 与 `development_rejections`：区分“模型写过文件”和“正式 Harness
    attempt”。
 7. 每个 attempt 的 `capability_validation_report.json`：先看 execution/integrity/video，再看 metric

@@ -59,9 +59,9 @@ EXPECTED_RETRY_POLICY = {
 }
 ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
-AUTHORITY_REVISION = "0.2.0"
-MANIFEST_REVISION = "0.2.0"
-PROTOCOL_REVISION = "0.2.0"
+AUTHORITY_REVISION = "0.2.1"
+MANIFEST_REVISION = "0.2.1"
+PROTOCOL_REVISION = "0.2.1"
 PHASE_TURN_BUDGETS = {
     "study": 16,
     "tgcd": 6,
@@ -268,12 +268,17 @@ def validate_design_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
     _require(isinstance(ivc_contract, Mapping), "ivc_contract must be pinned")
     assert isinstance(ivc_contract, Mapping)
     _require(
-        ivc_contract.get("candidate_blind") is True
-        and ivc_contract.get("experience_visible") is False
-        and ivc_contract.get("cases_per_capability")
-        == ["nominal", "calibrated_boundary"]
-        and ivc_contract.get("private_reference_positive_control_required") is True,
-        "IVC must be candidate-blind, Experience-free, exact nominal/boundary, and reference-calibrated",
+        dict(ivc_contract)
+        == {
+            "candidate_blind": True,
+            "experience_visible": False,
+            "cases_per_capability": ["nominal", "calibrated_boundary"],
+            "inline_measurement_binding_required": True,
+            "binding_id_forbidden": True,
+            "trusted_operator_catalog_required": True,
+            "worked_reference_case_count": 22,
+        },
+        "IVC must use candidate-blind inline trusted measurements and the complete worked references",
     )
 
     groups = manifest.get("reporting_groups")
@@ -463,15 +468,6 @@ def _validate_evidence_semantics(
             f"readiness_evidence.{label} does not prove that package",
         )
         return
-    if label.startswith("reference_positive_controls."):
-        robot = label.removeprefix("reference_positive_controls.")
-        _require(
-            isinstance(artifact_type, str)
-            and artifact_type.startswith("experiment3_reference_positive_control")
-            and _evidence_covers_robot(retained, robot),
-            f"readiness_evidence.{label} does not prove that reference control",
-        )
-        return
     if label == "producer_model_canary":
         settings = retained.get("request_settings")
         _require(
@@ -588,21 +584,15 @@ def validate_executable_preflight(
         "recorder",
     }
     _require(
-        set(evidence) == {"packages", "reference_positive_controls", *required_global},
+        set(evidence) == {"packages", *required_global},
         "readiness_evidence fields are incomplete",
     )
     packages = evidence.get("packages")
-    controls = evidence.get("reference_positive_controls")
     _require(isinstance(packages, Mapping) and set(packages) == set(ROBOT_CONFIGURATIONS), "package evidence must cover the exact eleven configurations")
-    _require(isinstance(controls, Mapping) and set(controls) == set(ROBOT_CONFIGURATIONS), "reference positive-control evidence must cover the exact eleven configurations")
-    assert isinstance(packages, Mapping) and isinstance(controls, Mapping)
+    assert isinstance(packages, Mapping)
     checked_evidence: dict[str, Any] = {
         "packages": {
             robot: _evidence_item(packages[robot], label=f"packages.{robot}", root=root)
-            for robot in ROBOT_CONFIGURATIONS
-        },
-        "reference_positive_controls": {
-            robot: _evidence_item(controls[robot], label=f"reference_positive_controls.{robot}", root=root)
             for robot in ROBOT_CONFIGURATIONS
         },
     }
@@ -627,8 +617,10 @@ def _check_package_ivc_contexts(
     The real IVC loader owns whether a package supplies dedicated capability
     inputs or projects its package-private task inputs.  This zero-model gate
     checks only facts knowable before TGCD/IVC authorship: all three collections
-    load, are non-empty, share one private namespace and match the indexed
-    package identity.  It does not turn private context into prewritten cases.
+    load, are non-empty, share one projected namespace and match the indexed
+    package identity.  ``combined`` means the IVC receives both dedicated
+    capability and task-backed scene/calibration contexts; it does not turn
+    either context into prewritten cases.
     """
 
     if package_loader is None:
@@ -664,7 +656,7 @@ def _check_package_ivc_contexts(
                         f"package-private {name}.json did not load as an object"
                     )
                 namespace = document.get("calibration_namespace")
-                if namespace not in {"capability", "task"}:
+                if namespace not in {"capability", "task", "combined"}:
                     raise Experiment3RunnerError(
                         f"package-private {name}.json has no recognised IVC namespace"
                     )
@@ -1220,7 +1212,7 @@ def _dispatch_predeclared_rows(
                 "run_id": cell["run_id"],
                 "producer_client": client,
                 "check_self_containment": check_self_containment,
-                "skip_reference_calibration": False,
+                "skip_reference_calibration": True,
             }
             if hooks_factory is not None:
                 kwargs["hooks"] = hooks_factory(copy.deepcopy(cell))
@@ -1813,9 +1805,6 @@ def main(argv: list[str] | None = None) -> int:
                 "model_id": checked["producer_model"]["model_id"],
                 "retained_package_evidence_count": len(
                     checked["readiness_evidence"]["packages"]
-                ),
-                "retained_reference_control_count": len(
-                    checked["readiness_evidence"]["reference_positive_controls"]
                 ),
                 "package_ivc_context_count": len(
                     checked["package_ivc_context_check"]["robots"]

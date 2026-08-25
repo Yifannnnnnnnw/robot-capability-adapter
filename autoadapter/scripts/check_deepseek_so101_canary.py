@@ -18,7 +18,7 @@ from typing import Any
 
 from autoadapter2.libraries import load_indexed_robot_package
 from autoadapter2.pipeline import ExperimentConfig, check_packages
-from autoadapter2.validation_compiler import load_sanitized_ivc_examples
+from autoadapter2.validation_compiler import load_ivc_worked_references
 
 
 ROBOT_ID = "robotstudio_so101"
@@ -175,8 +175,13 @@ def check_preflight(*, root: Path, config_path: Path) -> dict[str, Any]:
         not missing_metrics,
         "public task criteria lack private metric bindings: " + ", ".join(missing_metrics),
     )
-    examples = load_sanitized_ivc_examples()
-    _require(bool(examples), "sanitized IVC examples are missing")
+    references = load_ivc_worked_references()
+    _require(bool(references), "complete IVC worked references are missing")
+    worked_case_count = sum(
+        len(reference.get("validation_suite", {}).get("cases", []))
+        for reference in references
+    )
+    _require(worked_case_count == 22, "IVC worked reference bank must contain 22 cases")
 
     return {
         "check": "deepseek_so101_source_canary_preflight",
@@ -198,7 +203,8 @@ def check_preflight(*, root: Path, config_path: Path) -> dict[str, Any]:
         "empty_experience": not config.experience_input,
         "task_metric_count": len(task_metrics),
         "private_binding_metric_count": len(binding_metrics),
-        "sanitized_ivc_example_count": len(examples),
+        "ivc_worked_reference_count": len(references),
+        "ivc_worked_case_count": worked_case_count,
         "credential_environment": "AUTOADAPTER_MODEL_API_KEY",
     }
 

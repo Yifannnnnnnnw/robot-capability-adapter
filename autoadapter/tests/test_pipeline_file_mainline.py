@@ -522,6 +522,7 @@ def test_fresh_cell_order_visibility_freeze_and_partial_recap_whitelist(
         client=client,
         hooks=hooks,
         check_self_containment=False,
+        skip_reference_calibration=False,
     )
 
     expected_cell_events = [
