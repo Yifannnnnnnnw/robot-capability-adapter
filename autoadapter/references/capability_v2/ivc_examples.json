@@ -4,12 +4,13 @@
   "examples": [
     {
       "example_id": "nominal-boundary-pair-structure-v1",
-      "description": "Structure-only example for selecting one supplied nominal instance and one supplied calibrated-boundary instance for a sealed capability.",
+      "description": "Structure-only example for authoring one nominal request and one calibrated-boundary request against a sealed capability while selecting trusted private fixtures.",
       "nominal_case": {
         "case_role": "nominal",
         "capability_id": "copy one sealed capability_id",
         "method_name": "copy its sealed method_name",
-        "instance_id": "select one supplied nominal instance_id",
+        "request": "author one complete task-neutral request that satisfies the sealed request_schema and any request_domain supplied by the selected instance; request_anchors are evidence, not prescribed values",
+        "instance_id": "select one supplied nominal scene/reset fixture by instance_id",
         "binding_id": "select its supplied binding_id",
         "guard_ids": "copy the selected supplied guard_ids",
         "criteria": "copy the complete sealed criteria array byte-for-value"
@@ -18,12 +19,13 @@
         "case_role": "calibrated_boundary",
         "capability_id": "copy the same sealed capability_id",
         "method_name": "copy its sealed method_name",
-        "instance_id": "select one supplied calibrated-boundary instance_id",
+        "request": "author a different complete task-neutral request that satisfies the sealed request_schema and any request_domain supplied by the selected instance; request_anchors are evidence, not prescribed values",
+        "instance_id": "select one supplied calibrated-boundary scene/reset fixture by instance_id",
         "binding_id": "select its supplied binding_id",
         "guard_ids": "copy the selected supplied guard_ids",
         "criteria": "copy the complete sealed criteria array byte-for-value"
       },
-      "not_an_oracle": "The example supplies no IDs, requests, numeric values, thresholds, task mapping, waypoint, call sequence, or expected verdict."
+      "not_an_oracle": "The example supplies no concrete IDs, request values, numeric thresholds, task mapping, waypoint, call sequence, or expected verdict."
     }
   ]
 }

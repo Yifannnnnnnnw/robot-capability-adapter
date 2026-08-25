@@ -616,6 +616,96 @@ def validate_executable_preflight(
     }
 
 
+def _check_package_ivc_contexts(
+    mainline_root: str | Path,
+    *,
+    package_loader: Callable[[str | Path, str], Any] | None = None,
+    private_inputs_loader: Callable[[Any], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Load every formal package's complete private IVC context.
+
+    The real IVC loader owns whether a package supplies dedicated capability
+    inputs or projects its package-private task inputs.  This zero-model gate
+    checks only facts knowable before TGCD/IVC authorship: all three collections
+    load, are non-empty, share one private namespace and match the indexed
+    package identity.  It does not turn private context into prewritten cases.
+    """
+
+    if package_loader is None:
+        from autoadapter2.libraries import load_indexed_robot_package
+
+        package_loader = load_indexed_robot_package
+    if private_inputs_loader is None:
+        from autoadapter2.validation_compiler.ivc import (
+            _private_inputs_from_package,
+        )
+
+        private_inputs_loader = _private_inputs_from_package
+
+    root = Path(mainline_root).resolve()
+    summaries: dict[str, Any] = {}
+    for robot in ROBOT_CONFIGURATIONS:
+        try:
+            package = package_loader(root, robot)
+            private = private_inputs_loader(package)
+            identity = {
+                "robot_configuration_id": getattr(
+                    package, "robot_configuration_id", None
+                ),
+                "package_version": getattr(package, "package_version", None),
+                "task_snapshot_id": getattr(package, "snapshot_id", None),
+            }
+            counts: dict[str, int] = {}
+            namespaces: set[str] = set()
+            for name in ("instances", "bindings", "guards"):
+                document = private.get(name)
+                if not isinstance(document, Mapping):
+                    raise Experiment3RunnerError(
+                        f"package-private {name}.json did not load as an object"
+                    )
+                namespace = document.get("calibration_namespace")
+                if namespace not in {"capability", "task"}:
+                    raise Experiment3RunnerError(
+                        f"package-private {name}.json has no recognised IVC namespace"
+                    )
+                namespaces.add(namespace)
+                records = document.get(name)
+                if not isinstance(records, list) or not records:
+                    raise Experiment3RunnerError(
+                        f"package-private {name}.json must contain a non-empty {name}[]"
+                    )
+                for field, expected in identity.items():
+                    if not isinstance(expected, str) or not expected:
+                        raise Experiment3RunnerError(
+                            f"indexed package has no usable {field}"
+                        )
+                    if document.get(field) != expected:
+                        raise Experiment3RunnerError(
+                            f"package-private {name}.json {field} differs from "
+                            "the indexed package"
+                        )
+                counts[name] = len(records)
+            if len(namespaces) != 1:
+                raise Experiment3RunnerError(
+                    "package-private instances/bindings/guards use mixed IVC namespaces"
+                )
+        except Exception as exc:
+            if isinstance(exc, Experiment3RunnerError):
+                detail = str(exc)
+            else:
+                detail = f"{type(exc).__name__}: {exc}"
+            raise Experiment3RunnerError(
+                f"package-private IVC context for {robot!r} failed before "
+                f"model calls: {detail}"
+            ) from exc
+        summaries[robot] = {
+            **identity,
+            "private_namespace": next(iter(namespaces)),
+            "record_counts": counts,
+        }
+    return {"passed": True, "robots": summaries}
+
+
 def _assert_client_pin(client: Any, *, model: Mapping[str, Any], transport: Mapping[str, Any]) -> None:
     config = getattr(client, "config", None)
     _require(config is not None, "client_factory must return a client with a pinned config")
@@ -1007,14 +1097,27 @@ def run_preflight(
     manifest: Mapping[str, Any] | None = None,
     manifest_path: str | Path | None = None,
     package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
+    ivc_context_check_fn: Callable[[str | Path], Mapping[str, Any]] | None = None,
     check_self_containment: bool = True,
 ) -> dict[str, Any]:
-    """Validate retained pins and execute the current all-eleven package check."""
+    """Validate retained pins and execute current all-eleven zero-model checks."""
 
     source = load_manifest(manifest_path) if manifest is None else copy.deepcopy(dict(manifest))
     if package_check_fn is None:
         from autoadapter2.pipeline import check_packages as package_check_fn
     preflight = validate_executable_preflight(source, mainline_root=mainline_root)
+    ivc_context_check = copy.deepcopy(
+        dict(
+            (ivc_context_check_fn or _check_package_ivc_contexts)(mainline_root)
+        )
+    )
+    _require(
+        ivc_context_check.get("passed") is True
+        and isinstance(ivc_context_check.get("robots"), Mapping)
+        and set(ivc_context_check["robots"]) == set(ROBOT_CONFIGURATIONS),
+        "package-private IVC-context check did not pass "
+        "for the exact eleven configurations",
+    )
     all_robot_config = _cell_config(preflight, ROBOT_CONFIGURATIONS[0])
     all_robot_config["robots"] = list(ROBOT_CONFIGURATIONS)
     package_check = copy.deepcopy(
@@ -1036,7 +1139,11 @@ def run_preflight(
         and set(package_robots) == set(ROBOT_CONFIGURATIONS),
         "current package check did not cover the exact eleven configurations",
     )
-    return {**preflight, "current_package_check": package_check}
+    return {
+        **preflight,
+        "package_ivc_context_check": ivc_context_check,
+        "current_package_check": package_check,
+    }
 
 
 def _update_record_counts(record: dict[str, Any]) -> None:
@@ -1181,6 +1288,7 @@ def run_formal(
     | None = None,
     run_experiment_fn: Callable[..., Mapping[str, Any]] | None = None,
     package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
+    ivc_context_check_fn: Callable[[str | Path], Mapping[str, Any]] | None = None,
     hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
     check_self_containment: bool = True,
     git_commit_fn: Callable[[str | Path], str] | None = None,
@@ -1227,10 +1335,14 @@ def run_formal(
         mainline_root,
         manifest=source,
         package_check_fn=package_check_fn,
+        ivc_context_check_fn=ivc_context_check_fn,
         check_self_containment=check_self_containment,
     )
     record["dispatch_started"] = True
     record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
+    record["package_ivc_context_check"] = preflight[
+        "package_ivc_context_check"
+    ]
     record["current_package_check"] = preflight["current_package_check"]
     _write_json(destination / "experiment3_run_record.json", record)
     return _dispatch_predeclared_rows(
@@ -1316,6 +1428,7 @@ def run_resume(
     | None = None,
     run_experiment_fn: Callable[..., Mapping[str, Any]] | None = None,
     package_check_fn: Callable[..., Mapping[str, Any]] | None = None,
+    ivc_context_check_fn: Callable[[str | Path], Mapping[str, Any]] | None = None,
     hooks_factory: Callable[[Mapping[str, str]], Any] | None = None,
     check_self_containment: bool = True,
     git_commit_fn: Callable[[str | Path], str] | None = None,
@@ -1385,10 +1498,14 @@ def run_resume(
         mainline_root,
         manifest=source,
         package_check_fn=package_check_fn,
+        ivc_context_check_fn=ivc_context_check_fn,
         check_self_containment=check_self_containment,
     )
     record["dispatch_started"] = True
     record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
+    record["package_ivc_context_check"] = preflight[
+        "package_ivc_context_check"
+    ]
     record["current_package_check"] = preflight["current_package_check"]
     _write_json(record_path, record)
     return _dispatch_predeclared_rows(
@@ -1700,6 +1817,12 @@ def main(argv: list[str] | None = None) -> int:
                 "retained_reference_control_count": len(
                     checked["readiness_evidence"]["reference_positive_controls"]
                 ),
+                "package_ivc_context_count": len(
+                    checked["package_ivc_context_check"]["robots"]
+                ),
+                "package_ivc_context_check_passed": checked[
+                    "package_ivc_context_check"
+                ]["passed"],
                 "current_package_check_passed": checked[
                     "current_package_check"
                 ]["package_check_passed"],

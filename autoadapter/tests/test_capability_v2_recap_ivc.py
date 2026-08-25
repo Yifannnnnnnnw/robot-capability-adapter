@@ -136,15 +136,33 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
         criterion = capability["criteria"][0]
         for role in IVC_CASE_ROLES:
             suffix = f"{capability_id.lower()}-{role}"
-            amount = -0.25 if role == "nominal" else 0.75
+            field = f"amount_{capability_id[1:]}"
+            anchor_amount = -0.25 if role == "nominal" else 0.75
+            domain = json.loads(json.dumps(capability["request_schema"]))
+            domain_leaf = domain["properties"][field]
+            if role == "nominal":
+                domain_leaf["minimum"] = -0.5
+                domain_leaf["maximum"] = 0.25
+            else:
+                domain_leaf["minimum"] = 0.5
+                domain_leaf["maximum"] = 0.9
+            profile = f"{capability_id}-{role}"
             instances.append(
                 {
                     "instance_id": f"instance-{suffix}",
                     "capability_id": capability_id,
                     "case_role": role,
-                    "public_arguments": {
-                        "request": {f"amount_{capability_id[1:]}": amount}
-                    },
+                    "calibration_profile": profile,
+                    "scene_entrypoint": f"assets/{suffix}.xml",
+                    "reset": {"kind": "default"},
+                    "request_domain": domain,
+                    "request_anchors": [
+                        {
+                            "anchor_id": f"anchor-{suffix}",
+                            "request": {field: anchor_amount},
+                            "source_ref": f"private-calibration::{suffix}",
+                        }
+                    ],
                     "clause_bindings": {
                         "capability-criterion": f"binding-{suffix}"
                     },
@@ -158,6 +176,7 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
                     "binding_id": f"binding-{suffix}",
                     "capability_id": capability_id,
                     "case_role": role,
+                    "calibration_profile": profile,
                     "metric": criterion["metric"],
                     "unit": criterion["unit"],
                 }
@@ -175,6 +194,7 @@ def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
         for role in IVC_CASE_ROLES:
             suffix = f"{cap_id.lower()}-{role}"
             instance = instances[f"instance-{suffix}"]
+            authored_amount = 0.0 if role == "nominal" else 0.6
             cases.append(
                 {
                     "case_id": f"case-{suffix}",
@@ -186,9 +206,7 @@ def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
                     "guard_ids": [],
                     "repetitions": 2,
                     "timeout_sim_s": 5.0,
-                    "request": json.loads(
-                        json.dumps(instance["public_arguments"]["request"])
-                    ),
+                    "request": {f"amount_{cap_id[1:]}": authored_amount},
                     "criteria": json.loads(json.dumps(capability["criteria"])),
                 }
             )
@@ -524,7 +542,13 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
     }
     assert inputs["validator_contract"]["case_count"] == 6
     assert inputs["validator_contract"][
-        "copy_request_from_selected_instance_public_arguments_request_exactly"
+        "ivc_authors_complete_request_for_each_case"
+    ] is True
+    assert inputs["validator_contract"][
+        "validate_authored_request_against_selected_instance_request_domain_when_supplied"
+    ] is True
+    assert inputs["validator_contract"][
+        "request_anchors_are_calibration_evidence_not_prescribed_cases"
     ] is True
     model = _IVCModel(suite)
     events: list[dict[str, Any]] = []
@@ -554,7 +578,7 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
         )
 
 
-def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
+def test_ivc_authors_non_anchor_requests_inside_optional_calibrated_domains() -> None:
     package = _package()
     design = _design()
     private = _private_inputs(design)
@@ -564,23 +588,60 @@ def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
         suite, package=package, design=design, private_inputs=private
     )
     assert calibrated["cases"][0]["request"] != calibrated["cases"][1]["request"]
+    instances = {item["instance_id"]: item for item in private["instances"]}
+    for case in calibrated["cases"]:
+        anchors = instances[case["instance_id"]]["request_anchors"]
+        assert all(case["request"] != anchor["request"] for anchor in anchors)
+
+
+def test_ivc_rejects_authored_request_outside_optional_calibrated_domain() -> None:
+    package = _package()
+    design = _design()
+    private = _private_inputs(design)
+    suite = _suite(design, private)
+
+    outside_domain = json.loads(json.dumps(suite))
+    request_field = next(iter(outside_domain["cases"][0]["request"]))
+    outside_domain["cases"][0]["request"][request_field] = 0.5
+    with pytest.raises(IVCError, match="private request_domain"):
+        validate_capability_validation_suite(
+            outside_domain,
+            package=package,
+            design=design,
+            private_inputs=private,
+        )
+
+
+def test_ivc_authors_from_sealed_schema_when_private_domain_is_absent() -> None:
+    package = _package()
+    design = _design()
+    private = _private_inputs(design)
+    for instance in private["instances"]:
+        instance.pop("request_domain")
+        instance.pop("request_anchors")
+    suite = _suite(design, private)
+
+    canonical = validate_capability_validation_suite(
+        suite,
+        package=package,
+        design=design,
+        private_inputs=private,
+    )
+
+    assert canonical["cases"] == suite["cases"]
+
+
+def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
+    package = _package()
+    design = _design()
+    private = _private_inputs(design)
+    suite = _suite(design, private)
 
     invalid_request = json.loads(json.dumps(suite))
     invalid_request["cases"][0]["request"] = {"task_id": "task-a"}
     with pytest.raises(IVCError, match="request"):
         validate_capability_validation_suite(
             invalid_request, package=package, design=design, private_inputs=private
-        )
-
-    calibrated_mismatch = json.loads(json.dumps(suite))
-    request_field = next(iter(calibrated_mismatch["cases"][0]["request"]))
-    calibrated_mismatch["cases"][0]["request"][request_field] = 0.5
-    with pytest.raises(IVCError, match="private calibration request"):
-        validate_capability_validation_suite(
-            calibrated_mismatch,
-            package=package,
-            design=design,
-            private_inputs=private,
         )
 
     duplicate_requests = json.loads(json.dumps(suite))
@@ -590,14 +651,9 @@ def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
     ]
     pair[1]["request"] = json.loads(json.dumps(pair[0]["request"]))
     duplicate_private = json.loads(json.dumps(private))
-    boundary_instance = next(
-        instance
-        for instance in duplicate_private["instances"]
-        if instance["instance_id"] == pair[1]["instance_id"]
-    )
-    boundary_instance["public_arguments"]["request"] = json.loads(
-        json.dumps(pair[0]["request"])
-    )
+    for instance in duplicate_private["instances"]:
+        instance.pop("request_domain")
+        instance.pop("request_anchors")
     with pytest.raises(IVCError, match="requests must differ"):
         validate_capability_validation_suite(
             duplicate_requests,
@@ -618,6 +674,16 @@ def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
     with pytest.raises(IVCError, match="private instance role"):
         validate_capability_validation_suite(
             wrong_role, package=package, design=design, private_inputs=private
+        )
+
+    wrong_profile = json.loads(json.dumps(private))
+    wrong_profile["bindings"][0]["calibration_profile"] = "another-profile"
+    with pytest.raises(IVCError, match="calibration_profile differ"):
+        validate_capability_validation_suite(
+            suite,
+            package=package,
+            design=design,
+            private_inputs=wrong_profile,
         )
 
 

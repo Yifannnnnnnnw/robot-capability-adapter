@@ -125,21 +125,23 @@ def _merged_private_index(
     """Load the private namespace appropriate to this validation protocol."""
 
     capability_dir = package.root / "capability_validation" / "private"
-    if (
-        capability_v2
-        and capability_dir.is_dir()
-        and field in {"instances", "bindings"}
-    ):
+    capability_paths = [
+        capability_dir / f"{name}.json"
+        for name in ("instances", "bindings", "guards")
+    ]
+    present_capability_paths = [path for path in capability_paths if path.is_file()]
+    if capability_v2 and present_capability_paths and len(present_capability_paths) != 3:
+        missing = [path.name for path in capability_paths if not path.is_file()]
+        raise HarnessError(
+            "package-local IVC context is incomplete; missing "
+            f"capability_validation/private/{', '.join(missing)}"
+        )
+    if capability_v2 and len(present_capability_paths) == 3:
         directories = [capability_dir]
-    elif capability_v2 and capability_dir.is_dir() and field == "guards":
-        directories = [
-            directory
-            for directory in (package.private_dir, capability_dir)
-            if directory.is_dir()
-        ]
     else:
-        # Task Demo and legacy validation must not consume capability-bank
-        # records.  Capability-v2 falls back here only when no bank exists.
+        # A capability-v2 suite may use the package's existing trusted task
+        # fixtures as private execution contexts.  It still exposes only a native
+        # capability request to candidate code below.
         directories = [package.private_dir] if package.private_dir.is_dir() else []
     if not directories:
         raise HarnessError("package has no private Harness records")
@@ -155,6 +157,46 @@ def _merged_private_index(
             )
         result.update(records)
     return result
+
+
+def _capability_uses_task_context(package: RobotPackage) -> bool:
+    capability_dir = package.root / "capability_validation" / "private"
+    paths = [
+        capability_dir / f"{name}.json"
+        for name in ("instances", "bindings", "guards")
+    ]
+    present = [path for path in paths if path.is_file()]
+    if present and len(present) != len(paths):
+        missing = [path.name for path in paths if not path.is_file()]
+        raise HarnessError(
+            "package-local IVC context is incomplete; missing "
+            f"capability_validation/private/{', '.join(missing)}"
+        )
+    return not present
+
+
+def _task_context_arguments(
+    private_arguments: Any,
+    *,
+    authored_request: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Wrap an authored native request for trusted task-context consumers."""
+
+    if not isinstance(private_arguments, Mapping):
+        raise HarnessError(
+            "task execution context public_arguments must be an object"
+        )
+    private_request = private_arguments.get("request")
+    if not isinstance(private_request, Mapping):
+        raise HarnessError("task execution context requires a private request envelope")
+    task_id = private_request.get("task_id")
+    if not isinstance(task_id, str) or not task_id:
+        raise HarnessError("task execution context requires a private task_id")
+    trusted_request = dict(private_request)
+    trusted_request["task_parameters"] = dict(authored_request)
+    trusted_arguments = dict(private_arguments)
+    trusted_arguments["request"] = trusted_request
+    return trusted_arguments
 
 
 def _worker_environment(source_root: Path) -> dict[str, str]:
@@ -572,6 +614,9 @@ def run_private_suite(
         and suite.get("capability_protocol_version") == "capability-v2"
     )
     reference_execution = trusted_reference_driver or is_package_reference
+    capability_uses_task_context = (
+        _capability_uses_task_context(package) if is_capability_v2 else False
+    )
     if is_b1_suite:
         # Experiment 1 cases are intentionally self-contained.  They must not
         # inherit task/private IDs or mutable package-side validation inputs.
@@ -672,21 +717,68 @@ def run_private_suite(
             if is_b1_suite:
                 public_arguments = {"request": dict(case["request"])}
                 measurement_arguments = public_arguments
+                report_arguments = public_arguments
             elif is_capability_v2:
                 capability_request = case.get("request")
                 if not isinstance(capability_request, Mapping):
                     raise HarnessError("capability-v2 case request must be an object")
-                candidate_arguments = {"request": dict(capability_request)}
-                public_arguments = (
-                    private_public_arguments
-                    if reference_execution
-                    else candidate_arguments
-                )
-                measurement_arguments = candidate_arguments
+                # The capability-v2 execution boundary is deliberately native:
+                # candidate code receives only the request authored by IVC.  A
+                # trusted task binding or package reference may require a
+                # private adapter envelope, but that envelope is never used for
+                # candidate execution or public trial reporting.
+                authored_arguments = {"request": dict(capability_request)}
+                if capability_uses_task_context:
+                    trusted_task_arguments = _task_context_arguments(
+                        private_public_arguments,
+                        authored_request=capability_request,
+                    )
+                    public_arguments = (
+                        trusted_task_arguments
+                        if reference_execution
+                        else authored_arguments
+                    )
+                    # Legacy task bindings resolve paths beneath
+                    # request.task_parameters.  The values in that mapping are
+                    # nevertheless the authored request, not anchor values.
+                    measurement_arguments = trusted_task_arguments
+                else:
+                    reference_arguments = variant.get(
+                        "reference_arguments", instance.get("reference_arguments")
+                    )
+                    if reference_execution and reference_arguments is not None:
+                        if not isinstance(reference_arguments, Mapping):
+                            raise HarnessError(
+                                "private capability reference_arguments must be an object"
+                            )
+                        public_arguments = dict(reference_arguments)
+                    else:
+                        public_arguments = authored_arguments
+                    measurement_arguments = authored_arguments
+                report_arguments = authored_arguments
             else:
                 public_arguments = private_public_arguments
                 measurement_arguments = public_arguments
+                report_arguments = public_arguments
             reset = variant.get("reset", instance.get("reset", {"kind": "default"}))
+            if is_b1_suite:
+                preinvoke = case.get("preinvoke")
+                framework_events = case.get("framework_events", [])
+            elif is_capability_v2:
+                # These are trusted fixture mechanics.  IVC-authored cases may
+                # select a private instance, but cannot author executable setup
+                # or framework callbacks themselves.
+                preinvoke = variant.get("preinvoke", instance.get("preinvoke"))
+                framework_events = variant.get(
+                    "framework_events", instance.get("framework_events", [])
+                )
+            else:
+                preinvoke = None
+                framework_events = []
+            if preinvoke is not None and not isinstance(preinvoke, Mapping):
+                raise HarnessError("private preinvoke must be an object")
+            if not isinstance(framework_events, list):
+                raise HarnessError("private framework_events must be a list")
             trial_id = f"{case['case_id']}-r{repetition:02d}"
             video_path = destination / "videos" / f"{trial_id}.mp4"
             video_path.parent.mkdir(parents=True, exist_ok=True)
@@ -696,10 +788,8 @@ def run_private_suite(
                 "method_name": case["method_name"],
                 "public_arguments": public_arguments,
                 "reset": reset,
-                "preinvoke": case.get("preinvoke") if is_b1_suite else None,
-                "framework_events": (
-                    case.get("framework_events", []) if is_b1_suite else []
-                ),
+                "preinvoke": preinvoke,
+                "framework_events": framework_events,
                 "max_steps": int(instance.get("max_steps", 10000)),
                 "max_sim_time_s": float(case["timeout_sim_s"]),
                 "sample_hz": float(
@@ -867,7 +957,7 @@ def run_private_suite(
                 "case_role": case.get("case_role"),
                 "worker_completed": bool(worker.get("worker_completed")),
                 "method_invoked": bool(worker.get("method_invoked")),
-                "public_arguments": public_arguments,
+                "public_arguments": report_arguments,
                 "measurement_value": measurement_value,
                 "measurement_error": measurement_error,
                 "criterion_passed": False,

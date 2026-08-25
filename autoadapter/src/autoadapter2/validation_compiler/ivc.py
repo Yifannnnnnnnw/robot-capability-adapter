@@ -1,11 +1,13 @@
 """Implementation-blind capability-v2 Independent Validation Compiler.
 
-IVC receives a sealed capability design and Framework-private calibration
-inputs.  It never receives candidate Driver source, a trace, or Repair
-history.  The model chooses references inside those private inputs; the
-deterministic audit then requires exactly one ``nominal`` and one
-``calibrated_boundary`` case per sealed capability and copies each criterion
-without changing its numeric values.
+IVC receives a sealed capability design and Framework-private execution
+contexts.  It never receives candidate Driver source, a trace, or Repair
+history.  The model references private fixtures but authors the task-neutral
+request in each case.  The deterministic audit then requires exactly one
+``nominal`` and one ``calibrated_boundary`` case per sealed capability,
+checks every request against both the sealed schema and its calibrated private
+domain when one is supplied, and copies each criterion without changing its
+numeric values.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ from autoadapter2.capability_design.protocol import (
     CapabilityProtocolError,
     capability_records,
     json_copy,
+    validate_schema_definition,
     validate_schema_value,
 )
 from autoadapter2.driver_synthesis.interactive import IsolatedArtifactSession
@@ -44,19 +47,22 @@ TASK_DEMO_TASK_COUNT = PRIVATE_CASE_SAMPLE_SIZE
 
 IVC_SYSTEM_PROMPT = """You are the implementation-blind capability-v2 Independent Validation Compiler.
 Compile the sealed Capability Design into one complete private validation suite. You see only the
-sealed capability contracts, Framework-private instances/bindings/guards, and sanitized public
-capability-validation examples. You cannot see and must not infer candidate Driver source,
+sealed capability contracts, Framework-private execution contexts/bindings/guards, and sanitized
+public capability-validation examples. You cannot see and must not infer candidate Driver source,
 generated traces, Repair history, or a candidate verdict.
 
 Return one JSON object with artifact_type='capability_validation_suite', schema_version='2.0',
 capability_protocol_version='capability-v2', the supplied package identity, and exactly two cases
 for every sealed capability: one case_role='nominal' and one case_role='calibrated_boundary'.
-Choose only supplied private IDs. Each case has a task-neutral request that exactly satisfies the
-sealed request_schema; the nominal and calibrated-boundary requests for one capability must differ.
-Copy the sealed capability criteria and every referenced numeric value exactly into each case. Keep
-private bindings, guards, repetitions, and timeout references unchanged. Set
-whole_suite_aggregation={'kind':'all_cases'}. Do not add task mappings, Driver or Repair material,
-implementation advice, a task plan, or a self-reported verdict."""
+Choose only supplied private scene/reset context, binding, and guard IDs, but author each complete
+task-neutral request yourself. Supplied request_anchors are calibration evidence, not prescribed
+cases and need not be copied. Every authored request must satisfy the sealed request_schema and,
+when the selected private instance supplies one, its request_domain. A private context without a
+request_domain does not prescribe a request. The nominal and calibrated-boundary requests for one
+capability must differ. Copy the sealed capability criteria and every referenced numeric value
+exactly into each case. Keep private bindings, guards, repetitions, and timeout references unchanged.
+Set whole_suite_aggregation={'kind':'all_cases'}. Do not add task mappings, task IDs, Driver or Repair
+material, implementation advice, a task plan, or a self-reported verdict."""
 
 
 class IVCError(ValueError):
@@ -156,21 +162,36 @@ def _private_inputs_from_package(package: Any) -> dict[str, Any]:
         package_root = Path(package_root)
     if not isinstance(package_root, Path):
         raise IVCError(
-            "package-local capability calibration bank is required at "
-            "capability_validation/private, but the package root is unavailable"
+            "a package-private IVC context requires an available package root"
         )
     capability_dir = package_root / "capability_validation" / "private"
-    required_paths = {
-        name: capability_dir / f"{name}.json"
-        for name in ("instances", "bindings", "guards")
+    task_dir = package_root / "tasks" / "private"
+    names = ("instances", "bindings", "guards")
+    capability_paths = {
+        name: capability_dir / f"{name}.json" for name in names
     }
-    missing = [path.name for path in required_paths.values() if not path.is_file()]
-    if missing:
+    present_capability = {
+        name for name, path in capability_paths.items() if path.is_file()
+    }
+    if present_capability and present_capability != set(names):
+        missing = sorted(set(names) - present_capability)
         raise IVCError(
-            "package-local capability calibration bank is incomplete; missing "
-            f"capability_validation/private/{', '.join(missing)}. "
-            "Legacy tasks/private records cannot be used for capability-v2 IVC"
+            "package-local IVC context is incomplete; missing "
+            "capability_validation/private/"
+            + ", ".join(f"{name}.json" for name in missing)
         )
+    if present_capability:
+        required_paths = capability_paths
+        calibration_namespace = "capability"
+    else:
+        required_paths = {name: task_dir / f"{name}.json" for name in names}
+        missing = [path.name for path in required_paths.values() if not path.is_file()]
+        if missing:
+            raise IVCError(
+                "package has no complete private IVC context; missing "
+                f"tasks/private/{', '.join(missing)}"
+            )
+        calibration_namespace = "task"
 
     id_fields = {
         "instances": "instance_id",
@@ -179,9 +200,10 @@ def _private_inputs_from_package(package: Any) -> dict[str, Any]:
     }
     result: dict[str, Any] = {}
     for name, id_field in id_fields.items():
-        # Capability-v2 calibration is a closed, package-local namespace.
-        # Task Demo records contain task envelopes (including task_id) and are
-        # not a substitute for native capability requests or calibration.
+        # The physical context is a closed, package-local namespace.  When no
+        # dedicated capability context exists, the existing task fixtures are
+        # trusted scene/reset/binding inputs; they never prescribe the native
+        # capability request authored by IVC.
         documents = [_read_object(required_paths[name])]
         merged: list[dict[str, Any]] = []
         seen: set[str] = set()
@@ -207,7 +229,11 @@ def _private_inputs_from_package(package: Any) -> dict[str, Any]:
                     raise IVCError(f"private {name} contains conflicting ID {identifier!r}")
                 seen.add(identifier)
                 merged.append(json_copy(dict(record), label=f"private {name}"))
-        result[name] = {**identity, name: merged}
+        result[name] = {
+            **identity,
+            "calibration_namespace": calibration_namespace,
+            name: merged,
+        }
     return result
 
 
@@ -340,6 +366,91 @@ def _same_json_value(left: Any, right: Any) -> bool:
         return False
 
 
+def _calibration_profile(record: Mapping[str, Any], *, label: str, where: str) -> str | None:
+    profile = record.get("calibration_profile")
+    if profile is None:
+        return None
+    if not isinstance(profile, str) or not profile.strip():
+        raise IVCError(
+            f"{where} selected private {label} has an invalid calibration_profile"
+        )
+    return profile
+
+
+def _validate_authored_request_context(
+    request: Any,
+    *,
+    instance: Mapping[str, Any],
+    sealed_schema: Mapping[str, Any],
+    where: str,
+) -> None:
+    """Validate an IVC-authored request against one private execution context."""
+
+    scene_entrypoint = instance.get("scene_entrypoint")
+    if not isinstance(scene_entrypoint, str) or not scene_entrypoint.strip():
+        raise IVCError(f"{where} selected private instance has no scene_entrypoint")
+    if not isinstance(instance.get("reset"), Mapping):
+        raise IVCError(f"{where} selected private instance has no reset fixture")
+
+    raw_domain = instance.get("request_domain")
+    domain: Mapping[str, Any] | None = None
+    if raw_domain is not None:
+        if not isinstance(raw_domain, Mapping):
+            raise IVCError(f"{where} selected private instance request_domain must be an object")
+        try:
+            domain = validate_schema_definition(
+                raw_domain,
+                path=f"{where}.private_request_domain",
+            )
+            validate_schema_value(
+                request,
+                domain,
+                path=f"{where}.request against private request_domain",
+            )
+        except CapabilityProtocolError as exc:
+            raise IVCError(str(exc)) from None
+
+    anchors = instance.get("request_anchors")
+    if anchors is None:
+        return
+    if not isinstance(anchors, list) or not anchors:
+        raise IVCError(
+            f"{where} selected private instance request_anchors must be a non-empty array when supplied"
+        )
+    seen_anchor_ids: set[str] = set()
+    for index, anchor in enumerate(anchors):
+        anchor_where = f"{where}.private_request_anchors[{index}]"
+        if not isinstance(anchor, Mapping):
+            raise IVCError(f"{anchor_where} must be an object")
+        anchor_id = anchor.get("anchor_id")
+        if (
+            not isinstance(anchor_id, str)
+            or not anchor_id.strip()
+            or anchor_id in seen_anchor_ids
+        ):
+            raise IVCError(f"{anchor_where}.anchor_id is invalid or duplicated")
+        seen_anchor_ids.add(anchor_id)
+        source_ref = anchor.get("source_ref")
+        if not isinstance(source_ref, str) or not source_ref.strip():
+            raise IVCError(f"{anchor_where}.source_ref must be non-empty text")
+        if "request" not in anchor:
+            raise IVCError(f"{anchor_where}.request is required")
+        try:
+            validate_schema_value(
+                anchor["request"],
+                sealed_schema,
+                path=f"{anchor_where}.request against sealed request_schema",
+            )
+            if domain is not None:
+                validate_schema_value(
+                    anchor["request"],
+                    domain,
+                    path=f"{anchor_where}.request against private request_domain",
+                )
+        except CapabilityProtocolError as exc:
+            raise IVCError(str(exc)) from None
+
+
 def _normalise_case_criteria(case: Mapping[str, Any], capability: Mapping[str, Any]) -> dict[str, Any]:
     result = json_copy(dict(case), label="validation case")
     expected = _criterion_list(capability, where="sealed capability")
@@ -410,10 +521,11 @@ def validate_capability_validation_suite(
         if not _same_criteria(case, capability, where=where):
             raise IVCError(f"{where} changes sealed criterion or numeric values")
         request = case.get("request")
+        sealed_request_schema = capability.get("request_schema", {})
         try:
             validate_schema_value(
                 request,
-                capability.get("request_schema", {}),
+                sealed_request_schema,
                 path=f"{where}.request",
             )
         except CapabilityProtocolError as exc:
@@ -426,16 +538,12 @@ def validate_capability_validation_suite(
             raise IVCError(f"{where}.binding_id is not a supplied private binding")
         instance = instances[instance_id]
         binding = bindings[binding_id]
-        private_arguments = instance.get("public_arguments")
-        private_request = (
-            private_arguments.get("request")
-            if isinstance(private_arguments, Mapping)
-            else None
+        _validate_authored_request_context(
+            request,
+            instance=instance,
+            sealed_schema=sealed_request_schema,
+            where=where,
         )
-        if not _same_json_value(request, private_request):
-            raise IVCError(
-                f"{where}.request differs from the selected private calibration request"
-            )
         clause_bindings = instance.get("clause_bindings")
         if (
             not isinstance(clause_bindings, Mapping)
@@ -449,6 +557,25 @@ def validate_capability_validation_suite(
             declared_role = record.get("case_role")
             if declared_role is not None and declared_role != role:
                 raise IVCError(f"{where} changes the private {label} role")
+        instance_profile = _calibration_profile(
+            instance,
+            label="instance",
+            where=where,
+        )
+        binding_profile = _calibration_profile(
+            binding,
+            label="binding",
+            where=where,
+        )
+        if (instance_profile is None) != (binding_profile is None):
+            raise IVCError(
+                f"{where} selected private instance and binding must either both declare "
+                "calibration_profile or both omit it"
+            )
+        if instance_profile is not None and instance_profile != binding_profile:
+            raise IVCError(
+                f"{where} selected private instance and binding calibration_profile differ"
+            )
         guard_ids = case.get("guard_ids")
         if not isinstance(guard_ids, list) or any(not isinstance(item, str) or item not in guards for item in guard_ids):
             raise IVCError(f"{where}.guard_ids references invalid private guards")
@@ -478,9 +605,10 @@ def validate_capability_validation_suite(
         for role in IVC_CASE_ROLES:
             if roles.get((capability_id, role), 0) != 1:
                 raise IVCError(f"capability {capability_id!r} must have exactly one {role} case")
-        if requests[(capability_id, "nominal")] == requests[
-            (capability_id, "calibrated_boundary")
-        ]:
+        if _same_json_value(
+            requests[(capability_id, "nominal")],
+            requests[(capability_id, "calibrated_boundary")],
+        ):
             raise IVCError(
                 f"capability {capability_id!r} nominal and calibrated-boundary requests must differ"
             )
@@ -530,12 +658,17 @@ def build_ivc_inputs(
             ],
             "copy_method_name_from_sealed_design": True,
             "copy_criteria_from_sealed_design_exactly": True,
-            "copy_request_from_selected_instance_public_arguments_request_exactly": True,
+            "ivc_authors_complete_request_for_each_case": True,
+            "validate_authored_request_against_sealed_request_schema": True,
+            "validate_authored_request_against_selected_instance_request_domain_when_supplied": True,
+            "request_domain_format": "closed capability-v2 request schema",
+            "request_anchors_are_calibration_evidence_not_prescribed_cases": True,
             "copy_instance_execution_fields_when_present": [
                 "repetitions",
                 "timeout_sim_s",
             ],
             "instance_binding_guard_ids_must_be_supplied": True,
+            "instance_and_binding_calibration_profile_must_match_when_supplied": True,
             "nominal_and_boundary_requests_must_differ": True,
         },
         "sealed_capability_design": json_copy(dict(design), label="sealed_capability_design"),
@@ -748,7 +881,8 @@ def run_ivc(
                 "\nCorrect the previous artifact only enough to satisfy the deterministic audit. "
                 "Keep exactly one nominal and one calibrated_boundary case per capability and "
                 "copy every criterion value exactly; each pair must use distinct task-neutral "
-                "requests that satisfy the sealed request schema."
+                "requests that satisfy the sealed request schema and any request_domain supplied "
+                "by the selected private instance. Request anchors are evidence, not prescribed cases."
             )
             continue
         if artifact_path is not None:

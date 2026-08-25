@@ -126,8 +126,10 @@ mapping, `task_support`, oracle plan or concrete call programme.
 
 IVC sees the sealed design, Framework-private instances/bindings/guards and
 sanitised validation examples. It never sees candidate code, Repair history or
-candidate verdicts. It creates exactly one nominal and one calibrated-boundary
-case per capability, copies the sealed public criteria exactly, passes the
+candidate verdicts. It authors the exact task-neutral request and complete case
+for exactly one nominal and one calibrated-boundary case per capability; private
+instances provide trusted execution context, not pre-authored cases. IVC copies
+the sealed public criteria exactly, passes the
 Framework schema/count/binding audit and then passes the private package
 reference-driver positive control before sealing.
 

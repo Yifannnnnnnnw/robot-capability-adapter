@@ -66,6 +66,16 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
                     "task_id": "private-task-identifier",
                     "clause_bindings": {"task": "legacy-task-binding"},
                     "guard_ids": ["control", "state", "canonical"],
+                    "scene_entrypoint": "assets/scene.xml",
+                    "public_arguments": {
+                        "request": {
+                            "task_id": "private-task-identifier",
+                            "task_parameters": {
+                                "target_position_m": [0.4, 0.0, 0.2],
+                                "max_duration_s": 1.0,
+                            },
+                        }
+                    },
                     "repetitions": 1,
                     "timeout_sim_s": 1.0,
                 }
@@ -74,7 +84,15 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
     )
     _write(
         legacy / "bindings.json",
-        {"bindings": [{"binding_id": "legacy-task-binding", "kind": "unused"}]},
+        {
+            "bindings": [
+                {
+                    "binding_id": "legacy-task-binding",
+                    "kind": "b1_contract",
+                    "parameters": {"contract_id": "A1"},
+                }
+            ]
+        },
     )
     _write(legacy / "guards.json", {"guards": guards})
     _write(
@@ -86,12 +104,43 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
                     "capability_id": "cap-a",
                     "case_role": "nominal",
                     "scene_entrypoint": "assets/scene.xml",
-                    "public_arguments": {
+                    "reset": {"kind": "trusted-capability-reset"},
+                    "request_anchors": [
+                        {
+                            "anchor_id": "private-anchor",
+                            "request": {
+                                "target_position_m": [0.4, 0.0, 0.2],
+                                "max_duration_s": 2.0,
+                            },
+                        }
+                    ],
+                    # A private reference adapter may still dispatch the
+                    # package reference by task.  Candidate execution must
+                    # never receive this envelope.
+                    "reference_arguments": {
                         "request": {
                             "task_id": "SECRET-private-task",
                             "task_parameters": {"target": [0.4, 0.0, 0.2]},
                         }
                     },
+                    # Retain a legacy-looking honeypot to prove capability-v2
+                    # does not use public_arguments as an implicit reference
+                    # envelope.
+                    "public_arguments": {
+                        "request": {
+                            "task_id": "DO-NOT-USE",
+                            "task_parameters": {"target": [9.9, 9.9, 9.9]},
+                        }
+                    },
+                    "preinvoke": {
+                        "duration_s": 0.1,
+                        "required_contact_pairs": [
+                            {"geom1": "trusted-a", "geom2": "trusted-b"}
+                        ],
+                    },
+                    "framework_events": [
+                        {"kind": "trusted-private-event", "step": 2}
+                    ],
                     "clause_bindings": {"criterion": "cap-a-binding"},
                     "guard_ids": ["cap-control", "cap-state", "cap-canonical"],
                     "repetitions": 1,
@@ -208,6 +257,17 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
                     "target_position_m": [0.45, 0.0, 0.2],
                     "max_duration_s": 2.0,
                 },
+                # These are model-authored case fields and must not control
+                # framework setup even if suite validation is bypassed.
+                "preinvoke": {
+                    "duration_s": 9.9,
+                    "required_contact_pairs": [
+                        {"geom1": "case-a", "geom2": "case-b"}
+                    ],
+                },
+                "framework_events": [
+                    {"kind": "untrusted-case-event", "step": 99}
+                ],
                 "criteria": [criterion],
             }
         ],
@@ -245,6 +305,16 @@ def test_capability_candidate_receives_only_native_request_and_plural_criterion_
         )
 
     assert payloads[0]["public_arguments"] == {"request": suite["cases"][0]["request"]}
+    assert payloads[0]["reset"] == {"kind": "trusted-capability-reset"}
+    assert payloads[0]["preinvoke"] == {
+        "duration_s": 0.1,
+        "required_contact_pairs": [{"geom1": "trusted-a", "geom2": "trusted-b"}],
+    }
+    assert payloads[0]["framework_events"] == [
+        {"kind": "trusted-private-event", "step": 2}
+    ]
+    assert "private-anchor" not in json.dumps(payloads[0]["public_arguments"])
+    assert "SECRET-private-task" not in json.dumps(payloads[0]["public_arguments"])
     assert "task_id" not in json.dumps(report)
     assert resolver.call_count == 1
     assert report["validation_passed"] is True
@@ -289,11 +359,100 @@ def test_trusted_reference_keeps_private_task_dispatch_but_measures_native_reque
         )
 
     assert payloads[0]["public_arguments"]["request"]["task_id"] == "SECRET-private-task"
+    assert "DO-NOT-USE" not in json.dumps(payloads[0]["public_arguments"])
     assert measurement_arguments == [{"request": suite["cases"][0]["request"]}]
+    assert report["trials"][0]["public_arguments"] == {
+        "request": suite["cases"][0]["request"]
+    }
+    assert "SECRET-private-task" not in json.dumps(report)
     assert report["validation_passed"] is True
 
 
-def test_private_capability_bank_is_a_closed_package_local_namespace(tmp_path: Path) -> None:
+def test_task_context_wraps_authored_request_only_for_trusted_consumers(
+    tmp_path: Path,
+) -> None:
+    package, candidate, design, suite = _fixture(tmp_path)
+    capability_dir = package.root / "capability_validation" / "private"
+    for name in ("instances.json", "bindings.json", "guards.json"):
+        (capability_dir / name).unlink()
+
+    case = suite["cases"][0]
+    case["instance_id"] = "legacy-task-instance"
+    case["binding_id"] = "legacy-task-binding"
+    case["guard_ids"] = ["control", "state", "canonical"]
+
+    candidate_payloads: list[dict[str, Any]] = []
+    reference_payloads: list[dict[str, Any]] = []
+    measurement_arguments: list[Mapping[str, Any]] = []
+
+    def measured(
+        _binding: Mapping[str, Any],
+        *,
+        evidence: Mapping[str, Any],
+        public_arguments: Mapping[str, Any],
+    ) -> float:
+        del evidence
+        measurement_arguments.append(public_arguments)
+        return 1.0
+
+    with (
+        mock.patch.object(
+            harness_runner,
+            "_run_worker",
+            side_effect=lambda payload, **_kwargs: (
+                candidate_payloads.append(dict(payload)) or _worker_result()
+            ),
+        ),
+        mock.patch.object(harness_runner, "measure", side_effect=measured),
+    ):
+        candidate_report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=candidate,
+            condition="from-scratch",
+            output_dir=tmp_path / "task-context-candidate",
+            record_video=False,
+        )
+
+    with (
+        mock.patch.object(
+            harness_runner,
+            "_run_worker",
+            side_effect=lambda payload, **_kwargs: (
+                reference_payloads.append(dict(payload)) or _worker_result()
+            ),
+        ),
+        mock.patch.object(harness_runner, "measure", side_effect=measured),
+    ):
+        reference_report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=candidate,
+            condition="from-scratch",
+            output_dir=tmp_path / "task-context-reference",
+            record_video=False,
+            trusted_reference_driver=True,
+        )
+
+    authored_arguments = {"request": case["request"]}
+    trusted_arguments = {
+        "request": {
+            "task_id": "private-task-identifier",
+            "task_parameters": case["request"],
+        }
+    }
+    assert candidate_payloads[0]["public_arguments"] == authored_arguments
+    assert reference_payloads[0]["public_arguments"] == trusted_arguments
+    assert measurement_arguments == [trusted_arguments, trusted_arguments]
+    assert candidate_report["trials"][0]["public_arguments"] == authored_arguments
+    assert reference_report["trials"][0]["public_arguments"] == authored_arguments
+    assert "private-task-identifier" not in json.dumps(candidate_report)
+    assert "private-task-identifier" not in json.dumps(reference_report)
+
+
+def test_private_capability_context_is_a_closed_package_local_namespace(tmp_path: Path) -> None:
     package, _candidate, _design, _suite = _fixture(tmp_path)
     merged = _private_inputs_from_package(package)
     assert {item["instance_id"] for item in merged["instances"]["instances"]} == {
@@ -346,20 +505,19 @@ def test_private_capability_bank_is_a_closed_package_local_namespace(tmp_path: P
         )
 
 
-def test_ivc_rejects_legacy_task_private_fallback_before_model_call(
+def test_ivc_rejects_partial_capability_context_before_model_call(
     tmp_path: Path,
 ) -> None:
     package, _candidate, design, _suite = _fixture(tmp_path)
     capability_dir = package.root / "capability_validation" / "private"
-    for name in ("instances.json", "bindings.json", "guards.json"):
-        (capability_dir / name).unlink()
+    (capability_dir / "guards.json").unlink()
 
     client = mock.Mock()
     with pytest.raises(
         IVCError,
         match=(
-            "package-local capability calibration bank is incomplete.*"
-            "Legacy tasks/private records cannot be used"
+            "package-local IVC context is incomplete.*"
+            "capability_validation/private/guards.json"
         ),
     ):
         run_ivc(client, package=package, design=design)

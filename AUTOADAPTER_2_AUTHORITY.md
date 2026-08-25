@@ -8,7 +8,21 @@
 > **Effective date / 生效日期：** 2026-08-25<br>
 > **Current direction / 当前方向：** Direct-MuJoCo is the default mainline; real-SDK and Translation work is an independent extension / Direct-MuJoCo 是默认主线；真实 SDK 与 Translation 工作是独立扩展线
 
-Revision `0.20.0` replaces the unintegrated `primitive-v1` draft with the one
+Revision `0.20.0` clarifies the IVC authorship boundary. IVC authors each exact
+task-neutral nominal and calibrated-boundary request and the complete private
+suite; it does not select or copy a pre-authored case. Framework-private
+instances supply only trusted physical execution context such as scene/reset,
+measurement binding, guards and optional calibrated request domains or
+anchors. The Harness passes the IVC-authored native request to a candidate and
+keeps any task envelope or reference adapter private.
+
+**中文辅助说明。** 修订 `0.20.0` 明确 IVC 的创作边界：IVC 自己写每个 nominal 与
+calibrated-boundary case 的精确 task-neutral request 及完整私有 suite，不选择或复制预写 case。
+Framework 私有 instance 只提供可信 scene/reset、measurement binding、guard，以及可选的已校准
+request domain/anchor；Harness 对 candidate 只传 IVC 写出的 native request，task envelope 或
+reference adapter 始终保持私有。
+
+The same revision replaces the unintegrated `primitive-v1` draft with the one
 canonical `capability-v2` mainline and restores the observable AutoAdapter 1.0
 file-workspace semantics from commit
 `585eb1f1fde33f17f5f9a1e169a18dd41f97b586` inside the existing AutoAdapter 2.0
@@ -1858,8 +1872,8 @@ For every designed capability, the IVC must:
    rule, or aggregation;
 3. bind the public metric semantics to trusted MuJoCo observations and Framework-owned measurement
    code;
-4. select concrete private case inputs, scene/reset state, repetitions, termination, and
-   anti-false-pass guards; and
+4. author each exact task-neutral case request while referencing concrete private scene/reset
+   state, repetitions, termination, measurement binding, and anti-false-pass guards; and
 5. produce deterministic per-case, per-capability, and whole-suite verdict rules.
 
 The IVC may preserve a TGCD threshold or make a private case stricter when justified, but
@@ -1895,8 +1909,9 @@ candidate trace、candidate 输出、Repair 历史或验证结果。
 对每项设计 capability，IVC 必须：确认恰好一个 primary contract 和最多一个有明确理由的
 robustness contract，且各自精确复制某项被覆盖 task 的来源通过标准；拒绝
 虚构、缺失、不可比较或更宽松的 metric、comparator、threshold、时间规则或 aggregation；把公开
-metric 语义绑定到可信 MuJoCo observation 和 Framework measurement 代码；选择具体私有 case
-输入、scene/reset 状态、重复次数、终止条件和 anti-false-pass guard；并生成逐 case、
+metric 语义绑定到可信 MuJoCo observation 和 Framework measurement 代码；自行写出精确且
+task-neutral 的 case request，同时引用具体私有 scene/reset 状态、重复次数、终止条件、measurement
+binding 和 anti-false-pass guard；并生成逐 case、
 逐 capability 及整套 suite 的确定性 verdict 规则。
 
 有依据时 IVC 可以保留 TGCD threshold 或让私有 case 更严格，但不能悄悄放宽被选来源义务。

@@ -60,7 +60,7 @@ def _load(path: Path) -> ModuleType:
     return module
 
 
-def test_private_bank_is_exact_h1_h3_task_neutral_projection() -> None:
+def test_private_context_keeps_h1_h3_as_evidence_anchors_not_cases() -> None:
     instances_document = _read(PRIVATE_ROOT / "instances.json")
     bindings_document = _read(PRIVATE_ROOT / "bindings.json")
     guards_document = _read(PRIVATE_ROOT / "guards.json")
@@ -96,7 +96,12 @@ def test_private_bank_is_exact_h1_h3_task_neutral_projection() -> None:
         source = source_cases[instance["source_case_id"]]
         assert instance["scene_entrypoint"] == source["scene_entrypoint"]
         assert instance["reset"] == source["reset"]
-        assert instance["public_arguments"]["request"] == source["request"]
+        assert "public_arguments" not in instance
+        assert len(instance["request_anchors"]) == 1
+        anchor = instance["request_anchors"][0]
+        assert anchor["anchor_id"] == instance["source_case_id"]
+        assert anchor["request"] == source["request"]
+        assert anchor["source_ref"].endswith(f"::{instance['source_case_id']}")
         assert instance["repetitions"] == source["repetitions"]
         assert instance["max_steps"] == source["max_steps"]
         assert instance["sample_hz"] == source["sample_hz"]
@@ -115,7 +120,7 @@ def test_private_bank_is_exact_h1_h3_task_neutral_projection() -> None:
         assert binding["kind"] == "b1_contract"
         assert binding["parameters"]["contract_id"] == profile
         validate_schema_value(
-            instance["public_arguments"]["request"],
+            anchor["request"],
             public_by_profile[profile]["request_schema"],
         )
 
@@ -124,12 +129,12 @@ def test_private_bank_is_exact_h1_h3_task_neutral_projection() -> None:
         assert set(roles) == {"nominal", "calibrated_boundary"}
         assert roles["nominal"]["instance_id"] != roles["calibrated_boundary"]["instance_id"]
         assert (
-            roles["nominal"]["public_arguments"]["request"]
-            != roles["calibrated_boundary"]["public_arguments"]["request"]
+            roles["nominal"]["request_anchors"][0]["request"]
+            != roles["calibrated_boundary"]["request_anchors"][0]["request"]
         ), profile
 
     request_keys = set().union(
-        *(_keys(instance["public_arguments"]["request"]) for instance in instances)
+        *(_keys(instance["request_anchors"][0]["request"]) for instance in instances)
     )
     assert request_keys.isdisjoint(
         {"task", "task_id", "task_parameters", "scene", "reset", "criteria"}
@@ -185,7 +190,7 @@ def test_native_renderer_uses_arbitrary_names_and_native_requests(
     }
     driver = rendered_class.__new__(rendered_class)
     for index, method in enumerate(methods, start=1):
-        request = instance_by_profile[f"A{index}"]["public_arguments"]["request"]
+        request = instance_by_profile[f"A{index}"]["request_anchors"][0]["request"]
         getattr(driver, method)(request=request)
     assert [name for name, _ in calls] == fixed_methods
     assert calls[0][1] == {"target_position_m": [0.4, 0.1, 0.2], "max_duration_s": 4.0}

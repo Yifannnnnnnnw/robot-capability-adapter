@@ -438,33 +438,35 @@ path-tracking capability 的调用参数类型；reference 文件本身仍不含
 
 ### 7.3 IVC（Independent Validation Compiler）
 
-IVC 是 implementation-blind compiler。它只使用 sealed design 与 Framework-private calibration
-records，生成每个 capability 恰好两个 cases：
+IVC 是 implementation-blind compiler。它只使用 sealed design 与 Framework-private execution
+contexts，自己写出每个 capability 恰好两个完整 cases：
 
 - `nominal`：典型有效范围；
 - `calibrated_boundary`：真实校准边界附近、仍符合 contract 的范围。
 
 这里的“脱敏示例”特指
 `references/capability_v2/ivc_examples.json` 中的 structure-only pair example：它只示范
-nominal/boundary 两个 case 应复制哪些字段、怎样选择 Framework 已提供的 instance/binding/guard ID、
-以及怎样原样复制 sealed `criteria[]`。它不含真实 ID、request、数值、threshold、task mapping、
+nominal/boundary 两个 case 应包含哪些字段、怎样引用 Framework 已提供的 scene/reset
+instance、binding 与 guard ID，以及怎样原样复制 sealed `criteria[]`。它不含真实 ID、request、数值、threshold、task mapping、
 waypoint、call sequence 或 expected verdict，因此不是候选 Driver 的 oracle。
 
 确定性审核要求 case 数量准确、capability/method 对应、criteria 原样复制、request 严格符合
-closed schema、逐 JSON 值等于所选 private calibration instance 的 request，且同一 capability 的
-nominal/boundary request 不同；instance/binding/guard IDs 来自 supplied private records、binding
+sealed closed schema；如果所引用的 private instance 还给出了真实 `request_domain`，request 也必须
+落在该 domain 内。`request_anchors` 只提供私有物理参考，既不是预写 case，也不要求 IVC 复制。
+同一 capability 的 nominal/boundary request 必须不同；instance/binding/guard IDs 来自 supplied private records、binding
 确实属于所选 instance、role/capability binding 不被改变、
 binding 声明的 metric/unit 与 sealed criterion 一致，以及 repetitions/timeout 不被弱化。审核通过后，Framework 用
 package-private reference Driver 执行完整 suite；正控失败时不
 封存 IVC artifact，而把脱敏 calibration error 返回同一 IVC conversation（仍有 turns 时可修正）。
 
-有专用 capability-calibration bank 的 package 使用两个明确分开的私有命名空间：IVC 与
-Capability Harness 的 `instances`/`bindings` 只从 `capability_validation/private/` 读取；guards
-可以与既有 task-private guards 合并，但 ID 冲突时 fail closed。Task Demo Harness 仍只读取原来的
-task-private records，不能把 capability calibration records 当作 task oracle。
+Package 可以在 `capability_validation/private/` 提供专用 capability execution context；若没有，
+IVC/Harness 使用现有 `tasks/private/` 的可信 scene/reset、binding 与 guards。两种路径都只给
+Framework 提供物理执行和测量上下文，不给 IVC 预写 request。Task Demo Harness 始终按原来的
+task-private records 执行，candidate 也始终看不到 private task ID。
 
-SO-101 `1.0.4` 的 bank 由 Exp1 fixed suite v6 的 A1--A6 `H1`/`H3` 关系校准成 12 个
-nominal/boundary instances 和 6 个 trusted `b1_contract` bindings。其 native reference renderer
+SO-101 `1.0.4` 的专用 context 保留 Exp1 fixed suite v6 的 A1--A6 `H1`/`H3` 场景、reset 与
+物理参考 anchors，共 12 个 nominal/boundary fixtures 和 6 个 trusted `b1_contract` bindings；
+最终 request 仍由本次 IVC 写出。其 native reference renderer
 接受 3--6 项已知 profile 子集，但每项 request-schema 物理签名与 criterion metric/unit 必须唯一
 匹配 A1--A6 之一；随后把 TGCD 的 method names 包装到 fixed task-blind capability Driver。未知、
 重复、混合新旧协议或其他 open-world schema 都会 fail closed，不能据此声称任意 TGCD design 已被
@@ -802,11 +804,11 @@ runs/<run-id>/
 
 ### 11.4 Reference failure
 
-IVC private reference positive control 是 suite seal gate。它验证 Framework、case binding、scene、
+正式 run 中，IVC private reference positive control 是 suite seal gate。它验证 Framework、case binding、scene、
 reference Driver 和 Harness 的组合，不是模型 candidate 成绩。正控失败时 candidate generation 不应
-开始；错误归于 IVC/reference calibration 路径。当前 `full` CLI 和 scoped experiment runners 不提供
-skip/reuse 参数，始终运行 fresh private positive control。底层 Python API 保留的 diagnostic-only skip
-参数在 `formal=true` 时 fail closed；任何这种低层诊断记录都必须是 `skipped=true`、有 reason、
+开始；错误归于 IVC/reference calibration 路径。通用 `full` CLI 不提供 skip 参数；本项目的显式
+`formal=false` Sonnet/DeepSeek diagnostic runner 可以调用底层 diagnostic-only skip，而 scoped formal
+runner 不允许跳过。任何 skip 记录都必须是 `skipped=true`、有 reason、
 `passed=false`，且不能进入正式 denominator。
 
 ### 11.5 Partial diagnostic

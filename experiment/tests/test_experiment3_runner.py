@@ -47,6 +47,13 @@ def _transport() -> dict[str, Any]:
     }
 
 
+def _passing_ivc_context_check() -> dict[str, Any]:
+    return {
+        "passed": True,
+        "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
+    }
+
+
 def _evidence(
     tmp_path: Path, label: str, retained: dict[str, Any]
 ) -> dict[str, Any]:
@@ -338,6 +345,109 @@ def test_readiness_rejects_passed_evidence_with_the_wrong_semantic_scope(
         runner.validate_executable_preflight(manifest, mainline_root=tmp_path)
 
 
+def test_preflight_loads_all_package_private_ivc_contexts_before_package_check(
+    tmp_path: Path,
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+    missing_robot = "unitree-go2-stock-12dof"
+    package_check_calls: list[Path] = []
+
+    def package_for(robot: str) -> SimpleNamespace:
+        return SimpleNamespace(
+            root=tmp_path / "packages" / robot,
+            robot_configuration_id=robot,
+            package_version="1.0.0",
+            snapshot_id=f"{robot}-snapshot",
+        )
+
+    def write_context(
+        robot: str,
+        *,
+        omit: str | None = None,
+    ) -> None:
+        package = package_for(robot)
+        # Deliberately exercise the real loader's package-private task-context
+        # projection.  This remains context for IVC authorship, not a suite of
+        # prewritten capability cases.
+        destination = package.root / "tasks" / "private"
+        destination.mkdir(parents=True, exist_ok=True)
+        for name, id_field in {
+            "instances": "instance_id",
+            "bindings": "binding_id",
+            "guards": "guard_id",
+        }.items():
+            if name == omit:
+                continue
+            record: dict[str, Any] = {id_field: f"{robot}-{name}"}
+            if name == "instances":
+                record["public_arguments"] = {
+                    "request": {
+                        "task_id": f"{robot}-private-task",
+                        "task_parameters": {"distance_m": 0.25},
+                    }
+                }
+            (destination / f"{name}.json").write_text(
+                json.dumps(
+                    {
+                        "robot_configuration_id": robot,
+                        "package_version": package.package_version,
+                        "task_snapshot_id": package.snapshot_id,
+                        name: [record],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+    for robot in runner.ROBOT_CONFIGURATIONS:
+        write_context(robot, omit="bindings" if robot == missing_robot else None)
+
+    def ivc_context_check(root: str | Path) -> Mapping[str, Any]:
+        return runner._check_package_ivc_contexts(
+            root,
+            package_loader=lambda _root, robot: package_for(robot),
+        )
+
+    def package_check(root: str | Path, **_kwargs: Any) -> Mapping[str, Any]:
+        package_check_calls.append(Path(root))
+        return {
+            "package_check_passed": True,
+            "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
+        }
+
+    with pytest.raises(
+        runner.Experiment3RunnerError,
+        match=r"unitree-go2-stock-12dof.*bindings\.json",
+    ):
+        runner.run_preflight(
+            tmp_path,
+            manifest=manifest,
+            package_check_fn=package_check,
+            ivc_context_check_fn=ivc_context_check,
+            check_self_containment=False,
+        )
+    assert package_check_calls == []
+
+    write_context(missing_robot)
+    checked = runner.run_preflight(
+        tmp_path,
+        manifest=manifest,
+        package_check_fn=package_check,
+        ivc_context_check_fn=ivc_context_check,
+        check_self_containment=False,
+    )
+
+    assert checked["package_ivc_context_check"]["passed"] is True
+    assert set(checked["package_ivc_context_check"]["robots"]) == set(
+        runner.ROBOT_CONFIGURATIONS
+    )
+    assert {
+        item["private_namespace"]
+        for item in checked["package_ivc_context_check"]["robots"].values()
+    } == {"task"}
+    assert package_check_calls == [tmp_path]
+
+
 def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -444,6 +554,7 @@ def test_formal_runner_uses_one_fresh_singleton_call_per_cell_and_retains_failur
             "package_check_passed": True,
             "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
         },
+        ivc_context_check_fn=lambda _root: _passing_ivc_context_check(),
         hooks_factory=hooks_factory,
         check_self_containment=False,
         git_commit_fn=lambda _root: "a" * 40,
@@ -685,6 +796,7 @@ def test_resume_skips_terminal_rows_fails_a_partial_workspace_and_runs_only_unto
             "package_check_passed": True,
             "robots": {robot: {} for robot in runner.ROBOT_CONFIGURATIONS},
         },
+        ivc_context_check_fn=lambda _root: _passing_ivc_context_check(),
         check_self_containment=False,
         git_commit_fn=lambda _root: commit,
     )
@@ -922,6 +1034,7 @@ def test_cli_dispatches_preflight_formal_and_summarise_without_a_test_factory(
                 },
             },
             "current_package_check": {"package_check_passed": True},
+            "package_ivc_context_check": _passing_ivc_context_check(),
         }
 
     def fake_formal(root: str, **kwargs: Any) -> dict[str, Any]:
