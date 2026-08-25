@@ -80,97 +80,7 @@ The first question concerns generation of the robot-facing software layer. The
 second concerns downstream use of that already fixed layer. Neither experiment
 compares alternative synthesis frameworks or controller architectures.
 
-\section[Benchmark and Experimental Setup]{Benchmark and Experimental Setup}
-
-\subsection{Benchmark Design}
-
-Experiment~1a holds the generation framework and validation protocol constant
-while varying the LLM used to generate the driver. Experiment~1b holds a fixed
-recursive task planner and the capability-validated reference driver constant
-while varying the LLM used for task planning. Generation success is a
-capability-level judgement about a generated driver. Use success is an
-episode-level judgement about task completion through an existing driver.
-
-In the skeleton-assisted generation condition, the model may inspect and use
-trusted, task-neutral starter source that exposes low-level control utilities.
-The model must nevertheless implement every declared driver capability. In
-the from-scratch condition, the model receives the same public robot and
-capability requirements but may not inspect, import, copy, or invoke that
-starter source.
-
-For Experiment~1b, the fixed recursive task planner decomposes a task into
-ordered subtasks or driver-capability calls. It executes the next call and
-updates the remaining plan from bounded public feedback. This planner is
-referred to as ReCAP. Generation and task-use outcomes are therefore not
-interchangeable.
-
-\subsection{Experimental Matrix}
-
-Tables~\ref{tab:chapter3-exp1a-matrix} and~\ref{tab:chapter3-exp1b-matrix} define the
-experimental units and prospective denominators.
-
-\begin{table}[htbp]
-  \centering
-  \begingroup
-  \small
-  \setstretch{1.0}
-  \renewcommand{\arraystretch}{1.12}
-  \caption{Experiment 1a driver-synthesis matrix.}
-  \label{tab:chapter3-exp1a-matrix}
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
-    \toprule
-    \textbf{Design element} & \textbf{Setting} \\
-    \midrule
-    Active models & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; GPT-5.6 Sol \\
-    Robots & SO-101 and Unitree Go2 \\
-    Conditions & Skeleton-assisted and from-scratch \\
-    Repetitions & Three prespecified synthesis seeds; paired conditions use the same seed when the endpoint supports seed control \\
-    Experimental unit & One robot--model--condition--replicate generation cell \\
-    Attempt budget & One initial driver submission and at most two bounded correction submissions per cell \\
-    Total & $2$ robots $\times 7$ models $\times 2$ conditions $\times 3$ replicates $=84$ cells \\
-    \bottomrule
-  \end{tabularx}
-  \endgroup
-\end{table}
-
-\begin{table}[htbp]
-  \centering
-  \begingroup
-  \small
-  \setstretch{1.0}
-  \renewcommand{\arraystretch}{1.12}
-  \caption{Experiment 1b driver-use matrix.}
-  \label{tab:chapter3-exp1b-matrix}
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
-    \toprule
-    \textbf{Design element} & \textbf{Setting} \\
-    \midrule
-    Active models & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; GPT-5.6 Sol \\
-    Robots & SO-101 and Unitree Go2 \\
-    Tasks & Five fixed tasks per robot \\
-    Controller & One fixed recursive task planner (ReCAP) \\
-    Fixed software & One capability-validated reference driver and one defined driver capability interface per robot \\
-    Repetitions & Three fresh isolated execution sessions from the same canonical initial state; no task-reset seed is varied \\
-    Experimental unit & One robot--task--model--replicate episode \\
-    Total & $2$ robots $\times 5$ tasks $\times 7$ models $\times 3$ replicates $=210$ episodes \\
-    \bottomrule
-  \end{tabularx}
-  \endgroup
-\end{table}
-
-The SO-101 tasks are Push to Goal, Sweep into Goal, Pick and Place, Pick and
-Place with Wall, and Bin Picking. The Unitree Go2 tasks are Single-step
-Ascent, Single-step Descent, Fixed Mixed-obstacle Path, Barkour Pause-table
-Transition, and Barkour Weave Poles. Robot and task are blocking dimensions in
-Experiment~1b rather than manipulated factors.
-
-Each robot--task--model combination is repeated three times. The fixed task
-definitions do not vary a reset seed, so all three repetitions use the same
-sealed scene, reset, and initial state. Each repetition nevertheless creates a
-fresh isolated execution process, driver instance, and MuJoCo session. MuJoCo
-is the physics simulator used in this study. The design thus measures
-run-to-run repeatability under one fixed initial condition, not robustness
-across different task seeds or starting states.
+\section[Auto-Adapter Benchmark]{Auto-Adapter Benchmark}
 
 \subsection{LLM and Robot Cohorts}
 
@@ -236,69 +146,34 @@ scope without sharing outcomes. The 84-cell and 210-episode results remain
 bounded to these two selected configurations and are not interpreted as
 performance estimates for all eleven robots or as effects of robot type.
 
-\subsection{Success Criteria and Validation}
+\section[Experiment design]{Experiment design}
 
-Experiment~1a separates source generation from acceptance. For each robot, the
-human-authored requirements define the operations that the driver must expose
-and how their observed outcomes will be judged. These requirements and their
-numerical thresholds are fixed before model generation. An independent
-validation program, referred to as the trusted Harness, executes three hidden
-cases for each capability. It obtains simulator measurements outside the
-candidate driver. A capability passes when at least two cases pass. A
-generated driver passes only when every assigned capability passes. Candidate
-return values and self-reported success do not affect the verdict.
+Tables~\ref{tab:chapter3-exp1a-matrix} and~\ref{tab:chapter3-exp1b-matrix} define the
+experimental units and prospective denominators.
 
-The criteria test behaviour rather than method presence alone. For example,
-the SO-101 end-effector method must hold position error within 15 mm for 0.5 s.
-The Go2 planar-twist method is evaluated using velocity, yaw-rate, and
-direction errors. Table~\ref{tab:appendix-b1-driver-validation} reports the
-complete driver methods and capability-level passing standards.
-
-Experiment~1b instead uses an independent task evaluator to issue one binary
-complete-task verdict per episode. ReCAP receives the public task description,
-the available driver capabilities and their input formats, and bounded
-feedback after execution. The controller cannot access the private simulator
-measurements, thresholds, physical-integrity checks, or final verdict. Each
-episode retains one isolated execution process, driver instance, and MuJoCo
-state from reset to terminal scoring, together with one continuous video.
-
-The task criteria combine task-specific completion with common physical
-integrity. For example, in the fixed SO-101 Pick and Place task, the object
-starts at $[0.34,0.08,0.18]$ m, the grasp point is
-$[0.34,0.08,0.195]$ m, and the gripper target is $0.26$ rad. Within its 40 s
-and 10,000-step budget, the terminal object-to-goal distance must be at most
-$0.07$ m. For Go2, Single-step Ascent requires the front and hind feet to
-traverse the step within 10 s, while Barkour Weave Poles requires ordered
-passage and at least $0.10$ m torso-centre clearance. The complete task list
-and task-level passing standards are reported in
-Table~\ref{tab:appendix-task-libraries}.
-
-The two experiments use different forms of criterion provenance. For
-Experiment~1a, the capability limits form a fixed, human-authored conformance
-contract. They are benchmark settings rather than values taken from ISO or
-manufacturer performance specifications. Experiment~1b instead derives each
-task-level clause from a traceable benchmark or experimental protocol. The
-SO-101 clauses retain the Meta-World metric, comparator, and threshold while
-adapting the robot and scene. The Go2 clauses adapt published locomotion
-protocols and retain Barkour's completion and clearance rules. ISO~9283
-provides context for industrial-robot performance criteria and related test
-methods, while ISO~9946 covers the presentation of robot characteristics;
-neither prescribes a universal threshold for these simulated tasks
-\citep{iso9283,iso9946}. Table~\ref{tab:appendix-standard-sources} records the
-sources and adaptations.
-
-Every task verdict also requires commanded motion to arise through the
-declared actuators and remain within the fixed control limits.
-Physical-integrity checks reject unintended contacts or dynamic penetration
-above $0.005$ m. A missing terminal report or incomplete video makes an
-episode non-evaluable rather than successful. These criteria support
-simulator-grounded conformance and task-completion claims only. They do not
-establish industrial positioning accuracy, deployment safety, or sim-to-real
-transfer.
-
-\section[Experiment 1a: Driver Synthesis]{Experiment 1a: Driver Synthesis}
-
-\section[Experiment 1b: Driver Use]{Experiment 1b: Driver Use}
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{Experiment 1a driver-synthesis matrix.}
+  \label{tab:chapter3-exp1a-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{Design element} & \textbf{Setting} \\
+    \midrule
+    Active models & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; GPT-5.6 Sol \\
+    Robots & SO-101 and Unitree Go2 \\
+    Conditions & Skeleton-assisted and from-scratch \\
+    Repetitions & Three prespecified synthesis seeds; paired conditions use the same seed when the endpoint supports seed control \\
+    Experimental unit & One robot--model--condition--replicate generation cell \\
+    Attempt budget & One initial driver submission and at most two bounded correction submissions per cell \\
+    Total & $2$ robots $\times 7$ models $\times 2$ conditions $\times 3$ replicates $=84$ cells \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
 
 Experiment~1b evaluated whether fixed, capability-validated robot APIs
 supported downstream task completion. Seven LLMs were compared as
@@ -309,6 +184,51 @@ per robot with three repetitions, yielding 210 episodes. The driver,
 interface, planner logic, task conditions and evaluator were held constant;
 only the LLM backbone varied. Task success was determined independently by
 the trusted Harness. The available capabilities are summarised below.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{Experiment 1b driver-use matrix.}
+  \label{tab:chapter3-exp1b-matrix}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
+    \toprule
+    \textbf{Design element} & \textbf{Setting} \\
+    \midrule
+    Active models & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; GPT-5.6 Sol \\
+    Robots & SO-101 and Unitree Go2 \\
+    Tasks & Five fixed tasks per robot \\
+    Controller & One fixed recursive task planner (ReCAP) \\
+    Fixed software & One capability-validated reference driver and one defined driver capability interface per robot \\
+    Repetitions & Three fresh isolated execution sessions from the same canonical initial state; no task-reset seed is varied \\
+    Experimental unit & One robot--task--model--replicate episode \\
+    Total & $2$ robots $\times 5$ tasks $\times 7$ models $\times 3$ replicates $=210$ episodes \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+The SO-101 tasks are Push to Goal, Sweep into Goal, Pick and Place, Pick and
+Place with Wall, and Bin Picking. The Unitree Go2 tasks are Single-step
+Ascent, Single-step Descent, Fixed Mixed-obstacle Path, Barkour Pause-table
+Transition, and Barkour Weave Poles. Robot and task are blocking dimensions in
+Experiment~1b rather than manipulated factors.
+
+Each robot--task--model combination is repeated three times. The fixed task
+definitions do not vary a reset seed, so all three repetitions use the same
+sealed scene, reset, and initial state. Each repetition nevertheless creates a
+fresh isolated execution process, driver instance, and MuJoCo session. MuJoCo
+is the physics simulator used in this study. The design thus measures
+run-to-run repeatability under one fixed initial condition, not robustness
+across different task seeds or starting states.
+
+\section[Result]{Result}
+
+\subsection[Experiment 1a: Driver Synthesis]{Experiment 1a: Driver Synthesis}
+
+\subsection[Experiment 1b: Driver Use]{Experiment 1b : Driver Use}
 
 \begin{table}[htbp]
   \centering
@@ -396,3 +316,7 @@ Across all evaluable R1--R2 episodes, aggregate success was almost identical for
 \end{figure}
 
 \section[Discussion]{Discussion}
+
+Taken together, Table~\ref{tab:chapter3-exp1b-model-results} and the retained controller traces indicate that the most consequential difference was not command emission itself, but whether returned observations were used to revise an incomplete plan. In the successful Pick and Place with Wall episode, the controller recognised a failed first grasp, fully closed the gripper, and retried before following the elevated route; failed traces instead moved towards release while the object remained near its start. Weave Poles exposed a complementary long-horizon weakness: several controllers generated locally plausible motions and maintained pole separation, yet none preserved the alternating waypoint sequence across calls. This suggests that exposing ReCAP feedback is insufficient unless the model retains subgoal state and uses the observations to replan.
+
+A second implication concerns completion judgement. Nova Pro and Ministral sometimes produced invalid controller outputs, but every normally terminated Harness failure across the cohort had nevertheless been declared complete by the controller. The trusted Harness is therefore necessary to distinguish valid capability execution and model-reported completion from externally observed task completion. Within these simulator conditions, the practically important model differences concerned feedback interpretation, multi-stage state tracking, and recovery from failed intermediate actions.
