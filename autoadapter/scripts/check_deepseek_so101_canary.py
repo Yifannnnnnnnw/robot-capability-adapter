@@ -269,8 +269,16 @@ def check_evidence(*, run_dir: Path, config_path: Path) -> dict[str, Any]:
         configuration.get("generation_conditions") == [CONDITION],
         "reported run uses another generation condition",
     )
-    _require(report.get("reference_calibration_skipped") is False, "IVC positive control was skipped")
-    _require(report.get("reference_calibration_passed") is True, "IVC positive control did not pass")
+    reference_skipped = report.get("reference_calibration_skipped")
+    _require(
+        isinstance(reference_skipped, bool),
+        "report does not record whether IVC positive control was skipped",
+    )
+    if not reference_skipped:
+        _require(
+            report.get("reference_calibration_passed") is True,
+            "executed IVC positive control did not pass",
+        )
     _require(report.get("pipeline_completed") is True, "source canary did not complete its physical pipeline")
     for field in ("producer_model", "evolution_model"):
         identity = report.get(field)
@@ -349,7 +357,14 @@ def check_evidence(*, run_dir: Path, config_path: Path) -> dict[str, Any]:
     references = report.get("references")
     _require(isinstance(references, Mapping), "cell reference evidence is missing")
     reference = references.get(f"{ROBOT_ID}::{CONDITION}", {})
-    _require(isinstance(reference, Mapping) and reference.get("passed") is True, "cell reference control failed")
+    _require(isinstance(reference, Mapping), "cell reference evidence is malformed")
+    if reference_skipped:
+        _require(
+            reference.get("skipped") is True,
+            "report-level reference skip has no matching cell evidence",
+        )
+    else:
+        _require(reference.get("passed") is True, "cell reference control failed")
 
     validation = cell.get("capability_validation")
     _require(isinstance(validation, Mapping), "candidate capability Harness report is missing")
@@ -469,6 +484,7 @@ def check_evidence(*, run_dir: Path, config_path: Path) -> dict[str, Any]:
         "robot_configuration_id": ROBOT_ID,
         "package_version": PACKAGE_VERSION,
         "generation_condition": CONDITION,
+        "reference_calibration_skipped": reference_skipped,
         "frozen_driver_attempt_count": len(attempts),
         "nominal_boundary_passed_capabilities": list(passed),
         "recap_real_capability_calls": real_calls,

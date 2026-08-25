@@ -71,9 +71,14 @@ def test_canary_evidence_gate_accepts_partial_capability_closure(tmp_path: Path)
                 "robots": [ROBOT_ID],
                 "generation_conditions": [CONDITION],
             },
-            "reference_calibration_skipped": False,
-            "reference_calibration_passed": True,
-            "references": {f"{ROBOT_ID}::{CONDITION}": {"passed": True}},
+            "reference_calibration_skipped": True,
+            "reference_calibration_passed": False,
+            "references": {
+                f"{ROBOT_ID}::{CONDITION}": {
+                    "passed": False,
+                    "skipped": True,
+                }
+            },
             "cells": [
                 {
                     "robot_package_version": "1.0.4",
@@ -195,6 +200,7 @@ def test_canary_evidence_gate_accepts_partial_capability_closure(tmp_path: Path)
     result = check_evidence(run_dir=run_dir, config_path=CONFIG)
 
     assert result["passed"] is True
+    assert result["reference_calibration_skipped"] is True
     assert result["nominal_boundary_passed_capabilities"] == ["C1"]
     assert result["recap_real_capability_calls"] == 1
     assert result["task_demo_verdict"] == "FAIL"

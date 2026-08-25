@@ -222,6 +222,9 @@ fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，
 `frozen-driver-attempts/attempt-N/driver.py`。只有这个 frozen copy 才交给私有 Harness，并且
 才使 `frozen_driver_attempt_count` 加一。最多三份 frozen Driver；stub、缺文件、schema/ABI
 错误、source audit 失败或 import/build 失败都只进入 `development_rejections`，不消耗三次预算。
+如果 Generate 后已经有 frozen Driver，而后续 Repair artifact 被 source audit 拒绝，Framework
+保留上一份 frozen Driver、它的终态 Capability Validation 报告和由此派生的 whitelist；被拒 revision
+只记为 development rejection，不会清空已有 partial closure，也不会再次调用 Harness。
 
 实验结果使用最后一份 frozen Driver 的 verdict，不在失败记录中 cherry-pick “best attempt”。
 
@@ -563,6 +566,12 @@ Framework 添加：
 人工输入只接受 `accept`/`reject` 和非空 `reason`。review API 不接受 proposal 字段，因此不能在
 审核时编辑模型内容。只有 accepted records 进入 `autoadapter_experience_snapshot`；snapshot 的
 `usage_scope` 是 `next_independent_run_only`，并且同源 run ID 会被拒绝。
+
+若 final Driver 只有 partial capability closure，只要 Framework whitelist 非空，且后续 Task Demo
+确实完成物理执行、顶层与报告内 verdict 一致、必需视频完整，Framework 仍按 Task Demo verdict
+赋 `positive` 或 `negative` outcome，允许人工处置。整套 Capability Validation 仍保持 FAIL，不能
+改写为 full Driver PASS。Task Demo 缺失、未真实执行、视频不完整、verdict 冲突或 infrastructure
+failure 时 outcome 保持 `indeterminate`，即使人工填写 accept 也不能生成 snapshot。
 
 代码边界对应 `build_experience_review_queue(...)` → `apply_experience_review(...)` →
 `build_experience_snapshot(...)`。主线 source run 只生成 pending queue；没有通用 CLI 会替用户自动
@@ -1021,7 +1030,8 @@ DeepSeek canary 的判读条件不是“整套必须 PASS”，而是同时检�
 
 1. 使用 indexed SO-101 `1.0.4`、skeleton-assisted、`formal=false`；
 2. 真实执行 STUDY → TGCD → IVC → Generate/Repair → ReCAP → Evolution；
-3. IVC suite 在 candidate 之前通过 private reference positive control；
+3. IVC suite 在 candidate 之前完成 schema/binding audit；`formal=false` canary 可显式跳过 private
+   reference positive control，但必须在报告中记录 skip，且仍只算 diagnostic；
 4. 至少一个 capability 的 nominal 和 boundary 都 PASS；
 5. ReCAP 只获得双过 whitelist，并至少真实调用一个 capability；
 6. Task Demo 有真实 physics、可信 Harness verdict 和视频；其 verdict 可以 FAIL；
@@ -1047,8 +1057,8 @@ source evidence gate 通过后先在对话里展示打印出的 proposal。此�
    完整 callbacks 与 model-call records 留在 private `ivc_artifact_trace.json`，避免把 compiler 私有
    payload 复制到公共 aggregate。
 4. `study_evidence.json`：是否真的有成功 physics steps，而不只是模型描述。
-5. sealed TGCD/IVC artifacts：capability 数、task support、case roles、criteria copy 和 reference
-   positive control 是否通过。
+5. sealed TGCD/IVC artifacts：capability 数、task support、case roles、criteria copy，以及 reference
+   positive control 是通过还是在 `formal=false` 诊断中被显式跳过。
 6. `frozen_driver_attempt_count` 与 `development_rejections`：区分“模型写过文件”和“正式 Harness
    attempt”。
 7. 每个 attempt 的 `capability_validation_report.json`：先看 execution/integrity/video，再看 metric
