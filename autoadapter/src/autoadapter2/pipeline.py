@@ -2677,6 +2677,10 @@ def _run_cell(
     else:
         raw_report["evolution"] = None
         raw_report["evolution_disabled"] = True
+    # Keep the raw per-cell artifact on the same canonical outcome path used by
+    # the public experiment report and evidence checkers.  ``evolution`` stays
+    # as a compatibility alias for existing run readers.
+    raw_report["outcomes"]["Evolution"] = _copy(raw_report["evolution"])
     _write(workspace / "cell_report.json", raw_report)
     return raw_report
 

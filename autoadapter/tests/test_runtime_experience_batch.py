@@ -134,6 +134,18 @@ def test_legacy_shared_client_and_distinct_evolution_client_are_supported(
         check_self_containment=False,
     )
     assert seen == [state["client"]]
+    raw_cell = json.loads(
+        (
+            tmp_path
+            / "shared"
+            / "cells"
+            / "r-arm"
+            / "skeleton-assisted"
+            / "cell_report.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert raw_cell["outcomes"]["Evolution"] == raw_cell["evolution"]
+    assert raw_cell["outcomes"]["Evolution"]["evolution_completed"] is True
 
     seen.clear()
     evolution_client = object()
