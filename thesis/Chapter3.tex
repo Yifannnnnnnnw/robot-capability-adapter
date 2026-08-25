@@ -300,4 +300,32 @@ transfer.
 
 \section[Experiment 1b: Driver Use]{Experiment 1b: Driver Use}
 
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \small
+  \setstretch{1.0}
+  \renewcommand{\arraystretch}{1.12}
+  \caption{Performance of seven LLMs acting as the ReCAP controller across ten  tasks on SO-101 and Unitree Go2, using robot drivers generated and validated by AutoAdapter.}
+  \label{tab:chapter3-exp1b-model-results}
+  \begin{tabularx}{\textwidth}{@{}X
+    >{\raggedleft\arraybackslash}p{43mm}
+    >{\raggedleft\arraybackslash}p{45mm}@{}}
+    \toprule
+    \textbf{LLM} &
+    \textbf{Task-success rate} &
+    \textbf{Estimated cost per task (US\$)} \\
+    \midrule
+    Claude Opus 5       & 100.0\% & 0.585 \\
+    GPT-5.6 Sol         & 87.5\%  & 0.466 \\
+    Claude Sonnet 4.6   & 83.3\%  & 0.336 \\
+    Claude Haiku 4.5    & 57.9\%  & 0.112 \\
+    DeepSeek V4 Pro     & 44.4\%  & 0.013 \\
+    Amazon Nova Pro     & 5.0\%   & 0.139 \\
+    Ministral 3 8B      & 0.0\%   & 0.024 \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
 \section[Discussion]{Discussion}
