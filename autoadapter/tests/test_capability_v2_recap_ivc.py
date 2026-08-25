@@ -314,6 +314,11 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
     ]
     assert inputs["matching_reference_indices"] == []
 
+    matching_package = json.loads(json.dumps(package))
+    matching_package["robot_configuration_id"] = "robotstudio_so101"
+    matching_inputs = build_public_tgcd_inputs(matching_package)
+    assert matching_inputs["matching_reference_indices"] == [0]
+
 
 class _TGCDModel:
     def __init__(self, design: dict[str, Any]) -> None:

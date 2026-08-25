@@ -702,10 +702,10 @@ def run_artifact_react(
         if 0 < remaining_turns <= 2:
             _append_user_instruction(
                 messages,
-                f"Artifact deadline: {remaining_turns} model turns remain and no canonical "
-                f"{artifact_name} write has been observed. Stop optional inspection. On the "
-                "next turn, use write_file to create the complete canonical artifact so the "
-                "Framework can validate it and return any repairable error.",
+                f"Artifact deadline: {remaining_turns} model turns remain. Stop optional "
+                f"inspection. Ensure the canonical {artifact_name} is complete with write_file, "
+                "then end the turn so the Framework can validate it and return any repairable "
+                "error.",
             )
 
     raise ReactLoopError(

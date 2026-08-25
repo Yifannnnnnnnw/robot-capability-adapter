@@ -43,15 +43,17 @@ morphology and source-backed Task Library. Do not select from a primitive_family
 Each capability is one single-call physical effect and must have a unique capability_id and
 Python method_name, a concise description and effect, a closed task-neutral request_schema,
 preconditions, temporal_semantics, invariants, failure_behavior, and source-grounded structured
-criteria. Every non-object request-schema field has an explicit unit and frame and numeric bounds
-are finite where relevant. A request schema must not contain task_id, task_parameters, scene,
+criteria. Each capability has exactly one top-level criterion. Every non-object request-schema
+field has an explicit unit and frame and numeric bounds are finite where relevant. A request
+schema must not contain task_id, task_parameters, scene,
 reset, private values, criteria, oracle fields, or a task/macro plan.
 
 Return one JSON object with artifact_type='capability_design', schema_version='2.0',
 capability_protocol_version='capability-v2', the supplied package identity, invocation_abi
 exactly equal to the supplied capability-request ABI, capabilities[], and task_support[].
 task_support is only a many-to-many relation of {task_id, capability_id, rationale}; it contains
-no ordered calls, waypoints, macro, plan, reset, scene, criterion, or private values. Do not
+no ordered calls, waypoints, macro, plan, reset, scene, criterion, or private values. It must cover
+every supplied task and every authored capability at least once. Do not
 return code, Driver/Repair material, hidden instances, exact private requests, oracle plans, or
 a self-reported verdict. The public reference catalog is background evidence only: author the
 capabilities yourself and do not copy task mappings from it."""

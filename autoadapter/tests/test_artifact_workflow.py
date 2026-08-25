@@ -19,7 +19,13 @@ from autoadapter2.driver_synthesis.generation import (
 from autoadapter2.driver_synthesis.interactive import PublicDevelopmentSession
 from autoadapter2.driver_synthesis.probe import ProbeBudget
 from autoadapter2.libraries import RobotPackage
-from autoadapter2.react import ToolCall, ToolSpec, ToolTurn, run_artifact_react
+from autoadapter2.react import (
+    ReactLoopError,
+    ToolCall,
+    ToolSpec,
+    ToolTurn,
+    run_artifact_react,
+)
 
 
 def _call(call_id: str, name: str, arguments: Mapping[str, Any]) -> ToolCall:
@@ -218,6 +224,50 @@ class ArtifactWorkflowTests(unittest.TestCase):
                 },
             }])
             self.assertEqual(result.completed_on, "end_turn")
+
+    def test_final_turn_rejects_a_hallucinated_non_write_tool(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "study.json"
+            executed: list[bool] = []
+
+            def execute_python(_arguments: Mapping[str, Any]) -> dict[str, Any]:
+                executed.append(True)
+                return {"ok": True}
+
+            client = _ScriptedArtifactClient(
+                [
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(_call("hallucinated", "execute_python", {"code": "pass"}),),
+                    )
+                ]
+            )
+            with self.assertRaises(ReactLoopError) as raised:
+                run_artifact_react(
+                    client=client,
+                    stage="study",
+                    system_prompt="write the study",
+                    user_prompt="produce study.json",
+                    tools=(
+                        ToolSpec("write_file", "write", {"type": "object"}, lambda _: {}),
+                        ToolSpec(
+                            "execute_python",
+                            "execute",
+                            {"type": "object"},
+                            execute_python,
+                        ),
+                    ),
+                    artifact_name="study.json",
+                    artifact_path=artifact,
+                    validate_artifact=_json_validator,
+                    max_turns=1,
+                )
+
+            self.assertEqual(client.tools[0][0]["function"]["name"], "write_file")
+            self.assertEqual(executed, [])
+            self.assertFalse(raised.exception.trace[0]["ok"])
+            self.assertIn("tool unavailable", raised.exception.trace[0]["observation"])
 
     def test_artifact_loop_has_no_aggregate_tool_call_cutoff(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
