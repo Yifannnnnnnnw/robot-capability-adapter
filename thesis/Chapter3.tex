@@ -351,38 +351,4 @@ transfer.
   \endgroup
 \end{table}
 
-\begin{table}[htbp]
-  \centering
-  \small
-  \renewcommand{\arraystretch}{1.12}
-  \caption{Task-level success rates for SO-101 and Unitree Go2. Pick and Place with Wall routes an object around a barrier; Dial Turn rotates a mounted dial to its target; Mixed-obstacle Path crosses a ramp, platform, stairs and blocks in sequence; Pause-table Transition moves Go2 between two separated tables and requires a stable terminal hold; and Weave Poles follows five alternating waypoints around physical poles.}
-  \label{tab:chapter3-exp1b-task-results}
-  \begin{tabularx}{\textwidth}{@{}X r X r@{}}
-    \toprule
-    \textbf{SO-101 task} & \textbf{Success rate} &
-    \textbf{Unitree Go2 task} & \textbf{Success rate} \\
-    \midrule
-    Push to Goal             & 71.4\% &
-    Single-step Ascent       & 71.4\% \\
-    Sweep into Goal          & 57.1\% &
-    Single-step Descent      & 71.4\% \\
-    Pick and Place           & 38.5\% &
-    Mixed-obstacle Path      & 20.0\% \\
-    Pick and Place with Wall & 11.1\% &
-    Pause-table Transition   & 64.3\% \\
-    Dial Turn                & 60.0\% &
-    Weave Poles              & 0.0\% \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
-
-Across all evaluable R1--R2 episodes, aggregate success was almost identical for SO-101 and Go2 (50.0\% and 49.2\%), placing the larger performance variation at task level rather than between robot platforms. Weave Poles failed in all 11 evaluable episodes because none completed the five alternating 0.12\,m waypoint regions in order (median one completed); nine nevertheless met the 0.10\,m torso-clearance requirement and all passed terminal stability. Pick and Place with Wall was limited by failed grasp recovery before wall traversal: across all eight evaluable failures the object rose by at most 7.1\,mm and moved at most 2.9\,cm from its start while contact integrity remained valid, whereas the sole success recognised an unsuccessful first grasp, issued a fully closed re-grasp, and then followed the elevated route.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{assets/exp1b_task_trajectory_examples.png}
-  \caption{Five-frame examples from Experiment~1b: (a) successful SO-101 Pick and Place, GPT-5.6 Sol/R2; (b) successful Go2 Mixed-obstacle Path, Claude Sonnet 4.6/R2; and (c) failed Go2 Weave Poles, Claude Sonnet 4.6/R2. The failed episode passed execution, integrity, clearance, stability and video checks but completed only one of five ordered waypoints.}
-  \label{fig:chapter3-exp1b-task-examples}
-\end{figure}
-
 \section[Discussion]{Discussion}
