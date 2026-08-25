@@ -9,6 +9,7 @@ validation inputs and calibration references.
 from __future__ import annotations
 
 import ast
+import functools
 import json
 import os
 import select
@@ -97,15 +98,272 @@ class PublicProbeWorkspace:
 _PERSISTENT_RESULT_PREFIX = "__AUTOADAPTER_PERSISTENT_RESULT__="
 
 
-_PERSISTENT_BOOTSTRAP = r'''
+def _sandbox_literal(path: Path) -> str:
+    """Return one quoted Seatbelt literal without shell interpolation."""
+
+    return json.dumps(os.fspath(path.resolve()))
+
+
+@functools.lru_cache(maxsize=1)
+def _seatbelt_available() -> bool:
+    """Return whether a nested macOS Seatbelt profile can be applied here."""
+
+    executable = Path("/usr/bin/sandbox-exec")
+    if sys.platform != "darwin" or not executable.is_file():
+        return False
+    try:
+        result = subprocess.run(
+            [
+                os.fspath(executable),
+                "-p",
+                "(version 1) (allow default)",
+                "/usr/bin/true",
+            ],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=2.0,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def _sandboxed_python_command(
+    *,
+    public_workspace: PublicProbeWorkspace,
+    workspace: Path,
+    arguments: Sequence[str],
+) -> list[str]:
+    """Build one interpreter command with mandatory OS-level confinement.
+
+    The bootstrap always installs a Python audit hook and the process must also
+    enter macOS Seatbelt.  We fail closed when that OS boundary is unavailable:
+    MuJoCo is a native extension and its file APIs do not emit every CPython
+    audit event, so an audit-hook-only process is not an isolation boundary.
+    """
+
+    interpreter = Path(sys.executable).resolve()
+    python_prefixes = {Path(sys.prefix).resolve(), Path(sys.base_prefix).resolve()}
+    command = [sys.executable, *arguments]
+    if not _seatbelt_available():
+        raise ProbeError(
+            "OS-level Python/MuJoCo probe sandbox is unavailable; refusing model code execution"
+        )
+
+    readable_roots = {
+        *python_prefixes,
+        workspace.resolve(),
+        public_workspace.root.resolve(),
+    }
+    if public_workspace.python_root is not None:
+        readable_roots.add(public_workspace.python_root.resolve())
+    read_denials = {
+        Path("/Users"),
+        Path("/Volumes"),
+        Path("/etc"),
+        Path("/home"),
+        Path("/root"),
+        Path("/Library/Keychains"),
+        Path("/private/etc"),
+        Path("/private/tmp"),
+        Path("/private/var/folders"),
+        Path("/private/var/db"),
+        Path("/private/var/tmp"),
+    }
+    profile_parts = [
+        "(version 1)",
+        "(allow default)",
+        "(deny network*)",
+        "(deny process-fork)",
+        "(deny process-exec)",
+        f"(allow process-exec (literal {_sandbox_literal(interpreter)}))",
+        "(deny file-read* "
+        + " ".join(f"(subpath {_sandbox_literal(path)})" for path in sorted(read_denials))
+        + ")",
+        "(allow file-read* "
+        + " ".join(f"(subpath {_sandbox_literal(path)})" for path in sorted(readable_roots))
+        + ")",
+        "(deny file-write*)",
+        f"(allow file-write* (subpath {_sandbox_literal(workspace)}))",
+    ]
+    return ["/usr/bin/sandbox-exec", "-p", " ".join(profile_parts), *command]
+
+
+_RUNTIME_GUARD_BOOTSTRAP = r'''
 import contextlib
 import io
 import json
 import os
+import platform
+import subprocess
 import sys
 import traceback
 
+# MuJoCo's macOS package shells out to ``sysctl`` once during import solely to
+# detect Rosetta.  The parent already launches its current native interpreter;
+# keep the probe sandbox process-free by supplying that one harmless result
+# in-process, then restore subprocess.run before any model code executes.
+_original_subprocess_run = subprocess.run
+if platform.system() == "Darwin":
+    class _NativeProcessResult:
+        stdout = b"0\n"
+
+    def _native_sysctl_result(*args, **kwargs):
+        command = args[0] if args else kwargs.get("args")
+        if command == ["sysctl", "-n", "sysctl.proc_translated"]:
+            return _NativeProcessResult()
+        raise RuntimeError("process creation is unavailable in execute_python")
+
+    subprocess.run = _native_sysctl_result
+
 import mujoco
+
+subprocess.run = _original_subprocess_run
+
+
+def _blocked_plugin_loader(*_args, **_kwargs):
+    raise PermissionError("MuJoCo plugin loading is unavailable in execute_python")
+
+
+# These pybind entry points can call dlopen without a CPython ``ctypes.*``
+# audit event.  Disable them before any model-authored source can run.
+for _plugin_loader_name in ("mj_loadPluginLibrary", "mj_loadAllPluginLibraries"):
+    if hasattr(mujoco, _plugin_loader_name):
+        setattr(mujoco, _plugin_loader_name, _blocked_plugin_loader)
+
+
+# This non-removable Python audit hook complements mandatory Seatbelt.  It
+# covers dynamic getattr/import/open paths that the parent AST audit cannot
+# reliably recognise; it is defense-in-depth, not a substitute for the OS
+# boundary because native MuJoCo file APIs do not emit every CPython event.
+_phase_workspace = os.path.realpath(os.environ["AUTOADAPTER_PROBE_WORKSPACE"])
+_read_roots = {
+    _phase_workspace,
+    os.path.realpath(os.environ["AUTOADAPTER_PROBE_PUBLIC_PACKAGE"]),
+    os.path.realpath(sys.prefix),
+    os.path.realpath(sys.base_prefix),
+}
+_python_root_for_audit = os.environ.get("AUTOADAPTER_PROBE_PYTHON_ROOT")
+if _python_root_for_audit:
+    _read_roots.add(os.path.realpath(_python_root_for_audit))
+_read_roots = tuple(sorted(_read_roots))
+_write_roots = (_phase_workspace,)
+_special_files = {"/dev/null", "/dev/urandom", "/dev/random"}
+_blocked_import_roots = {
+    "_ctypes", "_posixsubprocess", "_socket", "asyncio", "cffi", "ctypes",
+    "ftplib", "http", "httpx", "importlib", "multiprocessing", "pkgutil",
+    "requests", "runpy", "shutil", "socket", "ssl", "subprocess", "sys",
+    "telnetlib", "urllib",
+}
+_compile_authorised = False
+
+
+def _normalise_audit_path(value):
+    if isinstance(value, int):
+        raise PermissionError("execute_python cannot open inherited file descriptors")
+    if value is None:
+        value = os.getcwd()
+    if isinstance(value, bytes):
+        value = os.fsdecode(value)
+    if not isinstance(value, str):
+        raise PermissionError("execute_python filesystem path must be text")
+    return os.path.realpath(os.path.abspath(value))
+
+
+def _under_any(path, roots):
+    if path in _special_files:
+        return True
+    return any(path == root or path.startswith(root + os.sep) for root in roots)
+
+
+def _require_path(value, roots, operation):
+    path = _normalise_audit_path(value)
+    if not _under_any(path, roots):
+        raise PermissionError(
+            "execute_python %s is outside the isolated phase workspace" % operation
+        )
+
+
+def _runtime_audit(event, args):
+    if event == "open":
+        path = args[0] if args else None
+        mode = args[1] if len(args) > 1 else None
+        flags = args[2] if len(args) > 2 else 0
+        writing = (
+            isinstance(mode, str) and any(marker in mode for marker in "wax+")
+        ) or (
+            isinstance(flags, int)
+            and bool(
+                flags
+                & (
+                    os.O_WRONLY
+                    | os.O_RDWR
+                    | os.O_CREAT
+                    | os.O_TRUNC
+                    | os.O_APPEND
+                )
+            )
+        )
+        _require_path(path, _write_roots if writing else _read_roots, "file access")
+        return
+    if event in {"os.listdir", "os.scandir", "os.chdir"} and args:
+        _require_path(args[0], _read_roots, event)
+        return
+    if event in {
+        "os.remove", "os.rmdir", "os.mkdir", "os.chmod", "os.chown",
+        "os.truncate", "os.utime",
+    } and args:
+        _require_path(args[0], _write_roots, event)
+        return
+    if event in {"os.rename", "os.replace", "os.link", "os.symlink"}:
+        if args:
+            _require_path(args[0], _write_roots, event)
+        if len(args) > 1:
+            _require_path(args[1], _write_roots, event)
+        return
+    if (
+        event
+        in {
+            "os.system",
+            "os.fork",
+            "os.forkpty",
+            "os.kill",
+            "os.killpg",
+            "subprocess.Popen",
+        }
+        or event.startswith("os.exec")
+        or event.startswith("os.spawn")
+        or event.startswith("os.posix_spawn")
+    ):
+        raise PermissionError("process creation is unavailable in execute_python")
+    if event.startswith("socket."):
+        raise PermissionError("network access is unavailable in execute_python")
+    if event.startswith("ctypes."):
+        raise PermissionError("native dynamic loading is unavailable in execute_python")
+    if event == "import" and args:
+        module_root = str(args[0]).split(".", 1)[0]
+        if module_root in _blocked_import_roots:
+            raise PermissionError(
+                "import %s is unavailable in execute_python" % module_root
+            )
+    if event == "compile":
+        filename = args[1] if len(args) > 1 else ""
+        if _compile_authorised:
+            return
+        if isinstance(filename, str) and not filename.startswith("<"):
+            _require_path(filename, _read_roots, "compile")
+            return
+        raise PermissionError("dynamic compilation is unavailable in execute_python")
+    if event in {"builtins.input", "builtins.input/result"}:
+        raise PermissionError("stdin access is unavailable in execute_python")
+
+
+sys.addaudithook(_runtime_audit)
+'''
+
+
+_PERSISTENT_BOOTSTRAP = _RUNTIME_GUARD_BOOTSTRAP + r'''
 
 
 _public_root = os.environ.get("AUTOADAPTER_PROBE_PUBLIC_PACKAGE")
@@ -166,7 +424,12 @@ for _line in sys.stdin:
         _error = None
         with contextlib.redirect_stdout(_stdout), contextlib.redirect_stderr(_stderr):
             try:
-                exec(compile(_code, "<execute_python>", "exec"), _state, _state)
+                _compile_authorised = True
+                try:
+                    _compiled = compile(_code, "<execute_python>", "exec")
+                finally:
+                    _compile_authorised = False
+                exec(_compiled, _state, _state)
             except BaseException as _exc:
                 _ok = False
                 _error = {"type": type(_exc).__name__, "message": str(_exc)}
@@ -217,12 +480,20 @@ class PersistentPythonSession:
         self._calls = 0
         self._closed = False
         self._process: subprocess.Popen[bytes] | None = None
-        env = _probe_environment(public_workspace=public_workspace, budget=budget)
+        env = _probe_environment(
+            public_workspace=public_workspace,
+            workspace=self.workspace,
+            budget=budget,
+        )
         # Never inherit cloud credentials, proxy credentials, or unrelated
         # host state.  The existing probe environment intentionally contains
         # only interpreter/runtime variables and public workspace paths.
         self._process = subprocess.Popen(
-            [sys.executable, "-I", "-u", "-c", _PERSISTENT_BOOTSTRAP],
+            _sandboxed_python_command(
+                public_workspace=public_workspace,
+                workspace=self.workspace,
+                arguments=("-I", "-B", "-u", "-c", _PERSISTENT_BOOTSTRAP),
+            ),
             cwd=str(public_workspace.root),
             env=env,
             stdin=subprocess.PIPE,
@@ -387,6 +658,19 @@ _FILESYSTEM_INTROSPECTION_ROOTS = frozenset(
     {"os", "pathlib", "glob", "shutil", "tempfile", "fileinput", "sys", "inspect", "types"}
 )
 _DYNAMIC_CALLS = frozenset({"eval", "exec", "compile", "__import__"})
+_OS_PROCESS_CALLS = frozenset(
+    {
+        "fork",
+        "forkpty",
+        "kill",
+        "killpg",
+        "popen",
+        "posix_spawn",
+        "posix_spawnp",
+        "startfile",
+        "system",
+    }
+)
 _FORBIDDEN_PATH_LITERALS = (
     "/tasks/private",
     "\\tasks\\private",
@@ -460,6 +744,15 @@ def audit_public_source(
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             if node.func.id in _DYNAMIC_CALLS:
                 errors.append(f"dynamic execution is forbidden: {node.func.id}")
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            call_path = _module_path(node.func).lower()
+            call_root, _, call_name = call_path.rpartition(".")
+            if call_root == "os" and (
+                call_name in _OS_PROCESS_CALLS
+                or call_name.startswith("spawn")
+                or call_name.startswith("exec")
+            ):
+                errors.append(f"process creation is forbidden: {call_path}")
         if isinstance(node, ast.Attribute):
             path = _module_path(node).lower()
             if any(part in path.split(".") for part in ("harness", "reference", "private_dir")):
@@ -580,15 +873,7 @@ def public_asset_closure_manifest(package: RobotPackage) -> dict[str, Any]:
     }
 
 
-_BOOTSTRAP = r'''
-import json
-import os
-import runpy
-import sys
-
-import mujoco
-
-
+_BOOTSTRAP = _RUNTIME_GUARD_BOOTSTRAP + r'''
 max_steps = int(os.environ["AUTOADAPTER_PROBE_MAX_STEPS"])
 max_sim_time_s = float(os.environ["AUTOADAPTER_PROBE_MAX_SIM_TIME_S"])
 step_count = [0]
@@ -625,7 +910,14 @@ def bounded_mj_step(model, data, *args, **kwargs):
 
 mujoco.mj_step = bounded_mj_step
 try:
-    runpy.run_path(sys.argv[1], run_name="__main__")
+    with open(sys.argv[1], "r", encoding="utf-8") as script_file:
+        script_source = script_file.read()
+    _compile_authorised = True
+    try:
+        script_code = compile(script_source, sys.argv[1], "exec")
+    finally:
+        _compile_authorised = False
+    exec(script_code, {"__name__": "__main__", "__file__": sys.argv[1]})
 finally:
     print("__AUTOADAPTER_PROBE_FACTS__=" + json.dumps({"physics_steps": step_count[0]}))
 '''
@@ -827,16 +1119,20 @@ def _bounded_text(value: bytes, limit: int) -> tuple[str, bool, int]:
 def _probe_environment(
     *,
     public_workspace: PublicProbeWorkspace,
+    workspace: Path,
     budget: ProbeBudget,
 ) -> dict[str, str]:
     environment: dict[str, str] = {}
-    for name in ("PATH", "TMPDIR", "MUJOCO_GL", "DYLD_LIBRARY_PATH"):
-        value = os.environ.get(name)
-        if value:
-            environment[name] = value
+    mujoco_gl = os.environ.get("MUJOCO_GL")
+    if mujoco_gl in {"glfw", "egl", "osmesa", "cgl", "disable"}:
+        environment["MUJOCO_GL"] = mujoco_gl
+    temporary_root = workspace.resolve() / ".tmp"
+    temporary_root.mkdir(parents=True, exist_ok=True)
     environment.update(
         {
+            "TMPDIR": str(temporary_root),
             "PYTHONNOUSERSITE": "1",
+            "AUTOADAPTER_PROBE_WORKSPACE": str(workspace.resolve()),
             "AUTOADAPTER_PROBE_PUBLIC_PACKAGE": str(public_workspace.root),
             "AUTOADAPTER_PROBE_SCENE": str(public_workspace.scene_path),
             "AUTOADAPTER_PROBE_MAX_STEPS": str(budget.max_steps),
@@ -868,7 +1164,11 @@ def _run_one(
     probe_dir.mkdir(parents=True, exist_ok=True)
     script_path = probe_dir / f"{request.probe_id}.py"
     script_path.write_text(request.script, encoding="utf-8")
-    command = [sys.executable, "-I", "-c", _BOOTSTRAP, str(script_path)]
+    command = _sandboxed_python_command(
+        public_workspace=public_workspace,
+        workspace=workspace,
+        arguments=("-I", "-B", "-u", "-c", _BOOTSTRAP, str(script_path)),
+    )
     started = time.monotonic()
     timed_out = False
     spawn_error: str | None = None
@@ -882,6 +1182,7 @@ def _run_one(
             cwd=str(public_workspace.root),
             env=_probe_environment(
                 public_workspace=public_workspace,
+                workspace=workspace,
                 budget=budget,
             ),
             stdout=subprocess.PIPE,

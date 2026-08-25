@@ -388,6 +388,8 @@ class DriverGenerationTests(unittest.TestCase):
         self.assertEqual(fallback.read_bytes(), b"source")
 
     def test_probe_isolation_and_nstep_fact_use_staged_public_scene(self) -> None:
+        outside = Path(self.temporary.name) / "outside-probe-secret.txt"
+        outside.write_text("OUTSIDE_PROBE_SECRET", encoding="utf-8")
         script = """
 import os
 from pathlib import Path
@@ -403,6 +405,15 @@ data = mujoco.MjData(model)
 data.ctrl[0] = 0.2
 mujoco.mj_step(model, data, 2)
 print("TIME=" + str(data.time))
+""" + f"""
+try:
+    print("LEAK=" + open({str(outside)!r}, encoding="utf-8").read())
+except PermissionError:
+    print("OUTSIDE_READ=BLOCKED")
+try:
+    getattr(os, "sy" + "stem")("/usr/bin/true")
+except PermissionError:
+    print("DYNAMIC_PROCESS=BLOCKED")
 """
         result = run_probes(
             [{"probe_id": "public-scene", "script": script}],
@@ -421,6 +432,9 @@ print("TIME=" + str(data.time))
         self.assertIn("PYROOT=None", result["stdout"])
         self.assertIn("CWD=", result["stdout"])
         self.assertIn("/probe/public_package", result["stdout"])
+        self.assertIn("OUTSIDE_READ=BLOCKED", result["stdout"])
+        self.assertIn("DYNAMIC_PROCESS=BLOCKED", result["stdout"])
+        self.assertNotIn("OUTSIDE_PROBE_SECRET", result["stdout"])
         self.assertFalse((Path(self.temporary.name) / "probe" / "public_python").exists())
 
     def test_source_boundary_rejects_framework_network_and_wrong_condition_imports(self) -> None:
@@ -436,6 +450,20 @@ print("TIME=" + str(data.time))
             audit_public_source("import socket", condition="from-scratch")
         with self.assertRaises(ProbeSourceError):
             audit_public_source("import pathlib", condition="from-scratch")
+        for source in (
+            "import os\nos.system('true')",
+            "import os\nos.popen('true')",
+            "import os\nos.spawnv(0, '/usr/bin/true', ['true'])",
+            "import os\nos.execl('/usr/bin/true', 'true')",
+            "import os\nos.kill(os.getpid(), 0)",
+            "import os\nos.killpg(os.getpgrp(), 0)",
+        ):
+            with self.subTest(source=source), self.assertRaises(ProbeSourceError):
+                audit_public_source(
+                    source,
+                    condition="from-scratch",
+                    allow_probe_utilities=True,
+                )
 
     def test_generation_rejects_capability_method_without_fixed_request_abi(self) -> None:
         client = FakeJsonGenerator(
