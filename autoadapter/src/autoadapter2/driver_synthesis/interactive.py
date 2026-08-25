@@ -376,7 +376,10 @@ class PublicDevelopmentSession:
             }
         )
         if not bool(result.get("successful")):
-            detail = result.get("stderr") or result.get("stdout") or result.get("error")
+            # The worker's structured error contains the actual terminal
+            # exception. Prefer it to a long traceback whose useful tail can
+            # be lost again when the artifact loop bounds its observation.
+            detail = result.get("error") or result.get("stderr") or result.get("stdout")
             raise DevelopmentSessionError(
                 f"driver.py public import/build failed: {str(detail)[:2000]}"
             )

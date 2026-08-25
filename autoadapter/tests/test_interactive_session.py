@@ -464,6 +464,26 @@ class InteractiveFileSessionTests(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertTrue(result["import"]["successful"])
 
+    def test_driver_import_failure_reports_structured_root_cause_before_traceback(self) -> None:
+        self.session.write_file({"path": "driver.py", "content": DRIVER_SOURCE})
+        with mock.patch.object(
+            self.session,
+            "execute_python",
+            return_value={
+                "successful": False,
+                "error": {
+                    "type": "PermissionError",
+                    "message": "ROOT_CAUSE_DYNAMIC_COMPILATION",
+                },
+                "stderr": "traceback-prefix-" * 300,
+                "stdout": "",
+            },
+        ), self.assertRaisesRegex(
+            DevelopmentSessionError,
+            "ROOT_CAUSE_DYNAMIC_COMPILATION",
+        ):
+            self.session.validate_driver_artifact()
+
     def test_candidate_task_dispatch_is_rejected_before_freeze(self) -> None:
         invalid = DRIVER_SOURCE.replace(
             'request["target"]', 'request["task_id"]'
