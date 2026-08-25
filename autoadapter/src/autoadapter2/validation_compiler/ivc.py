@@ -520,8 +520,41 @@ def build_ivc_inputs(
     sanitized_examples = _copy_private_inputs(
         {"examples": selected_examples}
     ).get("examples", [])
+    identity = _package_identity(package)
+    capability_count = len(_design_map(design))
     return {
         "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        "artifact_header": {
+            "artifact_type": "capability_validation_suite",
+            "schema_version": "2.0",
+            "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+            **identity,
+            "whole_suite_aggregation": {"kind": "all_cases"},
+        },
+        "validator_contract": {
+            "case_count": 2 * capability_count,
+            "case_roles_per_capability": list(IVC_CASE_ROLES),
+            "case_required_fields": [
+                "case_id",
+                "case_role",
+                "capability_id",
+                "method_name",
+                "request",
+                "instance_id",
+                "binding_id",
+                "guard_ids",
+                "criteria",
+            ],
+            "copy_method_name_from_sealed_design": True,
+            "copy_criteria_from_sealed_design_exactly": True,
+            "copy_request_from_selected_instance_public_arguments_request_exactly": True,
+            "copy_instance_execution_fields_when_present": [
+                "repetitions",
+                "timeout_sim_s",
+            ],
+            "instance_binding_guard_ids_must_be_supplied": True,
+            "nominal_and_boundary_requests_must_differ": True,
+        },
         "sealed_capability_design": json_copy(dict(design), label="sealed_capability_design"),
         "private_instances": copied_private.get("instances", {}),
         "private_bindings": copied_private.get("bindings", {}),
@@ -656,6 +689,11 @@ def run_ivc(
                     turn=validation_turn,
                 )
 
+            authoring_brief = json.dumps(
+                inputs,
+                ensure_ascii=True,
+                separators=(",", ":"),
+            )
             try:
                 result = run_artifact_react(
                     client=client,
@@ -664,7 +702,9 @@ def run_ivc(
                     user_prompt=(
                         "Read ivc_inputs.json, which is raw JSON in the phase-workspace root "
                         "and is directly openable as ./ivc_inputs.json from execute_python; "
-                        "there is no result wrapper. Author the complete canonical "
+                        f"there is no result wrapper. The complete authoring brief is included "
+                        f"here verbatim: {authoring_brief}. Copy artifact_header unchanged at the "
+                        "suite top level and follow validator_contract exactly. Author the complete canonical "
                         f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
                         "for credential-free calibration calculations. Use at most two turns for "
                         "inspection, then call write_file with an initial complete artifact by "

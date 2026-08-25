@@ -513,6 +513,19 @@ def test_ivc_is_blind_and_compiles_exactly_two_cases_per_capability(tmp_path: Pa
     assert "candidate" not in serialized
     assert load_sanitized_ivc_examples()
     assert inputs["sanitized_capability_validation_examples"]
+    assert inputs["artifact_header"] == {
+        "artifact_type": "capability_validation_suite",
+        "schema_version": "2.0",
+        "capability_protocol_version": "capability-v2",
+        "robot_configuration_id": "test_robot",
+        "package_version": "1.0.0",
+        "task_snapshot_id": "test-tasks-v1",
+        "whole_suite_aggregation": {"kind": "all_cases"},
+    }
+    assert inputs["validator_contract"]["case_count"] == 6
+    assert inputs["validator_contract"][
+        "copy_request_from_selected_instance_public_arguments_request_exactly"
+    ] is True
     model = _IVCModel(suite)
     events: list[dict[str, Any]] = []
     artifact_path = tmp_path / "capability_validation_suite.json"
@@ -651,6 +664,8 @@ def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
         {"write_file"},
         {"write_file"},
     ]
+    assert '"artifact_header"' in model.messages[0][0]["content"]
+    assert '"validator_contract"' in model.messages[0][0]["content"]
     correction_messages = json.dumps(model.messages[1])
     assert "reference calibration failed" in correction_messages
     assert "SECRET-private-case-id-and-driver-path" not in correction_messages
