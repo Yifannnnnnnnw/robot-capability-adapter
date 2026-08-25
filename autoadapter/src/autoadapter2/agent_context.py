@@ -10,6 +10,14 @@ from typing import Any
 
 
 _DRIVER_SOURCE_TOOLS = frozenset({"write_driver", "check_driver"})
+_CANONICAL_ARTIFACT_PATHS = frozenset(
+    {
+        "study.json",
+        "capability_design.json",
+        "capability_validation_suite.json",
+        "driver.py",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -45,6 +53,13 @@ def _bounded_text(value: Any, limit: int = 800) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 16] + "...[truncated]"
+
+
+def _canonical_artifact_path(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    path = value.strip().replace("\\", "/")
+    return path if path in _CANONICAL_ARTIFACT_PATHS else None
 
 
 def _append_message(messages: list[dict[str, Any]], message: Mapping[str, Any]) -> None:
@@ -97,11 +112,11 @@ class AgentContextManager:
     def _observation_payload(content: Any) -> dict[str, Any] | None:
         return _decode_object(content)
 
-    def _latest_driver_snapshot(
+    def _latest_artifact_snapshots(
         self, messages: Sequence[Mapping[str, Any]]
-    ) -> dict[str, Any] | None:
+    ) -> dict[str, dict[str, Any]]:
         calls: dict[str, tuple[str | None, Any]] = {}
-        snapshot: dict[str, Any] | None = None
+        snapshots: dict[str, dict[str, Any]] = {}
         for message in messages:
             if message.get("role") == "assistant":
                 for call in self._tool_calls(message):
@@ -117,16 +132,61 @@ class AgentContextManager:
                 continue
             result = payload.get("result")
             revision = result.get("revision") if isinstance(result, Mapping) else None
+            arguments = _decode_object(calls.get(call_id, (None, None))[1])
+            if name == "write_file" and payload.get("ok") is True:
+                requested_path = _canonical_artifact_path(
+                    arguments.get("path") if arguments is not None else None
+                )
+                observed_path = _canonical_artifact_path(
+                    result.get("path") if isinstance(result, Mapping) else None
+                )
+                content = arguments.get("content") if arguments is not None else None
+                if (
+                    requested_path is not None
+                    and (observed_path is None or observed_path == requested_path)
+                    and isinstance(content, str)
+                ):
+                    snapshots[requested_path] = {
+                        "path": requested_path,
+                        "content": content,
+                        "content_chars": len(content),
+                        "revision": revision if isinstance(revision, int) else None,
+                        "observed_via": "write_file",
+                        "tool_call_id": call_id,
+                        "workflow": "file",
+                    }
+                continue
+            if name == "read_file" and payload.get("ok") is True:
+                result_mapping = result if isinstance(result, Mapping) else {}
+                path = _canonical_artifact_path(result_mapping.get("path"))
+                root = result_mapping.get("root")
+                content = result_mapping.get("content")
+                if (
+                    path is not None
+                    and root in {None, "workspace"}
+                    and isinstance(content, str)
+                ):
+                    snapshots[path] = {
+                        "path": path,
+                        "content": content,
+                        "content_chars": len(content),
+                        "revision": revision if isinstance(revision, int) else None,
+                        "observed_via": "read_file",
+                        "tool_call_id": call_id,
+                        "workflow": "file",
+                    }
+                continue
             if name in _DRIVER_SOURCE_TOOLS and payload.get("ok") is True:
-                arguments = _decode_object(calls.get(call_id, (None, None))[1])
                 source = arguments.get("source") if arguments is not None else None
                 if isinstance(source, str):
-                    snapshot = {
-                        "source": source,
-                        "source_chars": len(source),
+                    snapshots["driver.py"] = {
+                        "path": "driver.py",
+                        "content": source,
+                        "content_chars": len(source),
                         "revision": revision if isinstance(revision, int) else None,
                         "observed_via": name,
                         "tool_call_id": call_id,
+                        "workflow": "legacy_driver",
                     }
             source = result.get("source") if isinstance(result, Mapping) else None
             if (
@@ -134,14 +194,16 @@ class AgentContextManager:
                 and payload.get("ok") is True
                 and isinstance(source, str)
             ):
-                snapshot = {
-                    "source": source,
-                    "source_chars": len(source),
+                snapshots["driver.py"] = {
+                    "path": "driver.py",
+                    "content": source,
+                    "content_chars": len(source),
                     "revision": revision if isinstance(revision, int) else None,
                     "observed_via": "read_driver",
                     "tool_call_id": call_id,
+                    "workflow": "legacy_driver",
                 }
-        return snapshot
+        return snapshots
 
     @staticmethod
     def _compact_arguments(name: str | None, raw_arguments: Any) -> tuple[Any, dict[str, Any]]:
@@ -164,6 +226,25 @@ class AgentContextManager:
                     "source_history": "omitted; current source is retained separately",
                 }
             )
+        if name == "write_file":
+            path = _canonical_artifact_path(arguments.get("path"))
+            content = arguments.get("content")
+            if path is not None and isinstance(content, str):
+                arguments.pop("content")
+                metadata.update(
+                    {
+                        "artifact_path": path,
+                        "content_chars": len(content),
+                    }
+                )
+                arguments.update(
+                    {
+                        "content_chars": len(content),
+                        "content_history": (
+                            "omitted; current canonical artifact is retained separately"
+                        ),
+                    }
+                )
         if name == "run_mujoco_probe" and isinstance(arguments.get("script"), str):
             script = arguments.pop("script")
             metadata["script_chars"] = len(script)
@@ -203,6 +284,22 @@ class AgentContextManager:
                 result["source_chars"] = len(source)
                 result["source_history"] = "omitted; current source is retained separately"
                 event["source_chars"] = len(source)
+            if name == "read_file":
+                path = _canonical_artifact_path(result.get("path"))
+                root = result.get("root")
+                content = result.get("content")
+                if (
+                    path is not None
+                    and root in {None, "workspace"}
+                    and isinstance(content, str)
+                ):
+                    result.pop("content")
+                    result["content_chars"] = len(content)
+                    result["content_history"] = (
+                        "omitted; current canonical artifact is retained separately"
+                    )
+                    event["artifact_path"] = path
+                    event["content_chars"] = len(content)
             payload["result"] = result
             event["result_summary"] = _bounded_text(
                 json.dumps(result, ensure_ascii=True, sort_keys=True), 300
@@ -396,19 +493,58 @@ class AgentContextManager:
         )
 
     @staticmethod
-    def _snapshot_text(snapshot: Mapping[str, Any] | None) -> str:
-        if snapshot is None:
+    def _snapshot_text(snapshots: Mapping[str, Mapping[str, Any]]) -> str:
+        if not snapshots:
             return ""
-        return "CURRENT_DRIVER_SNAPSHOT_JSON:\n" + json.dumps(
-            {
-                "observed_via": snapshot.get("observed_via"),
-                "revision": snapshot.get("revision"),
-                "source": snapshot.get("source"),
-                "source_chars": snapshot.get("source_chars"),
-            },
-            ensure_ascii=True,
-            sort_keys=True,
+        file_snapshots = [
+            snapshot
+            for _path, snapshot in sorted(snapshots.items())
+            if snapshot.get("workflow") == "file"
+        ]
+        legacy_driver = next(
+            (
+                snapshot
+                for snapshot in snapshots.values()
+                if snapshot.get("workflow") == "legacy_driver"
+            ),
+            None,
         )
+        sections: list[str] = []
+        if file_snapshots:
+            sections.append(
+                "CURRENT_CANONICAL_ARTIFACT_SNAPSHOTS_JSON:\n"
+                + json.dumps(
+                    {
+                        "artifacts": [
+                            {
+                                "path": snapshot.get("path"),
+                                "observed_via": snapshot.get("observed_via"),
+                                "revision": snapshot.get("revision"),
+                                "content": snapshot.get("content"),
+                                "content_chars": snapshot.get("content_chars"),
+                            }
+                            for snapshot in file_snapshots
+                        ]
+                    },
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+            )
+        if legacy_driver is not None:
+            sections.append(
+                "CURRENT_DRIVER_SNAPSHOT_JSON:\n"
+                + json.dumps(
+                    {
+                        "observed_via": legacy_driver.get("observed_via"),
+                        "revision": legacy_driver.get("revision"),
+                        "source": legacy_driver.get("content"),
+                        "source_chars": legacy_driver.get("content_chars"),
+                    },
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+            )
+        return "\n\n".join(sections)
 
     def _assemble(
         self,
@@ -432,14 +568,14 @@ class AgentContextManager:
         split = max(0, len(projected_groups) - self.recent_groups)
         summarized = projected_groups[:split]
         retained = projected_groups[split:]
-        snapshot = self._latest_driver_snapshot(messages)
+        snapshots = self._latest_artifact_snapshots(messages)
 
         def projected_history_chars() -> int:
             appendix = [
                 text
                 for text in (
                     self._summary_text(summarized),
-                    self._snapshot_text(snapshot),
+                    self._snapshot_text(snapshots),
                 )
                 if text
             ]
@@ -454,7 +590,7 @@ class AgentContextManager:
             text
             for text in (
                 self._summary_text(summarized),
-                self._snapshot_text(snapshot),
+                self._snapshot_text(snapshots),
             )
             if text
         ]
@@ -479,6 +615,7 @@ class AgentContextManager:
                 else:
                     output.append(copy.deepcopy(dict(message)))
         history_chars = projected_history_chars()
+        driver_snapshot = snapshots.get("driver.py")
         stats = {
             "mode": mode,
             "history_char_budget": self.history_char_budget,
@@ -489,8 +626,18 @@ class AgentContextManager:
             "tool_group_count": len(projected_groups),
             "retained_group_count": len(retained),
             "summarized_group_count": len(summarized),
-            "current_driver_revision": snapshot.get("revision") if snapshot else None,
-            "current_driver_source_chars": snapshot.get("source_chars") if snapshot else 0,
+            "current_driver_revision": (
+                driver_snapshot.get("revision") if driver_snapshot else None
+            ),
+            "current_driver_source_chars": (
+                driver_snapshot.get("content_chars") if driver_snapshot else 0
+            ),
+            "current_artifact_paths": sorted(snapshots),
+            "current_artifact_count": len(snapshots),
+            "current_artifact_chars": sum(
+                int(snapshot.get("content_chars") or 0)
+                for snapshot in snapshots.values()
+            ),
             "budget_exceeded": history_chars > self.history_char_budget,
         }
         return ContextProjection(messages=tuple(output), stats=stats)

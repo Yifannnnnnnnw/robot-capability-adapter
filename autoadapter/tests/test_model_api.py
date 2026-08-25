@@ -772,6 +772,159 @@ class ModelApiTests(unittest.TestCase):
         self.assertIn('"tool": "read_driver"', projected_text)
         self.assertEqual(projection.stats["current_driver_revision"], 2)
 
+    def test_context_manager_keeps_one_latest_file_artifact_snapshot_per_path(self) -> None:
+        canonical_paths = (
+            "study.json",
+            "capability_design.json",
+            "capability_validation_suite.json",
+            "driver.py",
+        )
+        old_contents = {
+            path: f"OLD_{path}_CONTENT_" * 80 for path in canonical_paths
+        }
+        current_contents = {
+            path: f"CURRENT_{path}_CONTENT_" * 80 for path in canonical_paths
+        }
+        messages: list[dict[str, object]] = [
+            {"role": "user", "content": "INITIAL_PUBLIC_TASK"}
+        ]
+
+        def append_write(
+            *, call_id: str, path: str, content: str, ok: bool = True
+        ) -> None:
+            messages.extend(
+                [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": call_id,
+                                "type": "function",
+                                "function": {
+                                    "name": "write_file",
+                                    "arguments": json.dumps(
+                                        {"path": path, "content": content}
+                                    ),
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": call_id,
+                        "content": json.dumps(
+                            {
+                                "ok": ok,
+                                "result": {"path": path, "revision": 2} if ok else None,
+                                "error": None if ok else "write rejected",
+                            }
+                        ),
+                    },
+                ]
+            )
+
+        for path in canonical_paths:
+            append_write(
+                call_id=f"old-{path}", path=path, content=old_contents[path]
+            )
+            append_write(
+                call_id=f"current-{path}",
+                path=path,
+                content=current_contents[path],
+            )
+
+        read_content = "READ_BACK_CAPABILITY_DESIGN_" * 80
+        messages.extend(
+            [
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": "read-design",
+                            "type": "function",
+                            "function": {
+                                "name": "read_file",
+                                "arguments": json.dumps(
+                                    {"path": "capability_design.json"}
+                                ),
+                            },
+                        }
+                    ],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "read-design",
+                    "content": json.dumps(
+                        {
+                            "ok": True,
+                            "result": {
+                                "path": "capability_design.json",
+                                "root": "workspace",
+                                "content": read_content,
+                            },
+                        }
+                    ),
+                },
+            ]
+        )
+        rejected_content = "REJECTED_STUDY_CONTENT_" * 80
+        append_write(
+            call_id="rejected-study",
+            path="study.json",
+            content=rejected_content,
+            ok=False,
+        )
+        final_driver = "FINAL_WRITE_ONLY_DRIVER_" * 80
+        append_write(
+            call_id="final-driver",
+            path="driver.py",
+            content=final_driver,
+        )
+
+        manager = AgentContextManager(history_char_budget=12000, recent_groups=2)
+        for mode in ("text", "native"):
+            with self.subTest(mode=mode):
+                projection = (
+                    manager.project_text_observation(messages)
+                    if mode == "text"
+                    else manager.project_native(messages)
+                )
+                projected_text = json.dumps(projection.messages, ensure_ascii=True)
+
+                self.assertIn(
+                    "CURRENT_CANONICAL_ARTIFACT_SNAPSHOTS_JSON", projected_text
+                )
+                for content in old_contents.values():
+                    self.assertNotIn(content, projected_text)
+                self.assertNotIn(rejected_content, projected_text)
+                self.assertEqual(
+                    projected_text.count(current_contents["study.json"]), 1
+                )
+                self.assertEqual(
+                    projected_text.count(
+                        current_contents["capability_validation_suite.json"]
+                    ),
+                    1,
+                )
+                self.assertEqual(projected_text.count(read_content), 1)
+                self.assertNotIn(
+                    current_contents["capability_design.json"], projected_text
+                )
+                self.assertEqual(projected_text.count(final_driver), 1)
+                self.assertNotIn(current_contents["driver.py"], projected_text)
+                self.assertEqual(
+                    projection.stats["current_artifact_paths"],
+                    sorted(canonical_paths),
+                )
+                self.assertEqual(projection.stats["current_artifact_count"], 4)
+                self.assertEqual(
+                    projection.stats["current_driver_source_chars"],
+                    len(final_driver),
+                )
+                self.assertGreaterEqual(projection.stats["summarized_group_count"], 8)
+
     def test_native_context_projection_compacts_atomic_check_with_one_snapshot(self) -> None:
         source = "NATIVE_CURRENT_DRIVER" * 400
         checks = [
