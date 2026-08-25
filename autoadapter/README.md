@@ -1,5 +1,11 @@
 # AutoAdapter 2.0
 
+For the current Authority `0.20.0` implementation, stage interfaces, tools,
+visibility boundaries, artifacts, and experiment-preparation commands, see
+[`AUTOADAPTER_2_PIPELINE_GUIDE.md`](AUTOADAPTER_2_PIPELINE_GUIDE.md). The
+Authority remains normative; older interface descriptions below are retained
+only as historical context where they conflict with the current guide.
+
 `autoadapter/` is the self-contained, experiment-grade Direct-MuJoCo mainline.
 It does not import or copy runtime code from `demo2/`, `demo3/`,
 `general_demo/`, or `extensions/`.
