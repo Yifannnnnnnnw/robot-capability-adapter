@@ -188,9 +188,11 @@ credential 不会进入这些记录。`generate_message_json` 的 raw exchange �
    同一个文件。
 6. artifact 有效时，phase 立即完成并返回 artifact、完整 trace、model-turn count、tool-call count
    和完成事件。
-7. 最后一个 turn 即使只包含 `write_file` 而没有额外 closing message，也会在 `final_turn`
+7. 最后两个 turns 是有界交付窗口，只暴露 `write_file`。倒数第二个 turn 写出的 artifact 会立即
+   审核；若无效，确定性错误回到同一 conversation，保留最后一次修正机会。
+8. 最后一个 turn 即使只包含 `write_file` 而没有额外 closing message，也会在 `final_turn`
    事件后审核；有效文件照常接受。
-8. turn 预算耗尽仍无有效 artifact，抛出带 trace 的 `ReactLoopError`。这不是 Driver attempt。
+9. turn 预算耗尽仍无有效 artifact，抛出带 trace 的 `ReactLoopError`。这不是 Driver attempt。
 
 文件 phase 不设另一个 aggregate tool-call ceiling。限制位于每个具体工具：路径、文件/代码大小、
 每次执行 wall time、每阶段 MuJoCo step/simulated-time、输出大小和权限。
@@ -296,10 +298,14 @@ fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，
   scoped runner 只固定 turn budgets，未另行覆盖时使用 24,000 的代码默认。具体运行以适用的
   scoped config/runner 为准。
 - code 最多 200,000 characters。stdout/stderr 被合并在边界内，超出部分明确标记 truncated。
-- timeout 会终止该持久进程，不能把 timeout 后的不完整状态当作成功 probe。
+- timeout、worker exit 或协议损坏会终止并丢弃当前持久进程；失败代码不会自动重放。下一次显式
+  `execute_python` 会启动干净 worker，并返回 `session_restarted=true`，此前 Python globals 不再
+  保证存在。phase 的 tool-call 计数不会清零；因为丢失 worker 后无法确认已执行的 native steps，
+  Framework 会保守视为该 phase 的 physics-step budget 已耗尽。新 worker 仍可做纯 Python 和
+  Driver import/build 审核，但不能借重启取得新的物理执行预算。
 
 结果区分 `successful`、`timed_out`、`exit_code`、`spawn_error`、stdout/stderr、输出截断、
-wall time、本 call 和累计 physics steps，以及结构化 exception。
+wall time、本 call 和累计 physics steps、`session_restarted`/`session_lost`，以及结构化 exception。
 
 ### 5.4 `list_skeletons`
 
@@ -775,7 +781,8 @@ runs/<run-id>/
 - malformed tool arguments、unknown/unavailable tool、路径越界、代码 audit、Python exception 和
   invalid artifact 都作为同 conversation observation；仍有 turns 时模型可以修。
 - final turn 有效 artifact 接受；final turn 无效则 phase exhausted。
-- artifact validator 的 exception 会转成稳定、截断的模型可见错误，而不是泄漏 traceback/private data。
+- artifact validator 的 exception 会转成稳定、截断的模型可见错误，而不是泄漏 traceback/private data；
+  Driver import/build failure 优先回传 worker 的结构化 terminal exception，避免长 traceback 把根因截掉。
 
 ### 11.3 Driver/Repair failure
 
