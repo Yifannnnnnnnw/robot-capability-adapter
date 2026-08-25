@@ -27,7 +27,10 @@ def _parser() -> argparse.ArgumentParser:
     for name, help_text in (
         ("package", "validate the indexed robot packages"),
         ("check-only", "validate self-containment and indexed packages"),
-        ("full", "run reference calibration and the configured dynamic cells"),
+        (
+            "full",
+            "run fresh configured cells with private reference positive controls",
+        ),
     ):
         command = subparsers.add_parser(name, help=help_text)
         command.add_argument("--root", type=Path, default=None)
@@ -35,17 +38,6 @@ def _parser() -> argparse.ArgumentParser:
         if name == "full":
             command.add_argument("--output", type=Path, default=None)
             command.add_argument("--run-id", default=None)
-            command.add_argument(
-                "--skip-reference-calibration",
-                action="store_true",
-                help="skip the optional hidden reference diagnostics",
-            )
-            command.add_argument(
-                "--reuse-sealed-inputs-from",
-                type=Path,
-                default=None,
-                help="reuse audited TGCD/IVC artifacts from a prior mainline run",
-            )
     return parser
 
 
@@ -80,8 +72,6 @@ def main(argv: list[str] | None = None) -> int:
             config=config,
             output_dir=args.output,
             run_id=args.run_id,
-            skip_reference_calibration=args.skip_reference_calibration,
-            sealed_inputs_from=args.reuse_sealed_inputs_from,
         )
         _print(
             {
