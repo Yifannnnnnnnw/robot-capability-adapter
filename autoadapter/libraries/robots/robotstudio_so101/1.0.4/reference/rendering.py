@@ -1,7 +1,8 @@
 """Package-local SO-101 reference rendering for sealed capability designs.
 
-Capability-v2 designs are matched to the six calibrated SO-101 profiles by
-their closed native request schema and their top-level criterion metric/unit.
+Capability-v2 designs containing three to six capabilities are matched to a
+unique subset of the six calibrated SO-101 profiles by their closed native
+request schema and their top-level criterion metric/unit.
 The generated wrappers call the fixed capability reference directly; they do
 not inspect task identifiers or choose behaviour from a request payload.
 
@@ -111,8 +112,10 @@ def _native_mapping(
     capabilities: list[Mapping[str, Any]],
 ) -> list[tuple[str, str, str]]:
     profiles = _native_profiles()
-    if len(capabilities) != len(profiles):
-        raise ValueError("native SO-101 reference requires all six calibrated profiles")
+    if not 3 <= len(capabilities) <= len(profiles):
+        raise ValueError(
+            "native SO-101 reference requires three to six calibrated profiles"
+        )
     matches: list[tuple[str, str, str]] = []
     seen_profiles: set[str] = set()
     for capability in capabilities:
@@ -138,8 +141,6 @@ def _native_mapping(
             raise ValueError(f"ambiguous duplicate SO-101 calibration profile {profile_id}")
         seen_profiles.add(profile_id)
         matches.append((str(capability["method_name"]), profile_id, fixed_method))
-    if len(seen_profiles) != 6:
-        raise ValueError("native SO-101 reference requires each A1-A6 profile exactly once")
     return matches
 
 

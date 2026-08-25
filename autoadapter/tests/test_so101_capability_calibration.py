@@ -216,7 +216,28 @@ def test_renderer_keeps_explicit_task_metric_fallback_and_fails_closed(
     with pytest.raises(ValueError, match="ambiguous duplicate"):
         render_reference_driver(package, duplicate, tmp_path / "duplicate")
 
-    incomplete = _native_design()
-    incomplete["capabilities"].pop()
-    with pytest.raises(ValueError, match="all six"):
-        render_reference_driver(package, incomplete, tmp_path / "incomplete")
+    unknown = _native_design()
+    unknown["capabilities"][0]["criteria"][0]["metric"] = "unknown_metric"
+    with pytest.raises(ValueError, match="does not match"):
+        render_reference_driver(package, unknown, tmp_path / "unknown")
+
+    too_small = _native_design()
+    too_small["capabilities"] = too_small["capabilities"][:2]
+    with pytest.raises(ValueError, match="three to six"):
+        render_reference_driver(package, too_small, tmp_path / "too-small")
+
+
+@pytest.mark.parametrize("profile_count", [3, 4, 5, 6])
+def test_native_renderer_accepts_unique_known_profile_subsets(
+    tmp_path: Path, profile_count: int
+) -> None:
+    package = load_robot_package(PACKAGE_ROOT)
+    design = _native_design()
+    design["capabilities"] = design["capabilities"][:profile_count]
+    rendered = render_reference_driver(
+        package, design, tmp_path / f"native-{profile_count}"
+    )
+    source = rendered.read_text(encoding="utf-8")
+    assert "task_id" not in source
+    for capability in design["capabilities"]:
+        assert f"def {capability['method_name']}(" in source
