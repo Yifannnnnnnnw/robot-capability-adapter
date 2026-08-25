@@ -15,6 +15,7 @@ from autoadapter2.libraries import RobotPackage
 from autoadapter2.validation_compiler.ivc import (
     IVCError,
     _private_inputs_from_package,
+    run_ivc,
 )
 
 
@@ -54,6 +55,7 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
         {"guard_id": "control", "kind": "actuator_and_physics_step_required"},
         {"guard_id": "state", "kind": "no_direct_state_write"},
         {"guard_id": "canonical", "kind": "canonical_model_data"},
+        {"guard_id": "legacy-only", "kind": "task_demo_only"},
     ]
     _write(
         legacy / "instances.json",
@@ -91,7 +93,7 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
                         }
                     },
                     "clause_bindings": {"criterion": "cap-a-binding"},
-                    "guard_ids": ["control", "state", "canonical"],
+                    "guard_ids": ["cap-control", "cap-state", "cap-canonical"],
                     "repetitions": 1,
                     "timeout_sim_s": 1.0,
                     "max_steps": 20,
@@ -115,7 +117,19 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
             ]
         },
     )
-    _write(capability / "guards.json", {"guards": []})
+    _write(
+        capability / "guards.json",
+        {
+            "guards": [
+                {
+                    "guard_id": "cap-control",
+                    "kind": "actuator_and_physics_step_required",
+                },
+                {"guard_id": "cap-state", "kind": "no_direct_state_write"},
+                {"guard_id": "cap-canonical", "kind": "canonical_model_data"},
+            ]
+        },
+    )
 
     candidate = tmp_path / "candidate" / "driver.py"
     candidate.parent.mkdir()
@@ -187,7 +201,7 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
                 "method_name": "move_target",
                 "instance_id": "cap-a-nominal",
                 "binding_id": "cap-a-binding",
-                "guard_ids": ["control", "state", "canonical"],
+                "guard_ids": ["cap-control", "cap-state", "cap-canonical"],
                 "repetitions": 1,
                 "timeout_sim_s": 1.0,
                 "request": {
@@ -279,7 +293,7 @@ def test_trusted_reference_keeps_private_task_dispatch_but_measures_native_reque
     assert report["validation_passed"] is True
 
 
-def test_private_capability_bank_is_closed_except_for_shared_guards(tmp_path: Path) -> None:
+def test_private_capability_bank_is_a_closed_package_local_namespace(tmp_path: Path) -> None:
     package, _candidate, _design, _suite = _fixture(tmp_path)
     merged = _private_inputs_from_package(package)
     assert {item["instance_id"] for item in merged["instances"]["instances"]} == {
@@ -289,9 +303,9 @@ def test_private_capability_bank_is_closed_except_for_shared_guards(tmp_path: Pa
         "cap-a-binding",
     }
     assert {item["guard_id"] for item in merged["guards"]["guards"]} == {
-        "control",
-        "state",
-        "canonical",
+        "cap-control",
+        "cap-state",
+        "cap-canonical",
     }
 
     assert set(
@@ -314,14 +328,41 @@ def test_private_capability_bank_is_closed_except_for_shared_guards(tmp_path: Pa
     capability_guards = package.root / "capability_validation" / "private" / "guards.json"
     _write(
         capability_guards,
-        {"guards": [{"guard_id": "control", "kind": "duplicate"}]},
+        {
+            "guards": [
+                {"guard_id": "duplicate", "kind": "first"},
+                {"guard_id": "duplicate", "kind": "second"},
+            ]
+        },
     )
     with pytest.raises(IVCError, match="conflicting ID"):
         _private_inputs_from_package(package)
-    with pytest.raises(HarnessError, match="conflicting IDs"):
+    with pytest.raises(HarnessError, match="conflicting ID"):
         harness_runner._merged_private_index(
             package,
             "guards",
             "guard_id",
             capability_v2=True,
         )
+
+
+def test_ivc_rejects_legacy_task_private_fallback_before_model_call(
+    tmp_path: Path,
+) -> None:
+    package, _candidate, design, _suite = _fixture(tmp_path)
+    capability_dir = package.root / "capability_validation" / "private"
+    for name in ("instances.json", "bindings.json", "guards.json"):
+        (capability_dir / name).unlink()
+
+    client = mock.Mock()
+    with pytest.raises(
+        IVCError,
+        match=(
+            "package-local capability calibration bank is incomplete.*"
+            "Legacy tasks/private records cannot be used"
+        ),
+    ):
+        run_ivc(client, package=package, design=design)
+
+    client.generate_json.assert_not_called()
+    client.generate_tool_turn.assert_not_called()

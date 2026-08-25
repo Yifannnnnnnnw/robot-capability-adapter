@@ -147,32 +147,30 @@ def load_sanitized_ivc_examples(
 
 
 def _private_inputs_from_package(package: Any) -> dict[str, Any]:
-    legacy_dir = (
-        package.get("private_dir")
-        if isinstance(package, Mapping)
-        else getattr(package, "private_dir", None)
-    )
     package_root = (
         package.get("root")
         if isinstance(package, Mapping)
         else getattr(package, "root", None)
     )
-    if isinstance(legacy_dir, str):
-        legacy_dir = Path(legacy_dir)
     if isinstance(package_root, str):
         package_root = Path(package_root)
-    capability_dir = (
-        package_root / "capability_validation" / "private"
-        if isinstance(package_root, Path)
-        else None
-    )
-
-    legacy_available = isinstance(legacy_dir, Path) and legacy_dir.is_dir()
-    capability_available = (
-        isinstance(capability_dir, Path) and capability_dir.is_dir()
-    )
-    if not legacy_available and not capability_available:
-        raise IVCError("private_inputs must be supplied when package has no private records")
+    if not isinstance(package_root, Path):
+        raise IVCError(
+            "package-local capability calibration bank is required at "
+            "capability_validation/private, but the package root is unavailable"
+        )
+    capability_dir = package_root / "capability_validation" / "private"
+    required_paths = {
+        name: capability_dir / f"{name}.json"
+        for name in ("instances", "bindings", "guards")
+    }
+    missing = [path.name for path in required_paths.values() if not path.is_file()]
+    if missing:
+        raise IVCError(
+            "package-local capability calibration bank is incomplete; missing "
+            f"capability_validation/private/{', '.join(missing)}. "
+            "Legacy tasks/private records cannot be used for capability-v2 IVC"
+        )
 
     id_fields = {
         "instances": "instance_id",
@@ -181,25 +179,10 @@ def _private_inputs_from_package(package: Any) -> dict[str, Any]:
     }
     result: dict[str, Any] = {}
     for name, id_field in id_fields.items():
-        if capability_available and name in {"instances", "bindings"}:
-            # A capability-calibration bank is a closed IVC namespace.  Mixing
-            # task-demo records into it would expose task envelopes and let the
-            # compiler bind a capability case to an unrelated task instance.
-            directories = [capability_dir]
-        elif capability_available and name == "guards":
-            # Guards are shared physical-integrity contracts.  A calibration
-            # bank may add package-specific guards, but never override a task
-            # guard with the same identifier.
-            directories = [
-                directory
-                for directory in (legacy_dir, capability_dir)
-                if isinstance(directory, Path) and directory.is_dir()
-            ]
-        else:
-            directories = [legacy_dir]
-        documents = [
-            _read_object(directory / f"{name}.json") for directory in directories
-        ]
+        # Capability-v2 calibration is a closed, package-local namespace.
+        # Task Demo records contain task envelopes (including task_id) and are
+        # not a substitute for native capability requests or calibration.
+        documents = [_read_object(required_paths[name])]
         merged: list[dict[str, Any]] = []
         seen: set[str] = set()
         identity: dict[str, Any] = {}
