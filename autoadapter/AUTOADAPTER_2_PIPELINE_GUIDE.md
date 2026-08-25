@@ -1046,6 +1046,28 @@ source evidence gate 通过后先在对话里展示打印出的 proposal。此�
 给出 `accept`/`reject` 和非空理由后，才能调用第 7.7 节的 review/snapshot API。若接受，later run
 也必须由用户另行启动；上述 canary 命令不会自动创建或消费 Experience snapshot。
 
+### 16.1 Sonnet 其余机器人 skeleton 诊断
+
+`configs/experiments/sonnet-exp3-remaining-skeleton-diagnostic.json` 固定 Exp3 的 Sonnet 4.6
+model、file-workflow budgets、skeleton-assisted、empty Experience 和 Evolution disabled，但明确
+保持 `formal=false`。它包含除 SO-101 外的 10 台机器人。诊断入口每次只取其中一台，显式从
+`.env.company-api` 加载 company credential，调用 fresh STUDY/TGCD/IVC/Generate/Repair/ReCAP
+主线，并按本轮指示跳过 reference positive control：
+
+```bash
+PYTHONPATH=autoadapter/src pyenv exec python \
+  experiment/experiment3/diagnostics/run_sonnet_skeleton_diagnostic.py \
+  --robot unitree-go2-stock-12dof \
+  --output autoadapter/runs/diagnostic/sonnet-go2-skeleton-20260825 \
+  --run-id sonnet-go2-skeleton-20260825
+```
+
+其他允许值是 `franka_panda`、`kinova_gen3_robotiq_2f85`、`ufactory_xarm7`、
+`universal_robots_ur5e_robotiq_2f85`、`piper`、`kuka_iiwa_14`、`leap_hand`、
+`hello_robot_stretch_2` 和 `aloha_2`。入口在发出模型请求前先验证 exact model pin、credential
+来源和单机器人 package；结束时打印 stage/Driver/ReCAP 摘要、requested/returned model、累计 token
+以及 evidence path。这些运行不占 Exp3 的 33-cell denominator，也不授权正式 dispatch。
+
 ## 17. 怎样读一份运行证据
 
 建议按以下顺序审查，不要只看最后一个布尔值：
