@@ -13,17 +13,19 @@ agentic systems use test, execution, or physical feedback to refine controller
 and policy code
 \citep{tripathi2026testdriven,xiao2026enpire,fu2026capx,lu2026aspire}.
 
-This chapter presents Auto-Adapter, which transforms public robot metadata,
-canonical MJCF assets, and source-backed tasks into reusable capability
-contracts and robot-specific drivers. Its features are
-\textbf{Task-Grounded Capability Design}, an \textbf{implementation-blind
-Independent Validation Compiler}, and a \textbf{two-level, physics-grounded
-feedback architecture}. During GENERATE, an \textbf{inner physics-grounded
-generation loop} alternates between code synthesis, bounded public MuJoCo
-probes, and revision. An \textbf{outer validation--Repair cycle} then submits
-the generated driver to the trusted Harness, which runs private cases, issues
-behavioural verdicts, and returns bounded reports for Repair. Evolution
-proposes review-gated Experience for later matched runs.
+This chapter presents Auto-Adapter, a framework that uses public robot
+descriptions, a simulation model, and documented tasks to construct reusable
+robot capabilities and a robot-specific Python driver. Task-Grounded
+Capability Design identifies bounded operations shared across tasks; for
+example, reaching and manipulation tasks may motivate an end-effector
+capability whose success requires reaching and holding a target within a stated
+tolerance. Before driver generation, an Independent Validation Compiler
+converts these requirements into executable tests without access to the
+eventual implementation. A ReAct coding agent then develops the driver by
+reading permitted files, revising its artefacts, and running bounded Python and
+simulation checks \citep{yao2023react}. Final acceptance uses simulator state
+recorded independently of the generated code, rather than its return values or
+self-reported success.
 
 The chapter's central empirical objective is to establish whether Auto-Adapter
 produces effective robot-specific drivers whose quality, operationalised as
