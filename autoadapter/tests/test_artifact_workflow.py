@@ -159,6 +159,66 @@ class ArtifactWorkflowTests(unittest.TestCase):
             self.assertEqual(result.completed_on, "final_turn")
             self.assertEqual(result.model_turns, 1)
 
+    def test_missing_artifact_gets_a_two_turn_deadline_instruction(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "study.json"
+
+            def write_file(arguments: Mapping[str, Any]) -> dict[str, Any]:
+                artifact.write_text(str(arguments["content"]), encoding="utf-8")
+                return {"path": "study.json"}
+
+            client = _ScriptedArtifactClient(
+                [
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(_call("observe", "observe", {}),),
+                    ),
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            _call(
+                                "write-after-warning",
+                                "write_file",
+                                {"path": "study.json", "content": '{"ready": true}'},
+                            ),
+                        ),
+                    ),
+                    ToolTurn(content="artifact ready", finish_reason="stop"),
+                ]
+            )
+            result = run_artifact_react(
+                client=client,
+                stage="study",
+                system_prompt="write the study",
+                user_prompt="produce study.json",
+                tools=(
+                    ToolSpec("observe", "observe", {"type": "object"}, lambda _: {}),
+                    ToolSpec("write_file", "write", {"type": "object"}, write_file),
+                ),
+                artifact_name="study.json",
+                artifact_path=artifact,
+                validate_artifact=_json_validator,
+                max_turns=3,
+            )
+
+            warning = "\n".join(
+                str(message.get("content", ""))
+                for message in client.messages[1]
+                if message.get("role") == "user"
+            )
+            self.assertIn("Artifact deadline: 2 model turns remain", warning)
+            self.assertEqual(client.tools[2], [{
+                "type": "function",
+                "function": {
+                    "name": "write_file",
+                    "description": "write",
+                    "parameters": {"type": "object"},
+                },
+            }])
+            self.assertEqual(result.completed_on, "end_turn")
+
     def test_artifact_loop_has_no_aggregate_tool_call_cutoff(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             artifact = Path(directory) / "study.json"

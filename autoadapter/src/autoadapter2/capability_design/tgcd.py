@@ -342,14 +342,34 @@ def build_public_tgcd_inputs(
         else [json_copy(dict(value), label="reference_catalog") for value in reference_catalog]
     )
     _assert_reference_public(references)
+    tasks = json_copy(list(_package_tasks(package)), label="task_library")
+    task_index = [
+        {
+            key: task[key]
+            for key in ("task_id", "name", "description")
+            if isinstance(task, Mapping) and key in task
+        }
+        for task in tasks
+    ]
+    matching_reference_indices = [
+        index
+        for index, reference in enumerate(references)
+        if reference.get("robot_configuration_id") == ids["robot_configuration_id"]
+    ]
     return {
         "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        "invocation_abi": json_copy(
+            CAPABILITY_INVOCATION_ABI,
+            label="capability_invocation_abi",
+        ),
         "robot_package": {
             **ids,
             "morphology": json_copy(dict(morphology), label="morphology"),
-            "tasks": json_copy(list(_package_tasks(package)), label="task_library"),
+            "tasks": tasks,
         },
+        "task_index": task_index,
         "capability_v2_public_references": references,
+        "matching_reference_indices": matching_reference_indices,
         "completed_public_study": _sanitise_study(study),
         "eligible_experience": _sanitise_experience(experience),
         "task_support_is_design_evidence_only": True,
@@ -472,12 +492,16 @@ def run_tgcd(
                     user_prompt=(
                         "Read tgcd_inputs.json, which is raw JSON in the phase-workspace root "
                         "and is also directly openable as ./tgcd_inputs.json from execute_python. "
-                        "Its top-level keys include robot_package, capability_v2_public_references, "
-                        "completed_public_study, and eligible_experience; there is no result wrapper. "
-                        "Inspect the public robot package only as needed, and "
-                        f"author the complete canonical {TGCD_ARTIFACT_NAME} with write_file. "
-                        "Conserve the six-turn budget: inspect structured inputs with Python rather "
-                        "than searching paths, and write an initial complete artifact early enough "
+                        "Its top-level invocation_abi is the exact required capability-v2 ABI; "
+                        "do not use the legacy task invocation ABI nested in morphology. Use the "
+                        "compact task_index for coverage and matching_reference_indices to locate "
+                        "same-configuration public capability records without printing the full "
+                        "Task Library or reference catalog. You may adapt those source-grounded "
+                        "records, but must independently add the required preconditions, temporal "
+                        "semantics, invariants, failure behavior, and task_support. "
+                        f"Author the complete canonical {TGCD_ARTIFACT_NAME} with write_file. "
+                        "Conserve the six-turn budget: use at most two turns for inspection and call "
+                        "write_file with an initial complete artifact by turn three, early enough "
                         "to receive deterministic validation feedback. You may use execute_python "
                         "for credential-free public MuJoCo checks. "
                         "End the turn when the artifact is ready; there is no submit tool."

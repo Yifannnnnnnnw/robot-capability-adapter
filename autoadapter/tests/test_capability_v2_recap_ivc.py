@@ -295,6 +295,26 @@ def test_public_reference_projection_has_only_so101_and_go2_designs() -> None:
             assert capability["criteria"][0]["source_refs"]
 
 
+def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
+    package = _package()
+    inputs = build_public_tgcd_inputs(package)
+
+    assert inputs["invocation_abi"] == {
+        "kind": "capability_request",
+        "method_call": "method(request=request)",
+        "request_required": ["request"],
+    }
+    assert inputs["task_index"] == [
+        {
+            key: task[key]
+            for key in ("task_id", "name", "description")
+            if key in task
+        }
+        for task in package["tasks"]
+    ]
+    assert inputs["matching_reference_indices"] == []
+
+
 class _TGCDModel:
     def __init__(self, design: dict[str, Any]) -> None:
         self.design = design
@@ -408,7 +428,7 @@ def test_tgcd_real_client_uses_exact_file_tools_and_accepts_final_turn_write(
     )
 
     assert result["artifact_type"] == "capability_design"
-    assert model.tool_names == [{"read_file", "write_file", "execute_python"}]
+    assert model.tool_names == [{"write_file"}]
     assert (tmp_path / "sealed" / "capability_design.json").is_file()
 
 
@@ -587,7 +607,7 @@ def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
     assert len(result["cases"]) == 2 * len(design["capabilities"])
     assert model.tool_names == [
         {"read_file", "write_file", "execute_python"},
-        {"read_file", "write_file", "execute_python"},
+        {"write_file"},
     ]
     correction_messages = json.dumps(model.messages[1])
     assert "reference calibration failed" in correction_messages

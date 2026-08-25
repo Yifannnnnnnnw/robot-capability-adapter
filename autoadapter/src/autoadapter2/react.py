@@ -536,7 +536,10 @@ def run_artifact_react(
     There is intentionally no aggregate tool-call limit here.  Tool handlers
     retain their own path, execution-time, output, and stage-local resource
     limits; a long-lived development conversation must not be cut off by a
-    second, unrelated call counter.
+    second, unrelated call counter.  The final model turn exposes only
+    ``write_file`` so optional inspection cannot consume the artifact deadline;
+    a valid artifact already written on an earlier turn may also be accepted by
+    ending that final turn without another tool call.
     """
 
     if max_turns < 1 or tool_output_chars < 256:
@@ -584,15 +587,15 @@ def run_artifact_react(
     for turn_number in range(1, max_turns + 1):
         final_turn = turn_number == max_turns
         model_started = time.monotonic()
+        available_tools = [tool for tool in tools if tool.is_available()]
+        if final_turn:
+            available_tools = [tool for tool in available_tools if tool.name == "write_file"]
+        available_tool_names = {tool.name for tool in available_tools}
         turn = client.generate_tool_turn(
             stage=stage,
             system_prompt=system_prompt,
             messages=messages,
-            tools=[
-                tool.model_definition()
-                for tool in tools
-                if tool.is_available()
-            ],
+            tools=[tool.model_definition() for tool in available_tools],
         )
         model_elapsed_s = max(0.0, time.monotonic() - model_started)
         messages.append(_assistant_message(turn))
@@ -623,7 +626,7 @@ def run_artifact_react(
             tool_started = time.monotonic()
             if tool is None:
                 error = f"unknown tool: {call.name}"
-            elif not tool.is_available():
+            elif call.name not in available_tool_names or not tool.is_available():
                 error = f"tool unavailable in the current state: {call.name}"
             elif call.arguments is None and error is None:
                 error = "tool arguments must be one JSON object"
@@ -681,7 +684,6 @@ def run_artifact_react(
                     "observation": observation,
                 }
             )
-
         # A final turn may contain the write itself and therefore cannot wait
         # for an additional end_turn response.  Earlier tool turns continue
         # the conversation unless the model explicitly ended the turn.
@@ -694,6 +696,17 @@ def run_artifact_react(
             result = validate(turn_number=turn_number, event="end_turn")
             if result is not None:
                 return result
+            continue
+
+        remaining_turns = max_turns - turn_number
+        if 0 < remaining_turns <= 2:
+            _append_user_instruction(
+                messages,
+                f"Artifact deadline: {remaining_turns} model turns remain and no canonical "
+                f"{artifact_name} write has been observed. Stop optional inspection. On the "
+                "next turn, use write_file to create the complete canonical artifact so the "
+                "Framework can validate it and return any repairable error.",
+            )
 
     raise ReactLoopError(
         f"{stage} reached {max_turns} model turns without a valid {artifact_name}",

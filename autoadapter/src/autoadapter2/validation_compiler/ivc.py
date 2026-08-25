@@ -666,8 +666,9 @@ def run_ivc(
                         "and is directly openable as ./ivc_inputs.json from execute_python; "
                         "there is no result wrapper. Author the complete canonical "
                         f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
-                        "for credential-free calibration calculations. Conserve the six-turn "
-                        "budget and write an initial complete artifact early enough to receive "
+                        "for credential-free calibration calculations. Use at most two turns for "
+                        "inspection, then call write_file with an initial complete artifact by "
+                        "turn three so there is time to receive and apply "
                         "deterministic validation feedback. End the turn when the "
                         "artifact is ready; there is no submit or check tool."
                     ),
