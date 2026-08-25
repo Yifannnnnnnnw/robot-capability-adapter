@@ -136,11 +136,15 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
         criterion = capability["criteria"][0]
         for role in IVC_CASE_ROLES:
             suffix = f"{capability_id.lower()}-{role}"
+            amount = -0.25 if role == "nominal" else 0.75
             instances.append(
                 {
                     "instance_id": f"instance-{suffix}",
                     "capability_id": capability_id,
                     "case_role": role,
+                    "public_arguments": {
+                        "request": {f"amount_{capability_id[1:]}": amount}
+                    },
                     "clause_bindings": {
                         "capability-criterion": f"binding-{suffix}"
                     },
@@ -170,19 +174,21 @@ def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
         method_name = capability["method_name"]
         for role in IVC_CASE_ROLES:
             suffix = f"{cap_id.lower()}-{role}"
-            amount = -0.25 if role == "nominal" else 0.75
+            instance = instances[f"instance-{suffix}"]
             cases.append(
                 {
                     "case_id": f"case-{suffix}",
                     "case_role": role,
                     "capability_id": cap_id,
                     "method_name": method_name,
-                    "instance_id": instances[f"instance-{suffix}"]["instance_id"],
+                    "instance_id": instance["instance_id"],
                     "binding_id": bindings[f"binding-{suffix}"]["binding_id"],
                     "guard_ids": [],
                     "repetitions": 2,
                     "timeout_sim_s": 5.0,
-                    "request": {f"amount_{cap_id[1:]}": amount},
+                    "request": json.loads(
+                        json.dumps(instance["public_arguments"]["request"])
+                    ),
                     "criteria": json.loads(json.dumps(capability["criteria"])),
                 }
             )
@@ -479,11 +485,27 @@ def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
     private = _private_inputs(design)
     suite = _suite(design, private)
 
+    calibrated = validate_capability_validation_suite(
+        suite, package=package, design=design, private_inputs=private
+    )
+    assert calibrated["cases"][0]["request"] != calibrated["cases"][1]["request"]
+
     invalid_request = json.loads(json.dumps(suite))
     invalid_request["cases"][0]["request"] = {"task_id": "task-a"}
     with pytest.raises(IVCError, match="request"):
         validate_capability_validation_suite(
             invalid_request, package=package, design=design, private_inputs=private
+        )
+
+    calibrated_mismatch = json.loads(json.dumps(suite))
+    request_field = next(iter(calibrated_mismatch["cases"][0]["request"]))
+    calibrated_mismatch["cases"][0]["request"][request_field] = 0.5
+    with pytest.raises(IVCError, match="private calibration request"):
+        validate_capability_validation_suite(
+            calibrated_mismatch,
+            package=package,
+            design=design,
+            private_inputs=private,
         )
 
     duplicate_requests = json.loads(json.dumps(suite))
@@ -492,9 +514,21 @@ def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:
         case for case in duplicate_requests["cases"] if case["capability_id"] == cap_id
     ]
     pair[1]["request"] = json.loads(json.dumps(pair[0]["request"]))
+    duplicate_private = json.loads(json.dumps(private))
+    boundary_instance = next(
+        instance
+        for instance in duplicate_private["instances"]
+        if instance["instance_id"] == pair[1]["instance_id"]
+    )
+    boundary_instance["public_arguments"]["request"] = json.loads(
+        json.dumps(pair[0]["request"])
+    )
     with pytest.raises(IVCError, match="requests must differ"):
         validate_capability_validation_suite(
-            duplicate_requests, package=package, design=design, private_inputs=private
+            duplicate_requests,
+            package=package,
+            design=design,
+            private_inputs=duplicate_private,
         )
 
     wrong_binding = json.loads(json.dumps(suite))

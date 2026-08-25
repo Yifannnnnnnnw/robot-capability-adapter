@@ -336,6 +336,27 @@ def _same_criteria(case: Mapping[str, Any], capability: Mapping[str, Any], *, wh
     return False
 
 
+def _same_json_value(left: Any, right: Any) -> bool:
+    """Compare finite JSON structurally without Python's bool/int coercion."""
+
+    try:
+        return json.dumps(
+            left,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ) == json.dumps(
+            right,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    except (TypeError, ValueError):
+        return False
+
+
 def _normalise_case_criteria(case: Mapping[str, Any], capability: Mapping[str, Any]) -> dict[str, Any]:
     result = json_copy(dict(case), label="validation case")
     expected = _criterion_list(capability, where="sealed capability")
@@ -422,6 +443,16 @@ def validate_capability_validation_suite(
             raise IVCError(f"{where}.binding_id is not a supplied private binding")
         instance = instances[instance_id]
         binding = bindings[binding_id]
+        private_arguments = instance.get("public_arguments")
+        private_request = (
+            private_arguments.get("request")
+            if isinstance(private_arguments, Mapping)
+            else None
+        )
+        if not _same_json_value(request, private_request):
+            raise IVCError(
+                f"{where}.request differs from the selected private calibration request"
+            )
         clause_bindings = instance.get("clause_bindings")
         if (
             not isinstance(clause_bindings, Mapping)
