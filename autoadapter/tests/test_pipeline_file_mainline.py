@@ -4,11 +4,16 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from autoadapter2.driver_synthesis.generation import ModelCallEvidence, StudyResult
+from autoadapter2.driver_synthesis.generation import (
+    DriverSourceAuditError,
+    ModelCallEvidence,
+    StudyResult,
+)
 from autoadapter2.pipeline import (
     ExperimentConfig,
     PipelineHooks,
     _RecapClientAdapter,
+    _run_cell,
     run_experiment,
 )
 
@@ -157,6 +162,142 @@ def test_recap_adapter_forwards_native_tool_turn_unchanged() -> None:
     assert result is marker
     assert seen["stage"] == "recap"
     assert seen["tools"][0]["function"]["name"] == "move"
+
+
+def test_rejected_repair_retains_the_last_frozen_driver_for_partial_recap(
+    tmp_path: Path,
+) -> None:
+    package = _package(tmp_path)
+    client = SimpleNamespace(calls=[])
+    events: list[str] = []
+    initial_source = "def build(*, model, data):\n    return object()\n"
+
+    def generate_runner(*_args: Any, **kwargs: Any) -> Any:
+        events.append("generate")
+        workspace = Path(kwargs["workspace"])
+        workspace.mkdir(parents=True, exist_ok=True)
+        path = workspace / "driver.py"
+        path.write_text(initial_source, encoding="utf-8")
+        return SimpleNamespace(
+            driver_path=path,
+            driver_source=initial_source,
+            output={},
+            source_audit={},
+            probe_results=(),
+        )
+
+    def harness_runner(**kwargs: Any) -> dict[str, Any]:
+        events.append("harness")
+        assert Path(kwargs["driver_path"]).read_text(encoding="utf-8") == initial_source
+        return {
+            "pipeline_completed": True,
+            "physical_validation_executed": True,
+            "validation_passed": False,
+            "video_complete": True,
+            "trials": [
+                {
+                    "case_id": case["case_id"],
+                    "capability_id": case["capability_id"],
+                    "trial_passed": case["capability_id"] == "cap-a",
+                }
+                for case in kwargs["suite"]["cases"]
+            ],
+            "video_manifest": [],
+        }
+
+    def repair_runner(*_args: Any, **_kwargs: Any) -> Any:
+        events.append("repair")
+        rejected_source = (
+            "def build(*, model, data):\n"
+            "    return getattr(data, 'private_state')\n"
+        )
+        raise DriverSourceAuditError(
+            "repaired driver failed source audit",
+            driver_source=rejected_source,
+            model_output={"driver_filename": "driver.py"},
+        )
+
+    def task_demo_runner(**kwargs: Any) -> dict[str, Any]:
+        events.append("recap")
+        assert kwargs["capability_whitelist"] == ("cap-a",)
+        assert Path(kwargs["driver_path"]).read_text(encoding="utf-8") == initial_source
+        return {
+            "pipeline_completed": True,
+            "physical_validation_executed": True,
+            "validation_passed": False,
+            "video_complete": True,
+            "task_count": 1,
+            "passed_task_count": 0,
+            "trials": [{"case_id": "demo", "trial_passed": False}],
+            "video_manifest": [],
+        }
+
+    study_result = StudyResult(
+        condition="skeleton-assisted",
+        output={"findings": [], "implementation_plan": []},
+        probe_requests=({"probe_id": "public-step", "script": "import mujoco"},),
+        call_evidence=ModelCallEvidence(
+            stage="study", prompt="test", inputs={}, output={}
+        ),
+        probe_results=(
+            {
+                "probe_id": "public-step",
+                "exit_code": 0,
+                "timed_out": False,
+                "spawn_error": None,
+                "physics_steps": 1,
+            },
+        ),
+    )
+    config = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "repair-rejection-retention",
+            "robots": ["robot-a"],
+            "generation_conditions": ["skeleton-assisted"],
+            "max_driver_attempts_per_condition": 3,
+            "record_video": False,
+            "formal": False,
+            "evolution": {"enabled": False},
+        }
+    )
+    cell = _run_cell(
+        package=package,
+        design=_design(),
+        capability_suite=_suite(),
+        robot="robot-a",
+        condition="skeleton-assisted",
+        config=config,
+        client=client,
+        identity={"provider": "test", "model": "test"},
+        experience=(),
+        workspace=tmp_path / "cell",
+        run_id="repair-rejection-retention",
+        hooks=PipelineHooks(
+            generate_runner=generate_runner,
+            repair_runner=repair_runner,
+            harness_runner=harness_runner,
+            task_demo_runner=task_demo_runner,
+        ),
+        model_stage_log=[],
+        completed_study=study_result,
+        completed_probe_results=study_result.probe_results,
+        evolution_enabled=False,
+    )
+
+    assert events == ["generate", "harness", "repair", "recap"]
+    assert cell["frozen_driver_attempt_count"] == 1
+    assert cell["passed_capability_whitelist"] == ["cap-a"]
+    assert cell["capability_validation"]["attempt"] == 0
+    assert cell["task_demo_executed"] is True
+    assert len(cell["development_rejections"]) == 1
+    rejection = cell["development_rejections"][0]
+    assert rejection["stage"] == "repair"
+    assert rejection["formal_attempt_submitted"] is False
+    assert rejection["source_audit_passed"] is False
+    assert rejection["previous_frozen_driver_retained"] is True
+    assert Path(cell["attempts"][0]["frozen_driver_path"]).read_text(
+        encoding="utf-8"
+    ) == initial_source
 
 
 def test_fresh_cell_order_visibility_freeze_and_partial_recap_whitelist(

@@ -2216,6 +2216,12 @@ def _run_cell(
                 failure = None
             except DriverSourceAuditError as exc:
                 stage = "generate" if attempt == 0 else "repair"
+                retained_prior_driver = bool(
+                    attempt > 0
+                    and current_driver is not None
+                    and terminal_validation is not None
+                    and attempts
+                )
                 evidence = _stage_evidence(
                     client,
                     stage=stage,
@@ -2230,36 +2236,39 @@ def _run_cell(
                         **_with_experience_trace(evidence, experience),
                     }
                 )
-                current_driver = None
-                current_source = exc.driver_source
+                if not retained_prior_driver:
+                    current_driver = None
+                    current_source = exc.driver_source
                 driver_generated = True
                 failure = {"stage": stage, **_failure_record(exc)}
                 rejection = {
                     "stage": stage,
                     "formal_attempt_submitted": False,
                     "source_audit_passed": False,
+                    "previous_frozen_driver_retained": retained_prior_driver,
                     "failure": failure,
                     "evidence": evidence,
                 }
                 development_rejections.append(rejection)
-                terminal_validation = _normalise_validation_report(
-                    {
-                        "pipeline_completed": False,
-                        "physical_validation_executed": False,
-                        "validation_passed": False,
-                        "video_complete": not config.record_video,
-                        "source_audit_passed": False,
-                        "pre_harness_rejection": True,
-                        "failure": failure,
-                        "trials": [],
-                        "video_manifest": [],
-                    },
-                    robot=robot,
-                    condition=condition,
-                    attempt=attempt,
-                    record_video=config.record_video,
-                    evaluation_role="capability_validation",
-                )
+                if not retained_prior_driver:
+                    terminal_validation = _normalise_validation_report(
+                        {
+                            "pipeline_completed": False,
+                            "physical_validation_executed": False,
+                            "validation_passed": False,
+                            "video_complete": not config.record_video,
+                            "source_audit_passed": False,
+                            "pre_harness_rejection": True,
+                            "failure": failure,
+                            "trials": [],
+                            "video_manifest": [],
+                        },
+                        robot=robot,
+                        condition=condition,
+                        attempt=attempt,
+                        record_video=config.record_video,
+                        evaluation_role="capability_validation",
+                    )
                 _write(
                     attempt_dir / "generation_evidence.json",
                     {
@@ -2272,6 +2281,12 @@ def _run_cell(
                         "model_output": exc.model_output,
                         "evidence": evidence,
                         "formal_attempt_submitted": False,
+                        "previous_frozen_driver_retained": retained_prior_driver,
+                        **(
+                            {"retained_frozen_driver_path": str(current_driver)}
+                            if retained_prior_driver and current_driver is not None
+                            else {}
+                        ),
                     },
                 )
                 _write(attempt_dir / "generation_error.json", failure)
