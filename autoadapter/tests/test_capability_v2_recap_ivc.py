@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -21,6 +22,8 @@ from autoadapter2.capability_design import (
     validate_capability_design,
 )
 from autoadapter2.capability_design.tgcd import run_tgcd
+from autoadapter2.harness import run_private_suite
+from autoadapter2.harness import runner as harness_runner
 from autoadapter2.task_demo.recap import RecapBudgets, run_recap
 from autoadapter2.libraries import load_robot_package
 from autoadapter2.react import ToolCall, ToolTurn
@@ -38,6 +41,14 @@ from autoadapter2.validation_compiler.ivc import IVCError
 
 ROOT = Path(__file__).resolve().parents[2]
 SO101_PACKAGE_ROOT = ROOT / "autoadapter" / "libraries" / "robots" / "robotstudio_so101" / "1.0.4"
+GO2_PACKAGE_ROOT = (
+    ROOT
+    / "autoadapter"
+    / "libraries"
+    / "robots"
+    / "unitree-go2-stock-12dof"
+    / "1.0.2"
+)
 
 
 def _package() -> dict[str, Any]:
@@ -629,6 +640,199 @@ def test_ivc_authors_from_sealed_schema_when_private_domain_is_absent() -> None:
     )
 
     assert canonical["cases"] == suite["cases"]
+
+
+def test_task_fallback_hides_go2_task_requests_but_executes_authored_requests(
+    tmp_path: Path,
+) -> None:
+    package = load_robot_package(GO2_PACKAGE_ROOT)
+    capability = json.loads(json.dumps(_design()["capabilities"][0]))
+    capability.update(
+        {
+            "capability_id": "G-test",
+            "method_name": "track_yaw_rate",
+            "request_schema": _scalar_schema("target_yaw_rate_rad_s"),
+            "criteria": [
+                {
+                    "metric": "mean_body_yaw_rate",
+                    "unit": "rad/s",
+                    "comparator": ">=",
+                    "threshold": 0.1,
+                    "temporal": {"kind": "bounded_window", "duration_s": 0.1},
+                    "aggregation": {"kind": "single_trial"},
+                    "source_refs": _evidence("Go2 task-context execution boundary"),
+                }
+            ],
+        }
+    )
+    design = {
+        "artifact_type": "capability_design",
+        "schema_version": "2.0",
+        "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        "robot_configuration_id": package.robot_configuration_id,
+        "package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+        "invocation_abi": CAPABILITY_INVOCATION_ABI,
+        "capabilities": [capability],
+        "task_support": [],
+    }
+    instance_document = json.loads(
+        (GO2_PACKAGE_ROOT / "tasks" / "private" / "instances.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    raw_instance = next(
+        item
+        for item in instance_document["instances"]
+        if item["instance_id"] == "go2-go2-t05"
+    )
+    assert raw_instance["public_arguments"]["request"]["task_id"] == "GO2-T05"
+    suite = {
+        "artifact_type": "capability_validation_suite",
+        "schema_version": "2.0",
+        "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        "robot_configuration_id": package.robot_configuration_id,
+        "package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+        "whole_suite_aggregation": {"kind": "all_cases"},
+        "cases": [
+            {
+                "case_id": f"go2-authored-{role}",
+                "case_role": role,
+                "capability_id": "G-test",
+                "method_name": "track_yaw_rate",
+                "instance_id": raw_instance["instance_id"],
+                "binding_id": "go2-t05-yaw-rate",
+                "guard_ids": list(raw_instance["guard_ids"]),
+                "repetitions": raw_instance["repetitions"],
+                "timeout_sim_s": raw_instance["timeout_sim_s"],
+                "request": {
+                    "target_yaw_rate_rad_s": 0.25 if role == "nominal" else 0.5
+                },
+                "criteria": json.loads(json.dumps(capability["criteria"])),
+            }
+            for role in IVC_CASE_ROLES
+        ],
+    }
+
+    model = _IVCModel(suite)
+    result = run_ivc(
+        model,
+        package=package,
+        design=design,
+        max_turns=2,
+        reference_positive_control_hook=lambda **_kwargs: {
+            "reference_passed": True
+        },
+    )
+
+    model_instances = model.calls[0]["inputs"]["private_instances"]
+    serialized_instances = json.dumps(model_instances)
+    for forbidden in (
+        "task_id",
+        "public_arguments",
+        "repetition_variants",
+        "reference_arguments",
+        "preinvoke",
+        "framework_events",
+        "task_macro",
+        "task_plan",
+    ):
+        assert forbidden not in serialized_instances
+    projected = next(
+        item
+        for item in model_instances["instances"]
+        if item["instance_id"] == raw_instance["instance_id"]
+    )
+    assert projected["scene_entrypoint"] == raw_instance["scene_entrypoint"]
+    assert projected["clause_bindings"] == raw_instance["clause_bindings"]
+    assert [case["request"] for case in result["cases"]] == [
+        {"target_yaw_rate_rad_s": 0.25},
+        {"target_yaw_rate_rad_s": 0.5},
+    ]
+
+    candidate = tmp_path / "driver.py"
+    candidate.write_text(
+        "import mujoco\n\n"
+        "class Driver:\n"
+        "    def __init__(self, model, data):\n"
+        "        self.model = model\n"
+        "        self.data = data\n\n"
+        "    def track_yaw_rate(self, request):\n"
+        "        self.data.ctrl[0] = float(request['target_yaw_rate_rad_s'])\n"
+        "        mujoco.mj_step(self.model, self.data)\n\n"
+        "def build(*, model, data):\n"
+        "    return Driver(model, data)\n",
+        encoding="utf-8",
+    )
+    candidate_payloads: list[dict[str, Any]] = []
+    trusted_measurement_arguments: list[dict[str, Any]] = []
+
+    def worker(payload: dict[str, Any], **_kwargs: Any) -> dict[str, Any]:
+        candidate_payloads.append(payload)
+        return {
+            "worker_completed": True,
+            "method_invoked": True,
+            "canonical_model_data": True,
+            "candidate_exception": None,
+            "candidate_log": "",
+            "physical_evidence": {
+                "step_count": 2,
+                "ctrl_observed_before_step": True,
+                "ctrl_changed_from_reset": True,
+                "direct_state_write_detected": False,
+                "contact_monitoring_complete": True,
+                "minimum_contact_distance_m": None,
+                "contact_pair_min_distances": [],
+                "samples": [{"time": 0.0}, {"time": 0.1}],
+            },
+            "video": {"requested": False, "complete": False, "frame_count": 0},
+        }
+
+    def temporal(
+        _binding: dict[str, Any],
+        *,
+        criterion: dict[str, Any],
+        evidence: dict[str, Any],
+        public_arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        del criterion, evidence
+        trusted_measurement_arguments.append(public_arguments)
+        return {"kind": "test", "passed": True, "value": 0.4}
+
+    with (
+        mock.patch.object(harness_runner, "_run_worker", side_effect=worker),
+        mock.patch.object(harness_runner, "evaluate_temporal", side_effect=temporal),
+        mock.patch.object(
+            harness_runner,
+            "evaluate_guards",
+            side_effect=lambda guards, **_kwargs: {
+                str(guard["guard_id"]): True for guard in guards
+            },
+        ),
+    ):
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=result,
+            driver_path=candidate,
+            condition="from-scratch",
+            output_dir=tmp_path / "harness",
+            record_video=False,
+        )
+
+    assert report["validation_passed"] is True
+    assert [payload["public_arguments"] for payload in candidate_payloads] == [
+        {"request": case["request"]} for case in result["cases"]
+    ]
+    assert [
+        arguments["request"]["task_parameters"]
+        for arguments in trusted_measurement_arguments
+    ] == [case["request"] for case in result["cases"]]
+    assert {
+        arguments["request"]["task_id"]
+        for arguments in trusted_measurement_arguments
+    } == {"GO2-T05"}
 
 
 def test_ivc_rejects_request_role_and_instance_binding_mismatches() -> None:

@@ -275,6 +275,71 @@ def _copy_private_inputs(private_inputs: Mapping[str, Any]) -> dict[str, Any]:
     return copied
 
 
+_TASK_INSTANCE_MODEL_FIELDS = frozenset(
+    {
+        "instance_id",
+        "capability_id",
+        "case_role",
+        "scene_entrypoint",
+        "reset",
+        "request_domain",
+        "request_anchors",
+        "calibration_profile",
+        "clause_bindings",
+        "guard_ids",
+        "repetitions",
+        "timeout_sim_s",
+    }
+)
+
+
+def _project_private_inputs_for_model(
+    private_inputs: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Hide task execution envelopes while retaining IVC authoring context.
+
+    A package without a dedicated capability-validation namespace falls back
+    to trusted ``tasks/private`` fixtures.  Those records also contain the
+    private Task Demo request and execution plan.  The Framework needs the
+    complete records for audit and Harness execution, but the IVC model only
+    needs opaque fixture IDs and the physical/calibration metadata required to
+    author and bind capability cases.
+    """
+
+    copied = _copy_private_inputs(private_inputs)
+    instances_document = copied.get("instances")
+    if not (
+        isinstance(instances_document, Mapping)
+        and instances_document.get("calibration_namespace") == "task"
+    ):
+        return copied
+
+    raw_instances = instances_document.get("instances")
+    if not isinstance(raw_instances, list):
+        raise IVCError("private instances must be an object array")
+
+    projected_instances: list[dict[str, Any]] = []
+    for index, record in enumerate(raw_instances):
+        if not isinstance(record, Mapping):
+            raise IVCError(f"private instances[{index}] must be an object")
+        projected_instances.append(
+            {
+                key: json_copy(value, label=f"private instances[{index}].{key}")
+                for key, value in record.items()
+                if key in _TASK_INSTANCE_MODEL_FIELDS
+            }
+        )
+
+    projected_document = {
+        key: json_copy(value, label=f"private instances.{key}")
+        for key, value in instances_document.items()
+        if key != "instances"
+    }
+    projected_document["instances"] = projected_instances
+    copied["instances"] = projected_document
+    return copied
+
+
 def _records(value: Any, *, field: str) -> list[Mapping[str, Any]]:
     if isinstance(value, Mapping):
         if field in value:
@@ -626,7 +691,7 @@ def build_ivc_inputs(
 ) -> dict[str, Any]:
     """Build IVC inputs while enforcing implementation blindness."""
 
-    copied_private = _copy_private_inputs(private_inputs)
+    copied_private = _project_private_inputs_for_model(private_inputs)
     selected_examples = list(examples) if examples else load_sanitized_ivc_examples()
     sanitized_examples = _copy_private_inputs(
         {"examples": selected_examples}
@@ -763,7 +828,7 @@ def run_ivc(
                 raise IVCError(
                     "reference calibration failed for at least one nominal or "
                     "calibrated-boundary case; revise only the supplied private "
-                    "case selections, task-neutral requests and bindings"
+                    "contexts, authored task-neutral requests, and bindings"
                 ) from None
             if callback is not None:
                 callback(
