@@ -300,6 +300,16 @@ transfer.
 
 \section[Experiment 1b: Driver Use]{Experiment 1b: Driver Use}
 
+Experiment~1b evaluated whether fixed, capability-validated robot APIs
+supported downstream task completion. Seven LLMs were compared as
+interchangeable backbones within the same ReCAP high-level planner
+\citep{zhang2025recap}. Auto-Adapter supplied one fixed driver and capability
+interface for SO-101 and Unitree Go2. Each model was evaluated on five tasks
+per robot with three repetitions, yielding 210 episodes. The driver,
+interface, planner logic, task conditions and evaluator were held constant;
+only the LLM backbone varied. Task success was determined independently by
+the trusted Harness. The available capabilities are summarised below.
+
 \begin{table}[htbp]
   \centering
   \begingroup
