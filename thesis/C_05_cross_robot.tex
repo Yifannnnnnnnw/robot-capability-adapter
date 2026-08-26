@@ -52,3 +52,196 @@ effect. Source checks, behavioural validation, and downstream Task Demo answer
 different questions and are reported separately. All resulting evidence is
 limited to the declared MuJoCo models and conditions
 \citep{todorov2012mujoco}.
+
+The four sections that follow consolidate morphology-specific evidence from
+the earlier Auto-Adapter 1.0 experiments. This evidence provides historical
+context for the present cross-robot study, but it is not reclassified as
+Experiment~3 evidence and does not enter the current 33-cell denominator.
+Auto-Adapter 1.0 evaluated fixed serial arms, quadrupeds, an aerial quadrotor,
+and a humanoid biped. It did not contain corresponding results for the
+dexterous-hand, mobile-manipulator, or bimanual-manipulator configurations
+introduced in the current cohort.
+
+The earlier onboarding headline combined structural checks with smoke-level
+behavioural tests. A stricter retrospective run retained the structural results
+but exposed missing or insufficient behavioural checks on several drivers.
+The sections below therefore state separately whether a result concerns
+source and interface construction, robot-level behavioural validation, or
+downstream task execution. Where applicable, the historical comparison places
+Auto-Adapter's multi-turn controller against a same-interface Code as Policies
+(CaP) single-program baseline.
+
+
+\section[Serial-Arm Manipulation]{Serial-Arm Manipulation}
+\label{sec:cross-robot-serial-arms}
+
+The Auto-Adapter 1.0 cohort contained five fixed serial arms: SO-101, Piper,
+UR5e, Franka Panda, and KUKA iiwa 14. A self-contained driver was generated
+for each configuration. The original onboarding suite reported seven of seven
+checks passing for every arm. A later strict re-evaluation retained the
+source, build, and homing results, but the five drivers lacked a
+scene-perception operation added to the revised harness. The original
+onboarding result should therefore be interpreted as structural and
+smoke-level evidence rather than as equivalent to the current
+candidate-independent Capability Validation protocol.
+
+The depth of downstream evaluation differed substantially across the five
+arms. SO-101 supported the broadest manipulation and model-portability
+experiments. Piper and UR5e were evaluated on the same five-task mixed
+physics-and-behaviour suite, Franka was examined through a controlled reach
+breakdown, and KUKA received onboarding tests without a downstream task
+evaluation. These unequal protocols preclude a pooled serial-arm success rate.
+
+On Piper and UR5e, Auto-Adapter completed 12 of 15 trials per robot
+($80\%$), compared with 9 of 15 ($60\%$) for CaP. Both methods completed the
+basic reach and gripper tasks and failed the multi-waypoint square trace. The
+difference arose from \texttt{unreachable\_detect}: Auto-Adapter reported the
+inverse-kinematics exception correctly in all three trials, whereas CaP
+reported completion in all three despite the failed command. A separate Piper
+pick experiment completed 30 of 30 task trials, but its driver included a
+13-line post-synthesis patch. This result therefore supports the feasibility
+of the resulting interface under the evaluated scene, not untouched
+end-to-end generation.
+
+Franka exposed a different limitation. Across seven Cartesian reach variants
+with ten trials each, the driver passed 20 of 70 trials ($28.6\%$), with a
+mean final error of $3.49$\,cm. The positive $x$ and positive $z$ variants
+passed all trials, four directions ended approximately $2$--$4$\,cm from
+their targets, and the negative $z$ variant ended $11.07$\,cm away at the
+workspace and joint-limit boundary. A deterministic scripted oracle with no
+language model reproduced the same two-of-seven variant pattern. Increasing
+the damped-least-squares iteration budget fivefold and introducing null-space
+regularisation did not improve the aggregate count, while
+gravity-compensated execution recovered one additional variant. The observed
+ceiling therefore lies in the prescribed control template and execution path,
+rather than in the language model's selection of the Cartesian target alone.
+
+The historical cross-model comparison used SO-101 grasping as the
+contact-rich manipulation reference. Task success among self-written drivers
+that passed the earlier validation process ranged from $0.28$ to $0.46$.
+Because its task, validation, and synthesis-attempt protocol differed from the
+non-gripper experiments below, this range is retained as context rather than
+as a directly comparable morphology-level estimate.
+
+
+\section[Quadruped Locomotion]{Quadruped Locomotion}
+\label{sec:cross-robot-quadrupeds}
+
+Auto-Adapter 1.0 included Unitree Go2, Unitree A1, and ANYmal-C as
+twelve-actuator quadruped configurations. All three passed the original
+structural and smoke-level onboarding suite. Under the later strict
+locomotion checks, however, Go2 did not lower its body sufficiently during
+\texttt{sit}, A1 moved backwards during \texttt{walk\_forward}, and ANYmal-C
+failed the revised standing or displacement requirements. A1 consequently
+received no downstream task result. The Go2 and ANYmal-C results below came
+from a separate ten-task suite with independent physics grading and do not
+inherit the leniency of the original onboarding checks.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{llrr}
+    \toprule
+    \textbf{Robot} & \textbf{Agent} &
+    \textbf{Auto-Adapter} & \textbf{CaP} \\
+    \midrule
+    ANYmal-C & Sonnet 4.5 & 68\% & 28\% \\
+    ANYmal-C & Sonnet 4.6 & 62\% & 50\% \\
+    Unitree Go2 & Sonnet 4.5 & 48\% & 54\% \\
+    Unitree Go2 & Sonnet 4.6 & 44\% & 54\% \\
+    \bottomrule
+  \end{tabular}
+  \caption{Auto-Adapter 1.0 quadruped locomotion results on the
+  ten-task physics-graded suite. Each percentage summarises ten tasks
+  with five trials per task. Both controller conditions used the same
+  Sonnet 4.5-generated driver; the Sonnet 4.6 rows change the downstream
+  agent only.}
+  \label{tab:aa1-quadruped-locomotion}
+\end{table}
+
+Table~\ref{tab:aa1-quadruped-locomotion} shows that neither controller
+dominated across both configurations. Auto-Adapter led on ANYmal-C, whereas
+CaP led on Go2, and the ordering remained the same when the downstream agent
+changed from Sonnet 4.5 to Sonnet 4.6. On ANYmal-C, CaP's open-loop gait
+failed beyond a short walk, while Auto-Adapter benefited from checking the
+base pose between actions. On Go2, the same repeated-control strategy
+frequently overshot short target distances because the driver's walking
+increment was comparatively coarse. These observations describe interaction
+between each driver, controller, and task suite; they do not isolate a causal
+effect of quadruped morphology.
+
+The two-attempt cross-model synthesis sweep produced a validated Go2 driver
+in one of two attempts for Opus 4.8 and one of two attempts for Sonnet 4.6.
+Their downstream task-success rates were $0.70$ and $0.82$, respectively.
+The other five model configurations produced no validating driver within two
+attempts. These counts measure reliability under that bounded historical
+protocol and are not model-ranking evidence for the current experiment.
+
+
+\section[Aerial Quadrotor]{Aerial Quadrotor}
+\label{sec:cross-robot-aerial}
+
+Skydio X2 extended Auto-Adapter 1.0 beyond its eight-robot core benchmark.
+Its floating base and four thrust rotors make the system underactuated and
+open-loop unstable. The generated driver exposed \texttt{takeoff},
+\texttt{move\_to}, \texttt{hover}, \texttt{land}, and
+\texttt{get\_base\_pose}. Internally, it implemented a cascaded
+position-to-attitude-to-rotor-thrust feedback controller rather than relying
+on kinematics alone.
+
+The Sonnet 4.5-generated driver passed all seven class-specific onboarding
+checks, including commanded-altitude take-off while upright and movement to a
+world-frame target without overturning. The corrected downstream comparison
+used eight physics-graded tasks with five trials per task. The suite covered
+take-off, altitude holding, point-to-point movement, return movement, diagonal
+flight, and square patrol, and was tightened so that a do-nothing controller
+passed none of its eight tasks. Auto-Adapter and same-interface CaP each
+completed all 40 task trials. The result therefore supports successful
+synthesis and validation of the flight controller under those conditions; it
+does not support an advantage for the Auto-Adapter agent loop.
+
+In the two-attempt cross-model sweep, Opus 4.8 and Sonnet 4.6 each produced
+validating drivers in both attempts. Haiku 4.5 and DeepSeek V3.2 each
+succeeded once, while Nova Pro, Ministral 8B, and Qwen3 32B produced no
+validating driver. The downstream task-success rates of the passing drivers
+were $1.00$ for Opus, $0.95$ for Sonnet, $1.00$ for Haiku, and $0.82$ for
+DeepSeek. These results are reported as configuration-specific historical
+outcomes because the two-attempt sweep does not estimate a general aerial
+synthesis rate.
+
+
+\section[Humanoid Biped]{Humanoid Biped}
+\label{sec:cross-robot-humanoid}
+
+Unitree H1 provided the Auto-Adapter 1.0 humanoid case. The evaluated model
+had 19 actuated joints and a floating torso, and it fell without active
+stabilisation. The retained Sonnet 4.5 driver was the third synthesis version
+and implemented a joint-space proportional--derivative balance controller.
+It passed all seven class-specific validation checks. During the standing
+test, torso height remained approximately $0.98$\,m and the body-axis upright
+measure remained $1.00$. During squat recovery, the torso lowered and then
+returned to approximately $0.97$\,m with an upright measure of $0.99$.
+
+The result was repeated under the home-initialised protocol: standing passed
+four of four runs and squat recovery passed three of three. This evidence is
+reported at the driver-validation level because the orchestrator advanced
+physics directly during the stand and squat checks. A replay that failed to
+advance physics could allow a homed robot to remain upright without executing
+the requested controller, so controller-reported completion alone would not
+support the same claim.
+
+Dynamic walking remained a negative result. Attempts to generate a
+closed-loop micro-step gait did not produce a stable,
+validator-certified walk, and adding the walking objective disrupted the
+previously reliable standing behaviour. The evidence therefore supports
+static balance and squat recovery under the evaluated simulation conditions,
+but not dynamic bipedal locomotion.
+
+The later two-attempt cross-model sweep should not be conflated with the
+retained Sonnet 4.5 driver above. In that sweep, only Opus 4.8 produced a
+validating H1 driver, in one of two attempts, and its downstream task-success
+rate was $0.50$. The remaining model configurations produced no validating
+driver. This was the lowest validation frequency among the three
+non-gripper configurations in that sweep, but the tasks, controllers, and
+dynamics changed together. It therefore remains a descriptive result rather
+than evidence of a causal morphology ordering.
