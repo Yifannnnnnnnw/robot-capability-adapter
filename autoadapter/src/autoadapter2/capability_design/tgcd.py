@@ -44,8 +44,11 @@ Each capability is one single-call physical effect and must have a unique capabi
 Python method_name, a concise description and effect, a closed task-neutral request_schema,
 preconditions, temporal_semantics, invariants, failure_behavior, and source-grounded structured
 criteria. Each capability has exactly one top-level criterion. Every non-object request-schema
-field has an explicit unit and frame, numeric bounds are finite where relevant, and every field
-carrying a numeric bound also carries its public evidence_refs. A request schema must not contain
+node has its own explicit unit and frame, numeric bounds are finite where relevant, and every node
+carrying a numeric bound also carries its own public evidence_refs. These rules are recursive:
+an array node itself needs minItems, maxItems, unit, and frame; its items object is a separate full
+schema node, so numeric items also need their own unit, frame, finite bounds, and evidence_refs.
+Parent metadata is never inherited. A request schema must not contain
 task_id, task_parameters, scene,
 reset, private values, criteria, oracle fields, or a task/macro plan.
 
@@ -449,6 +452,27 @@ def build_public_tgcd_inputs(
                 "evidence_refs",
             ],
             "bounded_schema_fields_require_evidence_refs": True,
+            "request_schema_rules": {
+                "recursive": True,
+                "parent_metadata_is_not_inherited": True,
+                "array_node_required_fields": [
+                    "type",
+                    "items",
+                    "minItems",
+                    "maxItems",
+                    "unit",
+                    "frame",
+                ],
+                "array_items_follow_same_rules_recursively": True,
+                "numeric_node_required_fields": [
+                    "type",
+                    "unit",
+                    "frame",
+                    "at_least_one_finite_numeric_bound",
+                    "evidence_refs",
+                ],
+                "string_boolean_node_required_fields": ["type", "unit", "frame"],
+            },
             "evidence_ref_required_fields": ["source_id", "specific_reference"],
             "preconditions_and_invariants_are_nonempty_text_arrays": True,
             "temporal_semantics_is_nonempty_object": True,
@@ -566,7 +590,7 @@ def run_tgcd(
             )
             model_inputs_path = session.workspace / "tgcd_inputs.json"
             model_inputs_path.write_text(
-                json.dumps(inputs, indent=2, ensure_ascii=True) + "\n",
+                json.dumps(inputs, ensure_ascii=True, separators=(",", ":")) + "\n",
                 encoding="utf-8",
             )
             working_artifact = session.workspace / TGCD_ARTIFACT_NAME
@@ -596,8 +620,9 @@ def run_tgcd(
                     stage="tgcd",
                     system_prompt=TGCD_SYSTEM_PROMPT,
                     user_prompt=(
-                        "Read tgcd_inputs.json, which is raw JSON in the phase-workspace root "
-                        "and is also directly openable as ./tgcd_inputs.json from execute_python. "
+                        "The complete raw public input is ./tgcd_inputs.json in the phase-workspace "
+                        "root. It is compact JSON; use execute_python for targeted queries instead "
+                        "of spending turns printing the full Task Library or reference catalog. "
                         f"The compact authoring brief is included here verbatim: {authoring_brief}. "
                         "Its top-level invocation_abi is the exact required capability-v2 ABI; "
                         "copy every artifact_header field unchanged at the artifact top level, "
@@ -608,7 +633,11 @@ def run_tgcd(
                         "or reference catalog. When this matching list is non-empty, use its "
                         "calibrated records as the source for numeric request bounds and criteria "
                         "rather than inventing replacements. Copy any selected request_schema, "
-                        "criteria, and evidence_refs without abridging them. Keep capabilities as "
+                        "criteria, and evidence_refs without abridging them. Recursively audit every "
+                        "request_schema node "
+                        "node before writing: an array and its items are separate nodes, parent "
+                        "unit/frame/evidence do not propagate, and numeric items need their own "
+                        "unit, frame, finite bounds, and evidence_refs. Keep capabilities as "
                         "reusable single physical effects, not task operations such as whole-object "
                         "push/grasp/release or fixture-specific macros. You must independently add the "
                         "required preconditions, temporal semantics, invariants, failure behavior, "

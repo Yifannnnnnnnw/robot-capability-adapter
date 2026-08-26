@@ -177,15 +177,75 @@ def _validate_evidence_refs(value: Any, *, where: str) -> list[dict[str, Any]]:
     return result
 
 
-def validate_schema_definition(
+def _recursive_schema_requirement_issues(
     schema: Mapping[str, Any],
     *,
-    path: str = "request_schema",
-) -> dict[str, Any]:
-    """Validate a closed task-neutral request schema and return a copy."""
+    path: str,
+) -> list[str]:
+    """Collect recursive physical-metadata omissions TGCD can fix together."""
 
-    if not isinstance(schema, Mapping):
-        raise CapabilitySchemaError(f"{path} must be an object")
+    issues: list[str] = []
+    kind = schema.get("type")
+    if kind in _SCHEMA_TYPES and kind != "object":
+        missing = [
+            field
+            for field in ("unit", "frame")
+            if not isinstance(schema.get(field), str) or not schema[field].strip()
+        ]
+        if missing:
+            issues.append(f"{path} missing non-empty {', '.join(missing)}")
+
+    if kind in {"number", "integer"}:
+        bound_keys = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
+        if not any(key in schema for key in bound_keys):
+            issues.append(f"{path} missing a finite numeric bound")
+        evidence = schema.get("evidence_refs")
+        if not isinstance(evidence, list) or not evidence:
+            issues.append(f"{path} missing non-empty evidence_refs for its bound")
+
+    if kind == "array":
+        missing_bounds = [key for key in ("minItems", "maxItems") if key not in schema]
+        if missing_bounds:
+            issues.append(f"{path} missing {', '.join(missing_bounds)}")
+        items = schema.get("items")
+        if isinstance(items, Mapping):
+            issues.extend(
+                _recursive_schema_requirement_issues(items, path=f"{path}.items")
+            )
+
+    if kind == "object":
+        properties = schema.get("properties")
+        if isinstance(properties, Mapping):
+            for name, child in properties.items():
+                if isinstance(child, Mapping):
+                    issues.extend(
+                        _recursive_schema_requirement_issues(
+                            child,
+                            path=f"{path}.properties.{name}",
+                        )
+                    )
+    return issues
+
+
+def _recursive_schema_error(issues: Sequence[str]) -> CapabilitySchemaError:
+    reminder = (
+        "request_schema recursive audit failed. Audit every capability and every nested "
+        "items node: each non-object node needs its own unit and frame; each array node "
+        "needs minItems and maxItems; each numeric node needs a finite bound and its own "
+        "non-empty evidence_refs. Parent metadata is not inherited."
+    )
+    return CapabilitySchemaError(
+        f"{reminder} Found {len(issues)} issue(s): {'; '.join(issues)}"
+    )
+
+
+def _validate_schema_definition_node(
+    schema: Mapping[str, Any],
+    *,
+    path: str,
+) -> dict[str, Any]:
+    """Run canonical fail-closed validation after the omission pre-audit."""
+
     unknown = set(schema) - _SCHEMA_KEYS
     if unknown:
         raise CapabilitySchemaError(f"{path} uses unsupported schema keywords: {sorted(unknown)}")
@@ -214,12 +274,12 @@ def validate_schema_definition(
             if not isinstance(name, str) or not isinstance(child, Mapping):
                 raise CapabilitySchemaError(f"{path}.properties is invalid")
             _assert_task_neutral_name(name, where=f"{path}.properties")
-            validate_schema_definition(child, path=f"{path}.properties.{name}")
+            _validate_schema_definition_node(child, path=f"{path}.properties.{name}")
     elif kind == "array":
         items = result.get("items")
         if not isinstance(items, Mapping):
             raise CapabilitySchemaError(f"{path}.items must be an object")
-        validate_schema_definition(items, path=f"{path}.items")
+        _validate_schema_definition_node(items, path=f"{path}.items")
         if "minItems" not in result or "maxItems" not in result:
             raise CapabilitySchemaError(f"{path} arrays require minItems and maxItems bounds")
         for key in ("minItems", "maxItems"):
@@ -256,6 +316,21 @@ def validate_schema_definition(
             if not isinstance(result.get(field), str) or not result[field].strip():
                 raise CapabilitySchemaError(f"{path}.{field} must be non-empty text")
     return result
+
+
+def validate_schema_definition(
+    schema: Mapping[str, Any],
+    *,
+    path: str = "request_schema",
+) -> dict[str, Any]:
+    """Validate a closed task-neutral request schema and return a copy."""
+
+    if not isinstance(schema, Mapping):
+        raise CapabilitySchemaError(f"{path} must be an object")
+    issues = _recursive_schema_requirement_issues(schema, path=path)
+    if issues:
+        raise _recursive_schema_error(issues)
+    return _validate_schema_definition_node(schema, path=path)
 
 
 def validate_schema_value(
@@ -491,6 +566,21 @@ def validate_capability_design(
     raw_capabilities = design.get("capabilities")
     if not isinstance(raw_capabilities, list) or not 3 <= len(raw_capabilities) <= 10:
         raise CapabilityProtocolError("capabilities must contain between 3 and 10 items")
+
+    schema_issues: list[str] = []
+    for index, raw in enumerate(raw_capabilities):
+        if not isinstance(raw, Mapping):
+            continue
+        raw_schema = raw.get("request_schema")
+        if isinstance(raw_schema, Mapping):
+            schema_issues.extend(
+                _recursive_schema_requirement_issues(
+                    raw_schema,
+                    path=f"capabilities[{index}].request_schema",
+                )
+            )
+    if schema_issues:
+        raise _recursive_schema_error(schema_issues)
 
     seen_ids: set[str] = set()
     seen_methods: set[str] = set()

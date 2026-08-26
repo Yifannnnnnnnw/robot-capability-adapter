@@ -379,6 +379,25 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
     assert inputs["validator_contract"][
         "bounded_schema_fields_require_evidence_refs"
     ] is True
+    schema_rules = inputs["validator_contract"]["request_schema_rules"]
+    assert schema_rules["recursive"] is True
+    assert schema_rules["parent_metadata_is_not_inherited"] is True
+    assert schema_rules["array_items_follow_same_rules_recursively"] is True
+    assert schema_rules["array_node_required_fields"] == [
+        "type",
+        "items",
+        "minItems",
+        "maxItems",
+        "unit",
+        "frame",
+    ]
+    assert schema_rules["numeric_node_required_fields"] == [
+        "type",
+        "unit",
+        "frame",
+        "at_least_one_finite_numeric_bound",
+        "evidence_refs",
+    ]
     assert "bounds" not in inputs["validator_contract"][
         "request_schema_supported_keywords"
     ]
@@ -410,6 +429,35 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
         reference["robot_configuration_id"]
         for reference in matching_inputs["matching_capability_references"]
     ] == ["robotstudio_so101"]
+
+
+def test_tgcd_reports_recursive_schema_omissions_across_capabilities() -> None:
+    design = _design()
+    for index in (0, 1):
+        field = f"vector_{index + 1}"
+        design["capabilities"][index]["request_schema"] = {
+            "type": "object",
+            "properties": {
+                field: {
+                    "type": "array",
+                    "items": {"type": "number"},
+                }
+            },
+            "required": [field],
+            "additionalProperties": False,
+        }
+
+    with pytest.raises(CapabilityDesignError) as caught:
+        validate_capability_design(design, _package())
+
+    error = str(caught.value)
+    assert "Audit every capability and every nested items node" in error
+    assert "Parent metadata is not inherited" in error
+    assert "capabilities[0].request_schema.properties.vector_1.items" in error
+    assert "capabilities[1].request_schema.properties.vector_2.items" in error
+    assert "missing minItems, maxItems" in error
+    assert "missing a finite numeric bound" in error
+    assert "missing non-empty evidence_refs" in error
 
 
 class _TGCDModel:
@@ -445,6 +493,32 @@ class _ArtifactModel:
             name="write_file",
             arguments={"path": path, "content": content},
             raw_arguments=json.dumps({"path": "canonical", "content": content}),
+        )
+        return ToolTurn(content=None, tool_calls=(call,), finish_reason="end_turn")
+
+
+class _ReadThenArtifactModel(_ArtifactModel):
+    def generate_tool_turn(self, **kwargs: Any) -> ToolTurn:
+        self.messages.append([dict(item) for item in kwargs["messages"]])
+        self.tool_names.append(
+            {item["function"]["name"] for item in kwargs["tools"]}
+        )
+        if len(self.messages) == 1:
+            call = ToolCall(
+                id="read-inputs",
+                name="read_file",
+                arguments={"path": "tgcd_inputs.json"},
+                raw_arguments=json.dumps({"path": "tgcd_inputs.json"}),
+            )
+            return ToolTurn(content=None, tool_calls=(call,), finish_reason="tool_calls")
+        artifact = self.artifacts.pop(0)
+        path = artifact.pop("__path__")
+        content = json.dumps(artifact, ensure_ascii=True)
+        call = ToolCall(
+            id="write-design",
+            name="write_file",
+            arguments={"path": path, "content": content},
+            raw_arguments=json.dumps({"path": path, "content": content}),
         )
         return ToolTurn(content=None, tool_calls=(call,), finish_reason="end_turn")
 
@@ -530,6 +604,39 @@ def test_tgcd_real_client_uses_exact_file_tools_and_accepts_final_turn_write(
     assert '"validator_contract"' in model.messages[0][0]["content"]
     assert '"matching_capability_references":[]' in model.messages[0][0]["content"]
     assert (tmp_path / "sealed" / "capability_design.json").is_file()
+
+
+def test_tgcd_full_input_is_compact_and_readable_before_delivery(tmp_path: Path) -> None:
+    package, design = _real_package_design()
+    artifact = {**json.loads(json.dumps(design)), "__path__": "capability_design.json"}
+    model = _ReadThenArtifactModel([artifact])
+    large_study = {
+        "condition": "skeleton-assisted",
+        "findings": [f"public-fact-{index:05d}" for index in range(3_500)],
+        "implementation_plan": ["Use bounded feedback."],
+        "probe_requests": [{"probe_id": "physics", "script": "pass"}],
+    }
+
+    result = run_tgcd(
+        model,
+        package,
+        study=large_study,
+        max_turns=3,
+        artifact_path=tmp_path / "sealed" / "capability_design.json",
+    )
+
+    assert result["artifact_type"] == "capability_design"
+    assert "read_file" in model.tool_names[0]
+    tool_observation = json.dumps(model.messages[1], ensure_ascii=True)
+    assert "file is too large for the model tool" not in tool_observation
+    assert '\\"ok\\": true' in tool_observation
+    full_input = tmp_path / "sealed" / "workspace" / "tgcd_inputs.json"
+    compact_text = full_input.read_text(encoding="utf-8")
+    assert len(compact_text.encode("utf-8")) <= 200_000
+    assert len(compact_text.splitlines()) == 1
+    first_prompt = str(model.messages[0][0]["content"])
+    assert "array and its items are separate nodes" in first_prompt
+    assert "parent unit/frame/evidence do not propagate" in first_prompt
 
 
 def test_tgcd_rejects_candidate_material_in_study_projection() -> None:
