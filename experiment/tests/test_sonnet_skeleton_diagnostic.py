@@ -177,6 +177,43 @@ def _reusable_study_cell(
     return config, cell
 
 
+def _reusable_through_tgcd_cell(
+    tmp_path,
+    *,
+    cumulative_resource_summary=None,
+):
+    config, cell = _reusable_study_cell(
+        tmp_path,
+        cumulative_resource_summary=cumulative_resource_summary,
+    )
+    cell_report_path = cell / "cell_report.json"
+    cell_report = json.loads(cell_report_path.read_text(encoding="utf-8"))
+    cell_report["failure"] = {"stage": "ivc"}
+    cell_report["outcomes"]["TGCD"] = {
+        "attempted": True,
+        "completed": True,
+        "condition": "skeleton-assisted",
+    }
+    _write_json(cell_report_path, cell_report)
+
+    report_path = cell.parents[2] / "experiment_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["configuration"]["formal"] = False
+    _write_json(report_path, report)
+    design = {
+        "artifact_type": "capability_design",
+        "schema_version": "2.0",
+        "capability_protocol_version": "capability-v2",
+        "robot_configuration_id": "franka_panda",
+        "package_version": "1.0.0",
+        "task_snapshot_id": "snapshot-1",
+        "capabilities": [{"capability_id": "move"}],
+        "task_support": [],
+    }
+    _write_json(cell / "design" / "capability_design.json", design)
+    return config, cell, design
+
+
 def test_sonnet_diagnostic_reuses_real_study_with_explicit_provenance(tmp_path) -> None:
     config, cell = _reusable_study_cell(tmp_path)
 
@@ -245,3 +282,109 @@ def test_sonnet_diagnostic_continuation_preserves_prior_cumulative_usage(tmp_pat
 
     assert provenance["source_was_continuation"] is True
     assert provenance["source_resource_summary"] == cumulative
+
+
+def test_sonnet_diagnostic_reuses_study_and_sealed_tgcd_from_ivc_failure(
+    tmp_path,
+) -> None:
+    cumulative = {
+        "model_id": "eu.anthropic.claude-sonnet-4-6",
+        "call_count": 38,
+        "token_categories": {
+            "input_tokens": 800000,
+            "output_tokens": 125000,
+            "total_tokens": 925000,
+        },
+        "model_elapsed_time_s": 1450.0,
+        "estimated_cost": {
+            "is_estimate": True,
+            "amount": 4.7,
+            "currency": "USD",
+            "price_snapshot_date": "2026-08-26",
+        },
+    }
+    config, cell, expected_design = _reusable_through_tgcd_cell(
+        tmp_path,
+        cumulative_resource_summary=cumulative,
+    )
+
+    study, design, provenance = diagnostic._load_reused_through_tgcd(
+        cell,
+        robot="franka_panda",
+        condition="skeleton-assisted",
+        run_id="run-1",
+        config=config,
+    )
+
+    assert study.condition == "skeleton-assisted"
+    assert design == expected_design
+    assert provenance["reused_stages"] == ["STUDY", "TGCD"]
+    assert provenance["reused_stage"] == "STUDY+TGCD"
+    assert provenance["restarted_stage"] == "IVC"
+    assert provenance["source_failed_stage"] == "ivc"
+    assert provenance["source_resource_summary"] == cumulative
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("wrong_failure_stage", "IVC-failed"),
+        ("tgcd_not_completed", "completed TGCD"),
+        ("formal_source", "non-formal"),
+        ("wrong_package_identity", "package_version differs"),
+    ],
+)
+def test_sonnet_diagnostic_rejects_invalid_through_tgcd_source(
+    tmp_path,
+    mutation,
+    message,
+) -> None:
+    config, cell, _ = _reusable_through_tgcd_cell(tmp_path)
+    cell_report_path = cell / "cell_report.json"
+    report_path = cell.parents[2] / "experiment_report.json"
+    design_path = cell / "design" / "capability_design.json"
+    if mutation == "wrong_failure_stage":
+        value = json.loads(cell_report_path.read_text(encoding="utf-8"))
+        value["failure"]["stage"] = "tgcd"
+        _write_json(cell_report_path, value)
+    elif mutation == "tgcd_not_completed":
+        value = json.loads(cell_report_path.read_text(encoding="utf-8"))
+        value["outcomes"]["TGCD"]["completed"] = False
+        _write_json(cell_report_path, value)
+    elif mutation == "formal_source":
+        value = json.loads(report_path.read_text(encoding="utf-8"))
+        value["configuration"]["formal"] = True
+        _write_json(report_path, value)
+    else:
+        value = json.loads(design_path.read_text(encoding="utf-8"))
+        value["package_version"] = "9.9.9"
+        _write_json(design_path, value)
+
+    with pytest.raises(diagnostic.DiagnosticRunError, match=message):
+        diagnostic._load_reused_through_tgcd(
+            cell,
+            robot="franka_panda",
+            condition="skeleton-assisted",
+            run_id="run-1",
+            config=config,
+        )
+
+
+def test_sonnet_diagnostic_reuse_flags_are_mutually_exclusive(tmp_path) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        diagnostic.main(
+            [
+                "--robot",
+                "franka_panda",
+                "--output",
+                str(tmp_path / "output"),
+                "--run-id",
+                "run-1",
+                "--reuse-study-cell",
+                str(tmp_path / "study"),
+                "--reuse-through-tgcd-cell",
+                str(tmp_path / "tgcd"),
+            ]
+        )
+
+    assert exc_info.value.code == 2

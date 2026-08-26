@@ -189,8 +189,10 @@ def _load_reused_study(
     condition: str,
     run_id: str,
     config: ExperimentConfig,
+    source_failed_stage: str = "tgcd",
+    restarted_stage: str = "TGCD",
 ) -> tuple[StudyResult, dict[str, Any]]:
-    """Load one completed real STUDY from a TGCD-failed diagnostic cell."""
+    """Load one completed real STUDY from a failed diagnostic cell."""
 
     source_cell = cell_dir.resolve()
     source_output = source_cell.parents[2]
@@ -208,8 +210,10 @@ def _load_reused_study(
     if cell_report.get("condition") != condition:
         raise DiagnosticRunError("reused STUDY condition differs from the requested condition")
     failure = cell_report.get("failure")
-    if not isinstance(failure, Mapping) or failure.get("stage") != "tgcd":
-        raise DiagnosticRunError("reused STUDY source must be a TGCD-failed cell")
+    if not isinstance(failure, Mapping) or failure.get("stage") != source_failed_stage:
+        raise DiagnosticRunError(
+            f"reused STUDY source must be an {source_failed_stage.upper()}-failed cell"
+        )
     outcomes = cell_report.get("outcomes")
     study_outcome = outcomes.get("STUDY") if isinstance(outcomes, Mapping) else None
     if not isinstance(study_outcome, Mapping) or study_outcome.get("completed") is not True:
@@ -277,7 +281,7 @@ def _load_reused_study(
         probe_requests=tuple(dict(item) for item in probe_requests),
         probe_results=probe_results,
         call_evidence=ModelCallEvidence(
-            stage="study-reused-after-tgcd-framework-fix",
+            stage=f"study-reused-after-{source_failed_stage}-framework-fix",
             prompt="",
             inputs={"reused_from": str(source_cell)},
             output=dict(study_output),
@@ -291,18 +295,84 @@ def _load_reused_study(
         "source_experiment_report": str(source_output / "experiment_report.json"),
         "source_run_id": source_report.get("run_id"),
         "reused_stage": "STUDY",
-        "restarted_stage": "TGCD",
-        "source_failed_stage": "tgcd",
+        "restarted_stage": restarted_stage,
+        "source_failed_stage": source_failed_stage,
         "source_was_continuation": isinstance(
             source_report.get("diagnostic_continuation"), Mapping
         ),
         "source_resource_summary": source_resources,
         "claim_boundary": (
-            "diagnostic continuation across a TGCD framework fix; cumulative TGCD turns "
+            f"diagnostic continuation across an {source_failed_stage.upper()} framework fix; "
+            f"cumulative {source_failed_stage.upper()} turns "
             "are not a single budget-compliant formal cell"
         ),
     }
     return result, provenance
+
+
+def _load_reused_through_tgcd(
+    cell_dir: Path,
+    *,
+    robot: str,
+    condition: str,
+    run_id: str,
+    config: ExperimentConfig,
+) -> tuple[StudyResult, dict[str, Any], dict[str, Any]]:
+    """Load sealed STUDY and TGCD artifacts from an IVC-failed diagnostic cell."""
+
+    source_cell = cell_dir.resolve()
+    source_output = source_cell.parents[2]
+    reused_study, provenance = _load_reused_study(
+        source_cell,
+        robot=robot,
+        condition=condition,
+        run_id=run_id,
+        config=config,
+        source_failed_stage="ivc",
+        restarted_stage="IVC",
+    )
+    cell_report = _read_object(source_cell / "cell_report.json")
+    source_report = _read_object(source_output / "experiment_report.json")
+    source_configuration = source_report.get("configuration")
+    if not isinstance(source_configuration, Mapping):
+        raise DiagnosticRunError("reused TGCD source has no configuration")
+    if source_configuration.get("formal") is not False:
+        raise DiagnosticRunError("reused TGCD source must be non-formal")
+
+    outcomes = cell_report.get("outcomes")
+    tgcd_outcome = outcomes.get("TGCD") if isinstance(outcomes, Mapping) else None
+    if not isinstance(tgcd_outcome, Mapping) or tgcd_outcome.get("completed") is not True:
+        raise DiagnosticRunError("reused TGCD source has no completed TGCD evidence")
+    if tgcd_outcome.get("condition") != condition:
+        raise DiagnosticRunError("reused TGCD outcome condition differs from the request")
+
+    design_path = source_cell / "design" / "capability_design.json"
+    design = _read_object(design_path)
+    expected_identity = {
+        "robot_configuration_id": robot,
+        "package_version": cell_report.get("robot_package_version"),
+        "task_snapshot_id": cell_report.get("task_snapshot_id"),
+    }
+    for field, expected in expected_identity.items():
+        if not isinstance(expected, str) or not expected.strip():
+            raise DiagnosticRunError(f"reused TGCD source has no {field} identity")
+        if design.get(field) != expected:
+            raise DiagnosticRunError(
+                f"reused capability_design.json {field} differs from the source cell"
+            )
+    capabilities = design.get("capabilities")
+    if not isinstance(capabilities, list) or not capabilities:
+        raise DiagnosticRunError("reused capability_design.json has no capabilities")
+
+    provenance.update(
+        {
+            "reused_stage": "STUDY+TGCD",
+            "reused_stages": ["STUDY", "TGCD"],
+            "restarted_stage": "IVC",
+            "reused_capability_design": str(design_path),
+        }
+    )
+    return reused_study, design, provenance
 
 
 def _summary(
@@ -350,7 +420,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--env-file", type=Path, default=DEFAULT_ENV_FILE)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--reuse-study-cell", type=Path)
+    reuse_group = parser.add_mutually_exclusive_group()
+    reuse_group.add_argument("--reuse-study-cell", type=Path)
+    reuse_group.add_argument("--reuse-through-tgcd-cell", type=Path)
     args = parser.parse_args(argv)
 
     config = _single_robot_config(args.config.resolve(), args.robot)
@@ -376,14 +448,37 @@ def main(argv: list[str] | None = None) -> int:
         raise DiagnosticRunError("diagnostic output directory is not empty")
     hooks = None
     continuation: dict[str, Any] | None = None
-    if args.reuse_study_cell is not None:
-        reused_study, continuation = _load_reused_study(
-            args.reuse_study_cell,
-            robot=args.robot,
-            condition="skeleton-assisted",
-            run_id=args.run_id,
-            config=config,
-        )
+    reuse_cell = args.reuse_study_cell or args.reuse_through_tgcd_cell
+    reused_design: dict[str, Any] | None = None
+    if reuse_cell is not None:
+        if args.reuse_through_tgcd_cell is not None:
+            reused_study, reused_design, continuation = _load_reused_through_tgcd(
+                reuse_cell,
+                robot=args.robot,
+                condition="skeleton-assisted",
+                run_id=args.run_id,
+                config=config,
+            )
+        else:
+            reused_study, continuation = _load_reused_study(
+                reuse_cell,
+                robot=args.robot,
+                condition="skeleton-assisted",
+                run_id=args.run_id,
+                config=config,
+            )
+
+        source_cell_report = _read_object(reuse_cell.resolve() / "cell_report.json")
+        cell_report_version = source_cell_report.get("robot_package_version")
+        cell_report_snapshot = source_cell_report.get("task_snapshot_id")
+
+        def verify_reused_package(package: Any) -> None:
+            if package.robot_configuration_id != args.robot:
+                raise DiagnosticRunError("runtime package differs from reused STUDY robot")
+            if package.package_version != cell_report_version:
+                raise DiagnosticRunError("runtime package version differs from reused STUDY")
+            if package.snapshot_id != cell_report_snapshot:
+                raise DiagnosticRunError("runtime task snapshot differs from reused STUDY")
 
         def reuse_study_runner(
             _client: Any,
@@ -394,22 +489,31 @@ def main(argv: list[str] | None = None) -> int:
             **_kwargs: Any,
         ) -> StudyResult:
             del design
-            if package.robot_configuration_id != args.robot:
-                raise DiagnosticRunError("runtime package differs from reused STUDY robot")
-            if package.package_version != cell_report_version:
-                raise DiagnosticRunError("runtime package version differs from reused STUDY")
-            if package.snapshot_id != cell_report_snapshot:
-                raise DiagnosticRunError("runtime task snapshot differs from reused STUDY")
+            verify_reused_package(package)
             if condition != reused_study.condition:
                 raise DiagnosticRunError("runtime condition differs from reused STUDY")
             return reused_study
 
-        source_cell_report = _read_object(
-            args.reuse_study_cell.resolve() / "cell_report.json"
-        )
-        cell_report_version = source_cell_report.get("robot_package_version")
-        cell_report_snapshot = source_cell_report.get("task_snapshot_id")
-        hooks = PipelineHooks(study_runner=reuse_study_runner)
+        if reused_design is None:
+            hooks = PipelineHooks(study_runner=reuse_study_runner)
+        else:
+
+            def reuse_tgcd_runner(
+                _client: Any,
+                package: Any,
+                *,
+                study: Mapping[str, Any] | None = None,
+                **_kwargs: Any,
+            ) -> Mapping[str, Any]:
+                verify_reused_package(package)
+                if study != reused_study.output:
+                    raise DiagnosticRunError("runtime STUDY differs from reused TGCD input")
+                return dict(reused_design)
+
+            hooks = PipelineHooks(
+                study_runner=reuse_study_runner,
+                tgcd_runner=reuse_tgcd_runner,
+            )
     report = run_experiment(
         MAINLINE_ROOT,
         config=config,
