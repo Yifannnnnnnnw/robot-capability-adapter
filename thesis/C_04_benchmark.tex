@@ -148,81 +148,50 @@ enters every experiment.
 
 \section[Experiment design]{Experiment design}
 
-Tables~\ref{tab:chapter3-exp1a-matrix} and~\ref{tab:chapter3-exp1b-matrix} define the
-experimental units and prospective denominators.
+Experiment~1a compares driver synthesis for SO-101 and Unitree Go2. The
+deployed model factor has seven configurations: Sonnet 4.6, Opus 5, Haiku 4.5,
+Nova Pro, DeepSeek V4 Pro, Ministral 3 8B, and GPT-5.6 Sol. Each configuration
+is evaluated under both skeleton-assisted and from-scratch generation. The
+skeleton-assisted condition provides trusted, task-neutral starter source,
+whereas the from-scratch condition requires the model to implement the driver
+without access to that source. Within each robot block, both conditions use the
+same capability interface, pass standards, and independent behavioural tests.
 
-\begin{table}[htbp]
-  \centering
-  \begingroup
-  \small
-  \setstretch{1.0}
-  \renewcommand{\arraystretch}{1.12}
-  \caption{Experiment 1a driver-synthesis matrix.}
-  \label{tab:chapter3-exp1a-matrix}
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
-    \toprule
-    \textbf{Design element} & \textbf{Setting} \\
-    \midrule
-    Active models & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; GPT-5.6 Sol \\
-    Robots & SO-101 and Unitree Go2 \\
-    Conditions & Skeleton-assisted and from-scratch \\
-    Repetitions & Three prespecified synthesis seeds; paired conditions use the same seed when the endpoint supports seed control \\
-    Experimental unit & One robot--model--condition--replicate generation cell \\
-    Attempt budget & One initial driver submission and at most two bounded correction submissions per cell \\
-    Total & $2$ robots $\times 7$ models $\times 2$ conditions $\times 3$ replicates $=84$ cells \\
-    \bottomrule
-  \end{tabularx}
-  \endgroup
-\end{table}
+The experimental unit is one
+robot--model--condition--replicate generation cell. Each robot--model
+combination has three prespecified synthesis replicates, and paired conditions
+use the same seed where the endpoint supports seed control. Their model
+sessions, workspaces, and generated drivers remain isolated. Each cell permits
+at most three frozen driver submissions: one initial submission and up to two
+bounded corrections. The design therefore contains
+$2$ robots $\times 7$ models $\times 2$ conditions $\times 3$ replicates
+$=84$ cells and permits at most 252 trusted Harness validations. Cell-level
+success is determined by the final frozen driver.
 
-Experiment~1b evaluated whether fixed, capability-validated robot APIs
-supported downstream task completion. Seven LLMs were compared as
-interchangeable backbones within the same ReCAP high-level planner
-\citep{zhang2025recap}. Auto-Adapter supplied one fixed driver and capability
-interface for SO-101 and Unitree Go2. Each model was evaluated on five tasks
-per robot with three repetitions, yielding 210 episodes. The driver,
-interface, planner logic, task conditions and evaluator were held constant;
-only the LLM backbone varied. Task success was determined independently by
-the trusted Harness. The available capabilities are summarised below.
+Experiment~1b evaluates downstream task completion rather than driver
+synthesis. The same seven model configurations serve as interchangeable
+backbones within one fixed ReCAP high-level planner
+\citep{zhang2025recap}. Auto-Adapter supplies one fixed,
+capability-validated driver and one defined capability interface for each
+robot. The ReCAP logic, prompt, task conditions, driver, interface, and trusted
+Harness remain fixed across episodes. Only the deployed model-plus-endpoint
+configuration varies, and the Harness independently determines task success.
 
-\begin{table}[htbp]
-  \centering
-  \begingroup
-  \small
-  \setstretch{1.0}
-  \renewcommand{\arraystretch}{1.12}
-  \caption{Experiment 1b driver-use matrix.}
-  \label{tab:chapter3-exp1b-matrix}
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{39mm}X@{}}
-    \toprule
-    \textbf{Design element} & \textbf{Setting} \\
-    \midrule
-    Active models & Sonnet 4.6; Opus 5; Haiku 4.5; Nova Pro; DeepSeek V4 Pro; Ministral 3 8B; GPT-5.6 Sol \\
-    Robots & SO-101 and Unitree Go2 \\
-    Tasks & Five fixed tasks per robot \\
-    Controller & One fixed recursive task planner (ReCAP) \\
-    Fixed software & One capability-validated reference driver and one defined driver capability interface per robot \\
-    Repetitions & Three fresh isolated execution sessions from the same canonical initial state; no task-reset seed is varied \\
-    Experimental unit & One robot--task--model--replicate episode \\
-    Total & $2$ robots $\times 5$ tasks $\times 7$ models $\times 3$ replicates $=210$ episodes \\
-    \bottomrule
-  \end{tabularx}
-  \endgroup
-\end{table}
+The SO-101 task block comprises Push to Goal, Sweep into Goal, Pick and Place,
+Pick and Place with Wall, and Bin Picking. The Unitree Go2 task block comprises
+Single-step Ascent, Single-step Descent, Fixed Mixed-obstacle Path, Barkour
+Pause-table Transition, and Barkour Weave Poles. Robot, task, and replicate
+serve as blocking dimensions rather than manipulated factors.
 
-The SO-101 tasks are Push to Goal, Sweep into Goal, Pick and Place, Pick and
-Place with Wall, and Bin Picking. The Unitree Go2 tasks are Single-step
-Ascent, Single-step Descent, Fixed Mixed-obstacle Path, Barkour Pause-table
-Transition, and Barkour Weave Poles. Robot and task are blocking dimensions in
-Experiment~1b rather than manipulated factors.
-
-Each robot--task--model combination is repeated three times. The fixed task
-definitions do not vary a reset seed, so all three repetitions use the same
-sealed scene, reset, and initial state. Each repetition nevertheless creates a
-fresh isolated execution process, driver instance, and MuJoCo session. MuJoCo
-is the physics simulator used in this study. The design thus measures
-run-to-run repeatability under one fixed initial condition, not robustness
-across different task seeds or starting states.
+The experimental unit is one
+robot--task--model--replicate episode. Each robot--task--model combination is
+repeated three times, giving
+$2$ robots $\times 5$ tasks $\times 7$ models $\times 3$ replicates
+$=210$ planned episodes. Every repetition creates a fresh isolated execution
+process, driver instance, and MuJoCo session, while retaining the same sealed
+scene, reset, and initial state. No task-reset seed is varied. The design
+therefore measures run-to-run repeatability under one fixed initial condition,
+not robustness to different task seeds or starting states.
 
 \section[Result]{Result}
 
