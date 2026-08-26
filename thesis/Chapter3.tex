@@ -37,6 +37,21 @@ lowering the entry barrier for researchers specialising in high-level
 language-model policies.
 
 \section{Background}
+\subsection{Cross-robot scaling}
+
+Robotics software has long sought portability across platforms by separating
+task logic from platform-specific execution. The Robot Operating System (ROS)
+provided modular communication and shared software packages, while ROS 2
+extended this architecture for distributed systems
+\citep{quigley2009ros,macenski2022ros2}. Capability-based frameworks expose
+robot functions as task-facing operations, and SkiROS2 organises these
+operations into executable skills
+\citep{pantano2022capabilitysurvey,mayr2023skiros2}. However, these abstractions
+do not themselves supply the platform-specific control interface required by a
+newly introduced robot. Auto-Adapter targets this integration step by
+generating a driver behind a stable capability interface. Its longer-term aim
+is to simplify future robot onboarding, whereas Experiment 3 examines this
+route within a bounded simulator cohort.
 
 \subsection{Physics-Grounded Feedback}
 
@@ -233,17 +248,21 @@ completion only under the specified MuJoCo model, requests, initial conditions,
 and measurement criteria. It does not establish hardware performance,
 deployment safety, or sim-to-real transfer.
 
+
 \section{Experiments and Results}
 
-This section presents three component studies examining candidate-visible
-MuJoCo feedback, task-grounded capability design, and source-preserving
-capability-level criteria with implementation-blind IVC audit and compilation.
+Experiment 2 applies one fixed Auto-Adapter route to eleven Direct-MuJoCo
+robot configurations. Each configuration is executed in three fresh runs,
+producing 33 robot--run cells. Sonnet 4.6 operates under the skeleton-assisted
+condition with empty Experience and identical inference and resource budgets.
+Cells use an isolated workspace and simulator reset, and independently
+generate their capability design and implementation-blind validation suite.
+The model receives one initial driver submission and at most two Repair
+submissions. A whole-suite validation pass admits the final driver to a
+separate five-task Task Demo; otherwise the Demo is not run. Evolution is
+disabled, and configuration differences are analysed descriptively.
 
-\subsection{MuJoCo versus \texttt{pytest} Feedback}
 
-\subsection{Task-Grounded Capability Design}
-
-\subsection{Pass-Criteria Design and IVC}
 
 \subsection{Interpretation and Limitations}
 

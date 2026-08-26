@@ -13,95 +13,63 @@ stating the contributions, scope, and structure of the thesis.
 \section[Motivation]{Motivation}
 \label{sec:intro-motivation}
 
-Recent robot-learning systems have made task-level behaviour more reusable.
-Visuomotor policies learn actions from observations
-\citep{chi2023diffusionpolicy}, while vision--language--action models seek to
-transfer behaviour across tasks and robots
-\citep{brohan2023rt2,openxembodiment2024}. Large language model (LLM) systems
-can also interpret instructions and compose supplied robot operations
-\citep{ahn2022saycan,liang2023codeaspolicies}. These advances reduce
-task-specific programming, but they generally assume that an executable
-software interface to the target robot already exists.
+Tool-using LLM systems can interpret instructions and compose robot operations
+through an existing interface
+\citep{ahn2022saycan,liang2023codeaspolicies}. However, they generally assume
+that the target robot already exposes the required tool API. This assumption
+leaves an upstream problem unresolved: the robot-specific software behind
+those tools must still be authored.
 
-The executable implementation behind that interface must translate requested
-operations into the joint commands, actuator inputs, coordinate frames,
-limits, and observations used by a particular robot. These details vary with
-the robot and its control configuration, so a new platform can require new
-integration even when the task-level logic is unchanged. Robotics frameworks
-expose this remaining work directly: adding hardware still requires
-connections, calibration, state reading, and command writing
-\citep{lerobot2026hardware,ros2control2026hardware}. This thesis calls the
-decision-making program that chooses robot operations the
-\emph{high-level controller}. It calls the reusable, caller-facing interface
-that hides robot-specific execution details the \emph{robot capability
-interface}. The executable implementation of that interface for one declared
-robot configuration is the \emph{robot-specific driver}. Each operation
-exposed by the interface is a
-\emph{capability}; the word \emph{skill} is reserved for a task-level,
-temporally extended behaviour such as a pick-and-place sequence.
+Consider an SO-ARM101 arm described by an MJCF file containing its joints,
+actuators, and motion limits. The \emph{high-level controller} selects and
+sequences robot operations. It can request a Cartesian move through
+\texttt{get\_ee\_pose()} and \texttt{move\_cartesian(...)}. Yet the second call
+requires software that converts the requested pose into valid joint or actuator
+commands. This thesis calls the reusable caller-facing contract the
+\emph{robot capability interface}. Each task-neutral operation is a
+\emph{capability}. The executable implementation for one robot configuration
+is the \emph{robot-specific driver}.
 
-AutoAdapter 1.0 provided initial evidence that an LLM can generate a
-robot-specific driver for this missing interface from machine-readable robot
-descriptions. Across eight simulated robot configurations, it produced
-self-contained drivers that all passed its
-structural-and-smoke onboarding harness, at a mean LLM-inference cost of
-US\$\(2.98 \pm 0.84\) and \(7.8 \pm 1.6\) minutes of wall-clock time per robot
-\citep{wang2026autoadapter}. This onboarding result did not establish full
-behavioural assurance. The same study also separated capability-interface use from
-driver synthesis: all seven evaluated LLMs could operate through the same
-fixed capability interface backed by the same fixed and validated driver, whereas
-only three produced a driver that passed driver validation
-\citep{wang2026autoadapter}. Using an available robot capability interface therefore
-does not establish that the same model can synthesise a driver that implements
-it.
+The driver remains robot-specific even when the task is unchanged. Joint
+naming, actuator semantics, units, coordinate frames, and observations vary
+across configurations. Robotics frameworks therefore still require connection,
+calibration, state reading, and command writing for each new platform
+\citep{lerobot2026hardware,ros2control2026hardware}. Reusing a planner or learned
+policy does not remove this integration requirement.
 
-Auto-Adapter 2.0 addresses decisions that the earlier system left
-prespecified. Instead of receiving a pre-authored capability catalogue, the
-model must derive five to ten reusable capabilities from at least twenty
-source-backed tasks with reviewed task-level pass standards. It must then
-design measurable conditions for accepting each capability---the
-\emph{capability-level pass criteria}---without weakening those standards.
-Robot code can run while controlling the wrong joints, using incorrect units,
-or producing the wrong physical outcome: a form of the software test-oracle
-problem \citep{barr2015oracle,araujo2023rasreview}. Auto-Adapter therefore uses
-an independent evaluation program, the \emph{Harness}, to own the private
-validation cases, observe simulator outcomes, and issue final verdicts.
-Structured failure reports may guide bounded corrections to the current
-driver, called \emph{Repair}; reviewed evidence from completed runs may instead inform
-later runs through \emph{Evolution}, but cannot alter the run that produced
-it.
+Auto-Adapter addresses this gap by making software-layer authoring part of the
+LLM workflow. It receives machine-readable robot information and source-backed
+target tasks with reviewed pass standards. From these inputs, it derives
+reusable capabilities and measurable acceptance criteria. It then synthesises
+a robot-specific driver that implements the resulting interface. A separate
+high-level controller can therefore operate through task-neutral tools without
+implementing robot-specific control logic.
 
-Three uncertainties then become central. First, when the robot capability
-interface and its validation requirements are held fixed, it remains uncertain
-how LLM backbone choice and access to a trusted implementation skeleton affect
-robot-specific driver synthesis. Second, it remains uncertain whether an LLM
-can construct those upstream inputs from source-backed tasks without receiving
-a pre-authored capability catalogue, task-to-capability mapping, or
-human-authored capability-level pass criteria. Third, after a synthesis run has
-reached its terminal verdict, it remains uncertain what effect human-reviewed
-evidence from that run has on later synthesis relative to an otherwise matched
-run without that Experience.
+Executable code alone cannot establish correct physical behaviour. A driver
+may control the wrong joints, use incorrect units, or produce an unintended
+outcome. This is an instance of the software test-oracle problem
+\citep{barr2015oracle,araujo2023rasreview}. Auto-Adapter therefore separates
+synthesis from behavioural evaluation. An independent \emph{Harness} owns
+private validation cases, observes simulator state, and applies fixed
+requirements. This evidence supports behavioural claims only under evaluated
+Direct-MuJoCo conditions. It does not establish hardware performance or
+sim-to-real transfer.
 
-These questions concern different points in the evidence chain. Capability and
-pass-criteria design determine what a driver must implement and how it will be
-judged; fixed-input driver synthesis determines whether a model can produce an
-implementation under those requirements; Continued Evolution can influence
-only a later run. Evidence for one question therefore cannot be substituted
-for evidence for another. The next section converts these uncertainties into
-explicit research objectives and questions.
 
 
 \section[Research Objectives]{Research Objectives}
 \label{sec:research-objectives}
-\label{sec:research-questions}
 
-The aim of this thesis is to determine, under controlled Direct-MuJoCo
-conditions, how LLM backbone choice and trusted-skeleton access affect
-robot-specific driver synthesis, whether the capability and validation inputs
-to that process can be constructed from source-backed tasks, and what effect
-reviewed terminal evidence has on subsequent synthesis. The research therefore
-separates upstream input design, synthesis under fixed inputs, and later-run
-Experience reuse.
+The aim of this thesis is to develop and evaluate Auto-Adapter as a framework
+for automating robot-software synthesis. Auto-Adapter starts from a
+machine-readable robot description and a source-backed collection of target
+tasks with reviewed pass standards. It constructs the required software layer
+by designing a reusable robot capability interface and synthesising the
+robot-specific driver that implements it. The interface exposes task-neutral
+robot operations as tools to a separate high-level controller. The driver
+translates each requested operation into commands for the declared robot
+configuration. An independent Harness evaluates the resulting behaviour
+against fixed requirements under controlled Direct-MuJoCo conditions.
 
 This aim is expressed through three research questions:
 
