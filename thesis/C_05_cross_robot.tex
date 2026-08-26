@@ -10,3 +10,45 @@ downstream tasks. These task outcomes remain distinct from the driver verdict.
 Differences between configurations are reported descriptively and are not
 interpreted as effects of morphology.
 \end{quote}
+
+\section[Introduction]{Introduction}
+
+Robot agents require robot-specific software that converts requested
+capabilities into valid commands and observations. Auto-Adapter generates this
+software as a reusable Python driver rather than a task-specific policy. This
+chapter examines the complete construction route across eleven predeclared
+Direct-MuJoCo robot configurations.
+
+Each configuration contributes three isolated runs, producing 33 experimental
+cells. All cells use Sonnet 4.6 and skeleton-assisted generation, and receive
+no Experience from an earlier run. Every run constructs a fresh capability
+design, implementation-blind validation suite, and driver. At most three
+driver attempts are evaluated before a ReCAP Task Demo using only capabilities
+that passed both nominal and calibrated-boundary validation.
+
+The analysis reports construction, Capability Validation, Repair, and Task
+Demo outcomes by exact robot configuration. The comparison is descriptive
+because morphology, control interface, observations, tasks, and simulation
+scene change together. It therefore does not establish morphology effects,
+model or generation-condition differences, hardware behaviour, or sim-to-real
+transfer.
+
+
+\section[Background]{Background}
+
+The same intended action may require different implementations because robot
+joint structures, actuation methods, coordinate frames, limits, and feedback
+signals differ \citep{zech2019action,pantano2022capabilitysurvey}. A capability
+interface hides part of this variation from the high-level controller, but its
+driver must still realise each operation using one configuration's control and
+observation facilities. Experiment~3 therefore reconstructs the capability
+design, validation suite, and driver independently in every cell.
+
+The cohort includes serial arms, a quadruped, a dexterous hand, a mobile
+manipulator, and a bimanual manipulator. SO-101 and Unitree Go2 contribute six
+reference-seen cells, while the remaining configurations contribute 27
+transfer cells; these labels describe reference exposure rather than a transfer
+effect. Source checks, behavioural validation, and downstream Task Demo answer
+different questions and are reported separately. All resulting evidence is
+limited to the declared MuJoCo models and conditions
+\citep{todorov2012mujoco}.
