@@ -641,11 +641,16 @@ def run_tgcd(
                         "reusable single physical effects, not task operations such as whole-object "
                         "push/grasp/release or fixture-specific macros. You must independently add the "
                         "required preconditions, temporal semantics, invariants, failure behavior, "
-                        "and task_support. "
+                        "and task_support. Prefer the smallest sufficient design, normally three to "
+                        "five capabilities. task_support is not a Cartesian product: emit only the "
+                        "minimal pairs needed to cover every task and every capability. Write compact "
+                        "JSON. If the artifact would exceed one model response, split it at safe text "
+                        "boundaries across write_file calls: the first chunk uses append=false and "
+                        "later chunks use append=true; only the final combined file must parse as JSON. "
                         f"Author the complete canonical {TGCD_ARTIFACT_NAME} with write_file. "
-                        "Conserve the six-turn budget: use at most two turns for inspection and call "
-                        "write_file with an initial complete artifact by turn three. Turns five and "
-                        "six are reserved for deterministic delivery and one validation correction. "
+                        "Conserve the six-turn budget: use at most two turns for inspection. Turns "
+                        "three through six are write-only delivery turns so a large artifact can be "
+                        "written in bounded chunks and still receive deterministic validation feedback. "
                         "You may use execute_python "
                         "for credential-free public MuJoCo checks. "
                         "End the turn when the artifact is ready; there is no submit tool."
@@ -655,6 +660,7 @@ def run_tgcd(
                     artifact_path=working_artifact,
                     validate_artifact=validate_file,
                     max_turns=max_turns,
+                    delivery_turns=max(1, max_turns - 2),
                 )
             except ReactLoopError as exc:
                 raise CapabilityDesignError(

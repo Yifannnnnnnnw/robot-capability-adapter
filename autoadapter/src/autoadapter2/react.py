@@ -522,6 +522,7 @@ def run_artifact_react(
     artifact_path: Any,
     validate_artifact: Callable[[Any], Any] | None = None,
     max_turns: int = 16,
+    delivery_turns: int = 2,
     tool_output_chars: int = 24000,
 ) -> ArtifactResult:
     """Run a bounded AA1-style file/artifact conversation.
@@ -536,14 +537,22 @@ def run_artifact_react(
     There is intentionally no aggregate tool-call limit here.  Tool handlers
     retain their own path, execution-time, output, and stage-local resource
     limits; a long-lived development conversation must not be cut off by a
-    second, unrelated call counter.  The final two model turns are the bounded
-    delivery window and expose only ``write_file``: the penultimate turn gives
-    the validator one chance to return a repairable error, and the final turn
-    accepts a corrected artifact without requiring another closing response.
+    second, unrelated call counter.  The bounded delivery window exposes only
+    ``write_file``.  It defaults to the final two turns; stages whose canonical
+    JSON can exceed one provider response may reserve more turns and use
+    bounded append writes.  The final turn accepts a corrected artifact
+    without requiring another closing response.
     """
 
-    if max_turns < 1 or tool_output_chars < 256:
+    if (
+        max_turns < 1
+        or not isinstance(delivery_turns, int)
+        or isinstance(delivery_turns, bool)
+        or delivery_turns < 1
+        or tool_output_chars < 256
+    ):
         raise ValueError("artifact ReAct limits must be positive and tool output at least 256 chars")
+    effective_delivery_turns = min(delivery_turns, max_turns)
     tool_map = {tool.name: tool for tool in tools}
     if len(tool_map) != len(tools):
         raise ValueError("artifact ReAct tool names must be unique")
@@ -586,7 +595,7 @@ def run_artifact_react(
 
     for turn_number in range(1, max_turns + 1):
         final_turn = turn_number == max_turns
-        delivery_turn = turn_number >= max(1, max_turns - 1)
+        delivery_turn = turn_number > max_turns - effective_delivery_turns
         model_started = time.monotonic()
         available_tools = [tool for tool in tools if tool.is_available()]
         if delivery_turn:

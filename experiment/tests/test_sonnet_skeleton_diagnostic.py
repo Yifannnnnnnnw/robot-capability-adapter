@@ -108,7 +108,12 @@ def _write_json(path, value) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def _reusable_study_cell(tmp_path, *, physics_steps: int = 50):
+def _reusable_study_cell(
+    tmp_path,
+    *,
+    physics_steps: int = 50,
+    cumulative_resource_summary=None,
+):
     config = diagnostic._single_robot_config(CHAPTER3_EXP2_CONFIG, "franka_panda")
     output = tmp_path / "source-output"
     cell = output / "cells" / "franka_panda" / "skeleton-assisted"
@@ -156,18 +161,19 @@ def _reusable_study_cell(tmp_path, *, physics_steps: int = 50):
             "elapsed_s": 2.0,
         }
     ]
-    _write_json(
-        output / "experiment_report.json",
-        {
-            "run_id": "run-1",
-            "configuration": {
-                "model": config.model_manifest,
-                "experience": {"input": []},
-                "max_driver_attempts_per_condition": 2,
-            },
-            "stage_evidence": [{"stage": "study", "model_calls": source_calls}],
+    source_report = {
+        "run_id": "run-1",
+        "configuration": {
+            "model": config.model_manifest,
+            "experience": {"input": []},
+            "max_driver_attempts_per_condition": 2,
         },
-    )
+        "stage_evidence": [{"stage": "study", "model_calls": source_calls}],
+    }
+    if cumulative_resource_summary is not None:
+        source_report["cumulative_resource_summary"] = cumulative_resource_summary
+        source_report["diagnostic_continuation"] = {"reused_stage": "STUDY"}
+    _write_json(output / "experiment_report.json", source_report)
     return config, cell
 
 
@@ -203,3 +209,39 @@ def test_sonnet_diagnostic_rejects_reused_study_without_physics(tmp_path) -> Non
             run_id="run-1",
             config=config,
         )
+
+
+def test_sonnet_diagnostic_continuation_preserves_prior_cumulative_usage(tmp_path) -> None:
+    cumulative = {
+        "model_id": "eu.anthropic.claude-sonnet-4-6",
+        "call_count": 27,
+        "token_categories": {
+            "input_tokens": 716206,
+            "output_tokens": 102357,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "total_tokens": 818563,
+        },
+        "model_elapsed_time_s": 1132.08,
+        "estimated_cost": {
+            "is_estimate": True,
+            "amount": 4.0523703,
+            "currency": "USD",
+            "price_snapshot_date": "2026-08-26",
+        },
+    }
+    config, cell = _reusable_study_cell(
+        tmp_path,
+        cumulative_resource_summary=cumulative,
+    )
+
+    _, provenance = diagnostic._load_reused_study(
+        cell,
+        robot="franka_panda",
+        condition="skeleton-assisted",
+        run_id="run-1",
+        config=config,
+    )
+
+    assert provenance["source_was_continuation"] is True
+    assert provenance["source_resource_summary"] == cumulative

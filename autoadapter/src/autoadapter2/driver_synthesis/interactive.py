@@ -311,23 +311,31 @@ class PublicDevelopmentSession:
 
         relative = self._safe_relative_path(arguments.get("path"))
         content = arguments.get("content")
+        append = arguments.get("append", False)
         if not isinstance(content, str):
             raise DevelopmentSessionError("content must be text")
+        if not isinstance(append, bool):
+            raise DevelopmentSessionError("append must be boolean")
         if len(content) > MAX_FILE_CHARS:
             raise DevelopmentSessionError("file exceeds the 200000-character limit")
         destination = self._under(self.workspace, relative, label="workspace file path")
         self._require_writable_path(relative, destination)
         before = destination.read_text(encoding="utf-8") if destination.is_file() else None
+        combined = (before or "") + content if append else content
+        if len(combined) > MAX_FILE_CHARS:
+            raise DevelopmentSessionError("file exceeds the 200000-character limit")
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(content, encoding="utf-8")
+        destination.write_text(combined, encoding="utf-8")
         if relative == "driver.py":
             self.candidate_path = destination
-            self._revision += 1 if before != content else 0
+            self._revision += 1 if before != combined else 0
             self._sync_candidate_to_public()
         return {
             "path": relative,
             "bytes_written": len(content.encode("utf-8")),
-            "source_changed": before != content,
+            "file_chars": len(combined),
+            "append": append,
+            "source_changed": before != combined,
             "revision": self._revision if relative == "driver.py" else None,
         }
 
@@ -481,9 +489,13 @@ class PublicDevelopmentSession:
             ),
             ToolSpec(
                 "write_file",
-                "Write one UTF-8 file under the condition workspace. Framework-staged public package, scene, and trusted skeleton inputs are read-only. Use study.json and driver.py for canonical artifacts.",
+                "Write one UTF-8 file under the condition workspace. For a large canonical artifact, write a first bounded chunk with append=false, then later chunks with append=true; the combined file remains capped at 200000 characters. Framework-staged public package, scene, and trusted skeleton inputs are read-only. Use study.json and driver.py for canonical artifacts.",
                 _object_schema(
-                    {"path": {"type": "string"}, "content": {"type": "string"}},
+                    {
+                        "path": {"type": "string"},
+                        "content": {"type": "string"},
+                        "append": {"type": "boolean"},
+                    },
                     required=("path", "content"),
                 ),
                 self.write_file,
@@ -604,17 +616,25 @@ class IsolatedArtifactSession:
     def write_file(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
         relative, path = self._path(arguments.get("path"))
         content = arguments.get("content")
+        append = arguments.get("append", False)
         if not isinstance(content, str):
             raise DevelopmentSessionError("content must be text")
+        if not isinstance(append, bool):
+            raise DevelopmentSessionError("append must be boolean")
         if len(content) > MAX_FILE_CHARS:
             raise DevelopmentSessionError("file exceeds the 200000-character limit")
         before = path.read_text(encoding="utf-8") if path.is_file() else None
+        combined = (before or "") + content if append else content
+        if len(combined) > MAX_FILE_CHARS:
+            raise DevelopmentSessionError("file exceeds the 200000-character limit")
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
+        path.write_text(combined, encoding="utf-8")
         return {
             "path": relative,
             "bytes_written": len(content.encode("utf-8")),
-            "source_changed": before != content,
+            "file_chars": len(combined),
+            "append": append,
+            "source_changed": before != combined,
         }
 
     def execute_python(self, arguments: Mapping[str, Any]) -> dict[str, Any]:
@@ -645,9 +665,13 @@ class IsolatedArtifactSession:
             ),
             ToolSpec(
                 "write_file",
-                "Write one UTF-8 file inside this isolated phase workspace.",
+                "Write one UTF-8 file inside this isolated phase workspace. For a large canonical artifact, use append=false for the first bounded chunk and append=true for later chunks; the combined file remains capped at 200000 characters.",
                 _object_schema(
-                    {"path": {"type": "string"}, "content": {"type": "string"}},
+                    {
+                        "path": {"type": "string"},
+                        "content": {"type": "string"},
+                        "append": {"type": "boolean"},
+                    },
                     required=("path", "content"),
                 ),
                 self.write_file,

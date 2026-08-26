@@ -266,7 +266,11 @@ def _load_reused_study(
         for call in source_calls
     ):
         raise DiagnosticRunError("reused STUDY source lacks exact returned-model evidence")
-    source_resources = _resource_summary_from_calls(source_calls, source_model)
+    prior_cumulative = source_report.get("cumulative_resource_summary")
+    if isinstance(prior_cumulative, Mapping):
+        source_resources = dict(prior_cumulative)
+    else:
+        source_resources = _resource_summary_from_calls(source_calls, source_model)
     result = StudyResult(
         condition=condition,
         output=dict(study_output),
@@ -289,6 +293,9 @@ def _load_reused_study(
         "reused_stage": "STUDY",
         "restarted_stage": "TGCD",
         "source_failed_stage": "tgcd",
+        "source_was_continuation": isinstance(
+            source_report.get("diagnostic_continuation"), Mapping
+        ),
         "source_resource_summary": source_resources,
         "claim_boundary": (
             "diagnostic continuation across a TGCD framework fix; cumulative TGCD turns "

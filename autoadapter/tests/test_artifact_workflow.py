@@ -224,6 +224,94 @@ class ArtifactWorkflowTests(unittest.TestCase):
             }])
             self.assertEqual(result.completed_on, "artifact_delivery_turn")
 
+    def test_large_artifact_can_use_four_write_only_delivery_turns(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "capability_design.json"
+
+            def write_file(arguments: Mapping[str, Any]) -> dict[str, Any]:
+                content = str(arguments["content"])
+                before = artifact.read_text(encoding="utf-8") if artifact.exists() else ""
+                combined = before + content if arguments.get("append") is True else content
+                artifact.write_text(combined, encoding="utf-8")
+                return {
+                    "path": "capability_design.json",
+                    "append": arguments.get("append", False),
+                    "file_chars": len(combined),
+                }
+
+            client = _ScriptedArtifactClient(
+                [
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(_call("inspect-1", "observe", {}),),
+                    ),
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(_call("inspect-2", "observe", {}),),
+                    ),
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            _call(
+                                "chunk-1",
+                                "write_file",
+                                {
+                                    "path": "capability_design.json",
+                                    "content": '{"ready":',
+                                    "append": False,
+                                },
+                            ),
+                        ),
+                    ),
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            _call(
+                                "chunk-2",
+                                "write_file",
+                                {
+                                    "path": "capability_design.json",
+                                    "content": "true}",
+                                    "append": True,
+                                },
+                            ),
+                        ),
+                    ),
+                ]
+            )
+            result = run_artifact_react(
+                client=client,
+                stage="tgcd",
+                system_prompt="write the design in bounded chunks",
+                user_prompt="produce capability_design.json",
+                tools=(
+                    ToolSpec("observe", "observe", {"type": "object"}, lambda _: {}),
+                    ToolSpec("write_file", "write", {"type": "object"}, write_file),
+                ),
+                artifact_name="capability_design.json",
+                artifact_path=artifact,
+                validate_artifact=_json_validator,
+                max_turns=6,
+                delivery_turns=4,
+            )
+
+            self.assertEqual(result.artifact, {"ready": True})
+            self.assertEqual(result.model_turns, 4)
+            self.assertEqual(
+                [tool[0]["function"]["name"] for tool in client.tools[2:]],
+                ["write_file", "write_file"],
+            )
+            recovery = "\n".join(
+                str(message.get("content", ""))
+                for message in client.messages[3]
+                if message.get("role") == "user"
+            )
+            self.assertIn("Artifact validation failed", recovery)
+
     def test_final_turn_rejects_a_hallucinated_non_write_tool(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             artifact = Path(directory) / "study.json"
@@ -355,6 +443,27 @@ class ArtifactWorkflowTests(unittest.TestCase):
                     tools = session.artifact_tools(include_skeleton=include_skeleton)
                     self.assertEqual({tool.name for tool in tools}, expected)
                     self.assertTrue(all(not tool.terminal for tool in tools))
+                    write_file = next(tool for tool in tools if tool.name == "write_file")
+                    self.assertIn("append", write_file.input_schema["properties"])
+                    write_file.handler(
+                        {
+                            "path": "study.json",
+                            "content": '{"ready":',
+                            "append": False,
+                        }
+                    )
+                    appended = write_file.handler(
+                        {
+                            "path": "study.json",
+                            "content": "true}",
+                            "append": True,
+                        }
+                    )
+                    self.assertTrue(appended["append"])
+                    self.assertEqual(
+                        (workspace / "study.json").read_text(encoding="utf-8"),
+                        '{"ready":true}',
+                    )
                 finally:
                     session.close()
 

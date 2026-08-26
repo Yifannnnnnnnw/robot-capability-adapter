@@ -925,6 +925,87 @@ class ModelApiTests(unittest.TestCase):
                 )
                 self.assertGreaterEqual(projection.stats["summarized_group_count"], 8)
 
+    def test_context_manager_combines_successful_append_writes(self) -> None:
+        messages = [
+            {"role": "user", "content": "INITIAL_PUBLIC_TASK"},
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "chunk-1",
+                        "type": "function",
+                        "function": {
+                            "name": "write_file",
+                            "arguments": json.dumps(
+                                {
+                                    "path": "capability_design.json",
+                                    "content": "CHUNK_ONE_",
+                                    "append": False,
+                                }
+                            ),
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "chunk-1",
+                "content": json.dumps(
+                    {
+                        "ok": True,
+                        "result": {
+                            "path": "capability_design.json",
+                            "append": False,
+                        },
+                    }
+                ),
+            },
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "chunk-2",
+                        "type": "function",
+                        "function": {
+                            "name": "write_file",
+                            "arguments": json.dumps(
+                                {
+                                    "path": "capability_design.json",
+                                    "content": "CHUNK_TWO",
+                                    "append": True,
+                                }
+                            ),
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "chunk-2",
+                "content": json.dumps(
+                    {
+                        "ok": True,
+                        "result": {
+                            "path": "capability_design.json",
+                            "append": True,
+                        },
+                    }
+                ),
+            },
+        ]
+
+        projection = AgentContextManager(history_char_budget=8192).project_native(messages)
+        projected = json.dumps(projection.messages, ensure_ascii=True)
+
+        self.assertIn("CHUNK_ONE_CHUNK_TWO", projected)
+        self.assertEqual(projection.stats["current_artifact_chars"], 19)
+        self.assertEqual(
+            projection.stats["current_artifact_paths"],
+            ["capability_design.json"],
+        )
+
     def test_native_context_projection_compacts_atomic_check_with_one_snapshot(self) -> None:
         source = "NATIVE_CURRENT_DRIVER" * 400
         checks = [

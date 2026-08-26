@@ -146,6 +146,12 @@ class AgentContextManager:
                     and (observed_path is None or observed_path == requested_path)
                     and isinstance(content, str)
                 ):
+                    append = arguments.get("append") is True
+                    prior = snapshots.get(requested_path)
+                    if append and isinstance(prior, Mapping):
+                        prior_content = prior.get("content")
+                        if isinstance(prior_content, str):
+                            content = prior_content + content
                     snapshots[requested_path] = {
                         "path": requested_path,
                         "content": content,
