@@ -71,6 +71,44 @@ def _distance(left: Sequence[float], right: Sequence[float]) -> float:
     return math.sqrt(sum((float(a) - float(b)) ** 2 for a, b in zip(left, right)))
 
 
+def _dot(left: Sequence[float], right: Sequence[float]) -> float:
+    if len(left) != len(right):
+        raise MeasurementError("cannot combine vectors with different lengths")
+    return math.fsum(float(a) * float(b) for a, b in zip(left, right))
+
+
+def _cross3(
+    left: Sequence[float], right: Sequence[float]
+) -> tuple[float, float, float]:
+    lx, ly, lz = _vector(left, size=3)
+    rx, ry, rz = _vector(right, size=3)
+    return (
+        ly * rz - lz * ry,
+        lz * rx - lx * rz,
+        lx * ry - ly * rx,
+    )
+
+
+def _unit_vector(value: Sequence[float], *, name: str) -> tuple[float, float, float]:
+    vector = _vector(value, size=3)
+    norm = math.sqrt(_dot(vector, vector))
+    if not math.isfinite(norm) or norm <= 1.0e-8:
+        raise MeasurementError(f"{name} must be a finite non-zero vector")
+    return tuple(component / norm for component in vector)  # type: ignore[return-value]
+
+
+def _declared_unit_vector(
+    value: Sequence[float], *, name: str
+) -> tuple[float, float, float]:
+    vector = _vector(value, size=3)
+    norm = math.sqrt(_dot(vector, vector))
+    if not math.isfinite(norm) or norm <= 1.0e-12:
+        raise MeasurementError(f"{name} must be a finite non-zero vector")
+    if not math.isclose(norm, 1.0, rel_tol=0.0, abs_tol=1.0e-6):
+        raise MeasurementError(f"{name} must have unit length")
+    return vector  # type: ignore[return-value]
+
+
 def _body_position(sample: Mapping[str, Any], name: str) -> tuple[float, float, float]:
     positions = sample.get("body_positions")
     if not isinstance(positions, Mapping) or name not in positions:
@@ -912,6 +950,20 @@ def measure(
         actual = _body_position(final, str(parameters["body_name"]))
         target = _vector(_argument(public_arguments, str(parameters["target_argument"])), size=3)
         return _distance(actual, target)
+    if kind == "final_body_xyz_position_error":
+        actual = _body_position(final, str(parameters["body_name"]))
+        target = tuple(
+            _finite_number(
+                _argument(public_arguments, str(parameters[field])),
+                field,
+            )
+            for field in (
+                "target_x_argument",
+                "target_y_argument",
+                "target_z_argument",
+            )
+        )
+        return _distance(actual, target)
     if kind == "body_planar_target_error":
         actual = _body_position(final, str(parameters["body_name"]))
         target = _vector(
@@ -967,6 +1019,95 @@ def measure(
         return (end[0] - start[0]) * math.cos(direction) + (
             end[1] - start[1]
         ) * math.sin(direction)
+    if kind == "accumulated_body_arc_angle_error":
+        body_name = str(parameters["body_name"])
+        center = tuple(
+            _finite_number(
+                _argument(public_arguments, str(parameters[field])),
+                field,
+            )
+            for field in (
+                "center_x_argument",
+                "center_y_argument",
+                "center_z_argument",
+            )
+        )
+        axis_name = _argument(
+            public_arguments, str(parameters["axis_argument"])
+        )
+        axes = {
+            "x": (1.0, 0.0, 0.0),
+            "y": (0.0, 1.0, 0.0),
+            "z": (0.0, 0.0, 1.0),
+        }
+        if not isinstance(axis_name, str) or axis_name not in axes:
+            raise MeasurementError("arc axis request must be x, y, or z")
+        axis = axes[str(axis_name)]
+        radial_directions: list[tuple[float, float, float]] = []
+        for sample in samples:
+            position = _body_position(sample, body_name)
+            displacement = tuple(
+                coordinate - origin
+                for coordinate, origin in zip(position, center)
+            )
+            axial = _dot(displacement, axis)
+            radial = tuple(
+                component - axial * axis_component
+                for component, axis_component in zip(displacement, axis)
+            )
+            radial_directions.append(
+                _unit_vector(radial, name="body arc radius")
+            )
+        increments: list[float] = []
+        for previous, current in zip(
+            radial_directions, radial_directions[1:]
+        ):
+            sine = _dot(axis, _cross3(previous, current))
+            cosine = max(-1.0, min(1.0, _dot(previous, current)))
+            increment = math.atan2(sine, cosine)
+            if abs(increment) >= math.pi - 1.0e-6:
+                raise MeasurementError(
+                    "body arc samples are too far apart to disambiguate signed angle"
+                )
+            increments.append(increment)
+        accumulated = math.fsum(increments)
+        target = _finite_number(
+            _argument(
+                public_arguments, str(parameters["target_angle_argument"])
+            ),
+            "target_angle_argument",
+        )
+        return abs(accumulated - target)
+    if kind == "final_body_directional_displacement_error":
+        body_name = str(parameters["body_name"])
+        direction = _declared_unit_vector(
+            tuple(
+                _finite_number(
+                    _argument(public_arguments, str(parameters[field])),
+                    field,
+                )
+                for field in (
+                    "direction_x_argument",
+                    "direction_y_argument",
+                    "direction_z_argument",
+                )
+            ),
+            name="body displacement direction",
+        )
+        start = _body_position(first, body_name)
+        end = _body_position(final, body_name)
+        displacement = tuple(
+            end_coordinate - start_coordinate
+            for start_coordinate, end_coordinate in zip(start, end)
+        )
+        actual = _dot(displacement, direction)
+        target = _finite_number(
+            _argument(
+                public_arguments, str(parameters["target_distance_argument"])
+            ),
+            "target_distance_argument",
+        )
+        return abs(actual - target)
     if kind == "body_directional_progress_until_corridor_exit":
         body_name = str(parameters["body_name"])
         start = _body_position(first, body_name)
@@ -1185,6 +1326,7 @@ _STATE_BINDING_KINDS = {
     "final_site_axis_error",
     "final_weighted_site_position_error",
     "final_body_position_error",
+    "final_body_xyz_position_error",
     "body_planar_target_error",
     "final_joint_position_error",
     "body_height",

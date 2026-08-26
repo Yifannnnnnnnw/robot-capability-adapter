@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import textwrap
 from collections.abc import Mapping
 from pathlib import Path
@@ -298,6 +299,9 @@ def test_operator_catalog_is_closed_and_excludes_b1_dispatch() -> None:
     kinds = set(operators)
     assert "final_site_position_error" in kinds
     assert "mean_body_yaw_rate" in kinds
+    assert "final_body_xyz_position_error" in kinds
+    assert "accumulated_body_arc_angle_error" in kinds
+    assert "final_body_directional_displacement_error" in kinds
     assert "b1_contract" not in kinds
     assert catalog["binding_fields"] == ["metric", "unit", "kind", "parameters"]
     joint_error = operators["final_joint_position_error"]
@@ -507,3 +511,283 @@ def test_scaled_joint_measurement_rejects_nonfinite_request_value() -> None:
             evidence=_joint_evidence(0.04),
             public_arguments={"request": {"aperture_fraction": float("nan")}},
         )
+
+
+def _numeric_leaf(unit: str) -> dict[str, Any]:
+    return {
+        "type": "number",
+        "unit": unit,
+        "frame": "world",
+        "minimum": -2.0,
+        "maximum": 2.0,
+    }
+
+
+def _xyz_object_schema(field: str, *, unit: str) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            field: {
+                "type": "object",
+                "properties": {
+                    axis: _numeric_leaf(unit) for axis in ("x", "y", "z")
+                },
+                "required": ["x", "y", "z"],
+                "additionalProperties": False,
+            }
+        },
+        "required": [field],
+        "additionalProperties": False,
+    }
+
+
+def _body_evidence(*positions: tuple[float, float, float]) -> dict[str, Any]:
+    return {
+        "samples": [
+            {
+                "time": float(index),
+                "body_positions": {"tool": list(position)},
+            }
+            for index, position in enumerate(positions)
+        ]
+    }
+
+
+def test_final_body_xyz_position_error_audits_scalar_paths_and_measures(
+    tmp_path: Path,
+) -> None:
+    package, _candidate, _design, _suite = _fixture(tmp_path)
+    schema = _xyz_object_schema("target_position", unit="m")
+    binding = {
+        "metric": "body_position_error",
+        "unit": "m",
+        "kind": "final_body_xyz_position_error",
+        "parameters": {
+            "body_name": "tool",
+            "target_x_argument": "request.target_position.x",
+            "target_y_argument": "request.target_position.y",
+            "target_z_argument": "request.target_position.z",
+        },
+    }
+    canonical = audit_inline_measurement_binding(
+        binding,
+        criterion={"metric": "body_position_error", "unit": "m"},
+        request_schema=schema,
+        scene_path=package.mjcf_path,
+    )
+
+    assert measure(
+        canonical,
+        evidence=_body_evidence((0.0, 0.0, 0.0), (0.4, -0.1, 0.2)),
+        public_arguments={
+            "request": {"target_position": {"x": 0.4, "y": -0.1, "z": 0.2}}
+        },
+    ) == 0.0
+
+
+def test_accumulated_body_arc_angle_error_uses_signed_trusted_samples(
+    tmp_path: Path,
+) -> None:
+    package, _candidate, _design, _suite = _fixture(tmp_path)
+    schema = _xyz_object_schema("arc_center", unit="m")
+    schema["properties"].update(
+        {
+            "arc_axis": {
+                "type": "string",
+                "frame": "world",
+                "enum": ["x", "y", "z"],
+            },
+            "angle": _numeric_leaf("rad"),
+        }
+    )
+    schema["required"].extend(["arc_axis", "angle"])
+    binding = {
+        "metric": "arc_angle_error",
+        "unit": "rad",
+        "kind": "accumulated_body_arc_angle_error",
+        "parameters": {
+            "body_name": "tool",
+            "center_x_argument": "request.arc_center.x",
+            "center_y_argument": "request.arc_center.y",
+            "center_z_argument": "request.arc_center.z",
+            "axis_argument": "request.arc_axis",
+            "target_angle_argument": "request.angle",
+        },
+    }
+    canonical = audit_inline_measurement_binding(
+        binding,
+        criterion={"metric": "arc_angle_error", "unit": "rad"},
+        request_schema=schema,
+        scene_path=package.mjcf_path,
+    )
+
+    assert measure(
+        canonical,
+        evidence=_body_evidence(
+            (1.0, 0.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (-1.0, 0.0, 0.0),
+        ),
+        public_arguments={
+            "request": {
+                "arc_center": {"x": 0.0, "y": 0.0, "z": 0.0},
+                "arc_axis": "z",
+                "angle": math.pi,
+            }
+        },
+    ) == pytest.approx(0.0)
+
+
+def test_final_body_directional_displacement_error_projects_xyz_direction(
+    tmp_path: Path,
+) -> None:
+    package, _candidate, _design, _suite = _fixture(tmp_path)
+    schema = _xyz_object_schema("direction", unit="fraction")
+    schema["properties"]["distance"] = _numeric_leaf("m")
+    schema["required"].append("distance")
+    binding = {
+        "metric": "directional_displacement_error",
+        "unit": "m",
+        "kind": "final_body_directional_displacement_error",
+        "parameters": {
+            "body_name": "tool",
+            "direction_x_argument": "request.direction.x",
+            "direction_y_argument": "request.direction.y",
+            "direction_z_argument": "request.direction.z",
+            "target_distance_argument": "request.distance",
+        },
+    }
+    canonical = audit_inline_measurement_binding(
+        binding,
+        criterion={"metric": "directional_displacement_error", "unit": "m"},
+        request_schema=schema,
+        scene_path=package.mjcf_path,
+    )
+
+    assert measure(
+        canonical,
+        evidence=_body_evidence((0.0, 0.0, 0.0), (0.0, -0.16, 0.0)),
+        public_arguments={
+            "request": {
+                "direction": {"x": 0.0, "y": -1.0, "z": 0.0},
+                "distance": 0.16,
+            }
+        },
+    ) == pytest.approx(0.0)
+
+
+def test_body_xyz_binding_rejects_aliased_paths_and_wrong_unit(tmp_path: Path) -> None:
+    package, _candidate, _design, _suite = _fixture(tmp_path)
+    schema = _xyz_object_schema("target_position", unit="m")
+    binding = {
+        "metric": "body_position_error",
+        "unit": "m",
+        "kind": "final_body_xyz_position_error",
+        "parameters": {
+            "body_name": "tool",
+            "target_x_argument": "request.target_position.x",
+            "target_y_argument": "request.target_position.x",
+            "target_z_argument": "request.target_position.z",
+        },
+    }
+    with pytest.raises(MeasurementOperatorError, match="distinct sibling x/y/z"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": "body_position_error", "unit": "m"},
+            request_schema=schema,
+            scene_path=package.mjcf_path,
+        )
+
+    binding["parameters"]["target_y_argument"] = "request.target_position.y"
+    schema["properties"]["target_position"]["properties"]["x"]["unit"] = "rad"
+    with pytest.raises(MeasurementOperatorError, match="unit='m'.*frame='world'"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": "body_position_error", "unit": "m"},
+            request_schema=schema,
+            scene_path=package.mjcf_path,
+        )
+
+
+def test_directional_displacement_rejects_materially_non_unit_direction() -> None:
+    binding = {
+        "kind": "final_body_directional_displacement_error",
+        "parameters": {
+            "body_name": "tool",
+            "direction_x_argument": "request.direction.x",
+            "direction_y_argument": "request.direction.y",
+            "direction_z_argument": "request.direction.z",
+            "target_distance_argument": "request.distance",
+        },
+    }
+    with pytest.raises(MeasurementError, match="must have unit length"):
+        measure(
+            binding,
+            evidence=_body_evidence((0.0, 0.0, 0.0), (0.0, -0.16, 0.0)),
+            public_arguments={
+                "request": {
+                    "direction": {"x": 0.0, "y": -2.0, "z": 0.0},
+                    "distance": 0.16,
+                }
+            },
+        )
+
+
+def test_arc_angle_rejects_near_pi_sample_alias() -> None:
+    binding = {
+        "kind": "accumulated_body_arc_angle_error",
+        "parameters": {
+            "body_name": "tool",
+            "center_x_argument": "request.arc_center.x",
+            "center_y_argument": "request.arc_center.y",
+            "center_z_argument": "request.arc_center.z",
+            "axis_argument": "request.arc_axis",
+            "target_angle_argument": "request.angle",
+        },
+    }
+    with pytest.raises(MeasurementError, match="too far apart"):
+        measure(
+            binding,
+            evidence=_body_evidence((1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)),
+            public_arguments={
+                "request": {
+                    "arc_center": {"x": 0.0, "y": 0.0, "z": 0.0},
+                    "arc_axis": "z",
+                    "angle": math.pi,
+                }
+            },
+        )
+
+
+def test_final_body_position_error_rejects_object_target_before_worker(
+    tmp_path: Path,
+) -> None:
+    package, candidate, design, suite = _fixture(tmp_path)
+    design["capabilities"][0]["request_schema"] = _xyz_object_schema(
+        "target_position_m", unit="m"
+    )
+    suite["cases"][0]["request"] = {
+        "target_position_m": {"x": 0.4, "y": 0.0, "z": 0.2}
+    }
+    suite["cases"][0]["measurement_binding"] = {
+        "metric": "end_effector_position_error",
+        "unit": "m",
+        "kind": "final_body_position_error",
+        "parameters": {
+            "body_name": "tool",
+            "target_argument": "request.target_position_m",
+        },
+    }
+
+    with mock.patch.object(harness_runner, "_run_worker") as worker:
+        with pytest.raises(HarnessError, match="numeric array schema"):
+            run_private_suite(
+                package=package,
+                design=design,
+                suite=suite,
+                driver_path=candidate,
+                condition="from-scratch",
+                output_dir=tmp_path / "object-target-report",
+                record_video=False,
+            )
+    worker.assert_not_called()

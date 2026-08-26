@@ -29,6 +29,7 @@ def _spec(
     request_paths: Sequence[str] = (),
     evaluation_mode: str = "numeric_measurement",
     parameter_details: Mapping[str, Mapping[str, Any]] = {},
+    request_value_types: Mapping[str, str] = {},
 ) -> dict[str, Any]:
     properties = {
         **{name: {"type": kind} for name, kind in required.items()},
@@ -47,6 +48,7 @@ def _spec(
             "additionalProperties": False,
         },
         "request_path_parameters": list(request_paths),
+        "request_value_types": dict(request_value_types),
         "entity_parameters": dict(entities),
         "evaluation_mode": evaluation_mode,
     }
@@ -86,11 +88,35 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         request_paths=("target_argument",),
     ),
     "final_body_position_error": _spec(
-        "Euclidean terminal world-position error for one named body.",
+        "Euclidean terminal world-position error for one named body against a "
+        "request numeric array of exactly three coordinates.",
         ["m"],
         required={"body_name": "string", "target_argument": "request_path"},
         entities={"body_name": "body"},
         request_paths=("target_argument",),
+        request_value_types={"target_argument": "number_array_3"},
+    ),
+    "final_body_xyz_position_error": _spec(
+        "Euclidean terminal world-position error for one named body against "
+        "three scalar request-coordinate paths.",
+        ["m"],
+        required={
+            "body_name": "string",
+            "target_x_argument": "request_path",
+            "target_y_argument": "request_path",
+            "target_z_argument": "request_path",
+        },
+        entities={"body_name": "body"},
+        request_paths=(
+            "target_x_argument",
+            "target_y_argument",
+            "target_z_argument",
+        ),
+        request_value_types={
+            "target_x_argument": "world_m_number",
+            "target_y_argument": "world_m_number",
+            "target_z_argument": "world_m_number",
+        },
     ),
     "body_planar_target_error": _spec(
         "Terminal planar world-position error for one named body.",
@@ -163,6 +189,60 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"body_name": "body"},
         request_paths=("direction_argument",),
+        request_value_types={"direction_argument": "number"},
+    ),
+    "accumulated_body_arc_angle_error": _spec(
+        "Absolute error between accumulated signed body arc angle and a requested "
+        "angle, using a request-defined XYZ center and x/y/z axis name.",
+        ["rad"],
+        required={
+            "body_name": "string",
+            "center_x_argument": "request_path",
+            "center_y_argument": "request_path",
+            "center_z_argument": "request_path",
+            "axis_argument": "request_path",
+            "target_angle_argument": "request_path",
+        },
+        entities={"body_name": "body"},
+        request_paths=(
+            "center_x_argument",
+            "center_y_argument",
+            "center_z_argument",
+            "axis_argument",
+            "target_angle_argument",
+        ),
+        request_value_types={
+            "center_x_argument": "world_m_number",
+            "center_y_argument": "world_m_number",
+            "center_z_argument": "world_m_number",
+            "axis_argument": "world_axis_name",
+            "target_angle_argument": "rad_number",
+        },
+    ),
+    "final_body_directional_displacement_error": _spec(
+        "Absolute error between terminal body displacement projected along a "
+        "request XYZ direction and a requested distance.",
+        ["m"],
+        required={
+            "body_name": "string",
+            "direction_x_argument": "request_path",
+            "direction_y_argument": "request_path",
+            "direction_z_argument": "request_path",
+            "target_distance_argument": "request_path",
+        },
+        entities={"body_name": "body"},
+        request_paths=(
+            "direction_x_argument",
+            "direction_y_argument",
+            "direction_z_argument",
+            "target_distance_argument",
+        ),
+        request_value_types={
+            "direction_x_argument": "world_direction_number",
+            "direction_y_argument": "world_direction_number",
+            "direction_z_argument": "world_direction_number",
+            "target_distance_argument": "m_number",
+        },
     ),
     "body_directional_progress_until_corridor_exit": _spec(
         "Maximum requested-direction progress before leaving a trusted corridor.",
@@ -690,6 +770,138 @@ def _schema_at_request_path(request_schema: Mapping[str, Any], path: str) -> Map
     return current
 
 
+def _validate_request_value_schema(
+    schema: Mapping[str, Any],
+    expected: str,
+    *,
+    path: str,
+) -> None:
+    schema_type = schema.get("type")
+    if expected in {
+        "number",
+        "world_m_number",
+        "world_direction_number",
+        "m_number",
+        "rad_number",
+    }:
+        if schema_type not in {"number", "integer"}:
+            raise MeasurementOperatorError(
+                f"request path {path!r} must resolve to a numeric scalar schema"
+            )
+        if expected == "world_m_number" and (
+            schema.get("unit") != "m" or schema.get("frame") != "world"
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare unit='m' and frame='world'"
+            )
+        if expected == "world_direction_number" and (
+            schema.get("unit")
+            not in {"fraction", "ratio", "unitless", "none", "1"}
+            or schema.get("frame") != "world"
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare a dimensionless unit and "
+                "frame='world'"
+            )
+        if expected == "m_number" and schema.get("unit") != "m":
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare unit='m'"
+            )
+        if expected == "rad_number" and schema.get("unit") != "rad":
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare unit='rad'"
+            )
+        return
+    if expected == "number_array_3":
+        items = schema.get("items")
+        if (
+            schema_type != "array"
+            or schema.get("minItems") != 3
+            or schema.get("maxItems") != 3
+            or not isinstance(items, Mapping)
+            or items.get("type") not in {"number", "integer"}
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must resolve to a numeric array schema "
+                "with exactly three items"
+            )
+        return
+    if expected in {"axis_name", "world_axis_name"}:
+        values = schema.get("enum")
+        if (
+            schema_type != "string"
+            or not isinstance(values, list)
+            or not values
+            or any(value not in {"x", "y", "z"} for value in values)
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must resolve to a string schema restricted "
+                "to x/y/z"
+            )
+        if expected == "world_axis_name" and schema.get("frame") != "world":
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare frame='world'"
+            )
+        return
+    raise MeasurementOperatorError(
+        f"trusted operator declares unsupported request value type {expected!r}"
+    )
+
+
+def _validate_xyz_sibling_paths(
+    parameters: Mapping[str, Any],
+    fields: Sequence[str],
+    *,
+    label: str,
+) -> None:
+    paths = [str(parameters[field]).split(".") for field in fields]
+    if (
+        len({str(parameters[field]) for field in fields}) != 3
+        or any(len(parts) < 3 for parts in paths)
+        or [parts[-1] for parts in paths] != ["x", "y", "z"]
+        or any(parts[:-1] != paths[0][:-1] for parts in paths[1:])
+    ):
+        raise MeasurementOperatorError(
+            f"{label} request paths must be distinct sibling x/y/z fields"
+        )
+
+
+def _validate_operator_request_roles(
+    kind: str,
+    parameters: Mapping[str, Any],
+) -> None:
+    if kind == "final_body_xyz_position_error":
+        _validate_xyz_sibling_paths(
+            parameters,
+            (
+                "target_x_argument",
+                "target_y_argument",
+                "target_z_argument",
+            ),
+            label="body target",
+        )
+    elif kind == "accumulated_body_arc_angle_error":
+        _validate_xyz_sibling_paths(
+            parameters,
+            (
+                "center_x_argument",
+                "center_y_argument",
+                "center_z_argument",
+            ),
+            label="arc center",
+        )
+    elif kind == "final_body_directional_displacement_error":
+        _validate_xyz_sibling_paths(
+            parameters,
+            (
+                "direction_x_argument",
+                "direction_y_argument",
+                "direction_z_argument",
+            ),
+            label="body direction",
+        )
+
+
 def _scene_model(scene_path: Path) -> Any:
     try:
         import mujoco
@@ -989,6 +1201,13 @@ def audit_inline_measurement_binding(
         field: _schema_at_request_path(request_schema, str(parameters[field]))
         for field in spec["request_path_parameters"]
     }
+    for field, expected in spec["request_value_types"].items():
+        _validate_request_value_schema(
+            request_path_schemas[field],
+            str(expected),
+            path=str(parameters[field]),
+        )
+    _validate_operator_request_roles(kind, parameters)
     resolved_scene_path = (
         Path(scene_path).resolve() if scene_path is not None else None
     )
