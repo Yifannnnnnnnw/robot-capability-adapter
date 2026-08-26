@@ -2,10 +2,12 @@
 \label{chapter:autoadapter-bench}
 
 \begin{quote}\itshape
-This chapter presents AutoAdapter-Bench, a benchmark for comparing how
-different LLM backbones perform in robot-driver tasks. The benchmark separates
-two abilities that are often conflated: synthesising robot-specific drivers and
-using robot capability interfaces to complete tasks.
+This chapter presents AutoAdapter-Bench, which evaluates large language models
+in two roles at the robot-software boundary. The first role requires a model to
+implement a specified interface for a particular robot and satisfy independent
+behavioural tests. The second supplies an existing driver and asks a model to
+complete tasks through it. The outcomes remain separate because successful
+tool use does not establish that the model can create the underlying software.
 \end{quote}
 
 \section[Introduction]{Introduction}

@@ -1,6 +1,16 @@
 \chapter[Auto-Adapter Framework]{Auto-Adapter: A Framework for Harness-Validated Robot Driver Synthesis}
 \label{chapter:autoadapter-component-analysis}
 
+\begin{quote}\itshape
+This chapter presents Auto-Adapter, a framework that creates a reusable Python
+interface for a particular robot. It uses public robot information and
+documented task requirements to derive the operations that the interface must
+provide. The framework states how their physical effects will be judged before
+a coding agent implements them. Final assessment relies on observations
+supplied outside the generated code, so the driver cannot determine whether
+its own behaviour is accepted.
+\end{quote}
+
 \section{Introduction}
 
 Large language models support task-level robot planning, yet high-level
