@@ -312,6 +312,74 @@ class ArtifactWorkflowTests(unittest.TestCase):
             )
             self.assertIn("Artifact validation failed", recovery)
 
+    def test_optional_early_write_validation_keeps_inspection_tools_available(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "capability_validation_suite.json"
+
+            def write_file(arguments: Mapping[str, Any]) -> dict[str, Any]:
+                artifact.write_text(str(arguments["content"]), encoding="utf-8")
+                return {"path": artifact.name}
+
+            client = _ScriptedArtifactClient(
+                [
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            _call(
+                                "invalid-early-write",
+                                "write_file",
+                                {"path": artifact.name, "content": '{"ready":false}'},
+                            ),
+                        ),
+                    ),
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            _call(
+                                "corrected-early-write",
+                                "write_file",
+                                {"path": artifact.name, "content": '{"ready":true}'},
+                            ),
+                        ),
+                    ),
+                ]
+            )
+
+            result = run_artifact_react(
+                client=client,
+                stage="ivc",
+                system_prompt="write the suite",
+                user_prompt="produce capability_validation_suite.json",
+                tools=(
+                    ToolSpec("observe", "observe", {"type": "object"}, lambda _: {}),
+                    ToolSpec("write_file", "write", {"type": "object"}, write_file),
+                ),
+                artifact_name=artifact.name,
+                artifact_path=artifact,
+                validate_artifact=_json_validator,
+                max_turns=4,
+                delivery_turns=2,
+                validate_after_write=True,
+            )
+
+            self.assertEqual(result.artifact, {"ready": True})
+            self.assertEqual(result.completed_on, "artifact_write_turn")
+            self.assertEqual(
+                [
+                    {tool["function"]["name"] for tool in turn_tools}
+                    for turn_tools in client.tools
+                ],
+                [{"observe", "write_file"}, {"observe", "write_file"}],
+            )
+            recovery = "\n".join(
+                str(message.get("content", ""))
+                for message in client.messages[1]
+                if message.get("role") == "user"
+            )
+            self.assertIn("Artifact validation failed", recovery)
+
     def test_artifact_recovery_keeps_validator_detail_beyond_1000_chars(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             artifact = Path(directory) / "capability_design.json"

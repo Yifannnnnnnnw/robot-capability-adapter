@@ -13,6 +13,7 @@ from autoadapter2.libraries import RobotPackage, load_robot_package
 from autoadapter2.react import ToolCall, ToolTurn
 from autoadapter2.validation_compiler.ivc import (
     IVCError,
+    _build_ivc_authoring_index,
     _private_inputs_from_package,
     build_ivc_inputs,
     load_sanitized_ivc_examples,
@@ -208,6 +209,12 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
     tmp_path: Path,
 ) -> None:
     package, design, private, _suite = _synthetic(tmp_path)
+    design["capabilities"][0]["evidence_refs"] = [
+        {
+            "source_id": "capability-provenance-only",
+            "specific_reference": "not a request bound",
+        }
+    ]
 
     inputs = build_ivc_inputs(
         package=package,
@@ -231,6 +238,20 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
     assert "go2_stable_stance_recovery" not in operator_kinds
     assert "so101_end_effector_regulation" not in operator_kinds
     assert len(inputs["complete_so101_go2_worked_references"]) == 2
+    authoring_index = _build_ivc_authoring_index(inputs)
+    capability_entry = authoring_index["capability_criterion_index"][0]
+    assert capability_entry[
+        "allowed_request_grounding_refs_from_sealed_schema"
+    ] == [
+        {
+            "source_id": "real-calibration",
+            "specific_reference": "target_m bounds from admitted scene calibration",
+        }
+    ]
+    assert "capability-provenance-only" not in json.dumps(capability_entry)
+    assert "selected instance request_domain" in authoring_index[
+        "request_grounding_ref_rule"
+    ]
 
 
 def test_franka_ivc_inputs_fit_read_limit_when_serialized_compactly(
@@ -291,7 +312,9 @@ class _InspectThenCorrectIVCModel:
 
         artifact = copy.deepcopy(self.suite)
         if turn == 3:
-            artifact["cases"] = []
+            # Reproduce the observed wrapper/list/guessed-ID mistake.  The
+            # authoring index supplies the exact scalar ID instead.
+            artifact["cases"][0]["instance_id"] = ["guessed-private-instance"]
         content = json.dumps(artifact, ensure_ascii=True, separators=(",", ":"))
         call = ToolCall(
             id=f"write-{turn}",
@@ -310,7 +333,7 @@ class _InspectThenCorrectIVCModel:
         return ToolTurn(content=None, tool_calls=(call,), finish_reason="end_turn")
 
 
-def test_ivc_turn_three_is_write_only_and_immediately_validated(
+def test_ivc_turn_three_write_is_immediately_validated_with_tools_available(
     tmp_path: Path,
 ) -> None:
     package, design, private, suite = _synthetic(tmp_path)
@@ -328,14 +351,28 @@ def test_ivc_turn_three_is_write_only_and_immediately_validated(
 
     assert canonical["cases"] == suite["cases"]
     assert len(model.messages) == 4
-    assert model.tool_names[:2] == [
+    assert model.tool_names == [
+        {"read_file", "write_file", "execute_python"},
+        {"read_file", "write_file", "execute_python"},
         {"read_file", "write_file", "execute_python"},
         {"read_file", "write_file", "execute_python"},
     ]
-    assert model.tool_names[2:] == [{"write_file"}, {"write_file"}]
-    assert "cases must contain exactly two cases per capability" in json.dumps(
+    assert "instance_id is not a supplied private instance" in json.dumps(
         model.messages[3]
     )
+    first_prompt = str(model.messages[0][0]["content"])
+    assert '"records_path":"private_instances.instances"' in first_prompt
+    assert '"instance_id":"novel-scene"' in first_prompt
+    assert '"mandatory_guard_ids":["control","state","canonical"]' in first_prompt
+    assert '"measurement_binding_shape"' in first_prompt
+    assert '"allowed_request_grounding_refs_from_sealed_schema"' in first_prompt
+    assert "copy only exact source_id/specific_reference pairs" in first_prompt
+    assert "selected instance request_domain" in first_prompt
+    assert '"kind":"final_site_position_error"' in first_prompt
+    assert '"parameter_schema":{"type":"object","required":["site_name","target_argument"]' in first_prompt
+    assert '"sites":["tool_site"]' in first_prompt
+    assert "rather than guessing" in first_prompt
+    assert len(first_prompt.encode("utf-8")) < 200_000
     serialized_inputs = (
         destination.parent / "workspace" / "ivc_inputs.json"
     ).read_text(encoding="utf-8")
@@ -344,6 +381,9 @@ def test_ivc_turn_three_is_write_only_and_immediately_validated(
         ensure_ascii=True,
         separators=(",", ":"),
     ) + "\n"
+    assert len(
+        json.loads(serialized_inputs)["complete_so101_go2_worked_references"]
+    ) == 2
 
 
 def test_complete_so101_go2_references_pass_real_operator_audit() -> None:

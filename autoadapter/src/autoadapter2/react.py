@@ -532,6 +532,7 @@ def run_artifact_react(
     validate_artifact: Callable[[Any], Any] | None = None,
     max_turns: int = 16,
     delivery_turns: int = 2,
+    validate_after_write: bool = False,
     tool_output_chars: int = 24000,
 ) -> ArtifactResult:
     """Run a bounded AA1-style file/artifact conversation.
@@ -550,7 +551,10 @@ def run_artifact_react(
     ``write_file``.  It defaults to the final two turns; stages whose canonical
     JSON can exceed one provider response may reserve more turns and use
     bounded append writes.  The final turn accepts a corrected artifact
-    without requiring another closing response.
+    without requiring another closing response.  Stages may opt into
+    ``validate_after_write`` to audit after any turn containing a successful
+    ``write_file`` call while leaving inspection tools available outside the
+    bounded delivery window; the default completion behavior is unchanged.
     """
 
     if (
@@ -558,6 +562,7 @@ def run_artifact_react(
         or not isinstance(delivery_turns, int)
         or isinstance(delivery_turns, bool)
         or delivery_turns < 1
+        or not isinstance(validate_after_write, bool)
         or tool_output_chars < 256
     ):
         raise ValueError("artifact ReAct limits must be positive and tool output at least 256 chars")
@@ -637,6 +642,7 @@ def run_artifact_react(
                 break
             continue
 
+        successful_write = False
         for call in turn.tool_calls:
             call_count += 1
             tool = tool_map.get(call.name)
@@ -662,6 +668,8 @@ def run_artifact_react(
                 else None
             )
             execution_error = error or reported_error
+            if call.name == "write_file" and execution_error is None:
+                successful_write = True
             tool_elapsed_s = max(0.0, time.monotonic() - tool_started)
             budget_status = {
                 "model_turn": turn_number,
@@ -713,6 +721,11 @@ def run_artifact_react(
                 return result
             if final_turn:
                 break
+            continue
+        if validate_after_write and successful_write:
+            result = validate(turn_number=turn_number, event="artifact_write_turn")
+            if result is not None:
+                return result
             continue
         if turn.finish_reason in {"end_turn", "stop"}:
             result = validate(turn_number=turn_number, event="end_turn")

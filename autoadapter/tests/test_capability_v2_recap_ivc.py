@@ -1206,7 +1206,7 @@ def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
 
     assert len(result["cases"]) == 2 * len(design["capabilities"])
     assert model.tool_names == [
-        {"read_file", "write_file", "execute_python"},
+        {"write_file"},
         {"write_file"},
     ]
     assert '"artifact_header"' in model.messages[0][0]["content"]

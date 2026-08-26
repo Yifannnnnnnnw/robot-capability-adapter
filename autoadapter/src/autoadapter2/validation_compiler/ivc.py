@@ -64,10 +64,12 @@ trusted measurement-operator catalog, and complete SO-101/Go2 worked references.
 must not infer candidate Driver source, generated traces, Repair history, or a candidate verdict.
 
 The complete input is compact JSON in ivc_inputs.json. Use execute_python for targeted queries; do
-not print the full scene, Task Library, operator, or worked-reference collections. With a six-turn
-budget, turns one and two are the only inspection turns and turns three through six are write-only
-delivery/correction turns. Every delivery write is immediately audited and any deterministic error
-is returned in this same conversation. Large artifacts may use bounded append writes. When a sealed
+not print the full scene, Task Library, operator, or worked-reference collections. The prompt's
+authoring index gives the exact private_instances.instances records, compatible operator schemas,
+and relevant scene entities; never guess an instance ID or treat the private_instances wrapper as a
+list. With a six-turn budget, turns one through four retain inspection and writing tools; turns five
+and six are write-only delivery/correction turns. Every successful write is immediately audited and
+any deterministic error is returned in this same conversation. Large artifacts may use bounded append writes. When a sealed
 request expresses a scaled joint target, use target_scale and target_offset only when those closed
 parameters are declared by the selected trusted operator-catalog entry; never invent an operator
 parameter.
@@ -1208,6 +1210,156 @@ def build_ivc_inputs(
     }
 
 
+def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Build a compact, exact index for the first IVC prompt.
+
+    The complete private projection remains in ``ivc_inputs.json``.  This
+    index duplicates only the fields needed to avoid guessing wrapper paths,
+    instance IDs, operator parameters, and scene entities.
+    """
+
+    private_document = inputs.get("private_instances")
+    if isinstance(private_document, Mapping):
+        raw_instances = private_document.get("instances")
+        records_path = "private_instances.instances"
+        wrapper_fields = sorted(str(key) for key in private_document)
+        wrapper_rule = (
+            "private_instances is an object wrapper, not a case list; "
+            "copy instance_id only from the indexed records below"
+        )
+    else:
+        raw_instances = private_document
+        records_path = "private_instances"
+        wrapper_fields = []
+        wrapper_rule = (
+            "this compatibility input is the record array itself; copy "
+            "instance_id only from the indexed records below"
+        )
+    if not isinstance(raw_instances, list):
+        raise IVCError("private_instances.instances must be an array")
+    instance_records: list[dict[str, Any]] = []
+    scene_entrypoints: set[str] = set()
+    for index, record in enumerate(raw_instances):
+        if not isinstance(record, Mapping):
+            raise IVCError(f"private_instances.instances[{index}] must be an object")
+        instance_id = record.get("instance_id")
+        scene_entrypoint = record.get("scene_entrypoint")
+        if not isinstance(instance_id, str) or not isinstance(scene_entrypoint, str):
+            raise IVCError("private instance index requires exact IDs and scenes")
+        scene_entrypoints.add(scene_entrypoint)
+        instance_records.append(
+            {
+                "instance_id": instance_id,
+                "context_namespace": record.get("context_namespace"),
+                "capability_id": record.get("capability_id"),
+                "case_role": record.get("case_role"),
+                "scene_entrypoint": scene_entrypoint,
+                "mandatory_guard_ids": json_copy(
+                    record.get("guard_ids", []),
+                    label=f"private instance {instance_id} guard_ids",
+                ),
+                "repetitions": record.get("repetitions"),
+                "timeout_sim_s": record.get("timeout_sim_s"),
+                "request_domain": json_copy(
+                    record.get("request_domain"),
+                    label=f"private instance {instance_id} request_domain",
+                ),
+            }
+        )
+
+    design = inputs.get("sealed_capability_design")
+    if not isinstance(design, Mapping):
+        raise IVCError("sealed_capability_design authoring input must be an object")
+    criterion_index: list[dict[str, Any]] = []
+    criterion_units: set[str] = set()
+    for capability in capability_records(design):
+        criteria = capability.get("criteria")
+        if not (
+            isinstance(criteria, list)
+            and len(criteria) == 1
+            and isinstance(criteria[0], Mapping)
+        ):
+            raise IVCError("sealed capability requires exactly one criterion")
+        criterion = criteria[0]
+        unit = criterion.get("unit")
+        if isinstance(unit, str):
+            criterion_units.add(unit)
+        criterion_index.append(
+            {
+                "capability_id": capability.get("capability_id"),
+                "method_name": capability.get("method_name"),
+                "criterion": json_copy(dict(criterion), label="sealed criterion"),
+                "allowed_request_grounding_refs_from_sealed_schema": [
+                    {
+                        "source_id": source_id,
+                        "specific_reference": specific_reference,
+                    }
+                    for source_id, specific_reference in sorted(
+                        _evidence_ref_pairs(capability.get("request_schema"))
+                    )
+                ],
+            }
+        )
+
+    operator_document = inputs.get("measurement_operator_catalog")
+    raw_operators = (
+        operator_document.get("operators")
+        if isinstance(operator_document, Mapping)
+        else None
+    )
+    if not isinstance(raw_operators, list):
+        raise IVCError("measurement_operator_catalog.operators must be an array")
+    operator_shortlist = [
+        json_copy(dict(operator), label="measurement operator")
+        for operator in raw_operators
+        if isinstance(operator, Mapping)
+        and isinstance(operator.get("output_units"), list)
+        and criterion_units.intersection(
+            unit for unit in operator["output_units"] if isinstance(unit, str)
+        )
+    ]
+
+    scene_document = inputs.get("scene_entity_catalog")
+    raw_scenes = (
+        scene_document.get("scenes")
+        if isinstance(scene_document, Mapping)
+        else None
+    )
+    if not isinstance(raw_scenes, list):
+        raise IVCError("scene_entity_catalog.scenes must be an array")
+    relevant_scenes = [
+        json_copy(dict(scene), label="scene entity catalog")
+        for scene in raw_scenes
+        if isinstance(scene, Mapping)
+        and scene.get("scene_entrypoint") in scene_entrypoints
+    ]
+
+    return {
+        "private_instances_raw_wrapper": {
+            "document_path": "private_instances",
+            "records_path": records_path,
+            "wrapper_fields": wrapper_fields,
+            "rule": wrapper_rule,
+        },
+        "private_instance_records": instance_records,
+        "capability_criterion_index": criterion_index,
+        "request_grounding_ref_rule": (
+            "For each case, copy only exact source_id/specific_reference pairs "
+            "from that capability's allowed_request_grounding_refs_from_sealed_schema "
+            "or from evidence_refs inside the selected instance request_domain. "
+            "Capability-level evidence_refs and source_refs are not request grounding."
+        ),
+        "measurement_binding_shape": {
+            "metric": "exact sealed criterion metric",
+            "unit": "exact sealed criterion unit",
+            "kind": "one kind from operator_shortlist",
+            "parameters": "closed object matching that operator parameter_schema",
+        },
+        "operator_shortlist_filtered_by_sealed_criterion_units": operator_shortlist,
+        "relevant_scene_entity_catalogs": relevant_scenes,
+    }
+
+
 @dataclass(frozen=True)
 class IVCPhase:
     """Six-turn artifact workflow exposed for pipeline integration."""
@@ -1339,6 +1491,7 @@ def run_ivc(
                     "artifact_header": inputs["artifact_header"],
                     "validator_contract": inputs["validator_contract"],
                     "sealed_capability_design": inputs["sealed_capability_design"],
+                    "authoring_index": _build_ivc_authoring_index(inputs),
                 },
                 ensure_ascii=True,
                 separators=(",", ":"),
@@ -1353,15 +1506,29 @@ def run_ivc(
                         "phase-workspace root; there is no result wrapper. Use execute_python "
                         "for targeted queries instead of printing the full scene, Task Library, "
                         "operator, or worked-reference collections. The compact core authoring "
-                        f"brief is included here verbatim: {authoring_brief}. Copy artifact_header "
-                        "unchanged at the suite top level and follow validator_contract exactly. "
+                        f"brief is included here verbatim: {authoring_brief}. "
+                        "The raw private_instances value is an object wrapper; its record array is "
+                        "private_instances.instances. Use only exact instance_id values from "
+                        "authoring_index.private_instance_records, and copy each indexed mandatory "
+                        "guard list, repetitions, timeout, and request_domain rather than guessing. "
+                        "For request_grounding_refs, copy only exact source_id/specific_reference "
+                        "pairs from the capability's indexed "
+                        "allowed_request_grounding_refs_from_sealed_schema or from evidence_refs "
+                        "inside the selected instance request_domain. Capability-level evidence_refs "
+                        "and criterion source_refs are not valid request grounding. "
+                        "Choose measurement_binding.kind only from the unit-filtered operator "
+                        "shortlist and satisfy its complete parameter_schema using the relevant "
+                        "indexed scene entities. Copy artifact_header unchanged at the suite top "
+                        "level and follow validator_contract exactly. "
                         "Author the complete canonical "
                         f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
                         "for credential-free calibration calculations and may inspect the read-only "
-                        "public assets root through AUTOADAPTER_PROBE_PUBLIC_PACKAGE. Turns one and "
-                        "two are the only inspection turns. Turns three through six are write-only "
-                        "delivery/correction turns, and the Framework validates after every one. "
-                        "Start writing by turn three. For a large artifact, use append=false for "
+                        "public assets root through AUTOADAPTER_PROBE_PUBLIC_PACKAGE. Turns one "
+                        "through four retain read_file, write_file, and execute_python. Turns five "
+                        "and six are write-only delivery/correction turns. The Framework validates "
+                        "at the end of every turn containing a successful write_file call, so write "
+                        "as soon as you have a grounded draft and use returned errors to correct it. "
+                        "For a large artifact, use append=false for "
                         "the first safe text chunk and append=true for later chunks; only the "
                         "combined file must parse. For scaled joint targets, use target_scale and "
                         "target_offset only when the selected operator-catalog entry declares them. "
@@ -1373,7 +1540,8 @@ def run_ivc(
                     artifact_path=working_artifact,
                     validate_artifact=validate_file,
                     max_turns=max_turns,
-                    delivery_turns=max(1, max_turns - 2),
+                    delivery_turns=2,
+                    validate_after_write=True,
                 )
             except ReactLoopError as exc:
                 raise IVCError(
