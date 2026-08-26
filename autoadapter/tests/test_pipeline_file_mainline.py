@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -324,6 +325,12 @@ def test_fresh_cell_order_visibility_freeze_and_partial_recap_whitelist(
         seen["study_experience"] = kwargs["experience"]
         assert kwargs.get("design") is None
         assert kwargs["max_turns"] == 16
+        study_path = Path(kwargs["workspace"]) / "study.json"
+        study_path.parent.mkdir(parents=True, exist_ok=True)
+        study_path.write_text(
+            json.dumps({"condition": "model-authored-label"}),
+            encoding="utf-8",
+        )
         return StudyResult(
             condition=kwargs["condition"],
             output={
@@ -544,6 +551,20 @@ def test_fresh_cell_order_visibility_freeze_and_partial_recap_whitelist(
     assert seen["tgcd"]["experience"] == experience
     assert seen["tgcd"]["study"]["findings"] == ["f"]
     assert seen["tgcd"]["max_turns"] == 6
+    for condition in ("skeleton-assisted", "from-scratch"):
+        sealed_study = json.loads(
+            (
+                tmp_path
+                / "run"
+                / "cells"
+                / "robot-a"
+                / condition
+                / "files"
+                / "study.json"
+            ).read_text(encoding="utf-8")
+        )
+        assert sealed_study["condition"] == condition
+        assert sealed_study["findings"] == ["f"]
     assert "experience" not in seen["ivc"]
     assert {"candidate_driver", "driver_source", "repair_history"}.isdisjoint(
         seen["ivc"]

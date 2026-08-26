@@ -2999,8 +2999,11 @@ def _run_study_phase(
         if not _has_successful_physics_probe(probe_results):
             raise ProbeError("STUDY produced no successful real-MuJoCo physics probe")
         canonical_path = workspace / "files" / "study.json"
-        if not canonical_path.is_file():
-            _write(canonical_path, result.output)
+        # The model-written file may carry its own condition label.  ``study``
+        # normalises that label in the accepted result, so persist the exact
+        # canonical object handed to TGCD/Generate rather than leaving a stale
+        # pre-normalisation file behind.
+        _write(canonical_path, result.output)
         evidence = _with_experience_trace(
             _stage_evidence(client, stage="study", before=before, completed=True),
             experience,
