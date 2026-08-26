@@ -54,21 +54,22 @@ Within the evaluated scope, the thesis makes three scientific contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item A role-separated evaluation of LLM-based robot software. Driver
+  \item A \textbf{role-separated evaluation} of LLM-based robot software.
+  Driver
   synthesis and downstream tool use are treated as distinct experimental
   objects with separate inputs, metrics, and verdicts, preventing success
   through a supplied interface from being counted as evidence that the model
   can implement it.
 
-  \item A source-grounded pipeline for synthesising robot-facing interfaces.
-  It derives a reusable, task-neutral API and measurable acceptance criteria
-  from documented task requirements, implements the API in a robot-specific
-  driver, and constrains driver revision and the reuse of reviewed evidence
-  across runs.
+  \item A \textbf{source-grounded pipeline} for synthesising robot-facing
+  interfaces. It derives a reusable, task-neutral API and
+  measurable acceptance criteria from documented task requirements,
+  implements the API in a robot-specific driver, and constrains driver revision
+  and the reuse of reviewed evidence across runs.
 
-  \item An implementation-blind validation architecture for generated robot
-  software. Validation cases are constructed without access to the candidate
-  code, while a trusted evaluator owns simulator measurements,
+  \item An \textbf{implementation-blind validation architecture} for generated
+  robot software. Validation cases are constructed without access to the
+  candidate code, while a trusted evaluator owns simulator measurements,
   physical-integrity checks, and final verdicts. This separates interface
   conformance from observed actuator-mediated behaviour.
 
@@ -79,15 +80,17 @@ industry-relevant contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item An auditable workflow for LLM-assisted robot integration. It fixes
-  robot inputs and callable interfaces, bounds driver revisions, records model
-  and resource use, and retains the evidence behind each acceptance decision.
+  \item An \textbf{auditable workflow} for LLM-assisted robot integration. It
+  fixes robot inputs and callable interfaces, bounds driver revisions, records
+  model and resource use, and retains the evidence behind each acceptance
+  decision.
 
-  \item A reusable experimental substrate for embodied-AI model comparison.
-  Fixed and independently validated robot interfaces allow controllers to be
-  evaluated without changing the underlying robot integration.
+  \item A \textbf{reusable experimental substrate} for embodied-AI model
+  comparison. Fixed and independently validated robot interfaces allow
+  controllers to be evaluated without changing the underlying robot
+  integration.
 
-  \item A resource-accounted basis for role-specific model selection.
+  \item A \textbf{resource-accounted basis for role-specific model selection}.
   Behavioural outcomes are reported with model calls, token use, cost,
   wall-clock time, revision history, and failure class, supporting separate
   trade-off analysis for tool creation and tool use rather than a universal
