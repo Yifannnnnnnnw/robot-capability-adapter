@@ -660,9 +660,11 @@ class _InspectThenCorrectIVCModel:
         if turn <= 2:
             call = ToolCall(
                 id=f"inspect-{turn}",
-                name="read_file",
-                arguments={"path": "ivc_inputs.json"},
-                raw_arguments=json.dumps({"path": "ivc_inputs.json"}),
+                name="execute_python",
+                arguments={"code": "print('targeted lookup complete')"},
+                raw_arguments=json.dumps(
+                    {"code": "print('targeted lookup complete')"}
+                ),
             )
             return ToolTurn(content=None, tool_calls=(call,), finish_reason="tool_calls")
 
@@ -708,8 +710,8 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     assert canonical["cases"] == suite["cases"]
     assert len(model.messages) == 4
     assert model.tool_names == [
-        {"read_file", "write_file", "execute_python"},
-        {"read_file", "write_file", "execute_python"},
+        {"write_file", "execute_python"},
+        {"write_file", "execute_python"},
         {"write_file"},
         {"write_file"},
     ]
@@ -744,6 +746,7 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     assert "measurement_operator_catalog.operators" in first_prompt
     assert "at most two inspection turns" in IVC_SYSTEM_PROMPT
     assert "turns three through six are write/correction only" in IVC_SYSTEM_PROMPT
+    assert "read_file is intentionally unavailable" in IVC_SYSTEM_PROMPT
     assert "The Framework has not selected an operator" in IVC_SYSTEM_PROMPT
     assert "Ground requests only with the supplied schema/domain evidence pairs" in (
         IVC_SYSTEM_PROMPT

@@ -63,9 +63,10 @@ relation, sanitized private instances/scenes, source lineage, every unit-compati
 operator, and worked references. You cannot see or infer a candidate Driver, trace, Repair history, or
 verdict. The Framework has not selected an operator, instance, request, or scene entity for you.
 
-Full raw input is at ./ivc_inputs.json; the prompt has the exact authoring fields. Use execute_python
-only for targeted entity/operator lookups; never print a full collection. private_instances is an
-object wrapper; apply shared fields before record-local overrides, use only indexed records, and copy
+The prompt already contains every exact authoring field. read_file is intentionally unavailable in
+this phase because ./ivc_inputs.json can exceed the bounded file-output limit. Use execute_python only
+for targeted entity/operator lookups in that JSON; never print a full collection. private_instances is
+an object wrapper; apply shared fields before record-local overrides, use only indexed records, and copy
 their exact guards, repetitions, timeout, and request domain. Every operator request-path value starts
 with request. and resolves into the sealed closed schema. Operator signatures use plain JSON types,
 entity:<type>, request_path:<value_type>, and optional:<signature>. These signatures describe required
@@ -1765,6 +1766,11 @@ def run_ivc(
                 ensure_ascii=True,
                 separators=(",", ":"),
             )
+            ivc_tools = tuple(
+                tool
+                for tool in session.artifact_tools()
+                if tool.name != "read_file"
+            )
             try:
                 result = run_artifact_react(
                     client=client,
@@ -1774,7 +1780,7 @@ def run_ivc(
                         f"Authoring brief:\n{authoring_brief}\n"
                         f"Write {IVC_ARTIFACT_NAME}."
                     ),
-                    tools=session.artifact_tools(),
+                    tools=ivc_tools,
                     artifact_name=IVC_ARTIFACT_NAME,
                     artifact_path=working_artifact,
                     validate_artifact=validate_file,
