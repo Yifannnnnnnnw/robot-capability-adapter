@@ -651,7 +651,7 @@
 \renewcommand \section{\@startsection {section}{1}{\z@}%
                                       {-1ex \@plus -.4ex \@minus -.2ex}%
                                       {.6ex \@plus .1ex}%
-                                      {\raggedright \reset@font \fontsize{12}{15}\selectfont \bfseries}}
+                                      {\raggedright \reset@font \fontsize{14}{17}\selectfont \bfseries}}
 \renewcommand \subsection{\@startsection{subsection}{2}{\z@}%
                                         {-.7ex\@plus -.3ex \@minus -.2ex}%
                                         {.4ex \@plus .1ex}%
