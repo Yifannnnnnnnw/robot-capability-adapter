@@ -109,6 +109,21 @@ behavioural tests. Driver synthesis implements the resulting capability
 interface. Independent capability assessment determines which operations may
 subsequently be used in downstream task demonstration.
 
+Figure~\ref{fig:autoadapter-framework-workflow} summarises the five-stage
+workflow and the separation between candidate-visible development feedback
+and independent capability assessment.
+
+\begin{figure}[htbp]
+  \centering
+  \includesvg[width=\linewidth]{assets/auto_adapter_framework}
+  \caption{Auto-Adapter workflow. Public robot and task inputs support study
+  and capability design before a robot-specific driver is developed through
+  bounded simulation feedback. The development loop remains separate from the
+  fixed validation cases and capability verdict used before downstream task
+  demonstration.}
+  \label{fig:autoadapter-framework-workflow}
+\end{figure}
+
 Each stage in which the language model authors an artefact uses a ReAct process
 that alternates between reasoning, tool use, and revision
 \citep{yao2023react}. The common interface provides
