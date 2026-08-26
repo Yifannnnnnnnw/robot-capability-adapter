@@ -373,7 +373,7 @@ class _InspectThenCorrectIVCModel:
         return ToolTurn(content=None, tool_calls=(call,), finish_reason="end_turn")
 
 
-def test_ivc_turn_three_write_is_immediately_validated_with_tools_available(
+def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     tmp_path: Path,
 ) -> None:
     package, design, private, suite = _synthetic(tmp_path)
@@ -394,8 +394,8 @@ def test_ivc_turn_three_write_is_immediately_validated_with_tools_available(
     assert model.tool_names == [
         {"read_file", "write_file", "execute_python"},
         {"read_file", "write_file", "execute_python"},
-        {"read_file", "write_file", "execute_python"},
-        {"read_file", "write_file", "execute_python"},
+        {"write_file"},
+        {"write_file"},
     ]
     assert "instance_id is not a supplied private instance" in json.dumps(
         model.messages[3]
@@ -411,6 +411,10 @@ def test_ivc_turn_three_write_is_immediately_validated_with_tools_available(
     assert '"kind":"final_site_position_error"' in first_prompt
     assert '"parameter_schema":{"type":"object","required":["site_name","target_argument"]' in first_prompt
     assert '"sites":["tool_site"]' in first_prompt
+    assert "measurement_operator_catalog.operators" in first_prompt
+    assert "must start with the literal prefix request." in first_prompt
+    assert "use at most two turns for targeted inspection" in first_prompt
+    assert "Turns three through six are write-only" in first_prompt
     assert "rather than guessing" in first_prompt
     assert len(first_prompt.encode("utf-8")) < 200_000
     serialized_inputs = (

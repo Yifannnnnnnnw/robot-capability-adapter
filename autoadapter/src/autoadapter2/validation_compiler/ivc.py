@@ -67,9 +67,11 @@ The complete input is compact JSON in ivc_inputs.json. Use execute_python for ta
 not print the full scene, Task Library, operator, or worked-reference collections. The prompt's
 authoring index gives the exact private_instances.instances records, compatible operator schemas,
 and relevant scene entities; never guess an instance ID or treat the private_instances wrapper as a
-list. With a six-turn budget, turns one through four retain inspection and writing tools; turns five
-and six are write-only delivery/correction turns. Every successful write is immediately audited and
-any deterministic error is returned in this same conversation. Large artifacts may use bounded append writes. When a sealed
+list. The operator array is measurement_operator_catalog.operators, not the wrapper itself, and every
+operator request_path value is rooted at request.<field>. With a six-turn budget, use at most two
+turns for targeted inspection; turns three through six are write-only delivery/correction turns.
+Every successful write is immediately audited and any deterministic error is returned in this same
+conversation. Large artifacts may use bounded append writes. When a sealed
 request expresses a scaled joint target, use target_scale and target_offset only when those closed
 parameters are declared by the selected trusted operator-catalog entry; never invent an operator
 parameter.
@@ -1568,14 +1570,18 @@ def run_ivc(
                         "and criterion source_refs are not valid request grounding. "
                         "Choose measurement_binding.kind only from the unit-filtered operator "
                         "shortlist and satisfy its complete parameter_schema using the relevant "
-                        "indexed scene entities. Copy artifact_header unchanged at the suite top "
+                        "indexed scene entities. The raw operator catalog is an object wrapper; its "
+                        "operator array is measurement_operator_catalog.operators. Every parameter "
+                        "whose catalog type is request_path must start with the literal prefix "
+                        "request. and resolve into the sealed request_schema. Copy artifact_header "
+                        "unchanged at the suite top "
                         "level and follow validator_contract exactly. "
                         "Author the complete canonical "
                         f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
                         "for credential-free calibration calculations and may inspect the read-only "
-                        "public assets root through AUTOADAPTER_PROBE_PUBLIC_PACKAGE. Turns one "
-                        "through four retain read_file, write_file, and execute_python. Turns five "
-                        "and six are write-only delivery/correction turns. The Framework validates "
+                        "public assets root through AUTOADAPTER_PROBE_PUBLIC_PACKAGE. Conserve the "
+                        "six-turn budget: use at most two turns for targeted inspection. Turns three "
+                        "through six are write-only delivery/correction turns. The Framework validates "
                         "at the end of every turn containing a successful write_file call, so write "
                         "as soon as you have a grounded draft and use returned errors to correct it. "
                         "For a large artifact, use append=false for "
@@ -1590,7 +1596,7 @@ def run_ivc(
                     artifact_path=working_artifact,
                     validate_artifact=validate_file,
                     max_turns=max_turns,
-                    delivery_turns=2,
+                    delivery_turns=max(1, max_turns - 2),
                     validate_after_write=True,
                 )
             except ReactLoopError as exc:
