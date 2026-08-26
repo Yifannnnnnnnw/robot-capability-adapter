@@ -192,6 +192,46 @@ def test_novel_capability_seals_ivc_authored_inline_measurement(tmp_path: Path) 
     } == {"final_site_position_error"}
 
 
+def test_ivc_audit_reports_all_independent_case_errors(tmp_path: Path) -> None:
+    package, design, private, suite = _synthetic(tmp_path)
+    (package.root / "assets" / "scene.xml").write_text(
+        "<mujoco><worldbody><body name='tool'>"
+        "<joint name='tool_joint' type='hinge' range='-1 1'/>"
+        "<geom type='sphere' size='.01' mass='.1'/>"
+        "<site name='tool_site'/></body></worldbody></mujoco>",
+        encoding="utf-8",
+    )
+    suite["cases"][0]["measurement_binding"]["parameters"][
+        "target_argument"
+    ] = "target_m"
+    suite["cases"][1]["measurement_binding"] = {
+        "metric": "novel_tip_error",
+        "unit": "m",
+        "kind": "final_joint_position_error",
+        "parameters": {
+            "joint_name": "tool_joint",
+            "target_argument": "request.target_m",
+        },
+    }
+
+    with pytest.raises(IVCError) as captured:
+        validate_capability_validation_suite(
+            suite,
+            package=package,
+            design=design,
+            private_inputs=private,
+        )
+
+    message = str(captured.value)
+    assert "cases[0] (case_id='novel-nominal')" in message
+    assert "request path 'target_m' must be rooted at request.<field>" in message
+    assert "cases[1] (case_id='novel-calibrated_boundary')" in message
+    assert (
+        "final_joint_position_error for joint 'tool_joint' must use unit 'rad', "
+        "not 'm'"
+    ) in message
+
+
 def test_dynamic_suite_rejects_historical_binding_id(tmp_path: Path) -> None:
     package, design, private, suite = _synthetic(tmp_path)
     suite["cases"][0]["binding_id"] = "example-only"

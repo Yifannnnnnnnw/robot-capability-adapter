@@ -866,6 +866,176 @@ def _reject_untrusted_suite_material(value: Any, *, where: str = "suite") -> Non
         raise IVCError(f"{where} contains executable code material")
 
 
+def _audit_capability_validation_case(
+    case: Any,
+    *,
+    index: int,
+    package: Any,
+    capabilities: Mapping[str, Mapping[str, Any]],
+    instances: Mapping[str, Mapping[str, Any]],
+    guards: Mapping[str, Mapping[str, Any]],
+    semantic_reference_contracts: Mapping[str, Mapping[str, Any]],
+    seen_cases: set[str],
+    roles: dict[tuple[str, str], int],
+    requests: dict[tuple[str, str], Any],
+) -> dict[str, Any]:
+    """Audit one case after suite-level structure has been accepted."""
+
+    where = f"cases[{index}]"
+    if not isinstance(case, Mapping):
+        raise IVCError(f"{where} must be an object")
+    if set(case) != _IVC_CASE_FIELDS:
+        raise IVCError(
+            f"{where} fields are invalid; missing={sorted(_IVC_CASE_FIELDS - set(case))}, "
+            f"extra={sorted(set(case) - _IVC_CASE_FIELDS)}"
+        )
+    case_id = case.get("case_id")
+    if not isinstance(case_id, str) or not case_id.strip() or case_id in seen_cases:
+        raise IVCError(f"{where}.case_id is invalid or duplicated")
+    seen_cases.add(case_id)
+    role = case.get("case_role")
+    if role not in IVC_CASE_ROLES:
+        raise IVCError(f"{where}.case_role must be nominal or calibrated_boundary")
+    capability_id = case.get("capability_id")
+    capability = capabilities.get(capability_id) if isinstance(capability_id, str) else None
+    if capability is None:
+        raise IVCError(f"{where}.capability_id references an unknown capability")
+    method_name = capability.get("method_name", capability.get("method"))
+    if case.get("method_name") != method_name:
+        raise IVCError(f"{where}.method_name differs from the sealed design")
+    if not _same_criteria(case, capability, where=where):
+        raise IVCError(f"{where} changes sealed criterion or numeric values")
+    request = case.get("request")
+    sealed_request_schema = capability.get("request_schema", {})
+    try:
+        validate_schema_value(
+            request,
+            sealed_request_schema,
+            path=f"{where}.request",
+        )
+    except CapabilityProtocolError as exc:
+        raise IVCError(str(exc)) from None
+    instance_id = case.get("instance_id")
+    if not isinstance(instance_id, str) or instance_id not in instances:
+        raise IVCError(f"{where}.instance_id is not a supplied private instance")
+    instance = instances[instance_id]
+    _validate_authored_request_context(
+        request,
+        instance=instance,
+        sealed_schema=sealed_request_schema,
+        where=where,
+    )
+    _validate_request_grounding_refs(
+        case.get("request_grounding_refs"),
+        request_schema=sealed_request_schema,
+        instance=instance,
+        where=where,
+    )
+    declared_capability = instance.get("capability_id")
+    if declared_capability is not None and declared_capability != capability_id:
+        raise IVCError(f"{where} changes the private instance capability context")
+    declared_role = instance.get("case_role")
+    if declared_role is not None and declared_role != role:
+        raise IVCError(f"{where} changes the private instance role")
+    guard_ids = case.get("guard_ids")
+    if (
+        not isinstance(guard_ids, list)
+        or not guard_ids
+        or any(not isinstance(item, str) or item not in guards for item in guard_ids)
+    ):
+        raise IVCError(f"{where}.guard_ids references invalid private guards")
+    mandatory_guards = instance.get("guard_ids")
+    if not isinstance(mandatory_guards, list) or not mandatory_guards:
+        raise IVCError(f"{where} selected private instance has no mandatory guards")
+    if guard_ids != mandatory_guards:
+        raise IVCError(f"{where}.guard_ids changes mandatory private guards")
+    for field in ("repetitions", "timeout_sim_s"):
+        if field not in instance or case.get(field) != instance.get(field):
+            raise IVCError(f"{where}.{field} changes private execution settings")
+    repetitions = case.get("repetitions")
+    timeout_sim_s = case.get("timeout_sim_s")
+    if (
+        isinstance(repetitions, bool)
+        or not isinstance(repetitions, int)
+        or repetitions <= 0
+    ):
+        raise IVCError(f"{where}.repetitions must be a positive integer")
+    if (
+        isinstance(timeout_sim_s, bool)
+        or not isinstance(timeout_sim_s, (int, float))
+        or not math.isfinite(float(timeout_sim_s))
+        or float(timeout_sim_s) <= 0.0
+    ):
+        raise IVCError(f"{where}.timeout_sim_s must be positive and finite")
+    criterion = _criterion_list(capability, where="sealed capability")[0]
+    scene_path, scene_entities = _scene_audit_inputs(
+        package,
+        instance,
+        where=where,
+    )
+    try:
+        binding = audit_inline_measurement_binding(
+            case.get("measurement_binding"),
+            criterion=criterion,
+            request_schema=sealed_request_schema,
+            scene_path=scene_path,
+            scene_entities=scene_entities,
+        )
+    except MeasurementOperatorError as exc:
+        raise IVCError(f"{where}: {exc}") from None
+    evaluation_mode = measurement_operator_evaluation_mode(binding.get("kind"))
+    if evaluation_mode == "trusted_criterion_verdict":
+        kind = binding.get("kind")
+        reference = (
+            semantic_reference_contracts.get(kind)
+            if isinstance(kind, str)
+            else None
+        )
+        package_robot_id = _package_identity(package).get(
+            "robot_configuration_id"
+        )
+        if not (
+            isinstance(reference, Mapping)
+            and package_robot_id == reference["robot_configuration_id"]
+            and capability_id == reference["capability_id"]
+            and capability_execution_contract(capability)
+            == reference["execution_contract"]
+        ):
+            raise IVCError(
+                f"{where} selects fixed semantic operator {kind!r} outside "
+                "its exact SO-101/Go2 worked-reference robot, capability, "
+                "request schema, and criterion contract. The complete "
+                "reference is a design aid; use a generic numeric operator "
+                "for a transfer capability"
+            )
+    else:
+        temporal = criterion.get("temporal")
+        aggregation = criterion.get("aggregation")
+        temporal_kind = temporal.get("kind") if isinstance(temporal, Mapping) else None
+        aggregation_kind = (
+            aggregation.get("kind") if isinstance(aggregation, Mapping) else None
+        )
+        if not (
+            isinstance(temporal_kind, str)
+            and temporal_kind in NUMERIC_CRITERION_TEMPORAL_KINDS
+        ):
+            raise IVCError(
+                f"{where} sealed temporal criterion {temporal_kind!r} cannot be "
+                "expressed by this numeric trusted operator"
+            )
+        if aggregation_kind not in NUMERIC_CRITERION_AGGREGATION_KINDS:
+            raise IVCError(
+                f"{where} sealed aggregation criterion {aggregation_kind!r} cannot be "
+                "expressed by this numeric trusted operator"
+            )
+    key = (capability_id, role)
+    roles[key] = roles.get(key, 0) + 1
+    requests[key] = json_copy(request, label=f"{where}.request")
+    canonical_case = _normalise_case_criteria(case, capability)
+    canonical_case["measurement_binding"] = binding
+    return canonical_case
+
+
 def validate_capability_validation_suite(
     suite: Mapping[str, Any],
     *,
@@ -908,162 +1078,42 @@ def validate_capability_validation_suite(
     roles: dict[tuple[str, str], int] = {}
     requests: dict[tuple[str, str], Any] = {}
     canonical_cases: list[dict[str, Any]] = []
+    case_errors: list[str] = []
     for index, case in enumerate(cases):
         where = f"cases[{index}]"
-        if not isinstance(case, Mapping):
-            raise IVCError(f"{where} must be an object")
-        if set(case) != _IVC_CASE_FIELDS:
-            raise IVCError(
-                f"{where} fields are invalid; missing={sorted(_IVC_CASE_FIELDS - set(case))}, "
-                f"extra={sorted(set(case) - _IVC_CASE_FIELDS)}"
-            )
-        case_id = case.get("case_id")
-        if not isinstance(case_id, str) or not case_id.strip() or case_id in seen_cases:
-            raise IVCError(f"{where}.case_id is invalid or duplicated")
-        seen_cases.add(case_id)
-        role = case.get("case_role")
-        if role not in IVC_CASE_ROLES:
-            raise IVCError(f"{where}.case_role must be nominal or calibrated_boundary")
-        capability_id = case.get("capability_id")
-        capability = capabilities.get(capability_id) if isinstance(capability_id, str) else None
-        if capability is None:
-            raise IVCError(f"{where}.capability_id references an unknown capability")
-        method_name = capability.get("method_name", capability.get("method"))
-        if case.get("method_name") != method_name:
-            raise IVCError(f"{where}.method_name differs from the sealed design")
-        if not _same_criteria(case, capability, where=where):
-            raise IVCError(f"{where} changes sealed criterion or numeric values")
-        request = case.get("request")
-        sealed_request_schema = capability.get("request_schema", {})
         try:
-            validate_schema_value(
-                request,
-                sealed_request_schema,
-                path=f"{where}.request",
+            canonical_case = _audit_capability_validation_case(
+                case,
+                index=index,
+                package=package,
+                capabilities=capabilities,
+                instances=instances,
+                guards=guards,
+                semantic_reference_contracts=semantic_reference_contracts,
+                seen_cases=seen_cases,
+                roles=roles,
+                requests=requests,
             )
-        except CapabilityProtocolError as exc:
-            raise IVCError(str(exc)) from None
-        instance_id = case.get("instance_id")
-        if not isinstance(instance_id, str) or instance_id not in instances:
-            raise IVCError(f"{where}.instance_id is not a supplied private instance")
-        instance = instances[instance_id]
-        _validate_authored_request_context(
-            request,
-            instance=instance,
-            sealed_schema=sealed_request_schema,
-            where=where,
-        )
-        _validate_request_grounding_refs(
-            case.get("request_grounding_refs"),
-            request_schema=sealed_request_schema,
-            instance=instance,
-            where=where,
-        )
-        declared_capability = instance.get("capability_id")
-        if declared_capability is not None and declared_capability != capability_id:
-            raise IVCError(f"{where} changes the private instance capability context")
-        declared_role = instance.get("case_role")
-        if declared_role is not None and declared_role != role:
-            raise IVCError(f"{where} changes the private instance role")
-        guard_ids = case.get("guard_ids")
-        if (
-            not isinstance(guard_ids, list)
-            or not guard_ids
-            or any(not isinstance(item, str) or item not in guards for item in guard_ids)
-        ):
-            raise IVCError(f"{where}.guard_ids references invalid private guards")
-        mandatory_guards = instance.get("guard_ids")
-        if not isinstance(mandatory_guards, list) or not mandatory_guards:
-            raise IVCError(f"{where} selected private instance has no mandatory guards")
-        if guard_ids != mandatory_guards:
-            raise IVCError(f"{where}.guard_ids changes mandatory private guards")
-        for field in ("repetitions", "timeout_sim_s"):
-            if field not in instance or case.get(field) != instance.get(field):
-                raise IVCError(f"{where}.{field} changes private execution settings")
-        repetitions = case.get("repetitions")
-        timeout_sim_s = case.get("timeout_sim_s")
-        if (
-            isinstance(repetitions, bool)
-            or not isinstance(repetitions, int)
-            or repetitions <= 0
-        ):
-            raise IVCError(f"{where}.repetitions must be a positive integer")
-        if (
-            isinstance(timeout_sim_s, bool)
-            or not isinstance(timeout_sim_s, (int, float))
-            or not math.isfinite(float(timeout_sim_s))
-            or float(timeout_sim_s) <= 0.0
-        ):
-            raise IVCError(f"{where}.timeout_sim_s must be positive and finite")
-        criterion = _criterion_list(capability, where="sealed capability")[0]
-        scene_path, scene_entities = _scene_audit_inputs(
-            package,
-            instance,
-            where=where,
-        )
-        try:
-            binding = audit_inline_measurement_binding(
-                case.get("measurement_binding"),
-                criterion=criterion,
-                request_schema=sealed_request_schema,
-                scene_path=scene_path,
-                scene_entities=scene_entities,
+        except IVCError as exc:
+            case_id = case.get("case_id") if isinstance(case, Mapping) else None
+            case_label = (
+                f"{where} (case_id={case_id!r})"
+                if isinstance(case_id, str) and case_id.strip()
+                else where
             )
-        except MeasurementOperatorError as exc:
-            raise IVCError(f"{where}: {exc}") from None
-        evaluation_mode = measurement_operator_evaluation_mode(binding.get("kind"))
-        if evaluation_mode == "trusted_criterion_verdict":
-            kind = binding.get("kind")
-            reference = (
-                semantic_reference_contracts.get(kind)
-                if isinstance(kind, str)
-                else None
-            )
-            package_robot_id = _package_identity(package).get(
-                "robot_configuration_id"
-            )
-            if not (
-                isinstance(reference, Mapping)
-                and package_robot_id == reference["robot_configuration_id"]
-                and capability_id == reference["capability_id"]
-                and capability_execution_contract(capability)
-                == reference["execution_contract"]
-            ):
-                raise IVCError(
-                    f"{where} selects fixed semantic operator {kind!r} outside "
-                    "its exact SO-101/Go2 worked-reference robot, capability, "
-                    "request schema, and criterion contract. The complete "
-                    "reference is a design aid; use a generic numeric operator "
-                    "for a transfer capability"
-                )
+            detail = str(exc)
+            prefixed = f"{where}: "
+            if detail.startswith(prefixed):
+                detail = detail[len(prefixed) :]
+            case_errors.append(f"{case_label}: {detail}")
         else:
-            temporal = criterion.get("temporal")
-            aggregation = criterion.get("aggregation")
-            temporal_kind = temporal.get("kind") if isinstance(temporal, Mapping) else None
-            aggregation_kind = (
-                aggregation.get("kind") if isinstance(aggregation, Mapping) else None
-            )
-            if not (
-                isinstance(temporal_kind, str)
-                and (
-                    temporal_kind in NUMERIC_CRITERION_TEMPORAL_KINDS
-                )
-            ):
-                raise IVCError(
-                    f"{where} sealed temporal criterion {temporal_kind!r} cannot be "
-                    "expressed by this numeric trusted operator"
-                )
-            if aggregation_kind not in NUMERIC_CRITERION_AGGREGATION_KINDS:
-                raise IVCError(
-                    f"{where} sealed aggregation criterion {aggregation_kind!r} cannot be "
-                    "expressed by this numeric trusted operator"
-                )
-        key = (capability_id, role)
-        roles[key] = roles.get(key, 0) + 1
-        requests[key] = json_copy(request, label=f"{where}.request")
-        canonical_case = _normalise_case_criteria(case, capability)
-        canonical_case["measurement_binding"] = binding
-        canonical_cases.append(canonical_case)
+            canonical_cases.append(canonical_case)
+
+    if case_errors:
+        details = "\n".join(f"- {error}" for error in case_errors)
+        raise IVCError(
+            f"validation suite case audit found {len(case_errors)} error(s):\n{details}"
+        )
 
     for capability_id in capabilities:
         for role in IVC_CASE_ROLES:
