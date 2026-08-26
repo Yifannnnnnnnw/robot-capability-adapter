@@ -83,6 +83,37 @@ class Experiment1ParallelRunnerTests(unittest.TestCase):
 
         self.assertFalse(output.exists())
 
+    def test_go2_descriptive_slice_materializes_only_its_allowlist(self) -> None:
+        units, resolved = materialized_units(
+            manifest_path=(
+                EXPERIMENT_ROOT
+                / "manifest-go2-skeleton-r01-seven-model-descriptive.json"
+            ),
+            order_path=(
+                EXPERIMENT_ROOT
+                / "config"
+                / "components"
+                / "execution-order-r1-r5.json"
+            ),
+            wave_id="core-r3",
+            backbone_ids=["M1", "M2", "M3", "M4", "M5", "M6", "M8"],
+            robot_ids=["robotstudio_so101", "unitree-go2-stock-12dof"],
+        )
+
+        self.assertEqual(len(units), 7)
+        self.assertEqual(
+            {unit["unit_id"] for unit in units},
+            set(resolved["dispatch_unit_allowlist"]),
+        )
+        self.assertTrue(
+            all(
+                unit["robot_configuration_id"] == "unitree-go2-stock-12dof"
+                and unit["replicate_id"] == "r01"
+                and unit["generation_condition"] == "skeleton-assisted"
+                for unit in units
+            )
+        )
+
     def test_eight_workers_get_unique_process_outputs_and_scheduler_records(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

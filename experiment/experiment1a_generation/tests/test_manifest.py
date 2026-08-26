@@ -26,6 +26,10 @@ class Experiment1ManifestTests(unittest.TestCase):
         EXPERIMENT_ROOT
         / "manifest-so101-skeleton-r01-six-model-descriptive.json"
     )
+    GO2_DESCRIPTIVE_SLICE = (
+        EXPERIMENT_ROOT
+        / "manifest-go2-skeleton-r01-seven-model-descriptive.json"
+    )
 
     def test_core_manifest_matches_the_authority_matrix(self) -> None:
         resolved = resolve_experiment_manifest(EXPERIMENT_ROOT / "manifest.json")
@@ -70,6 +74,29 @@ class Experiment1ManifestTests(unittest.TestCase):
             _select_unit(
                 resolved,
                 "b1::robotstudio_so101::M1::r01::skeleton-assisted",
+            )
+
+    def test_go2_descriptive_slice_allows_only_the_seven_approved_units(self) -> None:
+        resolved = resolve_experiment_manifest(self.GO2_DESCRIPTIVE_SLICE)
+
+        expected = [
+            "b1::unitree-go2-stock-12dof::M6::r01::skeleton-assisted",
+            "b1::unitree-go2-stock-12dof::M5::r01::skeleton-assisted",
+            "b1::unitree-go2-stock-12dof::M4::r01::skeleton-assisted",
+            "b1::unitree-go2-stock-12dof::M3::r01::skeleton-assisted",
+            "b1::unitree-go2-stock-12dof::M1::r01::skeleton-assisted",
+            "b1::unitree-go2-stock-12dof::M8::r01::skeleton-assisted",
+            "b1::unitree-go2-stock-12dof::M2::r01::skeleton-assisted",
+        ]
+        self.assertTrue(resolved["formal_dispatch_enabled"])
+        self.assertEqual(resolved["blocked_reasons"], [])
+        self.assertEqual(resolved["result_classification"], "descriptive-slice")
+        self.assertEqual(resolved["dispatch_unit_allowlist"], expected)
+
+        with self.assertRaisesRegex(B1RunError, "outside.*dispatch allowlist"):
+            _select_unit(
+                resolved,
+                "b1::robotstudio_so101::M6::r01::skeleton-assisted",
             )
 
     def test_every_core_block_contains_both_isolated_conditions(self) -> None:

@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "authority": "EXPERIMENT_1_AUTHORITY.md",
+  "authority_revision": "0.2.0",
+  "experiment_id": "experiment1-b1-go2-skeleton-r01-seven-model-descriptive-20260826",
+  "result_classification": "descriptive-slice",
+  "dispatch_unit_allowlist": [
+    "b1::unitree-go2-stock-12dof::M6::r01::skeleton-assisted",
+    "b1::unitree-go2-stock-12dof::M5::r01::skeleton-assisted",
+    "b1::unitree-go2-stock-12dof::M4::r01::skeleton-assisted",
+    "b1::unitree-go2-stock-12dof::M3::r01::skeleton-assisted",
+    "b1::unitree-go2-stock-12dof::M1::r01::skeleton-assisted",
+    "b1::unitree-go2-stock-12dof::M8::r01::skeleton-assisted",
+    "b1::unitree-go2-stock-12dof::M2::r01::skeleton-assisted"
+  ],
+  "track": "B1",
+  "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
+  "backbone_set": "config/components/backbone-set-m1-m6-m8.json",
+  "backbone_runtime_configs": {
+    "M1": "config/providers/M1-company-api-sonnet-4-6.json",
+    "M2": "config/providers/M2-company-api-opus-5.json",
+    "M3": "config/providers/M3-company-api-haiku-4-5.json",
+    "M4": "config/providers/M4-company-api-nova-pro.json",
+    "M5": "config/providers/M5-deepseek-v4-pro.json",
+    "M6": "config/providers/M6-company-api-ministral-3-8b.json",
+    "M8": "config/providers/M8-company-api-gpt-5-6-sol.json"
+  },
+  "model_execution_policy": "remote-hosted-api-only",
+  "replicate_set": "config/components/replicates-core-r3.json",
+  "fixed_validation_bundle_set": "validation/fixed_validation_bundles/index.json",
+  "condition_coverage": [
+    {
+      "condition": "skeleton-assisted",
+      "robot_set": "config/components/robot-set.json"
+    },
+    {
+      "condition": "from-scratch",
+      "robot_set": "config/components/robot-set.json"
+    }
+  ],
+  "run_task_demo": false,
+  "run_high_level_controller": false,
+  "run_evolution": false,
+  "experience_input": "empty",
+  "workflow": {
+    "canonical_artifacts": {
+      "STUDY": "study.json",
+      "GENERATE": "driver.py",
+      "Repair": "driver.py"
+    },
+    "completion": "framework-validates-canonical-artifact-on-normal-phase-end",
+    "tools": ["read_file", "write_file", "execute_python"],
+    "skeleton_only_tools": ["list_skeletons", "inspect_skeleton"],
+    "forbidden_submission_tools": [
+      "submit_study",
+      "submit_driver",
+      "check_driver"
+    ],
+    "aggregate_tool_call_limit": null,
+    "phase_turn_budgets": {
+      "study_skeleton": 16,
+      "study_from_scratch": 16,
+      "generate_skeleton": 22,
+      "generate_from_scratch": 40,
+      "repair_skeleton": 22,
+      "repair_from_scratch": 20
+    },
+    "maximum_frozen_driver_attempts_per_cell": 3,
+    "reported_driver": "final-frozen-driver"
+  },
+  "expected_generation_condition_replicates": 84,
+  "maximum_frozen_driver_attempts": 252,
+  "extension_replicate_ids": [
+    "r04",
+    "r05"
+  ],
+  "maximum_cumulative_generation_condition_replicates": 140,
+  "maximum_cumulative_frozen_driver_attempts": 420,
+  "extension_generation_condition_replicates": {
+    "r04": 28,
+    "r05": 28
+  },
+  "maximum_extension_frozen_driver_attempts": {
+    "r04": 84,
+    "r05": 84
+  },
+  "blocked_reasons": [],
+  "formal_dispatch_enabled": true,
+  "execution_concurrency": {
+    "target_maximum": 1,
+    "status": "operational"
+  }
+}
