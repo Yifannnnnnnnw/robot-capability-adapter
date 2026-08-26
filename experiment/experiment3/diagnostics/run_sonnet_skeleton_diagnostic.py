@@ -127,6 +127,21 @@ def _report_calls(report: Mapping[str, Any]) -> list[dict[str, Any]]:
     return calls
 
 
+def _private_artifact_calls(cell_dir: Path) -> list[dict[str, Any]]:
+    """Read provider evidence retained by a diagnostic continuation stage."""
+
+    private_dir = cell_dir / "private"
+    calls: list[dict[str, Any]] = []
+    for trace_path in sorted(private_dir.glob("*_artifact_trace.json")):
+        trace = _read_object(trace_path)
+        records = trace.get("model_calls")
+        if isinstance(records, list):
+            calls.extend(
+                dict(record) for record in records if isinstance(record, Mapping)
+            )
+    return calls
+
+
 def _resource_summary_from_calls(
     calls: list[dict[str, Any]], model: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -200,10 +215,16 @@ def _load_reused_study(
     source_report = _read_object(source_output / "experiment_report.json")
     study_output = _read_object(source_cell / "files" / "study.json")
     study_evidence = _read_object(source_cell / "study_evidence.json")
-    tgcd_inputs = _read_object(source_cell / "design" / "workspace" / "tgcd_inputs.json")
-    canonical_study = tgcd_inputs.get("completed_public_study")
-    if isinstance(canonical_study, Mapping):
-        study_output = dict(canonical_study)
+    # A continuation that reuses TGCD does not recreate TGCD's transient
+    # workspace.  The sealed study.json and study_evidence.json remain the
+    # canonical reuse inputs; prefer the historical TGCD projection only when
+    # that source actually ran TGCD and retained it.
+    tgcd_inputs_path = source_cell / "design" / "workspace" / "tgcd_inputs.json"
+    if tgcd_inputs_path.is_file():
+        tgcd_inputs = _read_object(tgcd_inputs_path)
+        canonical_study = tgcd_inputs.get("completed_public_study")
+        if isinstance(canonical_study, Mapping):
+            study_output = dict(canonical_study)
 
     if cell_report.get("robot_configuration_id") != robot:
         raise DiagnosticRunError("reused STUDY robot differs from the requested robot")
@@ -265,6 +286,10 @@ def _load_reused_study(
 
     source_model = source_configuration["model"]
     source_calls = _report_calls(source_report)
+    if not source_calls and isinstance(
+        source_report.get("diagnostic_continuation"), Mapping
+    ):
+        source_calls = _private_artifact_calls(source_cell)
     if not source_calls or any(
         call.get("returned_model") != config.model_manifest.get("model_id")
         for call in source_calls

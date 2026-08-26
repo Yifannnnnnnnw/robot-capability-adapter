@@ -325,6 +325,79 @@ def test_sonnet_diagnostic_reuses_study_and_sealed_tgcd_from_ivc_failure(
     assert provenance["source_resource_summary"] == cumulative
 
 
+def test_sonnet_diagnostic_reuses_sealed_study_when_tgcd_workspace_is_absent(
+    tmp_path,
+) -> None:
+    config, cell, expected_design = _reusable_through_tgcd_cell(tmp_path)
+    sealed_study_path = cell / "files" / "study.json"
+    sealed_study = json.loads(sealed_study_path.read_text(encoding="utf-8"))
+    sealed_study["condition"] = "skeleton-assisted"
+    _write_json(sealed_study_path, sealed_study)
+    (cell / "design" / "workspace" / "tgcd_inputs.json").unlink()
+
+    study, design, provenance = diagnostic._load_reused_through_tgcd(
+        cell,
+        robot="franka_panda",
+        condition="skeleton-assisted",
+        run_id="run-1",
+        config=config,
+    )
+
+    assert study.output == json.loads(
+        sealed_study_path.read_text(encoding="utf-8")
+    )
+    assert design == expected_design
+    assert provenance["source_was_continuation"] is False
+
+
+def test_sonnet_diagnostic_reads_exact_model_evidence_from_continuation_trace(
+    tmp_path,
+) -> None:
+    cumulative = {
+        "model_id": "eu.anthropic.claude-sonnet-4-6",
+        "call_count": 7,
+        "token_categories": {"total_tokens": 700},
+        "estimated_cost": {"amount": 0.7, "currency": "USD"},
+    }
+    config, cell, expected_design = _reusable_through_tgcd_cell(
+        tmp_path,
+        cumulative_resource_summary=cumulative,
+    )
+    sealed_study_path = cell / "files" / "study.json"
+    sealed_study = json.loads(sealed_study_path.read_text(encoding="utf-8"))
+    sealed_study["condition"] = "skeleton-assisted"
+    _write_json(sealed_study_path, sealed_study)
+    (cell / "design" / "workspace" / "tgcd_inputs.json").unlink()
+    report_path = cell.parents[2] / "experiment_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["stage_evidence"] = []
+    _write_json(report_path, report)
+    _write_json(
+        cell / "private" / "ivc_artifact_trace.json",
+        {
+            "model_calls": [
+                {
+                    "requested_model": "eu.anthropic.claude-sonnet-4-6",
+                    "returned_model": "eu.anthropic.claude-sonnet-4-6",
+                }
+            ]
+        },
+    )
+
+    study, design, provenance = diagnostic._load_reused_through_tgcd(
+        cell,
+        robot="franka_panda",
+        condition="skeleton-assisted",
+        run_id="run-1",
+        config=config,
+    )
+
+    assert study.output == sealed_study
+    assert design == expected_design
+    assert provenance["source_was_continuation"] is True
+    assert provenance["source_resource_summary"] == cumulative
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [
