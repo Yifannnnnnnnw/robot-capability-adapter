@@ -25,22 +25,21 @@ designing robot tools, implementing them, validating their behaviour, and
 using them to complete tasks.
 
 The evaluation comprises three experiments.
-\textbf{Experiment 1---Fixed-input LLM backbone comparison.} Seven LLM
-backbones are compared across five robot configurations under skeleton-assisted
-and from-scratch driver generation. One prior-designed capability interface,
-set of pass standards, and private validation suite remains fixed per robot.
+\textbf{Experiment 1---Auto-Adapter Framework.} The first experiment evaluates
+the complete framework, from designing reusable robot operations to generating
+and independently validating a robot-specific driver. Its purpose is to
+determine whether Auto-Adapter can construct the robot-facing software required
+by a tool-using agent.
 
-\textbf{Experiment 2---Component analysis of Auto-Adapter.} The experiment is
-designed to compare reusable-driver synthesis with task-specific code
-generation, physics-grounded MuJoCo feedback with \texttt{pytest} feedback, and
-bounded Repair with a no-Repair condition. It also evaluates Task-Grounded
-Capability Design and the source-preserving formulation, implementation-blind
-audit, compilation, and simulator-grounded evaluation of capability-level pass
-criteria.
+\textbf{Experiment 2---AutoAdapter-Bench.} The benchmark evaluates LLMs
+separately as creators and users of robot tools. Its purpose is to compare these
+abilities and establish whether successful tool use also indicates successful
+tool synthesis.
 
-\textbf{Experiment 3---Continued Evolution.} Matched later driver-synthesis
-runs compare access to reviewed Experience with the same condition without
-Experience.
+\textbf{Experiment 3---Cross-Robot Evaluation.} The final experiment applies
+Auto-Adapter across different robot configurations. Its purpose is to analyse
+how observed performance differs between robots and identify where the
+framework succeeds or fails.
 
 [RESULT NEEDED: report the principal Experiment~1 synthesis and resource
 outcomes, the Experiment~2 component-analysis, capability-design, and
