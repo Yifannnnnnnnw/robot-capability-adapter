@@ -14,6 +14,7 @@ from autoadapter2.react import ToolCall, ToolTurn
 from autoadapter2.validation_compiler.ivc import (
     IVCError,
     IVC_SYSTEM_PROMPT,
+    _build_ivc_authoring_brief,
     _build_ivc_authoring_index,
     _private_inputs_from_package,
     build_ivc_inputs,
@@ -25,6 +26,27 @@ from autoadapter2.validation_compiler.ivc import (
 
 ROOT = Path(__file__).resolve().parents[2]
 ROBOT_ROOT = ROOT / "autoadapter" / "libraries" / "robots"
+
+
+def _without_repeated_schema_annotations(schema: Any) -> Any:
+    if not isinstance(schema, dict):
+        return copy.deepcopy(schema)
+    projected = {}
+    for name, value in schema.items():
+        if name in {"description", "evidence_refs"}:
+            continue
+        if name == "properties" and isinstance(value, dict):
+            projected[name] = {
+                property_name: _without_repeated_schema_annotations(
+                    property_schema
+                )
+                for property_name, property_schema in value.items()
+            }
+        elif name == "items" and isinstance(value, dict):
+            projected[name] = _without_repeated_schema_annotations(value)
+        else:
+            projected[name] = copy.deepcopy(value)
+    return projected
 
 
 def _synthetic(
@@ -256,6 +278,10 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
             "specific_reference": "not a request bound",
         }
     ]
+    design["task_support"] = [
+        {"task_id": "task-z", "capability_id": "N1", "rationale": "verbose-z"},
+        {"task_id": "task-a", "capability_id": "N1", "rationale": "verbose-a"},
+    ]
 
     inputs = build_ivc_inputs(
         package=package,
@@ -280,26 +306,98 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
     assert "so101_end_effector_regulation" not in operator_kinds
     assert len(inputs["complete_so101_go2_worked_references"]) == 2
     authoring_index = _build_ivc_authoring_index(inputs)
-    capability_entry = authoring_index["capability_criterion_index"][0]
+    capability_entry = authoring_index["sealed_authoring_contract"][
+        "capabilities"
+    ][0]
+    assert set(authoring_index) == {
+        "raw_paths",
+        "private_instance_records",
+        "private_instance_shared_execution_fields",
+        "sealed_authoring_contract",
+        "unit_compatible_operator_signatures_by_kind",
+        "scene_declared_frame_aliases",
+    }
+    assert set(capability_entry) == {
+        "capability_id",
+        "method_name",
+        "criteria",
+        "request_schema",
+        "rooted_request_paths",
+        "allowed_request_grounding_refs_from_sealed_schema",
+    }
     assert authoring_index["raw_paths"] == {
+        "design": "ivc_inputs.json::sealed_capability_design",
+        "task_support": (
+            "ivc_inputs.json::sealed_capability_design.task_support"
+        ),
         "instances": "ivc_inputs.json::private_instances.instances",
         "operators": "ivc_inputs.json::measurement_operator_catalog.operators",
         "scenes": "ivc_inputs.json::scene_entity_catalog.scenes",
     }
-    assert capability_entry["rooted_request_leaf_index"] == [
-        {
-            "path": "request.target_m",
-            "type": "array",
-            "minItems": 3,
-            "maxItems": 3,
-        }
-    ]
-    operator_specs = authoring_index["unit_compatible_operator_specs_by_kind"]
-    assert operator_specs["final_site_position_error"]["required_parameters"] == {
-        "site_name": "string",
-        "target_argument": "request_path",
+    assert capability_entry["rooted_request_paths"] == ["request.target_m"]
+    assert capability_entry["request_schema"] == {
+        "type": "object",
+        "properties": {
+            "target_m": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                    "type": "number",
+                    "minimum": -1.0,
+                    "maximum": 1.0,
+                },
+            }
+        },
+        "required": ["target_m"],
+        "additionalProperties": False,
     }
-    assert "final_joint_position_error" in operator_specs
+    assert capability_entry["request_schema"] == (
+        _without_repeated_schema_annotations(
+            design["capabilities"][0]["request_schema"]
+        )
+    )
+    assert capability_entry["criteria"] == design["capabilities"][0]["criteria"]
+    assert authoring_index["sealed_authoring_contract"][
+        "task_support_by_capability"
+    ] == {"N1": ["task-a", "task-z"]}
+    assert "verbose-a" not in json.dumps(authoring_index)
+    operator_signatures = authoring_index[
+        "unit_compatible_operator_signatures_by_kind"
+    ]
+    assert operator_signatures["final_site_position_error"]["parameters"] == {
+        "site_name": "entity:site",
+        "target_argument": "request_path:number_array_3",
+    }
+    assert "final_joint_position_error" in operator_signatures
+    expected_operator_kinds = {
+        operator["kind"]
+        for operator in inputs["measurement_operator_catalog"]["operators"]
+        if "m" in operator["output_units"]
+    }
+    assert set(operator_signatures) == expected_operator_kinds
+    for operator in inputs["measurement_operator_catalog"]["operators"]:
+        if operator["kind"] not in expected_operator_kinds:
+            continue
+        raw_schema = operator["parameter_schema"]
+        required = set(raw_schema.get("required", []))
+        expected_parameters = {}
+        for name, parameter_schema in raw_schema["properties"].items():
+            signature = parameter_schema["type"]
+            if name in operator.get("entity_parameters", {}):
+                signature = f"entity:{operator['entity_parameters'][name]}"
+            elif name in operator.get("request_value_types", {}):
+                signature = f"request_path:{operator['request_value_types'][name]}"
+            if name not in required:
+                signature = f"optional:{signature}"
+            expected_parameters[name] = signature
+        projected = operator_signatures[operator["kind"]]
+        assert projected["units"] == operator["output_units"]
+        assert projected["parameters"] == expected_parameters
+        assert projected["purpose"] == operator["description"]
+        assert projected.get("mode", "numeric_measurement") == operator.get(
+            "evaluation_mode", "numeric_measurement"
+        )
     assert capability_entry[
         "allowed_request_grounding_refs_from_sealed_schema"
     ] == [
@@ -309,18 +407,60 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
         }
     ]
     assert "capability-provenance-only" not in json.dumps(capability_entry)
-    assert "selected instance request_domain" in authoring_index[
-        "request_grounding_ref_rule"
-    ]
     assert "operator_shortlist_filtered_by_sealed_criterion_units" not in authoring_index
     assert "relevant_scene_entity_catalogs" not in authoring_index
-    candidate_text = json.dumps(operator_specs)
+    candidate_text = json.dumps(operator_signatures)
     for forbidden in (
         "selected_kind",
+        "recommended_kind",
+        "selected_instance_id",
+        "selected_entity",
         "binding_id",
         "measurement_binding",
     ):
         assert forbidden not in candidate_text
+
+    def nested_keys(value: Any) -> set[str]:
+        if isinstance(value, dict):
+            return set(value).union(
+                *(nested_keys(item) for item in value.values())
+            )
+        if isinstance(value, list):
+            return set().union(*(nested_keys(item) for item in value))
+        return set()
+
+    assert nested_keys(authoring_index).isdisjoint(
+        {
+            "selected_kind",
+            "recommended_kind",
+            "selected_instance_id",
+            "selected_entity",
+            "binding_id",
+            "measurement_binding",
+        }
+    )
+
+    shared_fields = authoring_index["private_instance_shared_execution_fields"]
+    projected_instances = []
+    for projected_record in authoring_index["private_instance_records"]:
+        record = dict(shared_fields)
+        record.update(projected_record)
+        projected_instances.append(record)
+    expected_instances = []
+    for raw_record in inputs["private_instances"]["instances"]:
+        expected = {
+            "instance_id": raw_record["instance_id"],
+            "context_namespace": raw_record.get("context_namespace"),
+            "scene_entrypoint": raw_record["scene_entrypoint"],
+            "mandatory_guard_ids": raw_record.get("guard_ids", []),
+            "repetitions": raw_record.get("repetitions"),
+            "timeout_sim_s": raw_record.get("timeout_sim_s"),
+        }
+        for optional_field in ("capability_id", "case_role", "request_domain"):
+            if raw_record.get(optional_field) is not None:
+                expected[optional_field] = raw_record[optional_field]
+        expected_instances.append(expected)
+    assert projected_instances == expected_instances
 
 
 def test_real_kinova_authoring_index_is_compact_and_projects_robot_base() -> None:
@@ -385,17 +525,25 @@ def test_real_kinova_authoring_index_is_compact_and_projects_robot_base() -> Non
         authoring_index, ensure_ascii=True, separators=(",", ":")
     )
     assert len(compact_index.encode("utf-8")) < 30_000
-    capability_entry = authoring_index["capability_criterion_index"][0]
-    assert [
-        item["path"] for item in capability_entry["rooted_request_leaf_index"]
-    ] == [
+    capability_entry = authoring_index["sealed_authoring_contract"][
+        "capabilities"
+    ][0]
+    assert capability_entry["rooted_request_paths"] == [
         "request.target_position.x",
         "request.target_position.y",
         "request.target_position.z",
     ]
-    operator_specs = authoring_index["unit_compatible_operator_specs_by_kind"]
-    assert "final_site_frame_xyz_position_error" in operator_specs
-    assert "final_joint_position_error" in operator_specs
+    assert capability_entry["criteria"] == design["capabilities"][0]["criteria"]
+    assert capability_entry["request_schema"] == (
+        _without_repeated_schema_annotations(
+            design["capabilities"][0]["request_schema"]
+        )
+    )
+    operator_signatures = authoring_index[
+        "unit_compatible_operator_signatures_by_kind"
+    ]
+    assert "final_site_frame_xyz_position_error" in operator_signatures
+    assert "final_joint_position_error" in operator_signatures
     alias_group = next(
         item
         for item in authoring_index["scene_declared_frame_aliases"]
@@ -404,16 +552,12 @@ def test_real_kinova_authoring_index_is_compact_and_projects_robot_base() -> Non
     assert alias_group["declared_frame_aliases"] == {"robot_base": "base_link"}
     assert alias_group["unresolved_declared_frames"] == []
     authoring_brief = json.dumps(
-        {
-            "artifact_header": inputs["artifact_header"],
-            "validator_contract": inputs["validator_contract"],
-            "authoring_index": authoring_index,
-            "sealed_capability_design": inputs["sealed_capability_design"],
-        },
+        _build_ivc_authoring_brief(inputs),
         ensure_ascii=True,
         separators=(",", ":"),
     )
-    assert len((IVC_SYSTEM_PROMPT + authoring_brief).encode("utf-8")) < 80_000
+    assert '"sealed_capability_design"' not in authoring_brief
+    assert len((IVC_SYSTEM_PROMPT + authoring_brief).encode("utf-8")) < 40_000
 
 
 def test_franka_ivc_inputs_fit_read_limit_when_serialized_compactly(
@@ -523,24 +667,23 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
         model.messages[3]
     )
     first_prompt = str(model.messages[0][0]["content"])
-    assert '"records_path":"private_instances.instances"' in first_prompt
+    assert '"instances":"ivc_inputs.json::private_instances.instances"' in first_prompt
     assert '"instance_id":"novel-scene"' in first_prompt
     assert '"mandatory_guard_ids":["control","state","canonical"]' in first_prompt
-    assert '"measurement_binding_shape"' in first_prompt
     assert '"allowed_request_grounding_refs_from_sealed_schema"' in first_prompt
-    assert "copy only exact source_id/specific_reference pairs" in first_prompt
-    assert "selected instance request_domain" in first_prompt
-    assert '"unit_compatible_operator_specs_by_kind"' in first_prompt
+    assert '"unit_compatible_operator_signatures_by_kind"' in first_prompt
     assert '"final_site_position_error"' in first_prompt
-    assert '"required_parameters":{"site_name":"string","target_argument":"request_path"}' in first_prompt
+    assert '"parameters":{"site_name":"entity:site","target_argument":"request_path:number_array_3"}' in first_prompt
     assert '"scenes":"ivc_inputs.json::scene_entity_catalog.scenes"' in first_prompt
-    assert '"path":"request.target_m"' in first_prompt
+    assert '"rooted_request_paths":["request.target_m"]' in first_prompt
     assert "measurement_operator_catalog.operators" in first_prompt
-    assert "must start with the literal prefix request." in first_prompt
-    assert "use at most two turns for targeted inspection" in first_prompt
-    assert "Turns three through six are write-only" in first_prompt
-    assert "rather than guessing" in first_prompt
-    assert len(first_prompt.encode("utf-8")) < 80_000
+    assert "at most two inspection turns" in IVC_SYSTEM_PROMPT
+    assert "turns three through six are write/correction only" in IVC_SYSTEM_PROMPT
+    assert "The Framework has not selected an operator" in IVC_SYSTEM_PROMPT
+    assert "Ground requests only with the supplied schema/domain evidence pairs" in (
+        IVC_SYSTEM_PROMPT
+    )
+    assert len(first_prompt.encode("utf-8")) < 40_000
     serialized_inputs = (
         destination.parent / "workspace" / "ivc_inputs.json"
     ).read_text(encoding="utf-8")

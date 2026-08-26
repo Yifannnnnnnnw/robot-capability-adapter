@@ -58,40 +58,31 @@ TASK_DEMO_TASK_COUNT = PRIVATE_CASE_SAMPLE_SIZE
 
 
 IVC_SYSTEM_PROMPT = """You are the implementation-blind capability-v2 Independent Validation Compiler.
-Compile the sealed Capability Design into one complete hidden validation suite. You see the sealed
-capability contracts and task_support relation, sanitized scene/reset contexts, source lineage,
-trusted measurement-operator catalog, and complete SO-101/Go2 worked references. You cannot see and
-must not infer candidate Driver source, generated traces, Repair history, or a candidate verdict.
+Compile the sealed design into one hidden suite. You may see its exact authoring contract, task-support
+relation, sanitized private instances/scenes, source lineage, every unit-compatible trusted measurement
+operator, and worked references. You cannot see or infer a candidate Driver, trace, Repair history, or
+verdict. The Framework has not selected an operator, instance, request, or scene entity for you.
 
-The complete input is compact JSON in ivc_inputs.json. Use execute_python for targeted queries; do
-not print the full scene, Task Library, operator, or worked-reference collections. The prompt's
-authoring index gives the exact private_instances.instances records, rooted request leaves,
-unit-compatible operator schemas, and declared frame aliases. Query the raw scene catalog
-only for entity values; never guess an instance ID or treat the private_instances wrapper as a list.
-The operator array is measurement_operator_catalog.operators, not the wrapper itself, and every
-operator request_path value is rooted at request.<field>. With a six-turn budget, use at most two
-turns for targeted inspection; turns three through six are write-only delivery/correction turns.
-Every successful write is immediately audited and any deterministic error is returned in this same
-conversation. Large artifacts may use bounded append writes. When a sealed
-request expresses a scaled joint target, use target_scale and target_offset only when those closed
-parameters are declared by the selected trusted operator-catalog entry; never invent an operator
-parameter.
+Full raw input is at ./ivc_inputs.json; the prompt has the exact authoring fields. Use execute_python
+only for targeted entity/operator lookups; never print a full collection. private_instances is an
+object wrapper; apply shared fields before record-local overrides, use only indexed records, and copy
+their exact guards, repetitions, timeout, and request domain. Every operator request-path value starts
+with request. and resolves into the sealed closed schema. Operator signatures use plain JSON types,
+entity:<type>, request_path:<value_type>, and optional:<signature>; an omitted mode means
+numeric_measurement. Scaled joint targets may use target_scale/target_offset only when listed. Never
+invent an operator parameter. Public assets are read-only at AUTOADAPTER_PROBE_PUBLIC_PACKAGE.
 
-Return one JSON object with artifact_type='capability_validation_suite', schema_version='2.0',
-capability_protocol_version='capability-v2', the supplied package identity, and exactly two cases
-for every sealed capability: one case_role='nominal' and one case_role='calibrated_boundary'.
-Author each complete task-neutral request and inline measurement_binding yourself. Select only a
-supplied scene/reset instance and its mandatory guard IDs; private measurement examples are examples,
-not IDs to select. Every request must satisfy the sealed request_schema and any request_domain on the
-selected instance. The nominal and calibrated-boundary requests for one capability must differ. Give
-request_grounding_refs that resolve to sealed-schema or supplied calibration evidence. Copy the sealed
-criteria and every referenced numeric value exactly. Use only a kind and closed parameters from the
-trusted operator catalog. Complete SO-101/Go2 worked references remain class-level design examples;
-their fixed semantic operators are selectable only when the scoped operator catalog explicitly lists
-the exact matching reference capability. Transfer designs use a generic numeric operator with the
-terminal_state/single_trial criterion contract. Set whole_suite_aggregation={'kind':'all_cases'}. Never emit binding_id,
-Python/code, task dispatch, task IDs, Driver or Repair material, implementation advice, or a
-self-reported verdict."""
+Write capability_validation_suite.json with the supplied artifact/package identity, exactly one nominal
+and one calibrated_boundary case per capability, and whole_suite_aggregation={'kind':'all_cases'}.
+Author each task-neutral request and inline measurement binding yourself. Requests must satisfy both the
+sealed schema and selected instance domain, and a capability's two requests must differ. Copy its complete
+criteria unchanged. Ground requests only with the supplied schema/domain evidence pairs. Use only listed
+operator signatures and real entities from the selected scene. Private examples are examples, never IDs.
+Never emit binding_id, code, task dispatch/IDs, Driver/Repair material, advice, or a self-reported verdict.
+
+There are six turns: at most two inspection turns, then turns three through six are write/correction only.
+Every successful write is audited immediately. Large files may use bounded append writes; the combined
+canonical file alone must parse."""
 
 
 class IVCError(ValueError):
@@ -1267,18 +1258,19 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
     """Build a compact, exact index for the first IVC prompt.
 
     The complete private projection remains in ``ivc_inputs.json``.  This
-    index duplicates only the fields needed to avoid guessing wrapper paths,
-    instance IDs, operator parameters, request paths, and declared frame
-    aliases.  Full operator and scene catalogs remain queryable in the raw
-    input instead of being repeated in the first prompt.
+    index fuses the sealed contract with its request-path index so capability
+    semantics appear only once.  Repeated schema evidence prose and task-
+    support rationales remain queryable in the raw input.  Every exact
+    criterion, closed request constraint, legal operator signature, private
+    instance, and declared frame alias required for authoring remains inline.
     """
 
     def schema_nodes(
         schema: Any,
         *,
         path: str = "request",
-    ) -> tuple[list[dict[str, Any]], list[tuple[str, Mapping[str, Any]]]]:
-        leaves: list[dict[str, Any]] = []
+    ) -> tuple[list[str], list[tuple[str, Mapping[str, Any]]]]:
+        leaves: list[str] = []
         addressable: list[tuple[str, Mapping[str, Any]]] = []
         if not isinstance(schema, Mapping):
             return leaves, addressable
@@ -1294,41 +1286,47 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
                 leaves.extend(child_leaves)
                 addressable.extend(child_nodes)
             return leaves, addressable
-        record: dict[str, Any] = {
-            "path": path,
-            "type": schema.get("type"),
-        }
-        for field in (
-            "unit",
-            "frame",
-            "minimum",
-            "maximum",
-            "minItems",
-            "maxItems",
-            "enum",
-        ):
-            if field in schema:
-                record[field] = json_copy(
-                    schema[field], label=f"sealed request leaf {path}.{field}"
-                )
-        leaves.append(record)
+        leaves.append(path)
         return leaves, addressable
+
+    def compact_request_schema(schema: Any) -> Any:
+        """Copy an exact schema while de-duplicating prose and evidence refs.
+
+        Evidence pairs are projected once beside the schema.  Descriptions
+        remain available in the raw sealed design; all machine-enforced
+        schema keywords, including unknown future keywords, are retained.
+        """
+
+        if not isinstance(schema, Mapping):
+            return json_copy(schema, label="sealed request schema value")
+        compact: dict[str, Any] = {}
+        for name, value in schema.items():
+            if name in {"description", "evidence_refs"}:
+                continue
+            if name == "properties" and isinstance(value, Mapping):
+                compact[name] = {
+                    str(property_name): compact_request_schema(property_schema)
+                    for property_name, property_schema in value.items()
+                }
+            elif name == "items" and isinstance(value, Mapping):
+                compact[name] = compact_request_schema(value)
+            elif name in {"allOf", "anyOf", "oneOf"} and isinstance(value, list):
+                compact[name] = [
+                    compact_request_schema(alternative) for alternative in value
+                ]
+            elif name == "additionalProperties" and isinstance(value, Mapping):
+                compact[name] = compact_request_schema(value)
+            else:
+                compact[name] = json_copy(
+                    value, label=f"sealed request schema {name}"
+                )
+        return compact
 
     private_document = inputs.get("private_instances")
     if isinstance(private_document, Mapping):
         raw_instances = private_document.get("instances")
-        records_path = "private_instances.instances"
-        wrapper_rule = (
-            "private_instances is an object wrapper, not a case list; "
-            "copy instance_id only from the indexed records below"
-        )
     else:
         raw_instances = private_document
-        records_path = "private_instances"
-        wrapper_rule = (
-            "this compatibility input is the record array itself; copy "
-            "instance_id only from the indexed records below"
-        )
     if not isinstance(raw_instances, list):
         raise IVCError("private_instances.instances must be an array")
     instance_records: list[dict[str, Any]] = []
@@ -1376,7 +1374,7 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
     design = inputs.get("sealed_capability_design")
     if not isinstance(design, Mapping):
         raise IVCError("sealed_capability_design authoring input must be an object")
-    criterion_index: list[dict[str, Any]] = []
+    authoring_capabilities: list[dict[str, Any]] = []
     criterion_units: set[str] = set()
     declared_frames: set[str] = set()
     operator_document = inputs.get("measurement_operator_catalog")
@@ -1405,13 +1403,27 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
             frame = node_schema.get("frame")
             if isinstance(frame, str) and frame.strip():
                 declared_frames.add(frame)
-        criterion_index.append(
+        authoring_capability = {
+            field: json_copy(
+                capability[field],
+                label=f"sealed capability {capability.get('capability_id')} {field}",
+            )
+            for field in (
+                "capability_id",
+                "method_name",
+                "effect",
+                "preconditions",
+                "temporal_semantics",
+                "invariants",
+                "failure_behavior",
+                "criteria",
+            )
+            if field in capability
+        }
+        authoring_capability.update(
             {
-                "capability_id": capability.get("capability_id"),
-                "method_name": capability.get("method_name"),
-                "criterion_metric": criterion.get("metric"),
-                "criterion_unit": criterion.get("unit"),
-                "rooted_request_leaf_index": leaves,
+                "request_schema": compact_request_schema(request_schema),
+                "rooted_request_paths": leaves,
                 "allowed_request_grounding_refs_from_sealed_schema": [
                     {
                         "source_id": source_id,
@@ -1423,8 +1435,28 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
                 ],
             }
         )
+        authoring_capabilities.append(authoring_capability)
 
-    compatible_operator_specs: dict[str, Any] = {}
+    task_support_by_capability: dict[str, list[str]] = {}
+    raw_task_support = design.get("task_support", [])
+    if not isinstance(raw_task_support, list):
+        raise IVCError("sealed capability task_support must be an array")
+    for index, support in enumerate(raw_task_support):
+        if not isinstance(support, Mapping):
+            raise IVCError(f"sealed capability task_support[{index}] must be an object")
+        capability_id = support.get("capability_id")
+        task_id = support.get("task_id")
+        if not isinstance(capability_id, str) or not isinstance(task_id, str):
+            raise IVCError("sealed task_support requires exact task and capability IDs")
+        task_support_by_capability.setdefault(capability_id, []).append(task_id)
+    for task_ids in task_support_by_capability.values():
+        task_ids.sort()
+
+    invocation_abi = json_copy(
+        design.get("invocation_abi"), label="sealed design invocation_abi"
+    )
+
+    compatible_operator_signatures: dict[str, Any] = {}
     for operator in raw_operators:
         if not (
             isinstance(operator, Mapping)
@@ -1457,43 +1489,31 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
             if isinstance(properties, Mapping)
             else {}
         )
+        entity_parameters = operator.get("entity_parameters", {})
+        request_value_types = operator.get("request_value_types", {})
+        parameter_signatures: dict[str, Any] = {}
+        for name, parameter_type in compact_properties.items():
+            signature = parameter_type
+            if isinstance(entity_parameters, Mapping) and name in entity_parameters:
+                signature = f"entity:{entity_parameters[name]}"
+            elif isinstance(request_value_types, Mapping) and name in request_value_types:
+                signature = f"request_path:{request_value_types[name]}"
+            if name not in required_parameters:
+                signature = f"optional:{signature}"
+            parameter_signatures[name] = signature
+
         compact_spec: dict[str, Any] = {
-            "description": operator.get("description"),
-            "output_units": json_copy(
+            "purpose": operator.get("description"),
+            "units": json_copy(
                 operator.get("output_units", []),
                 label="measurement operator output units",
             ),
-            "required_parameters": {
-                name: compact_properties[name]
-                for name in compact_properties
-                if name in required_parameters
-            },
-            "optional_parameters": {
-                name: compact_properties[name]
-                for name in compact_properties
-                if name not in required_parameters
-            },
-            "entity_parameter_types": json_copy(
-                operator.get("entity_parameters", {}),
-                label="measurement operator entity parameter types",
-            ),
+            "parameters": parameter_signatures,
         }
-        request_path_parameters = operator.get("request_path_parameters", [])
-        if request_path_parameters:
-            compact_spec["request_path_parameters"] = json_copy(
-                request_path_parameters,
-                label="measurement operator request path parameters",
-            )
-        request_value_types = operator.get("request_value_types", {})
-        if request_value_types:
-            compact_spec["request_value_types"] = json_copy(
-                request_value_types,
-                label="measurement operator request value types",
-            )
         evaluation_mode = operator.get("evaluation_mode")
         if evaluation_mode != "numeric_measurement":
-            compact_spec["evaluation_mode"] = evaluation_mode
-        compatible_operator_specs[str(operator["kind"])] = compact_spec
+            compact_spec["mode"] = evaluation_mode
+        compatible_operator_signatures[str(operator["kind"])] = compact_spec
 
     scene_document = inputs.get("scene_entity_catalog")
     raw_scenes = (
@@ -1537,42 +1557,37 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
 
     return {
         "raw_paths": {
+            "design": "ivc_inputs.json::sealed_capability_design",
+            "task_support": "ivc_inputs.json::sealed_capability_design.task_support",
             "instances": "ivc_inputs.json::private_instances.instances",
             "operators": "ivc_inputs.json::measurement_operator_catalog.operators",
             "scenes": "ivc_inputs.json::scene_entity_catalog.scenes",
         },
-        "request_path_contract": {
-            "literal_prefix": "request.",
-            "example": "request.target_position.x",
-        },
-        "private_instances_raw_wrapper": {
-            "records_path": records_path,
-            "rule": wrapper_rule,
-        },
         "private_instance_records": instance_records,
         "private_instance_shared_execution_fields": shared_instance_fields,
-        "capability_criterion_index": criterion_index,
-        "request_grounding_ref_rule": (
-            "For each case, copy only exact source_id/specific_reference pairs "
-            "from that capability's allowed_request_grounding_refs_from_sealed_schema "
-            "or from evidence_refs inside the selected instance request_domain. "
-            "Capability-level evidence_refs and source_refs are not request grounding."
+        "sealed_authoring_contract": {
+            "invocation_abi": invocation_abi,
+            "capabilities": authoring_capabilities,
+            "task_support_by_capability": task_support_by_capability,
+        },
+        "unit_compatible_operator_signatures_by_kind": (
+            compatible_operator_signatures
         ),
-        "measurement_binding_shape": {
-            "metric": "exact sealed criterion metric",
-            "unit": "exact sealed criterion unit",
-            "kind": "IVC chooses one unit-compatible operator kind",
-            "parameters": (
-                "IVC authors the closed object from unit_compatible_operator_specs_by_kind; "
-                "entity values come from the selected raw scene catalog"
-            ),
-        },
-        "unit_compatible_operator_specs_by_kind": compatible_operator_specs,
-        "operator_spec_defaults": {
-            "evaluation_mode": "numeric_measurement",
-            "missing_request_path_parameters_or_value_types": "empty",
-        },
         "scene_declared_frame_aliases": scene_frame_aliases,
+    }
+
+
+def _build_ivc_authoring_brief(inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the single non-redundant payload embedded in the first turn."""
+
+    return {
+        "artifact_header": json_copy(
+            inputs["artifact_header"], label="IVC artifact header"
+        ),
+        "validator_contract": json_copy(
+            inputs["validator_contract"], label="IVC validator contract"
+        ),
+        "authoring_index": _build_ivc_authoring_index(inputs),
     }
 
 
@@ -1703,12 +1718,7 @@ def run_ivc(
                 )
 
             authoring_brief = json.dumps(
-                {
-                    "artifact_header": inputs["artifact_header"],
-                    "validator_contract": inputs["validator_contract"],
-                    "authoring_index": _build_ivc_authoring_index(inputs),
-                    "sealed_capability_design": inputs["sealed_capability_design"],
-                },
+                _build_ivc_authoring_brief(inputs),
                 ensure_ascii=True,
                 separators=(",", ":"),
             )
@@ -1718,47 +1728,8 @@ def run_ivc(
                     stage="ivc",
                     system_prompt=IVC_SYSTEM_PROMPT,
                     user_prompt=(
-                        "The complete raw input is compact JSON at ./ivc_inputs.json in the "
-                        "phase-workspace root; there is no result wrapper. Use execute_python "
-                        "for targeted queries instead of printing the full scene, Task Library, "
-                        "operator, or worked-reference collections. The compact core authoring "
-                        f"brief is included here verbatim: {authoring_brief}. "
-                        "The raw private_instances value is an object wrapper; its record array is "
-                        "private_instances.instances. Use only exact instance_id values from "
-                        "authoring_index.private_instance_records, and copy each indexed mandatory "
-                        "guard list, repetitions, timeout, and request_domain rather than guessing. "
-                        "Apply authoring_index.private_instance_shared_execution_fields to every "
-                        "indexed record before any record-local overrides. "
-                        "For request_grounding_refs, copy only exact source_id/specific_reference "
-                        "pairs from the capability's indexed "
-                        "allowed_request_grounding_refs_from_sealed_schema or from evidence_refs "
-                        "inside the selected instance request_domain. Capability-level evidence_refs "
-                        "and criterion source_refs are not valid request grounding. "
-                        "Choose measurement_binding.kind yourself from the unit-compatible operator "
-                        "specs and satisfy its parameter signature. The index deliberately contains "
-                        "no selected kind, binding, instance, or entity value: query the exact selected scene under "
-                        "authoring_index.raw_paths.scenes only for the entity values you still need. "
-                        "Use authoring_index.scene_declared_frame_aliases for schema-declared frames. "
-                        "The raw operator catalog is an object wrapper; its "
-                        "operator array is measurement_operator_catalog.operators. Every parameter "
-                        "whose catalog type is request_path must start with the literal prefix "
-                        "request. and resolve into the sealed request_schema. Copy artifact_header "
-                        "unchanged at the suite top "
-                        "level and follow validator_contract exactly. "
-                        "Author the complete canonical "
-                        f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
-                        "for credential-free calibration calculations and may inspect the read-only "
-                        "public assets root through AUTOADAPTER_PROBE_PUBLIC_PACKAGE. Conserve the "
-                        "six-turn budget: use at most two turns for targeted inspection. Turns three "
-                        "through six are write-only delivery/correction turns. The Framework validates "
-                        "at the end of every turn containing a successful write_file call, so write "
-                        "as soon as you have a grounded draft and use returned errors to correct it. "
-                        "For a large artifact, use append=false for "
-                        "the first safe text chunk and append=true for later chunks; only the "
-                        "combined file must parse. For scaled joint targets, use target_scale and "
-                        "target_offset only when the selected operator-catalog entry declares them. "
-                        "End the turn when the "
-                        "artifact is ready; there is no submit or check tool."
+                        f"Authoring brief:\n{authoring_brief}\n"
+                        f"Write {IVC_ARTIFACT_NAME}."
                     ),
                     tools=session.artifact_tools(),
                     artifact_name=IVC_ARTIFACT_NAME,
