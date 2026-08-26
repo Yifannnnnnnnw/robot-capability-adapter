@@ -293,21 +293,58 @@ and measurement criteria. It does not establish hardware performance,
 deployment safety, or sim-to-real transfer.
 
 
-\section{Experiments and Results}
+\section{Interpretation and Limitations}
 
-Experiment 2 applies one fixed Auto-Adapter route to eleven Direct-MuJoCo
-robot configurations. Each configuration is executed in three fresh runs,
-producing 33 robot--run cells. Sonnet 4.6 operates under the skeleton-assisted
-condition with empty Experience and identical inference and resource budgets.
-Cells use an isolated workspace and simulator reset, and independently
-generate their capability design and implementation-blind validation suite.
-The model receives one initial driver submission and at most two Repair
-submissions. A whole-suite validation pass admits the final driver to a
-separate five-task Task Demo; otherwise the Demo is not run. Evolution is
-disabled, and configuration differences are analysed descriptively.
+Auto-Adapter's principal methodological choice is to separate capability
+design, driver implementation, and behavioural judgement. Task-Grounded
+Capability Design connects a task-neutral interface to source-backed task
+requirements, while the Independent Validation Compiler defines executable
+cases without access to candidate code. The trusted \emph{Harness} then applies
+fixed criteria to measurements recorded outside the candidate. This arrangement
+prevents driver return values and self-reported completion from determining
+acceptance. It does not remove judgement from translating task standards into
+capability criteria or make the resulting suite exhaustive.
 
+The evidence produced at each stage answers a different question. Source and
+import checks establish only that a candidate can be loaded. A Capability
+Validation pass supports the declared physical effect for the exact nominal and
+calibrated-boundary cases; those two cases do not cover every request,
+interaction, or long-horizon composition. A Task Demo evaluates downstream
+composition using only capabilities that passed both cases. Its outcome neither
+changes the earlier capability verdicts nor establishes that the complete
+driver passed. Similarly, a terminal pass after Repair measures performance
+after bounded feedback and must remain distinct from initial-attempt
+performance.
 
-
-\subsection{Interpretation and Limitations}
+The framework definition alone does not establish that Auto-Adapter reliably
+produces effective drivers, outperforms alternative methods, or generalises
+across robot configurations. Those questions require the controlled
+evaluations in later chapters. Furthermore, Direct-MuJoCo evidence is
+conditional on the selected assets, requests, initial states, observation
+operators, and thresholds. It does not measure real-SDK fidelity, sensing
+uncertainty, communication latency, calibration error, hardware safety, or
+sim-to-real transfer. Cross-configuration outcomes must remain descriptive
+because morphology, actuation, task catalogue, scene, and observation
+facilities vary together.
 
 \section{Summary}
+
+This chapter defined Auto-Adapter as a framework for constructing a reusable,
+robot-specific Python driver from public robot information and source-backed
+task requirements. It first studies the robot and fixed simulation model,
+derives task-neutral capabilities, and compiles implementation-blind
+behavioural cases. A bounded ReAct coding agent then implements the driver
+using public MuJoCo feedback. The trusted \emph{Harness} evaluates the
+resulting actuator-mediated trajectories against fixed criteria rather than
+relying on candidate output.
+
+The workflow keeps source checking, capability validation, Repair, downstream
+Task Demo, and any later Experience use distinct. Only capabilities satisfying
+both their nominal and calibrated-boundary cases are exposed to Task Demo, and
+its terminal outcome does not rewrite driver verdicts. These boundaries provide
+an auditable basis for empirical comparison; they are not themselves evidence
+of universal integration or hardware readiness.
+Chapter~\ref{chapter:autoadapter-bench} evaluates driver synthesis and
+downstream use under controlled inputs, while
+Chapter~\ref{chapter:cross-robot-evaluation} examines the complete construction
+route across the declared Direct-MuJoCo configurations.
