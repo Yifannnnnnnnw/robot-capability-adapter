@@ -426,6 +426,14 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
         "aggregation": "non-empty JSON object; strings are invalid",
         "source_refs": "non-empty evidence-ref array",
     }
+    assert inputs["validator_contract"]["criterion_temporal_kinds"] == [
+        "terminal_state"
+    ]
+    assert inputs["validator_contract"]["criterion_temporal_kind_prefixes"] == []
+    assert inputs["validator_contract"]["criterion_aggregation_kinds"] == [
+        "single_trial"
+    ]
+    assert len(inputs["capability_v2_public_references"]) == 2
     assert inputs["matching_capability_references"] == []
     assert inputs["task_index"] == [
         {
@@ -498,6 +506,88 @@ def test_tgcd_reports_criterion_contract_errors_across_capabilities() -> None:
     assert "capabilities[1].criteria[0].aggregation must be a non-empty object" in error
     assert "capabilities[2].criteria[0].temporal must be a non-empty object" in error
     assert "capabilities[2].criteria[0].aggregation must be a non-empty object" in error
+
+
+def test_tgcd_canonicalises_observed_terminal_single_call_criterion_alias() -> None:
+    design = _design()
+    criterion = design["capabilities"][0]["criteria"][0]
+    criterion["temporal"] = {
+        "at": "motion_completion",
+        "condition": "first_time_or_timeout",
+    }
+    criterion["aggregation"] = {
+        "method": "final_value",
+        "over": "single_call",
+    }
+
+    canonical = validate_capability_design(design, _package())
+    canonical_criterion = canonical["capabilities"][0]["criteria"][0]
+
+    assert canonical_criterion["temporal"] == {
+        "at": "motion_completion",
+        "condition": "first_time_or_timeout",
+        "kind": "terminal_state",
+    }
+    assert canonical_criterion["aggregation"] == {
+        "method": "final_value",
+        "over": "single_call",
+        "kind": "single_trial",
+    }
+
+
+def test_tgcd_rejects_non_executable_criterion_kinds() -> None:
+    design = _design()
+    criterion = design["capabilities"][0]["criteria"][0]
+    criterion["temporal"] = {"kind": "after_the_model_says_done"}
+    criterion["aggregation"] = {"kind": "pick_the_best"}
+
+    with pytest.raises(CapabilityDesignError) as caught:
+        validate_capability_design(design, _package())
+
+    error = str(caught.value)
+    assert "criteria[0].temporal.kind must name a supported executable" in error
+    assert "criteria[0].aggregation.kind must name a supported executable" in error
+
+
+def test_tgcd_rejects_rich_reference_criterion_as_transfer_execution() -> None:
+    design = _design()
+    criterion = design["capabilities"][0]["criteria"][0]
+    criterion["temporal"] = {"kind": "continuous", "duration_s": 0.5}
+    criterion["aggregation"] = {"kind": "all_samples"}
+
+    with pytest.raises(CapabilityDesignError, match="non-executable transfer contract"):
+        validate_capability_design(design, _package())
+
+
+def test_tgcd_rich_criterion_requires_exact_matching_reference_contract() -> None:
+    package = load_robot_package(SO101_PACKAGE_ROOT)
+    reference = load_public_reference_catalog()[0]
+    design = {
+        "artifact_type": "capability_design",
+        "schema_version": "2.0",
+        "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
+        "robot_configuration_id": package.robot_configuration_id,
+        "package_version": package.package_version,
+        "task_snapshot_id": package.snapshot_id,
+        "invocation_abi": CAPABILITY_INVOCATION_ABI,
+        "capabilities": json.loads(json.dumps(reference["capabilities"])),
+        "task_support": [],
+    }
+
+    canonical = validate_capability_design(
+        design,
+        package,
+        require_task_support=False,
+    )
+    assert canonical["capabilities"][0]["capability_id"] == "A1"
+
+    design["capabilities"][0]["criteria"][0]["threshold"] += 0.001
+    with pytest.raises(CapabilityDesignError, match="exact matching SO-101/Go2"):
+        validate_capability_design(
+            design,
+            package,
+            require_task_support=False,
+        )
 
 
 class _TGCDModel:
@@ -1116,7 +1206,7 @@ def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
 
     assert len(result["cases"]) == 2 * len(design["capabilities"])
     assert model.tool_names == [
-        {"write_file"},
+        {"read_file", "write_file", "execute_python"},
         {"write_file"},
     ]
     assert '"artifact_header"' in model.messages[0][0]["content"]

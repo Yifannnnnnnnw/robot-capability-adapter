@@ -12,7 +12,12 @@ import pytest
 
 from autoadapter2.harness import HarnessError, run_private_suite
 from autoadapter2.harness import runner as harness_runner
-from autoadapter2.harness.operators import measurement_operator_catalog
+from autoadapter2.harness.measurements import MeasurementError, measure
+from autoadapter2.harness.operators import (
+    MeasurementOperatorError,
+    audit_inline_measurement_binding,
+    measurement_operator_catalog,
+)
 from autoadapter2.libraries import RobotPackage
 
 
@@ -289,8 +294,216 @@ def test_capability_v2_binding_id_is_rejected_before_worker(tmp_path: Path) -> N
 
 def test_operator_catalog_is_closed_and_excludes_b1_dispatch() -> None:
     catalog = measurement_operator_catalog()
-    kinds = {operator["kind"] for operator in catalog["operators"]}
+    operators = {operator["kind"]: operator for operator in catalog["operators"]}
+    kinds = set(operators)
     assert "final_site_position_error" in kinds
     assert "mean_body_yaw_rate" in kinds
     assert "b1_contract" not in kinds
     assert catalog["binding_fields"] == ["metric", "unit", "kind", "parameters"]
+    joint_error = operators["final_joint_position_error"]
+    assert joint_error["output_units"] == ["rad", "m"]
+    properties = joint_error["parameter_schema"]["properties"]
+    assert properties["target_scale"]["default"] == 1.0
+    assert properties["target_offset"]["default"] == 0.0
+
+
+def _joint_scene(tmp_path: Path, *, joint_type: str) -> Path:
+    scene = tmp_path / f"{joint_type}.xml"
+    joint_range = "0 0.04" if joint_type == "slide" else "-1 1"
+    scene.write_text(
+        "<mujoco><worldbody><body name='moving'>"
+        f"<joint name='measured_joint' type='{joint_type}' axis='1 0 0' "
+        f"range='{joint_range}'/>"
+        "<geom type='sphere' size='0.01' mass='1'/></body></worldbody></mujoco>",
+        encoding="utf-8",
+    )
+    return scene
+
+
+def _joint_request_schema(
+    field: str,
+    *,
+    unit: str = "rad",
+    minimum: float = -2.0,
+    maximum: float = 2.0,
+) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            field: {
+                "type": "number",
+                "unit": unit,
+                "minimum": minimum,
+                "maximum": maximum,
+                "evidence_refs": [
+                    {
+                        "source_id": "test-calibration",
+                        "specific_reference": "trusted request bounds",
+                    }
+                ],
+            }
+        },
+        "required": [field],
+        "additionalProperties": False,
+    }
+
+
+def _joint_binding(*, metric: str, unit: str, field: str) -> dict[str, Any]:
+    return {
+        "metric": metric,
+        "unit": unit,
+        "kind": "final_joint_position_error",
+        "parameters": {
+            "joint_name": "measured_joint",
+            "target_argument": f"request.{field}",
+        },
+    }
+
+
+def _joint_evidence(actual: float) -> dict[str, Any]:
+    return {
+        "samples": [
+            {"joint_positions": {"measured_joint": 0.0}},
+            {"joint_positions": {"measured_joint": actual}},
+        ]
+    }
+
+
+def test_scaled_slide_joint_target_is_audited_and_measured(tmp_path: Path) -> None:
+    binding = _joint_binding(
+        metric="aperture_position_error",
+        unit="m",
+        field="aperture_fraction",
+    )
+    binding["parameters"].update(target_scale=0.04, target_offset=0.0)
+    canonical = audit_inline_measurement_binding(
+        binding,
+        criterion={"metric": "aperture_position_error", "unit": "m"},
+        request_schema=_joint_request_schema(
+            "aperture_fraction", unit="fraction", minimum=0.0, maximum=1.0
+        ),
+        scene_path=_joint_scene(tmp_path, joint_type="slide"),
+    )
+
+    assert measure(
+        canonical,
+        evidence=_joint_evidence(0.04),
+        public_arguments={"request": {"aperture_fraction": 1.0}},
+    ) == 0.0
+
+
+def test_scaled_joint_target_rejects_zero_scale_current_position_cheat(
+    tmp_path: Path,
+) -> None:
+    binding = _joint_binding(
+        metric="aperture_position_error",
+        unit="m",
+        field="aperture_fraction",
+    )
+    binding["parameters"].update(target_scale=0.0, target_offset=0.02)
+
+    with pytest.raises(MeasurementOperatorError, match="target_scale must be positive"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": "aperture_position_error", "unit": "m"},
+            request_schema=_joint_request_schema(
+                "aperture_fraction", unit="fraction", minimum=0.0, maximum=1.0
+            ),
+            scene_path=_joint_scene(tmp_path, joint_type="slide"),
+        )
+
+
+def test_scaled_joint_target_rejects_arbitrary_offset(tmp_path: Path) -> None:
+    binding = _joint_binding(
+        metric="aperture_position_error",
+        unit="m",
+        field="aperture_fraction",
+    )
+    binding["parameters"].update(target_scale=0.04, target_offset=0.01)
+
+    with pytest.raises(
+        MeasurementOperatorError,
+        match="target_offset does not match the evidence-backed",
+    ):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": "aperture_position_error", "unit": "m"},
+            request_schema=_joint_request_schema(
+                "aperture_fraction", unit="fraction", minimum=0.0, maximum=1.0
+            ),
+            scene_path=_joint_scene(tmp_path, joint_type="slide"),
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda parameters: parameters.update(target_gain=0.04),
+        lambda parameters: parameters.update(target_scale="0.04"),
+        lambda parameters: parameters.update(target_offset=float("inf")),
+    ],
+)
+def test_scaled_joint_target_rejects_unknown_wrong_and_nonfinite_parameters(
+    tmp_path: Path,
+    mutation: Any,
+) -> None:
+    binding = _joint_binding(
+        metric="aperture_position_error",
+        unit="m",
+        field="aperture_fraction",
+    )
+    mutation(binding["parameters"])
+
+    with pytest.raises(MeasurementOperatorError):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": "aperture_position_error", "unit": "m"},
+            request_schema=_joint_request_schema(
+                "aperture_fraction", unit="fraction", minimum=0.0, maximum=1.0
+            ),
+            scene_path=_joint_scene(tmp_path, joint_type="slide"),
+        )
+
+
+def test_joint_position_error_keeps_legacy_radian_defaults(tmp_path: Path) -> None:
+    binding = _joint_binding(metric="joint_error", unit="rad", field="target_rad")
+    canonical = audit_inline_measurement_binding(
+        binding,
+        criterion={"metric": "joint_error", "unit": "rad"},
+        request_schema=_joint_request_schema("target_rad"),
+        scene_path=_joint_scene(tmp_path, joint_type="hinge"),
+    )
+
+    assert measure(
+        canonical,
+        evidence=_joint_evidence(0.25),
+        public_arguments={"request": {"target_rad": 0.2}},
+    ) == pytest.approx(0.05)
+
+
+def test_joint_position_error_rejects_unit_that_disagrees_with_joint_type(
+    tmp_path: Path,
+) -> None:
+    binding = _joint_binding(metric="joint_error", unit="rad", field="target_rad")
+    with pytest.raises(MeasurementOperatorError, match="must use unit 'm'"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": "joint_error", "unit": "rad"},
+            request_schema=_joint_request_schema("target_rad"),
+            scene_path=_joint_scene(tmp_path, joint_type="slide"),
+        )
+
+
+def test_scaled_joint_measurement_rejects_nonfinite_request_value() -> None:
+    binding = _joint_binding(
+        metric="aperture_position_error",
+        unit="m",
+        field="aperture_fraction",
+    )
+    binding["parameters"]["target_scale"] = 0.04
+    with pytest.raises(MeasurementError, match="request value must be finite"):
+        measure(
+            binding,
+            evidence=_joint_evidence(0.04),
+            public_arguments={"request": {"aperture_fraction": float("nan")}},
+        )

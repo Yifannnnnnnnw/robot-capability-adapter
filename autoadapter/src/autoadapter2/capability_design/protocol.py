@@ -33,6 +33,51 @@ CAPABILITY_INVOCATION_ABI = {
     "method_call": "method(request=request)",
     "request_required": ["request"],
 }
+SEMANTIC_REFERENCE_ROBOT_IDS = frozenset(
+    {"robotstudio_so101", "unitree-go2-stock-12dof"}
+)
+NUMERIC_CRITERION_TEMPORAL_KINDS = frozenset(
+    {"terminal_state"}
+)
+SEMANTIC_CRITERION_TEMPORAL_KINDS = frozenset(
+    {
+        # Trusted semantic SO-101/Go2 operators evaluate these complete
+        # published contracts parent-side rather than as one numeric sample.
+        "continuous",
+        "continuous_terminal_hold",
+        "disturbance_recovery_then_hold",
+        "final_window",
+        "ordered_phase_holds",
+        "ordered_precontact_ray_contact",
+        "ordered_waypoints_and_terminal_hold",
+    }
+)
+CRITERION_TEMPORAL_KINDS = (
+    NUMERIC_CRITERION_TEMPORAL_KINDS | SEMANTIC_CRITERION_TEMPORAL_KINDS
+)
+NUMERIC_CRITERION_AGGREGATION_KINDS = frozenset(
+    {"single_trial"}
+)
+SEMANTIC_CRITERION_AGGREGATION_KINDS = frozenset(
+    {
+        # Aggregations owned by the trusted semantic reference operators.
+        "all_gates",
+        "all_samples",
+        "all_samples_and_bidirectional_excursion",
+        "all_stability_support_and_contact_gates",
+        "both_legs_and_displacement",
+        "height_attitude_displacement_and_yaw",
+        "maximum_cross_track_and_terminal_error",
+        "mean_velocity_and_yaw_rate",
+        "position_yaw_and_speed",
+        "target_and_other_joint_hold",
+        "waypoints_cross_track_endpoint_and_speed",
+    }
+)
+CRITERION_AGGREGATION_KINDS = (
+    NUMERIC_CRITERION_AGGREGATION_KINDS
+    | SEMANTIC_CRITERION_AGGREGATION_KINDS
+)
 
 
 class CapabilityProtocolError(ValueError):
@@ -469,6 +514,43 @@ def _required_text(value: Any, *, where: str) -> str:
     return value.strip()
 
 
+def _canonical_temporal_rule(value: Any, *, where: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or not value:
+        raise CapabilityProtocolError(f"{where} must be a non-empty object")
+    result = json_copy(dict(value), label=where)
+    kind = result.get("kind")
+    if kind is None and result.get("at") in {"motion_completion", "stroke_completion"}:
+        if result.get("condition") == "first_time_or_timeout":
+            # Preserve the observed pre-kind spelling while adding the exact
+            # executable meaning used by IVC and the trusted Harness.
+            result["kind"] = "terminal_state"
+            kind = "terminal_state"
+    if not isinstance(kind, str) or not (
+        kind in CRITERION_TEMPORAL_KINDS or kind.startswith("terminal_state_")
+    ):
+        raise CapabilityProtocolError(
+            f"{where}.kind must name a supported executable temporal rule"
+        )
+    return result
+
+
+def _canonical_aggregation_rule(value: Any, *, where: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or not value:
+        raise CapabilityProtocolError(f"{where} must be a non-empty object")
+    result = json_copy(dict(value), label=where)
+    kind = result.get("kind")
+    if kind is None and result == {"method": "final_value", "over": "single_call"}:
+        # Canonicalise the exact spelling observed in the interrupted Franka
+        # diagnostic without changing its single terminal-value semantics.
+        result["kind"] = "single_trial"
+        kind = "single_trial"
+    if kind not in CRITERION_AGGREGATION_KINDS:
+        raise CapabilityProtocolError(
+            f"{where}.kind must name a supported executable aggregation rule"
+        )
+    return result
+
+
 def _validate_structured_criterion(value: Any, *, where: str) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise CapabilityProtocolError(f"{where} must be an object")
@@ -487,13 +569,79 @@ def _validate_structured_criterion(value: Any, *, where: str) -> dict[str, Any]:
         and all(_finite_number(item) for item in threshold)
     ):
         raise CapabilityProtocolError(f"{where}.threshold must be finite numeric or a range")
-    for field in ("temporal", "aggregation"):
-        if not isinstance(value.get(field), Mapping) or not value[field]:
-            raise CapabilityProtocolError(f"{where}.{field} must be a non-empty object")
+    temporal = _canonical_temporal_rule(
+        value.get("temporal"),
+        where=f"{where}.temporal",
+    )
+    aggregation = _canonical_aggregation_rule(
+        value.get("aggregation"),
+        where=f"{where}.aggregation",
+    )
     refs = _validate_evidence_refs(value.get("source_refs"), where=f"{where}.source_refs")
     result = json_copy(dict(value), label=where)
+    result["temporal"] = temporal
+    result["aggregation"] = aggregation
     result["source_refs"] = refs
     return result
+
+
+def is_authorable_numeric_criterion(value: Mapping[str, Any]) -> bool:
+    """Return whether dynamic IVC can execute this generic numeric contract.
+
+    The generic measurement DSL currently yields one terminal numeric value.
+    Rich temporal/aggregation rules remain accepted only for the sealed
+    SO-101/Go2 reference contracts evaluated by their trusted semantic
+    operators; advertising them as generic would create an unexecutable
+    transfer design.
+    """
+
+    temporal = value.get("temporal")
+    aggregation = value.get("aggregation")
+    return bool(
+        isinstance(temporal, Mapping)
+        and temporal.get("kind") == "terminal_state"
+        and isinstance(aggregation, Mapping)
+        and aggregation.get("kind") == "single_trial"
+    )
+
+
+def capability_execution_contract(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Project fields that determine trusted semantic operator execution.
+
+    Public provenance and prose do not alter execution, so evidence_refs,
+    source_refs, and schema descriptions are omitted.  Request shape, units,
+    frames, bounds and the complete measurable criterion remain exact.
+    """
+
+    if not isinstance(value, Mapping):
+        raise CapabilityProtocolError("capability execution contract must be an object")
+    schema = json_copy(value.get("request_schema"), label="request_schema")
+    if not isinstance(schema, dict):
+        raise CapabilityProtocolError("capability execution contract requires request_schema")
+
+    def strip_schema_metadata(node: Any) -> None:
+        if isinstance(node, dict):
+            node.pop("description", None)
+            node.pop("evidence_refs", None)
+            for child in node.values():
+                strip_schema_metadata(child)
+        elif isinstance(node, list):
+            for child in node:
+                strip_schema_metadata(child)
+
+    strip_schema_metadata(schema)
+    criteria = value.get("criteria")
+    if not (
+        isinstance(criteria, list)
+        and len(criteria) == 1
+        and isinstance(criteria[0], Mapping)
+    ):
+        raise CapabilityProtocolError(
+            "capability execution contract requires exactly one criterion"
+        )
+    criterion = json_copy(dict(criteria[0]), label="criterion")
+    criterion.pop("source_refs", None)
+    return {"request_schema": schema, "criterion": criterion}
 
 
 def _criterion_requirement_issues(value: Any, *, where: str) -> list[str]:
@@ -518,9 +666,14 @@ def _criterion_requirement_issues(value: Any, *, where: str) -> list[str]:
         and all(_finite_number(item) for item in threshold)
     ):
         issues.append(f"{where}.threshold must be finite numeric or a range")
-    for field in ("temporal", "aggregation"):
-        if not isinstance(value.get(field), Mapping) or not value[field]:
-            issues.append(f"{where}.{field} must be a non-empty object")
+    for field, validator in (
+        ("temporal", _canonical_temporal_rule),
+        ("aggregation", _canonical_aggregation_rule),
+    ):
+        try:
+            validator(value.get(field), where=f"{where}.{field}")
+        except CapabilityProtocolError as exc:
+            issues.append(str(exc))
     try:
         _validate_evidence_refs(value.get("source_refs"), where=f"{where}.source_refs")
     except CapabilitySchemaError as exc:
@@ -696,6 +849,17 @@ def validate_capability_design(
             _validate_structured_criterion(item, where=f"{where}.criteria[{criterion_index}]")
             for criterion_index, item in enumerate(criteria)
         ]
+        if (
+            ids["robot_configuration_id"] not in SEMANTIC_REFERENCE_ROBOT_IDS
+            and not is_authorable_numeric_criterion(canonical_criteria[0])
+        ):
+            raise CapabilityProtocolError(
+                f"{where}.criteria[0] is a non-executable transfer contract; "
+                "dynamic transfer capabilities must use "
+                "temporal.kind='terminal_state' and "
+                "aggregation.kind='single_trial'. SO-101/Go2 rich criteria are "
+                "design references, not generic measurement semantics"
+            )
         for field in ("preconditions", "invariants"):
             values = raw.get(field)
             if not isinstance(values, list) or not values or any(
@@ -760,10 +924,19 @@ def validate_capability_design(
 __all__ = [
     "CAPABILITY_INVOCATION_ABI",
     "CAPABILITY_PROTOCOL_VERSION",
+    "CRITERION_AGGREGATION_KINDS",
+    "CRITERION_TEMPORAL_KINDS",
+    "NUMERIC_CRITERION_AGGREGATION_KINDS",
+    "NUMERIC_CRITERION_TEMPORAL_KINDS",
+    "SEMANTIC_REFERENCE_ROBOT_IDS",
+    "SEMANTIC_CRITERION_AGGREGATION_KINDS",
+    "SEMANTIC_CRITERION_TEMPORAL_KINDS",
     "CapabilityProtocolError",
     "CapabilitySchemaError",
     "capability_methods",
     "capability_records",
+    "capability_execution_contract",
+    "is_authorable_numeric_criterion",
     "json_copy",
     "validate_structured_criterion",
     "validate_schema_definition",

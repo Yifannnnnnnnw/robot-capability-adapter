@@ -28,17 +28,22 @@ def _spec(
     entities: Mapping[str, str] = {},
     request_paths: Sequence[str] = (),
     evaluation_mode: str = "numeric_measurement",
+    parameter_details: Mapping[str, Mapping[str, Any]] = {},
 ) -> dict[str, Any]:
+    properties = {
+        **{name: {"type": kind} for name, kind in required.items()},
+        **{name: {"type": kind} for name, kind in optional.items()},
+    }
+    for name, details in parameter_details.items():
+        if name in properties:
+            properties[name].update(copy.deepcopy(dict(details)))
     return {
         "description": description,
         "output_units": list(units),
         "parameter_schema": {
             "type": "object",
             "required": list(required),
-            "properties": {
-                **{name: {"type": kind} for name, kind in required.items()},
-                **{name: {"type": kind} for name, kind in optional.items()},
-            },
+            "properties": properties,
             "additionalProperties": False,
         },
         "request_path_parameters": list(request_paths),
@@ -95,11 +100,28 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         request_paths=("target_argument",),
     ),
     "final_joint_position_error": _spec(
-        "Absolute terminal position error for one named joint.",
-        ["rad"],
+        "Absolute terminal position error for one scalar joint: radians for a "
+        "hinge or metres for a slide. The trusted target is request_value * "
+        "target_scale + target_offset. Non-identity conversion is accepted only "
+        "when it exactly maps evidence-backed sealed request bounds onto the "
+        "selected scene's finite joint range.",
+        ["rad", "m"],
         required={"joint_name": "string", "target_argument": "request_path"},
+        optional={"target_scale": "number", "target_offset": "number"},
         entities={"joint_name": "joint"},
         request_paths=("target_argument",),
+        parameter_details={
+            "target_scale": {
+                "description": "Positive finite multiplier applied to the request "
+                "value; non-identity values must match the audited bound conversion.",
+                "default": 1.0,
+            },
+            "target_offset": {
+                "description": "Finite joint-coordinate offset added after scaling; "
+                "nonzero values must match the audited bound conversion.",
+                "default": 0.0,
+            },
+        },
     ),
     "joint_range": _spec(
         "Observed position range of one named joint.",
@@ -679,7 +701,7 @@ def _scene_model(scene_path: Path) -> Any:
         ) from exc
 
 
-def inspect_scene_entities(scene_path: str | Path) -> dict[str, list[str]]:
+def inspect_scene_entities(scene_path: str | Path) -> dict[str, Any]:
     """Return the named entities available to trusted operators in one scene."""
 
     model = _scene_model(Path(scene_path).resolve())
@@ -693,7 +715,7 @@ def inspect_scene_entities(scene_path: str | Path) -> dict[str, list[str]]:
         "actuators": (mujoco.mjtObj.mjOBJ_ACTUATOR, int(model.nu)),
         "keyframes": (mujoco.mjtObj.mjOBJ_KEY, int(model.nkey)),
     }
-    result: dict[str, list[str]] = {}
+    result: dict[str, Any] = {}
     for field, (object_type, count) in object_types.items():
         names: list[str] = []
         for index in range(count):
@@ -704,6 +726,24 @@ def inspect_scene_entities(scene_path: str | Path) -> dict[str, list[str]]:
                 # Trusted evidence uses this stable alias for unnamed geoms.
                 names.append(f"geom_{index}")
         result[field] = sorted(names)
+    joint_units: dict[str, str] = {}
+    joint_ranges: dict[str, list[float]] = {}
+    for joint_id in range(int(model.njnt)):
+        name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, joint_id)
+        if not isinstance(name, str) or not name:
+            continue
+        joint_type = int(model.jnt_type[joint_id])
+        if joint_type == int(mujoco.mjtJoint.mjJNT_HINGE):
+            joint_units[name] = "rad"
+        elif joint_type == int(mujoco.mjtJoint.mjJNT_SLIDE):
+            joint_units[name] = "m"
+        if name in joint_units and bool(model.jnt_limited[joint_id]):
+            lower = float(model.jnt_range[joint_id][0])
+            upper = float(model.jnt_range[joint_id][1])
+            if math.isfinite(lower) and math.isfinite(upper) and lower < upper:
+                joint_ranges[name] = [lower, upper]
+    result["joint_units"] = dict(sorted(joint_units.items()))
+    result["joint_ranges"] = dict(sorted(joint_ranges.items()))
     return result
 
 
@@ -761,6 +801,122 @@ def _validate_entities(
                     f"measurement parameters.{field} references unknown "
                     f"{base_kind} {name!r} in selected scene"
                 )
+
+
+def _validate_final_joint_position_conversion(
+    kind: str,
+    unit: str,
+    parameters: Mapping[str, Any],
+    target_schema: Mapping[str, Any] | None,
+    *,
+    scene_path: Path | None,
+    scene_entities: Mapping[str, Any] | None,
+) -> None:
+    if kind != "final_joint_position_error":
+        return
+    if scene_entities is None:
+        if scene_path is None:
+            raise MeasurementOperatorError(
+                "selected scene joint units are unavailable for measurement audit"
+            )
+        scene_entities = inspect_scene_entities(scene_path)
+    raw_joint_units = scene_entities.get("joint_units")
+    if not isinstance(raw_joint_units, Mapping) or any(
+        not isinstance(name, str) or value not in {"rad", "m"}
+        for name, value in raw_joint_units.items()
+    ):
+        raise MeasurementOperatorError(
+            "selected scene has no valid joint_units catalog"
+        )
+    joint_name = str(parameters["joint_name"])
+    expected_unit = raw_joint_units.get(joint_name)
+    if expected_unit is None:
+        raise MeasurementOperatorError(
+            "final_joint_position_error requires a scalar hinge or slide joint; "
+            f"{joint_name!r} is not one"
+        )
+    if unit != expected_unit:
+        raise MeasurementOperatorError(
+            f"final_joint_position_error for joint {joint_name!r} must use "
+            f"unit {expected_unit!r}, not {unit!r}"
+        )
+    scale = float(parameters.get("target_scale", 1.0))
+    offset = float(parameters.get("target_offset", 0.0))
+    if scale <= 0.0:
+        raise MeasurementOperatorError(
+            "final_joint_position_error target_scale must be positive"
+        )
+    if not isinstance(target_schema, Mapping):
+        raise MeasurementOperatorError(
+            "final_joint_position_error target_argument has no sealed schema"
+        )
+    request_unit = target_schema.get("unit")
+    if request_unit == unit:
+        if scale != 1.0 or offset != 0.0:
+            raise MeasurementOperatorError(
+                "same-unit joint targets require target_scale=1 and target_offset=0"
+            )
+        return
+    if request_unit not in {"fraction", "ratio", "unitless", "none", "1"}:
+        raise MeasurementOperatorError(
+            "non-identity joint target conversion requires a dimensionless sealed "
+            "request field"
+        )
+    evidence_refs = target_schema.get("evidence_refs")
+    if not isinstance(evidence_refs, list) or not evidence_refs or any(
+        not isinstance(ref, Mapping)
+        or not isinstance(ref.get("source_id"), str)
+        or not ref["source_id"].strip()
+        or not isinstance(ref.get("specific_reference"), str)
+        or not ref["specific_reference"].strip()
+        for ref in evidence_refs
+    ):
+        raise MeasurementOperatorError(
+            "joint target conversion requires evidence-backed sealed request bounds"
+        )
+    request_lower = target_schema.get("minimum")
+    request_upper = target_schema.get("maximum")
+    if not _is_number(request_lower) or not _is_number(request_upper):
+        raise MeasurementOperatorError(
+            "joint target conversion requires finite sealed minimum and maximum"
+        )
+    request_lower = float(request_lower)
+    request_upper = float(request_upper)
+    if request_lower >= request_upper:
+        raise MeasurementOperatorError(
+            "joint target conversion requires increasing sealed request bounds"
+        )
+    raw_joint_ranges = scene_entities.get("joint_ranges")
+    raw_joint_range = (
+        raw_joint_ranges.get(joint_name)
+        if isinstance(raw_joint_ranges, Mapping)
+        else None
+    )
+    if (
+        not isinstance(raw_joint_range, list)
+        or len(raw_joint_range) != 2
+        or not all(_is_number(value) for value in raw_joint_range)
+        or float(raw_joint_range[0]) >= float(raw_joint_range[1])
+    ):
+        raise MeasurementOperatorError(
+            "joint target conversion requires a finite selected-scene joint range"
+        )
+    joint_lower = float(raw_joint_range[0])
+    joint_upper = float(raw_joint_range[1])
+    expected_scale = (joint_upper - joint_lower) / (
+        request_upper - request_lower
+    )
+    expected_offset = joint_lower - request_lower * expected_scale
+    if not math.isclose(scale, expected_scale, rel_tol=1.0e-9, abs_tol=1.0e-12):
+        raise MeasurementOperatorError(
+            "target_scale does not match the evidence-backed sealed-to-joint "
+            f"conversion ({expected_scale!r})"
+        )
+    if not math.isclose(offset, expected_offset, rel_tol=1.0e-9, abs_tol=1.0e-12):
+        raise MeasurementOperatorError(
+            "target_offset does not match the evidence-backed sealed-to-joint "
+            f"conversion ({expected_offset!r})"
+        )
 
 
 def audit_inline_measurement_binding(
@@ -829,13 +985,33 @@ def audit_inline_measurement_binding(
                 f"measurement_binding.parameters.{field} must have type {expected}"
             )
     _assert_finite_json(parameters, where="measurement_binding.parameters")
-    for field in spec["request_path_parameters"]:
-        _schema_at_request_path(request_schema, str(parameters[field]))
+    request_path_schemas = {
+        field: _schema_at_request_path(request_schema, str(parameters[field]))
+        for field in spec["request_path_parameters"]
+    }
+    resolved_scene_path = (
+        Path(scene_path).resolve() if scene_path is not None else None
+    )
+    resolved_scene_entities = scene_entities
+    if (
+        resolved_scene_entities is None
+        and resolved_scene_path is not None
+        and spec["entity_parameters"]
+    ):
+        resolved_scene_entities = inspect_scene_entities(resolved_scene_path)
     _validate_entities(
         parameters,
         spec["entity_parameters"],
-        scene_path=Path(scene_path).resolve() if scene_path is not None else None,
-        scene_entities=scene_entities,
+        scene_path=resolved_scene_path,
+        scene_entities=resolved_scene_entities,
+    )
+    _validate_final_joint_position_conversion(
+        kind,
+        str(binding["unit"]),
+        parameters,
+        request_path_schemas.get("target_argument"),
+        scene_path=resolved_scene_path,
+        scene_entities=resolved_scene_entities,
     )
     return copy.deepcopy(dict(binding))
 

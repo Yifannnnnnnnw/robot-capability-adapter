@@ -26,10 +26,16 @@ from autoadapter2.react import ReactLoopError, run_artifact_react
 from .protocol import (
     CAPABILITY_INVOCATION_ABI,
     CAPABILITY_PROTOCOL_VERSION,
+    CRITERION_AGGREGATION_KINDS,
+    CRITERION_TEMPORAL_KINDS,
+    NUMERIC_CRITERION_AGGREGATION_KINDS,
+    NUMERIC_CRITERION_TEMPORAL_KINDS,
     CapabilityProtocolError,
     CapabilitySchemaError,
+    capability_execution_contract,
     capability_methods,
     capability_records,
+    is_authorable_numeric_criterion,
     json_copy,
     validate_schema_definition,
     validate_structured_criterion,
@@ -43,7 +49,9 @@ morphology and source-backed Task Library. Do not select from a primitive_family
 Each capability is one single-call physical effect and must have a unique capability_id and
 Python method_name, a concise description and effect, a closed task-neutral request_schema,
 preconditions, temporal_semantics, invariants, failure_behavior, and source-grounded structured
-criteria. Each capability has exactly one top-level criterion. Every non-object request-schema
+criteria. Each capability has exactly one top-level criterion. Its temporal and aggregation rules
+must use an executable supplied `kind`; for a single terminal numeric measurement, use
+temporal={"kind":"terminal_state"} and aggregation={"kind":"single_trial"}. Every non-object request-schema
 node has its own explicit unit and frame, numeric bounds are finite where relevant, and every node
 carrying a numeric bound also carries its own public evidence_refs. These rules are recursive:
 an array node itself needs minItems, maxItems, unit, and frame; its items object is a separate full
@@ -60,7 +68,9 @@ no ordered calls, waypoints, macro, plan, reset, scene, criterion, or private va
 every supplied task and every authored capability at least once. Do not
 return code, Driver/Repair material, hidden instances, exact private requests, oracle plans, or
 a self-reported verdict. The public reference catalog is background evidence only: author the
-capabilities yourself and do not copy task mappings from it."""
+capabilities yourself and do not copy task mappings from it. For a transfer robot, SO-101/Go2 rich
+temporal and aggregation contracts remain class-level design examples, not selectable execution
+semantics; use the generic terminal_state/single_trial contract exposed by validator_contract."""
 
 
 TGCD_ARTIFACT_TURNS = 6
@@ -398,6 +408,16 @@ def build_public_tgcd_inputs(
         json_copy(references[index], label=f"matching_reference[{index}]")
         for index in matching_reference_indices
     ]
+    criterion_temporal_kinds = (
+        CRITERION_TEMPORAL_KINDS
+        if matching_references
+        else NUMERIC_CRITERION_TEMPORAL_KINDS
+    )
+    criterion_aggregation_kinds = (
+        CRITERION_AGGREGATION_KINDS
+        if matching_references
+        else NUMERIC_CRITERION_AGGREGATION_KINDS
+    )
     return {
         "capability_protocol_version": CAPABILITY_PROTOCOL_VERSION,
         "invocation_abi": json_copy(
@@ -440,6 +460,14 @@ def build_public_tgcd_inputs(
                 "aggregation": "non-empty JSON object; strings are invalid",
                 "source_refs": "non-empty evidence-ref array",
             },
+            "criterion_temporal_kinds": sorted(criterion_temporal_kinds),
+            "criterion_temporal_kind_prefixes": [],
+            "criterion_aggregation_kinds": sorted(criterion_aggregation_kinds),
+            "generic_numeric_criterion_contract": {
+                "temporal": {"kind": "terminal_state"},
+                "aggregation": {"kind": "single_trial"},
+            },
+            "semantic_reference_contracts_are_selectable_only_for_exact_matching_reference": True,
             "request_schema_supported_keywords": [
                 "type",
                 "properties",
@@ -518,11 +546,46 @@ def validate_capability_design(
     require_task_support: bool = True,
 ) -> dict[str, Any]:
     try:
-        return _validate_capability_design(
+        canonical = _validate_capability_design(
             design,
             package=package,
             require_task_support=require_task_support,
         )
+        semantic_capabilities = [
+            capability
+            for capability in canonical["capabilities"]
+            if not is_authorable_numeric_criterion(capability["criteria"][0])
+        ]
+        if semantic_capabilities:
+            robot_id = canonical["robot_configuration_id"]
+            reference = next(
+                (
+                    item
+                    for item in load_public_reference_catalog()
+                    if item.get("robot_configuration_id") == robot_id
+                ),
+                None,
+            )
+            reference_capabilities = {
+                item.get("capability_id"): item
+                for item in reference.get("capabilities", [])
+                if isinstance(item, Mapping)
+            } if isinstance(reference, Mapping) else {}
+            for capability in semantic_capabilities:
+                capability_id = capability["capability_id"]
+                expected = reference_capabilities.get(capability_id)
+                if not isinstance(expected, Mapping) or (
+                    capability_execution_contract(capability)
+                    != capability_execution_contract(expected)
+                ):
+                    raise CapabilityProtocolError(
+                        f"capability {capability_id!r} uses a rich semantic criterion "
+                        "without the exact matching SO-101/Go2 reference request "
+                        "schema and criterion. Class references are design aids; "
+                        "otherwise use temporal.kind='terminal_state' and "
+                        "aggregation.kind='single_trial'"
+                    )
+        return canonical
     except CapabilityProtocolError as exc:
         raise CapabilityDesignError(str(exc)) from None
 
@@ -656,7 +719,13 @@ def run_tgcd(
                         "unit/frame/evidence do not propagate, and numeric items need their own "
                         "unit, frame, finite bounds, and evidence_refs. Each capability has exactly "
                         "one criterion; its temporal and aggregation fields must each be a non-empty "
-                        "JSON object, never a string. Keep capabilities as "
+                        "JSON object, never a string, and must use a supported executable kind from "
+                        "validator_contract. Prefer temporal.kind=terminal_state and "
+                        "aggregation.kind=single_trial for one terminal numeric measurement. When "
+                        "matching_capability_references is empty, these are the only authorable "
+                        "numeric temporal/aggregation kinds: the complete SO-101/Go2 references "
+                        "remain class-level design aids and their rich semantic criteria are not "
+                        "generic transfer execution contracts. Keep capabilities as "
                         "reusable single physical effects, not task operations such as whole-object "
                         "push/grasp/release or fixture-specific macros. You must independently add the "
                         "required preconditions, temporal semantics, invariants, failure behavior, "

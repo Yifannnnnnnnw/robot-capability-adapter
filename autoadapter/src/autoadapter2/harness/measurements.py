@@ -210,6 +210,15 @@ def _positive_number(value: Any, name: str) -> float:
     return result
 
 
+def _finite_number(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise MeasurementError(f"{name} must be numeric")
+    result = float(value)
+    if not math.isfinite(result):
+        raise MeasurementError(f"{name} must be finite")
+    return result
+
+
 def _positive_integer(value: Any, name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise MeasurementError(f"{name} must be a positive integer")
@@ -911,8 +920,23 @@ def measure(
         )
         return _distance(actual[:2], target[:2])
     if kind == "final_joint_position_error":
-        actual = _joint_position(final, str(parameters["joint_name"]))
-        target = float(_argument(public_arguments, str(parameters["target_argument"])))
+        actual = _finite_number(
+            _joint_position(final, str(parameters["joint_name"])),
+            "terminal joint position",
+        )
+        request_value = _finite_number(
+            _argument(public_arguments, str(parameters["target_argument"])),
+            "joint target request value",
+        )
+        target_scale = _finite_number(
+            parameters.get("target_scale", 1.0), "target_scale"
+        )
+        target_offset = _finite_number(
+            parameters.get("target_offset", 0.0), "target_offset"
+        )
+        target = request_value * target_scale + target_offset
+        if not math.isfinite(target):
+            raise MeasurementError("scaled joint target must be finite")
         return abs(actual - target)
     if kind == "joint_range":
         values = [_joint_position(sample, str(parameters["joint_name"])) for sample in samples]

@@ -25,7 +25,10 @@ from typing import Any, Protocol
 
 from autoadapter2.capability_design.protocol import (
     CAPABILITY_PROTOCOL_VERSION,
+    NUMERIC_CRITERION_AGGREGATION_KINDS,
+    NUMERIC_CRITERION_TEMPORAL_KINDS,
     CapabilityProtocolError,
+    capability_execution_contract,
     capability_records,
     json_copy,
     validate_schema_definition,
@@ -39,6 +42,7 @@ from autoadapter2.harness.operators import (
     inspect_scene_entities,
     measurement_operator_catalog,
     measurement_operator_evaluation_mode,
+    trusted_reference_contract_id,
 )
 from autoadapter2.react import ReactLoopError, run_artifact_react
 
@@ -59,6 +63,15 @@ capability contracts and task_support relation, sanitized scene/reset contexts, 
 trusted measurement-operator catalog, and complete SO-101/Go2 worked references. You cannot see and
 must not infer candidate Driver source, generated traces, Repair history, or a candidate verdict.
 
+The complete input is compact JSON in ivc_inputs.json. Use execute_python for targeted queries; do
+not print the full scene, Task Library, operator, or worked-reference collections. With a six-turn
+budget, turns one and two are the only inspection turns and turns three through six are write-only
+delivery/correction turns. Every delivery write is immediately audited and any deterministic error
+is returned in this same conversation. Large artifacts may use bounded append writes. When a sealed
+request expresses a scaled joint target, use target_scale and target_offset only when those closed
+parameters are declared by the selected trusted operator-catalog entry; never invent an operator
+parameter.
+
 Return one JSON object with artifact_type='capability_validation_suite', schema_version='2.0',
 capability_protocol_version='capability-v2', the supplied package identity, and exactly two cases
 for every sealed capability: one case_role='nominal' and one case_role='calibrated_boundary'.
@@ -68,7 +81,10 @@ not IDs to select. Every request must satisfy the sealed request_schema and any 
 selected instance. The nominal and calibrated-boundary requests for one capability must differ. Give
 request_grounding_refs that resolve to sealed-schema or supplied calibration evidence. Copy the sealed
 criteria and every referenced numeric value exactly. Use only a kind and closed parameters from the
-trusted operator catalog. Set whole_suite_aggregation={'kind':'all_cases'}. Never emit binding_id,
+trusted operator catalog. Complete SO-101/Go2 worked references remain class-level design examples;
+their fixed semantic operators are selectable only when the scoped operator catalog explicitly lists
+the exact matching reference capability. Transfer designs use a generic numeric operator with the
+terminal_state/single_trial criterion contract. Set whole_suite_aggregation={'kind':'all_cases'}. Never emit binding_id,
 Python/code, task dispatch, task IDs, Driver or Repair material, implementation advice, or a
 self-reported verdict."""
 
@@ -166,6 +182,102 @@ def load_sanitized_ivc_examples(
     """Compatibility alias for the former sanitized-example API name."""
 
     return load_ivc_worked_references(path)
+
+
+def _semantic_reference_contracts() -> dict[str, dict[str, Any]]:
+    """Index fixed B1 semantic operators by their sealed worked contract."""
+
+    result: dict[str, dict[str, Any]] = {}
+    for reference in load_ivc_worked_references():
+        design = reference.get("capability_design")
+        suite = reference.get("validation_suite")
+        if not isinstance(design, Mapping) or not isinstance(suite, Mapping):
+            raise IVCError("IVC worked reference is missing design or suite")
+        robot_id = suite.get("robot_configuration_id")
+        if not isinstance(robot_id, str) or not robot_id.strip():
+            raise IVCError("IVC worked reference has no robot identity")
+        capabilities = _design_map(design)
+        cases = suite.get("cases")
+        if not isinstance(cases, list):
+            raise IVCError("IVC worked reference suite has no cases")
+        for case in cases:
+            if not isinstance(case, Mapping):
+                raise IVCError("IVC worked reference contains a non-object case")
+            binding = case.get("measurement_binding")
+            capability_id = case.get("capability_id")
+            if not isinstance(binding, Mapping) or not isinstance(capability_id, str):
+                raise IVCError("IVC worked reference case is incomplete")
+            kind = binding.get("kind")
+            if not isinstance(kind, str) or (
+                measurement_operator_evaluation_mode(kind)
+                != "trusted_criterion_verdict"
+            ):
+                continue
+            capability = capabilities.get(capability_id)
+            if capability is None:
+                raise IVCError("IVC worked reference case has unknown capability")
+            contract_id = trusted_reference_contract_id(kind)
+            if contract_id != capability_id:
+                raise IVCError(
+                    "IVC semantic operator and worked capability identity disagree"
+                )
+            record = {
+                "robot_configuration_id": robot_id,
+                "capability_id": capability_id,
+                "execution_contract": capability_execution_contract(capability),
+            }
+            previous = result.get(kind)
+            if previous is not None and previous != record:
+                raise IVCError(f"IVC semantic operator {kind!r} is ambiguous")
+            result[kind] = record
+    return result
+
+
+def _scoped_measurement_operator_catalog(
+    *,
+    package: Any,
+    design: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Hide fixed SO/Go execution operators outside their exact contracts."""
+
+    catalog = measurement_operator_catalog()
+    operators = catalog.get("operators")
+    if not isinstance(operators, list):  # pragma: no cover - trusted static catalog
+        raise IVCError("trusted measurement operator catalog is invalid")
+    robot_id = _package_identity(package).get("robot_configuration_id")
+    capabilities = _design_map(design)
+    semantic_contracts = _semantic_reference_contracts()
+    visible: list[dict[str, Any]] = []
+    for operator in operators:
+        if not isinstance(operator, Mapping):
+            raise IVCError("trusted measurement operator catalog is invalid")
+        kind = operator.get("kind")
+        if measurement_operator_evaluation_mode(kind) != "trusted_criterion_verdict":
+            visible.append(json_copy(dict(operator), label="measurement operator"))
+            continue
+        reference = semantic_contracts.get(kind) if isinstance(kind, str) else None
+        capability = (
+            capabilities.get(reference["capability_id"])
+            if isinstance(reference, Mapping)
+            else None
+        )
+        if (
+            isinstance(reference, Mapping)
+            and robot_id == reference["robot_configuration_id"]
+            and capability is not None
+            and capability_execution_contract(capability)
+            == reference["execution_contract"]
+        ):
+            projected = json_copy(dict(operator), label="measurement operator")
+            projected["execution_scope"] = {
+                "robot_configuration_id": reference["robot_configuration_id"],
+                "capability_id": reference["capability_id"],
+                "requires_exact_worked_reference_contract": True,
+            }
+            visible.append(projected)
+    result = json_copy(dict(catalog), label="measurement operator catalog")
+    result["operators"] = visible
+    return result
 
 
 def _private_inputs_from_package(package: Any) -> dict[str, Any]:
@@ -625,30 +737,6 @@ _IVC_CASE_FIELDS = {
     "timeout_sim_s",
     "criteria",
 }
-_NUMERIC_TEMPORAL_KINDS = {
-    "fixed_trials",
-    "terminal_step",
-    "fixed_horizon",
-    "dwell",
-    "eventual",
-    "within",
-    "continuous",
-}
-_NUMERIC_AGGREGATION_KINDS = {
-    "all_trials",
-    "single_trial",
-    "all_four_fingertips",
-    "same_state_conjunction",
-    "maximum_over_all_16_joints",
-    "maximum_over_control_steps",
-    "count_successful_steps",
-    "count_events",
-    "mean_over_control_steps",
-    "per_trial",
-    "per_trial_mean",
-}
-
-
 def _package_root(package: Any) -> Path | None:
     value = package.get("root") if isinstance(package, Mapping) else getattr(package, "root", None)
     if isinstance(value, str):
@@ -808,6 +896,7 @@ def validate_capability_validation_suite(
     instances = _id_map(private.get("instances"), field="instances", id_field="instance_id")
     guards = _id_map(private.get("guards"), field="guards", id_field="guard_id")
     capabilities = _design_map(design)
+    semantic_reference_contracts = _semantic_reference_contracts()
     cases = suite.get("cases")
     expected_count = 2 * len(capabilities)
     if not isinstance(cases, list) or len(cases) != expected_count:
@@ -920,9 +1009,32 @@ def validate_capability_validation_suite(
             )
         except MeasurementOperatorError as exc:
             raise IVCError(f"{where}: {exc}") from None
-        if measurement_operator_evaluation_mode(binding.get("kind")) != (
-            "trusted_criterion_verdict"
-        ):
+        evaluation_mode = measurement_operator_evaluation_mode(binding.get("kind"))
+        if evaluation_mode == "trusted_criterion_verdict":
+            kind = binding.get("kind")
+            reference = (
+                semantic_reference_contracts.get(kind)
+                if isinstance(kind, str)
+                else None
+            )
+            package_robot_id = _package_identity(package).get(
+                "robot_configuration_id"
+            )
+            if not (
+                isinstance(reference, Mapping)
+                and package_robot_id == reference["robot_configuration_id"]
+                and capability_id == reference["capability_id"]
+                and capability_execution_contract(capability)
+                == reference["execution_contract"]
+            ):
+                raise IVCError(
+                    f"{where} selects fixed semantic operator {kind!r} outside "
+                    "its exact SO-101/Go2 worked-reference robot, capability, "
+                    "request schema, and criterion contract. The complete "
+                    "reference is a design aid; use a generic numeric operator "
+                    "for a transfer capability"
+                )
+        else:
             temporal = criterion.get("temporal")
             aggregation = criterion.get("aggregation")
             temporal_kind = temporal.get("kind") if isinstance(temporal, Mapping) else None
@@ -932,15 +1044,14 @@ def validate_capability_validation_suite(
             if not (
                 isinstance(temporal_kind, str)
                 and (
-                    temporal_kind in _NUMERIC_TEMPORAL_KINDS
-                    or temporal_kind.startswith("terminal_state")
+                    temporal_kind in NUMERIC_CRITERION_TEMPORAL_KINDS
                 )
             ):
                 raise IVCError(
                     f"{where} sealed temporal criterion {temporal_kind!r} cannot be "
                     "expressed by this numeric trusted operator"
                 )
-            if aggregation_kind not in _NUMERIC_AGGREGATION_KINDS:
+            if aggregation_kind not in NUMERIC_CRITERION_AGGREGATION_KINDS:
                 raise IVCError(
                     f"{where} sealed aggregation criterion {aggregation_kind!r} cannot be "
                     "expressed by this numeric trusted operator"
@@ -1069,6 +1180,11 @@ def build_ivc_inputs(
             ],
             "instance_and_guard_ids_must_be_supplied": True,
             "measurement_binding_is_ivc_authored_inline": True,
+            "generic_numeric_criterion_contract": {
+                "temporal": {"kind": "terminal_state"},
+                "aggregation": {"kind": "single_trial"},
+            },
+            "fixed_semantic_operators_require_exact_worked_reference_contract": True,
             "binding_id_is_forbidden": True,
             "nominal_and_boundary_requests_must_differ": True,
             "candidate_never_receives_measurement_criteria_or_guards": True,
@@ -1078,7 +1194,10 @@ def build_ivc_inputs(
         "private_instances": copied_private.get("instances", {}),
         "trusted_measurement_examples": copied_private.get("bindings", {}),
         "private_guards": copied_private.get("guards", {}),
-        "measurement_operator_catalog": measurement_operator_catalog(),
+        "measurement_operator_catalog": _scoped_measurement_operator_catalog(
+            package=package,
+            design=design,
+        ),
         "scene_entity_catalog": {
             "asset_root": "read-only public_package/assets",
             "execute_python_environment": "AUTOADAPTER_PROBE_PUBLIC_PACKAGE",
@@ -1200,7 +1319,7 @@ def run_ivc(
                 package=None if isinstance(package, Mapping) else package,
             )
             (session.workspace / "ivc_inputs.json").write_text(
-                json.dumps(inputs, indent=2, ensure_ascii=True) + "\n",
+                json.dumps(inputs, ensure_ascii=True, separators=(",", ":")) + "\n",
                 encoding="utf-8",
             )
             working_artifact = session.workspace / IVC_ARTIFACT_NAME
@@ -1216,7 +1335,11 @@ def run_ivc(
                 )
 
             authoring_brief = json.dumps(
-                inputs,
+                {
+                    "artifact_header": inputs["artifact_header"],
+                    "validator_contract": inputs["validator_contract"],
+                    "sealed_capability_design": inputs["sealed_capability_design"],
+                },
                 ensure_ascii=True,
                 separators=(",", ":"),
             )
@@ -1226,17 +1349,23 @@ def run_ivc(
                     stage="ivc",
                     system_prompt=IVC_SYSTEM_PROMPT,
                     user_prompt=(
-                        "Read ivc_inputs.json, which is raw JSON in the phase-workspace root "
-                        "and is directly openable as ./ivc_inputs.json from execute_python; "
-                        f"there is no result wrapper. The complete authoring brief is included "
-                        f"here verbatim: {authoring_brief}. Copy artifact_header unchanged at the "
-                        "suite top level and follow validator_contract exactly. Author the complete canonical "
+                        "The complete raw input is compact JSON at ./ivc_inputs.json in the "
+                        "phase-workspace root; there is no result wrapper. Use execute_python "
+                        "for targeted queries instead of printing the full scene, Task Library, "
+                        "operator, or worked-reference collections. The compact core authoring "
+                        f"brief is included here verbatim: {authoring_brief}. Copy artifact_header "
+                        "unchanged at the suite top level and follow validator_contract exactly. "
+                        "Author the complete canonical "
                         f"{IVC_ARTIFACT_NAME} with write_file. You may use execute_python "
                         "for credential-free calibration calculations and may inspect the read-only "
-                        "public assets root through AUTOADAPTER_PROBE_PUBLIC_PACKAGE. Use at most two turns for "
-                        "inspection, then call write_file with an initial complete artifact by "
-                        "turn three. Turns five and six are reserved for delivery and one "
-                        "correction after deterministic validation feedback. End the turn when the "
+                        "public assets root through AUTOADAPTER_PROBE_PUBLIC_PACKAGE. Turns one and "
+                        "two are the only inspection turns. Turns three through six are write-only "
+                        "delivery/correction turns, and the Framework validates after every one. "
+                        "Start writing by turn three. For a large artifact, use append=false for "
+                        "the first safe text chunk and append=true for later chunks; only the "
+                        "combined file must parse. For scaled joint targets, use target_scale and "
+                        "target_offset only when the selected operator-catalog entry declares them. "
+                        "End the turn when the "
                         "artifact is ready; there is no submit or check tool."
                     ),
                     tools=session.artifact_tools(),
@@ -1244,6 +1373,7 @@ def run_ivc(
                     artifact_path=working_artifact,
                     validate_artifact=validate_file,
                     max_turns=max_turns,
+                    delivery_turns=max(1, max_turns - 2),
                 )
             except ReactLoopError as exc:
                 raise IVCError(
