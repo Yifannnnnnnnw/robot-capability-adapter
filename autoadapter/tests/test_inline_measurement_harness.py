@@ -374,6 +374,60 @@ def _joint_evidence(actual: float) -> dict[str, Any]:
     }
 
 
+def test_inline_binding_reports_operator_field_as_kind_authoring_error() -> None:
+    with pytest.raises(
+        MeasurementOperatorError,
+        match="rename it to 'kind'.*trusted catalog key",
+    ):
+        audit_inline_measurement_binding(
+            {
+                "metric": "position_error",
+                "unit": "m",
+                "operator": "final_site_position_error",
+                "parameters": {},
+            },
+            criterion={"metric": "position_error", "unit": "m"},
+            request_schema={},
+        )
+
+
+def test_inline_binding_reports_evaluation_mode_as_non_kind() -> None:
+    with pytest.raises(
+        MeasurementOperatorError,
+        match="Framework evaluation metadata, not a trusted catalog kind",
+    ):
+        audit_inline_measurement_binding(
+            {
+                "metric": "position_error",
+                "unit": "m",
+                "kind": "numeric_measurement",
+                "parameters": {},
+            },
+            criterion={"metric": "position_error", "unit": "m"},
+            request_schema={},
+        )
+
+
+def test_inline_binding_rejects_catalog_signature_as_parameter_value() -> None:
+    with pytest.raises(
+        MeasurementOperatorError,
+        match="catalog type/source signature",
+    ):
+        audit_inline_measurement_binding(
+            {
+                "metric": "position_error",
+                "unit": "m",
+                "kind": "final_site_position_error",
+                "parameters": {
+                    "site_name": "entity:site",
+                    "target_argument": "request_path:number_array_3",
+                },
+            },
+            criterion={"metric": "position_error", "unit": "m"},
+            request_schema={},
+        )
+
+
 def test_scaled_slide_joint_target_is_audited_and_measured(tmp_path: Path) -> None:
     binding = _joint_binding(
         metric="aperture_position_error",

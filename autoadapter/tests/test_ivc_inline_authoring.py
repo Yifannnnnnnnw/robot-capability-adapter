@@ -314,7 +314,9 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
         "private_instance_records",
         "private_instance_shared_execution_fields",
         "sealed_authoring_contract",
-        "unit_compatible_operator_signatures_by_kind",
+        "measurement_binding_contract",
+        "operator_parameter_signature_legend",
+        "measurement_binding_kind_catalog",
         "scene_declared_frame_aliases",
     }
     assert set(capability_entry) == {
@@ -362,10 +364,10 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
         "task_support_by_capability"
     ] == {"N1": ["task-a", "task-z"]}
     assert "verbose-a" not in json.dumps(authoring_index)
-    operator_signatures = authoring_index[
-        "unit_compatible_operator_signatures_by_kind"
-    ]
-    assert operator_signatures["final_site_position_error"]["parameters"] == {
+    operator_signatures = authoring_index["measurement_binding_kind_catalog"]
+    assert operator_signatures["final_site_position_error"][
+        "parameter_types_not_values"
+    ] == {
         "site_name": "entity:site",
         "target_argument": "request_path:number_array_3",
     }
@@ -376,6 +378,21 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
         if "m" in operator["output_units"]
     }
     assert set(operator_signatures) == expected_operator_kinds
+    assert authoring_index["measurement_binding_contract"]["exact_fields"] == [
+        "metric",
+        "unit",
+        "kind",
+        "parameters",
+    ]
+    assert authoring_index["measurement_binding_contract"]["forbidden_fields"] == [
+        "operator",
+        "mode",
+        "evaluation_mode",
+        "binding_id",
+    ]
+    assert "replace with exact" in authoring_index[
+        "operator_parameter_signature_legend"
+    ]["entity:<type>"]
     for operator in inputs["measurement_operator_catalog"]["operators"]:
         if operator["kind"] not in expected_operator_kinds:
             continue
@@ -392,12 +409,15 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
                 signature = f"optional:{signature}"
             expected_parameters[name] = signature
         projected = operator_signatures[operator["kind"]]
-        assert projected["units"] == operator["output_units"]
-        assert projected["parameters"] == expected_parameters
-        assert projected["purpose"] == operator["description"]
-        assert projected.get("mode", "numeric_measurement") == operator.get(
-            "evaluation_mode", "numeric_measurement"
-        )
+        assert projected["allowed_binding_units"] == operator["output_units"]
+        assert projected["parameter_types_not_values"] == expected_parameters
+        assert "purpose" not in projected
+        if operator.get("evaluation_mode") in (None, "numeric_measurement"):
+            assert "framework_evaluation_mode_not_a_binding_field" not in projected
+        else:
+            assert projected[
+                "framework_evaluation_mode_not_a_binding_field"
+            ] == operator["evaluation_mode"]
     assert capability_entry[
         "allowed_request_grounding_refs_from_sealed_schema"
     ] == [
@@ -539,9 +559,7 @@ def test_real_kinova_authoring_index_is_compact_and_projects_robot_base() -> Non
             design["capabilities"][0]["request_schema"]
         )
     )
-    operator_signatures = authoring_index[
-        "unit_compatible_operator_signatures_by_kind"
-    ]
+    operator_signatures = authoring_index["measurement_binding_kind_catalog"]
     assert "final_site_frame_xyz_position_error" in operator_signatures
     assert "final_joint_position_error" in operator_signatures
     alias_group = next(
@@ -671,9 +689,21 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     assert '"instance_id":"novel-scene"' in first_prompt
     assert '"mandatory_guard_ids":["control","state","canonical"]' in first_prompt
     assert '"allowed_request_grounding_refs_from_sealed_schema"' in first_prompt
-    assert '"unit_compatible_operator_signatures_by_kind"' in first_prompt
+    assert '"measurement_binding_contract"' in first_prompt
+    assert (
+        '"forbidden_fields":["operator","mode","evaluation_mode","binding_id"]'
+        in first_prompt
+    )
+    normalized_system_prompt = " ".join(IVC_SYSTEM_PROMPT.split()).lower()
+    assert (
+        "never copy a signature marker as a parameter value"
+        in normalized_system_prompt
+    )
+    assert "operator, mode, and" in IVC_SYSTEM_PROMPT
+    assert '"measurement_binding_kind_catalog"' in first_prompt
+    assert '"unit_compatible_operator_signatures_by_kind"' not in first_prompt
     assert '"final_site_position_error"' in first_prompt
-    assert '"parameters":{"site_name":"entity:site","target_argument":"request_path:number_array_3"}' in first_prompt
+    assert '"parameter_types_not_values":{"site_name":"entity:site","target_argument":"request_path:number_array_3"}' in first_prompt
     assert '"scenes":"ivc_inputs.json::scene_entity_catalog.scenes"' in first_prompt
     assert '"rooted_request_paths":["request.target_m"]' in first_prompt
     assert "measurement_operator_catalog.operators" in first_prompt

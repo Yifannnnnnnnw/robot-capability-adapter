@@ -869,6 +869,17 @@ def _assert_finite_json(value: Any, *, where: str) -> None:
     raise MeasurementOperatorError(f"{where} contains a non-JSON value")
 
 
+def _walk_json_values(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        for child in value.values():
+            yield from _walk_json_values(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _walk_json_values(child)
+    else:
+        yield value
+
+
 def _schema_at_request_path(request_schema: Mapping[str, Any], path: str) -> Mapping[str, Any]:
     parts = path.split(".")
     if len(parts) < 2 or parts[0] != "request" or any(not part for part in parts):
@@ -1592,6 +1603,13 @@ def audit_inline_measurement_binding(
         raise MeasurementOperatorError("measurement_binding must be an object")
     allowed_fields = {"metric", "unit", "kind", "parameters"}
     if set(binding) != allowed_fields:
+        if "operator" in binding and "kind" not in binding:
+            raise MeasurementOperatorError(
+                "measurement_binding uses forbidden field 'operator'; rename it "
+                "to 'kind', set its value to an exact trusted catalog key (not "
+                "numeric_measurement), copy metric/unit from the sealed criterion, "
+                "and keep exactly metric, unit, kind, parameters"
+            )
         missing = sorted(allowed_fields - set(binding))
         extra = sorted(set(binding) - allowed_fields)
         raise MeasurementOperatorError(
@@ -1611,6 +1629,12 @@ def audit_inline_measurement_binding(
             "measurement_binding.unit must equal the sealed criterion unit"
         )
     kind = str(binding["kind"])
+    if kind == "numeric_measurement":
+        raise MeasurementOperatorError(
+            "measurement_binding.kind 'numeric_measurement' is Framework evaluation "
+            "metadata, not a trusted catalog kind; use an exact "
+            "measurement_binding_kind_catalog key"
+        )
     if kind == "b1_contract":
         raise MeasurementOperatorError(
             "capability-v2 measurement_binding cannot use b1_contract"
@@ -1628,6 +1652,18 @@ def audit_inline_measurement_binding(
     parameters = binding.get("parameters")
     if not isinstance(parameters, Mapping):
         raise MeasurementOperatorError("measurement_binding.parameters must be an object")
+    signature_markers = (
+        value
+        for value in _walk_json_values(parameters)
+        if isinstance(value, str)
+        and value.startswith(("entity:", "request_path:", "optional:"))
+    )
+    marker = next(signature_markers, None)
+    if marker is not None:
+        raise MeasurementOperatorError(
+            f"measurement_binding parameter value {marker!r} is a catalog type/source "
+            "signature, not an actual scene entity, rooted request.* path, or JSON value"
+        )
     schema = spec["parameter_schema"]
     required = set(schema["required"])
     properties = schema["properties"]

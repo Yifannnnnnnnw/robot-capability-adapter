@@ -68,9 +68,16 @@ only for targeted entity/operator lookups; never print a full collection. privat
 object wrapper; apply shared fields before record-local overrides, use only indexed records, and copy
 their exact guards, repetitions, timeout, and request domain. Every operator request-path value starts
 with request. and resolves into the sealed closed schema. Operator signatures use plain JSON types,
-entity:<type>, request_path:<value_type>, and optional:<signature>; an omitted mode means
-numeric_measurement. Scaled joint targets may use target_scale/target_offset only when listed. Never
-invent an operator parameter. Public assets are read-only at AUTOADAPTER_PROBE_PUBLIC_PACKAGE.
+entity:<type>, request_path:<value_type>, and optional:<signature>. These signatures describe required
+value sources; never copy a signature marker as a parameter value. Every
+measurement_binding_kind_catalog map key is an exact value allowed for measurement_binding.kind;
+framework evaluation modes are metadata, never binding fields or kind values. Use this non-JSON shape:
+measurement_binding = {metric: criterion.metric, unit: criterion.unit, kind: selected_catalog_key,
+parameters: actual_values}. The binding has exactly those four fields; operator, mode, and
+evaluation_mode are absent. Scaled joint targets may use target_scale/target_offset only when listed.
+Never invent an operator parameter. If a kind name is unclear, use a targeted execute_python lookup of
+its raw catalog description during the first two turns. Public assets are read-only at
+AUTOADAPTER_PROBE_PUBLIC_PACKAGE.
 
 Write capability_validation_suite.json with the supplied artifact/package identity, exactly one nominal
 and one calibrated_boundary case per capability, and whole_suite_aggregation={'kind':'all_cases'}.
@@ -1456,7 +1463,7 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
         design.get("invocation_abi"), label="sealed design invocation_abi"
     )
 
-    compatible_operator_signatures: dict[str, Any] = {}
+    measurement_binding_kind_catalog: dict[str, Any] = {}
     for operator in raw_operators:
         if not (
             isinstance(operator, Mapping)
@@ -1503,17 +1510,19 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
             parameter_signatures[name] = signature
 
         compact_spec: dict[str, Any] = {
-            "purpose": operator.get("description"),
-            "units": json_copy(
+            "allowed_binding_units": json_copy(
                 operator.get("output_units", []),
                 label="measurement operator output units",
             ),
-            "parameters": parameter_signatures,
+            "parameter_types_not_values": parameter_signatures,
         }
         evaluation_mode = operator.get("evaluation_mode")
         if evaluation_mode != "numeric_measurement":
-            compact_spec["mode"] = evaluation_mode
-        compatible_operator_signatures[str(operator["kind"])] = compact_spec
+            compact_spec["framework_evaluation_mode_not_a_binding_field"] = (
+                evaluation_mode
+            )
+        operator_kind = str(operator["kind"])
+        measurement_binding_kind_catalog[operator_kind] = compact_spec
 
     scene_document = inputs.get("scene_entity_catalog")
     raw_scenes = (
@@ -1570,9 +1579,36 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
             "capabilities": authoring_capabilities,
             "task_support_by_capability": task_support_by_capability,
         },
-        "unit_compatible_operator_signatures_by_kind": (
-            compatible_operator_signatures
-        ),
+        "measurement_binding_contract": {
+            "exact_fields": ["metric", "unit", "kind", "parameters"],
+            "metric": "copy the sealed criterion metric exactly",
+            "unit": "copy the sealed criterion unit exactly",
+            "kind": (
+                "choose one exact measurement_binding_kind_catalog key whose "
+                "allowed_binding_units contains the criterion unit; never use "
+                "framework evaluation metadata"
+            ),
+            "parameters": (
+                "actual closed JSON values; replace signature markers rather than "
+                "copying them"
+            ),
+            "forbidden_fields": [
+                "operator",
+                "mode",
+                "evaluation_mode",
+                "binding_id",
+            ],
+        },
+        "operator_parameter_signature_legend": {
+            "entity:<type>": "replace with exact selected-scene entity name or array",
+            "request_path": "replace with a literal rooted request.* path",
+            "request_path:<value_type>": (
+                "replace with a literal rooted request.* path of that value type"
+            ),
+            "optional:<signature>": "omit or replace using the nested signature",
+            "plain_json_type": "supply an actual JSON value of that type",
+        },
+        "measurement_binding_kind_catalog": measurement_binding_kind_catalog,
         "scene_declared_frame_aliases": scene_frame_aliases,
     }
 
