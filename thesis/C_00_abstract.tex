@@ -54,28 +54,23 @@ Within the evaluated scope, the thesis makes three scientific contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item A layer-separated benchmark of LLMs as producers and users of robot
-  software. B1 evaluates robot-specific driver synthesis under fixed
-  capability interfaces and private validation, whereas B2 evaluates
-  controller backbones against fixed, validated
-  driver--interface--adapter stacks. Their factors, statistical units,
-  outcomes, and verdicts remain separate, so downstream task success is not
-  counted as evidence of driver synthesis.
+  \item A role-separated evaluation of LLM-based robot software. Driver
+  synthesis and downstream tool use are treated as distinct experimental
+  objects with separate inputs, metrics, and verdicts, preventing success
+  through a supplied interface from being counted as evidence that the model
+  can implement it.
 
-  \item An evidence-governed synthesis lifecycle for model-authored robot
-  capabilities and controlled adaptation. Task-Grounded Capability Design
-  derives the capability layer and its acceptance requirements from
-  source-backed tasks; Driver Synthesis and bounded same-run Repair implement
-  that layer. Terminal Evolution may propose a restricted Experience record,
-  but only human-reviewed Experience can enter a later matched run.
+  \item A source-grounded pipeline for synthesising robot-facing interfaces.
+  It derives a reusable, task-neutral API and measurable acceptance criteria
+  from documented task requirements, implements the API in a robot-specific
+  driver, and constrains driver revision and the reuse of reviewed evidence
+  across runs.
 
-  \item An implementation-blind, physics-grounded test-oracle architecture for
-  generated robot software. The Independent Validation Compiler audits source
-  preservation and compiles accepted criteria without inspecting the candidate
-  implementation. The trusted Harness supplies Direct-MuJoCo observations,
-  enforces physical-integrity guards, and owns final verdicts, thereby
-  separating criterion compilation and structural conformance from
-  actuator-mediated behaviour.
+  \item An implementation-blind validation architecture for generated robot
+  software. Validation cases are constructed without access to the candidate
+  code, while a trusted evaluator owns simulator measurements,
+  physical-integrity checks, and final verdicts. This separates interface
+  conformance from observed actuator-mediated behaviour.
 
 \end{enumerate}
 
@@ -84,28 +79,19 @@ industry-relevant contributions:
 \vspace{-.65\baselineskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item A bounded and inspectable workflow for LLM-assisted robot integration.
-  Before each controlled comparison, Auto-Adapter fixes the admissible
-  per-robot inputs and callable contract, bounds generation and Repair, records
-  model and resource use, and assigns private physics-grounded evaluation to
-  the trusted Harness. Candidate revisions, model calls, token use, cost, wall
-  time, observations, and acceptance decisions can therefore be inspected
-  within the declared workflow.
+  \item An auditable workflow for LLM-assisted robot integration. It fixes
+  robot inputs and callable interfaces, bounds driver revisions, records model
+  and resource use, and retains the evidence behind each acceptance decision.
 
-  \item A reusable experimental substrate for embodied-AI research and
-  development. Each admitted experimental stack exposes a stable capability
-  interface backed by a driver that has passed independent Direct-MuJoCo
-  capability validation. High-level-controller backbones can therefore be
-  compared against the same robot-facing software boundary without changing
-  the underlying integration within that comparison.
+  \item A reusable experimental substrate for embodied-AI model comparison.
+  Fixed and independently validated robot interfaces allow controllers to be
+  evaluated without changing the underlying robot integration.
 
-  \item A resource-accounted basis for role-specific LLM selection. B1
-  supports conditional comparison of Producer backbones and trusted-skeleton
-  access for driver synthesis, whereas B2 supports conditional comparison of
-  controller backbones after the robot-facing stack has been fixed. Reporting
-  behavioural outcomes with calls, tokens, cost, wall time, Repair, and failure
-  records where applicable supports role-specific trade-off analysis rather
-  than a universal model ranking.
+  \item A resource-accounted basis for role-specific model selection.
+  Behavioural outcomes are reported with model calls, token use, cost,
+  wall-clock time, revision history, and failure class, supporting separate
+  trade-off analysis for tool creation and tool use rather than a universal
+  model ranking.
 
 \end{enumerate}
 
