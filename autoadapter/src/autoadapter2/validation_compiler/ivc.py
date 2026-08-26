@@ -81,6 +81,8 @@ AUTOADAPTER_PROBE_PUBLIC_PACKAGE.
 
 Write capability_validation_suite.json with the supplied artifact/package identity, exactly one nominal
 and one calibrated_boundary case per capability, and whole_suite_aggregation={'kind':'all_cases'}.
+Copy every required_artifact_top_level_field entry unchanged directly into the artifact root alongside
+cases; an artifact_header wrapper is forbidden.
 Author each task-neutral request and inline measurement binding yourself. Requests must satisfy both the
 sealed schema and selected instance domain, and a capability's two requests must differ. Copy its complete
 criteria unchanged. Ground requests only with the supplied schema/domain evidence pairs. Use only listed
@@ -1048,6 +1050,11 @@ def validate_capability_validation_suite(
 
     if not isinstance(suite, Mapping):
         raise IVCError("validation suite must be an object")
+    if "artifact_header" in suite:
+        raise IVCError(
+            "artifact_header wrapper is forbidden; move every artifact_header "
+            "field unchanged to the validation suite top level alongside cases"
+        )
     _reject_untrusted_suite_material(suite)
     ids = _package_identity(package)
     for key, expected in {
@@ -1617,7 +1624,7 @@ def _build_ivc_authoring_brief(inputs: Mapping[str, Any]) -> dict[str, Any]:
     """Return the single non-redundant payload embedded in the first turn."""
 
     return {
-        "artifact_header": json_copy(
+        "required_artifact_top_level_fields": json_copy(
             inputs["artifact_header"], label="IVC artifact header"
         ),
         "validator_contract": json_copy(

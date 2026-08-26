@@ -215,6 +215,38 @@ def test_novel_capability_seals_ivc_authored_inline_measurement(tmp_path: Path) 
     } == {"final_site_position_error"}
 
 
+def test_ivc_rejects_nested_artifact_header_with_direct_correction(
+    tmp_path: Path,
+) -> None:
+    package, design, private, suite = _synthetic(tmp_path)
+    wrapped = {
+        "artifact_header": {
+            key: suite[key]
+            for key in (
+                "artifact_type",
+                "schema_version",
+                "capability_protocol_version",
+                "robot_configuration_id",
+                "package_version",
+                "task_snapshot_id",
+                "whole_suite_aggregation",
+            )
+        },
+        "cases": suite["cases"],
+    }
+
+    with pytest.raises(
+        IVCError,
+        match="artifact_header wrapper is forbidden.*validation suite top level",
+    ):
+        validate_capability_validation_suite(
+            wrapped,
+            package=package,
+            design=design,
+            private_inputs=private,
+        )
+
+
 def test_ivc_audit_reports_all_independent_case_errors(tmp_path: Path) -> None:
     package, design, private, suite = _synthetic(tmp_path)
     (package.root / "assets" / "scene.xml").write_text(
@@ -690,6 +722,8 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     assert '"mandatory_guard_ids":["control","state","canonical"]' in first_prompt
     assert '"allowed_request_grounding_refs_from_sealed_schema"' in first_prompt
     assert '"measurement_binding_contract"' in first_prompt
+    assert '"required_artifact_top_level_fields"' in first_prompt
+    assert '"artifact_header"' not in first_prompt
     assert (
         '"forbidden_fields":["operator","mode","evaluation_mode","binding_id"]'
         in first_prompt
@@ -700,6 +734,7 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
         in normalized_system_prompt
     )
     assert "operator, mode, and" in IVC_SYSTEM_PROMPT
+    assert "artifact_header wrapper is forbidden" in IVC_SYSTEM_PROMPT
     assert '"measurement_binding_kind_catalog"' in first_prompt
     assert '"unit_compatible_operator_signatures_by_kind"' not in first_prompt
     assert '"final_site_position_error"' in first_prompt

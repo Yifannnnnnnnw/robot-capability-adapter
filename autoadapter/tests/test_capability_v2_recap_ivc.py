@@ -1235,7 +1235,7 @@ def test_ivc_reference_failure_returns_sanitized_same_conversation_correction(
         {"read_file", "write_file", "execute_python"},
         {"write_file"},
     ]
-    assert '"artifact_header"' in model.messages[0][0]["content"]
+    assert '"required_artifact_top_level_fields"' in model.messages[0][0]["content"]
     assert '"validator_contract"' in model.messages[0][0]["content"]
     correction_messages = json.dumps(model.messages[1])
     assert "reference calibration failed" in correction_messages
