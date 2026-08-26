@@ -64,6 +64,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         required={"site_name": "string", "target_argument": "request_path"},
         entities={"site_name": "site"},
         request_paths=("target_argument",),
+        request_value_types={"target_argument": "number_array_3"},
     ),
     "final_site_axis_error": _spec(
         "Absolute terminal axis error for one named site.",
@@ -118,6 +119,52 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "target_z_argument": "world_m_number",
         },
     ),
+    "final_site_frame_xyz_position_error": _spec(
+        "Euclidean terminal position error for one named site in a named body "
+        "frame against three scalar request-coordinate paths.",
+        ["m"],
+        required={
+            "site_name": "string",
+            "reference_body_name": "string",
+            "target_x_argument": "request_path",
+            "target_y_argument": "request_path",
+            "target_z_argument": "request_path",
+        },
+        entities={"site_name": "site", "reference_body_name": "body"},
+        request_paths=(
+            "target_x_argument",
+            "target_y_argument",
+            "target_z_argument",
+        ),
+        request_value_types={
+            "target_x_argument": "frame_m_number",
+            "target_y_argument": "frame_m_number",
+            "target_z_argument": "frame_m_number",
+        },
+    ),
+    "final_body_frame_xyz_position_error": _spec(
+        "Euclidean terminal position error for one named body in another named "
+        "body frame against three scalar request-coordinate paths.",
+        ["m"],
+        required={
+            "body_name": "string",
+            "reference_body_name": "string",
+            "target_x_argument": "request_path",
+            "target_y_argument": "request_path",
+            "target_z_argument": "request_path",
+        },
+        entities={"body_name": "body", "reference_body_name": "body"},
+        request_paths=(
+            "target_x_argument",
+            "target_y_argument",
+            "target_z_argument",
+        ),
+        request_value_types={
+            "target_x_argument": "frame_m_number",
+            "target_y_argument": "frame_m_number",
+            "target_z_argument": "frame_m_number",
+        },
+    ),
     "body_planar_target_error": _spec(
         "Terminal planar world-position error for one named body.",
         ["m"],
@@ -148,6 +195,25 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
                 "default": 0.0,
             },
         },
+    ),
+    "final_geom_pair_distance_error": _spec(
+        "Absolute terminal error between the trusted MuJoCo distance of two named "
+        "geoms and one scalar request target.",
+        ["m"],
+        required={
+            "geom_a_name": "string",
+            "geom_b_name": "string",
+            "target_argument": "request_path",
+        },
+        entities={"geom_a_name": "geom", "geom_b_name": "geom"},
+        request_paths=("target_argument",),
+        request_value_types={"target_argument": "bounded_m_number"},
+    ),
+    "final_geom_pair_distance": _spec(
+        "Terminal trusted MuJoCo signed distance between two named geoms.",
+        ["m"],
+        required={"geom_a_name": "string", "geom_b_name": "string"},
+        entities={"geom_a_name": "geom", "geom_b_name": "geom"},
     ),
     "joint_range": _spec(
         "Observed position range of one named joint.",
@@ -242,6 +308,64 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "direction_y_argument": "world_direction_number",
             "direction_z_argument": "world_direction_number",
             "target_distance_argument": "m_number",
+        },
+    ),
+    "site_frame_xyz_directional_displacement": _spec(
+        "Signed start-to-end displacement of a named site, expressed in a named "
+        "body frame and projected onto a requested XYZ unit vector.",
+        ["m"],
+        required={
+            "site_name": "string",
+            "reference_body_name": "string",
+            "direction_x_argument": "request_path",
+            "direction_y_argument": "request_path",
+            "direction_z_argument": "request_path",
+        },
+        entities={"site_name": "site", "reference_body_name": "body"},
+        request_paths=(
+            "direction_x_argument",
+            "direction_y_argument",
+            "direction_z_argument",
+        ),
+        request_value_types={
+            "direction_x_argument": "frame_direction_number",
+            "direction_y_argument": "frame_direction_number",
+            "direction_z_argument": "frame_direction_number",
+        },
+    ),
+    "accumulated_site_frame_axis_arc_angle_error": _spec(
+        "Absolute error between accumulated signed site arc angle and a requested "
+        "angle, with center and arbitrary unit axis expressed in a named body frame.",
+        ["rad"],
+        required={
+            "site_name": "string",
+            "reference_body_name": "string",
+            "center_x_argument": "request_path",
+            "center_y_argument": "request_path",
+            "center_z_argument": "request_path",
+            "axis_x_argument": "request_path",
+            "axis_y_argument": "request_path",
+            "axis_z_argument": "request_path",
+            "target_angle_argument": "request_path",
+        },
+        entities={"site_name": "site", "reference_body_name": "body"},
+        request_paths=(
+            "center_x_argument",
+            "center_y_argument",
+            "center_z_argument",
+            "axis_x_argument",
+            "axis_y_argument",
+            "axis_z_argument",
+            "target_angle_argument",
+        ),
+        request_value_types={
+            "center_x_argument": "frame_m_number",
+            "center_y_argument": "frame_m_number",
+            "center_z_argument": "frame_m_number",
+            "axis_x_argument": "frame_direction_number",
+            "axis_y_argument": "frame_direction_number",
+            "axis_z_argument": "frame_direction_number",
+            "target_angle_argument": "rad_number",
         },
     ),
     "body_directional_progress_until_corridor_exit": _spec(
@@ -781,7 +905,10 @@ def _validate_request_value_schema(
         "number",
         "world_m_number",
         "world_direction_number",
+        "frame_m_number",
+        "frame_direction_number",
         "m_number",
+        "bounded_m_number",
         "rad_number",
     }:
         if schema_type not in {"number", "integer"}:
@@ -803,9 +930,35 @@ def _validate_request_value_schema(
                 f"request path {path!r} must declare a dimensionless unit and "
                 "frame='world'"
             )
-        if expected == "m_number" and schema.get("unit") != "m":
+        if expected == "frame_m_number" and (
+            schema.get("unit") != "m"
+            or not isinstance(schema.get("frame"), str)
+            or not str(schema["frame"]).strip()
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare unit='m' and a non-empty frame"
+            )
+        if expected == "frame_direction_number" and (
+            schema.get("unit")
+            not in {"dimensionless", "fraction", "ratio", "unitless", "none", "1"}
+            or not isinstance(schema.get("frame"), str)
+            or not str(schema["frame"]).strip()
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare a dimensionless unit and a "
+                "non-empty frame"
+            )
+        if expected in {"m_number", "bounded_m_number"} and schema.get("unit") != "m":
             raise MeasurementOperatorError(
                 f"request path {path!r} must declare unit='m'"
+            )
+        if expected == "bounded_m_number" and (
+            not _is_number(schema.get("minimum"))
+            or not _is_number(schema.get("maximum"))
+            or float(schema["minimum"]) >= float(schema["maximum"])
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare finite increasing bounds"
             )
         if expected == "rad_number" and schema.get("unit") != "rad":
             raise MeasurementOperatorError(
@@ -853,12 +1006,13 @@ def _validate_xyz_sibling_paths(
     fields: Sequence[str],
     *,
     label: str,
+    suffixes: Sequence[str] = ("x", "y", "z"),
 ) -> None:
     paths = [str(parameters[field]).split(".") for field in fields]
     if (
         len({str(parameters[field]) for field in fields}) != 3
         or any(len(parts) < 3 for parts in paths)
-        or [parts[-1] for parts in paths] != ["x", "y", "z"]
+        or [parts[-1] for parts in paths] != list(suffixes)
         or any(parts[:-1] != paths[0][:-1] for parts in paths[1:])
     ):
         raise MeasurementOperatorError(
@@ -870,7 +1024,17 @@ def _validate_operator_request_roles(
     kind: str,
     parameters: Mapping[str, Any],
 ) -> None:
-    if kind == "final_body_xyz_position_error":
+    if kind in {"final_geom_pair_distance_error", "final_geom_pair_distance"} and (
+        parameters.get("geom_a_name") == parameters.get("geom_b_name")
+    ):
+        raise MeasurementOperatorError(
+            f"{kind} requires two distinct geoms"
+        )
+    if kind in {
+        "final_body_xyz_position_error",
+        "final_site_frame_xyz_position_error",
+        "final_body_frame_xyz_position_error",
+    }:
         _validate_xyz_sibling_paths(
             parameters,
             (
@@ -899,6 +1063,216 @@ def _validate_operator_request_roles(
                 "direction_z_argument",
             ),
             label="body direction",
+        )
+    elif kind in {
+        "site_frame_xyz_directional_displacement",
+    }:
+        _validate_xyz_sibling_paths(
+            parameters,
+            (
+                "direction_x_argument",
+                "direction_y_argument",
+                "direction_z_argument",
+            ),
+            label="frame direction",
+            suffixes=("dx", "dy", "dz"),
+        )
+    elif kind in {
+        "accumulated_site_frame_axis_arc_angle_error",
+    }:
+        _validate_xyz_sibling_paths(
+            parameters,
+            (
+                "center_x_argument",
+                "center_y_argument",
+                "center_z_argument",
+            ),
+            label="arc center",
+        )
+        _validate_xyz_sibling_paths(
+            parameters,
+            (
+                "axis_x_argument",
+                "axis_y_argument",
+                "axis_z_argument",
+            ),
+            label="arc axis",
+            suffixes=("ax", "ay", "az"),
+        )
+    if (
+        kind
+        in {
+            "final_body_frame_xyz_position_error",
+        }
+        and parameters.get("body_name") == parameters.get("reference_body_name")
+    ):
+        raise MeasurementOperatorError(
+            f"{kind} measured body and reference body must be distinct"
+        )
+
+
+def _validate_common_request_frame(
+    kind: str,
+    request_path_schemas: Mapping[str, Mapping[str, Any]],
+) -> None:
+    frame_fields: tuple[str, ...] = ()
+    if kind in {
+        "final_site_frame_xyz_position_error",
+        "final_body_frame_xyz_position_error",
+    }:
+        frame_fields = (
+            "target_x_argument",
+            "target_y_argument",
+            "target_z_argument",
+        )
+    elif kind in {
+        "site_frame_xyz_directional_displacement",
+    }:
+        frame_fields = (
+            "direction_x_argument",
+            "direction_y_argument",
+            "direction_z_argument",
+        )
+    elif kind in {
+        "accumulated_site_frame_axis_arc_angle_error",
+    }:
+        frame_fields = (
+            "center_x_argument",
+            "center_y_argument",
+            "center_z_argument",
+            "axis_x_argument",
+            "axis_y_argument",
+            "axis_z_argument",
+        )
+    if not frame_fields:
+        return
+    frames = [request_path_schemas[field].get("frame") for field in frame_fields]
+    if (
+        any(not isinstance(frame, str) or not frame.strip() for frame in frames)
+        or len(set(frames)) != 1
+    ):
+        raise MeasurementOperatorError(
+            f"{kind} coordinate request fields must declare one common non-empty frame"
+        )
+
+
+def _validate_reference_body_frame(
+    kind: str,
+    parameters: Mapping[str, Any],
+    request_path_schemas: Mapping[str, Mapping[str, Any]],
+    *,
+    scene_path: Path | None,
+    scene_entities: Mapping[str, Any] | None,
+) -> None:
+    if kind not in {
+        "final_site_frame_xyz_position_error",
+        "final_body_frame_xyz_position_error",
+        "site_frame_xyz_directional_displacement",
+        "accumulated_site_frame_axis_arc_angle_error",
+    }:
+        return
+    if scene_entities is None:
+        if scene_path is None:
+            raise MeasurementOperatorError(
+                "selected scene frame aliases are unavailable for measurement audit"
+            )
+        scene_entities = inspect_scene_entities(scene_path)
+    aliases = scene_entities.get("frame_aliases")
+    if not isinstance(aliases, Mapping) or any(
+        not isinstance(alias, str) or not isinstance(body, str)
+        for alias, body in aliases.items()
+    ):
+        raise MeasurementOperatorError(
+            "selected scene has no trusted frame_aliases catalog"
+        )
+    frame_schema = next(iter(request_path_schemas.values()), None)
+    declared_frame = frame_schema.get("frame") if isinstance(frame_schema, Mapping) else None
+    expected_reference = aliases.get(declared_frame)
+    if not isinstance(expected_reference, str) or not expected_reference:
+        raise MeasurementOperatorError(
+            f"request frame {declared_frame!r} has no trusted selected-scene body alias"
+        )
+    actual_reference = str(parameters["reference_body_name"])
+    if actual_reference != expected_reference:
+        raise MeasurementOperatorError(
+            f"request frame {declared_frame!r} resolves to reference body "
+            f"{expected_reference!r}, not {actual_reference!r}"
+        )
+    parent_names = scene_entities.get("body_parent_names")
+    joint_counts = scene_entities.get("body_joint_counts")
+    descendant_joint_counts = scene_entities.get("body_descendant_joint_counts")
+    site_body_names = scene_entities.get("site_body_names")
+    if not all(
+        isinstance(value, Mapping)
+        for value in (
+            parent_names,
+            joint_counts,
+            descendant_joint_counts,
+            site_body_names,
+        )
+    ):
+        raise MeasurementOperatorError(
+            "selected scene lacks trusted kinematic frame metadata"
+        )
+
+    def ancestors(body_name: str) -> list[str]:
+        path: list[str] = []
+        current = body_name
+        visited: set[str] = set()
+        while current != "world":
+            if current in visited or current not in parent_names:
+                raise MeasurementOperatorError(
+                    f"selected scene has invalid ancestry for body {body_name!r}"
+                )
+            visited.add(current)
+            path.append(current)
+            parent = parent_names[current]
+            if not isinstance(parent, str) or not parent:
+                raise MeasurementOperatorError(
+                    f"selected scene has invalid parent for body {current!r}"
+                )
+            current = parent
+        path.append("world")
+        return path
+
+    reference_path = ancestors(actual_reference)
+    subtree_joints = descendant_joint_counts.get(actual_reference)
+    if (
+        isinstance(subtree_joints, bool)
+        or not isinstance(subtree_joints, int)
+        or subtree_joints <= 0
+    ):
+        raise MeasurementOperatorError(
+            f"reference body {actual_reference!r} does not root an articulated subtree"
+        )
+
+    if "site_name" in parameters:
+        measured_body = site_body_names.get(str(parameters["site_name"]))
+    else:
+        measured_body = parameters.get("body_name")
+    if not isinstance(measured_body, str) or not measured_body:
+        raise MeasurementOperatorError(
+            f"{kind} cannot resolve the measured entity's owning body"
+        )
+    measured_path = ancestors(measured_body)
+    reference_ancestors = set(reference_path)
+    common = next(
+        (body for body in measured_path if body in reference_ancestors), None
+    )
+    if common is None:
+        raise MeasurementOperatorError(
+            "measured entity and reference body have no common kinematic ancestor"
+        )
+    relative_bodies = measured_path[: measured_path.index(common)]
+    relative_bodies.extend(reference_path[: reference_path.index(common)])
+    if any(body not in joint_counts for body in relative_bodies):
+        raise MeasurementOperatorError(
+            "selected scene lacks trusted joint metadata for the relative frame path"
+        )
+    path_joint_count = sum(int(joint_counts[body]) for body in relative_bodies)
+    if path_joint_count <= 0:
+        raise MeasurementOperatorError(
+            f"measured entity is rigid relative to reference body {actual_reference!r}"
         )
 
 
@@ -956,6 +1330,79 @@ def inspect_scene_entities(scene_path: str | Path) -> dict[str, Any]:
                 joint_ranges[name] = [lower, upper]
     result["joint_units"] = dict(sorted(joint_units.items()))
     result["joint_ranges"] = dict(sorted(joint_ranges.items()))
+    body_names = {
+        body_id: mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, body_id)
+        for body_id in range(int(model.nbody))
+    }
+    aliases = {
+        str(name): str(name)
+        for name in body_names.values()
+        if isinstance(name, str) and name
+    }
+    top_level_bodies = [
+        body_id
+        for body_id in range(1, int(model.nbody))
+        if int(model.body_parentid[body_id]) == 0
+    ]
+
+    def descendant_joint_count(root_body_id: int) -> int:
+        total = 0
+        for body_id in range(1, int(model.nbody)):
+            ancestor = body_id
+            while ancestor and ancestor != root_body_id:
+                ancestor = int(model.body_parentid[ancestor])
+            if ancestor == root_body_id:
+                total += int(model.body_jntnum[body_id])
+        return total
+
+    body_parent_names: dict[str, str] = {}
+    body_joint_counts: dict[str, int] = {}
+    body_descendant_joint_counts: dict[str, int] = {}
+    for body_id in range(1, int(model.nbody)):
+        name = body_names[body_id]
+        if not isinstance(name, str) or not name:
+            continue
+        parent_id = int(model.body_parentid[body_id])
+        parent_name = body_names.get(parent_id) if parent_id else "world"
+        if not isinstance(parent_name, str) or not parent_name:
+            # A named frame with an unnamed parent cannot be safely audited
+            # using the model-facing metadata exposed to IVC.
+            continue
+        body_parent_names[name] = parent_name
+        body_joint_counts[name] = int(model.body_jntnum[body_id])
+        body_descendant_joint_counts[name] = descendant_joint_count(body_id)
+    site_body_names: dict[str, str] = {}
+    for site_id in range(int(model.nsite)):
+        site_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_SITE, site_id)
+        owner_name = body_names.get(int(model.site_bodyid[site_id]))
+        if (
+            isinstance(site_name, str)
+            and site_name
+            and isinstance(owner_name, str)
+            and owner_name
+        ):
+            site_body_names[site_name] = owner_name
+
+    ranked_roots = sorted(
+        (
+            (descendant_joint_count(body_id), body_id)
+            for body_id in top_level_bodies
+        ),
+        reverse=True,
+    )
+    if ranked_roots and ranked_roots[0][0] > 0 and (
+        len(ranked_roots) == 1 or ranked_roots[0][0] > ranked_roots[1][0]
+    ):
+        robot_base_name = body_names[ranked_roots[0][1]]
+        if isinstance(robot_base_name, str) and robot_base_name:
+            aliases["robot_base"] = robot_base_name
+    result["frame_aliases"] = dict(sorted(aliases.items()))
+    result["body_parent_names"] = dict(sorted(body_parent_names.items()))
+    result["body_joint_counts"] = dict(sorted(body_joint_counts.items()))
+    result["body_descendant_joint_counts"] = dict(
+        sorted(body_descendant_joint_counts.items())
+    )
+    result["site_body_names"] = dict(sorted(site_body_names.items()))
     return result
 
 
@@ -1208,6 +1655,7 @@ def audit_inline_measurement_binding(
             path=str(parameters[field]),
         )
     _validate_operator_request_roles(kind, parameters)
+    _validate_common_request_frame(kind, request_path_schemas)
     resolved_scene_path = (
         Path(scene_path).resolve() if scene_path is not None else None
     )
@@ -1221,6 +1669,13 @@ def audit_inline_measurement_binding(
     _validate_entities(
         parameters,
         spec["entity_parameters"],
+        scene_path=resolved_scene_path,
+        scene_entities=resolved_scene_entities,
+    )
+    _validate_reference_body_frame(
+        kind,
+        parameters,
+        request_path_schemas,
         scene_path=resolved_scene_path,
         scene_entities=resolved_scene_entities,
     )

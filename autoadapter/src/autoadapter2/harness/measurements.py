@@ -221,6 +221,71 @@ def _body_position_in_frame(
     )
 
 
+def _site_position_in_frame(
+    sample: Mapping[str, Any], site_name: str, reference_body_name: str
+) -> tuple[float, float, float]:
+    return _point_in_body_frame(
+        sample, _site_position(sample, site_name), reference_body_name
+    )
+
+
+def _trusted_geom_pair_distance(
+    sample: Mapping[str, Any], geom_a_name: str, geom_b_name: str
+) -> float:
+    records = sample.get("trusted_geom_pair_distances")
+    if not isinstance(records, list):
+        raise MeasurementError(
+            "trusted sample has no parent-computed geom-pair distances"
+        )
+    matches = [
+        record
+        for record in records
+        if isinstance(record, Mapping)
+        and record.get("geom_a_name") == geom_a_name
+        and record.get("geom_b_name") == geom_b_name
+    ]
+    if len(matches) != 1:
+        raise MeasurementError(
+            f"trusted sample does not contain exactly one distance for geoms "
+            f"{geom_a_name!r}, {geom_b_name!r}"
+        )
+    return _finite_number(matches[0].get("distance_m"), "trusted geom-pair distance")
+
+
+def _accumulated_arc_angle(
+    positions: Sequence[Sequence[float]],
+    *,
+    center: Sequence[float],
+    axis: Sequence[float],
+) -> float:
+    trusted_center = _vector(center, size=3)
+    trusted_axis = _declared_unit_vector(axis, name="arc axis")
+    radial_directions: list[tuple[float, float, float]] = []
+    for position_value in positions:
+        position = _vector(position_value, size=3)
+        displacement = tuple(
+            coordinate - origin
+            for coordinate, origin in zip(position, trusted_center)
+        )
+        axial = _dot(displacement, trusted_axis)
+        radial = tuple(
+            component - axial * axis_component
+            for component, axis_component in zip(displacement, trusted_axis)
+        )
+        radial_directions.append(_unit_vector(radial, name="arc radius"))
+    increments: list[float] = []
+    for previous, current in zip(radial_directions, radial_directions[1:]):
+        sine = _dot(trusted_axis, _cross3(previous, current))
+        cosine = max(-1.0, min(1.0, _dot(previous, current)))
+        increment = math.atan2(sine, cosine)
+        if abs(increment) >= math.pi - 1.0e-6:
+            raise MeasurementError(
+                "arc samples are too far apart to disambiguate signed angle"
+            )
+        increments.append(increment)
+    return math.fsum(increments)
+
+
 def _yaw_rad(quaternion: Sequence[float]) -> float:
     w, x, y, z = _normalized_quaternion(quaternion)
     return math.atan2(
@@ -964,6 +1029,31 @@ def measure(
             )
         )
         return _distance(actual, target)
+    if kind in {
+        "final_site_frame_xyz_position_error",
+        "final_body_frame_xyz_position_error",
+    }:
+        reference_body_name = str(parameters["reference_body_name"])
+        if kind == "final_site_frame_xyz_position_error":
+            actual = _site_position_in_frame(
+                final, str(parameters["site_name"]), reference_body_name
+            )
+        else:
+            actual = _body_position_in_frame(
+                final, str(parameters["body_name"]), reference_body_name
+            )
+        target = tuple(
+            _finite_number(
+                _argument(public_arguments, str(parameters[field])),
+                field,
+            )
+            for field in (
+                "target_x_argument",
+                "target_y_argument",
+                "target_z_argument",
+            )
+        )
+        return _distance(actual, target)
     if kind == "body_planar_target_error":
         actual = _body_position(final, str(parameters["body_name"]))
         target = _vector(
@@ -990,6 +1080,19 @@ def measure(
         if not math.isfinite(target):
             raise MeasurementError("scaled joint target must be finite")
         return abs(actual - target)
+    if kind in {"final_geom_pair_distance_error", "final_geom_pair_distance"}:
+        actual_distance = _trusted_geom_pair_distance(
+            final,
+            str(parameters["geom_a_name"]),
+            str(parameters["geom_b_name"]),
+        )
+        if kind == "final_geom_pair_distance":
+            return actual_distance
+        target = _finite_number(
+            _argument(public_arguments, str(parameters["target_argument"])),
+            "geom-pair distance target request value",
+        )
+        return abs(actual_distance - target)
     if kind == "joint_range":
         values = [_joint_position(sample, str(parameters["joint_name"])) for sample in samples]
         return max(values) - min(values)
@@ -1042,35 +1145,11 @@ def measure(
         }
         if not isinstance(axis_name, str) or axis_name not in axes:
             raise MeasurementError("arc axis request must be x, y, or z")
-        axis = axes[str(axis_name)]
-        radial_directions: list[tuple[float, float, float]] = []
-        for sample in samples:
-            position = _body_position(sample, body_name)
-            displacement = tuple(
-                coordinate - origin
-                for coordinate, origin in zip(position, center)
-            )
-            axial = _dot(displacement, axis)
-            radial = tuple(
-                component - axial * axis_component
-                for component, axis_component in zip(displacement, axis)
-            )
-            radial_directions.append(
-                _unit_vector(radial, name="body arc radius")
-            )
-        increments: list[float] = []
-        for previous, current in zip(
-            radial_directions, radial_directions[1:]
-        ):
-            sine = _dot(axis, _cross3(previous, current))
-            cosine = max(-1.0, min(1.0, _dot(previous, current)))
-            increment = math.atan2(sine, cosine)
-            if abs(increment) >= math.pi - 1.0e-6:
-                raise MeasurementError(
-                    "body arc samples are too far apart to disambiguate signed angle"
-                )
-            increments.append(increment)
-        accumulated = math.fsum(increments)
+        accumulated = _accumulated_arc_angle(
+            [_body_position(sample, body_name) for sample in samples],
+            center=center,
+            axis=axes[str(axis_name)],
+        )
         target = _finite_number(
             _argument(
                 public_arguments, str(parameters["target_angle_argument"])
@@ -1108,6 +1187,70 @@ def measure(
             "target_distance_argument",
         )
         return abs(actual - target)
+    if kind == "site_frame_xyz_directional_displacement":
+        site_name = str(parameters["site_name"])
+        reference_body_name = str(parameters["reference_body_name"])
+        direction = _declared_unit_vector(
+            tuple(
+                _finite_number(
+                    _argument(public_arguments, str(parameters[field])), field
+                )
+                for field in (
+                    "direction_x_argument",
+                    "direction_y_argument",
+                    "direction_z_argument",
+                )
+            ),
+            name="site displacement direction",
+        )
+        start = _site_position_in_frame(first, site_name, reference_body_name)
+        end = _site_position_in_frame(final, site_name, reference_body_name)
+        return _dot(
+            tuple(
+                end_coordinate - start_coordinate
+                for start_coordinate, end_coordinate in zip(start, end)
+            ),
+            direction,
+        )
+    if kind == "accumulated_site_frame_axis_arc_angle_error":
+        site_name = str(parameters["site_name"])
+        reference_body_name = str(parameters["reference_body_name"])
+        center = tuple(
+            _finite_number(
+                _argument(public_arguments, str(parameters[field])), field
+            )
+            for field in (
+                "center_x_argument",
+                "center_y_argument",
+                "center_z_argument",
+            )
+        )
+        axis = _declared_unit_vector(
+            tuple(
+                _finite_number(
+                    _argument(public_arguments, str(parameters[field])), field
+                )
+                for field in (
+                    "axis_x_argument",
+                    "axis_y_argument",
+                    "axis_z_argument",
+                )
+            ),
+            name="site arc axis",
+        )
+        accumulated = _accumulated_arc_angle(
+            [
+                _site_position_in_frame(sample, site_name, reference_body_name)
+                for sample in samples
+            ],
+            center=center,
+            axis=axis,
+        )
+        target = _finite_number(
+            _argument(public_arguments, str(parameters["target_angle_argument"])),
+            "target_angle_argument",
+        )
+        return abs(accumulated - target)
     if kind == "body_directional_progress_until_corridor_exit":
         body_name = str(parameters["body_name"])
         start = _body_position(first, body_name)
@@ -1327,8 +1470,12 @@ _STATE_BINDING_KINDS = {
     "final_weighted_site_position_error",
     "final_body_position_error",
     "final_body_xyz_position_error",
+    "final_site_frame_xyz_position_error",
+    "final_body_frame_xyz_position_error",
     "body_planar_target_error",
     "final_joint_position_error",
+    "final_geom_pair_distance_error",
+    "final_geom_pair_distance",
     "body_height",
     "body_yaw_change_deg",
 }

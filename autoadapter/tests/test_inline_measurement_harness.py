@@ -17,9 +17,10 @@ from autoadapter2.harness.measurements import MeasurementError, measure
 from autoadapter2.harness.operators import (
     MeasurementOperatorError,
     audit_inline_measurement_binding,
+    inspect_scene_entities,
     measurement_operator_catalog,
 )
-from autoadapter2.libraries import RobotPackage
+from autoadapter2.libraries import RobotPackage, load_robot_package
 
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:
@@ -788,6 +789,657 @@ def test_final_body_position_error_rejects_object_target_before_worker(
                 driver_path=candidate,
                 condition="from-scratch",
                 output_dir=tmp_path / "object-target-report",
+                record_video=False,
+            )
+    worker.assert_not_called()
+
+
+_KINOVA_ASSETS = (
+    Path(__file__).resolve().parents[1]
+    / "libraries"
+    / "robots"
+    / "kinova_gen3_robotiq_2f85"
+    / "1.0.0"
+    / "assets"
+)
+
+
+def _kinova_geom_pair_binding(kind: str, *, metric: str) -> dict[str, Any]:
+    parameters: dict[str, Any] = {
+        "geom_a_name": "left_pad1",
+        "geom_b_name": "right_pad1",
+    }
+    if kind == "final_geom_pair_distance_error":
+        parameters["target_argument"] = "request.target_aperture"
+    return {
+        "metric": metric,
+        "unit": "m",
+        "kind": kind,
+        "parameters": parameters,
+    }
+
+
+def _kinova_aperture_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "target_aperture": {
+                "type": "number",
+                "unit": "m",
+                "frame": "gripper_base",
+                "minimum": 0.0,
+                "maximum": 0.085,
+            }
+        },
+        "required": ["target_aperture"],
+        "additionalProperties": False,
+    }
+
+
+def _settled_kinova_gripper_evidence(control: float) -> dict[str, Any]:
+    import mujoco
+
+    scene_path = _KINOVA_ASSETS / "pick_place_scene.xml"
+    model = mujoco.MjModel.from_xml_path(str(scene_path))
+    data = mujoco.MjData(model)
+    mujoco.mj_resetDataKeyframe(model, data, 0)
+    actuator_id = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_ACTUATOR, "fingers_actuator"
+    )
+    data.ctrl[actuator_id] = control
+    for _ in range(400):
+        mujoco.mj_step(model, data)
+    sample = {
+        "qpos": data.qpos.tolist(),
+        # Parent enrichment must overwrite, never trust, this worker-side field.
+        "trusted_geom_pair_distances": [
+            {
+                "geom_a_name": "left_pad1",
+                "geom_b_name": "right_pad1",
+                "distance_m": 99.0,
+            }
+        ],
+    }
+    return {"samples": [sample, dict(sample)]}
+
+
+def test_real_kinova_geom_distance_measures_aperture_without_ivc_mapping() -> None:
+    scene_path = _KINOVA_ASSETS / "pick_place_scene.xml"
+    set_binding = audit_inline_measurement_binding(
+        _kinova_geom_pair_binding(
+            "final_geom_pair_distance_error", metric="gripper_aperture_error"
+        ),
+        criterion={
+            "metric": "gripper_aperture_error",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.003,
+        },
+        request_schema=_kinova_aperture_schema(),
+        scene_path=scene_path,
+    )
+    actual_binding = audit_inline_measurement_binding(
+        _kinova_geom_pair_binding(
+            "final_geom_pair_distance", metric="gripper_aperture_at_grasp"
+        ),
+        criterion={
+            "metric": "gripper_aperture_at_grasp",
+            "unit": "m",
+            "comparator": "between",
+            "threshold": [-0.001, 0.086],
+        },
+        request_schema={
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False,
+        },
+        scene_path=scene_path,
+    )
+    open_evidence = harness_runner._trusted_measurement_evidence(
+        actual_binding,
+        _settled_kinova_gripper_evidence(0.0),
+        scene_path=scene_path,
+    )
+    closed_evidence = harness_runner._trusted_measurement_evidence(
+        actual_binding,
+        _settled_kinova_gripper_evidence(255.0),
+        scene_path=scene_path,
+    )
+    open_distance = measure(
+        actual_binding, evidence=open_evidence, public_arguments={"request": {}}
+    )
+    closed_distance = measure(
+        actual_binding, evidence=closed_evidence, public_arguments={"request": {}}
+    )
+    assert open_distance == pytest.approx(0.08518, abs=5.0e-4)
+    assert closed_distance == pytest.approx(0.0, abs=5.0e-4)
+    assert open_distance > closed_distance + 0.08
+    assert measure(
+        set_binding,
+        evidence=open_evidence,
+        public_arguments={"request": {"target_aperture": 0.085}},
+    ) < 5.0e-4
+    assert measure(
+        set_binding,
+        evidence=closed_evidence,
+        public_arguments={"request": {"target_aperture": 0.0}},
+    ) < 5.0e-4
+
+
+def test_real_kinova_geom_distance_reaches_private_harness_verdict(
+    tmp_path: Path,
+) -> None:
+    package = load_robot_package(_KINOVA_ASSETS.parent)
+    candidate = tmp_path / "driver.py"
+    candidate.write_text(
+        textwrap.dedent(
+            """
+            import mujoco
+
+            class Driver:
+                def __init__(self, model, data):
+                    self.model = model
+                    self.data = data
+
+                def set_gripper_aperture(self, request):
+                    self.data.ctrl[0] = 0.0
+                    mujoco.mj_step(self.model, self.data)
+
+            def build(*, model, data):
+                return Driver(model, data)
+            """
+        ),
+        encoding="utf-8",
+    )
+    criterion = {
+        "metric": "gripper_aperture_error",
+        "unit": "m",
+        "comparator": "<=",
+        "threshold": 0.003,
+        "temporal": {"kind": "terminal_state"},
+        "aggregation": {"kind": "single_trial"},
+    }
+    design = {
+        "capabilities": [
+            {
+                "capability_id": "set-gripper",
+                "method_name": "set_gripper_aperture",
+                "request_schema": _kinova_aperture_schema(),
+                "criteria": [criterion],
+            }
+        ]
+    }
+    case = {
+        "case_id": "set-gripper-open",
+        "case_role": "nominal",
+        "capability_id": "set-gripper",
+        "method_name": "set_gripper_aperture",
+        "request": {"target_aperture": 0.085},
+        "request_grounding_refs": [],
+        "instance_id": "kinova-gen3-robotiq-2f85-mw_pick_place",
+        "measurement_binding": _kinova_geom_pair_binding(
+            "final_geom_pair_distance_error", metric="gripper_aperture_error"
+        ),
+        "guard_ids": [
+            "guard_actuator_and_physics_step",
+            "guard_no_direct_state_write",
+            "guard_canonical_model_data",
+        ],
+        "repetitions": 1,
+        "timeout_sim_s": 20.0,
+        "criteria": [criterion],
+    }
+    suite = {
+        "artifact_type": "capability_validation_suite",
+        "capability_protocol_version": "capability-v2",
+        "whole_suite_aggregation": {"kind": "all_cases"},
+        "cases": [case],
+    }
+    worker_result = _worker_result()
+    samples = _settled_kinova_gripper_evidence(0.0)["samples"]
+    worker_result["physical_evidence"]["samples"] = [
+        {"time": float(index), **sample} for index, sample in enumerate(samples)
+    ]
+
+    with mock.patch.object(
+        harness_runner, "_run_worker", return_value=worker_result
+    ) as worker:
+        report = run_private_suite(
+            package=package,
+            design=design,
+            suite=suite,
+            driver_path=candidate,
+            condition="from-scratch",
+            output_dir=tmp_path / "kinova-geom-report",
+            record_video=False,
+        )
+
+    assert report["validation_passed"] is True
+    assert report["trials"][0]["measurement_value"] < 5.0e-4
+    assert "measurement_binding" not in json.dumps(worker.call_args.args[0])
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (
+            lambda binding, schema, criterion: binding["parameters"].update(
+                geom_a_name="not_a_geom"
+            ),
+            "unknown geom",
+        ),
+        (
+            lambda binding, schema, criterion: binding["parameters"].update(
+                geom_b_name="left_pad1"
+            ),
+            "two distinct geoms",
+        ),
+        (
+            lambda binding, schema, criterion: schema["properties"][
+                "target_aperture"
+            ].update(maximum=0.0),
+            "finite increasing bounds",
+        ),
+        (
+            lambda binding, schema, criterion: schema["properties"][
+                "target_aperture"
+            ].update(unit="rad"),
+            "must declare unit='m'",
+        ),
+    ],
+)
+def test_kinova_geom_pair_binding_fails_closed_before_measurement(
+    mutation: Any, message: str
+) -> None:
+    binding = _kinova_geom_pair_binding(
+        "final_geom_pair_distance_error", metric="gripper_aperture_error"
+    )
+    schema = _kinova_aperture_schema()
+    criterion = {
+        "metric": "gripper_aperture_error",
+        "unit": "m",
+        "comparator": "<=",
+        "threshold": 0.003,
+    }
+    mutation(binding, schema, criterion)
+    with pytest.raises(MeasurementOperatorError, match=message):
+        audit_inline_measurement_binding(
+            binding,
+            criterion=criterion,
+            request_schema=schema,
+            scene_path=_KINOVA_ASSETS / "pick_place_scene.xml",
+        )
+
+
+def _kinova_frame_schema() -> dict[str, Any]:
+    def scalar(unit: str) -> dict[str, Any]:
+        return {
+            "type": "number",
+            "unit": unit,
+            "frame": "robot_base",
+            "minimum": -2.0,
+            "maximum": 2.0,
+        }
+
+    return {
+        "type": "object",
+        "properties": {
+            "target_position": {
+                "type": "object",
+                "properties": {axis: scalar("m") for axis in ("x", "y", "z")},
+                "required": ["x", "y", "z"],
+                "additionalProperties": False,
+            },
+            "direction_unit_vector": {
+                "type": "object",
+                "properties": {
+                    axis: scalar("dimensionless") for axis in ("dx", "dy", "dz")
+                },
+                "required": ["dx", "dy", "dz"],
+                "additionalProperties": False,
+            },
+            "pivot_point": {
+                "type": "object",
+                "properties": {axis: scalar("m") for axis in ("x", "y", "z")},
+                "required": ["x", "y", "z"],
+                "additionalProperties": False,
+            },
+            "rotation_axis": {
+                "type": "object",
+                "properties": {
+                    axis: scalar("dimensionless") for axis in ("ax", "ay", "az")
+                },
+                "required": ["ax", "ay", "az"],
+                "additionalProperties": False,
+            },
+            "angular_displacement": scalar("rad"),
+        },
+        "required": [
+            "target_position",
+            "direction_unit_vector",
+            "pivot_point",
+            "rotation_axis",
+            "angular_displacement",
+        ],
+        "additionalProperties": False,
+    }
+
+
+def _frame_binding(kind: str, *, metric: str, entity: str) -> dict[str, Any]:
+    parameters: dict[str, Any] = {
+        ("site_name" if entity == "pinch_site" else "body_name"): entity,
+        "reference_body_name": "base_link",
+    }
+    if kind.endswith("position_error"):
+        parameters.update(
+            target_x_argument="request.target_position.x",
+            target_y_argument="request.target_position.y",
+            target_z_argument="request.target_position.z",
+        )
+    elif kind == "site_frame_xyz_directional_displacement":
+        parameters.update(
+            direction_x_argument="request.direction_unit_vector.dx",
+            direction_y_argument="request.direction_unit_vector.dy",
+            direction_z_argument="request.direction_unit_vector.dz",
+        )
+    else:
+        parameters.update(
+            center_x_argument="request.pivot_point.x",
+            center_y_argument="request.pivot_point.y",
+            center_z_argument="request.pivot_point.z",
+            axis_x_argument="request.rotation_axis.ax",
+            axis_y_argument="request.rotation_axis.ay",
+            axis_z_argument="request.rotation_axis.az",
+            target_angle_argument="request.angular_displacement",
+        )
+    return {
+        "metric": metric,
+        "unit": "rad" if "arc_angle" in kind else "m",
+        "kind": kind,
+        "parameters": parameters,
+    }
+
+
+def test_real_kinova_frame_contracts_audit_exact_site_body_and_reference() -> None:
+    schema = _kinova_frame_schema()
+    cases = [
+        (
+            _frame_binding(
+                "final_site_frame_xyz_position_error",
+                metric="euclidean_distance_tcp_to_target",
+                entity="pinch_site",
+            ),
+            "reach_scene.xml",
+        ),
+        (
+            _frame_binding(
+                "site_frame_xyz_directional_displacement",
+                metric="tcp_displacement_along_direction",
+                entity="pinch_site",
+            ),
+            "push_to_goal_scene.xml",
+        ),
+        (
+            _frame_binding(
+                "accumulated_site_frame_axis_arc_angle_error",
+                metric="angular_displacement_error",
+                entity="pinch_site",
+            ),
+            "dial_scene.xml",
+        ),
+        (
+            _frame_binding(
+                "final_body_frame_xyz_position_error",
+                metric="euclidean_distance_object_to_goal",
+                entity="workpiece",
+            ),
+            "pick_place_scene.xml",
+        ),
+    ]
+    for binding, scene_name in cases:
+        assert audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": binding["metric"], "unit": binding["unit"]},
+            request_schema=schema,
+            scene_path=_KINOVA_ASSETS / scene_name,
+        ) == binding
+
+
+def test_robot_base_alias_is_kinematic_and_aloha_tie_fails_closed() -> None:
+    kinova = inspect_scene_entities(_KINOVA_ASSETS / "reach_scene.xml")
+    assert kinova["frame_aliases"]["robot_base"] == "base_link"
+    assert kinova["body_parent_names"]["base_link"] == "world"
+    assert kinova["body_joint_counts"]["base_link"] == 0
+    assert kinova["body_descendant_joint_counts"]["base_link"] > 0
+
+    aloha_scene = (
+        Path(__file__).resolve().parents[1]
+        / "libraries"
+        / "robots"
+        / "aloha_2"
+        / "1.0.0"
+        / "assets"
+        / "reach_scene.xml"
+    )
+    aloha = inspect_scene_entities(aloha_scene)
+    assert "robot_base" not in aloha["frame_aliases"]
+    assert aloha["body_descendant_joint_counts"]["left/base_link"] == 8
+    assert aloha["body_descendant_joint_counts"]["right/base_link"] == 8
+
+
+def test_real_kinova_pinch_moves_in_base_link_but_is_rigid_in_gripper_base() -> None:
+    import mujoco
+    import numpy as np
+
+    model = mujoco.MjModel.from_xml_path(str(_KINOVA_ASSETS / "reach_scene.xml"))
+    data = mujoco.MjData(model)
+    mujoco.mj_resetDataKeyframe(model, data, 0)
+    mujoco.mj_forward(model, data)
+    site_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "pinch_site")
+
+    def site_in_frame(body_name: str) -> Any:
+        body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+        rotation = data.xmat[body_id].reshape(3, 3)
+        return rotation.T @ (data.site_xpos[site_id] - data.xpos[body_id])
+
+    initial_robot_base = site_in_frame("base_link").copy()
+    initial_gripper_base = site_in_frame("base").copy()
+    joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "joint_2")
+    actuator_id = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_ACTUATOR, "joint_2"
+    )
+    data.ctrl[actuator_id] = float(data.qpos[model.jnt_qposadr[joint_id]]) + 0.4
+    for _ in range(500):
+        mujoco.mj_step(model, data)
+
+    assert np.linalg.norm(site_in_frame("base_link") - initial_robot_base) > 0.2
+    assert np.linalg.norm(site_in_frame("base") - initial_gripper_base) < 1.0e-9
+
+
+def test_kinova_rigid_gripper_base_is_rejected_as_request_frame() -> None:
+    schema = _kinova_frame_schema()
+    for leaf in schema["properties"]["target_position"]["properties"].values():
+        leaf["frame"] = "base"
+    binding = _frame_binding(
+        "final_site_frame_xyz_position_error",
+        metric="euclidean_distance_tcp_to_target",
+        entity="pinch_site",
+    )
+    binding["parameters"]["reference_body_name"] = "base"
+    with pytest.raises(MeasurementOperatorError, match="rigid relative"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={"metric": binding["metric"], "unit": "m"},
+            request_schema=schema,
+            scene_path=_KINOVA_ASSETS / "reach_scene.xml",
+        )
+
+
+def _kinova_frame_evidence(
+    *,
+    site_positions: list[tuple[float, float, float]],
+    body_positions: list[tuple[float, float, float]] | None = None,
+) -> dict[str, Any]:
+    if body_positions is None:
+        body_positions = [(0.0, 0.0, 0.0)] * len(site_positions)
+    return {
+        "samples": [
+            {
+                "time": float(index),
+                "site_positions": {"pinch_site": list(site_position)},
+                "body_positions": {
+                    "base_link": [0.0, 0.0, 0.0],
+                    "workpiece": list(body_position),
+                },
+                "body_quaternions": {"base_link": [1.0, 0.0, 0.0, 0.0]},
+            }
+            for index, (site_position, body_position) in enumerate(
+                zip(site_positions, body_positions)
+            )
+        ]
+    }
+
+
+def test_kinova_frame_measurements_use_site_and_body_evidence() -> None:
+    target_request = {
+        "request": {"target_position": {"x": 0.4, "y": -0.1, "z": 0.2}}
+    }
+    evidence = _kinova_frame_evidence(
+        site_positions=[(0.0, 0.0, 0.0), (0.4, -0.1, 0.2)],
+        body_positions=[(0.0, 0.0, 0.0), (0.4, -0.1, 0.2)],
+    )
+    site_binding = _frame_binding(
+        "final_site_frame_xyz_position_error",
+        metric="euclidean_distance_tcp_to_target",
+        entity="pinch_site",
+    )
+    body_binding = _frame_binding(
+        "final_body_frame_xyz_position_error",
+        metric="euclidean_distance_object_to_goal",
+        entity="workpiece",
+    )
+    assert measure(
+        site_binding, evidence=evidence, public_arguments=target_request
+    ) == pytest.approx(0.0)
+    assert measure(
+        body_binding, evidence=evidence, public_arguments=target_request
+    ) == pytest.approx(0.0)
+
+    direction_binding = _frame_binding(
+        "site_frame_xyz_directional_displacement",
+        metric="tcp_displacement_along_direction",
+        entity="pinch_site",
+    )
+    assert measure(
+        direction_binding,
+        evidence=_kinova_frame_evidence(
+            site_positions=[(0.0, 0.0, 0.0), (0.2, 0.0, 0.0)]
+        ),
+        public_arguments={
+            "request": {
+                "direction_unit_vector": {"dx": 1.0, "dy": 0.0, "dz": 0.0}
+            }
+        },
+    ) == pytest.approx(0.2)
+
+    arc_binding = _frame_binding(
+        "accumulated_site_frame_axis_arc_angle_error",
+        metric="angular_displacement_error",
+        entity="pinch_site",
+    )
+    assert measure(
+        arc_binding,
+        evidence=_kinova_frame_evidence(
+            site_positions=[
+                (1.0, 0.0, 0.0),
+                (0.0, 1.0, 0.0),
+                (-1.0, 0.0, 0.0),
+            ]
+        ),
+        public_arguments={
+            "request": {
+                "pivot_point": {"x": 0.0, "y": 0.0, "z": 0.0},
+                "rotation_axis": {"ax": 0.0, "ay": 0.0, "az": 1.0},
+                "angular_displacement": math.pi,
+            }
+        },
+    ) == pytest.approx(0.0)
+
+
+def test_kinova_frame_contracts_fail_closed_on_frame_unit_entity_and_vector() -> None:
+    schema = _kinova_frame_schema()
+    position = _frame_binding(
+        "final_site_frame_xyz_position_error",
+        metric="euclidean_distance_tcp_to_target",
+        entity="pinch_site",
+    )
+    position["parameters"]["site_name"] = "bracelet_link"
+    with pytest.raises(MeasurementOperatorError, match="unknown site"):
+        audit_inline_measurement_binding(
+            position,
+            criterion={"metric": position["metric"], "unit": "m"},
+            request_schema=schema,
+            scene_path=_KINOVA_ASSETS / "reach_scene.xml",
+        )
+
+    position["parameters"]["site_name"] = "pinch_site"
+    schema["properties"]["target_position"]["properties"]["z"]["frame"] = "world"
+    with pytest.raises(MeasurementOperatorError, match="one common non-empty frame"):
+        audit_inline_measurement_binding(
+            position,
+            criterion={"metric": position["metric"], "unit": "m"},
+            request_schema=schema,
+            scene_path=_KINOVA_ASSETS / "reach_scene.xml",
+        )
+
+    direction = _frame_binding(
+        "site_frame_xyz_directional_displacement",
+        metric="tcp_displacement_along_direction",
+        entity="pinch_site",
+    )
+    with pytest.raises(MeasurementError, match="must have unit length"):
+        measure(
+            direction,
+            evidence=_kinova_frame_evidence(
+                site_positions=[(0.0, 0.0, 0.0), (0.2, 0.0, 0.0)]
+            ),
+            public_arguments={
+                "request": {
+                    "direction_unit_vector": {"dx": 2.0, "dy": 0.0, "dz": 0.0}
+                }
+            },
+        )
+
+
+def test_final_site_position_error_rejects_object_target_before_worker(
+    tmp_path: Path,
+) -> None:
+    package, candidate, design, suite = _fixture(tmp_path)
+    design["capabilities"][0]["request_schema"] = _xyz_object_schema(
+        "target_position_m", unit="m"
+    )
+    suite["cases"][0]["request"] = {
+        "target_position_m": {"x": 0.4, "y": 0.0, "z": 0.2}
+    }
+    suite["cases"][0]["measurement_binding"] = {
+        "metric": "end_effector_position_error",
+        "unit": "m",
+        "kind": "final_site_position_error",
+        "parameters": {
+            "site_name": "tool_site",
+            "target_argument": "request.target_position_m",
+        },
+    }
+    with mock.patch.object(harness_runner, "_run_worker") as worker:
+        with pytest.raises(HarnessError, match="numeric array schema"):
+            run_private_suite(
+                package=package,
+                design=design,
+                suite=suite,
+                driver_path=candidate,
+                condition="from-scratch",
+                output_dir=tmp_path / "site-object-target-report",
                 record_video=False,
             )
     worker.assert_not_called()

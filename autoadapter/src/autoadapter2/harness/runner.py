@@ -12,7 +12,7 @@ import sys
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -544,6 +544,98 @@ def _physical_execution_completed(worker: Mapping[str, Any]) -> bool:
     )
 
 
+def _trusted_measurement_evidence(
+    binding: Mapping[str, Any],
+    evidence: Mapping[str, Any],
+    *,
+    scene_path: Path,
+) -> Mapping[str, Any]:
+    """Add parent-computed evidence required by geometry operators.
+
+    Candidate code never receives the binding.  The parent reconstructs each
+    sampled MuJoCo state from the session-recorded qpos and computes the named
+    geom distance against the exact audited scene.
+    """
+
+    kind = binding.get("kind")
+    if kind not in {"final_geom_pair_distance_error", "final_geom_pair_distance"}:
+        return evidence
+    parameters = binding.get("parameters")
+    samples = evidence.get("samples")
+    if not isinstance(parameters, Mapping) or not isinstance(samples, list) or not samples:
+        raise HarnessError("geom-pair measurement requires trusted sampled evidence")
+    geom_a_name = parameters.get("geom_a_name")
+    geom_b_name = parameters.get("geom_b_name")
+    if not isinstance(geom_a_name, str) or not isinstance(geom_b_name, str):
+        raise HarnessError("geom-pair measurement has invalid geom names")
+
+    try:
+        import mujoco
+        import numpy as np
+
+        model = mujoco.MjModel.from_xml_path(str(scene_path))
+        geom_a_id = int(
+            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, geom_a_name)
+        )
+        geom_b_id = int(
+            mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, geom_b_name)
+        )
+        if geom_a_id < 0 or geom_b_id < 0 or geom_a_id == geom_b_id:
+            raise HarnessError("geom-pair measurement cannot resolve two distinct geoms")
+        data = mujoco.MjData(model)
+        fromto = np.empty(6, dtype=float)
+        enriched_samples: list[dict[str, Any]] = []
+        for index, sample in enumerate(samples):
+            if not isinstance(sample, Mapping):
+                raise HarnessError(f"trusted sample {index} must be an object")
+            qpos = sample.get("qpos")
+            if (
+                not isinstance(qpos, Sequence)
+                or isinstance(qpos, (str, bytes))
+                or len(qpos) != int(model.nq)
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(float(value))
+                    for value in qpos
+                )
+            ):
+                raise HarnessError(
+                    f"trusted sample {index} qpos does not match the audited scene"
+                )
+            data.qpos[:] = qpos
+            mujoco.mj_forward(model, data)
+            distance = float(
+                mujoco.mj_geomDistance(
+                    model,
+                    data,
+                    geom_a_id,
+                    geom_b_id,
+                    1.0e6,
+                    fromto,
+                )
+            )
+            if not math.isfinite(distance):
+                raise HarnessError("trusted MuJoCo geom distance is non-finite")
+            enriched = dict(sample)
+            enriched["trusted_geom_pair_distances"] = [
+                {
+                    "geom_a_name": geom_a_name,
+                    "geom_b_name": geom_b_name,
+                    "distance_m": distance,
+                }
+            ]
+            enriched_samples.append(enriched)
+    except HarnessError:
+        raise
+    except Exception as exc:
+        raise HarnessError(f"trusted geom-pair measurement failed: {exc}") from exc
+
+    enriched_evidence = dict(evidence)
+    enriched_evidence["samples"] = enriched_samples
+    return enriched_evidence
+
+
 def _designed_task_clauses(design: Mapping[str, Any]) -> dict[str, set[str]]:
     result: dict[str, set[str]] = {}
     capabilities = design.get("capabilities")
@@ -938,12 +1030,17 @@ def run_private_suite(
                 if worker.get("candidate_exception") is None and worker.get("method_invoked"):
                     if not isinstance(criterion, Mapping):
                         raise ValueError("private case criterion must be an object")
+                    measurement_evidence = _trusted_measurement_evidence(
+                        binding,
+                        worker["physical_evidence"],
+                        scene_path=scene_path,
+                    )
                     if is_capability_v2 and measurement_operator_evaluation_mode(
                         binding.get("kind")
                     ) == "trusted_criterion_verdict":
                         measurement_value = measure(
                             binding,
-                            evidence=worker["physical_evidence"],
+                            evidence=measurement_evidence,
                             public_arguments=measurement_arguments,
                         )
                         temporal_passed = math.isclose(
@@ -961,7 +1058,7 @@ def run_private_suite(
                         temporal_evidence = evaluate_temporal(
                             binding,
                             criterion=criterion,
-                            evidence=worker["physical_evidence"],
+                            evidence=measurement_evidence,
                             public_arguments=measurement_arguments,
                         )
                         measurement_value = temporal_evidence.get("value")

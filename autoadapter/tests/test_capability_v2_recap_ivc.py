@@ -89,6 +89,32 @@ def _scalar_schema(field: str) -> dict[str, Any]:
     }
 
 
+def _position_schema(field: str) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            field: {
+                "type": "array",
+                "unit": "m",
+                "frame": "world",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "world",
+                    "minimum": -1.0,
+                    "maximum": 1.0,
+                    "evidence_refs": _evidence(f"request bound: {field}"),
+                },
+                "evidence_refs": _evidence(f"request bound: {field}"),
+            }
+        },
+        "required": [field],
+        "additionalProperties": False,
+    }
+
+
 def _design() -> dict[str, Any]:
     capabilities = []
     for index in range(3):
@@ -100,7 +126,7 @@ def _design() -> dict[str, Any]:
                 "method_name": method_name,
                 "description": f"Apply reusable effect {index + 1}.",
                 "effect": f"bounded_effect_{index + 1}",
-                "request_schema": _scalar_schema(f"amount_{index + 1}"),
+                "request_schema": _position_schema(f"amount_{index + 1}"),
                 "preconditions": ["The public robot state is finite."],
                 "temporal_semantics": {"kind": "bounded_single_call", "hold_s": 0.2},
                 "invariants": ["No unrelated public state is intentionally changed."],
@@ -152,11 +178,11 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
             domain = json.loads(json.dumps(capability["request_schema"]))
             domain_leaf = domain["properties"][field]
             if role == "nominal":
-                domain_leaf["minimum"] = -0.5
-                domain_leaf["maximum"] = 0.25
+                domain_leaf["items"]["minimum"] = -0.5
+                domain_leaf["items"]["maximum"] = 0.25
             else:
-                domain_leaf["minimum"] = 0.5
-                domain_leaf["maximum"] = 0.9
+                domain_leaf["items"]["minimum"] = 0.5
+                domain_leaf["items"]["maximum"] = 0.9
             profile = f"{capability_id}-{role}"
             instances.append(
                 {
@@ -178,7 +204,7 @@ def _private_inputs(design: dict[str, Any]) -> dict[str, Any]:
                     "request_anchors": [
                         {
                             "anchor_id": f"anchor-{suffix}",
-                            "request": {field: anchor_amount},
+                            "request": {field: [anchor_amount] * 3},
                             "source_ref": f"private-calibration::{suffix}",
                         }
                     ],
@@ -243,7 +269,7 @@ def _suite(design: dict[str, Any], private: dict[str, Any]) -> dict[str, Any]:
                     "guard_ids": list(instance["guard_ids"]),
                     "repetitions": 2,
                     "timeout_sim_s": 5.0,
-                    "request": {f"amount_{cap_id[1:]}": authored_amount},
+                    "request": {f"amount_{cap_id[1:]}": [authored_amount] * 3},
                     "request_grounding_refs": _evidence(
                         f"request bound: amount_{cap_id[1:]}"
                     ),
@@ -880,7 +906,7 @@ def test_ivc_rejects_authored_request_outside_optional_calibrated_domain() -> No
 
     outside_domain = json.loads(json.dumps(suite))
     request_field = next(iter(outside_domain["cases"][0]["request"]))
-    outside_domain["cases"][0]["request"][request_field] = 0.5
+    outside_domain["cases"][0]["request"][request_field][0] = 0.5
     with pytest.raises(IVCError, match="private request_domain"):
         validate_capability_validation_suite(
             outside_domain,
@@ -1247,7 +1273,13 @@ def test_recap_uses_dynamic_catalogue_and_fixed_16_12_budgets() -> None:
                 field = next(iter(design["capabilities"][0]["request_schema"]["properties"]))
                 return {
                     "reasoning_summary": "Apply one public capability.",
-                    "subtasks": [{"kind": "capability", "capability_name": method, "request": {field: 0.1}}],
+                    "subtasks": [
+                        {
+                            "kind": "capability",
+                            "capability_name": method,
+                            "request": {field: [0.1, 0.1, 0.1]},
+                        }
+                    ],
                 }
             return {"reasoning_summary": "Done.", "subtasks": []}
 

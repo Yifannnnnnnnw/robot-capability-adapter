@@ -39,7 +39,24 @@ def _fixture() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
                     "type": "object",
                     "properties": {
                         "target_m": {
-                            "type": "number",
+                            "type": "array",
+                            "unit": "m",
+                            "frame": "world",
+                            "minItems": 3,
+                            "maxItems": 3,
+                            "items": {
+                                "type": "number",
+                                "unit": "m",
+                                "frame": "world",
+                                "minimum": -1.0,
+                                "maximum": 1.0,
+                                "evidence_refs": [
+                                    {
+                                        "source_id": "public-source",
+                                        "specific_reference": "target bound",
+                                    }
+                                ],
+                            },
                             "evidence_refs": [
                                 {
                                     "source_id": "public-source",
@@ -95,18 +112,22 @@ def _fixture() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
                 "public_arguments": {
                     "request": {
                         "task_id": f"private-task-{suffix}",
-                        "task_parameters": {"target_m": 0.5},
+                        "task_parameters": {"target_m": [0.5, 0.5, 0.5]},
                     }
                 },
-                "reference_arguments": {"request": {"target_m": 0.5}},
+                "reference_arguments": {
+                    "request": {"target_m": [0.5, 0.5, 0.5]}
+                },
                 "request_anchors": [
                     {
                         "anchor_id": f"anchor-{suffix}",
-                        "request": {"target_m": 0.5},
+                        "request": {"target_m": [0.5, 0.5, 0.5]},
                         "source_ref": "private exact request",
                     }
                 ],
-                "repetition_variants": [{"request": {"target_m": 0.9}}],
+                "repetition_variants": [
+                    {"request": {"target_m": [0.9, 0.9, 0.9]}}
+                ],
                 "preinvoke": {"kind": "private prelude"},
                 "framework_events": [{"kind": "private event"}],
                 "task_plan": ["private macro step"],
@@ -249,7 +270,7 @@ def test_ivc_authors_distinct_requests_without_copying_private_anchor() -> None:
                 "guard_ids": ["guard-a"],
                 "repetitions": 1,
                 "timeout_sim_s": 2.0,
-                "request": {"target_m": target},
+                "request": {"target_m": [target, target, target]},
                 "request_grounding_refs": [
                     {
                         "source_id": "public-source",
@@ -276,10 +297,13 @@ def test_ivc_authors_distinct_requests_without_copying_private_anchor() -> None:
     )
 
     assert [case["request"] for case in canonical["cases"]] == [
-        {"target_m": 0.25},
-        {"target_m": 0.75},
+        {"target_m": [0.25, 0.25, 0.25]},
+        {"target_m": [0.75, 0.75, 0.75]},
     ]
-    assert all(case["request"] != {"target_m": 0.5} for case in canonical["cases"])
+    assert all(
+        case["request"] != {"target_m": [0.5, 0.5, 0.5]}
+        for case in canonical["cases"]
+    )
 
 
 def test_dynamic_suite_rejects_binding_id_even_when_example_exists() -> None:
@@ -287,8 +311,8 @@ def test_dynamic_suite_rejects_binding_id_even_when_example_exists() -> None:
     capability = design["capabilities"][0]
     cases = []
     for role, request in (
-        ("nominal", {"target_m": 0.25}),
-        ("calibrated_boundary", {"target_m": 0.75}),
+        ("nominal", {"target_m": [0.25, 0.25, 0.25]}),
+        ("calibrated_boundary", {"target_m": [0.75, 0.75, 0.75]}),
     ):
         cases.append(
             {
