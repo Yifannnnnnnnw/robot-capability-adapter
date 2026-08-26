@@ -143,6 +143,19 @@
 %  that can make it easier to make commands robust.
 \usepackage{etoolbox}
 
+% Keep the first line after a block heading at the normal body-line distance.
+% The class uses a non-zero paragraph skip, which LaTeX otherwise adds on top
+% of each heading's own after-skip. Sparse pages are left ragged at the bottom
+% so that TeX does not stretch these vertical spaces to fill the page.
+\makeatletter
+\patchcmd{\@xsect}
+  {\vskip \@tempskipa}
+  {\vskip-\parskip}
+  {}
+  {\PackageError{ucl_thesis}{Unable to adjust heading spacing}{}}
+\makeatother
+\raggedbottom
+
 % The microtype package adds `micro-typographic extensions' which
 % generally makes text more readable and hyphenation less likely.
 \usepackage{microtype}
