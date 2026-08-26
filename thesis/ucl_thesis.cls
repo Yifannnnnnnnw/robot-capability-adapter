@@ -475,7 +475,10 @@
 \newcommand \@maketitle{%
     \newpage%
     \null%
-    \vspace*{5em}%
+    \begin{center}%
+        \includegraphics[width=12cm]{assets/ucl_logo.png}%
+    \end{center}%
+    \vspace*{3em}%
 %%%
 %%%  Julia Schnabel wanted the following added.
 %%%
