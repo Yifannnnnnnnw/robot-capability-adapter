@@ -312,6 +312,73 @@ class ArtifactWorkflowTests(unittest.TestCase):
             )
             self.assertIn("Artifact validation failed", recovery)
 
+    def test_artifact_recovery_keeps_validator_detail_beyond_1000_chars(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "capability_design.json"
+
+            def write_file(arguments: Mapping[str, Any]) -> dict[str, Any]:
+                artifact.write_text(str(arguments["content"]), encoding="utf-8")
+                return {"path": "capability_design.json"}
+
+            def validate(path: Path) -> dict[str, Any]:
+                parsed = json.loads(path.read_text(encoding="utf-8"))
+                if parsed.get("ready") is not True:
+                    raise ValueError("A" * 1500 + "TAIL_CRITERION_ERROR")
+                return parsed
+
+            client = _ScriptedArtifactClient(
+                [
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            _call(
+                                "invalid",
+                                "write_file",
+                                {
+                                    "path": "capability_design.json",
+                                    "content": '{"ready":false}',
+                                },
+                            ),
+                        ),
+                    ),
+                    ToolTurn(
+                        content=None,
+                        finish_reason="tool_calls",
+                        tool_calls=(
+                            _call(
+                                "valid",
+                                "write_file",
+                                {
+                                    "path": "capability_design.json",
+                                    "content": '{"ready":true}',
+                                },
+                            ),
+                        ),
+                    ),
+                ]
+            )
+
+            result = run_artifact_react(
+                client=client,
+                stage="tgcd",
+                system_prompt="write the design",
+                user_prompt="produce capability_design.json",
+                tools=(ToolSpec("write_file", "write", {"type": "object"}, write_file),),
+                artifact_name="capability_design.json",
+                artifact_path=artifact,
+                validate_artifact=validate,
+                max_turns=2,
+            )
+
+            recovery = "\n".join(
+                str(message.get("content", ""))
+                for message in client.messages[1]
+                if message.get("role") == "user"
+            )
+            self.assertIn("TAIL_CRITERION_ERROR", recovery)
+            self.assertEqual(result.artifact, {"ready": True})
+
     def test_final_turn_rejects_a_hallucinated_non_write_tool(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             artifact = Path(directory) / "study.json"

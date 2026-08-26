@@ -432,6 +432,14 @@ def build_public_tgcd_inputs(
                 "source_refs",
             ],
             "criterion_comparators": ["<", "<=", ">", ">=", "==", "between"],
+            "criterion_field_rules": {
+                "metric": "non-empty text",
+                "unit": "non-empty text",
+                "threshold": "finite number or two-number range",
+                "temporal": "non-empty JSON object; strings are invalid",
+                "aggregation": "non-empty JSON object; strings are invalid",
+                "source_refs": "non-empty evidence-ref array",
+            },
             "request_schema_supported_keywords": [
                 "type",
                 "properties",
@@ -455,6 +463,14 @@ def build_public_tgcd_inputs(
             "request_schema_rules": {
                 "recursive": True,
                 "parent_metadata_is_not_inherited": True,
+                "object_node_required_fields": [
+                    "type",
+                    "properties",
+                    "required",
+                    "additionalProperties",
+                ],
+                "object_additionalProperties_must_equal": False,
+                "object_required_must_equal_all_property_names": True,
                 "array_node_required_fields": [
                     "type",
                     "items",
@@ -634,10 +650,13 @@ def run_tgcd(
                         "calibrated records as the source for numeric request bounds and criteria "
                         "rather than inventing replacements. Copy any selected request_schema, "
                         "criteria, and evidence_refs without abridging them. Recursively audit every "
-                        "request_schema node "
-                        "node before writing: an array and its items are separate nodes, parent "
+                        "request_schema node before writing: an array and its items are separate "
+                        "nodes; every object sets additionalProperties=false and requires exactly "
+                        "all of its property names; parent "
                         "unit/frame/evidence do not propagate, and numeric items need their own "
-                        "unit, frame, finite bounds, and evidence_refs. Keep capabilities as "
+                        "unit, frame, finite bounds, and evidence_refs. Each capability has exactly "
+                        "one criterion; its temporal and aggregation fields must each be a non-empty "
+                        "JSON object, never a string. Keep capabilities as "
                         "reusable single physical effects, not task operations such as whole-object "
                         "push/grasp/release or fixture-specific macros. You must independently add the "
                         "required preconditions, temporal semantics, invariants, failure behavior, "

@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 
+_ARTIFACT_VALIDATION_ERROR_CHARS = 4000
+
+
 class ReactLoopError(RuntimeError):
     """Raised when a bounded ReAct phase ends without a valid submission."""
 
@@ -495,14 +498,20 @@ def _artifact_validation_error(
         return (
             False,
             None,
-            f"{artifact_name} is invalid ({type(exc).__name__}: {message[:1000]})",
+            f"{artifact_name} is invalid "
+            f"({type(exc).__name__}: {message[:_ARTIFACT_VALIDATION_ERROR_CHARS]})",
         )
 
     if isinstance(result, Mapping):
         valid = result.get("valid", result.get("ok", True))
         if valid is False:
             reason = result.get("error", result.get("message", "validation failed"))
-            return False, None, f"{artifact_name} is invalid ({str(reason)[:1000]})"
+            return (
+                False,
+                None,
+                f"{artifact_name} is invalid "
+                f"({str(reason)[:_ARTIFACT_VALIDATION_ERROR_CHARS]})",
+            )
         return True, result.get("artifact", result), None
     if result is False:
         return False, None, f"{artifact_name} is invalid (validation failed)"

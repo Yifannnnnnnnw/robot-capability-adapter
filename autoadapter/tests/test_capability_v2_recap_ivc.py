@@ -382,6 +382,14 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
     schema_rules = inputs["validator_contract"]["request_schema_rules"]
     assert schema_rules["recursive"] is True
     assert schema_rules["parent_metadata_is_not_inherited"] is True
+    assert schema_rules["object_node_required_fields"] == [
+        "type",
+        "properties",
+        "required",
+        "additionalProperties",
+    ]
+    assert schema_rules["object_additionalProperties_must_equal"] is False
+    assert schema_rules["object_required_must_equal_all_property_names"] is True
     assert schema_rules["array_items_follow_same_rules_recursively"] is True
     assert schema_rules["array_node_required_fields"] == [
         "type",
@@ -410,6 +418,14 @@ def test_tgcd_inputs_expose_exact_abi_and_compact_authoring_indices() -> None:
         "aggregation",
         "source_refs",
     ]
+    assert inputs["validator_contract"]["criterion_field_rules"] == {
+        "metric": "non-empty text",
+        "unit": "non-empty text",
+        "threshold": "finite number or two-number range",
+        "temporal": "non-empty JSON object; strings are invalid",
+        "aggregation": "non-empty JSON object; strings are invalid",
+        "source_refs": "non-empty evidence-ref array",
+    }
     assert inputs["matching_capability_references"] == []
     assert inputs["task_index"] == [
         {
@@ -458,6 +474,30 @@ def test_tgcd_reports_recursive_schema_omissions_across_capabilities() -> None:
     assert "missing minItems, maxItems" in error
     assert "missing a finite numeric bound" in error
     assert "missing non-empty evidence_refs" in error
+
+
+def test_tgcd_reports_criterion_contract_errors_across_capabilities() -> None:
+    design = _design()
+    design["capabilities"][0]["request_schema"]["required"] = []
+    design["capabilities"][0]["criteria"].append(
+        json.loads(json.dumps(design["capabilities"][0]["criteria"][0]))
+    )
+    for index in (1, 2):
+        criterion = design["capabilities"][index]["criteria"][0]
+        criterion["temporal"] = "at_termination"
+        criterion["aggregation"] = "final_value"
+
+    with pytest.raises(CapabilityDesignError) as caught:
+        validate_capability_design(design, _package())
+
+    error = str(caught.value)
+    assert "Fix every listed capability" in error
+    assert "capabilities[0].request_schema.required must require every property" in error
+    assert "capabilities[0].criteria must contain exactly one" in error
+    assert "capabilities[1].criteria[0].temporal must be a non-empty object" in error
+    assert "capabilities[1].criteria[0].aggregation must be a non-empty object" in error
+    assert "capabilities[2].criteria[0].temporal must be a non-empty object" in error
+    assert "capabilities[2].criteria[0].aggregation must be a non-empty object" in error
 
 
 class _TGCDModel:
@@ -636,6 +676,7 @@ def test_tgcd_full_input_is_compact_and_readable_before_delivery(tmp_path: Path)
     assert len(compact_text.splitlines()) == 1
     first_prompt = str(model.messages[0][0]["content"])
     assert "array and its items are separate nodes" in first_prompt
+    assert "requires exactly all of its property names" in first_prompt
     assert "parent unit/frame/evidence do not propagate" in first_prompt
 
 

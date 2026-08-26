@@ -107,6 +107,15 @@ _FORBIDDEN_TOKENS = {
     "sequence",
     "call",
 }
+_CRITERION_REQUIRED_FIELDS = {
+    "metric",
+    "unit",
+    "comparator",
+    "threshold",
+    "temporal",
+    "aggregation",
+    "source_refs",
+}
 
 
 def json_copy(value: Any, *, label: str = "value") -> Any:
@@ -463,8 +472,7 @@ def _required_text(value: Any, *, where: str) -> str:
 def _validate_structured_criterion(value: Any, *, where: str) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise CapabilityProtocolError(f"{where} must be an object")
-    required = {"metric", "unit", "comparator", "threshold", "temporal", "aggregation", "source_refs"}
-    missing = required - set(value)
+    missing = _CRITERION_REQUIRED_FIELDS - set(value)
     if missing:
         raise CapabilityProtocolError(f"{where} is missing criterion fields {sorted(missing)}")
     _required_text(value.get("metric"), where=f"{where}.metric")
@@ -486,6 +494,84 @@ def _validate_structured_criterion(value: Any, *, where: str) -> dict[str, Any]:
     result = json_copy(dict(value), label=where)
     result["source_refs"] = refs
     return result
+
+
+def _criterion_requirement_issues(value: Any, *, where: str) -> list[str]:
+    """Collect criterion errors that otherwise arrive one capability at a time."""
+
+    if not isinstance(value, Mapping):
+        return [f"{where} must be an object"]
+    issues: list[str] = []
+    missing = sorted(_CRITERION_REQUIRED_FIELDS - set(value))
+    if missing:
+        issues.append(f"{where} is missing fields {missing}")
+    for field in ("metric", "unit"):
+        item = value.get(field)
+        if not isinstance(item, str) or not item.strip():
+            issues.append(f"{where}.{field} must be non-empty text")
+    if value.get("comparator") not in {"<", "<=", ">", ">=", "==", "between"}:
+        issues.append(f"{where}.comparator is unsupported")
+    threshold = value.get("threshold")
+    if not _finite_number(threshold) and not (
+        isinstance(threshold, list)
+        and len(threshold) == 2
+        and all(_finite_number(item) for item in threshold)
+    ):
+        issues.append(f"{where}.threshold must be finite numeric or a range")
+    for field in ("temporal", "aggregation"):
+        if not isinstance(value.get(field), Mapping) or not value[field]:
+            issues.append(f"{where}.{field} must be a non-empty object")
+    try:
+        _validate_evidence_refs(value.get("source_refs"), where=f"{where}.source_refs")
+    except CapabilitySchemaError as exc:
+        issues.append(str(exc))
+    return issues
+
+
+def _capability_requirement_issues(
+    raw_capabilities: Sequence[Any],
+) -> list[str]:
+    """Pre-audit repeated capability obligations before fail-closed canonicalisation."""
+
+    issues: list[str] = []
+    for index, raw in enumerate(raw_capabilities):
+        where = f"capabilities[{index}]"
+        if not isinstance(raw, Mapping):
+            issues.append(f"{where} must be an object")
+            continue
+        raw_schema = raw.get("request_schema")
+        if not isinstance(raw_schema, Mapping):
+            issues.append(f"{where}.request_schema must be an object")
+        else:
+            recursive = _recursive_schema_requirement_issues(
+                raw_schema,
+                path=f"{where}.request_schema",
+            )
+            issues.extend(recursive)
+            if not recursive:
+                try:
+                    _validate_schema_definition_node(
+                        raw_schema,
+                        path=f"{where}.request_schema",
+                    )
+                except CapabilitySchemaError as exc:
+                    issues.append(str(exc))
+
+        criteria = raw.get("criteria", raw.get("validation_contract"))
+        if not isinstance(criteria, list) or len(criteria) != 1:
+            observed = len(criteria) if isinstance(criteria, list) else "non-array"
+            issues.append(
+                f"{where}.criteria must contain exactly one executable criterion "
+                f"(observed {observed})"
+            )
+        else:
+            issues.extend(
+                _criterion_requirement_issues(
+                    criteria[0],
+                    where=f"{where}.criteria[0]",
+                )
+            )
+    return issues
 
 
 def validate_structured_criterion(
@@ -567,20 +653,19 @@ def validate_capability_design(
     if not isinstance(raw_capabilities, list) or not 3 <= len(raw_capabilities) <= 10:
         raise CapabilityProtocolError("capabilities must contain between 3 and 10 items")
 
-    schema_issues: list[str] = []
-    for index, raw in enumerate(raw_capabilities):
-        if not isinstance(raw, Mapping):
-            continue
-        raw_schema = raw.get("request_schema")
-        if isinstance(raw_schema, Mapping):
-            schema_issues.extend(
-                _recursive_schema_requirement_issues(
-                    raw_schema,
-                    path=f"capabilities[{index}].request_schema",
-                )
-            )
-    if schema_issues:
-        raise _recursive_schema_error(schema_issues)
+    requirement_issues = _capability_requirement_issues(raw_capabilities)
+    if requirement_issues:
+        reminder = (
+            "capability design contract audit failed. Fix every listed capability, "
+            "request schema, and criterion issue together before rewriting. "
+            "Audit every capability and every nested items node. Parent metadata is not inherited. "
+            "Criterion temporal and aggregation fields are non-empty JSON objects, "
+            "not strings."
+        )
+        raise CapabilityProtocolError(
+            f"{reminder} Found {len(requirement_issues)} issue(s): "
+            f"{'; '.join(requirement_issues)}"
+        )
 
     seen_ids: set[str] = set()
     seen_methods: set[str] = set()
