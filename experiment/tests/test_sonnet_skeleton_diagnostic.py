@@ -29,6 +29,27 @@ def test_sonnet_diagnostic_is_single_robot_nonformal_and_uses_exp3_pin() -> None
         diagnostic._single_robot_config(diagnostic.DEFAULT_CONFIG, "robotstudio_so101")
 
 
+def test_chapter3_exp2_r01_diagnostic_allows_one_repair_only() -> None:
+    config_path = (
+        diagnostic.REPOSITORY_ROOT
+        / "autoadapter"
+        / "configs"
+        / "experiments"
+        / "sonnet-chapter3-exp2-r01-nine-one-repair-diagnostic.json"
+    )
+
+    config = diagnostic._single_robot_config(config_path, "franka_panda")
+
+    assert config.robots == ("franka_panda",)
+    assert config.generation_conditions == ("skeleton-assisted",)
+    assert config.max_driver_attempts_per_condition == 2
+    assert config.formal is False
+    assert config.evolution_enabled is False
+
+    with pytest.raises(diagnostic.DiagnosticRunError, match="not one of the remaining"):
+        diagnostic._single_robot_config(config_path, "unitree-go2-stock-12dof")
+
+
 def test_sonnet_diagnostic_usage_sums_all_physical_calls() -> None:
     client = SimpleNamespace(
         calls=[

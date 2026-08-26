@@ -1,0 +1,72 @@
+{
+  "experiment_id": "autoadapter2-diagnostic-sonnet-chapter3-exp2-r01-nine-one-repair",
+  "robots": [
+    "franka_panda",
+    "kinova_gen3_robotiq_2f85",
+    "ufactory_xarm7",
+    "universal_robots_ur5e_robotiq_2f85",
+    "piper",
+    "kuka_iiwa_14",
+    "leap_hand",
+    "hello_robot_stretch_2",
+    "aloha_2"
+  ],
+  "generation_conditions": [
+    "skeleton-assisted"
+  ],
+  "formal": false,
+  "phase_turn_budgets": {
+    "study": 16,
+    "tgcd": 6,
+    "ivc": 6,
+    "generate_skeleton": 22,
+    "generate_from_scratch": 40,
+    "repair_skeleton": 22,
+    "repair_from_scratch": 20
+  },
+  "max_driver_attempts_per_condition": 2,
+  "execute_python": {
+    "wall_timeout_s_per_call": 30,
+    "max_output_chars_per_call": 12000,
+    "max_steps_per_phase": 4000,
+    "max_sim_time_s_per_phase": 20.0
+  },
+  "recap": {
+    "max_planning_turns_per_task": 16,
+    "max_capability_calls_per_task": 12
+  },
+  "validation": {
+    "record_video": true,
+    "worker_wall_timeout_s": 120
+  },
+  "model": {
+    "vendor": "anthropic",
+    "api_protocol": "openai-compatible",
+    "model_id": "eu.anthropic.claude-sonnet-4-6",
+    "revision": "claude-sonnet-4-6",
+    "base_url": "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1",
+    "context_window_tokens": 1000000,
+    "max_output_tokens": 16384,
+    "temperature": 0.0,
+    "thinking": null,
+    "tool_history_mode": "native",
+    "price_snapshot": {
+      "date": "2026-08-21",
+      "currency": "USD",
+      "input_per_million_tokens": 3.3,
+      "output_per_million_tokens": 16.5
+    }
+  },
+  "experience": {
+    "input": [],
+    "review_queue_output": "experience_review_queue.json",
+    "snapshot_output": "experience_snapshot.json"
+  },
+  "evolution": {
+    "enabled": false,
+    "max_attempts": 1
+  },
+  "seeds": {
+    "task_demo_selection": "{run_id}:{robot_configuration_id}"
+  }
+}
