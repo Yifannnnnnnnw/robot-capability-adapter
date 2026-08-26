@@ -103,6 +103,23 @@ traceable to public sources. The generated driver is not itself a task policy.
 Instead, it provides bounded robot operations that a separate controller may
 select and compose.
 
+Figure~\ref{fig:autoadapter-robot-cohort} shows the eleven configurations in
+the declared Direct-MuJoCo construction cohort. The figure describes simulator
+package coverage; it does not treat morphology as an experimental factor or
+provide evidence of hardware behaviour.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[
+    width=0.96\linewidth
+  ]{assets/mujoco_robot_assets_contact_sheet.png}
+  \caption{Direct-MuJoCo presentation renders of the eleven robot
+  configurations in the declared Auto-Adapter construction cohort. The panels
+  show simulated morphology only; inclusion does not imply behavioural
+  validation, hardware execution, or deployment readiness.}
+  \label{fig:autoadapter-robot-cohort}
+\end{figure}
+
 Interactive simulation can help an agent develop the driver, but the generated
 code should not control the evidence used to assess it. Auto-Adapter therefore
 separates three responsibilities: defining the required capabilities,
