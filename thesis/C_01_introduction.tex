@@ -288,51 +288,45 @@ the evaluated conditions.
 \section[Thesis Structure]{Thesis Structure}
 \label{sec:intro-structure}
 
-The structure of this thesis is organised as follows:
+The remainder of the thesis is organised as follows:
 
 \begin{itemize}[leftmargin=*,itemsep=0.7em]
 
   \item Chapter~2---Background and Literature Review. This chapter defines the
   relationship between high-level controllers, robot capability interfaces,
-  and robot-specific drivers. It reviews LLM tool use, robot-software
-  synthesis, task-grounded abstraction, independent validation, iterative
-  Repair, and cross-run evidence reuse. It concludes by identifying the
-  assumptions that reusable capability interfaces, robot-specific
-  implementations, capability-level pass criteria, and executable validation
-  already exist.
+  and robot-specific drivers. It reviews how LLM-based systems use supplied
+  robot tools, generate executable programmes, and learn from execution
+  feedback. The chapter then identifies the unresolved connection between
+  reusable robot-interface synthesis and independent behavioural validation.
 
-  \item Chapter~3---AutoAdapter-Bench: Fixed-Input Comparison of LLM Backbones
-  in Robot-Specific Driver Synthesis. This chapter presents Experiment~1. It
-  compares seven LLM backbones across five robot configurations under
-  skeleton-assisted and from-scratch generation. For each robot, the capability
-  interface, pass standards, complete private validation suite, Harness rules,
-  and resource budget remain fixed. The chapter reports initial and final
-  validation, Repair, failure, model-use, cost, and time outcomes across the
-  210-cell primary matrix.
+  \item Chapter~3---Auto-Adapter Framework. This chapter presents
+  Experiment~1 and defines the complete Auto-Adapter workflow. It explains how
+  documented task requirements are converted into a task-neutral capability
+  interface, measurable acceptance criteria, and a robot-specific driver. It
+  also defines the information boundaries that separate driver generation,
+  implementation-blind validation, trusted behavioural verdicts, and downstream
+  task execution.
 
-  \item Chapter~4---Task-Grounded Capability and Validation Design. This
-  chapter presents Experiment~2. It first evaluates whether an LLM can derive
-  five to ten reusable capabilities from at least twenty source-backed tasks
-  without a pre-authored catalogue or mapping. It then evaluates whether the
-  LLM can formulate source-preserving capability-level pass criteria that an
-  implementation-blind Independent Validation Compiler can audit and compile.
-  Harness calibration and false-success evidence are reported separately from
-  compilation success. Although the chapter follows Experiment~1 in the thesis,
-  accepted outputs of this upstream process must be fixed before
-  Experiment~1 begins.
+  \item Chapter~4---AutoAdapter-Bench: LLMs for Robot Drivers. This chapter
+  presents Experiment~2 and compares LLMs in two distinct roles. The
+  driver-synthesis track evaluates whether a model can implement a fixed
+  robot-facing interface, whereas the tool-use track evaluates task completion
+  through an already fixed and independently validated interface. The chapter
+  reports their experimental units, behavioural outcomes, and resource measures
+  separately.
 
-  \item Chapter~5---Continued Evolution: Matched Evaluation of Reviewed
-  Experience. This chapter presents Experiment~3. It describes how terminal
-  reports are projected into bounded Evolution proposals, how human review
-  determines which proposals become Experience, and how accepted Experience is
-  versioned for later runs. It then compares matched driver-synthesis runs with
-  and without reviewed Experience. Evolution cannot alter the run from which
-  its evidence was derived.
+  \item Chapter~5---Cross-Robot Evaluation. This chapter presents
+  Experiment~3 and applies the complete Auto-Adapter process across the declared
+  robot configurations under a common model and evidence protocol. It traces
+  each run through interface design, driver generation, behavioural validation,
+  and downstream task execution to identify where the process succeeds or
+  fails. The comparison remains descriptive and does not treat morphology as a
+  causal effect factor.
 
-  \item Chapter~6---Conclusion and Future Work. The final chapter
-  answers the research questions in order and synthesises the evidence from
-  Chapters~3--5. It relates the findings to the scientific and bounded industry
-  contributions, states the limits of the Direct-MuJoCo evaluation, and
-  identifies future work arising from those limits.
+  \item Chapter~6---Conclusion and Future Work. This chapter synthesises the
+  evidence from the three experiments and answers the research questions in
+  their stated order. It relates the findings to the scientific and
+  industry-relevant contributions, defines the limits of the Direct-MuJoCo
+  evidence, and derives future work from those limitations.
 
 \end{itemize}
