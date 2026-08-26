@@ -65,6 +65,39 @@ singh2023progprompt}. Neither setting alone reveals how a model performs when
 constructing a robot-specific driver and when operating through an existing
 driver.
 
+\subsection[ReCAP]{ReCAP}
+\label{sec:recap}
+
+Recursive Context-Aware Reasoning and Planning (ReCAP) is a hierarchical
+framework for long-horizon LLM agents \citep{zhang2025recap}. It generates an
+ordered subtask list, processes only the first item, and recursively decomposes
+abstract items until an executable action is reached. As
+Figure~\ref{fig:chapter3-recap-backtracking} illustrates, the resulting
+observation and remaining parent plan are re-injected into a shared context so
+that subsequent steps can be revised.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]
+    {assets/recap_backtracking_refinement_zhang2025.png}
+  \caption[ReCAP backtracking and plan refinement.]
+  {ReCAP backtracking and plan refinement. The new observation and remaining
+  parent plan are re-injected into the shared context before subsequent
+  subtasks are generated. Reproduced and cropped from Figure~2 of
+  \citet{zhang2025recap} under the CC BY 4.0 licence.}
+  \label{fig:chapter3-recap-backtracking}
+\end{figure}
+
+Experiment~1b adapts this pattern as a fixed high-level controller. Executable
+leaves become typed calls to the fixed robot capability interface, while
+bounded public observations support replanning within the same MuJoCo session.
+Controller-reported completion is not task success; only the trusted Harness
+provides the independent behavioural verdict. Because ReCAP is held fixed, the
+experiment compares model configurations within this controller rather than
+alternative planning architectures.
+
+\subsection[Research Questions]{Research Questions}
+
 AutoAdapter-Bench therefore treats observed performance as conditional on a
 fixed model-plus-endpoint configuration and experimental route, rather than as
 an intrinsic property of a model family. The chapter addresses two questions:
