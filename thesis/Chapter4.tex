@@ -51,6 +51,8 @@ ranking. The remainder of the chapter defines the research questions before
 describing the benchmark design, the two experiments, and their separate
 findings.
 
+
+
 \section[Background and Research Questions]{Background and Research Questions}
 
 Code-generation benchmarks commonly evaluate whether model-produced programs
@@ -140,11 +142,7 @@ enters every experiment.
   \endgroup
 \end{table}
 
-The two Chapter~3 experiments use SO-101 and Unitree Go2 as representatives of
-fixed-arm manipulation and quadruped locomotion. They therefore share robot
-scope without sharing outcomes. The 84-cell and 210-episode results remain
-bounded to these two selected configurations and are not interpreted as
-performance estimates for all eleven robots or as effects of robot type.
+
 
 \section[Experiment design]{Experiment design}
 
@@ -227,6 +225,110 @@ across different task seeds or starting states.
 \section[Result]{Result}
 
 \subsection[Experiment 1a: Driver Synthesis]{Experiment 1a: Driver Synthesis}
+
+Table~\ref{tab:chapter3-exp1a-skeleton-r01-results} reports the completed
+skeleton-assisted R01 diagnostic slice. For each cell that reached the trusted
+Harness, the best-attempt case pass rate is the largest number of cases passed
+by any frozen Driver attempt divided by the applicable suite size. This
+case-level measure differs from the prespecified cell-level outcome, which is
+determined by the final frozen Driver and requires every case to pass.
+
+\begin{table}[htbp]
+  \centering
+  \begingroup
+  \scriptsize
+  \setstretch{1.0}
+  \setlength{\tabcolsep}{2.5pt}
+  \renewcommand{\arraystretch}{1.18}
+  \caption{Best-attempt case coverage and resource use in the
+  skeleton-assisted R01 diagnostic slice of Experiment~1a.}
+  \label{tab:chapter3-exp1a-skeleton-r01-results}
+  \begin{tabularx}{\textwidth}{@{}X
+    >{\centering\arraybackslash}p{17mm}
+    >{\raggedleft\arraybackslash}p{27mm}
+    >{\raggedleft\arraybackslash}p{15mm}
+    >{\centering\arraybackslash}p{17mm}
+    >{\raggedleft\arraybackslash}p{27mm}
+    >{\raggedleft\arraybackslash}p{15mm}@{}}
+    \toprule
+    \multirow{2}{*}{\textbf{LLM}} &
+    \multicolumn{3}{c}{\textbf{SO-101}} &
+    \multicolumn{3}{c}{\textbf{Unitree Go2}} \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    & \shortstack{\textbf{Best-attempt}\\\textbf{case pass rate}}
+    & \shortstack{\textbf{Total tokens /}\\\textbf{estimated cost}}
+    & \textbf{Time}
+    & \shortstack{\textbf{Best-attempt}\\\textbf{case pass rate}}
+    & \shortstack{\textbf{Total tokens /}\\\textbf{estimated cost}}
+    & \textbf{Time} \\
+    \midrule
+    Claude Sonnet 4.6$^{\dagger}$
+      & \shortstack{66.7\%\\(8/12)}
+      & \shortstack[r]{7,334,940\\US\$28.1560}
+      & 61.86 min
+      & \shortstack{93.3\%\\(14/15)}
+      & \shortstack[r]{7,472,317\\US\$28.3721}
+      & 58.76 min \\
+    Claude Opus 5
+      & \shortstack{77.8\%\\(14/18)}
+      & \shortstack[r]{4,753,412\\US\$31.0559}
+      & 48.97 min
+      & \shortstack{Study\\error}
+      & \shortstack[r]{832,998\\US\$6.0186}
+      & 10.97 min \\
+    Claude Haiku 4.5
+      & \shortstack{33.3\%\\(6/18)}
+      & \shortstack[r]{7,665,846\\US\$9.3799}
+      & 25.48 min
+      & \shortstack{53.3\%\\(8/15)}
+      & \shortstack[r]{8,197,519\\US\$10.1070}
+      & 26.41 min \\
+    Amazon Nova Pro
+      & \shortstack{Study\\error}
+      & \shortstack[r]{588,403\\US\$0.6749}
+      & 1.40 min
+      & \shortstack{Study\\error}
+      & \shortstack[r]{455,659\\US\$0.5262}
+      & 1.02 min \\
+    DeepSeek V4 Pro
+      & \shortstack{55.6\%\\(10/18)}
+      & \shortstack[r]{5,149,805\\US\$0.5331}
+      & 31.11 min
+      & \shortstack{86.7\%\\(13/15)}
+      & \shortstack[r]{5,369,899\\US\$0.5075}
+      & 29.17 min \\
+    Ministral 3 8B
+      & \shortstack{Study\\error}
+      & \shortstack[r]{650,866\\US\$0.1497}
+      & 2.17 min
+      & \shortstack{Study\\error}
+      & \shortstack[r]{534,139\\US\$0.1229}
+      & 2.66 min \\
+    \bottomrule
+  \end{tabularx}
+  \endgroup
+\end{table}
+
+The token totals combine input and output tokens. Reported cache-read tokens
+remain a subset of the input total and are not added again. Costs use the
+frozen price snapshots stored with each run and therefore represent estimates
+rather than provider invoices. A Study error indicates that the cell did not
+produce a valid study artefact and consequently did not enter Driver
+validation.
+
+The SO-101 Sonnet result marked $\dagger$ is retained from an earlier dynamic
+12-case canary, whereas the other SO-101 case-level results use the fixed
+18-case suite. It is therefore not directly comparable. Its reported time is
+the provider-request span, while the remaining values are cell wall-clock
+durations.
+
+Among the directly comparable cells that reached the Harness, Opus 5 achieved
+the highest SO-101 best-attempt coverage, at 77.8\%. On Go2, Sonnet 4.6 and
+DeepSeek V4 Pro reached 93.3\% and 86.7\%, respectively. No fixed-suite cell
+passed every case. Because this diagnostic slice contains one
+skeleton-assisted run per model, it does not estimate run-to-run repeatability
+or the effect of skeleton assistance in the prespecified 84-cell
+Experiment~1a design.
 
 \subsection[Experiment 1b: Driver Use]{Experiment 1b : Driver Use}
 
