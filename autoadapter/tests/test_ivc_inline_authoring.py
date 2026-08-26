@@ -13,6 +13,7 @@ from autoadapter2.libraries import RobotPackage, load_robot_package
 from autoadapter2.react import ToolCall, ToolTurn
 from autoadapter2.validation_compiler.ivc import (
     IVCError,
+    IVC_SYSTEM_PROMPT,
     _build_ivc_authoring_index,
     _private_inputs_from_package,
     build_ivc_inputs,
@@ -280,6 +281,25 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
     assert len(inputs["complete_so101_go2_worked_references"]) == 2
     authoring_index = _build_ivc_authoring_index(inputs)
     capability_entry = authoring_index["capability_criterion_index"][0]
+    assert authoring_index["raw_paths"] == {
+        "instances": "ivc_inputs.json::private_instances.instances",
+        "operators": "ivc_inputs.json::measurement_operator_catalog.operators",
+        "scenes": "ivc_inputs.json::scene_entity_catalog.scenes",
+    }
+    assert capability_entry["rooted_request_leaf_index"] == [
+        {
+            "path": "request.target_m",
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+        }
+    ]
+    operator_specs = authoring_index["unit_compatible_operator_specs_by_kind"]
+    assert operator_specs["final_site_position_error"]["required_parameters"] == {
+        "site_name": "string",
+        "target_argument": "request_path",
+    }
+    assert "final_joint_position_error" in operator_specs
     assert capability_entry[
         "allowed_request_grounding_refs_from_sealed_schema"
     ] == [
@@ -292,6 +312,108 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
     assert "selected instance request_domain" in authoring_index[
         "request_grounding_ref_rule"
     ]
+    assert "operator_shortlist_filtered_by_sealed_criterion_units" not in authoring_index
+    assert "relevant_scene_entity_catalogs" not in authoring_index
+    candidate_text = json.dumps(operator_specs)
+    for forbidden in (
+        "selected_kind",
+        "binding_id",
+        "measurement_binding",
+    ):
+        assert forbidden not in candidate_text
+
+
+def test_real_kinova_authoring_index_is_compact_and_projects_robot_base() -> None:
+    package = load_robot_package(
+        ROBOT_ROOT / "kinova_gen3_robotiq_2f85" / "1.0.0"
+    )
+    evidence_ref = {
+        "source_id": "schema-calibration",
+        "specific_reference": "bounded robot-base Cartesian calibration",
+    }
+    coordinate = {
+        "type": "number",
+        "unit": "m",
+        "frame": "robot_base",
+        "minimum": -1.0,
+        "maximum": 1.0,
+        "evidence_refs": [evidence_ref],
+    }
+    design = {
+        "capabilities": [
+            {
+                "capability_id": "K1",
+                "method_name": "move_tip",
+                "request_schema": {
+                    "type": "object",
+                    "properties": {
+                        "target_position": {
+                            "type": "object",
+                            "properties": {
+                                axis: copy.deepcopy(coordinate)
+                                for axis in ("x", "y", "z")
+                            },
+                            "required": ["x", "y", "z"],
+                            "additionalProperties": False,
+                        }
+                    },
+                    "required": ["target_position"],
+                    "additionalProperties": False,
+                },
+                "criteria": [
+                    {
+                        "metric": "tip_error",
+                        "unit": "m",
+                        "comparator": "<=",
+                        "threshold": 0.05,
+                        "temporal": {"kind": "terminal_state"},
+                        "aggregation": {"kind": "single_trial"},
+                        "source_refs": [evidence_ref],
+                    }
+                ],
+            }
+        ],
+        "task_support": [],
+    }
+    inputs = build_ivc_inputs(
+        package=package,
+        design=design,
+        private_inputs=_private_inputs_from_package(package),
+    )
+    authoring_index = _build_ivc_authoring_index(inputs)
+    compact_index = json.dumps(
+        authoring_index, ensure_ascii=True, separators=(",", ":")
+    )
+    assert len(compact_index.encode("utf-8")) < 30_000
+    capability_entry = authoring_index["capability_criterion_index"][0]
+    assert [
+        item["path"] for item in capability_entry["rooted_request_leaf_index"]
+    ] == [
+        "request.target_position.x",
+        "request.target_position.y",
+        "request.target_position.z",
+    ]
+    operator_specs = authoring_index["unit_compatible_operator_specs_by_kind"]
+    assert "final_site_frame_xyz_position_error" in operator_specs
+    assert "final_joint_position_error" in operator_specs
+    alias_group = next(
+        item
+        for item in authoring_index["scene_declared_frame_aliases"]
+        if "assets/reach_scene.xml" in item["scene_entrypoints"]
+    )
+    assert alias_group["declared_frame_aliases"] == {"robot_base": "base_link"}
+    assert alias_group["unresolved_declared_frames"] == []
+    authoring_brief = json.dumps(
+        {
+            "artifact_header": inputs["artifact_header"],
+            "validator_contract": inputs["validator_contract"],
+            "authoring_index": authoring_index,
+            "sealed_capability_design": inputs["sealed_capability_design"],
+        },
+        ensure_ascii=True,
+        separators=(",", ":"),
+    )
+    assert len((IVC_SYSTEM_PROMPT + authoring_brief).encode("utf-8")) < 80_000
 
 
 def test_franka_ivc_inputs_fit_read_limit_when_serialized_compactly(
@@ -408,15 +530,17 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     assert '"allowed_request_grounding_refs_from_sealed_schema"' in first_prompt
     assert "copy only exact source_id/specific_reference pairs" in first_prompt
     assert "selected instance request_domain" in first_prompt
-    assert '"kind":"final_site_position_error"' in first_prompt
-    assert '"parameter_schema":{"type":"object","required":["site_name","target_argument"]' in first_prompt
-    assert '"sites":["tool_site"]' in first_prompt
+    assert '"unit_compatible_operator_specs_by_kind"' in first_prompt
+    assert '"final_site_position_error"' in first_prompt
+    assert '"required_parameters":{"site_name":"string","target_argument":"request_path"}' in first_prompt
+    assert '"scenes":"ivc_inputs.json::scene_entity_catalog.scenes"' in first_prompt
+    assert '"path":"request.target_m"' in first_prompt
     assert "measurement_operator_catalog.operators" in first_prompt
     assert "must start with the literal prefix request." in first_prompt
     assert "use at most two turns for targeted inspection" in first_prompt
     assert "Turns three through six are write-only" in first_prompt
     assert "rather than guessing" in first_prompt
-    assert len(first_prompt.encode("utf-8")) < 200_000
+    assert len(first_prompt.encode("utf-8")) < 80_000
     serialized_inputs = (
         destination.parent / "workspace" / "ivc_inputs.json"
     ).read_text(encoding="utf-8")

@@ -65,9 +65,10 @@ must not infer candidate Driver source, generated traces, Repair history, or a c
 
 The complete input is compact JSON in ivc_inputs.json. Use execute_python for targeted queries; do
 not print the full scene, Task Library, operator, or worked-reference collections. The prompt's
-authoring index gives the exact private_instances.instances records, compatible operator schemas,
-and relevant scene entities; never guess an instance ID or treat the private_instances wrapper as a
-list. The operator array is measurement_operator_catalog.operators, not the wrapper itself, and every
+authoring index gives the exact private_instances.instances records, rooted request leaves,
+unit-compatible operator schemas, and declared frame aliases. Query the raw scene catalog
+only for entity values; never guess an instance ID or treat the private_instances wrapper as a list.
+The operator array is measurement_operator_catalog.operators, not the wrapper itself, and every
 operator request_path value is rooted at request.<field>. With a six-turn budget, use at most two
 turns for targeted inspection; turns three through six are write-only delivery/correction turns.
 Every successful write is immediately audited and any deterministic error is returned in this same
@@ -1267,14 +1268,56 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
 
     The complete private projection remains in ``ivc_inputs.json``.  This
     index duplicates only the fields needed to avoid guessing wrapper paths,
-    instance IDs, operator parameters, and scene entities.
+    instance IDs, operator parameters, request paths, and declared frame
+    aliases.  Full operator and scene catalogs remain queryable in the raw
+    input instead of being repeated in the first prompt.
     """
+
+    def schema_nodes(
+        schema: Any,
+        *,
+        path: str = "request",
+    ) -> tuple[list[dict[str, Any]], list[tuple[str, Mapping[str, Any]]]]:
+        leaves: list[dict[str, Any]] = []
+        addressable: list[tuple[str, Mapping[str, Any]]] = []
+        if not isinstance(schema, Mapping):
+            return leaves, addressable
+        properties = schema.get("properties")
+        if schema.get("type") == "object" and isinstance(properties, Mapping):
+            for name in sorted(properties):
+                child = properties[name]
+                if not isinstance(child, Mapping):
+                    continue
+                child_path = f"{path}.{name}"
+                addressable.append((child_path, child))
+                child_leaves, child_nodes = schema_nodes(child, path=child_path)
+                leaves.extend(child_leaves)
+                addressable.extend(child_nodes)
+            return leaves, addressable
+        record: dict[str, Any] = {
+            "path": path,
+            "type": schema.get("type"),
+        }
+        for field in (
+            "unit",
+            "frame",
+            "minimum",
+            "maximum",
+            "minItems",
+            "maxItems",
+            "enum",
+        ):
+            if field in schema:
+                record[field] = json_copy(
+                    schema[field], label=f"sealed request leaf {path}.{field}"
+                )
+        leaves.append(record)
+        return leaves, addressable
 
     private_document = inputs.get("private_instances")
     if isinstance(private_document, Mapping):
         raw_instances = private_document.get("instances")
         records_path = "private_instances.instances"
-        wrapper_fields = sorted(str(key) for key in private_document)
         wrapper_rule = (
             "private_instances is an object wrapper, not a case list; "
             "copy instance_id only from the indexed records below"
@@ -1282,7 +1325,6 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
     else:
         raw_instances = private_document
         records_path = "private_instances"
-        wrapper_fields = []
         wrapper_rule = (
             "this compatibility input is the record array itself; copy "
             "instance_id only from the indexed records below"
@@ -1299,31 +1341,52 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(instance_id, str) or not isinstance(scene_entrypoint, str):
             raise IVCError("private instance index requires exact IDs and scenes")
         scene_entrypoints.add(scene_entrypoint)
-        instance_records.append(
-            {
-                "instance_id": instance_id,
-                "context_namespace": record.get("context_namespace"),
-                "capability_id": record.get("capability_id"),
-                "case_role": record.get("case_role"),
-                "scene_entrypoint": scene_entrypoint,
-                "mandatory_guard_ids": json_copy(
-                    record.get("guard_ids", []),
-                    label=f"private instance {instance_id} guard_ids",
-                ),
-                "repetitions": record.get("repetitions"),
-                "timeout_sim_s": record.get("timeout_sim_s"),
-                "request_domain": json_copy(
-                    record.get("request_domain"),
-                    label=f"private instance {instance_id} request_domain",
-                ),
-            }
-        )
+        indexed_record = {
+            "instance_id": instance_id,
+            "context_namespace": record.get("context_namespace"),
+            "scene_entrypoint": scene_entrypoint,
+            "mandatory_guard_ids": json_copy(
+                record.get("guard_ids", []),
+                label=f"private instance {instance_id} guard_ids",
+            ),
+            "repetitions": record.get("repetitions"),
+            "timeout_sim_s": record.get("timeout_sim_s"),
+        }
+        for optional_field in ("capability_id", "case_role", "request_domain"):
+            if record.get(optional_field) is not None:
+                indexed_record[optional_field] = json_copy(
+                    record[optional_field],
+                    label=f"private instance {instance_id} {optional_field}",
+                )
+        instance_records.append(indexed_record)
+
+    shared_instance_fields: dict[str, Any] = {}
+    for field in (
+        "context_namespace",
+        "mandatory_guard_ids",
+        "repetitions",
+        "timeout_sim_s",
+    ):
+        values = [record.get(field) for record in instance_records]
+        if values and all(value == values[0] for value in values[1:]):
+            shared_instance_fields[field] = values[0]
+            for record in instance_records:
+                record.pop(field, None)
 
     design = inputs.get("sealed_capability_design")
     if not isinstance(design, Mapping):
         raise IVCError("sealed_capability_design authoring input must be an object")
     criterion_index: list[dict[str, Any]] = []
     criterion_units: set[str] = set()
+    declared_frames: set[str] = set()
+    operator_document = inputs.get("measurement_operator_catalog")
+    raw_operators = (
+        operator_document.get("operators")
+        if isinstance(operator_document, Mapping)
+        else None
+    )
+    if not isinstance(raw_operators, list):
+        raise IVCError("measurement_operator_catalog.operators must be an array")
     for capability in capability_records(design):
         criteria = capability.get("criteria")
         if not (
@@ -1336,40 +1399,101 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
         unit = criterion.get("unit")
         if isinstance(unit, str):
             criterion_units.add(unit)
+        request_schema = capability.get("request_schema")
+        leaves, request_nodes = schema_nodes(request_schema)
+        for _path, node_schema in request_nodes:
+            frame = node_schema.get("frame")
+            if isinstance(frame, str) and frame.strip():
+                declared_frames.add(frame)
         criterion_index.append(
             {
                 "capability_id": capability.get("capability_id"),
                 "method_name": capability.get("method_name"),
-                "criterion": json_copy(dict(criterion), label="sealed criterion"),
+                "criterion_metric": criterion.get("metric"),
+                "criterion_unit": criterion.get("unit"),
+                "rooted_request_leaf_index": leaves,
                 "allowed_request_grounding_refs_from_sealed_schema": [
                     {
                         "source_id": source_id,
                         "specific_reference": specific_reference,
                     }
                     for source_id, specific_reference in sorted(
-                        _evidence_ref_pairs(capability.get("request_schema"))
+                        _evidence_ref_pairs(request_schema)
                     )
                 ],
             }
         )
 
-    operator_document = inputs.get("measurement_operator_catalog")
-    raw_operators = (
-        operator_document.get("operators")
-        if isinstance(operator_document, Mapping)
-        else None
-    )
-    if not isinstance(raw_operators, list):
-        raise IVCError("measurement_operator_catalog.operators must be an array")
-    operator_shortlist = [
-        json_copy(dict(operator), label="measurement operator")
-        for operator in raw_operators
-        if isinstance(operator, Mapping)
-        and isinstance(operator.get("output_units"), list)
-        and criterion_units.intersection(
-            unit for unit in operator["output_units"] if isinstance(unit, str)
+    compatible_operator_specs: dict[str, Any] = {}
+    for operator in raw_operators:
+        if not (
+            isinstance(operator, Mapping)
+            and isinstance(operator.get("kind"), str)
+            and isinstance(operator.get("output_units"), list)
+            and criterion_units.intersection(
+                unit
+                for unit in operator["output_units"]
+                if isinstance(unit, str)
+            )
+        ):
+            continue
+        parameter_schema = operator.get("parameter_schema")
+        properties = (
+            parameter_schema.get("properties")
+            if isinstance(parameter_schema, Mapping)
+            else None
         )
-    ]
+        required_parameters = (
+            set(parameter_schema.get("required", []))
+            if isinstance(parameter_schema, Mapping)
+            else set()
+        )
+        compact_properties = (
+            {
+                str(name): specification.get("type")
+                for name, specification in properties.items()
+                if isinstance(name, str) and isinstance(specification, Mapping)
+            }
+            if isinstance(properties, Mapping)
+            else {}
+        )
+        compact_spec: dict[str, Any] = {
+            "description": operator.get("description"),
+            "output_units": json_copy(
+                operator.get("output_units", []),
+                label="measurement operator output units",
+            ),
+            "required_parameters": {
+                name: compact_properties[name]
+                for name in compact_properties
+                if name in required_parameters
+            },
+            "optional_parameters": {
+                name: compact_properties[name]
+                for name in compact_properties
+                if name not in required_parameters
+            },
+            "entity_parameter_types": json_copy(
+                operator.get("entity_parameters", {}),
+                label="measurement operator entity parameter types",
+            ),
+        }
+        request_path_parameters = operator.get("request_path_parameters", [])
+        if request_path_parameters:
+            compact_spec["request_path_parameters"] = json_copy(
+                request_path_parameters,
+                label="measurement operator request path parameters",
+            )
+        request_value_types = operator.get("request_value_types", {})
+        if request_value_types:
+            compact_spec["request_value_types"] = json_copy(
+                request_value_types,
+                label="measurement operator request value types",
+            )
+        evaluation_mode = operator.get("evaluation_mode")
+        if evaluation_mode != "numeric_measurement":
+            compact_spec["evaluation_mode"] = evaluation_mode
+        compatible_operator_specs[str(operator["kind"])] = compact_spec
 
     scene_document = inputs.get("scene_entity_catalog")
     raw_scenes = (
@@ -1379,21 +1503,54 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
     )
     if not isinstance(raw_scenes, list):
         raise IVCError("scene_entity_catalog.scenes must be an array")
-    relevant_scenes = [
-        json_copy(dict(scene), label="scene entity catalog")
-        for scene in raw_scenes
-        if isinstance(scene, Mapping)
-        and scene.get("scene_entrypoint") in scene_entrypoints
+    alias_groups: dict[
+        tuple[tuple[tuple[str, str], ...], tuple[str, ...]], list[str]
+    ] = {}
+    for scene in raw_scenes:
+        if (
+            not isinstance(scene, Mapping)
+            or scene.get("scene_entrypoint") not in scene_entrypoints
+        ):
+            continue
+        entities = scene.get("entities")
+        aliases = entities.get("frame_aliases") if isinstance(entities, Mapping) else None
+        resolved = {
+            frame: aliases[frame]
+            for frame in sorted(declared_frames)
+            if isinstance(aliases, Mapping)
+            and isinstance(aliases.get(frame), str)
+            and str(aliases[frame]).strip()
+        }
+        unresolved = tuple(sorted(declared_frames - set(resolved)))
+        group_key = (tuple(sorted(resolved.items())), unresolved)
+        alias_groups.setdefault(group_key, []).append(str(scene["scene_entrypoint"]))
+    scene_frame_aliases = [
+        {
+            "scene_entrypoints": sorted(entrypoints),
+            "declared_frame_aliases": dict(resolved_items),
+            "unresolved_declared_frames": list(unresolved),
+        }
+        for (resolved_items, unresolved), entrypoints in sorted(
+            alias_groups.items(), key=lambda item: item[1]
+        )
     ]
 
     return {
+        "raw_paths": {
+            "instances": "ivc_inputs.json::private_instances.instances",
+            "operators": "ivc_inputs.json::measurement_operator_catalog.operators",
+            "scenes": "ivc_inputs.json::scene_entity_catalog.scenes",
+        },
+        "request_path_contract": {
+            "literal_prefix": "request.",
+            "example": "request.target_position.x",
+        },
         "private_instances_raw_wrapper": {
-            "document_path": "private_instances",
             "records_path": records_path,
-            "wrapper_fields": wrapper_fields,
             "rule": wrapper_rule,
         },
         "private_instance_records": instance_records,
+        "private_instance_shared_execution_fields": shared_instance_fields,
         "capability_criterion_index": criterion_index,
         "request_grounding_ref_rule": (
             "For each case, copy only exact source_id/specific_reference pairs "
@@ -1404,11 +1561,18 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "measurement_binding_shape": {
             "metric": "exact sealed criterion metric",
             "unit": "exact sealed criterion unit",
-            "kind": "one kind from operator_shortlist",
-            "parameters": "closed object matching that operator parameter_schema",
+            "kind": "IVC chooses one unit-compatible operator kind",
+            "parameters": (
+                "IVC authors the closed object from unit_compatible_operator_specs_by_kind; "
+                "entity values come from the selected raw scene catalog"
+            ),
         },
-        "operator_shortlist_filtered_by_sealed_criterion_units": operator_shortlist,
-        "relevant_scene_entity_catalogs": relevant_scenes,
+        "unit_compatible_operator_specs_by_kind": compatible_operator_specs,
+        "operator_spec_defaults": {
+            "evaluation_mode": "numeric_measurement",
+            "missing_request_path_parameters_or_value_types": "empty",
+        },
+        "scene_declared_frame_aliases": scene_frame_aliases,
     }
 
 
@@ -1542,8 +1706,8 @@ def run_ivc(
                 {
                     "artifact_header": inputs["artifact_header"],
                     "validator_contract": inputs["validator_contract"],
-                    "sealed_capability_design": inputs["sealed_capability_design"],
                     "authoring_index": _build_ivc_authoring_index(inputs),
+                    "sealed_capability_design": inputs["sealed_capability_design"],
                 },
                 ensure_ascii=True,
                 separators=(",", ":"),
@@ -1563,14 +1727,19 @@ def run_ivc(
                         "private_instances.instances. Use only exact instance_id values from "
                         "authoring_index.private_instance_records, and copy each indexed mandatory "
                         "guard list, repetitions, timeout, and request_domain rather than guessing. "
+                        "Apply authoring_index.private_instance_shared_execution_fields to every "
+                        "indexed record before any record-local overrides. "
                         "For request_grounding_refs, copy only exact source_id/specific_reference "
                         "pairs from the capability's indexed "
                         "allowed_request_grounding_refs_from_sealed_schema or from evidence_refs "
                         "inside the selected instance request_domain. Capability-level evidence_refs "
                         "and criterion source_refs are not valid request grounding. "
-                        "Choose measurement_binding.kind only from the unit-filtered operator "
-                        "shortlist and satisfy its complete parameter_schema using the relevant "
-                        "indexed scene entities. The raw operator catalog is an object wrapper; its "
+                        "Choose measurement_binding.kind yourself from the unit-compatible operator "
+                        "specs and satisfy its parameter signature. The index deliberately contains "
+                        "no selected kind, binding, instance, or entity value: query the exact selected scene under "
+                        "authoring_index.raw_paths.scenes only for the entity values you still need. "
+                        "Use authoring_index.scene_declared_frame_aliases for schema-declared frames. "
+                        "The raw operator catalog is an object wrapper; its "
                         "operator array is measurement_operator_catalog.operators. Every parameter "
                         "whose catalog type is request_path must start with the literal prefix "
                         "request. and resolve into the sealed request_schema. Copy artifact_header "
