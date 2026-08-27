@@ -348,6 +348,32 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         output_minimum=0.0,
     ),
+    "final_site_directional_displacement_error": _spec(
+        "Absolute error between terminal site displacement projected along a "
+        "request XYZ direction and a requested distance.",
+        ["m"],
+        required={
+            "site_name": "string",
+            "direction_x_argument": "request_path",
+            "direction_y_argument": "request_path",
+            "direction_z_argument": "request_path",
+            "target_distance_argument": "request_path",
+        },
+        entities={"site_name": "site"},
+        request_paths=(
+            "direction_x_argument",
+            "direction_y_argument",
+            "direction_z_argument",
+            "target_distance_argument",
+        ),
+        request_value_types={
+            "direction_x_argument": "world_direction_number",
+            "direction_y_argument": "world_direction_number",
+            "direction_z_argument": "world_direction_number",
+            "target_distance_argument": "m_number",
+        },
+        output_minimum=0.0,
+    ),
     "site_frame_xyz_directional_displacement": _spec(
         "Signed start-to-end displacement of a named site, expressed in a named "
         "body frame and projected onto a requested XYZ unit vector.",
@@ -1250,7 +1276,10 @@ def _operator_sibling_path_groups(
                 "arc center",
             ),
         )
-    if kind == "final_body_directional_displacement_error":
+    if kind in {
+        "final_body_directional_displacement_error",
+        "final_site_directional_displacement_error",
+    }:
         return (
             (
                 (
@@ -1259,7 +1288,7 @@ def _operator_sibling_path_groups(
                     "direction_z_argument",
                 ),
                 ("x", "y", "z"),
-                "body direction",
+                "displacement direction",
             ),
         )
     if kind in {

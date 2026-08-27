@@ -667,6 +667,18 @@ def _body_evidence(*positions: tuple[float, float, float]) -> dict[str, Any]:
     }
 
 
+def _site_evidence(*positions: tuple[float, float, float]) -> dict[str, Any]:
+    return {
+        "samples": [
+            {
+                "time": float(index),
+                "site_positions": {"tool_site": list(position)},
+            }
+            for index, position in enumerate(positions)
+        ]
+    }
+
+
 def test_final_body_xyz_position_error_audits_scalar_paths_and_measures(
     tmp_path: Path,
 ) -> None:
@@ -781,6 +793,44 @@ def test_final_body_directional_displacement_error_projects_xyz_direction(
     assert measure(
         canonical,
         evidence=_body_evidence((0.0, 0.0, 0.0), (0.0, -0.16, 0.0)),
+        public_arguments={
+            "request": {
+                "direction": {"x": 0.0, "y": -1.0, "z": 0.0},
+                "distance": 0.16,
+            }
+        },
+    ) == pytest.approx(0.0)
+
+
+def test_final_site_directional_displacement_error_uses_site_not_parent_body(
+    tmp_path: Path,
+) -> None:
+    package, _candidate, _design, _suite = _fixture(tmp_path)
+    schema = _xyz_object_schema("direction", unit="fraction")
+    schema["properties"]["distance"] = _numeric_leaf("m")
+    schema["required"].append("distance")
+    binding = {
+        "metric": "site_directional_displacement_error",
+        "unit": "m",
+        "kind": "final_site_directional_displacement_error",
+        "parameters": {
+            "site_name": "tool_site",
+            "direction_x_argument": "request.direction.x",
+            "direction_y_argument": "request.direction.y",
+            "direction_z_argument": "request.direction.z",
+            "target_distance_argument": "request.distance",
+        },
+    }
+    canonical = audit_inline_measurement_binding(
+        binding,
+        criterion={"metric": "site_directional_displacement_error", "unit": "m"},
+        request_schema=schema,
+        scene_path=package.mjcf_path,
+    )
+
+    assert measure(
+        canonical,
+        evidence=_site_evidence((0.4, 0.0, 0.2), (0.4, -0.16, 0.2)),
         public_arguments={
             "request": {
                 "direction": {"x": 0.0, "y": -1.0, "z": 0.0},

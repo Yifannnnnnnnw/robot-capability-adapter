@@ -1171,8 +1171,10 @@ def measure(
             "target_angle_argument",
         )
         return abs(accumulated - target)
-    if kind == "final_body_directional_displacement_error":
-        body_name = str(parameters["body_name"])
+    if kind in {
+        "final_body_directional_displacement_error",
+        "final_site_directional_displacement_error",
+    }:
         direction = _declared_unit_vector(
             tuple(
                 _finite_number(
@@ -1185,10 +1187,16 @@ def measure(
                     "direction_z_argument",
                 )
             ),
-            name="body displacement direction",
+            name="displacement direction",
         )
-        start = _body_position(first, body_name)
-        end = _body_position(final, body_name)
+        if kind == "final_site_directional_displacement_error":
+            site_name = str(parameters["site_name"])
+            start = _site_position(first, site_name)
+            end = _site_position(final, site_name)
+        else:
+            body_name = str(parameters["body_name"])
+            start = _body_position(first, body_name)
+            end = _body_position(final, body_name)
         displacement = tuple(
             end_coordinate - start_coordinate
             for start_coordinate, end_coordinate in zip(start, end)
