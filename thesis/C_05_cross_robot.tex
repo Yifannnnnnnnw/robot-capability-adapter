@@ -322,3 +322,25 @@ driver. This was the lowest validation frequency among the three
 non-gripper configurations in that sweep, but the tasks, controllers, and
 dynamics changed together. It therefore remains a descriptive result rather
 than evidence of a causal morphology ordering.
+
+
+\clearpage
+\section[Summary]{Summary}
+
+This chapter examined the available MuJoCo evidence for serial arms,
+quadrupeds, Skydio X2, and Unitree H1. The studies showed both feasibility and
+failure at distinct evidence levels. For serial arms, source, build, and homing
+checks were retained, but stricter evaluation exposed missing perception and a
+control-and-execution ceiling on Franka. Quadruped performance depended on the
+evaluated robot and controller; neither Auto-Adapter nor CaP dominated both
+configurations. On Skydio X2, both controllers completed all 40 task trials,
+supporting the flight interface without establishing an agent-loop advantage.
+Unitree H1 supported standing and squat recovery at the driver-validation
+level, but not validated dynamic walking.
+
+The studies used different tasks, validation suites, controllers, and attempt
+budgets. Their results therefore cannot be pooled into a common success rate or
+interpreted as a causal morphology ordering. Taken together, the evidence
+supports configuration-specific execution within the evaluated MuJoCo
+settings; it does not establish general robot integration, hardware behaviour,
+or sim-to-real transfer.
