@@ -36,6 +36,11 @@
 \usepackage{setspace}
 \setstretch{1.5}
 
+% Keep paragraphs visually distinct without the class's oversized default gap.
+\AtBeginDocument{%
+  \setlength{\parskip}{.40\baselineskip plus 1pt minus .5pt}%
+}
+
 % That just does body text -- if you want to expand *everything*,
 %  including footnotes and tables, use this instead:
 %\renewcommand{\baselinestretch}{1.5}
