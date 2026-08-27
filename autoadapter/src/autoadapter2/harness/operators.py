@@ -30,6 +30,7 @@ def _spec(
     evaluation_mode: str = "numeric_measurement",
     parameter_details: Mapping[str, Mapping[str, Any]] = {},
     request_value_types: Mapping[str, str] = {},
+    output_minimum: float | None = None,
 ) -> dict[str, Any]:
     properties = {
         **{name: {"type": kind} for name, kind in required.items()},
@@ -38,7 +39,7 @@ def _spec(
     for name, details in parameter_details.items():
         if name in properties:
             properties[name].update(copy.deepcopy(dict(details)))
-    return {
+    result = {
         "description": description,
         "output_units": list(units),
         "parameter_schema": {
@@ -52,6 +53,9 @@ def _spec(
         "entity_parameters": dict(entities),
         "evaluation_mode": evaluation_mode,
     }
+    if output_minimum is not None:
+        result["output_minimum"] = float(output_minimum)
+    return result
 
 
 # Parameter types are deliberately a small closed DSL.  ``request_path`` is a
@@ -196,6 +200,19 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             },
         },
     ),
+    "final_joint_displacement_error": _spec(
+        "Absolute error between one scalar hinge joint's terminal displacement "
+        "from reset and a requested angular displacement.",
+        ["rad"],
+        required={
+            "joint_name": "string",
+            "target_displacement_argument": "request_path",
+        },
+        entities={"joint_name": "joint"},
+        request_paths=("target_displacement_argument",),
+        request_value_types={"target_displacement_argument": "rad_number"},
+        output_minimum=0.0,
+    ),
     "final_geom_pair_distance_error": _spec(
         "Absolute terminal error between the trusted MuJoCo distance of two named "
         "geoms and one scalar request target.",
@@ -220,6 +237,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         ["rad"],
         required={"joint_name": "string"},
         entities={"joint_name": "joint"},
+        output_minimum=0.0,
     ),
     "body_height": _spec(
         "Terminal world-frame height of one named body.",
@@ -255,7 +273,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"body_name": "body"},
         request_paths=("direction_argument",),
-        request_value_types={"direction_argument": "number"},
+        request_value_types={"direction_argument": "rad_number"},
     ),
     "accumulated_body_arc_angle_error": _spec(
         "Absolute error between accumulated signed body arc angle and a requested "
@@ -322,6 +340,29 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "direction_z_argument": "request_path",
         },
         entities={"site_name": "site", "reference_body_name": "body"},
+        request_paths=(
+            "direction_x_argument",
+            "direction_y_argument",
+            "direction_z_argument",
+        ),
+        request_value_types={
+            "direction_x_argument": "frame_direction_number",
+            "direction_y_argument": "frame_direction_number",
+            "direction_z_argument": "frame_direction_number",
+        },
+    ),
+    "body_frame_xyz_directional_displacement": _spec(
+        "Signed start-to-end displacement of a named body, expressed in a named "
+        "body frame and projected onto a requested XYZ unit vector.",
+        ["m"],
+        required={
+            "body_name": "string",
+            "reference_body_name": "string",
+            "direction_x_argument": "request_path",
+            "direction_y_argument": "request_path",
+            "direction_z_argument": "request_path",
+        },
+        entities={"body_name": "body", "reference_body_name": "body"},
         request_paths=(
             "direction_x_argument",
             "direction_y_argument",
@@ -934,7 +975,7 @@ def _validate_request_value_schema(
             )
         if expected == "world_direction_number" and (
             schema.get("unit")
-            not in {"fraction", "ratio", "unitless", "none", "1"}
+            not in {"dimensionless", "fraction", "ratio", "unitless", "none", "1"}
             or schema.get("frame") != "world"
         ):
             raise MeasurementOperatorError(
@@ -1012,6 +1053,48 @@ def _validate_request_value_schema(
     )
 
 
+def compatible_request_paths(
+    request_schema: Mapping[str, Any], expected_type: str
+) -> list[str]:
+    """Return sealed ``request.*`` paths compatible with one trusted value type.
+
+    This is an authoring aid only.  Final bindings still pass through
+    :func:`audit_inline_measurement_binding`, including the operator-specific
+    sibling, frame, entity, and conversion checks that cannot be decided from
+    an individual request leaf.
+    """
+
+    candidates: list[tuple[str, Mapping[str, Any]]] = []
+
+    def walk(schema: Mapping[str, Any], prefix: str) -> None:
+        properties = schema.get("properties")
+        if schema.get("type") != "object" or not isinstance(properties, Mapping):
+            return
+        for field, child in sorted(properties.items()):
+            if not isinstance(field, str) or not isinstance(child, Mapping):
+                continue
+            path = f"{prefix}.{field}"
+            candidates.append((path, child))
+            walk(child, path)
+
+    walk(request_schema, "request")
+    compatible: list[str] = []
+    for path, schema in candidates:
+        try:
+            _validate_request_value_schema(schema, expected_type, path=path)
+        except MeasurementOperatorError:
+            continue
+        compatible.append(path)
+    return compatible
+
+
+def _compact_names(names: Sequence[str], *, limit: int = 24) -> str:
+    ordered = sorted(set(names))
+    visible = ordered[:limit]
+    suffix = f" (+{len(ordered) - limit} more)" if len(ordered) > limit else ""
+    return f"{visible!r}{suffix}"
+
+
 def _validate_xyz_sibling_paths(
     parameters: Mapping[str, Any],
     fields: Sequence[str],
@@ -1077,6 +1160,7 @@ def _validate_operator_request_roles(
         )
     elif kind in {
         "site_frame_xyz_directional_displacement",
+        "body_frame_xyz_directional_displacement",
     }:
         _validate_xyz_sibling_paths(
             parameters,
@@ -1138,6 +1222,7 @@ def _validate_common_request_frame(
         )
     elif kind in {
         "site_frame_xyz_directional_displacement",
+        "body_frame_xyz_directional_displacement",
     }:
         frame_fields = (
             "direction_x_argument",
@@ -1179,6 +1264,7 @@ def _validate_reference_body_frame(
         "final_site_frame_xyz_position_error",
         "final_body_frame_xyz_position_error",
         "site_frame_xyz_directional_displacement",
+        "body_frame_xyz_directional_displacement",
         "accumulated_site_frame_axis_arc_angle_error",
     }:
         return
@@ -1247,15 +1333,16 @@ def _validate_reference_body_frame(
         return path
 
     reference_path = ancestors(actual_reference)
-    subtree_joints = descendant_joint_counts.get(actual_reference)
-    if (
-        isinstance(subtree_joints, bool)
-        or not isinstance(subtree_joints, int)
-        or subtree_joints <= 0
-    ):
-        raise MeasurementOperatorError(
-            f"reference body {actual_reference!r} does not root an articulated subtree"
-        )
+    if actual_reference != "world":
+        subtree_joints = descendant_joint_counts.get(actual_reference)
+        if (
+            isinstance(subtree_joints, bool)
+            or not isinstance(subtree_joints, int)
+            or subtree_joints <= 0
+        ):
+            raise MeasurementOperatorError(
+                f"reference body {actual_reference!r} does not root an articulated subtree"
+            )
 
     if "site_name" in parameters:
         measured_body = site_body_names.get(str(parameters["site_name"]))
@@ -1467,9 +1554,25 @@ def _validate_entities(
         available = set(raw_available)
         for name in _entity_names(parameters[field], declared_kind):
             if name not in available:
+                actual_kinds = [
+                    other_kind
+                    for other_kind, other_field in entity_fields.items()
+                    if other_kind != base_kind
+                    and isinstance(scene_entities.get(other_field), list)
+                    and name in scene_entities[other_field]
+                ]
+                valid = _compact_names(raw_available)
+                if actual_kinds:
+                    actual = "/".join(sorted(actual_kinds))
+                    raise MeasurementOperatorError(
+                        f"measurement parameters.{field} value {name!r} is a "
+                        f"{actual}, not a {base_kind}; valid {base_kind}s in the "
+                        f"selected scene: {valid}"
+                    )
                 raise MeasurementOperatorError(
                     f"measurement parameters.{field} references unknown "
-                    f"{base_kind} {name!r} in selected scene"
+                    f"{base_kind} {name!r} in selected scene; valid {base_kind}s: "
+                    f"{valid}"
                 )
 
 
@@ -1589,6 +1692,60 @@ def _validate_final_joint_position_conversion(
         )
 
 
+def _validate_joint_output_unit(
+    kind: str,
+    unit: str,
+    parameters: Mapping[str, Any],
+    *,
+    scene_path: Path | None,
+    scene_entities: Mapping[str, Any] | None,
+) -> None:
+    if kind not in {"joint_range", "final_joint_displacement_error"}:
+        return
+    if scene_entities is None:
+        if scene_path is None:
+            raise MeasurementOperatorError(
+                "selected scene joint units are unavailable for measurement audit"
+            )
+        scene_entities = inspect_scene_entities(scene_path)
+    raw_joint_units = scene_entities.get("joint_units")
+    if not isinstance(raw_joint_units, Mapping):
+        raise MeasurementOperatorError(
+            "selected scene has no valid joint_units catalog"
+        )
+    joint_name = str(parameters["joint_name"])
+    actual_unit = raw_joint_units.get(joint_name)
+    if actual_unit not in {"rad", "m"}:
+        raise MeasurementOperatorError(
+            f"{kind} requires a scalar hinge or slide joint; {joint_name!r} is not one"
+        )
+    if actual_unit != unit:
+        raise MeasurementOperatorError(
+            f"{kind} for joint {joint_name!r} must use unit {actual_unit!r}, "
+            f"not {unit!r}"
+        )
+
+
+def _validate_nontrivial_operator_criterion(
+    kind: str, spec: Mapping[str, Any], criterion: Mapping[str, Any]
+) -> None:
+    output_minimum = spec.get("output_minimum")
+    threshold = criterion.get("threshold")
+    comparator = criterion.get("comparator")
+    if not _is_number(output_minimum) or not _is_number(threshold):
+        return
+    minimum = float(output_minimum)
+    boundary = float(threshold)
+    always_true = (comparator == ">=" and boundary <= minimum) or (
+        comparator == ">" and boundary < minimum
+    )
+    if always_true:
+        raise MeasurementOperatorError(
+            f"sealed criterion {comparator} {boundary:g} is non-discriminating for "
+            f"trusted operator {kind!r}, whose output is always >= {minimum:g}"
+        )
+
+
 def audit_inline_measurement_binding(
     binding: Mapping[str, Any],
     *,
@@ -1641,14 +1798,23 @@ def audit_inline_measurement_binding(
         )
     spec = _OPERATOR_SPECS.get(kind)
     if spec is None:
+        criterion_unit = criterion.get("unit")
+        compatible_kinds = [
+            candidate_kind
+            for candidate_kind, candidate_spec in _OPERATOR_SPECS.items()
+            if criterion_unit in candidate_spec["output_units"]
+        ]
         raise MeasurementOperatorError(
-            f"measurement_binding.kind {kind!r} is not in the trusted operator catalog"
+            f"measurement_binding.kind {kind!r} is not in the trusted operator "
+            f"catalog; catalog kinds supporting unit {criterion_unit!r}: "
+            f"{_compact_names(compatible_kinds)}"
         )
     if binding["unit"] not in spec["output_units"]:
         raise MeasurementOperatorError(
             f"measurement_binding.unit {binding['unit']!r} is incompatible with "
             f"trusted operator {kind!r}"
         )
+    _validate_nontrivial_operator_criterion(kind, spec, criterion)
     parameters = binding.get("parameters")
     if not isinstance(parameters, Mapping):
         raise MeasurementOperatorError("measurement_binding.parameters must be an object")
@@ -1685,11 +1851,18 @@ def audit_inline_measurement_binding(
         for field in spec["request_path_parameters"]
     }
     for field, expected in spec["request_value_types"].items():
-        _validate_request_value_schema(
-            request_path_schemas[field],
-            str(expected),
-            path=str(parameters[field]),
-        )
+        try:
+            _validate_request_value_schema(
+                request_path_schemas[field],
+                str(expected),
+                path=str(parameters[field]),
+            )
+        except MeasurementOperatorError as exc:
+            compatible = compatible_request_paths(request_schema, str(expected))
+            raise MeasurementOperatorError(
+                f"{exc}; compatible sealed request paths for "
+                f"parameters.{field}: {_compact_names(compatible)}"
+            ) from exc
     _validate_operator_request_roles(kind, parameters)
     _validate_common_request_frame(kind, request_path_schemas)
     resolved_scene_path = (
@@ -1715,6 +1888,13 @@ def audit_inline_measurement_binding(
         scene_path=resolved_scene_path,
         scene_entities=resolved_scene_entities,
     )
+    _validate_joint_output_unit(
+        kind,
+        str(binding["unit"]),
+        parameters,
+        scene_path=resolved_scene_path,
+        scene_entities=resolved_scene_entities,
+    )
     _validate_final_joint_position_conversion(
         kind,
         str(binding["unit"]),
@@ -1729,6 +1909,7 @@ def audit_inline_measurement_binding(
 __all__ = [
     "MeasurementOperatorError",
     "audit_inline_measurement_binding",
+    "compatible_request_paths",
     "inspect_scene_entities",
     "measurement_operator_catalog",
     "measurement_operator_evaluation_mode",

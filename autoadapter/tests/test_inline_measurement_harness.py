@@ -17,6 +17,7 @@ from autoadapter2.harness.measurements import MeasurementError, measure
 from autoadapter2.harness.operators import (
     MeasurementOperatorError,
     audit_inline_measurement_binding,
+    compatible_request_paths,
     inspect_scene_entities,
     measurement_operator_catalog,
 )
@@ -303,6 +304,7 @@ def test_operator_catalog_is_closed_and_excludes_b1_dispatch() -> None:
     assert "final_body_xyz_position_error" in kinds
     assert "accumulated_body_arc_angle_error" in kinds
     assert "final_body_directional_displacement_error" in kinds
+    assert "body_frame_xyz_directional_displacement" in kinds
     assert "b1_contract" not in kinds
     assert catalog["binding_fields"] == ["metric", "unit", "kind", "parameters"]
     joint_error = operators["final_joint_position_error"]
@@ -310,6 +312,8 @@ def test_operator_catalog_is_closed_and_excludes_b1_dispatch() -> None:
     properties = joint_error["parameter_schema"]["properties"]
     assert properties["target_scale"]["default"] == 1.0
     assert properties["target_offset"]["default"] == 0.0
+    heading = operators["body_directional_displacement"]
+    assert heading["request_value_types"] == {"direction_argument": "rad_number"}
 
 
 def _joint_scene(tmp_path: Path, *, joint_type: str) -> Path:
@@ -853,6 +857,15 @@ _KINOVA_ASSETS = (
     / "libraries"
     / "robots"
     / "kinova_gen3_robotiq_2f85"
+    / "1.0.0"
+    / "assets"
+)
+
+_KUKA_ASSETS = (
+    Path(__file__).resolve().parents[1]
+    / "libraries"
+    / "robots"
+    / "kuka_iiwa_14"
     / "1.0.0"
     / "assets"
 )
@@ -1429,7 +1442,7 @@ def test_kinova_frame_contracts_fail_closed_on_frame_unit_entity_and_vector() ->
         entity="pinch_site",
     )
     position["parameters"]["site_name"] = "bracelet_link"
-    with pytest.raises(MeasurementOperatorError, match="unknown site"):
+    with pytest.raises(MeasurementOperatorError, match="body, not a site"):
         audit_inline_measurement_binding(
             position,
             criterion={"metric": position["metric"], "unit": "m"},
@@ -1497,3 +1510,295 @@ def test_final_site_position_error_rejects_object_target_before_worker(
                 record_video=False,
             )
     worker.assert_not_called()
+
+
+def _kuka_world_schema() -> dict[str, Any]:
+    def scalar(unit: str) -> dict[str, Any]:
+        return {
+            "type": "number",
+            "unit": unit,
+            "frame": "world",
+            "minimum": -2.0,
+            "maximum": 2.0,
+        }
+
+    def vector(prefix: str) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                f"{prefix}x": scalar("dimensionless"),
+                f"{prefix}y": scalar("dimensionless"),
+                f"{prefix}z": scalar("dimensionless"),
+            },
+            "required": [f"{prefix}x", f"{prefix}y", f"{prefix}z"],
+            "additionalProperties": False,
+        }
+
+    return {
+        "type": "object",
+        "properties": {
+            "target_position": {
+                "type": "object",
+                "properties": {axis: scalar("m") for axis in ("x", "y", "z")},
+                "required": ["x", "y", "z"],
+                "additionalProperties": False,
+            },
+            "push_axis": vector("d"),
+            "slide_axis": vector("d"),
+            "angular_displacement": scalar("rad"),
+        },
+        "required": [
+            "target_position",
+            "push_axis",
+            "slide_axis",
+            "angular_displacement",
+        ],
+        "additionalProperties": False,
+    }
+
+
+def test_request_path_compatibility_uses_sealed_type_unit_and_frame() -> None:
+    schema = _kuka_world_schema()
+    assert compatible_request_paths(schema, "rad_number") == [
+        "request.angular_displacement"
+    ]
+    assert compatible_request_paths(schema, "number_array_3") == []
+    assert compatible_request_paths(schema, "world_direction_number") == [
+        "request.push_axis.dx",
+        "request.push_axis.dy",
+        "request.push_axis.dz",
+        "request.slide_axis.dx",
+        "request.slide_axis.dy",
+        "request.slide_axis.dz",
+    ]
+
+
+def test_kuka_world_frame_site_and_body_bindings_audit() -> None:
+    schema = _kuka_world_schema()
+    reach = {
+        "metric": "attachment_site_position_error",
+        "unit": "m",
+        "kind": "final_site_frame_xyz_position_error",
+        "parameters": {
+            "site_name": "attachment_site",
+            "reference_body_name": "world",
+            "target_x_argument": "request.target_position.x",
+            "target_y_argument": "request.target_position.y",
+            "target_z_argument": "request.target_position.z",
+        },
+    }
+    push = {
+        "metric": "end_effector_displacement",
+        "unit": "m",
+        "kind": "site_frame_xyz_directional_displacement",
+        "parameters": {
+            "site_name": "attachment_site",
+            "reference_body_name": "world",
+            "direction_x_argument": "request.push_axis.dx",
+            "direction_y_argument": "request.push_axis.dy",
+            "direction_z_argument": "request.push_axis.dz",
+        },
+    }
+    slide = {
+        "metric": "mechanism_displacement",
+        "unit": "m",
+        "kind": "body_frame_xyz_directional_displacement",
+        "parameters": {
+            "body_name": "drawer",
+            "reference_body_name": "world",
+            "direction_x_argument": "request.slide_axis.dx",
+            "direction_y_argument": "request.slide_axis.dy",
+            "direction_z_argument": "request.slide_axis.dz",
+        },
+    }
+    for binding, scene, comparator, threshold in (
+        (reach, "reach_scene.xml", "<=", 0.05),
+        (push, "push_to_goal_scene.xml", ">=", 0.001),
+        (slide, "drawer_scene.xml", ">=", 0.001),
+    ):
+        assert audit_inline_measurement_binding(
+            binding,
+            criterion={
+                "metric": binding["metric"],
+                "unit": binding["unit"],
+                "comparator": comparator,
+                "threshold": threshold,
+            },
+            request_schema=schema,
+            scene_path=_KUKA_ASSETS / scene,
+        ) == binding
+
+
+def _mujoco_body_snapshot(model: Any, data: Any) -> dict[str, Any]:
+    import mujoco
+
+    return {
+        "body_positions": {
+            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, index): list(
+                map(float, data.xpos[index])
+            )
+            for index in range(int(model.nbody))
+        },
+        "body_quaternions": {
+            mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, index): list(
+                map(float, data.xquat[index])
+            )
+            for index in range(int(model.nbody))
+        },
+    }
+
+
+def test_kuka_drawer_world_frame_measurement_real_mujoco() -> None:
+    import mujoco
+
+    model = mujoco.MjModel.from_xml_path(str(_KUKA_ASSETS / "drawer_scene.xml"))
+    data = mujoco.MjData(model)
+    mujoco.mj_forward(model, data)
+    first = _mujoco_body_snapshot(model, data)
+    joint_id = mujoco.mj_name2id(
+        model, mujoco.mjtObj.mjOBJ_JOINT, "drawer_slide"
+    )
+    data.qpos[int(model.jnt_qposadr[joint_id])] = -0.05
+    mujoco.mj_forward(model, data)
+    final = _mujoco_body_snapshot(model, data)
+    binding = {
+        "kind": "body_frame_xyz_directional_displacement",
+        "parameters": {
+            "body_name": "drawer",
+            "reference_body_name": "world",
+            "direction_x_argument": "request.slide_axis.dx",
+            "direction_y_argument": "request.slide_axis.dy",
+            "direction_z_argument": "request.slide_axis.dz",
+        },
+    }
+    assert measure(
+        binding,
+        evidence={"samples": [first, final]},
+        public_arguments={
+            "request": {"slide_axis": {"dx": 0.0, "dy": -1.0, "dz": 0.0}}
+        },
+    ) == pytest.approx(0.05)
+
+
+def test_kuka_unknown_joint_error_lists_real_fixture_joint() -> None:
+    binding = {
+        "metric": "angular_displacement",
+        "unit": "rad",
+        "kind": "joint_range",
+        "parameters": {"joint_name": "ObjGeom"},
+    }
+    with pytest.raises(
+        MeasurementOperatorError, match=r"unknown joint 'ObjGeom'.*dial_hinge"
+    ):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={
+                "metric": binding["metric"],
+                "unit": "rad",
+                "comparator": ">",
+                "threshold": 0.0,
+            },
+            request_schema=_kuka_world_schema(),
+            scene_path=_KUKA_ASSETS / "dial_scene.xml",
+        )
+
+
+def test_kuka_rotation_no_motion_contract_is_rejected() -> None:
+    binding = {
+        "metric": "target_revolute_joint_angular_displacement",
+        "unit": "rad",
+        "kind": "joint_range",
+        "parameters": {"joint_name": "dial_hinge"},
+    }
+    with pytest.raises(MeasurementOperatorError, match="non-discriminating"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={
+                "metric": binding["metric"],
+                "unit": "rad",
+                "comparator": ">=",
+                "threshold": 0.0,
+            },
+            request_schema=_kuka_world_schema(),
+            scene_path=_KUKA_ASSETS / "dial_scene.xml",
+        )
+
+
+def test_joint_range_rejects_prismatic_joint_for_rad_output() -> None:
+    binding = {
+        "metric": "angular_displacement",
+        "unit": "rad",
+        "kind": "joint_range",
+        "parameters": {"joint_name": "drawer_slide"},
+    }
+    with pytest.raises(MeasurementOperatorError, match="must use unit 'm'"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={
+                "metric": binding["metric"],
+                "unit": "rad",
+                "comparator": ">",
+                "threshold": 0.0,
+            },
+            request_schema=_kuka_world_schema(),
+            scene_path=_KUKA_ASSETS / "drawer_scene.xml",
+        )
+
+
+def test_planar_heading_operator_rejects_xyz_direction_leaf() -> None:
+    binding = {
+        "metric": "end_effector_displacement",
+        "unit": "m",
+        "kind": "body_directional_displacement",
+        "parameters": {
+            "body_name": "link7",
+            "direction_argument": "request.push_axis.dx",
+        },
+    }
+    with pytest.raises(MeasurementOperatorError, match="unit='rad'"):
+        audit_inline_measurement_binding(
+            binding,
+            criterion={
+                "metric": binding["metric"],
+                "unit": "m",
+                "comparator": ">=",
+                "threshold": 0.001,
+            },
+            request_schema=_kuka_world_schema(),
+            scene_path=_KUKA_ASSETS / "push_to_goal_scene.xml",
+        )
+
+
+def test_final_joint_displacement_error_audits_and_measures_signed_targets() -> None:
+    schema = _kuka_world_schema()
+    binding = {
+        "metric": "angular_displacement_error",
+        "unit": "rad",
+        "kind": "final_joint_displacement_error",
+        "parameters": {
+            "joint_name": "dial_hinge",
+            "target_displacement_argument": "request.angular_displacement",
+        },
+    }
+    assert audit_inline_measurement_binding(
+        binding,
+        criterion={
+            "metric": binding["metric"],
+            "unit": "rad",
+            "comparator": "<=",
+            "threshold": 0.05,
+        },
+        request_schema=schema,
+        scene_path=_KUKA_ASSETS / "dial_scene.xml",
+    ) == binding
+    for actual, target in ((0.5, 0.5), (-0.5, -0.5)):
+        assert measure(
+            binding,
+            evidence={
+                "samples": [
+                    {"joint_positions": {"dial_hinge": 0.0}},
+                    {"joint_positions": {"dial_hinge": actual}},
+                ]
+            },
+            public_arguments={"request": {"angular_displacement": target}},
+        ) == pytest.approx(0.0)

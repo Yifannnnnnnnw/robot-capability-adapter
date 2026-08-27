@@ -1080,6 +1080,20 @@ def measure(
         if not math.isfinite(target):
             raise MeasurementError("scaled joint target must be finite")
         return abs(actual - target)
+    if kind == "final_joint_displacement_error":
+        joint_name = str(parameters["joint_name"])
+        actual = _finite_number(
+            _joint_position(final, joint_name) - _joint_position(first, joint_name),
+            "terminal joint displacement",
+        )
+        target = _finite_number(
+            _argument(
+                public_arguments,
+                str(parameters["target_displacement_argument"]),
+            ),
+            "joint displacement request value",
+        )
+        return abs(actual - target)
     if kind in {"final_geom_pair_distance_error", "final_geom_pair_distance"}:
         actual_distance = _trusted_geom_pair_distance(
             final,
@@ -1187,8 +1201,10 @@ def measure(
             "target_distance_argument",
         )
         return abs(actual - target)
-    if kind == "site_frame_xyz_directional_displacement":
-        site_name = str(parameters["site_name"])
+    if kind in {
+        "site_frame_xyz_directional_displacement",
+        "body_frame_xyz_directional_displacement",
+    }:
         reference_body_name = str(parameters["reference_body_name"])
         direction = _declared_unit_vector(
             tuple(
@@ -1203,8 +1219,20 @@ def measure(
             ),
             name="site displacement direction",
         )
-        start = _site_position_in_frame(first, site_name, reference_body_name)
-        end = _site_position_in_frame(final, site_name, reference_body_name)
+        if kind == "site_frame_xyz_directional_displacement":
+            start = _site_position_in_frame(
+                first, str(parameters["site_name"]), reference_body_name
+            )
+            end = _site_position_in_frame(
+                final, str(parameters["site_name"]), reference_body_name
+            )
+        else:
+            start = _body_position_in_frame(
+                first, str(parameters["body_name"]), reference_body_name
+            )
+            end = _body_position_in_frame(
+                final, str(parameters["body_name"]), reference_body_name
+            )
         return _dot(
             tuple(
                 end_coordinate - start_coordinate
@@ -1474,6 +1502,7 @@ _STATE_BINDING_KINDS = {
     "final_body_frame_xyz_position_error",
     "body_planar_target_error",
     "final_joint_position_error",
+    "final_joint_displacement_error",
     "final_geom_pair_distance_error",
     "final_geom_pair_distance",
     "body_height",
