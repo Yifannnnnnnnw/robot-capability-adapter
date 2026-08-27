@@ -64,9 +64,16 @@ behavioural tests. A stricter re-evaluation retained the structural results but
 exposed missing or insufficient behavioural checks on several drivers. The
 sections below therefore state separately whether a result concerns source and
 interface construction, robot-level behavioural validation, or downstream task
-execution. Where applicable, the comparison places Auto-Adapter's multi-turn
-controller against a same-interface Code as Policies (CaP) single-program
-baseline.
+execution.
+
+Code as Policies (CaP) generates executable policy programs that can process
+perception outputs and compose supplied control APIs
+\citep{liang2023codeaspolicies}. In the comparisons reported here, CaP
+receives the same robot-facing capability interface as Auto-Adapter but
+expresses the complete task as a single generated program. Auto-Adapter
+instead uses that interface through a multi-turn controller. The comparison
+therefore concerns downstream task control over a fixed interface, not the
+preceding synthesis of that interface.
 
 
 \section[Serial-Arm Manipulation]{Serial-Arm Manipulation}
@@ -177,16 +184,16 @@ inherit the leniency of the onboarding checks.
 Table~\ref{tab:cross-robot-quadruped-locomotion} shows that neither controller
 dominated across both configurations. Auto-Adapter led on ANYmal-C, whereas
 CaP led on Go2, and the ordering remained the same when the downstream agent
-changed from Sonnet 4.5 to Sonnet 4.6. On ANYmal-C, CaP's open-loop gait
+changed from Sonnet 4.5 to Sonnet 4.6.
+Figure~\ref{fig:quadruped-rollouts} illustrates two of these
+configuration-specific outcomes, but its frame sequences do not establish
+either controller's comparative reliability. On ANYmal-C, CaP's open-loop gait
 failed beyond a short walk, while Auto-Adapter benefited from checking the
 base pose between actions. On Go2, the same repeated-control strategy
 frequently overshot short target distances because the driver's walking
 increment was comparatively coarse. These observations describe interaction
 between each driver, controller, and task suite; they do not isolate a causal
 effect of quadruped morphology.
-
-Figure~\ref{fig:quadruped-rollouts} contrasts the rejected Go2 sit-to-stand
-attempt with a forward-walking ANYmal-C rollout.
 
 \begin{figure}[htbp]
   \centering
