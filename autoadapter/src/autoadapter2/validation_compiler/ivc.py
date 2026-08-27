@@ -90,7 +90,8 @@ criteria unchanged. Ground requests only with the supplied schema/domain evidenc
 operator signatures and real entities from the selected scene. Private examples are examples, never IDs.
 Never emit binding_id, code, task dispatch/IDs, Driver/Repair material, advice, or a self-reported verdict.
 
-There are six turns: at most two inspection turns, then turns three through six are write/correction only.
+There are six turns: turn one is the only optional targeted inspection turn; turns two through six are
+write/correction only. The authoring brief is sufficient, so write on turn one when no lookup is needed.
 Every successful write is audited immediately. Large files may use bounded append writes; the combined
 canonical file alone must parse."""
 
@@ -1785,7 +1786,7 @@ def run_ivc(
                     artifact_path=working_artifact,
                     validate_artifact=validate_file,
                     max_turns=max_turns,
-                    delivery_turns=max(1, max_turns - 2),
+                    delivery_turns=max(1, max_turns - 1),
                     validate_after_write=True,
                 )
             except ReactLoopError as exc:

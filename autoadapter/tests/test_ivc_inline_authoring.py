@@ -657,7 +657,7 @@ class _InspectThenCorrectIVCModel:
             {item["function"]["name"] for item in kwargs["tools"]}
         )
         turn = len(self.messages)
-        if turn <= 2:
+        if turn == 1:
             call = ToolCall(
                 id=f"inspect-{turn}",
                 name="execute_python",
@@ -669,7 +669,7 @@ class _InspectThenCorrectIVCModel:
             return ToolTurn(content=None, tool_calls=(call,), finish_reason="tool_calls")
 
         artifact = copy.deepcopy(self.suite)
-        if turn == 3:
+        if turn == 2:
             # Reproduce the observed wrapper/list/guessed-ID mistake.  The
             # authoring index supplies the exact scalar ID instead.
             artifact["cases"][0]["instance_id"] = ["guessed-private-instance"]
@@ -691,7 +691,7 @@ class _InspectThenCorrectIVCModel:
         return ToolTurn(content=None, tool_calls=(call,), finish_reason="end_turn")
 
 
-def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
+def test_ivc_reserves_turns_two_through_six_for_delivery_and_correction(
     tmp_path: Path,
 ) -> None:
     package, design, private, suite = _synthetic(tmp_path)
@@ -708,15 +708,14 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     )
 
     assert canonical["cases"] == suite["cases"]
-    assert len(model.messages) == 4
+    assert len(model.messages) == 3
     assert model.tool_names == [
-        {"write_file", "execute_python"},
         {"write_file", "execute_python"},
         {"write_file"},
         {"write_file"},
     ]
     assert "instance_id is not a supplied private instance" in json.dumps(
-        model.messages[3]
+        model.messages[2]
     )
     first_prompt = str(model.messages[0][0]["content"])
     assert '"instances":"ivc_inputs.json::private_instances.instances"' in first_prompt
@@ -744,8 +743,8 @@ def test_ivc_reserves_turns_three_through_six_for_delivery_and_correction(
     assert '"scenes":"ivc_inputs.json::scene_entity_catalog.scenes"' in first_prompt
     assert '"rooted_request_paths":["request.target_m"]' in first_prompt
     assert "measurement_operator_catalog.operators" in first_prompt
-    assert "at most two inspection turns" in IVC_SYSTEM_PROMPT
-    assert "turns three through six are write/correction only" in IVC_SYSTEM_PROMPT
+    assert "turn one is the only optional targeted inspection turn" in IVC_SYSTEM_PROMPT
+    assert "turns two through six are" in IVC_SYSTEM_PROMPT
     assert "read_file is intentionally unavailable" in IVC_SYSTEM_PROMPT
     assert "The Framework has not selected an operator" in IVC_SYSTEM_PROMPT
     assert "Ground requests only with the supplied schema/domain evidence pairs" in (
