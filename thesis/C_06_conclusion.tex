@@ -1,133 +1,71 @@
 \chapter[Conclusion and Future Work]{Conclusion and Future Work}\label{chapter:runtime-improvement}\label{chapter:discussion}\label{chapter:conclusion}
 
-\begin{quote}\itshape
-This final chapter answers the research questions by bringing together evidence
-from the preceding studies. It distinguishes what the experiments establish
-from interpretations that remain unsupported. The conclusion then explains
-how the framework contributes to research on robot-specific software while
-retaining the limits of the evaluated setting. Future work follows directly
-from those limits and asks how validation can be strengthened before the
-framework is assessed in less controlled conditions.
-\end{quote}
-
 \section[Summary]{Summary}
-This chapter answers RQ3 by analysing where the method breaks down. The goal is
-to make the boundary of the thesis explicit: the harness can produce bounded
-evidence for adapter correctness, but it cannot by itself guarantee all
-physical robot behaviours.
 
-\paragraph{\textit{Background literature.}}
-The chapter draws on literature and practice in sim-to-real transfer, robot
-runtime integration, failure analysis, calibration, sensing, and safety
-engineering. These areas explain why a generated adapter can pass available
-validation while still failing under physical deployment conditions.
+This thesis investigated how language models can construct reusable,
+executable, and independently validated software interfaces for different
+robots. Auto-Adapter frames this problem as the synthesis and validation of a
+robot-specific driver. By separating capability definition, driver
+implementation, and trusted Harness judgement, the framework allows interface
+correctness, behavioural correctness, and downstream task success to be
+evaluated independently.
 
-\paragraph{\textit{Sim-to-real and physical deployment.}}
-Simulator validation can expose many interface and behaviour errors, but
-physical deployment introduces calibration, perception, contact, latency, and
-safety constraints that may not be represented in simulation.
+The experiments showed that a structurally correct or executable driver does
+not necessarily satisfy its complete behavioural requirements. No evaluated
+fixed-suite cell passed every behavioural test. In the fixed-driver study, 61
+of 123 evaluable task episodes succeeded, while every normally terminated
+episode that failed the Harness had nevertheless been declared complete by its
+controller. These findings show that tool synthesis, tool use, and task
+completion are related but non-substitutable abilities. A model's completion
+statement cannot replace independent judgement of the observed robot state.
 
-\paragraph{\textit{Runtime integration failure modes.}}
-Runtime failures may arise from backend assumptions, transport mismatches,
-camera geometry, coordinate frames, servo behaviour, calibration drift, or
-observation-action inconsistency.
+The cross-robot experiments further indicated that the capability-interface
+approach can be applied across different robot configurations, although the
+outcomes remain dependent on the task, control structure, and validation
+conditions. The principal contribution of this thesis is therefore not a claim
+that one model can control robots universally, but an auditable method that
+turns language-model-generated robot software into an experimental object that
+can be independently tested, compared, and reused. The conclusions remain
+bounded to the evaluated models, robot configurations, tasks, and MuJoCo
+environments, and do not directly establish visual-perception performance,
+hardware validity, or sim-to-real transfer.
 
-\paragraph{\textit{Case study materials.}}
-The chapter uses runtime integration cases, validation logs, traces, robot
-observations, generated adapter artifacts, and failure evidence as its study
-materials. These materials are used to analyse whether failures arise from
-model capability, morphology, validation coverage, runtime assumptions, or
+\section[Future Work]{Future Work}
+
+\textbf{First, behavioural validation should cover a broader range of
+conditions.} Future studies could introduce unseen tasks, varied initial
+states, scene changes, and repeated resets to test whether an accepted driver
+remains reliable beyond its validation suite. Validation thresholds and
+boundary cases should also be calibrated further, distinguishing stable
+drivers from implementations that fit only the evaluated cases.
+
+\textbf{Second, failures associated with perception, control structure, and
+driver synthesis should be separated.} The present experiments mainly use
+structured state observations supplied by the simulator. Future work could
+compare structured state, noisy state, and RGB or RGB-D observations, while
+varying control priors separately and holding the remaining conditions fixed.
+This would provide clearer evidence about the source of each failure.
+
+\textbf{Third, long-horizon planning and the role of Experience require
+further investigation.} With the driver, tasks, and Harness held fixed,
+experiments could test whether explicit subgoal records, feedback use, and
+recovery mechanisms reduce false completion and improve task success. The
+effect of Experience would require a matched no-Experience condition and
+multiple independent runs. Loading Experience across runs establishes an
+information-transfer mechanism, but does not by itself establish improved
+performance.
+
+\textbf{Fourth, cross-robot evaluation requires a more closely matched
+design.} Future experiments should hold the model, task structure, resource
+budget, and validation standard as constant as possible, making outcomes more
+comparable across robot configurations. Any investigation of morphology would
+also need to separate morphology from differences in control interfaces,
+observations, and tasks.
+
+\textbf{Finally, simulator evidence should be extended to real execution in
+stages.} Future work should connect the framework to genuine vendor software
+development kits and robot-specific Translation Layers before conducting
+hardware experiments that examine calibration, communication latency, sensor
+noise, contact behaviour, and safety constraints. Simulator validation can
+serve as a filter before real execution, but it is not sufficient evidence for
 physical deployment.
-
-\paragraph{\textit{SO101 runtime backend integration.}}
-The SO101 case study describes the backend route, bridge process, calibration
-assumptions, observation path, action interface, and hardware-facing
-constraints. It focuses on how the adapter contract meets the physical
-execution route.
-
-\paragraph{\textit{Additional runtime routes.}}
-Additional routes such as Piper CAN, Unitree DDS, RealSense/D405 camera
-bridges, or other SDK-backed systems can show that runtime backend integration
-is not a single-robot special case.
-
-\paragraph{\textit{Aims of study and analysis approach.}}
-The aim of this chapter is to classify boundary conditions and failure modes.
-The analysis asks whether each failure is best explained by model capability,
-robot morphology, validation coverage, runtime integration, or physical
-deployment constraints.
-
-\paragraph{\textit{Failure categorisation.}}
-Failures are categorised by source so that the thesis can distinguish
-generation errors from tool-use errors, validation gaps, backend mismatches,
-and physical-world constraints.
-
-\paragraph{\textit{Boundary analysis.}}
-Boundary analysis identifies what the current method supports and what remains
-outside its evidence base. This makes the thesis contribution grounded rather
-than overclaimed.
-
-\paragraph{\textit{Failure and integration analysis.}}
-Failure evidence may include false validation, grasp failures, servo bias,
-hand-eye or calibration errors, near-field depth issues, transport mismatches,
-and observation-action inconsistencies.
-
-\paragraph{\textit{Model and morphology boundaries.}}
-Some failures arise because a model cannot infer the correct adapter structure,
-while others arise because a morphology or control interface makes the adapter
-problem more difficult.
-
-\paragraph{\textit{Validation gaps.}}
-Validation gaps occur when available checks fail to expose a behaviour that
-later matters during downstream execution or physical deployment.
-
-\paragraph{\textit{Runtime backend boundaries.}}
-Runtime backend boundaries occur when the adapter contract does not fully
-capture assumptions made by the SDK, bridge, camera, calibration file, or
-transport route.
-
-\paragraph{\textit{Results.}}
-The chapter reports failure categories, validation gaps, repaired and
-unrepaired cases, and lessons for extending simulator validation toward
-physical deployment.
-
-\section[Contributions]{Contributions}
-The boundary analysis clarifies what the thesis does and does not claim. The
-current work supports simulator-grounded and harness-gated onboarding of robot
-runtime adapters, while stronger physical validation, hardware safety review,
-and deployment-specific engineering remain future work.
-
-\paragraph{\textit{Interpretation of results.}}
-The results should be interpreted around the thesis claim that formal
-robot-and-runtime contracts make adapter synthesis more reusable and that
-validated adapters can become useful tool layers for downstream agents. At the
-same time, the failure evidence shows that model capability, robot morphology,
-validation coverage, and runtime integration remain important constraints.
-
-\paragraph{\textit{Limitations of current validation.}}
-The validation procedures are useful as feedback and evidence, but they are not
-complete guarantees of physical success. False validation is especially
-important because it shows where a generated adapter can pass available checks
-while still failing under real robot conditions.
-
-\paragraph{\textit{Final conclusion.}}
-The thesis reframes robot-facing LLM tool construction as a reusable adapter
-synthesis problem. It argues that the key unit is not a one-off task script,
-but a runtime adapter whose interface can be specified, validated, reused, and
-called by downstream agents.
-
-RQ1 is answered through the benchmark evaluation of reusable adapter synthesis.
-RQ2 is answered through downstream task execution with validated adapters as
-tool layers. RQ3 is answered through the failure categories and limitations
-that reveal the boundary between current validation procedures, runtime
-integration, and physical deployment.
-
-The broader implication is that robotics-oriented LLM systems need
-infrastructure that connects formal specifications, backend execution routes,
-and empirical evidence. The harness provides that structure while leaving room
-for more capable agents and stronger physical validation in future work.
-
-\section[Further Work]{Further Work}
-Future work includes richer diagnosis and repair agents, video-based
-diagnosis, automated reward or oracle construction, broader backend coverage,
-stronger physical safety constraints, and better integration between adapter
-synthesis and downstream task execution.
