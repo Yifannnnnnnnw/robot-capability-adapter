@@ -26,6 +26,66 @@ using them to complete tasks. The study evaluates seven LLMs across eleven
 robot configurations. In the SO-101 diagnostic, the strongest generated driver
 passed 14 of 18 independently evaluated cases (77.8\%).
 
+The evaluation comprises three experiments.
+\textbf{Experiment 1---Auto-Adapter Framework.} The first experiment evaluates
+the complete framework, from designing reusable robot operations to generating
+and independently validating a robot-specific driver. Its purpose is to
+determine whether Auto-Adapter can construct the robot-facing software required
+by a tool-using agent.
+
+\textbf{Experiment 2---AutoAdapter-Bench.} The benchmark evaluates LLMs
+separately as creators and users of robot tools. Its purpose is to compare these
+abilities and establish whether successful tool use also indicates successful
+tool synthesis.
+
+\textbf{Experiment 3---Cross-Robot Evaluation.} The final experiment applies
+Auto-Adapter across different robot configurations. Its purpose is to analyse
+how observed performance differs between robots and identify where the
+framework succeeds or fails.
+
+
+Within the evaluated scope, the thesis makes three scientific contributions:
+\vspace{-.65\baselineskip}
+\begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
+
+  \item Auto-Adapter contributes a task-grounded \textbf{design} method that
+  derives a task-neutral capability interface and measurable pass criteria from
+  source-backed target tasks, without requiring a pre-authored capability
+  catalogue or task-to-capability mapping.
+
+  \item The framework makes robot-specific driver \textbf{synthesis} the
+  evaluated research object. An LLM must implement the fixed capability contract
+  through actuator-mediated Direct-MuJoCo control, with bounded Repair and at
+  most three submitted drivers.
+
+  \item Implementation-blind \textbf{validation} prevents candidate code from
+  choosing its private cases, measurements, physical-integrity checks, or final
+  verdict, distinguishing interface conformance and model self-report from
+  observed robot behaviour.
+
+\end{enumerate}
+
+The thesis also makes three bounded,
+industry-relevant contributions:
+\vspace{-.65\baselineskip}
+\begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
+
+  \item A versioned robot \textbf{integration} package combines each robot's
+  MuJoCo model, source-backed tasks, capability design, private validation
+  bindings, and execution policy, supporting configuration-specific evaluation
+  through a common experimental route.
+
+  \item Fixed-input \textbf{benchmarking} holds each robot's capability
+  interface, private validation suite, Harness, and resource budget constant
+  while LLM backbones and generation conditions vary, with validation, Repair,
+  failure, token, cost, and time outcomes reported separately.
+
+  \item Cross-run reuse remains subject to human \textbf{oversight}: a reviewer
+  must accept or reject an unedited terminal Experience proposal with a reason
+  before it can enter a fresh later run.
+
+\end{enumerate}
+
 \end{abstract}
 
 \begin{acknowledgements}
