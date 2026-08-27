@@ -127,21 +127,8 @@ vision--language--action policies may combine several of these mappings
 explicit semantic subgoal selection above low-level action generation
 \citep{shi2025hirobot,hu2026orchestrating}.
 
-\begin{figure}[tbp]
-  \centering
-  \fbox{\rule{0pt}{0.28\textheight}\rule{0.90\linewidth}{0pt}}
-  \caption{Functional control hierarchy and the Auto-Adapter evaluation
-  boundary. High-level control selects and sequences capabilities, while a
-  robot-specific driver realises interface calls through lower-level motion
-  generation, control, and actuation. Dashed callouts indicate the separate
-  evaluation of capability use across interface granularities and LLM-based
-  driver synthesis. The boxes represent functional roles rather than mandatory
-  software modules.}
-  \label{fig:control-hierarchy-autoadapter}
-\end{figure}
-
-Figure~\ref{fig:control-hierarchy-autoadapter} places the robot capability
-interface at the delegation boundary between these functions. Auto-Adapter
+The robot capability interface sits at the delegation boundary between these
+functions. Auto-Adapter
 separately evaluates how high-level controllers use capabilities exposed at
 different granularities, and how different LLMs synthesise the robot-specific
 drivers that realise motion-control capabilities under matched experimental
