@@ -19,6 +19,7 @@ from autoadapter2.harness.operators import (
     audit_inline_measurement_binding,
     compatible_request_paths,
     inspect_scene_entities,
+    measurement_operator_authoring_compatibility,
     measurement_operator_catalog,
 )
 from autoadapter2.libraries import RobotPackage, load_robot_package
@@ -118,7 +119,15 @@ def _fixture(tmp_path: Path) -> tuple[RobotPackage, Path, dict[str, Any], dict[s
                 "type": "array",
                 "minItems": 3,
                 "maxItems": 3,
-                "items": {"type": "number", "minimum": -1.0, "maximum": 1.0},
+                "unit": "m",
+                "frame": "world",
+                "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "world",
+                    "minimum": -1.0,
+                    "maximum": 1.0,
+                },
             }
         },
         "required": ["target_position_m"],
@@ -557,6 +566,52 @@ def test_joint_position_error_rejects_unit_that_disagrees_with_joint_type(
         )
 
 
+def test_joint_position_authoring_compatibility_respects_target_units() -> None:
+    criterion = {
+        "metric": "slide_position_error",
+        "unit": "m",
+        "comparator": "<=",
+        "threshold": 0.005,
+    }
+    assert measurement_operator_authoring_compatibility(
+        "final_joint_position_error",
+        criterion=criterion,
+        request_schema=_joint_request_schema("target", unit="rad"),
+    ) is None
+
+    same_unit = measurement_operator_authoring_compatibility(
+        "final_joint_position_error",
+        criterion=criterion,
+        request_schema=_joint_request_schema("target", unit="m"),
+    )
+    assert same_unit is not None
+    assert same_unit["joint_target_path_modes"] == {
+        "request.target": "same_unit"
+    }
+
+    dimensionless = measurement_operator_authoring_compatibility(
+        "final_joint_position_error",
+        criterion=criterion,
+        request_schema=_joint_request_schema(
+            "target", unit="fraction", minimum=0.0, maximum=1.0
+        ),
+    )
+    assert dimensionless is not None
+    assert dimensionless["joint_target_path_modes"] == {
+        "request.target": "bounded_dimensionless"
+    }
+
+    ungrounded = _joint_request_schema(
+        "target", unit="fraction", minimum=0.0, maximum=1.0
+    )
+    del ungrounded["properties"]["target"]["evidence_refs"]
+    assert measurement_operator_authoring_compatibility(
+        "final_joint_position_error",
+        criterion=criterion,
+        request_schema=ungrounded,
+    ) is None
+
+
 def test_scaled_joint_measurement_rejects_nonfinite_request_value() -> None:
     binding = _joint_binding(
         metric="aperture_position_error",
@@ -765,6 +820,351 @@ def test_body_xyz_binding_rejects_aliased_paths_and_wrong_unit(tmp_path: Path) -
             criterion={"metric": "body_position_error", "unit": "m"},
             request_schema=schema,
             scene_path=package.mjcf_path,
+        )
+
+
+def test_authoring_compatibility_requires_one_legal_xyz_sibling_group() -> None:
+    split_schema = {
+        "type": "object",
+        "properties": {
+            "left": {
+                "type": "object",
+                "properties": {"x": _numeric_leaf("m")},
+                "required": ["x"],
+                "additionalProperties": False,
+            },
+            "right": {
+                "type": "object",
+                "properties": {
+                    axis: _numeric_leaf("m") for axis in ("y", "z")
+                },
+                "required": ["y", "z"],
+                "additionalProperties": False,
+            },
+        },
+        "required": ["left", "right"],
+        "additionalProperties": False,
+    }
+    criterion = {
+        "metric": "body_position_error",
+        "unit": "m",
+        "comparator": "<=",
+        "threshold": 0.05,
+    }
+    assert measurement_operator_authoring_compatibility(
+        "final_body_xyz_position_error",
+        criterion=criterion,
+        request_schema=split_schema,
+    ) is None
+
+    compatible = measurement_operator_authoring_compatibility(
+        "final_body_xyz_position_error",
+        criterion=criterion,
+        request_schema=_xyz_object_schema("target_position", unit="m"),
+    )
+    assert compatible is not None
+    assert compatible["request_path_candidates"] == {
+        "target_x_argument": ["request.target_position.x"],
+        "target_y_argument": ["request.target_position.y"],
+        "target_z_argument": ["request.target_position.z"],
+    }
+
+
+def test_authoring_compatibility_excludes_untyped_request_path_operator() -> None:
+    schema = _xyz_object_schema("target_position", unit="m")
+    schema["properties"]["control_steps"] = {"type": "integer"}
+    schema["required"].append("control_steps")
+    assert measurement_operator_authoring_compatibility(
+        "final_concatenated_site_position_error",
+        criterion={
+            "metric": "site_position_error",
+            "unit": "m",
+            "comparator": "<=",
+            "threshold": 0.05,
+        },
+        request_schema=schema,
+    ) is None
+    with pytest.raises(MeasurementOperatorError, match="lack sealed value types"):
+        audit_inline_measurement_binding(
+            {
+                "metric": "site_position_error",
+                "unit": "m",
+                "kind": "final_concatenated_site_position_error",
+                "parameters": {
+                    "site_names": ["tool_site"],
+                    "reference_body_name": "world",
+                    "target_argument": "request.target_position",
+                    "physics_steps_per_control_step": 2,
+                    "control_steps_argument": "request.control_steps",
+                },
+            },
+            criterion={
+                "metric": "site_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.05,
+            },
+            request_schema=schema,
+        )
+
+
+def test_nonnegative_position_error_rejects_always_true_zero_floor() -> None:
+    schema = {
+        "type": "object",
+        "properties": {
+            "target": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "unit": "m",
+                "frame": "world",
+                "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "world",
+                },
+            }
+        },
+        "required": ["target"],
+        "additionalProperties": False,
+    }
+    criterion = {
+        "metric": "site_position_error",
+        "unit": "m",
+        "comparator": ">=",
+        "threshold": 0.0,
+    }
+    assert measurement_operator_authoring_compatibility(
+        "final_site_position_error",
+        criterion=criterion,
+        request_schema=schema,
+    ) is None
+    with pytest.raises(MeasurementOperatorError, match="non-discriminating"):
+        audit_inline_measurement_binding(
+            {
+                "metric": "site_position_error",
+                "unit": "m",
+                "kind": "final_site_position_error",
+                "parameters": {
+                    "site_name": "tool_site",
+                    "target_argument": "request.target",
+                },
+            },
+            criterion=criterion,
+            request_schema=schema,
+        )
+
+
+def test_nonnegative_count_rejects_always_true_zero_floor() -> None:
+    criterion = {
+        "metric": "contact_samples",
+        "unit": "count",
+        "comparator": ">=",
+        "threshold": 0,
+    }
+    assert measurement_operator_authoring_compatibility(
+        "contact_sample_count",
+        criterion=criterion,
+        request_schema={
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False,
+        },
+    ) is None
+    with pytest.raises(MeasurementOperatorError, match="non-discriminating"):
+        audit_inline_measurement_binding(
+            {
+                "metric": "contact_samples",
+                "unit": "count",
+                "kind": "contact_sample_count",
+                "parameters": {},
+            },
+            criterion=criterion,
+            request_schema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+        )
+
+
+def test_binary_completion_rejects_always_true_one_ceiling() -> None:
+    criterion = {
+        "metric": "completion",
+        "unit": "binary",
+        "comparator": "<=",
+        "threshold": 1.0,
+    }
+    schema = {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": False,
+    }
+    assert measurement_operator_authoring_compatibility(
+        "named_bodies_axis_completion",
+        criterion=criterion,
+        request_schema=schema,
+    ) is None
+    with pytest.raises(MeasurementOperatorError, match="non-discriminating"):
+        audit_inline_measurement_binding(
+            {
+                "metric": "completion",
+                "unit": "binary",
+                "kind": "named_bodies_axis_completion",
+                "parameters": {
+                    "body_names": ["tool"],
+                    "finish_coordinate": 0.0,
+                },
+            },
+            criterion=criterion,
+            request_schema=schema,
+        )
+
+
+@pytest.mark.parametrize(
+    ("comparator", "threshold", "message"),
+    [
+        ("between", [-1.0, 2.0], "non-discriminating"),
+        ("between", [2.0, 3.0], "unsatisfiable"),
+        ("==", 2.0, "unsatisfiable"),
+    ],
+)
+def test_bounded_binary_rejects_vacuous_or_impossible_criteria(
+    comparator: str,
+    threshold: Any,
+    message: str,
+) -> None:
+    criterion = {
+        "metric": "completion",
+        "unit": "binary",
+        "comparator": comparator,
+        "threshold": threshold,
+    }
+    schema = {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": False,
+    }
+    assert measurement_operator_authoring_compatibility(
+        "named_bodies_axis_completion",
+        criterion=criterion,
+        request_schema=schema,
+    ) is None
+    with pytest.raises(MeasurementOperatorError, match=message):
+        audit_inline_measurement_binding(
+            {
+                "metric": "completion",
+                "unit": "binary",
+                "kind": "named_bodies_axis_completion",
+                "parameters": {
+                    "body_names": ["tool"],
+                    "finish_coordinate": 0.0,
+                },
+            },
+            criterion=criterion,
+            request_schema=schema,
+        )
+
+
+def test_world_position_operator_rejects_non_metric_array_schema() -> None:
+    schema = {
+        "type": "object",
+        "properties": {
+            "target": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "unit": "rad",
+                "frame": "world",
+                "items": {
+                    "type": "number",
+                    "unit": "rad",
+                    "frame": "world",
+                },
+            }
+        },
+        "required": ["target"],
+        "additionalProperties": False,
+    }
+    criterion = {
+        "metric": "site_position_error",
+        "unit": "m",
+        "comparator": "<=",
+        "threshold": 0.05,
+    }
+    assert measurement_operator_authoring_compatibility(
+        "final_site_position_error",
+        criterion=criterion,
+        request_schema=schema,
+    ) is None
+    with pytest.raises(
+        MeasurementOperatorError,
+        match="unit='m'.*frame='world'",
+    ):
+        audit_inline_measurement_binding(
+            {
+                "metric": "site_position_error",
+                "unit": "m",
+                "kind": "final_site_position_error",
+                "parameters": {
+                    "site_name": "tool_site",
+                    "target_argument": "request.target",
+                },
+            },
+            criterion=criterion,
+            request_schema=schema,
+        )
+
+
+@pytest.mark.parametrize(
+    "weights",
+    ([0.0, 0.0, 0.0], [1.0, 1.0], [1.0, -1.0, 1.0], [0.5, 1.0, 1.0]),
+)
+def test_weighted_position_operator_cannot_weaken_or_drop_an_axis(
+    weights: list[float],
+) -> None:
+    schema = {
+        "type": "object",
+        "properties": {
+            "target": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "unit": "m",
+                "frame": "world",
+                "items": {
+                    "type": "number",
+                    "unit": "m",
+                    "frame": "world",
+                },
+            }
+        },
+        "required": ["target"],
+        "additionalProperties": False,
+    }
+    with pytest.raises(MeasurementOperatorError, match="each >= 1"):
+        audit_inline_measurement_binding(
+            {
+                "metric": "weighted_site_position_error",
+                "unit": "m",
+                "kind": "final_weighted_site_position_error",
+                "parameters": {
+                    "site_name": "tool_site",
+                    "target_argument": "request.target",
+                    "weights": weights,
+                },
+            },
+            criterion={
+                "metric": "weighted_site_position_error",
+                "unit": "m",
+                "comparator": "<=",
+                "threshold": 0.05,
+            },
+            request_schema=schema,
         )
 
 
@@ -1743,6 +2143,155 @@ def test_joint_range_rejects_prismatic_joint_for_rad_output() -> None:
             request_schema=_kuka_world_schema(),
             scene_path=_KUKA_ASSETS / "drawer_scene.xml",
         )
+
+
+@pytest.mark.parametrize(
+    ("kind", "parameters", "request_schema"),
+    [
+        (
+            "final_maximum_joint_position_error",
+            {
+                "joint_names": ["slide_joint"],
+                "target_argument": "request.targets",
+                "physics_steps_per_control_step": 2,
+                "control_steps_argument": "request.control_steps",
+            },
+            {
+                "type": "object",
+                "properties": {
+                    "targets": {
+                        "type": "array",
+                        "unit": "rad",
+                        "items": {"type": "number", "unit": "rad"},
+                    },
+                    "control_steps": {"type": "integer", "minimum": 1},
+                },
+            },
+        ),
+        (
+            "final_wrapped_joint_position_error",
+            {
+                "joint_name": "slide_joint",
+                "target_argument": "request.target",
+                "physics_steps_per_control_step": 2,
+                "control_steps_argument": "request.control_steps",
+            },
+            {
+                "type": "object",
+                "properties": {
+                    "target": {"type": "number", "unit": "rad"},
+                    "control_steps": {"type": "integer", "minimum": 1},
+                },
+            },
+        ),
+        (
+            "maximum_joint_linear_trajectory_error",
+            {
+                "joint_name": "slide_joint",
+                "velocity_argument": "request.velocity",
+                "control_period_s": 0.02,
+                "control_steps_argument": "request.control_steps",
+                "physics_steps_per_control_step": 2,
+            },
+            {
+                "type": "object",
+                "properties": {
+                    "velocity": {"type": "number", "unit": "rad/s"},
+                    "control_steps": {"type": "integer", "minimum": 1},
+                },
+            },
+        ),
+    ],
+)
+def test_radian_joint_operators_reject_slide_joints_before_execution(
+    kind: str,
+    parameters: dict[str, Any],
+    request_schema: dict[str, Any],
+) -> None:
+    with pytest.raises(MeasurementOperatorError, match="requires 'rad' joints"):
+        audit_inline_measurement_binding(
+            {
+                "metric": "joint_error",
+                "unit": "rad",
+                "kind": kind,
+                "parameters": parameters,
+            },
+            criterion={
+                "metric": "joint_error",
+                "unit": "rad",
+                "comparator": "<=",
+                "threshold": 0.05,
+            },
+            request_schema=request_schema,
+            scene_entities={
+                "bodies": [],
+                "sites": [],
+                "joints": ["slide_joint"],
+                "geoms": [],
+                "joint_units": {"slide_joint": "m"},
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    ("kind", "request_schema", "expected_field"),
+    [
+        (
+            "final_maximum_joint_position_error",
+            {
+                "type": "object",
+                "properties": {
+                    "targets": {
+                        "type": "array",
+                        "unit": "rad",
+                        "items": {"type": "number", "unit": "rad"},
+                    },
+                    "control_steps": {"type": "integer", "minimum": 1},
+                },
+            },
+            "joint_names",
+        ),
+        (
+            "final_wrapped_joint_position_error",
+            {
+                "type": "object",
+                "properties": {
+                    "target": {"type": "number", "unit": "rad"},
+                    "control_steps": {"type": "integer", "minimum": 1},
+                },
+            },
+            "joint_name",
+        ),
+        (
+            "maximum_joint_linear_trajectory_error",
+            {
+                "type": "object",
+                "properties": {
+                    "velocity": {"type": "number", "unit": "rad/s"},
+                    "control_steps": {"type": "integer", "minimum": 1},
+                },
+            },
+            "joint_name",
+        ),
+    ],
+)
+def test_radian_joint_authoring_projection_declares_joint_unit(
+    kind: str,
+    request_schema: dict[str, Any],
+    expected_field: str,
+) -> None:
+    projection = measurement_operator_authoring_compatibility(
+        kind,
+        criterion={
+            "metric": "joint_error",
+            "unit": "rad",
+            "comparator": "<=",
+            "threshold": 0.05,
+        },
+        request_schema=request_schema,
+    )
+    assert projection is not None
+    assert projection["joint_parameter_units"] == {expected_field: "rad"}
 
 
 def test_planar_heading_operator_rejects_xyz_direction_leaf() -> None:

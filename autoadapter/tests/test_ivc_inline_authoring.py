@@ -98,8 +98,12 @@ def _synthetic(
                             "type": "array",
                             "minItems": 3,
                             "maxItems": 3,
+                            "unit": "m",
+                            "frame": "world",
                             "items": {
                                 "type": "number",
+                                "unit": "m",
+                                "frame": "world",
                                 "minimum": -1.0,
                                 "maximum": 1.0,
                                 "evidence_refs": [copy.deepcopy(evidence_ref)],
@@ -349,6 +353,8 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
         "measurement_binding_contract",
         "operator_parameter_signature_legend",
         "measurement_binding_kind_catalog",
+        "deterministic_structural_compatibility",
+        "scene_entity_type_index",
         "scene_declared_frame_aliases",
     }
     assert set(capability_entry) == {
@@ -376,8 +382,12 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
                 "type": "array",
                 "minItems": 3,
                 "maxItems": 3,
+                "unit": "m",
+                "frame": "world",
                 "items": {
                     "type": "number",
+                    "unit": "m",
+                    "frame": "world",
                     "minimum": -1.0,
                     "maximum": 1.0,
                 },
@@ -401,14 +411,14 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
         "parameter_types_not_values"
     ] == {
         "site_name": "entity:site",
-        "target_argument": "request_path:number_array_3",
+        "target_argument": "request_path:world_m_array_3",
     }
-    assert "final_joint_position_error" in operator_signatures
-    expected_operator_kinds = {
-        operator["kind"]
-        for operator in inputs["measurement_operator_catalog"]["operators"]
-        if "m" in operator["output_units"]
-    }
+    assert "final_joint_position_error" not in operator_signatures
+    expected_operator_kinds = set(
+        authoring_index["deterministic_structural_compatibility"][
+            "by_capability_id"
+        ]["N1"]["structurally_compatible_operator_kinds"]
+    )
     assert set(operator_signatures) == expected_operator_kinds
     assert authoring_index["measurement_binding_contract"]["exact_fields"] == [
         "metric",
@@ -461,6 +471,35 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
     assert "capability-provenance-only" not in json.dumps(capability_entry)
     assert "operator_shortlist_filtered_by_sealed_criterion_units" not in authoring_index
     assert "relevant_scene_entity_catalogs" not in authoring_index
+    compatibility = authoring_index["deterministic_structural_compatibility"][
+        "by_capability_id"
+    ]["N1"]
+    compatible_operators = compatibility[
+        "structurally_compatible_operator_kinds"
+    ]
+    assert "final_site_position_error" in compatible_operators
+    assert "final_joint_position_error" not in compatible_operators
+    assert compatibility["compatible_request_paths_by_value_type"] == {
+        "world_m_array_3": ["request.target_m"]
+    }
+    scene_index = authoring_index["scene_entity_type_index"]
+    assert scene_index["shared_across_all_scenes"]["entity_names"] == {
+        "body": ["tool", "world"],
+        "site": ["tool_site"],
+        "joint": [],
+        "geom": [],
+    }
+    assert scene_index["shared_across_all_scenes"][
+        "finite_range_joint_names_by_unit"
+    ] == {"rad": [], "m": []}
+    assert scene_index["per_scene_additions"] == [
+        {
+            "scene_entrypoint": "assets/scene.xml",
+            "entity_names": {key: [] for key in ("body", "site", "joint", "geom")},
+            "joint_names_by_unit": {"rad": [], "m": []},
+            "finite_range_joint_names_by_unit": {"rad": [], "m": []},
+        }
+    ]
     candidate_text = json.dumps(operator_signatures)
     for forbidden in (
         "selected_kind",
@@ -513,6 +552,249 @@ def test_build_inputs_exposes_catalog_scenes_and_examples_not_binding_selection(
                 expected[optional_field] = raw_record[optional_field]
         expected_instances.append(expected)
     assert projected_instances == expected_instances
+
+
+def test_authoring_scene_feasibility_requires_distinct_pair_in_one_scene(
+    tmp_path: Path,
+) -> None:
+    package, design, private, _suite = _synthetic(tmp_path)
+    package.mjcf_path.write_text(
+        "<mujoco><worldbody><body name='tool'>"
+        "<geom name='only_geom' type='sphere' size='.01'/>"
+        "<site name='tool_site'/></body></worldbody></mujoco>",
+        encoding="utf-8",
+    )
+    inputs = build_ivc_inputs(
+        package=package,
+        design=design,
+        private_inputs=private,
+    )
+    kinds = _build_ivc_authoring_index(inputs)[
+        "deterministic_structural_compatibility"
+    ]["by_capability_id"]["N1"]["structurally_compatible_operator_kinds"]
+    assert "final_geom_pair_distance" not in kinds
+
+    package.mjcf_path.write_text(
+        "<mujoco><worldbody><body name='tool'>"
+        "<geom name='geom_a' type='sphere' size='.01'/>"
+        "<geom name='geom_b' type='sphere' size='.01' pos='.1 0 0'/>"
+        "<site name='tool_site'/></body></worldbody></mujoco>",
+        encoding="utf-8",
+    )
+    inputs = build_ivc_inputs(
+        package=package,
+        design=design,
+        private_inputs=private,
+    )
+    kinds = _build_ivc_authoring_index(inputs)[
+        "deterministic_structural_compatibility"
+    ]["by_capability_id"]["N1"]["structurally_compatible_operator_kinds"]
+    assert "final_geom_pair_distance" in kinds
+
+
+def test_optional_entity_parameters_do_not_block_scene_feasibility(
+    tmp_path: Path,
+) -> None:
+    package, design, private, _suite = _synthetic(tmp_path)
+    package.mjcf_path.write_text(
+        "<mujoco><worldbody><body name='tool'>"
+        "<geom name='object_geom' type='sphere' size='.01'/>"
+        "</body></worldbody></mujoco>",
+        encoding="utf-8",
+    )
+    design["capabilities"][0]["request_schema"] = {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": False,
+    }
+    design["capabilities"][0]["criteria"] = [
+        {
+            "metric": "in_hand_motion_success",
+            "unit": "trial",
+            "comparator": ">=",
+            "threshold": 1,
+            "temporal": {"kind": "terminal_state"},
+            "aggregation": {"kind": "single_trial"},
+            "source_refs": [
+                {
+                    "source_id": "real-calibration",
+                    "specific_reference": "binary in-hand success",
+                }
+            ],
+        }
+    ]
+    inputs = build_ivc_inputs(
+        package=package,
+        design=design,
+        private_inputs=private,
+    )
+    kinds = _build_ivc_authoring_index(inputs)[
+        "deterministic_structural_compatibility"
+    ]["by_capability_id"]["N1"]["structurally_compatible_operator_kinds"]
+    assert "in_hand_object_pattern_success" in kinds
+
+
+def test_dimensionless_joint_target_requires_a_finite_scene_joint_range(
+    tmp_path: Path,
+) -> None:
+    package, design, private, _suite = _synthetic(tmp_path)
+    evidence_ref = {
+        "source_id": "real-calibration",
+        "specific_reference": "normalized slide target bounds",
+    }
+    design["capabilities"][0]["request_schema"] = {
+        "type": "object",
+        "properties": {
+            "target_fraction": {
+                "type": "number",
+                "unit": "fraction",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "evidence_refs": [evidence_ref],
+            }
+        },
+        "required": ["target_fraction"],
+        "additionalProperties": False,
+    }
+    design["capabilities"][0]["criteria"][0].update(
+        metric="slide_position_error",
+        unit="m",
+        source_refs=[evidence_ref],
+    )
+
+    def compatible_kinds(joint_xml: str) -> list[str]:
+        package.mjcf_path.write_text(
+            "<mujoco><worldbody><body name='tool'>"
+            f"{joint_xml}<geom name='tool_geom' type='sphere' size='.01' mass='.1'/>"
+            "<site name='tool_site'/></body></worldbody></mujoco>",
+            encoding="utf-8",
+        )
+        inputs = build_ivc_inputs(
+            package=package,
+            design=design,
+            private_inputs=private,
+        )
+        return _build_ivc_authoring_index(inputs)[
+            "deterministic_structural_compatibility"
+        ]["by_capability_id"]["N1"]["structurally_compatible_operator_kinds"]
+
+    assert "final_joint_position_error" not in compatible_kinds(
+        "<joint name='slide_joint' type='slide'/>"
+    )
+    assert "final_joint_position_error" in compatible_kinds(
+        "<joint name='slide_joint' type='slide' range='0 .04'/>"
+    )
+
+
+def test_frame_operator_requires_an_articulated_relative_path(
+    tmp_path: Path,
+) -> None:
+    package, design, private, _suite = _synthetic(tmp_path)
+    evidence_ref = {
+        "source_id": "real-calibration",
+        "specific_reference": "world-frame Cartesian bounds",
+    }
+    coordinate = {
+        "type": "number",
+        "unit": "m",
+        "frame": "world",
+        "minimum": -1.0,
+        "maximum": 1.0,
+        "evidence_refs": [evidence_ref],
+    }
+    design["capabilities"][0]["request_schema"] = {
+        "type": "object",
+        "properties": {
+            "target": {
+                "type": "object",
+                "properties": {
+                    axis: copy.deepcopy(coordinate)
+                    for axis in ("x", "y", "z")
+                },
+                "required": ["x", "y", "z"],
+                "additionalProperties": False,
+            }
+        },
+        "required": ["target"],
+        "additionalProperties": False,
+    }
+
+    def compatible_kinds(body_contents: str) -> list[str]:
+        package.mjcf_path.write_text(
+            "<mujoco><worldbody><body name='tool'>"
+            f"{body_contents}<site name='tool_site'/></body>"
+            "</worldbody></mujoco>",
+            encoding="utf-8",
+        )
+        inputs = build_ivc_inputs(
+            package=package,
+            design=design,
+            private_inputs=private,
+        )
+        return _build_ivc_authoring_index(inputs)[
+            "deterministic_structural_compatibility"
+        ]["by_capability_id"]["N1"]["structurally_compatible_operator_kinds"]
+
+    assert "final_site_frame_xyz_position_error" not in compatible_kinds("")
+    assert "final_site_frame_xyz_position_error" in compatible_kinds(
+        "<joint name='tool_hinge' type='hinge'/>"
+        "<geom name='tool_geom' type='sphere' size='.01' mass='.1'/>"
+    )
+
+
+def test_radian_joint_operator_is_not_advertised_for_slide_only_scene(
+    tmp_path: Path,
+) -> None:
+    package, design, private, _suite = _synthetic(tmp_path)
+    evidence_ref = {
+        "source_id": "real-calibration",
+        "specific_reference": "radian joint target bounds",
+    }
+    design["capabilities"][0]["request_schema"] = {
+        "type": "object",
+        "properties": {
+            "target": {
+                "type": "number",
+                "unit": "rad",
+                "minimum": -1.0,
+                "maximum": 1.0,
+                "evidence_refs": [evidence_ref],
+            },
+            "control_steps": {"type": "integer", "minimum": 1},
+        },
+        "required": ["target", "control_steps"],
+        "additionalProperties": False,
+    }
+    design["capabilities"][0]["criteria"][0].update(
+        metric="joint_error",
+        unit="rad",
+        source_refs=[evidence_ref],
+    )
+
+    def compatible_kinds(joint_type: str) -> list[str]:
+        joint_range = "0 .04" if joint_type == "slide" else "-1 1"
+        package.mjcf_path.write_text(
+            "<mujoco><worldbody><body name='tool'>"
+            f"<joint name='measured_joint' type='{joint_type}' "
+            f"range='{joint_range}'/>"
+            "<geom name='tool_geom' type='sphere' size='.01' mass='.1'/>"
+            "</body></worldbody></mujoco>",
+            encoding="utf-8",
+        )
+        inputs = build_ivc_inputs(
+            package=package,
+            design=design,
+            private_inputs=private,
+        )
+        return _build_ivc_authoring_index(inputs)[
+            "deterministic_structural_compatibility"
+        ]["by_capability_id"]["N1"]["structurally_compatible_operator_kinds"]
+
+    assert "final_wrapped_joint_position_error" not in compatible_kinds(
+        "slide"
+    )
+    assert "final_wrapped_joint_position_error" in compatible_kinds("hinge")
 
 
 def test_real_kinova_authoring_index_is_compact_and_projects_robot_base() -> None:
@@ -608,6 +890,172 @@ def test_real_kinova_authoring_index_is_compact_and_projects_robot_base() -> Non
     )
     assert '"sealed_capability_design"' not in authoring_brief
     assert len((IVC_SYSTEM_PROMPT + authoring_brief).encode("utf-8")) < 40_000
+
+
+def _kuka_compatibility_design(*, rotation_comparator: str) -> dict[str, Any]:
+    evidence_ref = {
+        "source_id": "kuka-scene-calibration",
+        "specific_reference": "bounded KUKA world-frame calibration",
+    }
+
+    def scalar(unit: str) -> dict[str, Any]:
+        return {
+            "type": "number",
+            "unit": unit,
+            "frame": "world",
+            "minimum": -2.0,
+            "maximum": 2.0,
+            "evidence_refs": [copy.deepcopy(evidence_ref)],
+        }
+
+    reach_schema = {
+        "type": "object",
+        "properties": {
+            "target_position": {
+                "type": "object",
+                "properties": {
+                    axis: scalar("m") for axis in ("x", "y", "z")
+                },
+                "required": ["x", "y", "z"],
+                "additionalProperties": False,
+            }
+        },
+        "required": ["target_position"],
+        "additionalProperties": False,
+    }
+    rotation_schema = {
+        "type": "object",
+        "properties": {"angular_displacement": scalar("rad")},
+        "required": ["angular_displacement"],
+        "additionalProperties": False,
+    }
+
+    def criterion(
+        metric: str, unit: str, comparator: str, threshold: float
+    ) -> dict[str, Any]:
+        return {
+            "metric": metric,
+            "unit": unit,
+            "comparator": comparator,
+            "threshold": threshold,
+            "temporal": {"kind": "terminal_state"},
+            "aggregation": {"kind": "single_trial"},
+            "source_refs": [copy.deepcopy(evidence_ref)],
+        }
+
+    return {
+        "capabilities": [
+            {
+                "capability_id": "K_REACH",
+                "method_name": "reach_pose",
+                "request_schema": reach_schema,
+                "criteria": [
+                    criterion("attachment_site_position_error", "m", "<=", 0.05)
+                ],
+            },
+            {
+                "capability_id": "K_ROTATE",
+                "method_name": "rotate_fixture",
+                "request_schema": rotation_schema,
+                "criteria": [
+                    criterion(
+                        "angular_displacement_error",
+                        "rad",
+                        rotation_comparator,
+                        0.0 if rotation_comparator == ">=" else 0.05,
+                    )
+                ],
+            },
+        ],
+        "task_support": [],
+    }
+
+
+def test_real_kuka_compatibility_is_lossless_and_rejects_noop_rotation() -> None:
+    package = load_robot_package(ROBOT_ROOT / "kuka_iiwa_14" / "1.0.0")
+    private_inputs = _private_inputs_from_package(package)
+    corrected_inputs = build_ivc_inputs(
+        package=package,
+        design=_kuka_compatibility_design(rotation_comparator="<="),
+        private_inputs=private_inputs,
+    )
+    corrected_index = _build_ivc_authoring_index(corrected_inputs)
+    compatibility = corrected_index["deterministic_structural_compatibility"][
+        "by_capability_id"
+    ]
+    assert "final_site_frame_xyz_position_error" in compatibility["K_REACH"][
+        "structurally_compatible_operator_kinds"
+    ]
+    assert compatibility["K_REACH"][
+        "compatible_request_paths_by_value_type"
+    ]["frame_m_number"] == [
+        "request.target_position.x",
+        "request.target_position.y",
+        "request.target_position.z",
+    ]
+    assert "final_joint_displacement_error" in compatibility["K_ROTATE"][
+        "structurally_compatible_operator_kinds"
+    ]
+    assert compatibility["K_ROTATE"]["joint_parameter_units_by_kind"][
+        "final_joint_displacement_error"
+    ] == {"joint_name": "rad"}
+
+    scene_index = corrected_index["scene_entity_type_index"]
+    shared = scene_index["shared_across_all_scenes"]
+    additions = {
+        record["scene_entrypoint"]: record
+        for record in scene_index["per_scene_additions"]
+    }
+    for raw_scene in corrected_inputs["scene_entity_catalog"]["scenes"]:
+        entrypoint = raw_scene["scene_entrypoint"]
+        entities = raw_scene["entities"]
+        for entity_type, source_field in {
+            "body": "bodies",
+            "site": "sites",
+            "joint": "joints",
+            "geom": "geoms",
+        }.items():
+            reconstructed = set(shared["entity_names"][entity_type]) | set(
+                additions[entrypoint]["entity_names"][entity_type]
+            )
+            assert reconstructed == set(entities[source_field])
+        for unit in ("rad", "m"):
+            reconstructed = set(shared["joint_names_by_unit"][unit]) | set(
+                additions[entrypoint]["joint_names_by_unit"][unit]
+            )
+            assert reconstructed == {
+                name
+                for name, declared_unit in entities["joint_units"].items()
+                if declared_unit == unit
+            }
+
+    bad_inputs = build_ivc_inputs(
+        package=package,
+        design=_kuka_compatibility_design(rotation_comparator=">="),
+        private_inputs=private_inputs,
+    )
+    bad_rotation = _build_ivc_authoring_index(bad_inputs)[
+        "deterministic_structural_compatibility"
+    ]["by_capability_id"]["K_ROTATE"]
+    assert bad_rotation["structurally_compatible_operator_kinds"] == []
+
+    class NeverCalledModel:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def generate_json(self, **_kwargs: Any) -> dict[str, Any]:
+            self.calls += 1
+            raise AssertionError("IVC model must not be called")
+
+    model = NeverCalledModel()
+    with pytest.raises(IVCError, match="do not call IVC.*rerun TGCD"):
+        run_ivc(
+            model,
+            package=package,
+            design=_kuka_compatibility_design(rotation_comparator=">="),
+            private_inputs=private_inputs,
+        )
+    assert model.calls == 0
 
 
 def test_franka_ivc_inputs_fit_read_limit_when_serialized_compactly(
@@ -737,9 +1185,12 @@ def test_ivc_reserves_turns_two_through_six_for_delivery_and_correction(
     assert "operator, mode, and" in IVC_SYSTEM_PROMPT
     assert "artifact_header wrapper is forbidden" in IVC_SYSTEM_PROMPT
     assert '"measurement_binding_kind_catalog"' in first_prompt
+    assert '"deterministic_structural_compatibility"' in first_prompt
+    assert '"scene_entity_type_index"' in first_prompt
+    assert '"structurally_compatible_operator_kinds"' in first_prompt
     assert '"unit_compatible_operator_signatures_by_kind"' not in first_prompt
     assert '"final_site_position_error"' in first_prompt
-    assert '"parameter_types_not_values":{"site_name":"entity:site","target_argument":"request_path:number_array_3"}' in first_prompt
+    assert '"parameter_types_not_values":{"site_name":"entity:site","target_argument":"request_path:world_m_array_3"}' in first_prompt
     assert '"scenes":"ivc_inputs.json::scene_entity_catalog.scenes"' in first_prompt
     assert '"rooted_request_paths":["request.target_m"]' in first_prompt
     assert "measurement_operator_catalog.operators" in first_prompt
@@ -809,6 +1260,34 @@ def test_semantic_operator_catalog_is_scoped_to_exact_reference_contract() -> No
         "capability_id": "A1",
         "requires_exact_worked_reference_contract": True,
     }
+
+
+def test_rich_reference_criteria_advertise_only_exact_semantic_operator() -> None:
+    index = json.loads((ROBOT_ROOT / "index.json").read_text(encoding="utf-8"))[
+        "robots"
+    ]
+    for reference in load_sanitized_ivc_examples():
+        robot_id = reference["validation_suite"]["robot_configuration_id"]
+        package = load_robot_package(ROBOT_ROOT / index[robot_id])
+        inputs = build_ivc_inputs(
+            package=package,
+            design=reference["capability_design"],
+            private_inputs=_private_inputs_from_package(package),
+        )
+        compatibility = _build_ivc_authoring_index(inputs)[
+            "deterministic_structural_compatibility"
+        ]["by_capability_id"]
+        expected_by_capability: dict[str, str] = {}
+        for case in reference["validation_suite"]["cases"]:
+            expected_by_capability.setdefault(
+                case["capability_id"],
+                case["measurement_binding"]["kind"],
+            )
+        assert set(compatibility) == set(expected_by_capability)
+        for capability_id, expected_kind in expected_by_capability.items():
+            assert compatibility[capability_id][
+                "structurally_compatible_operator_kinds"
+            ] == [expected_kind]
 
 
 def test_semantic_operator_rejects_changed_reference_identity_or_criterion() -> None:

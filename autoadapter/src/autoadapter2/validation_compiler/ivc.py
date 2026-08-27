@@ -39,6 +39,7 @@ from autoadapter2.driver_synthesis.probe import ProbeBudget
 from autoadapter2.harness.operators import (
     MeasurementOperatorError,
     audit_inline_measurement_binding,
+    measurement_operator_authoring_compatibility,
     inspect_scene_entities,
     measurement_operator_catalog,
     measurement_operator_evaluation_mode,
@@ -59,9 +60,18 @@ TASK_DEMO_TASK_COUNT = PRIVATE_CASE_SAMPLE_SIZE
 
 IVC_SYSTEM_PROMPT = """You are the implementation-blind capability-v2 Independent Validation Compiler.
 Compile the sealed design into one hidden suite. You may see its exact authoring contract, task-support
-relation, sanitized private instances/scenes, source lineage, every unit-compatible trusted measurement
+relation, sanitized private instances/scenes, source lineage, every structurally compatible trusted measurement
 operator, and worked references. You cannot see or infer a candidate Driver, trace, Repair history, or
 verdict. The Framework has not selected an operator, instance, request, or scene entity for you.
+
+deterministic_structural_compatibility removes only operators that are provably illegal for each sealed
+unit, numeric criterion, or request schema. It is not a semantic recommendation or a completed binding.
+Choose a kind only from that capability's structurally_compatible_operator_kinds, join its catalog
+request_path:<value_type> signatures to compatible_request_paths_by_value_type, then decide whether its
+measurement meaning actually matches the sealed metric. Reconstruct exact scene entity names from the
+scene_entity_type_index shared set union the selected scene's additions; use joint_names_by_unit whenever
+a joint parameter unit is declared, and finite_range_joint_names_by_unit for a bounded-dimensionless
+joint target conversion. The final Framework audit remains authoritative.
 
 The prompt already contains every exact authoring field. read_file is intentionally unavailable in
 this phase because ./ivc_inputs.json can exceed the bounded file-output limit. Use execute_python only
@@ -1391,6 +1401,7 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(design, Mapping):
         raise IVCError("sealed_capability_design authoring input must be an object")
     authoring_capabilities: list[dict[str, Any]] = []
+    compatibility_by_capability: dict[str, Any] = {}
     criterion_units: set[str] = set()
     declared_frames: set[str] = set()
     operator_document = inputs.get("measurement_operator_catalog")
@@ -1401,6 +1412,11 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
     )
     if not isinstance(raw_operators, list):
         raise IVCError("measurement_operator_catalog.operators must be an array")
+    raw_operator_by_kind = {
+        str(operator["kind"]): operator
+        for operator in raw_operators
+        if isinstance(operator, Mapping) and isinstance(operator.get("kind"), str)
+    }
     for capability in capability_records(design):
         criteria = capability.get("criteria")
         if not (
@@ -1452,6 +1468,70 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
         authoring_capabilities.append(authoring_capability)
+        capability_id = capability.get("capability_id")
+        if not isinstance(capability_id, str):
+            raise IVCError("sealed capability requires a string capability_id")
+        compatible_operators: dict[str, Any] = {}
+        if not isinstance(request_schema, Mapping):
+            raise IVCError(
+                f"sealed capability {capability_id!r} requires a request schema"
+            )
+        temporal = criterion.get("temporal")
+        aggregation = criterion.get("aggregation")
+        temporal_kind = (
+            temporal.get("kind") if isinstance(temporal, Mapping) else None
+        )
+        aggregation_kind = (
+            aggregation.get("kind")
+            if isinstance(aggregation, Mapping)
+            else None
+        )
+        numeric_criterion_executable = (
+            temporal_kind in NUMERIC_CRITERION_TEMPORAL_KINDS
+            and aggregation_kind in NUMERIC_CRITERION_AGGREGATION_KINDS
+        )
+        for operator in raw_operators:
+            if not isinstance(operator, Mapping):
+                continue
+            kind = operator.get("kind")
+            if not isinstance(kind, str):
+                continue
+            execution_scope = operator.get("execution_scope")
+            if (
+                isinstance(execution_scope, Mapping)
+                and execution_scope.get("capability_id") != capability_id
+            ):
+                continue
+            if (
+                operator.get("evaluation_mode") == "numeric_measurement"
+                and not numeric_criterion_executable
+            ):
+                continue
+            projection = measurement_operator_authoring_compatibility(
+                kind,
+                criterion=criterion,
+                request_schema=request_schema,
+            )
+            if projection is not None:
+                compatible_operators[kind] = projection
+        compatibility_by_capability[capability_id] = {
+            "criterion_contract": {
+                field: json_copy(
+                    criterion[field],
+                    label=f"sealed capability {capability_id} criterion {field}",
+                )
+                for field in (
+                    "metric",
+                    "unit",
+                    "comparator",
+                    "threshold",
+                    "temporal",
+                    "aggregation",
+                )
+                if field in criterion
+            },
+            "structurally_compatible_operator_kinds": compatible_operators,
+        }
 
     task_support_by_capability: dict[str, list[str]] = {}
     raw_task_support = design.get("task_support", [])
@@ -1544,6 +1624,13 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
     alias_groups: dict[
         tuple[tuple[tuple[str, str], ...], tuple[str, ...]], list[str]
     ] = {}
+    typed_scene_records: list[dict[str, Any]] = []
+    entity_fields = {
+        "body": "bodies",
+        "site": "sites",
+        "joint": "joints",
+        "geom": "geoms",
+    }
     for scene in raw_scenes:
         if (
             not isinstance(scene, Mapping)
@@ -1551,6 +1638,76 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
         ):
             continue
         entities = scene.get("entities")
+        if not isinstance(entities, Mapping):
+            raise IVCError("scene entity index requires an entities object")
+        entity_names: dict[str, list[str]] = {}
+        for entity_type, source_field in entity_fields.items():
+            raw_names = entities.get(source_field)
+            if not isinstance(raw_names, list) or any(
+                not isinstance(name, str) for name in raw_names
+            ):
+                raise IVCError(
+                    f"scene entity index requires a valid {source_field} catalog"
+                )
+            entity_names[entity_type] = sorted(set(raw_names))
+        raw_joint_units = entities.get("joint_units")
+        if raw_joint_units is None:
+            raw_joint_units = {}
+        if not isinstance(raw_joint_units, Mapping) or any(
+            not isinstance(name, str) or unit not in {"rad", "m"}
+            for name, unit in raw_joint_units.items()
+        ):
+            raise IVCError("scene entity index requires a valid joint_units catalog")
+        raw_joint_ranges = entities.get("joint_ranges")
+        if raw_joint_ranges is None:
+            raw_joint_ranges = {}
+        if not isinstance(raw_joint_ranges, Mapping):
+            raise IVCError("scene entity index requires a valid joint_ranges catalog")
+        typed_scene_records.append(
+            {
+                "scene_entrypoint": str(scene["scene_entrypoint"]),
+                "entity_names": entity_names,
+                "joint_names_by_unit": {
+                    unit: sorted(
+                        name
+                        for name, declared_unit in raw_joint_units.items()
+                        if declared_unit == unit
+                    )
+                    for unit in ("rad", "m")
+                },
+                "finite_range_joint_names_by_unit": {
+                    unit: sorted(
+                        name
+                        for name, declared_unit in raw_joint_units.items()
+                        if declared_unit == unit
+                        and isinstance(raw_joint_ranges.get(name), list)
+                        and len(raw_joint_ranges[name]) == 2
+                        and all(
+                            isinstance(value, (int, float))
+                            and not isinstance(value, bool)
+                            and math.isfinite(float(value))
+                            for value in raw_joint_ranges[name]
+                        )
+                        and float(raw_joint_ranges[name][0])
+                        < float(raw_joint_ranges[name][1])
+                    )
+                    for unit in ("rad", "m")
+                },
+                "frame_aliases": dict(entities.get("frame_aliases", {})),
+                "body_parent_names": dict(
+                    entities.get("body_parent_names", {})
+                ),
+                "body_joint_counts": dict(
+                    entities.get("body_joint_counts", {})
+                ),
+                "body_descendant_joint_counts": dict(
+                    entities.get("body_descendant_joint_counts", {})
+                ),
+                "site_body_names": dict(
+                    entities.get("site_body_names", {})
+                ),
+            }
+        )
         aliases = entities.get("frame_aliases") if isinstance(entities, Mapping) else None
         resolved = {
             frame: aliases[frame]
@@ -1572,6 +1729,264 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
             alias_groups.items(), key=lambda item: item[1]
         )
     ]
+
+    def shared_names(
+        records: Sequence[Mapping[str, Any]], group: str, field: str
+    ) -> list[str]:
+        collections = [
+            set(record[group][field])
+            for record in records
+            if isinstance(record.get(group), Mapping)
+        ]
+        return sorted(set.intersection(*collections)) if collections else []
+
+    shared_entity_names = {
+        entity_type: shared_names(
+            typed_scene_records, "entity_names", entity_type
+        )
+        for entity_type in entity_fields
+    }
+    shared_joint_names_by_unit = {
+        unit: shared_names(typed_scene_records, "joint_names_by_unit", unit)
+        for unit in ("rad", "m")
+    }
+    shared_finite_range_joint_names_by_unit = {
+        unit: shared_names(
+            typed_scene_records,
+            "finite_range_joint_names_by_unit",
+            unit,
+        )
+        for unit in ("rad", "m")
+    }
+
+    def scene_supports_frame_binding(
+        kind: str,
+        projection: Mapping[str, Any],
+        record: Mapping[str, Any],
+    ) -> bool:
+        request_frames = projection.get("request_frames")
+        if not request_frames:
+            return True
+        aliases = record["frame_aliases"]
+        parent_names = record["body_parent_names"]
+        joint_counts = record["body_joint_counts"]
+        descendant_joint_counts = record["body_descendant_joint_counts"]
+        site_body_names = record["site_body_names"]
+        bodies = set(record["entity_names"]["body"])
+
+        def ancestor_path(body_name: str) -> list[str] | None:
+            path: list[str] = []
+            current = body_name
+            visited: set[str] = set()
+            while current != "world":
+                if current in visited:
+                    return None
+                visited.add(current)
+                path.append(current)
+                parent = parent_names.get(current)
+                if not isinstance(parent, str) or not parent:
+                    return None
+                current = parent
+            path.append("world")
+            return path
+
+        if kind in {
+            "final_site_frame_xyz_position_error",
+            "site_frame_xyz_directional_displacement",
+            "accumulated_site_frame_axis_arc_angle_error",
+        }:
+            measured_bodies = {
+                site_body_names[site]
+                for site in record["entity_names"]["site"]
+                if isinstance(site_body_names.get(site), str)
+            }
+        else:
+            measured_bodies = bodies
+
+        for frame in request_frames:
+            reference = aliases.get(frame)
+            if not isinstance(reference, str) or reference not in bodies:
+                continue
+            if reference != "world" and (
+                not isinstance(descendant_joint_counts.get(reference), int)
+                or descendant_joint_counts[reference] <= 0
+            ):
+                continue
+            reference_path = ancestor_path(reference)
+            if reference_path is None:
+                continue
+            reference_ancestors = set(reference_path)
+            for measured_body in measured_bodies:
+                measured_path = ancestor_path(measured_body)
+                if measured_path is None:
+                    continue
+                common = next(
+                    (
+                        body
+                        for body in measured_path
+                        if body in reference_ancestors
+                    ),
+                    None,
+                )
+                if common is None:
+                    continue
+                relative_bodies = measured_path[: measured_path.index(common)]
+                relative_bodies.extend(
+                    reference_path[: reference_path.index(common)]
+                )
+                if relative_bodies and all(
+                    isinstance(joint_counts.get(body), int)
+                    for body in relative_bodies
+                ) and sum(
+                    int(joint_counts[body]) for body in relative_bodies
+                ) > 0:
+                    return True
+        return False
+
+    for compatibility in compatibility_by_capability.values():
+        operators = compatibility["structurally_compatible_operator_kinds"]
+        for kind, projection in list(operators.items()):
+            raw_operator = raw_operator_by_kind[kind]
+            parameter_schema = raw_operator.get("parameter_schema")
+            required_parameters = (
+                set(parameter_schema.get("required", []))
+                if isinstance(parameter_schema, Mapping)
+                else set()
+            )
+            entity_types = {
+                field: entity_type
+                for field, entity_type in projection.get(
+                    "entity_parameter_types", {}
+                ).items()
+                if field in required_parameters
+            }
+            joint_units = {
+                field: unit
+                for field, unit in projection.get(
+                    "joint_parameter_units", {}
+                ).items()
+                if field in required_parameters
+            }
+
+            def scene_supports_signature(record: Mapping[str, Any]) -> bool:
+                names_by_type = record["entity_names"]
+                for field, declared_type in entity_types.items():
+                    base_type = str(declared_type).split("_", 1)[0]
+                    required_count = 1
+                    if kind in {
+                        "final_geom_pair_distance_error",
+                        "final_geom_pair_distance",
+                    } and field in {"geom_a_name", "geom_b_name"}:
+                        required_count = 2
+                    if kind in {
+                        "final_body_frame_xyz_position_error",
+                        "body_frame_xyz_directional_displacement",
+                    } and field in {"body_name", "reference_body_name"}:
+                        required_count = 2
+                    if len(names_by_type.get(base_type, [])) < required_count:
+                        return False
+                for _field, unit in joint_units.items():
+                    if not record["joint_names_by_unit"].get(str(unit)):
+                        return False
+                target_modes = projection.get("joint_target_path_modes", {})
+                if target_modes and set(target_modes.values()) == {
+                    "bounded_dimensionless"
+                }:
+                    required_unit = str(
+                        next(iter(joint_units.values()))
+                    )
+                    if not record["finite_range_joint_names_by_unit"].get(
+                        required_unit
+                    ):
+                        return False
+                if not scene_supports_frame_binding(kind, projection, record):
+                    return False
+                return True
+
+            if not any(
+                scene_supports_signature(record)
+                for record in typed_scene_records
+            ):
+                del operators[kind]
+    compressed_compatibility_by_capability: dict[str, Any] = {}
+    for capability_id, compatibility in compatibility_by_capability.items():
+        operators = compatibility["structurally_compatible_operator_kinds"]
+        paths_by_value_type: dict[str, set[str]] = {}
+        joint_units_by_kind: dict[str, Any] = {}
+        joint_target_path_modes_by_kind: dict[str, Any] = {}
+        for kind, projection in operators.items():
+            raw_operator = raw_operator_by_kind[kind]
+            request_value_types = raw_operator.get("request_value_types", {})
+            for field, paths in projection.get("request_path_candidates", {}).items():
+                expected_type = (
+                    request_value_types.get(field)
+                    if isinstance(request_value_types, Mapping)
+                    else None
+                )
+                if isinstance(expected_type, str):
+                    paths_by_value_type.setdefault(expected_type, set()).update(paths)
+            if "joint_parameter_units" in projection:
+                joint_units_by_kind[kind] = projection["joint_parameter_units"]
+            if "joint_target_path_modes" in projection:
+                joint_target_path_modes_by_kind[kind] = projection[
+                    "joint_target_path_modes"
+                ]
+        compact_compatibility = {
+            "structurally_compatible_operator_kinds": sorted(operators),
+            "compatible_request_paths_by_value_type": {
+                value_type: sorted(paths)
+                for value_type, paths in sorted(paths_by_value_type.items())
+            },
+        }
+        if joint_units_by_kind:
+            compact_compatibility["joint_parameter_units_by_kind"] = (
+                joint_units_by_kind
+            )
+        if joint_target_path_modes_by_kind:
+            compact_compatibility["joint_target_path_modes_by_kind"] = (
+                joint_target_path_modes_by_kind
+            )
+        compressed_compatibility_by_capability[capability_id] = compact_compatibility
+    compatible_kind_union = {
+        kind
+        for compatibility in compressed_compatibility_by_capability.values()
+        for kind in compatibility["structurally_compatible_operator_kinds"]
+    }
+    measurement_binding_kind_catalog = {
+        kind: specification
+        for kind, specification in measurement_binding_kind_catalog.items()
+        if kind in compatible_kind_union
+    }
+    per_scene_entity_additions: list[dict[str, Any]] = []
+    for record in sorted(
+        typed_scene_records, key=lambda item: str(item["scene_entrypoint"])
+    ):
+        per_scene_entity_additions.append(
+            {
+                "scene_entrypoint": record["scene_entrypoint"],
+                "entity_names": {
+                    entity_type: sorted(
+                        set(record["entity_names"][entity_type])
+                        - set(shared_entity_names[entity_type])
+                    )
+                    for entity_type in entity_fields
+                },
+                "joint_names_by_unit": {
+                    unit: sorted(
+                        set(record["joint_names_by_unit"][unit])
+                        - set(shared_joint_names_by_unit[unit])
+                    )
+                    for unit in ("rad", "m")
+                },
+                "finite_range_joint_names_by_unit": {
+                    unit: sorted(
+                        set(record["finite_range_joint_names_by_unit"][unit])
+                        - set(shared_finite_range_joint_names_by_unit[unit])
+                    )
+                    for unit in ("rad", "m")
+                },
+            }
+        )
 
     return {
         "raw_paths": {
@@ -1618,6 +2033,31 @@ def _build_ivc_authoring_index(inputs: Mapping[str, Any]) -> dict[str, Any]:
             "plain_json_type": "supply an actual JSON value of that type",
         },
         "measurement_binding_kind_catalog": measurement_binding_kind_catalog,
+        "deterministic_structural_compatibility": {
+            "scope": (
+                "Framework-proven unit/request-schema compatibility only; IVC still "
+                "chooses the semantically correct operator, instance, request, and "
+                "scene entities. Join each allowed kind to "
+                "measurement_binding_kind_catalog parameter signatures and then "
+                "resolve request_path:<value_type> through the capability's grouped "
+                "compatible paths; the final audit remains authoritative"
+            ),
+            "by_capability_id": compressed_compatibility_by_capability,
+        },
+        "scene_entity_type_index": {
+            "reconstruction_rule": (
+                "for each scene and field, exact names are shared_across_all_scenes "
+                "union that scene's per_scene_additions"
+            ),
+            "shared_across_all_scenes": {
+                "entity_names": shared_entity_names,
+                "joint_names_by_unit": shared_joint_names_by_unit,
+                "finite_range_joint_names_by_unit": (
+                    shared_finite_range_joint_names_by_unit
+                ),
+            },
+            "per_scene_additions": per_scene_entity_additions,
+        },
         "scene_declared_frame_aliases": scene_frame_aliases,
     }
 
@@ -1634,6 +2074,37 @@ def _build_ivc_authoring_brief(inputs: Mapping[str, Any]) -> dict[str, Any]:
         ),
         "authoring_index": _build_ivc_authoring_index(inputs),
     }
+
+
+def _assert_ivc_authoring_is_executable(
+    authoring_brief: Mapping[str, Any],
+) -> None:
+    authoring_index = authoring_brief.get("authoring_index")
+    compatibility = (
+        authoring_index.get("deterministic_structural_compatibility")
+        if isinstance(authoring_index, Mapping)
+        else None
+    )
+    by_capability = (
+        compatibility.get("by_capability_id")
+        if isinstance(compatibility, Mapping)
+        else None
+    )
+    if not isinstance(by_capability, Mapping):
+        raise IVCError("IVC authoring compatibility index is unavailable")
+    unexecutable = sorted(
+        capability_id
+        for capability_id, record in by_capability.items()
+        if not isinstance(record, Mapping)
+        or not record.get("structurally_compatible_operator_kinds")
+    )
+    if unexecutable:
+        raise IVCError(
+            "sealed capability design has no structurally compatible trusted "
+            f"measurement operator for capabilities {unexecutable}; do not call "
+            "IVC for this design—rerun TGCD with a discriminating numeric criterion "
+            "and a request schema that the trusted measurement DSL can express"
+        )
 
 
 @dataclass(frozen=True)
@@ -1698,6 +2169,8 @@ def run_ivc(
         private_inputs=private,
         examples=examples,
     )
+    authoring_brief_document = _build_ivc_authoring_brief(inputs)
+    _assert_ivc_authoring_is_executable(authoring_brief_document)
 
     def validate_and_calibrate(artifact: Mapping[str, Any], *, turn: int) -> dict[str, Any]:
         canonical = validate_capability_validation_suite(
@@ -1763,7 +2236,7 @@ def run_ivc(
                 )
 
             authoring_brief = json.dumps(
-                _build_ivc_authoring_brief(inputs),
+                authoring_brief_document,
                 ensure_ascii=True,
                 separators=(",", ":"),
             )

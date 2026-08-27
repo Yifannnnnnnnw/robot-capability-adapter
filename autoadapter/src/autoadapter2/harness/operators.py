@@ -31,6 +31,7 @@ def _spec(
     parameter_details: Mapping[str, Mapping[str, Any]] = {},
     request_value_types: Mapping[str, str] = {},
     output_minimum: float | None = None,
+    output_maximum: float | None = None,
 ) -> dict[str, Any]:
     properties = {
         **{name: {"type": kind} for name, kind in required.items()},
@@ -55,6 +56,8 @@ def _spec(
     }
     if output_minimum is not None:
         result["output_minimum"] = float(output_minimum)
+    if output_maximum is not None:
+        result["output_maximum"] = float(output_maximum)
     return result
 
 
@@ -68,7 +71,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         required={"site_name": "string", "target_argument": "request_path"},
         entities={"site_name": "site"},
         request_paths=("target_argument",),
-        request_value_types={"target_argument": "number_array_3"},
+        request_value_types={"target_argument": "world_m_array_3"},
+        output_minimum=0.0,
     ),
     "final_site_axis_error": _spec(
         "Absolute terminal axis error for one named site.",
@@ -80,6 +84,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"site_name": "site"},
         request_paths=("target_argument",),
+        request_value_types={"target_argument": "world_m_array_3"},
+        output_minimum=0.0,
     ),
     "final_weighted_site_position_error": _spec(
         "Weighted Euclidean terminal position error for one named site.",
@@ -91,6 +97,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"site_name": "site"},
         request_paths=("target_argument",),
+        request_value_types={"target_argument": "world_m_array_3"},
+        output_minimum=0.0,
     ),
     "final_body_position_error": _spec(
         "Euclidean terminal world-position error for one named body against a "
@@ -99,7 +107,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         required={"body_name": "string", "target_argument": "request_path"},
         entities={"body_name": "body"},
         request_paths=("target_argument",),
-        request_value_types={"target_argument": "number_array_3"},
+        request_value_types={"target_argument": "world_m_array_3"},
+        output_minimum=0.0,
     ),
     "final_body_xyz_position_error": _spec(
         "Euclidean terminal world-position error for one named body against "
@@ -122,6 +131,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "target_y_argument": "world_m_number",
             "target_z_argument": "world_m_number",
         },
+        output_minimum=0.0,
     ),
     "final_site_frame_xyz_position_error": _spec(
         "Euclidean terminal position error for one named site in a named body "
@@ -145,6 +155,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "target_y_argument": "frame_m_number",
             "target_z_argument": "frame_m_number",
         },
+        output_minimum=0.0,
     ),
     "final_body_frame_xyz_position_error": _spec(
         "Euclidean terminal position error for one named body in another named "
@@ -168,6 +179,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "target_y_argument": "frame_m_number",
             "target_z_argument": "frame_m_number",
         },
+        output_minimum=0.0,
     ),
     "body_planar_target_error": _spec(
         "Terminal planar world-position error for one named body.",
@@ -175,6 +187,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         required={"body_name": "string", "target_argument": "request_path"},
         entities={"body_name": "body"},
         request_paths=("target_argument",),
+        request_value_types={"target_argument": "world_m_array_3"},
+        output_minimum=0.0,
     ),
     "final_joint_position_error": _spec(
         "Absolute terminal position error for one scalar joint: radians for a "
@@ -187,6 +201,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         optional={"target_scale": "number", "target_offset": "number"},
         entities={"joint_name": "joint"},
         request_paths=("target_argument",),
+        request_value_types={"target_argument": "number"},
         parameter_details={
             "target_scale": {
                 "description": "Positive finite multiplier applied to the request "
@@ -199,6 +214,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
                 "default": 0.0,
             },
         },
+        output_minimum=0.0,
     ),
     "final_joint_displacement_error": _spec(
         "Absolute error between one scalar hinge joint's terminal displacement "
@@ -225,6 +241,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         entities={"geom_a_name": "geom", "geom_b_name": "geom"},
         request_paths=("target_argument",),
         request_value_types={"target_argument": "bounded_m_number"},
+        output_minimum=0.0,
     ),
     "final_geom_pair_distance": _spec(
         "Terminal trusted MuJoCo signed distance between two named geoms.",
@@ -256,6 +273,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         ["m"],
         required={"body_name": "string"},
         entities={"body_name": "body"},
+        output_minimum=0.0,
     ),
     "body_axis_displacement": _spec(
         "Signed displacement of one named body along a world axis.",
@@ -302,6 +320,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "axis_argument": "world_axis_name",
             "target_angle_argument": "rad_number",
         },
+        output_minimum=0.0,
     ),
     "final_body_directional_displacement_error": _spec(
         "Absolute error between terminal body displacement projected along a "
@@ -327,6 +346,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "direction_z_argument": "world_direction_number",
             "target_distance_argument": "m_number",
         },
+        output_minimum=0.0,
     ),
     "site_frame_xyz_directional_displacement": _spec(
         "Signed start-to-end displacement of a named site, expressed in a named "
@@ -408,6 +428,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "axis_z_argument": "frame_direction_number",
             "target_angle_argument": "rad_number",
         },
+        output_minimum=0.0,
     ),
     "body_directional_progress_until_corridor_exit": _spec(
         "Maximum requested-direction progress before leaving a trusted corridor.",
@@ -421,18 +442,22 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"body_name": "body"},
         request_paths=("direction_argument", "limit_argument"),
+        output_minimum=0.0,
     ),
     "mean_body_planar_speed": _spec(
         "Mean planar speed of one named body over the evidence horizon.",
         ["m/s"],
         required={"body_name": "string"},
         entities={"body_name": "body"},
+        output_minimum=0.0,
     ),
     "body_yaw_change_deg": _spec(
         "Absolute yaw change of one named body.",
         ["deg"],
         required={"body_name": "string"},
         entities={"body_name": "body"},
+        output_minimum=0.0,
+        output_maximum=360.0,
     ),
     "mean_body_heading_error_deg": _spec(
         "Heading error inferred from body displacement.",
@@ -444,6 +469,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         optional={"minimum_displacement": "number"},
         entities={"body_name": "body"},
         request_paths=("direction_argument",),
+        output_minimum=0.0,
+        output_maximum=180.0,
     ),
     "named_bodies_axis_completion": _spec(
         "Binary completion of a shared coordinate gate by named bodies.",
@@ -454,12 +481,15 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         optional={"axis": "integer", "direction": "integer"},
         entities={"body_names": "body_array"},
+        output_minimum=0.0,
+        output_maximum=1.0,
     ),
     "mean_body_yaw_rate": _spec(
         "Absolute mean yaw rate of one named body.",
         ["rad/s"],
         required={"body_name": "string"},
         entities={"body_name": "body"},
+        output_minimum=0.0,
     ),
     "ordered_body_waypoint_completion_ratio": _spec(
         "Ordered planar waypoint completion ratio for one named body.",
@@ -470,6 +500,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "tolerance": "number",
         },
         entities={"body_name": "body"},
+        output_minimum=0.0,
+        output_maximum=1.0,
     ),
     "ordered_body_waypoint_completion_time": _spec(
         "Elapsed time to complete ordered planar waypoints.",
@@ -480,32 +512,39 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "tolerance": "number",
         },
         entities={"body_name": "body"},
+        output_minimum=0.0,
     ),
     "ordered_body_axis_gate_completion_ratio": _spec(
         "Ordered axis-gate completion ratio for one named body.",
         ["ratio"],
         required={"body_name": "string", "gates": "object_array"},
         entities={"body_name": "body"},
+        output_minimum=0.0,
+        output_maximum=1.0,
     ),
     "minimum_body_point_clearance": _spec(
         "Minimum planar clearance between one named body and fixed points.",
         ["m"],
         required={"body_name": "string", "points": "number_matrix"},
         entities={"body_name": "body"},
+        output_minimum=0.0,
     ),
     "named_geom_contact_step_count": _spec(
         "Physics-step contact count involving any selected geom.",
         ["physics_steps", "count"],
         required={"geom_names": "string_array"},
         entities={"geom_names": "geom_array"},
+        output_minimum=0.0,
     ),
     "contact_sample_count": _spec(
         "Number of trusted samples containing contact.",
         ["count"],
+        output_minimum=0.0,
     ),
     "physics_step_count": _spec(
         "Number of trusted MuJoCo physics steps.",
         ["physics_steps", "count", "binary", "reward", "run"],
+        output_minimum=0.0,
     ),
     "in_hand_object_pattern_success": _spec(
         "Binary trusted in-hand contact and motion-pattern outcome.",
@@ -541,6 +580,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "site_names": "site_array",
             "joint_name": "joint",
         },
+        output_minimum=0.0,
+        output_maximum=1.0,
     ),
     "final_concatenated_site_position_error": _spec(
         "Terminal concatenated site-position error in a named body frame.",
@@ -554,6 +595,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"site_names": "site_array", "reference_body_name": "body"},
         request_paths=("target_argument", "control_steps_argument"),
+        output_minimum=0.0,
     ),
     "final_body_position_offset_error": _spec(
         "Terminal body-offset error with a same-state orientation gate.",
@@ -573,6 +615,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "orientation_target_argument",
             "control_steps_argument",
         ),
+        output_minimum=0.0,
     ),
     "final_body_quaternion_error": _spec(
         "Terminal relative quaternion error with a same-state position gate.",
@@ -592,6 +635,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "position_target_argument",
             "control_steps_argument",
         ),
+        output_minimum=0.0,
+        output_maximum=math.pi,
     ),
     "final_maximum_joint_position_error": _spec(
         "Maximum terminal position error across named joints.",
@@ -604,6 +649,11 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"joint_names": "joint_array"},
         request_paths=("target_argument", "control_steps_argument"),
+        request_value_types={
+            "target_argument": "rad_number_array",
+            "control_steps_argument": "positive_integer",
+        },
+        output_minimum=0.0,
     ),
     "final_wrapped_joint_position_error": _spec(
         "Terminal wrapped position error for one named joint.",
@@ -616,6 +666,12 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"joint_name": "joint"},
         request_paths=("target_argument", "control_steps_argument"),
+        request_value_types={
+            "target_argument": "rad_number",
+            "control_steps_argument": "positive_integer",
+        },
+        output_minimum=0.0,
+        output_maximum=math.pi,
     ),
     "maximum_joint_linear_trajectory_error": _spec(
         "Maximum linear-trajectory tracking error for one named joint.",
@@ -629,6 +685,11 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"joint_name": "joint"},
         request_paths=("velocity_argument", "control_steps_argument"),
+        request_value_types={
+            "velocity_argument": "rad_per_s_number",
+            "control_steps_argument": "positive_integer",
+        },
+        output_minimum=0.0,
     ),
     "body_target_solved_sample_count": _spec(
         "Count of control samples where a body is within target tolerance.",
@@ -645,6 +706,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"body_name": "body", "reference_body_name": "body"},
         request_paths=("target_argument", "control_steps_argument"),
+        output_minimum=0.0,
     ),
     "body_target_drop_event_count": _spec(
         "Count of target-drop events after a minimum solved horizon.",
@@ -662,6 +724,7 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
         },
         entities={"body_name": "body", "reference_body_name": "body"},
         request_paths=("target_argument", "control_steps_argument"),
+        output_minimum=0.0,
     ),
     "mean_two_body_orbit_tracking_fraction": _spec(
         "Mean two-body source-frame orbit tracking fraction.",
@@ -686,6 +749,8 @@ _OPERATOR_SPECS: dict[str, dict[str, Any]] = {
             "period_argument",
             "control_steps_argument",
         ),
+        output_minimum=0.0,
+        output_maximum=1.0,
     ),
     # Complete SO-101/Go2 worked references use semantic, parameterized
     # operators for their compound published criteria.  These operators reuse
@@ -962,6 +1027,7 @@ def _validate_request_value_schema(
         "m_number",
         "bounded_m_number",
         "rad_number",
+        "rad_per_s_number",
     }:
         if schema_type not in {"number", "integer"}:
             raise MeasurementOperatorError(
@@ -1016,8 +1082,12 @@ def _validate_request_value_schema(
             raise MeasurementOperatorError(
                 f"request path {path!r} must declare unit='rad'"
             )
+        if expected == "rad_per_s_number" and schema.get("unit") != "rad/s":
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare unit='rad/s'"
+            )
         return
-    if expected == "number_array_3":
+    if expected in {"number_array_3", "world_m_array_3"}:
         items = schema.get("items")
         if (
             schema_type != "array"
@@ -1029,6 +1099,41 @@ def _validate_request_value_schema(
             raise MeasurementOperatorError(
                 f"request path {path!r} must resolve to a numeric array schema "
                 "with exactly three items"
+            )
+        if expected == "world_m_array_3" and (
+            schema.get("unit") != "m"
+            or schema.get("frame") != "world"
+            or items.get("unit") != "m"
+            or items.get("frame") != "world"
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must declare unit='m' and frame='world' "
+                "on both the array and its item schema"
+            )
+        return
+    if expected == "rad_number_array":
+        items = schema.get("items")
+        if (
+            schema_type != "array"
+            or not isinstance(items, Mapping)
+            or items.get("type") not in {"number", "integer"}
+            or schema.get("unit") != "rad"
+            or items.get("unit") != "rad"
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must resolve to a numeric radian array "
+                "schema with unit='rad' on the array and its items"
+            )
+        return
+    if expected == "positive_integer":
+        if (
+            schema_type != "integer"
+            or not _is_number(schema.get("minimum"))
+            or float(schema["minimum"]) < 1.0
+        ):
+            raise MeasurementOperatorError(
+                f"request path {path!r} must resolve to an integer schema with "
+                "minimum >= 1"
             )
         return
     if expected in {"axis_name", "world_axis_name"}:
@@ -1114,6 +1219,101 @@ def _validate_xyz_sibling_paths(
         )
 
 
+def _operator_sibling_path_groups(
+    kind: str,
+) -> tuple[tuple[tuple[str, ...], tuple[str, ...], str], ...]:
+    if kind in {
+        "final_body_xyz_position_error",
+        "final_site_frame_xyz_position_error",
+        "final_body_frame_xyz_position_error",
+    }:
+        return (
+            (
+                (
+                    "target_x_argument",
+                    "target_y_argument",
+                    "target_z_argument",
+                ),
+                ("x", "y", "z"),
+                "body target",
+            ),
+        )
+    if kind == "accumulated_body_arc_angle_error":
+        return (
+            (
+                (
+                    "center_x_argument",
+                    "center_y_argument",
+                    "center_z_argument",
+                ),
+                ("x", "y", "z"),
+                "arc center",
+            ),
+        )
+    if kind == "final_body_directional_displacement_error":
+        return (
+            (
+                (
+                    "direction_x_argument",
+                    "direction_y_argument",
+                    "direction_z_argument",
+                ),
+                ("x", "y", "z"),
+                "body direction",
+            ),
+        )
+    if kind in {
+        "site_frame_xyz_directional_displacement",
+        "body_frame_xyz_directional_displacement",
+    }:
+        return (
+            (
+                (
+                    "direction_x_argument",
+                    "direction_y_argument",
+                    "direction_z_argument",
+                ),
+                ("dx", "dy", "dz"),
+                "frame direction",
+            ),
+        )
+    if kind == "accumulated_site_frame_axis_arc_angle_error":
+        return (
+            (
+                (
+                    "center_x_argument",
+                    "center_y_argument",
+                    "center_z_argument",
+                ),
+                ("x", "y", "z"),
+                "arc center",
+            ),
+            (
+                (
+                    "axis_x_argument",
+                    "axis_y_argument",
+                    "axis_z_argument",
+                ),
+                ("ax", "ay", "az"),
+                "arc axis",
+            ),
+        )
+    return ()
+
+
+def _validate_operator_request_path_roles(
+    kind: str,
+    parameters: Mapping[str, Any],
+) -> None:
+    for fields, suffixes, label in _operator_sibling_path_groups(kind):
+        _validate_xyz_sibling_paths(
+            parameters,
+            fields,
+            label=label,
+            suffixes=suffixes,
+        )
+
+
 def _validate_operator_request_roles(
     kind: str,
     parameters: Mapping[str, Any],
@@ -1124,80 +1324,12 @@ def _validate_operator_request_roles(
         raise MeasurementOperatorError(
             f"{kind} requires two distinct geoms"
         )
-    if kind in {
-        "final_body_xyz_position_error",
-        "final_site_frame_xyz_position_error",
-        "final_body_frame_xyz_position_error",
-    }:
-        _validate_xyz_sibling_paths(
-            parameters,
-            (
-                "target_x_argument",
-                "target_y_argument",
-                "target_z_argument",
-            ),
-            label="body target",
-        )
-    elif kind == "accumulated_body_arc_angle_error":
-        _validate_xyz_sibling_paths(
-            parameters,
-            (
-                "center_x_argument",
-                "center_y_argument",
-                "center_z_argument",
-            ),
-            label="arc center",
-        )
-    elif kind == "final_body_directional_displacement_error":
-        _validate_xyz_sibling_paths(
-            parameters,
-            (
-                "direction_x_argument",
-                "direction_y_argument",
-                "direction_z_argument",
-            ),
-            label="body direction",
-        )
-    elif kind in {
-        "site_frame_xyz_directional_displacement",
-        "body_frame_xyz_directional_displacement",
-    }:
-        _validate_xyz_sibling_paths(
-            parameters,
-            (
-                "direction_x_argument",
-                "direction_y_argument",
-                "direction_z_argument",
-            ),
-            label="frame direction",
-            suffixes=("dx", "dy", "dz"),
-        )
-    elif kind in {
-        "accumulated_site_frame_axis_arc_angle_error",
-    }:
-        _validate_xyz_sibling_paths(
-            parameters,
-            (
-                "center_x_argument",
-                "center_y_argument",
-                "center_z_argument",
-            ),
-            label="arc center",
-        )
-        _validate_xyz_sibling_paths(
-            parameters,
-            (
-                "axis_x_argument",
-                "axis_y_argument",
-                "axis_z_argument",
-            ),
-            label="arc axis",
-            suffixes=("ax", "ay", "az"),
-        )
+    _validate_operator_request_path_roles(kind, parameters)
     if (
         kind
         in {
             "final_body_frame_xyz_position_error",
+            "body_frame_xyz_directional_displacement",
         }
         and parameters.get("body_name") == parameters.get("reference_body_name")
     ):
@@ -1206,16 +1338,12 @@ def _validate_operator_request_roles(
         )
 
 
-def _validate_common_request_frame(
-    kind: str,
-    request_path_schemas: Mapping[str, Mapping[str, Any]],
-) -> None:
-    frame_fields: tuple[str, ...] = ()
+def _operator_common_request_frame_fields(kind: str) -> tuple[str, ...]:
     if kind in {
         "final_site_frame_xyz_position_error",
         "final_body_frame_xyz_position_error",
     }:
-        frame_fields = (
+        return (
             "target_x_argument",
             "target_y_argument",
             "target_z_argument",
@@ -1224,15 +1352,13 @@ def _validate_common_request_frame(
         "site_frame_xyz_directional_displacement",
         "body_frame_xyz_directional_displacement",
     }:
-        frame_fields = (
+        return (
             "direction_x_argument",
             "direction_y_argument",
             "direction_z_argument",
         )
-    elif kind in {
-        "accumulated_site_frame_axis_arc_angle_error",
-    }:
-        frame_fields = (
+    if kind == "accumulated_site_frame_axis_arc_angle_error":
+        return (
             "center_x_argument",
             "center_y_argument",
             "center_z_argument",
@@ -1240,6 +1366,14 @@ def _validate_common_request_frame(
             "axis_y_argument",
             "axis_z_argument",
         )
+    return ()
+
+
+def _validate_common_request_frame(
+    kind: str,
+    request_path_schemas: Mapping[str, Mapping[str, Any]],
+) -> None:
+    frame_fields = _operator_common_request_frame_fields(kind)
     if not frame_fields:
         return
     frames = [request_path_schemas[field].get("frame") for field in frame_fields]
@@ -1623,6 +1757,11 @@ def _validate_final_joint_position_conversion(
         raise MeasurementOperatorError(
             "final_joint_position_error target_argument has no sealed schema"
         )
+    if target_schema.get("type") not in {"number", "integer"}:
+        raise MeasurementOperatorError(
+            "final_joint_position_error target_argument must resolve to a numeric "
+            "scalar schema"
+        )
     request_unit = target_schema.get("unit")
     if request_unit == unit:
         if scale != 1.0 or offset != 0.0:
@@ -1700,7 +1839,14 @@ def _validate_joint_output_unit(
     scene_path: Path | None,
     scene_entities: Mapping[str, Any] | None,
 ) -> None:
-    if kind not in {"joint_range", "final_joint_displacement_error"}:
+    scalar_joint_kinds = {
+        "joint_range": unit,
+        "final_joint_displacement_error": "rad",
+        "final_wrapped_joint_position_error": "rad",
+        "maximum_joint_linear_trajectory_error": "rad",
+    }
+    joint_array_kinds = {"final_maximum_joint_position_error": "rad"}
+    if kind not in scalar_joint_kinds and kind not in joint_array_kinds:
         return
     if scene_entities is None:
         if scene_path is None:
@@ -1713,37 +1859,390 @@ def _validate_joint_output_unit(
         raise MeasurementOperatorError(
             "selected scene has no valid joint_units catalog"
         )
-    joint_name = str(parameters["joint_name"])
-    actual_unit = raw_joint_units.get(joint_name)
-    if actual_unit not in {"rad", "m"}:
-        raise MeasurementOperatorError(
-            f"{kind} requires a scalar hinge or slide joint; {joint_name!r} is not one"
-        )
-    if actual_unit != unit:
-        raise MeasurementOperatorError(
-            f"{kind} for joint {joint_name!r} must use unit {actual_unit!r}, "
-            f"not {unit!r}"
-        )
+    expected_unit = scalar_joint_kinds.get(kind, joint_array_kinds.get(kind))
+    parameter_name = "joint_names" if kind in joint_array_kinds else "joint_name"
+    entity_kind = "joint_array" if kind in joint_array_kinds else "joint"
+    joint_names = _entity_names(parameters[parameter_name], entity_kind)
+    for joint_name in joint_names:
+        actual_unit = raw_joint_units.get(joint_name)
+        if actual_unit not in {"rad", "m"}:
+            raise MeasurementOperatorError(
+                f"{kind} requires scalar hinge or slide joints; {joint_name!r} "
+                "is not one"
+            )
+        if actual_unit != expected_unit:
+            if kind == "joint_range":
+                raise MeasurementOperatorError(
+                    f"{kind} for joint {joint_name!r} must use unit "
+                    f"{actual_unit!r}, not {unit!r}"
+                )
+            raise MeasurementOperatorError(
+                f"{kind} requires {expected_unit!r} joints; {joint_name!r} uses "
+                f"{actual_unit!r}"
+            )
 
 
 def _validate_nontrivial_operator_criterion(
     kind: str, spec: Mapping[str, Any], criterion: Mapping[str, Any]
 ) -> None:
     output_minimum = spec.get("output_minimum")
+    output_maximum = spec.get("output_maximum")
     threshold = criterion.get("threshold")
     comparator = criterion.get("comparator")
-    if not _is_number(output_minimum) or not _is_number(threshold):
+    minimum = float(output_minimum) if _is_number(output_minimum) else None
+    maximum = float(output_maximum) if _is_number(output_maximum) else None
+    if comparator == "between":
+        if (
+            not isinstance(threshold, Sequence)
+            or isinstance(threshold, (str, bytes))
+            or len(threshold) != 2
+            or not all(_is_number(value) for value in threshold)
+        ):
+            raise MeasurementOperatorError(
+                "sealed between criterion requires two finite numeric bounds"
+            )
+        low, high = (float(value) for value in threshold)
+        if low > high:
+            raise MeasurementOperatorError(
+                "sealed between criterion requires low <= high"
+            )
+        if (
+            minimum is not None
+            and maximum is not None
+            and low <= minimum
+            and high >= maximum
+        ):
+            raise MeasurementOperatorError(
+                f"sealed criterion between [{low:g}, {high:g}] is "
+                f"non-discriminating for trusted operator {kind!r}, whose output "
+                f"is always within [{minimum:g}, {maximum:g}]"
+            )
+        if (minimum is not None and high < minimum) or (
+            maximum is not None and low > maximum
+        ):
+            known_range = (
+                f"[{minimum:g}, {maximum:g}]"
+                if minimum is not None and maximum is not None
+                else "its known output bounds"
+            )
+            raise MeasurementOperatorError(
+                f"sealed criterion between [{low:g}, {high:g}] is unsatisfiable "
+                f"for trusted operator {kind!r}, whose output is constrained by "
+                f"{known_range}"
+            )
         return
-    minimum = float(output_minimum)
+    if not _is_number(threshold):
+        return
     boundary = float(threshold)
-    always_true = (comparator == ">=" and boundary <= minimum) or (
-        comparator == ">" and boundary < minimum
-    )
-    if always_true:
+    if comparator == "==" and (
+        (minimum is not None and boundary < minimum)
+        or (maximum is not None and boundary > maximum)
+    ):
         raise MeasurementOperatorError(
-            f"sealed criterion {comparator} {boundary:g} is non-discriminating for "
-            f"trusted operator {kind!r}, whose output is always >= {minimum:g}"
+            f"sealed criterion == {boundary:g} is unsatisfiable for trusted "
+            f"operator {kind!r} under its known output bounds"
         )
+    if minimum is not None:
+        always_true = (comparator == ">=" and boundary <= minimum) or (
+            comparator == ">" and boundary < minimum
+        )
+        impossible = (comparator == "<" and boundary <= minimum) or (
+            comparator == "<=" and boundary < minimum
+        )
+        if always_true:
+            raise MeasurementOperatorError(
+                f"sealed criterion {comparator} {boundary:g} is non-discriminating "
+                f"for trusted operator {kind!r}, whose output is always >= "
+                f"{minimum:g}"
+            )
+        if impossible:
+            raise MeasurementOperatorError(
+                f"sealed criterion {comparator} {boundary:g} is unsatisfiable for "
+                f"trusted operator {kind!r}, whose output is always >= {minimum:g}"
+            )
+    if maximum is not None:
+        always_true = (comparator == "<=" and boundary >= maximum) or (
+            comparator == "<" and boundary > maximum
+        )
+        impossible = (comparator == ">" and boundary >= maximum) or (
+            comparator == ">=" and boundary > maximum
+        )
+        if always_true:
+            raise MeasurementOperatorError(
+                f"sealed criterion {comparator} {boundary:g} is non-discriminating "
+                f"for trusted operator {kind!r}, whose output is always <= "
+                f"{maximum:g}"
+            )
+        if impossible:
+            raise MeasurementOperatorError(
+                f"sealed criterion {comparator} {boundary:g} is unsatisfiable for "
+                f"trusted operator {kind!r}, whose output is always <= {maximum:g}"
+            )
+
+
+def _narrow_request_path_candidates_for_operator(
+    kind: str,
+    request_schema: Mapping[str, Any],
+    candidates: Mapping[str, Sequence[str]],
+) -> dict[str, list[str]] | None:
+    """Keep only request paths participating in one legal operator binding."""
+
+    narrowed = {
+        field: sorted(set(paths)) for field, paths in candidates.items()
+    }
+    group_options: list[
+        tuple[tuple[str, ...], list[tuple[dict[str, str], str | None]]]
+    ] = []
+    grouped_fields: set[str] = set()
+    common_frame_fields = set(_operator_common_request_frame_fields(kind))
+    frame_domains: list[set[str]] = []
+
+    for fields, suffixes, _label in _operator_sibling_path_groups(kind):
+        grouped_fields.update(fields)
+        paths_by_field_and_parent: dict[
+            str, dict[tuple[str, ...], str]
+        ] = {}
+        for field, suffix in zip(fields, suffixes):
+            paths_by_parent: dict[tuple[str, ...], str] = {}
+            for path in narrowed.get(field, []):
+                parts = path.split(".")
+                if len(parts) >= 3 and parts[-1] == suffix:
+                    paths_by_parent[tuple(parts[:-1])] = path
+            paths_by_field_and_parent[field] = paths_by_parent
+        valid_parents = set.intersection(
+            *(set(paths_by_field_and_parent[field]) for field in fields)
+        )
+        options: list[tuple[dict[str, str], str | None]] = []
+        for parent in sorted(valid_parents):
+            assignment = {
+                field: paths_by_field_and_parent[field][parent]
+                for field in fields
+            }
+            frame: str | None = None
+            frame_members = [field for field in fields if field in common_frame_fields]
+            if frame_members:
+                frames = {
+                    _schema_at_request_path(
+                        request_schema, assignment[field]
+                    ).get("frame")
+                    for field in frame_members
+                }
+                if (
+                    len(frames) != 1
+                    or not isinstance(next(iter(frames)), str)
+                    or not str(next(iter(frames))).strip()
+                ):
+                    continue
+                frame = str(next(iter(frames)))
+            options.append((assignment, frame))
+        if not options:
+            return None
+        group_options.append((fields, options))
+        if any(field in common_frame_fields for field in fields):
+            frame_domains.append(
+                {frame for _assignment, frame in options if frame is not None}
+            )
+
+    ungrouped_frame_fields = common_frame_fields - grouped_fields
+    for field in sorted(ungrouped_frame_fields):
+        field_frames = {
+            str(frame)
+            for path in narrowed.get(field, [])
+            if isinstance(
+                (frame := _schema_at_request_path(request_schema, path).get("frame")),
+                str,
+            )
+            and frame.strip()
+        }
+        if not field_frames:
+            return None
+        frame_domains.append(field_frames)
+
+    allowed_frames = (
+        set.intersection(*frame_domains) if frame_domains else set()
+    )
+    if frame_domains and not allowed_frames:
+        return None
+
+    representative: dict[str, str] = {}
+    chosen_frame = min(allowed_frames) if allowed_frames else None
+    for fields, options in group_options:
+        surviving = [
+            (assignment, frame)
+            for assignment, frame in options
+            if chosen_frame is None or frame is None or frame in allowed_frames
+        ]
+        if not surviving:
+            return None
+        for field in fields:
+            narrowed[field] = sorted(
+                {
+                    assignment[field]
+                    for assignment, _frame in surviving
+                }
+            )
+        representative.update(
+            next(
+                assignment
+                for assignment, frame in surviving
+                if chosen_frame is None or frame is None or frame == chosen_frame
+            )
+        )
+
+    for field in sorted(ungrouped_frame_fields):
+        narrowed[field] = [
+            path
+            for path in narrowed[field]
+            if _schema_at_request_path(request_schema, path).get("frame")
+            in allowed_frames
+        ]
+        if not narrowed[field]:
+            return None
+        representative[field] = next(
+            path
+            for path in narrowed[field]
+            if _schema_at_request_path(request_schema, path).get("frame")
+            == chosen_frame
+        )
+
+    for field, paths in narrowed.items():
+        if not paths:
+            return None
+        representative.setdefault(field, paths[0])
+    try:
+        _validate_operator_request_path_roles(kind, representative)
+        schemas = {
+            field: _schema_at_request_path(request_schema, path)
+            for field, path in representative.items()
+        }
+        _validate_common_request_frame(kind, schemas)
+    except MeasurementOperatorError:
+        return None
+    return narrowed
+
+
+def _joint_target_request_mode(
+    schema: Mapping[str, Any], *, output_unit: str
+) -> str | None:
+    if schema.get("type") not in {"number", "integer"}:
+        return None
+    if schema.get("unit") == output_unit:
+        return "same_unit"
+    if schema.get("unit") not in {
+        "fraction",
+        "ratio",
+        "unitless",
+        "none",
+        "1",
+    }:
+        return None
+    if (
+        not _is_number(schema.get("minimum"))
+        or not _is_number(schema.get("maximum"))
+        or float(schema["minimum"]) >= float(schema["maximum"])
+    ):
+        return None
+    evidence_refs = schema.get("evidence_refs")
+    if not isinstance(evidence_refs, list) or not evidence_refs or any(
+        not isinstance(ref, Mapping)
+        or not isinstance(ref.get("source_id"), str)
+        or not ref["source_id"].strip()
+        or not isinstance(ref.get("specific_reference"), str)
+        or not ref["specific_reference"].strip()
+        for ref in evidence_refs
+    ):
+        return None
+    return "bounded_dimensionless"
+
+
+def measurement_operator_authoring_compatibility(
+    kind: str,
+    *,
+    criterion: Mapping[str, Any],
+    request_schema: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Project deterministic structural compatibility for IVC authoring.
+
+    ``None`` means the operator is provably incompatible with the sealed unit,
+    request schema, or numeric criterion.  The returned projection deliberately
+    contains no selected entity, instance, or completed binding; those remain
+    IVC-authored and are re-audited against the selected scene.
+    """
+
+    spec = _OPERATOR_SPECS.get(kind)
+    if spec is None or criterion.get("unit") not in spec["output_units"]:
+        return None
+    try:
+        _validate_nontrivial_operator_criterion(kind, spec, criterion)
+    except MeasurementOperatorError:
+        return None
+    if set(spec["request_path_parameters"]) - set(spec["request_value_types"]):
+        return None
+    request_path_candidates: dict[str, list[str]] = {}
+    for field, expected_type in spec["request_value_types"].items():
+        paths = compatible_request_paths(request_schema, str(expected_type))
+        if not paths:
+            return None
+        request_path_candidates[str(field)] = paths
+    narrowed_candidates = _narrow_request_path_candidates_for_operator(
+        kind,
+        request_schema,
+        request_path_candidates,
+    )
+    if narrowed_candidates is None:
+        return None
+    joint_target_path_modes: dict[str, str] = {}
+    if kind == "final_joint_position_error":
+        output_unit = str(criterion["unit"])
+        joint_target_path_modes = {
+            path: mode
+            for path in narrowed_candidates["target_argument"]
+            if (
+                mode := _joint_target_request_mode(
+                    _schema_at_request_path(request_schema, path),
+                    output_unit=output_unit,
+                )
+            )
+            is not None
+        }
+        if not joint_target_path_modes:
+            return None
+        narrowed_candidates["target_argument"] = sorted(
+            joint_target_path_modes
+        )
+    result: dict[str, Any] = {
+        "request_path_candidates": narrowed_candidates,
+        "entity_parameter_types": copy.deepcopy(spec["entity_parameters"]),
+    }
+    frame_fields = _operator_common_request_frame_fields(kind)
+    if frame_fields:
+        result["request_frames"] = sorted(
+            {
+                str(
+                    _schema_at_request_path(request_schema, path)["frame"]
+                )
+                for field in frame_fields
+                for path in narrowed_candidates[field]
+            }
+        )
+    if joint_target_path_modes:
+        result["joint_target_path_modes"] = joint_target_path_modes
+    if kind in {
+        "final_joint_position_error",
+        "joint_range",
+        "final_joint_displacement_error",
+    }:
+        result["joint_parameter_units"] = {
+            "joint_name": str(criterion["unit"])
+        }
+    elif kind in {
+        "final_wrapped_joint_position_error",
+        "maximum_joint_linear_trajectory_error",
+    }:
+        result["joint_parameter_units"] = {"joint_name": "rad"}
+    elif kind == "final_maximum_joint_position_error":
+        result["joint_parameter_units"] = {"joint_names": "rad"}
+    return result
 
 
 def audit_inline_measurement_binding(
@@ -1809,6 +2308,15 @@ def audit_inline_measurement_binding(
             f"catalog; catalog kinds supporting unit {criterion_unit!r}: "
             f"{_compact_names(compatible_kinds)}"
         )
+    untyped_request_paths = sorted(
+        set(spec["request_path_parameters"]) - set(spec["request_value_types"])
+    )
+    if untyped_request_paths:
+        raise MeasurementOperatorError(
+            f"trusted operator {kind!r} cannot be authored for capability-v2 "
+            "because its request-path parameters lack sealed value types: "
+            f"{untyped_request_paths}"
+        )
     if binding["unit"] not in spec["output_units"]:
         raise MeasurementOperatorError(
             f"measurement_binding.unit {binding['unit']!r} is incompatible with "
@@ -1846,11 +2354,29 @@ def audit_inline_measurement_binding(
                 f"measurement_binding.parameters.{field} must have type {expected}"
             )
     _assert_finite_json(parameters, where="measurement_binding.parameters")
+    if kind == "final_weighted_site_position_error":
+        weights = parameters.get("weights")
+        if (
+            not isinstance(weights, list)
+            or len(weights) != 3
+            or any(not _is_number(weight) or float(weight) < 1.0 for weight in weights)
+        ):
+            raise MeasurementOperatorError(
+                "final_weighted_site_position_error weights must contain exactly "
+                "three finite values, each >= 1, so IVC cannot weaken the sealed "
+                "metric or ignore an axis"
+            )
     request_path_schemas = {
         field: _schema_at_request_path(request_schema, str(parameters[field]))
         for field in spec["request_path_parameters"]
     }
     for field, expected in spec["request_value_types"].items():
+        if kind == "final_joint_position_error":
+            # This operator's scene joint type determines whether a scalar target
+            # is radians, metres, or an evidence-backed dimensionless conversion.
+            # Its operator-specific audit below checks the joint before the target
+            # schema so unit errors remain precise.
+            continue
         try:
             _validate_request_value_schema(
                 request_path_schemas[field],
@@ -1912,6 +2438,7 @@ __all__ = [
     "compatible_request_paths",
     "inspect_scene_entities",
     "measurement_operator_catalog",
+    "measurement_operator_authoring_compatibility",
     "measurement_operator_evaluation_mode",
     "trusted_reference_contract_id",
 ]
