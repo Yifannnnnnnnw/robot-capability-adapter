@@ -751,6 +751,124 @@ def _read_object(path: Path, *, label: str) -> dict[str, Any]:
     return value
 
 
+def _load_fixed_inputs(
+    source_directory: str | Path,
+    *,
+    packages: Mapping[str, RobotPackage],
+    hooks: PipelineHooks,
+) -> tuple[dict[str, dict[str, dict[str, Any]]], dict[str, Any]]:
+    """Load and audit one predeclared capability-v2 design/suite per robot.
+
+    The explicit on-disk contract is::
+
+        <source>/<robot_configuration_id>/capability_design.json
+        <source>/<robot_configuration_id>/capability_validation_suite.json
+
+    Validation happens before the Producer client is constructed or called.  The
+    returned suite remains Framework-private; callers must not place it in the
+    model-facing ``files`` workspace.
+    """
+
+    source = Path(source_directory).resolve()
+    if not source.is_dir():
+        raise PipelineError(f"fixed_inputs_from is not a directory: {source}")
+    loaded: dict[str, dict[str, dict[str, Any]]] = {}
+    provenance_robots: dict[str, dict[str, Any]] = {}
+    for robot, package in packages.items():
+        robot_directory = (source / robot).resolve()
+        try:
+            robot_directory.relative_to(source)
+        except ValueError as exc:
+            raise PipelineError(
+                f"fixed input robot directory escapes fixed_inputs_from: {robot!r}"
+            ) from exc
+        design_path = robot_directory / "capability_design.json"
+        suite_path = robot_directory / "capability_validation_suite.json"
+        raw_design = _read_object(
+            design_path,
+            label=f"fixed capability design for {robot!r}",
+        )
+        try:
+            design = _copy(
+                dict(
+                    _call_supported(
+                        hooks.capability_design_validator,
+                        raw_design,
+                        package,
+                    )
+                )
+            )
+        except Exception as exc:
+            raise PipelineError(
+                f"fixed capability design for {robot!r} failed validation: {exc}"
+            ) from exc
+        raw_suite = _read_object(
+            suite_path,
+            label=f"fixed capability validation suite for {robot!r}",
+        )
+        try:
+            suite = _copy(
+                dict(
+                    _call_supported(
+                        hooks.capability_suite_validator,
+                        raw_suite,
+                        package=package,
+                        design=design,
+                    )
+                )
+            )
+        except Exception as exc:
+            raise PipelineError(
+                f"fixed capability validation suite for {robot!r} failed validation: {exc}"
+            ) from exc
+        loaded[robot] = {"design": design, "suite": suite}
+        provenance_robots[robot] = {
+            "robot_configuration_id": package.robot_configuration_id,
+            "package_version": package.package_version,
+            "task_snapshot_id": package.snapshot_id,
+            "capability_design_path": str(design_path),
+            "capability_validation_suite_path": str(suite_path),
+            "capability_count": len(design.get("capabilities", [])),
+            "validation_case_count": len(suite.get("cases", [])),
+            "validated_before_model_calls": True,
+        }
+    return loaded, {
+        "mode": "fixed_inputs_from",
+        "source_directory": str(source),
+        "robots": provenance_robots,
+    }
+
+
+def _fixed_stage_evidence(
+    stage: str,
+    *,
+    provenance: Mapping[str, Any],
+    case_count: int | None = None,
+) -> dict[str, Any]:
+    """Record a truthful skipped authoring stage for a fixed-input run."""
+
+    evidence: dict[str, Any] = {
+        "stage": stage,
+        "attempted": False,
+        "completed": False,
+        "skipped": True,
+        "reason": "predeclared artifact loaded from fixed_inputs_from",
+        "model_call_count": 0,
+        "model_calls": [],
+        "fixed_input_provenance": _copy(dict(provenance)),
+        "experience_ids": [],
+    }
+    if stage == "ivc":
+        evidence.update(
+            {
+                "candidate_driver_visible": False,
+                "inline_suite_audit_passed": True,
+                "compiled_capability_validation_case_count": int(case_count or 0),
+            }
+        )
+    return evidence
+
+
 def _default_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
@@ -2042,6 +2160,7 @@ def _run_cell(
     completed_probe_results: Sequence[Mapping[str, Any]] = (),
     evolution_client: Any | None = None,
     evolution_enabled: bool = True,
+    fixed_input_provenance: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     workspace.mkdir(parents=True, exist_ok=True)
     terminal_evolution_client = evolution_client if evolution_client is not None else client
@@ -2671,6 +2790,11 @@ def _run_cell(
         },
     }
 
+    if fixed_input_provenance is not None:
+        raw_report["upstream_artifact_mode"] = "fixed-per-robot"
+        raw_report["fixed_input_provenance"] = _copy(
+            dict(fixed_input_provenance)
+        )
     if evolution_enabled:
         try:
             evolution = hooks.evolution_runner(
@@ -2718,6 +2842,7 @@ def _pre_driver_failure_cell(
     hooks: PipelineHooks,
     evolution_client: Any | None,
     evolution_enabled: bool,
+    fixed_input_provenance: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Retain one failed pre-Driver cell without aborting later cells."""
 
@@ -2848,6 +2973,11 @@ def _pre_driver_failure_cell(
             "TaskDemo": _copy(task_demo),
         },
     }
+    if fixed_input_provenance is not None:
+        raw_report["upstream_artifact_mode"] = "fixed-per-robot"
+        raw_report["fixed_input_provenance"] = _copy(
+            dict(fixed_input_provenance)
+        )
     if evolution_enabled:
         try:
             evolution = hooks.evolution_runner(
@@ -2961,8 +3091,9 @@ def _run_study_phase(
     workspace: Path,
     hooks: PipelineHooks,
     stage_log: list[dict[str, Any]],
+    design: Mapping[str, Any] | None = None,
 ) -> tuple[StudyResult, tuple[Mapping[str, Any], ...]]:
-    """Execute package-only STUDY before any fresh TGCD call."""
+    """Execute STUDY with either no design or an explicitly fixed design."""
 
     before = _call_count(client)
     try:
@@ -2970,7 +3101,7 @@ def _run_study_phase(
             hooks.study_runner,
             client,
             package,
-            design=None,
+            design=_copy(dict(design)) if isinstance(design, Mapping) else None,
             condition=condition,
             experience=experience,
             runtime_contract=_runtime_contract(package),
@@ -3103,12 +3234,15 @@ def run_experiment(
     check_self_containment: bool = True,
     skip_reference_calibration: bool = True,
     sealed_inputs_from: str | Path | None = None,
+    fixed_inputs_from: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Run TGCD/IVC, optional hidden reference diagnostics, and dynamic cells.
+    """Run fresh authoring or an explicit fixed-per-robot upstream route.
 
     Dynamic capability-v2 IVC is admitted by deterministic inline-suite audit.
     A caller may still opt into the historical reference-driver diagnostic by
     passing ``skip_reference_calibration=False``; it is not a mainline gate.
+    ``fixed_inputs_from`` skips TGCD/IVC authoring but audits their artifacts
+    before any Producer call and otherwise preserves the same dynamic Driver path.
     """
 
     root = Path(mainline_root).resolve()
@@ -3177,6 +3311,23 @@ def run_experiment(
     }
     _write(destination / "package_check.json", package_check)
 
+    if sealed_inputs_from is not None:
+        raise PipelineError(
+            "sealed TGCD/IVC reuse is incompatible with fresh per-cell design and validation"
+        )
+    fixed_inputs: dict[str, dict[str, dict[str, Any]]] | None = None
+    fixed_input_provenance: dict[str, Any] | None = None
+    if fixed_inputs_from is not None:
+        fixed_inputs, fixed_input_provenance = _load_fixed_inputs(
+            fixed_inputs_from,
+            packages=packages,
+            hooks=selected_hooks,
+        )
+        _write(
+            destination / "fixed_input_provenance.json",
+            fixed_input_provenance,
+        )
+
     if selected_producer is None:
         from autoadapter2.model_api import JsonModelClient, ModelConfig
 
@@ -3211,10 +3362,6 @@ def run_experiment(
         )
         if evolution_model_preflight is not None:
             _write(destination / "evolution_model_preflight.json", evolution_model_preflight)
-    if sealed_inputs_from is not None:
-        raise PipelineError(
-            "sealed TGCD/IVC reuse is incompatible with fresh per-cell design and validation"
-        )
     stage_log: list[dict[str, Any]] = []
     sealed_input_provenance: dict[str, Any] | None = None
     references: dict[str, Any] = {}
@@ -3232,6 +3379,63 @@ def run_experiment(
             completed_study: StudyResult | None = None
             study_probe_results: tuple[Mapping[str, Any], ...] = ()
             design: dict[str, Any] | None = None
+            capability_suite: dict[str, Any] | None = None
+            cell_fixed_provenance: dict[str, Any] | None = None
+            if fixed_inputs is not None:
+                fixed = fixed_inputs[robot]
+                design = _copy(fixed["design"])
+                capability_suite = _copy(fixed["suite"])
+                robot_provenance = _copy(
+                    dict(fixed_input_provenance["robots"][robot])
+                )
+                cell_fixed_provenance = {
+                    "mode": "fixed_inputs_from",
+                    "source_directory": fixed_input_provenance["source_directory"],
+                    **robot_provenance,
+                    "copied_capability_design_path": str(
+                        cell_workspace / "design" / "capability_design.json"
+                    ),
+                    "copied_capability_validation_suite_path": str(
+                        cell_workspace
+                        / "private"
+                        / "capability_validation_suite.json"
+                    ),
+                }
+                write_capability_design(
+                    cell_workspace / "design" / "capability_design.json",
+                    design,
+                )
+                write_private_suite(
+                    cell_workspace
+                    / "private"
+                    / "capability_validation_suite.json",
+                    capability_suite,
+                )
+                _write(
+                    cell_workspace / "fixed_input_provenance.json",
+                    cell_fixed_provenance,
+                )
+                stage_log.extend(
+                    (
+                        {
+                            "robot": robot,
+                            "condition": condition,
+                            **_fixed_stage_evidence(
+                                "tgcd",
+                                provenance=cell_fixed_provenance,
+                            ),
+                        },
+                        {
+                            "robot": robot,
+                            "condition": condition,
+                            **_fixed_stage_evidence(
+                                "ivc",
+                                provenance=cell_fixed_provenance,
+                                case_count=len(capability_suite.get("cases", [])),
+                            ),
+                        },
+                    )
+                )
             try:
                 completed_study, study_probe_results = _run_study_phase(
                     package=package,
@@ -3243,170 +3447,209 @@ def run_experiment(
                     workspace=cell_workspace,
                     hooks=selected_hooks,
                     stage_log=stage_log,
+                    design=design,
                 )
 
-                current_stage = "tgcd"
-                stage_before = _call_count(client)
+                if fixed_inputs is not None:
+                    if skip_reference_calibration:
+                        reference = {
+                            "robot_configuration_id": robot,
+                            "evaluation_role": "ivc_reference_positive_control",
+                            "skipped": True,
+                            "skip_reason": (
+                                "fixed capability-v2 inputs do not require an "
+                                "independent reference-driver diagnostic"
+                            ),
+                            "passed": False,
+                        }
+                    else:
+                        reference = _run_reference_positive_control(
+                            package=package,
+                            design=design,
+                            suite=capability_suite,
+                            config=config,
+                            hooks=selected_hooks,
+                            output_dir=(
+                                cell_workspace
+                                / "private"
+                                / "reference-positive-control"
+                            ),
+                            run_id=selected_run_id,
+                        )
+                    references[cell_id] = _copy(dict(reference))
+                else:
+                    current_stage = "tgcd"
+                    stage_before = _call_count(client)
 
-                def record_tgcd_event(event: Mapping[str, Any]) -> None:
-                    tgcd_events.append(_json_safe(dict(event)))
+                    def record_tgcd_event(event: Mapping[str, Any]) -> None:
+                        tgcd_events.append(_json_safe(dict(event)))
 
-                design = _call_supported(
-                    selected_hooks.tgcd_runner,
-                    client,
-                    package,
-                    experience=robot_experience,
-                    study=completed_study.output,
-                    max_turns=int(config.phase_turn_budgets["tgcd"]),
-                    probe_budget=config.probe_budget,
-                    callback=record_tgcd_event,
-                    artifact_path=cell_workspace / "design" / "capability_design.json",
-                )
-                design = _copy(
-                    dict(
-                        _call_supported(
-                            selected_hooks.capability_design_validator,
-                            design,
-                            package,
+                    design = _call_supported(
+                        selected_hooks.tgcd_runner,
+                        client,
+                        package,
+                        experience=robot_experience,
+                        study=completed_study.output,
+                        max_turns=int(config.phase_turn_budgets["tgcd"]),
+                        probe_budget=config.probe_budget,
+                        callback=record_tgcd_event,
+                        artifact_path=(
+                            cell_workspace / "design" / "capability_design.json"
+                        ),
+                    )
+                    design = _copy(
+                        dict(
+                            _call_supported(
+                                selected_hooks.capability_design_validator,
+                                design,
+                                package,
+                            )
                         )
                     )
-                )
-                design_path = cell_workspace / "design" / "capability_design.json"
-                if not design_path.is_file():
-                    write_capability_design(design_path, design)
-                tgcd_evidence = _with_experience_trace(
-                    _stage_evidence(
-                        client,
-                        stage="tgcd",
-                        before=stage_before,
-                        completed=True,
-                    ),
-                    robot_experience,
-                )
-                tgcd_evidence["artifact_trace"] = _copy(tgcd_events)
-                stage_log.append(
-                    {"robot": robot, "condition": condition, **tgcd_evidence}
-                )
-                _write(
-                    cell_workspace / "design" / "tgcd_artifact_trace.json",
-                    {"events": tgcd_events},
-                )
-
-                reference_box: dict[str, Any] = {}
-
-                def positive_control_hook(
-                    *,
-                    capability_design: Mapping[str, Any],
-                    validation_suite: Mapping[str, Any],
-                ) -> Mapping[str, Any]:
-                    report = _run_reference_positive_control(
-                        package=package,
-                        design=capability_design,
-                        suite=validation_suite,
-                        config=config,
-                        hooks=selected_hooks,
-                        output_dir=cell_workspace / "private" / "reference-positive-control",
-                        run_id=selected_run_id,
+                    design_path = (
+                        cell_workspace / "design" / "capability_design.json"
                     )
-                    reference_box["report"] = report
-                    return report
+                    if not design_path.is_file():
+                        write_capability_design(design_path, design)
+                    tgcd_evidence = _with_experience_trace(
+                        _stage_evidence(
+                            client,
+                            stage="tgcd",
+                            before=stage_before,
+                            completed=True,
+                        ),
+                        robot_experience,
+                    )
+                    tgcd_evidence["artifact_trace"] = _copy(tgcd_events)
+                    stage_log.append(
+                        {"robot": robot, "condition": condition, **tgcd_evidence}
+                    )
+                    _write(
+                        cell_workspace / "design" / "tgcd_artifact_trace.json",
+                        {"events": tgcd_events},
+                    )
 
-                current_stage = "ivc"
-                stage_before = _call_count(client)
+                    reference_box: dict[str, Any] = {}
 
-                def record_ivc_event(event: Mapping[str, Any]) -> None:
-                    ivc_events.append(_json_safe(dict(event)))
+                    def positive_control_hook(
+                        *,
+                        capability_design: Mapping[str, Any],
+                        validation_suite: Mapping[str, Any],
+                    ) -> Mapping[str, Any]:
+                        report = _run_reference_positive_control(
+                            package=package,
+                            design=capability_design,
+                            suite=validation_suite,
+                            config=config,
+                            hooks=selected_hooks,
+                            output_dir=(
+                                cell_workspace
+                                / "private"
+                                / "reference-positive-control"
+                            ),
+                            run_id=selected_run_id,
+                        )
+                        reference_box["report"] = report
+                        return report
 
-                capability_suite = _call_supported(
-                    selected_hooks.ivc_runner,
-                    client,
-                    package=package,
-                    design=_copy(dict(design)),
-                    max_turns=int(config.phase_turn_budgets["ivc"]),
-                    probe_budget=config.probe_budget,
-                    callback=record_ivc_event,
-                    reference_positive_control_hook=(
-                        None if skip_reference_calibration else positive_control_hook
-                    ),
-                    artifact_path=(
+                    current_stage = "ivc"
+                    stage_before = _call_count(client)
+
+                    def record_ivc_event(event: Mapping[str, Any]) -> None:
+                        ivc_events.append(_json_safe(dict(event)))
+
+                    capability_suite = _call_supported(
+                        selected_hooks.ivc_runner,
+                        client,
+                        package=package,
+                        design=_copy(dict(design)),
+                        max_turns=int(config.phase_turn_budgets["ivc"]),
+                        probe_budget=config.probe_budget,
+                        callback=record_ivc_event,
+                        reference_positive_control_hook=(
+                            None
+                            if skip_reference_calibration
+                            else positive_control_hook
+                        ),
+                        artifact_path=(
+                            cell_workspace
+                            / "private"
+                            / "capability_validation_suite.json"
+                        ),
+                    )
+                    capability_suite = _copy(
+                        dict(
+                            _call_supported(
+                                selected_hooks.capability_suite_validator,
+                                capability_suite,
+                                package=package,
+                                design=design,
+                            )
+                        )
+                    )
+                    suite_path = (
                         cell_workspace
                         / "private"
                         / "capability_validation_suite.json"
-                    ),
-                )
-                capability_suite = _copy(
-                    dict(
-                        _call_supported(
-                            selected_hooks.capability_suite_validator,
-                            capability_suite,
-                            package=package,
-                            design=design,
-                        )
                     )
-                )
-                suite_path = (
-                    cell_workspace
-                    / "private"
-                    / "capability_validation_suite.json"
-                )
-                if not suite_path.is_file():
-                    write_private_suite(suite_path, capability_suite)
-                ivc_trace_path = (
-                    cell_workspace / "private" / "ivc_artifact_trace.json"
-                )
-                if skip_reference_calibration:
-                    reference = {
-                        "robot_configuration_id": robot,
-                        "evaluation_role": "ivc_reference_positive_control",
-                        "skipped": True,
-                        "skip_reason": (
-                            "dynamic inline-suite audit does not require an "
-                            "independent reference-driver diagnostic"
-                        ),
-                        "passed": False,
-                    }
-                else:
-                    if "report" not in reference_box:
-                        positive_control_hook(
-                            capability_design=design,
-                            validation_suite=capability_suite,
-                        )
-                    reference = _copy(dict(reference_box["report"]))
-                references[cell_id] = reference
-                ivc_evidence = _stage_evidence(
-                    client,
-                    stage="ivc",
-                    before=stage_before,
-                    completed=True,
-                )
-                private_model_calls = ivc_evidence.pop("model_calls", [])
-                _write(
-                    ivc_trace_path,
-                    {
-                        "events": ivc_events,
-                        "model_calls": private_model_calls,
-                    },
-                )
-                ivc_evidence.update(
-                    {
-                        "experience_ids": [],
-                        "candidate_driver_visible": False,
-                        "compiled_capability_validation_case_count": len(
-                            capability_suite.get("cases", [])
-                        ),
-                        "inline_suite_audit_passed": True,
-                        "reference_positive_control_passed": bool(
-                            reference.get("passed")
-                        ),
-                        "artifact_trace_summary": (
-                            _private_artifact_event_summaries(ivc_events)
-                        ),
-                        "private_artifact_trace_path": str(ivc_trace_path),
-                    }
-                )
-                stage_log.append(
-                    {"robot": robot, "condition": condition, **ivc_evidence}
-                )
+                    if not suite_path.is_file():
+                        write_private_suite(suite_path, capability_suite)
+                    ivc_trace_path = (
+                        cell_workspace / "private" / "ivc_artifact_trace.json"
+                    )
+                    if skip_reference_calibration:
+                        reference = {
+                            "robot_configuration_id": robot,
+                            "evaluation_role": "ivc_reference_positive_control",
+                            "skipped": True,
+                            "skip_reason": (
+                                "dynamic inline-suite audit does not require an "
+                                "independent reference-driver diagnostic"
+                            ),
+                            "passed": False,
+                        }
+                    else:
+                        if "report" not in reference_box:
+                            positive_control_hook(
+                                capability_design=design,
+                                validation_suite=capability_suite,
+                            )
+                        reference = _copy(dict(reference_box["report"]))
+                    references[cell_id] = reference
+                    ivc_evidence = _stage_evidence(
+                        client,
+                        stage="ivc",
+                        before=stage_before,
+                        completed=True,
+                    )
+                    private_model_calls = ivc_evidence.pop("model_calls", [])
+                    _write(
+                        ivc_trace_path,
+                        {
+                            "events": ivc_events,
+                            "model_calls": private_model_calls,
+                        },
+                    )
+                    ivc_evidence.update(
+                        {
+                            "experience_ids": [],
+                            "candidate_driver_visible": False,
+                            "compiled_capability_validation_case_count": len(
+                                capability_suite.get("cases", [])
+                            ),
+                            "inline_suite_audit_passed": True,
+                            "reference_positive_control_passed": bool(
+                                reference.get("passed")
+                            ),
+                            "artifact_trace_summary": (
+                                _private_artifact_event_summaries(ivc_events)
+                            ),
+                            "private_artifact_trace_path": str(ivc_trace_path),
+                        }
+                    )
+                    stage_log.append(
+                        {"robot": robot, "condition": condition, **ivc_evidence}
+                    )
             except Exception as exc:
                 if isinstance(exc, OSError):
                     raise
@@ -3517,10 +3760,16 @@ def run_experiment(
                     hooks=selected_hooks,
                     evolution_client=evolution_client,
                     evolution_enabled=config.evolution_enabled,
+                    fixed_input_provenance=cell_fixed_provenance,
                 )
                 failed_cell = build_cell_report(raw_failed_cell)
                 failed_cell["frozen_driver_attempt_count"] = 0
                 failed_cell["passed_capability_whitelist"] = []
+                if cell_fixed_provenance is not None:
+                    failed_cell["upstream_artifact_mode"] = "fixed-per-robot"
+                    failed_cell["fixed_input_provenance"] = _copy(
+                        cell_fixed_provenance
+                    )
                 cell_reports.append(failed_cell)
                 continue
 
@@ -3542,6 +3791,7 @@ def run_experiment(
                 model_stage_log=stage_log,
                 completed_study=completed_study,
                 completed_probe_results=study_probe_results,
+                fixed_input_provenance=cell_fixed_provenance,
             )
             cell = build_cell_report(raw_cell)
             cell["frozen_driver_attempt_count"] = int(
@@ -3550,6 +3800,9 @@ def run_experiment(
             cell["passed_capability_whitelist"] = _copy(
                 list(raw_cell.get("passed_capability_whitelist", []))
             )
+            if cell_fixed_provenance is not None:
+                cell["upstream_artifact_mode"] = "fixed-per-robot"
+                cell["fixed_input_provenance"] = _copy(cell_fixed_provenance)
             cell_reports.append(cell)
 
     references_passed = bool(references) and all(
@@ -3587,6 +3840,10 @@ def run_experiment(
         "configuration": config.as_dict(),
         "package_check": package_check,
         "references": references,
+        "upstream_artifact_mode": (
+            "fixed-per-robot" if fixed_inputs is not None else "fresh-per-cell"
+        ),
+        "fixed_input_provenance": _copy(fixed_input_provenance),
         "sealed_input_provenance": sealed_input_provenance,
         "reference_calibration_skipped": skip_reference_calibration,
         "reference_calibration_passed": references_passed,

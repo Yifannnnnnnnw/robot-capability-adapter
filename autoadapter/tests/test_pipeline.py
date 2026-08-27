@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -335,6 +336,9 @@ def _fake_hooks(
     reference_inputs: list[dict[str, Any]] = []
     repair_calls: list[tuple[str, int]] = []
     repair_reports: list[dict[str, Any]] = []
+    study_designs: list[Any] = []
+    generate_designs: list[Any] = []
+    repair_public_inputs: list[dict[str, Any]] = []
     client = SimpleNamespace(calls=[])
 
     def load(root: Path, robot: str) -> Any:
@@ -380,6 +384,7 @@ def _fake_hooks(
 
     def study_runner(model: Any, package: Any, design: Any, **kwargs: Any) -> StudyResult:
         events.append(("study", package.robot_configuration_id, kwargs["condition"]))
+        study_designs.append(design)
         if study_raises:
             raise RuntimeError("model output failed STUDY validation")
         return StudyResult(
@@ -453,6 +458,7 @@ def _fake_hooks(
 
     def generate_runner(model: Any, package: Any, design: Any, study: Any, **kwargs: Any) -> Any:
         events.append(("generate", package.robot_configuration_id, kwargs["condition"], 0))
+        generate_designs.append(design)
         if generation_raises:
             candidate = (
                 Path(kwargs["workspace"]) / "generate-development" / "driver.py"
@@ -484,6 +490,7 @@ def _fake_hooks(
         condition = kwargs["condition"]
         repair_calls.append((condition, previous_attempt))
         repair_reports.append(dict(kwargs["candidate_report"]))
+        repair_public_inputs.append(dict(kwargs["public_inputs"]))
         events.append(("repair", condition, previous_attempt))
         return _generated_driver(Path(kwargs["workspace"]), previous_attempt + 1)
 
@@ -568,6 +575,9 @@ def _fake_hooks(
         "reference_inputs": reference_inputs,
         "repair_calls": repair_calls,
         "repair_reports": repair_reports,
+        "study_designs": study_designs,
+        "generate_designs": generate_designs,
+        "repair_public_inputs": repair_public_inputs,
     }
 
 
@@ -621,6 +631,10 @@ def test_pipeline_runs_a_single_robot_single_condition_canary(tmp_path: Path) ->
     assert [cell["cell_id"] for cell in result["cells"]] == [
         "r-arm::skeleton-assisted"
     ]
+    assert result["upstream_artifact_mode"] == "fresh-per-cell"
+    assert result["fixed_input_provenance"] is None
+    assert ("tgcd", "r-arm") in events
+    assert ("ivc", "r-arm") in events
     assert result["paired_report"]["summary"]["expected_cell_count"] == 1
     assert result["paired_report"]["summary"]["all_expected_cells_reported"]
 
@@ -1186,57 +1200,286 @@ def test_reference_skip_does_not_call_incomplete_cells_completed(
     )
 
 
-def test_reuse_sealed_inputs_preserves_both_private_suites(
-    tmp_path: Path,
-) -> None:
-    source_events: list[tuple[Any, ...]] = []
-    source_hooks, source_state = _fake_hooks(
-        tmp_path, source_events, validation_pass_at=1
+def _write_fixed_inputs(
+    root: Path,
+    *,
+    robot: str = "r-arm",
+    design: dict[str, Any] | None = None,
+    suite: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    fixed_design = design or {
+        "artifact_type": "capability_design",
+        "robot_configuration_id": robot,
+        "invocation_abi": {
+            "kind": "capability_request",
+            "method_call": "method(request=request)",
+            "request_required": ["request"],
+        },
+        "capabilities": [
+            {
+                "capability_id": "cap-a",
+                "method_name": "move_a",
+                "covered_task_ids": ["task-0"],
+            },
+            {
+                "capability_id": "cap-b",
+                "method_name": "move_b",
+                "covered_task_ids": ["task-1"],
+            },
+        ],
+        "task_support": [
+            {"task_id": "task-0", "capability_id": "cap-a"},
+            {"task_id": "task-1", "capability_id": "cap-b"},
+        ],
+    }
+    fixed_suite = suite or {
+        "artifact_type": "capability_validation_suite",
+        "robot_configuration_id": robot,
+        "whole_suite_aggregation": {"kind": "all_cases"},
+        "cases": [
+            {
+                "case_id": "cap-a-nominal",
+                "capability_id": "cap-a",
+                "case_role": "nominal",
+            },
+            {
+                "case_id": "cap-a-boundary",
+                "capability_id": "cap-a",
+                "case_role": "calibrated_boundary",
+            },
+            {
+                "case_id": "cap-b-nominal",
+                "capability_id": "cap-b",
+                "case_role": "nominal",
+            },
+            {
+                "case_id": "cap-b-boundary",
+                "capability_id": "cap-b",
+                "case_role": "calibrated_boundary",
+            },
+        ],
+    }
+    robot_root = root / robot
+    robot_root.mkdir(parents=True, exist_ok=True)
+    (robot_root / "capability_design.json").write_text(
+        json.dumps(fixed_design), encoding="utf-8"
     )
-    source = tmp_path / "runs" / "sealed-source"
-    run_experiment(
-        tmp_path,
-        config=_config(),
-        output_dir=source,
-        run_id="sealed-source",
-        client=source_state["client"],
-        hooks=source_hooks,
-        check_self_containment=False,
+    (robot_root / "capability_validation_suite.json").write_text(
+        json.dumps(fixed_suite), encoding="utf-8"
+    )
+    return fixed_design, fixed_suite
+
+
+@pytest.mark.parametrize("invalid_artifact", ("design", "suite"))
+def test_fixed_inputs_fail_validation_before_any_model_or_authoring_call(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    invalid_artifact: str,
+) -> None:
+    monkeypatch.setattr("autoadapter2.pipeline.check_environment", lambda: {})
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
+    fixed_root = tmp_path / "fixed"
+    _write_fixed_inputs(
+        fixed_root,
+        **(
+            {"design": {"artifact_type": "invalid"}}
+            if invalid_artifact == "design"
+            else {"suite": {"artifact_type": "invalid"}}
+        ),
     )
 
-    resumed_events: list[tuple[Any, ...]] = []
-    resumed_hooks, resumed_state = _fake_hooks(
-        tmp_path, resumed_events, validation_pass_at=1
+    def reject_design(design: Any, package: Any) -> dict[str, Any]:
+        if invalid_artifact == "design":
+            raise ValueError("not a current capability-v2 design")
+        return dict(design)
+
+    def reject_suite(suite: Any, **kwargs: Any) -> dict[str, Any]:
+        if invalid_artifact == "suite":
+            raise ValueError("not a current capability-v2 suite")
+        return dict(suite)
+
+    def forbidden_authoring(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("TGCD/IVC must not run for fixed inputs")
+
+    hooks = replace(
+        hooks,
+        capability_design_validator=reject_design,
+        capability_suite_validator=reject_suite,
+        tgcd_runner=forbidden_authoring,
+        ivc_runner=forbidden_authoring,
     )
-    destination = tmp_path / "runs" / "resumed"
+    config = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "fixed-invalid",
+            "robots": ["r-arm"],
+            "generation_conditions": ["skeleton-assisted"],
+        }
+    )
+
+    with pytest.raises(PipelineError, match="failed validation"):
+        run_experiment(
+            tmp_path,
+            config=config,
+            output_dir=tmp_path / "run",
+            run_id="fixed-invalid",
+            client=state["client"],
+            hooks=hooks,
+            check_self_containment=False,
+            fixed_inputs_from=fixed_root,
+        )
+
+    assert state["client"].calls == []
+    assert events == [("load", "r-arm")]
+
+
+def test_fixed_inputs_skip_authoring_stay_private_and_preserve_whitelist(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("autoadapter2.pipeline.check_environment", lambda: {})
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=None)
+    fixed_root = tmp_path / "fixed"
+    fixed_design, fixed_suite = _write_fixed_inputs(fixed_root)
+    base_harness = hooks.harness_runner
+    task_demo_calls: list[dict[str, Any]] = []
+
+    def forbidden_authoring(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        raise AssertionError("TGCD/IVC must not run for fixed inputs")
+
+    def selective_harness(**kwargs: Any) -> dict[str, Any]:
+        report = dict(base_harness(**kwargs))
+        for trial in report["trials"]:
+            trial["trial_passed"] = trial["case_id"] != "cap-b-boundary"
+        report["validation_passed"] = False
+        return report
+
+    def task_demo_runner(**kwargs: Any) -> dict[str, Any]:
+        task_demo_calls.append(
+            {
+                "design": kwargs["design"],
+                "capability_whitelist": kwargs["capability_whitelist"],
+            }
+        )
+        return {
+            "pipeline_completed": True,
+            "physical_validation_executed": True,
+            "validation_passed": True,
+            "video_complete": True,
+            "trials": [
+                {
+                    "case_id": "task-demo-0",
+                    "task_id": "task-0",
+                    "source_clause_id": "all-task-clauses",
+                    "trial_passed": True,
+                }
+            ],
+            "video_manifest": [],
+            "high_level_controller": {"completed": True},
+        }
+
+    hooks = replace(
+        hooks,
+        tgcd_runner=forbidden_authoring,
+        ivc_runner=forbidden_authoring,
+        harness_runner=selective_harness,
+        task_demo_runner=task_demo_runner,
+    )
+    config = ExperimentConfig.from_mapping(
+        {
+            "experiment_id": "fixed-route",
+            "robots": ["r-arm"],
+            "generation_conditions": ["skeleton-assisted"],
+            "max_driver_attempts_per_condition": 2,
+        }
+    )
+    destination = tmp_path / "run"
+
     result = run_experiment(
         tmp_path,
-        config=_config(),
+        config=config,
         output_dir=destination,
-        run_id="resumed",
-        client=resumed_state["client"],
-        hooks=resumed_hooks,
+        run_id="fixed-route",
+        client=state["client"],
+        hooks=hooks,
         check_self_containment=False,
-        skip_reference_calibration=True,
-        sealed_inputs_from=source,
+        fixed_inputs_from=fixed_root,
     )
 
-    assert not any(item[0] in {"tgcd", "ivc"} for item in resumed_events)
-    assert len([item for item in resumed_events if item[0] == "study"]) == 4
-    assert result["sealed_input_provenance"]["source_run_id"] == "sealed-source"
-    for robot in ("r-arm", "r-quad"):
-        for filename, case_count in (
-            ("capability_validation_suite.json", 8),
-            ("task_demo_suite.json", 5),
-        ):
-            original = json.loads(
-                (source / "private" / robot / filename).read_text()
-            )
-            reused = json.loads(
-                (destination / "private" / robot / filename).read_text()
-            )
-            assert reused == original
-            assert len(reused["cases"]) == case_count
+    assert not any(event[0] in {"tgcd", "ivc"} for event in events)
+    cell = result["cells"][0]
+    assert result["upstream_artifact_mode"] == "fixed-per-robot"
+    assert cell["upstream_artifact_mode"] == "fixed-per-robot"
+    for stage in ("TGCD", "IVC"):
+        assert cell["outcomes"][stage]["attempted"] is False
+        assert cell["outcomes"][stage]["completed"] is False
+        assert cell["outcomes"][stage]["skipped"] is True
+        assert cell["outcomes"][stage]["model_call_count"] == 0
+        assert isinstance(
+            cell["outcomes"][stage]["fixed_input_provenance"], dict
+        )
+        assert "fixed_inputs_from" in cell["outcomes"][stage]["reason"]
+    assert cell["outcomes"]["IVC"]["candidate_driver_visible"] is False
+    assert state["study_designs"] == [fixed_design]
+    assert state["generate_designs"] == [fixed_design]
+    assert state["repair_public_inputs"][0]["sealed_capability_design"] == fixed_design
+    assert cell["passed_capability_whitelist"] == ["cap-a"]
+    assert task_demo_calls[0]["capability_whitelist"] == ("cap-a",)
+    assert [
+        item["capability_id"] for item in task_demo_calls[0]["design"]["capabilities"]
+    ] == ["cap-a"]
+    copied_design = json.loads(
+        (
+            destination
+            / "cells"
+            / "r-arm"
+            / "skeleton-assisted"
+            / "design"
+            / "capability_design.json"
+        ).read_text(encoding="utf-8")
+    )
+    copied_suite = json.loads(
+        (
+            destination
+            / "cells"
+            / "r-arm"
+            / "skeleton-assisted"
+            / "private"
+            / "capability_validation_suite.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert copied_design == fixed_design
+    assert copied_suite == fixed_suite
+    model_workspace = (
+        destination / "cells" / "r-arm" / "skeleton-assisted" / "files"
+    )
+    assert not any(model_workspace.rglob("capability_validation_suite.json"))
+    assert all(item["suite"] == fixed_suite for item in state["harness_inputs"])
+
+
+def test_historical_sealed_input_reuse_remains_rejected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("autoadapter2.pipeline.check_environment", lambda: {})
+    events: list[tuple[Any, ...]] = []
+    hooks, state = _fake_hooks(tmp_path, events, validation_pass_at=1)
+
+    with pytest.raises(PipelineError, match="sealed TGCD/IVC reuse is incompatible"):
+        run_experiment(
+            tmp_path,
+            config=_config(),
+            output_dir=tmp_path / "run",
+            run_id="sealed-rejected",
+            client=state["client"],
+            hooks=hooks,
+            check_self_containment=False,
+            sealed_inputs_from=tmp_path / "old-run",
+        )
+
+    assert state["client"].calls == []
+    assert events == [("load", "r-arm"), ("load", "r-quad")]
 
 
 def test_package_failure_happens_before_model_calls(tmp_path: Path) -> None:
