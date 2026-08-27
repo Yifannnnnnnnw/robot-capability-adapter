@@ -440,3 +440,37 @@ Across all evaluable R1--R2 episodes, aggregate success was almost identical for
 Taken together, Table~\ref{tab:chapter3-exp1b-model-results} and the retained controller traces indicate that the most consequential difference was not command emission itself, but whether returned observations were used to revise an incomplete plan. In the successful Pick and Place with Wall episode, the controller recognised a failed first grasp, fully closed the gripper, and retried before following the elevated route; failed traces instead moved towards release while the object remained near its start. Weave Poles exposed a complementary long-horizon weakness: several controllers generated locally plausible motions and maintained pole separation, yet none preserved the alternating waypoint sequence across calls. This suggests that exposing ReCAP feedback is insufficient unless the model retains subgoal state and uses the observations to replan.
 
 A second implication concerns completion judgement. Nova Pro and Ministral sometimes produced invalid controller outputs, but every normally terminated Harness failure across the cohort had nevertheless been declared complete by the controller. The trusted Harness is therefore necessary to distinguish valid capability execution and model-reported completion from externally observed task completion. Within these simulator conditions, the practically important model differences concerned feedback interpretation, multi-stage state tracking, and recovery from failed intermediate actions.
+
+\section{Summary}
+
+This chapter evaluated two distinct abilities at the robot--software boundary:
+synthesising a reusable driver and completing tasks through an existing,
+capability-validated driver. For RQ1a, no fixed-suite cell reaching the trusted
+Harness achieved complete driver-level conformance. Partial behavioural
+coverage nevertheless differed across model--robot configurations, reaching
+14/18 cases (77.8\%) for SO-101 with Opus~5 and 14/15 cases (93.3\%) for
+Unitree Go2 with Sonnet~4.6. Providing a reviewed, task-neutral driver skeleton
+was therefore insufficient to ensure complete behavioural conformance.
+
+For RQ1b, the model-plus-endpoint configurations produced markedly different
+outcomes when controlling fixed drivers through ReCAP. The Harness recorded 61
+successes among 123 evaluable episodes (49.6\%); model-level rates ranged from
+12/12 (100.0\%) for Opus~5 to 0/20 (0.0\%) for Ministral~3~8B. Because the
+evaluable denominators differed, this is a descriptive comparison rather than
+a universal model ranking. Success was similar across the two robot blocks, at
+30/60 (50.0\%) for SO-101 and 31/63 (49.2\%) for Go2, but varied more widely
+among tasks. The retained traces suggest that unsuccessful grasp recovery,
+incomplete use of returned observations, and loss of long-horizon subgoal
+state contributed to task failures.
+
+Taken together, the findings show that driver synthesis and driver use require
+separate evidence. Every normally terminated Harness failure in
+Experiment~1b had nevertheless been declared complete by the controller,
+supporting the need for candidate-independent behavioural judgement. The
+conclusions remain bounded to the selected model-plus-endpoint configurations,
+fixed tasks and initial conditions, the ReCAP controller, and the evaluated
+MuJoCo physics simulation, in which robot drivers issued commands directly to
+simulated robots. They do not establish hardware performance, morphology
+effects, or a universal model ranking.
+Chapter~\ref{chapter:cross-robot-evaluation} next examines the complete
+Auto-Adapter construction route across a broader robot cohort.
