@@ -1,0 +1,52 @@
+{
+  "artifact_type": "capability_validation_private_guards",
+  "robot_configuration_id": "aloha_2",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v2",
+  "guards": [
+    {
+      "guard_id": "aloha-capability-control",
+      "kind": "actuator_and_physics_step_required"
+    },
+    {
+      "guard_id": "aloha-capability-no-direct-write",
+      "kind": "no_direct_state_write"
+    },
+    {
+      "guard_id": "aloha-capability-canonical",
+      "kind": "canonical_model_data"
+    },
+    {
+      "guard_id": "aloha-capability-control-range",
+      "kind": "control_range"
+    },
+    {
+      "guard_id": "aloha-capability-left-side-neutral",
+      "kind": "named_joints_remain_near_reset",
+      "joint_tolerances": {
+        "left/waist": 0.002,
+        "left/shoulder": 0.003,
+        "left/elbow": 0.03,
+        "left/forearm_roll": 0.002,
+        "left/wrist_angle": 0.035,
+        "left/wrist_rotate": 0.002,
+        "left/left_finger": 0.0005,
+        "left/right_finger": 0.0005
+      }
+    },
+    {
+      "guard_id": "aloha-capability-right-side-neutral",
+      "kind": "named_joints_remain_near_reset",
+      "joint_tolerances": {
+        "right/waist": 0.002,
+        "right/shoulder": 0.003,
+        "right/elbow": 0.03,
+        "right/forearm_roll": 0.002,
+        "right/wrist_angle": 0.035,
+        "right/wrist_rotate": 0.002,
+        "right/left_finger": 0.0005,
+        "right/right_finger": 0.0005
+      }
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "artifact_type": "capability_validation_private_instances",
+  "robot_configuration_id": "aloha_2",
+  "package_version": "1.0.0",
+  "task_snapshot_id": "aloha-2-metaworld-source-protocols-2026-08-20-v2",
+  "calibration_source": {
+    "repository_path": "autoadapter/libraries/robots/aloha_2/1.0.0/morphology.json",
+    "specific_reference": "reset_fact.available_keyframe=neutral_pose and public_control",
+    "description": "Capability-only neutral reset and public Direct-MuJoCo control surface; no task request or task plan is inherited."
+  },
+  "instances": [
+    {
+      "instance_id": "aloha-2-capability-left-side",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "neutral_pose"
+      },
+      "guard_ids": [
+        "aloha-capability-control",
+        "aloha-capability-no-direct-write",
+        "aloha-capability-canonical",
+        "aloha-capability-control-range",
+        "aloha-capability-right-side-neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    },
+    {
+      "instance_id": "aloha-2-capability-right-side",
+      "scene_entrypoint": "assets/reach_scene.xml",
+      "reset": {
+        "kind": "keyframe",
+        "name": "neutral_pose"
+      },
+      "guard_ids": [
+        "aloha-capability-control",
+        "aloha-capability-no-direct-write",
+        "aloha-capability-canonical",
+        "aloha-capability-control-range",
+        "aloha-capability-left-side-neutral"
+      ],
+      "repetitions": 1,
+      "timeout_sim_s": 8.0,
+      "max_steps": 5000,
+      "sample_hz": 20.0,
+      "video_width": 800,
+      "video_height": 600,
+      "video_fps": 10.0,
+      "camera": "evidence"
+    }
+  ]
+}
