@@ -103,20 +103,28 @@ traceable to public sources. The generated driver is not itself a task policy.
 Instead, it provides bounded robot operations that a separate controller may
 select and compose.
 
-Figure~\ref{fig:autoadapter-robot-cohort} shows the eleven configurations in
-the declared Direct-MuJoCo construction cohort. The figure describes simulator
-package coverage; it does not treat morphology as an experimental factor or
-provide evidence of hardware behaviour.
+Figure~\ref{fig:autoadapter-robot-cohort} presents the eleven configurations in
+the declared Direct-MuJoCo construction cohort. Their differing joint
+structures, actuator layouts, and end effectors illustrate the
+configuration-specific control requirements handled by each generated driver.
+The figure documents simulator package coverage only; it neither treats
+morphology as an experimental factor nor provides evidence of hardware
+behaviour.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[
     width=0.96\linewidth
   ]{assets/mujoco_robot_assets_contact_sheet.png}
-  \caption{Direct-MuJoCo presentation renders of the eleven robot
-  configurations in the declared Auto-Adapter construction cohort. The panels
-  show simulated morphology only; inclusion does not imply behavioural
-  validation, hardware execution, or deployment readiness.}
+  \caption[MuJoCo robot cohort]
+  {Auto-Adapter MuJoCo construction cohort.
+  \textbf{Top:} SO-101, Unitree Go2, Franka Panda, Kinova Gen3 with Robotiq
+  2F-85, UFACTORY xArm7, and Universal Robots UR5e with Robotiq 2F-85.
+  \textbf{Bottom:} AgileX PiPER, KUKA LBR iiwa 14, LEAP Hand, Hello Robot
+  Stretch 2, and ALOHA 2.
+  The renders identify simulated configurations only; inclusion does not imply
+  behavioural validation, hardware execution, or a controlled morphology
+  comparison.}
   \label{fig:autoadapter-robot-cohort}
 \end{figure}
 
@@ -136,20 +144,29 @@ behavioural tests. Driver synthesis implements the resulting capability
 interface. Independent capability assessment determines which operations may
 subsequently be used in downstream task demonstration.
 
-Figure~\ref{fig:autoadapter-framework-workflow} summarises the five-stage
-workflow and the separation between candidate-visible development feedback
-and independent capability assessment.
+Figure~\ref{fig:autoadapter-framework-workflow} traces this five-stage workflow
+from declared inputs to downstream task demonstration. Robot metadata, the MJCF
+model, and the task library feed study and capability design, while approved
+prior-run Experience is optional. During driver synthesis, the candidate may
+inspect files, revise \texttt{driver.py}, and use bounded development
+simulation. Independent assessment then runs the frozen driver in fresh MuJoCo
+tests and owns the capability verdict. Only accepted capabilities proceed to
+task demonstration; the dashed Repair path returns bounded feedback without
+exposing or changing the fixed validation cases.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[
     width=\linewidth
   ]{assets/auto_adapter_framework.png}
-  \caption{Auto-Adapter workflow. Public robot and task inputs support study
-  and capability design before a robot-specific driver is developed through
-  bounded simulation feedback. The development loop remains separate from the
-  fixed validation cases and capability verdict used before downstream task
-  demonstration.}
+  \caption[Five-stage Auto-Adapter workflow]
+  {Five-stage Auto-Adapter workflow.
+  Robot metadata, the MJCF model, the task library, and optional prior-run
+  Experience support study and capability design; a ReAct agent then develops
+  \texttt{driver.py} through bounded simulation.
+  Independent assessment runs the frozen driver in fresh MuJoCo tests and issues
+  the capability verdict before task demonstration; the dashed path denotes
+  bounded Repair feedback.}
   \label{fig:autoadapter-framework-workflow}
 \end{figure}
 

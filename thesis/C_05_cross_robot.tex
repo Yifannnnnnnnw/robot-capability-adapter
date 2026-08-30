@@ -101,13 +101,13 @@ basic reach and gripper tasks and failed the multi-waypoint square trace. The
 difference arose from \texttt{unreachable\_detect}: Auto-Adapter reported the
 inverse-kinematics exception correctly in all three trials, whereas CaP
 reported completion in all three despite the failed command. A separate Piper
-pick experiment completed 30 of 30 task trials, but its driver included a
-13-line post-synthesis patch. This result therefore supports the feasibility
-of the resulting interface under the evaluated scene, not untouched
-end-to-end generation.
-
-Figure~\ref{fig:piper-pick-rollout} shows the staged approach, grasp, and lift
-in the Piper pick rollout.
+pick experiment completed 30 of 30 task trials.
+Figure~\ref{fig:piper-pick-rollout} traces one retained rollout from the home
+pose through approach and descent to grasp and a $0.12$\,m lift. The final
+frame shows the green object raised above the table, distinguishing pickup from
+contact alone. Because the driver included a 13-line post-synthesis patch, this
+result supports feasibility of the resulting interface under the evaluated
+scene, not untouched end-to-end generation.
 
 \begin{figure}[htbp]
   \centering
@@ -119,9 +119,13 @@ in the Piper pick rollout.
     \includegraphics[width=0.185\textwidth]{assets/film_piper_pick_3.png} &
     \includegraphics[width=0.185\textwidth]{assets/film_piper_pick_4.png}
   \end{tabular}
-  \caption[Piper pick rollout]
-  {Five MuJoCo frames from the Piper \texttt{pick\_green} rollout:
-  home, approach, descent, grasp, and a $0.12$\,m lift.}
+  \caption[Piper \texttt{pick\_green} rollout]
+  {Piper \texttt{pick\_green} rollout.
+  Home with an open gripper $\rightarrow$ approach $\rightarrow$ descent
+  $\rightarrow$ grasp $\rightarrow$ $0.12$\,m lift.
+  The retained driver includes the reported 13-line post-synthesis patch, so the
+  sequence represents the patched interface rather than untouched end-to-end
+  generation.}
   \label{fig:piper-pick-rollout}
 \end{figure}
 
@@ -184,15 +188,18 @@ Table~\ref{tab:cross-robot-quadruped-locomotion} shows that neither controller
 dominated across both configurations. Auto-Adapter led on ANYmal-C, whereas
 CaP led on Go2, and the ordering remained the same when the downstream agent
 changed from Sonnet 4.5 to Sonnet 4.6.
-Figure~\ref{fig:quadruped-rollouts} illustrates two of these
-configuration-specific outcomes, but its frame sequences do not establish
-either controller's comparative reliability. On ANYmal-C, CaP's open-loop gait
-failed beyond a short walk, while Auto-Adapter benefited from checking the
-base pose between actions. On Go2, the same repeated-control strategy
-frequently overshot short target distances because the driver's walking
-increment was comparatively coarse. These observations describe interaction
-between each driver, controller, and task suite; they do not isolate a causal
-effect of quadruped morphology.
+Figure~\ref{fig:quadruped-rollouts} provides qualitative examples of these
+configuration-specific behaviours. The upper sequence records a rejected Go2
+sit-to-stand attempt that loses posture, whereas the lower sequence records
+ANYmal-C walking approximately $0.24$\,m while maintaining approximately
+$0.5$\,m body height. These frames illustrate evaluated motions but do not
+establish either controller's comparative reliability. On ANYmal-C, CaP's
+open-loop gait failed beyond a short walk, while Auto-Adapter benefited from
+checking the base pose between actions. On Go2, the same repeated-control
+strategy frequently overshot short target distances because the driver's
+walking increment was comparatively coarse. These observations describe
+interaction between each driver, controller, and task suite; they do not
+isolate a causal effect of quadruped morphology.
 
 \begin{figure}[htbp]
   \centering
@@ -209,10 +216,14 @@ effect of quadruped morphology.
     \includegraphics[width=0.185\textwidth]{assets/film_anymal_3.png} &
     \includegraphics[width=0.185\textwidth]{assets/film_anymal_4.png}
   \end{tabular}
-  \caption[Quadruped MuJoCo rollouts]
-  {Quadruped rollouts in MuJoCo. Top: a rejected Go2 sit-to-stand
-  attempt. Bottom: ANYmal-C walking approximately $0.24$\,m while
-  maintaining approximately $0.5$\,m body height.}
+  \caption[Go2 and ANYmal-C MuJoCo rollouts]
+  {Quadruped MuJoCo rollouts.
+  \textbf{Top:} rejected Unitree Go2 sit-to-stand attempt ending in loss of
+  posture.
+  \textbf{Bottom:} ANYmal-C \texttt{walk\_forward} rollout advancing
+  approximately $0.24$\,m while maintaining approximately $0.5$\,m body height.
+  These single sequences illustrate configuration-specific behaviour, not
+  comparative controller reliability.}
   \label{fig:quadruped-rollouts}
 \end{figure}
 
@@ -246,8 +257,11 @@ completed all 40 task trials. The result therefore supports successful
 synthesis and validation of the flight controller under those conditions; it
 does not support an advantage for the Auto-Adapter agent loop.
 
-Figure~\ref{fig:skydio-flight-rollout} visualises one take-off,
-point-to-point flight, return, and landing sequence.
+Figure~\ref{fig:skydio-flight-rollout} illustrates one multi-stage rollout
+from this suite. Its five frames represent take-off to $0.5$\,m, translation
+to $(0.4,0,0.5)$, return to the starting horizontal position, and landing.
+The sequence clarifies the controlled stages, but as one example it adds no
+comparative evidence beyond the aggregate 40-trial outcomes.
 
 \begin{figure}[htbp]
   \centering
@@ -259,9 +273,12 @@ point-to-point flight, return, and landing sequence.
     \includegraphics[width=0.185\textwidth]{assets/film_skydio_3.png} &
     \includegraphics[width=0.185\textwidth]{assets/film_skydio_4.png}
   \end{tabular}
-  \caption[Skydio X2 flight rollout]
-  {Skydio X2 in MuJoCo: take-off to $0.5$\,m, movement to
-  $(0.4,0,0.5)$, return, and landing.}
+  \caption[Skydio X2 MuJoCo flight rollout]
+  {Skydio X2 MuJoCo flight rollout.
+  Ground $\rightarrow$ take-off to $0.5$\,m $\rightarrow$ movement to
+  $(0.4,0,0.5)$ $\rightarrow$ return $\rightarrow$ landing.
+  The generated cascaded position--attitude--thrust controller executes the
+  sequence; aggregate controller outcomes are reported in the text.}
   \label{fig:skydio-flight-rollout}
 \end{figure}
 
@@ -294,8 +311,11 @@ advance physics could allow a homed robot to remain upright without executing
 the requested controller, so controller-reported completion alone would not
 support the same claim.
 
-Figure~\ref{fig:h1-squat-recovery} shows the conservative
-squat-and-recovery motion used in validation.
+Figure~\ref{fig:h1-squat-recovery} visualises the validated
+squat-and-recovery motion. Across five frames, H1 lowers its torso while
+retaining an upright posture and then returns close to its initial standing
+height. The sequence illustrates simulator-level driver validation; it does
+not show dynamic walking.
 
 \begin{figure}[htbp]
   \centering
@@ -307,9 +327,12 @@ squat-and-recovery motion used in validation.
     \includegraphics[width=0.185\textwidth]{assets/film_h1_3.png} &
     \includegraphics[width=0.185\textwidth]{assets/film_h1_4.png}
   \end{tabular}
-  \caption[Unitree H1 squat recovery]
-  {Unitree H1 performing a balanced squat and recovery in MuJoCo.
-  Dynamic walking is not represented.}
+  \caption[Unitree H1 MuJoCo squat recovery]
+  {Unitree H1 MuJoCo squat-recovery rollout.
+  The 19-actuated-joint humanoid lowers its torso from approximately $0.98$\,m
+  and returns to approximately $0.97$\,m while remaining upright.
+  The frames illustrate the validated \texttt{squat} primitive; dynamic walking
+  is not represented.}
   \label{fig:h1-squat-recovery}
 \end{figure}
 

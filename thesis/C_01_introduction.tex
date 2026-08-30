@@ -94,17 +94,28 @@ This aim is expressed through three research questions:
     selected robot configurations, and where does the process succeed or fail?
 \end{enumerate}
 
+Figure~\ref{fig:introduction-auto-adapter-role} summarises the software boundary
+examined in this thesis. A robot configuration supplies the platform-specific
+structure from which Auto-Adapter designs a capability interface and synthesises
+its driver. A separate high-level controller then invokes the driver, while the
+Harness judges the resulting simulator behaviour independently. The figure
+therefore separates creation of the robot-facing tool from its downstream use
+and bounds the illustrated verdict to Direct-MuJoCo.
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\linewidth]{assets/abstract.drawio.png}
-  \caption{Conceptual role of Auto-Adapter. The framework designs a reusable
-  robot capability interface, synthesises a robot-specific driver that implements
-  it, and independently evaluates the driver's behaviour under controlled
-  Direct-MuJoCo conditions.}
+  \caption[Auto-Adapter software boundary]
+  {Auto-Adapter at the robot-software boundary.
+  \textbf{Left:} the target robot configuration.
+  \textbf{Centre:} capability-interface design, robot-specific driver synthesis,
+  and independent MuJoCo validation.
+  \textbf{Right:} a separate high-level controller calls the validated driver
+  for downstream task execution, while the Harness retains the behavioural
+  verdict.}
   \label{fig:introduction-auto-adapter-role}
 \end{figure}
 
-\label{sec:intro-scope}
 These questions concern the declared LLM endpoints, robot configurations,
 tasks, generation conditions, and Direct-MuJoCo evaluation protocols. The
 selected robot configurations are experimental cases rather than a

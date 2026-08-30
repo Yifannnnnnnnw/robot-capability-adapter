@@ -69,22 +69,26 @@ driver.
 \label{sec:recap}
 
 Recursive Context-Aware Reasoning and Planning (ReCAP) is a hierarchical
-framework for long-horizon LLM agents \citep{zhang2025recap}. It generates an
-ordered subtask list, processes only the first item, and recursively decomposes
-abstract items until an executable action is reached. As
-Figure~\ref{fig:chapter3-recap-backtracking} illustrates, the resulting
-observation and remaining parent plan are re-injected into a shared context so
-that subsequent steps can be revised.
+framework for long-horizon LLM agents \citep{zhang2025recap}. It creates an
+ordered subtask list and recursively decomposes the first unresolved item until
+an executable action is reached.
+Figure~\ref{fig:chapter3-recap-backtracking} shows the context update after one
+such action finishes. The latest observation is appended to the previous
+context (step 1), the parent task's prior reasoning and remaining subtasks are
+restored (step 2), and the model generates revised reasoning and a refined next
+subtask (step 3). This update allows later actions to respond to execution
+feedback rather than follow an unchanged initial plan.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.72\textwidth]
     {assets/recap_backtracking_refinement_zhang2025.png}
-  \caption[ReCAP backtracking and plan refinement.]
-  {ReCAP backtracking and plan refinement. The new observation and remaining
-  parent plan are re-injected into the shared context before subsequent
-  subtasks are generated. Reproduced and cropped from Figure~2 of
-  \citet{zhang2025recap} under the CC BY 4.0 licence.}
+  \caption[ReCAP backtracking and plan refinement]
+  {ReCAP backtracking and plan refinement.
+  The latest observation updates the previous context (1); prior parent reasoning
+  and remaining subtasks are restored (2); the model produces revised reasoning
+  and a refined next subtask (3).
+  Cropped reproduction of Figure~2 from \citet{zhang2025recap} under CC BY 4.0.}
   \label{fig:chapter3-recap-backtracking}
 \end{figure}
 
@@ -229,14 +233,25 @@ not robustness to different task seeds or starting states.
 The corrected non-formal audit reported below retained the first four
 SO-101 tasks and used Dial Turn in place of Bin Picking; its selected
 outcomes do not replace the source formal record.
-Figure~\ref{fig:chapter4-exp1b-task-scenes} provides a visual index of
-the ten Direct-MuJoCo task scenes used in that corrected audit.
+Figure~\ref{fig:chapter4-exp1b-task-scenes} groups the ten corrected-audit
+scenes by robot and task family. The upper row contains five SO-101
+object-interaction tasks, spanning planar pushing, sweeping, grasping,
+obstacle-constrained placement, and dial rotation. The lower row contains five
+Go2 locomotion tasks spanning step transitions, mixed obstacles, a table
+transition, and ordered pole weaving. The image identifies the evaluated
+conditions; it does not report task outcomes or replace the source formal
+record.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.95\linewidth]{assets/exp1b_task_scenes_horizontal.png}
-  \caption{MuJoCo task scenes in the corrected Experiment~1b audit:
-  SO-101 (top) and Unitree Go2 (bottom).}
+  \caption[Corrected Experiment~1b task scenes]
+  {Corrected Experiment~1b MuJoCo task scenes.
+  \textbf{Top:} SO-101 Push to Goal, Sweep into Goal, Pick and Place, Pick and
+  Place with Wall, and Dial Turn.
+  \textbf{Bottom:} Unitree Go2 Single-step Ascent, Single-step Descent,
+  Mixed-obstacle Path, Pause-table Transition, and Weave Poles.
+  The panels identify evaluation conditions rather than task outcomes.}
   \label{fig:chapter4-exp1b-task-scenes}
 \end{figure}
 
@@ -428,10 +443,27 @@ Experiment~1a design.
 
 Across all evaluable R1--R2 episodes, aggregate success was almost identical for SO-101 and Go2 (50.0\% and 49.2\%), placing the larger performance variation at task level rather than between robot platforms. Weave Poles failed in all 11 evaluable episodes because none completed the five alternating 0.12\,m waypoint regions in order (median one completed); nine nevertheless met the 0.10\,m torso-clearance requirement and all passed terminal stability. Pick and Place with Wall was limited by failed grasp recovery before wall traversal: across all eight evaluable failures the object rose by at most 7.1\,mm and moved at most 2.9\,cm from its start while contact integrity remained valid, whereas the sole success recognised an unsuccessful first grasp, issued a fully closed re-grasp, and then followed the elevated route.
 
+Figure~\ref{fig:chapter3-exp1b-task-examples} contrasts two successful R2
+episodes with a failed R2 episode. Panel~(a) records GPT-5.6 Sol using SO-101
+to grasp and place the object, while panel~(b) records Claude Sonnet 4.6
+guiding Go2 through the Mixed-obstacle Path. Panel~(c), also from Claude
+Sonnet 4.6, shows Go2 remaining clear and stable but completing only one of
+five ordered waypoints. Although the third episode passed execution,
+integrity, clearance, stability, and video checks, it failed the task-specific
+waypoint criterion. These examples illustrate the behavioural distinction but
+do not estimate aggregate model or task success.
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{assets/exp1b_task_trajectory_examples.png}
-  \caption{Five-frame examples from Experiment~1b: (a) successful SO-101 Pick and Place, GPT-5.6 Sol/R2; (b) successful Go2 Mixed-obstacle Path, Claude Sonnet 4.6/R2; and (c) failed Go2 Weave Poles, Claude Sonnet 4.6/R2. The failed episode passed execution, integrity, clearance, stability and video checks but completed only one of five ordered waypoints.}
+  \caption[Experiment~1b trajectory examples]
+  {Five-frame Experiment~1b trajectory examples.
+  \textbf{(a)} successful SO-101 Pick and Place (GPT-5.6 Sol, R2);
+  \textbf{(b)} successful Unitree Go2 Mixed-obstacle Path
+  (Claude Sonnet 4.6, R2);
+  \textbf{(c)} failed Unitree Go2 Weave Poles (Claude Sonnet 4.6, R2).
+  The failed episode passed execution, integrity, clearance, stability, and
+  video checks but completed only one of five ordered waypoints.}
   \label{fig:chapter3-exp1b-task-examples}
 \end{figure}
 
