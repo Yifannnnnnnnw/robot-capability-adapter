@@ -73,31 +73,25 @@ against fixed requirements under controlled Direct-MuJoCo conditions.
 This aim is expressed through three research questions:
 
 \begin{enumerate}
-    \item \textbf{RQ1---End-to-end robot-software synthesis and downstream use.}
+    \item \textbf{RQ1---Auto-Adapter driver production.}
 
-    To what extent can Auto-Adapter produce robot-specific drivers that pass
-    independent behavioural validation and support downstream embodied-task
-    completion by a separate high-level controller?
+    To what extent can Auto-Adapter produce independently validated
+    robot-specific drivers that a high-level planner can use for downstream
+    tasks?
 
-    \item \textbf{RQ2---Task-grounded capability and validation design.}
+    \item \textbf{RQ2---AutoAdapter-Bench.}
 
-    \textbf{(a)} To what extent can an LLM derive five to ten reusable
-    capabilities from at least twenty source-backed tasks without receiving a
-    pre-authored capability catalogue or task-to-capability mapping?
+    \textbf{(a)} How do the selected LLM configurations and generation
+    conditions differ in their ability to produce validated drivers?
 
-    \textbf{(b)} Can the LLM formulate source-grounded capability-level pass
-    criteria from reviewed task-level standards without human predefinition at
-    the capability level, and can an implementation-blind Independent
-    Validation Compiler audit and compile those criteria into private
-    executable validation without weakening their source obligations?
+    \textbf{(b)} How do the selected LLM configurations differ in independently
+    judged task performance when using the same validated driver and high-level
+    planner?
 
-    \item \textbf{RQ3---Continued Evolution in later driver synthesis.}
+    \item \textbf{RQ3---Cross-robot analysis.}
 
-    With the robot, LLM backbone, fixed capability-and-validation inputs,
-    generation condition, evaluation protocol, and resource budget held
-    constant, what effect, if any, does access to human-reviewed Experience
-    derived from completed terminal runs have on later driver-synthesis
-    outcomes relative to matched runs without that Experience?
+    How consistently can Auto-Adapter produce usable drivers across the
+    selected robot configurations, and where does the process succeed or fail?
 \end{enumerate}
 
 \begin{figure}[htbp]
