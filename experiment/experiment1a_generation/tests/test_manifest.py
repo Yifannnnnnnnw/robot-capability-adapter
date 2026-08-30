@@ -277,7 +277,7 @@ class Experiment1ManifestTests(unittest.TestCase):
         )
         self.assertEqual(m2["authority_revision"], "0.1.17")
         self.assertEqual(m2["inference_settings"]["max_tokens"], 32768)
-        self.assertEqual(m2["inference_settings"]["timeout_s"], 600)
+        self.assertEqual(m2["inference_settings"]["timeout_s"], 120)
 
         m5 = json.loads(
             (

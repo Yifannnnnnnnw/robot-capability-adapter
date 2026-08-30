@@ -94,7 +94,7 @@
     },
     "evolution_transport": {
       "endpoint_region": "eu-west-2",
-      "request_timeout_s": 600,
+      "request_timeout_s": 120,
       "retry_policy": {
         "maximum_physical_requests": 2,
         "backoff_seconds": 1.0,
