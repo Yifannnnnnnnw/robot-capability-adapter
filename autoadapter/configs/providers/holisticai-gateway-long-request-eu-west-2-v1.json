@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "profile_id": "holisticai-gateway-long-request-eu-west-2-v1",
+  "deployment_mode": "holisticai-hosted-api",
+  "api_protocol": "openai-compatible",
+  "base_url": "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1",
+  "endpoint_path": "/chat/completions",
+  "endpoint_region": "eu-west-2",
+  "credential_env": "AUTOADAPTER_HOLISTICAI_API_KEY",
+  "auth_header": "X-Api-Key",
+  "auth_prefix": "",
+  "maximum_request_timeout_s": 120
+}

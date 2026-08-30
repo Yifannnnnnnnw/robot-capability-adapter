@@ -6,6 +6,7 @@ import contextlib
 import copy
 import json
 import os
+import posixpath
 import signal
 import ssl
 import threading
@@ -36,6 +37,24 @@ _RETRY_BACKOFF_S = 1.0
 _EMPTY_NATIVE_ASSISTANT_CONTENT = (
     "No tool call or terminal submission was produced."
 )
+
+
+def _is_normalized_absolute_endpoint_path(value: object) -> bool:
+    if (
+        not isinstance(value, str)
+        or not value.startswith("/")
+        or value.startswith("//")
+    ):
+        return False
+    parsed = urllib.parse.urlsplit(value)
+    return (
+        parsed.scheme == ""
+        and parsed.netloc == ""
+        and parsed.query == ""
+        and parsed.fragment == ""
+        and "\\" not in value
+        and posixpath.normpath(value) == value
+    )
 
 
 @contextlib.contextmanager
@@ -127,6 +146,11 @@ class ModelConfig:
     max_tokens: int = 16000
     tool_history_mode: str = "native"
     history_char_budget: int = 80000
+    endpoint_path: str = "/chat/completions"
+
+    def __post_init__(self) -> None:
+        if not _is_normalized_absolute_endpoint_path(self.endpoint_path):
+            raise ValueError("endpoint_path must be a normalized absolute URL path")
 
     @classmethod
     def from_env(cls) -> ModelConfig:
@@ -169,6 +193,14 @@ class ModelConfig:
             raise ModelInvocationError(
                 "AUTOADAPTER_MODEL_TIMEOUT_S must be between 30 and 600"
             )
+        endpoint_path = environment.get(
+            "AUTOADAPTER_MODEL_API_ENDPOINT_PATH", "/chat/completions"
+        ).strip() or "/chat/completions"
+        if not _is_normalized_absolute_endpoint_path(endpoint_path):
+            raise ModelInvocationError(
+                "AUTOADAPTER_MODEL_API_ENDPOINT_PATH must be a normalized "
+                "absolute URL path"
+            )
         tool_history_mode = environment.get(
             "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE", "native"
         ).strip() or "native"
@@ -198,6 +230,7 @@ class ModelConfig:
             model=required["model"],
             base_url=required["base_url"],
             api_key=required["api_key"],
+            endpoint_path=endpoint_path,
             api_protocol=api_protocol,
             auth_header=environment.get(
                 "AUTOADAPTER_MODEL_API_AUTH_HEADER", "Authorization"
@@ -216,9 +249,9 @@ class ModelConfig:
     @property
     def endpoint_url(self) -> str:
         base = self.base_url.rstrip("/")
-        if base.endswith("/chat/completions"):
+        if base.endswith(self.endpoint_path):
             return base
-        return base + "/chat/completions"
+        return base + self.endpoint_path
 
 
 class JsonModelClient:
