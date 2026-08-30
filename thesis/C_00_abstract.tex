@@ -10,11 +10,11 @@
 \makedeclaration
 
 \begin{abstract}
-Deploying a tool-using large language model (LLM) agent on a new robot requires
-a tool application programming interface (API) and a robot-specific driver
-behind it. Existing agent frameworks generally assume that this software layer
-has already been written. This thesis asks whether an LLM can instead design
-the API, define how it should be tested, and implement the driver itself.
+This thesis investigates how task-level decisions in embodied-AI systems can
+be translated into executable commands across different robots. It develops
+and evaluates Auto-Adapter, which generates the required robot-specific drivers
+and independently validates their behaviour before they are used for task
+execution.
 Auto-Adapter reads a robot description and a collection of target tasks,
 proposes a small set of reusable robot operations, and generates the code that
 exposes them to an agent. The proposed operations are evaluated against
