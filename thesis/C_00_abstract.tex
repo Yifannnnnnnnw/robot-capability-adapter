@@ -48,17 +48,20 @@ Within the evaluated scope, the thesis makes three scientific contributions:
 \vspace{-\parskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item Auto-Adapter contributes a task-grounded \textbf{design} method that
+  \item \textbf{Deriving Reusable Robot Operations from Tasks.}
+  Auto-Adapter contributes a task-grounded design method that
   derives a task-neutral capability interface and measurable pass criteria from
   source-backed target tasks, without requiring a pre-authored capability
   catalogue or task-to-capability mapping.
 
-  \item The framework makes robot-specific driver \textbf{synthesis} the
+  \item \textbf{Evaluating LLM-Generated Robot Drivers.}
+  The framework makes robot-specific driver synthesis the
   evaluated research object. An LLM must implement the fixed capability contract
   through actuator-mediated Direct-MuJoCo control, with bounded Repair and at
   most three submitted drivers.
 
-  \item Implementation-blind \textbf{validation} prevents candidate code from
+  \item \textbf{Validating Robot Behaviour Independently of Generated Code.}
+  Implementation-blind validation prevents candidate code from
   choosing its private cases, measurements, physical-integrity checks, or final
   verdict, distinguishing interface conformance and model self-report from
   observed robot behaviour.
@@ -70,19 +73,23 @@ industry-relevant contributions:
 \vspace{-\parskip}
 \begin{enumerate}[leftmargin=*,labelsep=.8em,nosep]
 
-  \item A versioned robot \textbf{integration} package combines each robot's
+  \item \textbf{Creating Versioned Robot Integration Packages.}
+  A versioned robot integration package combines each robot's
   MuJoCo model, source-backed tasks, capability design, private validation
   bindings, and execution policy, supporting configuration-specific evaluation
   through a common experimental route.
 
-  \item Fixed-input \textbf{benchmarking} holds each robot's capability
+  \item \textbf{Comparing LLMs under Fixed Conditions.}
+  Fixed-input benchmarking holds each robot's capability
   interface, private validation suite, Harness, and resource budget constant
   while LLM backbones and generation conditions vary, with validation, Repair,
   failure, token, cost, and time outcomes reported separately.
 
-  \item Cross-run reuse remains subject to human \textbf{oversight}: a reviewer
-  must accept or reject an unedited terminal Experience proposal with a reason
-  before it can enter a fresh later run.
+  \item \textbf{Resource-Accounted Evaluation.}
+  The evaluation reports behavioural outcomes alongside model calls, token use,
+  cost, wall-clock time, revision history, and failure class. This supports
+  practical trade-off analysis within the evaluated conditions without implying
+  a universal model ranking.
 
 \end{enumerate}
 
