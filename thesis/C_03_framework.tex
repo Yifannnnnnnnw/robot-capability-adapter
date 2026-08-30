@@ -310,6 +310,37 @@ and measurement criteria. It does not establish hardware performance,
 deployment safety, or sim-to-real transfer.
 
 
+\section{Experimental Configuration}
+
+Experiment 1 covers eleven robot configurations. These are SO-101, Unitree
+Go2, Franka Panda, Kinova Gen3, xArm7, UR5e, Piper, KUKA iiwa 14, LEAP Hand,
+Stretch 2 and ALOHA 2. Each configuration is evaluated in three fresh runs,
+giving 33 experimental units.
+
+All runs use Claude Sonnet 4.6 under the same skeleton-assisted generation
+condition and execution limits. Within each robot, the task, capability design,
+simulation assets and private validation suite remain unchanged. Every run uses
+a fresh model conversation, workspace and simulator reset. No information is
+transferred between runs.
+
+The validation suites define 58 capabilities and 116 test cases. A test case
+invokes one capability with specified inputs from a fixed initial state. An
+independent evaluator measures the resulting state and motion in the physics
+simulator. It then applies a numerical pass criterion. Each capability has two
+cases: one representative request and one request near its permitted operating
+limit.
+
+A driver qualifies only if all its test cases pass. Capabilities that pass both
+cases are made available for task execution. If none passes, the task is
+recorded as not run. Task success is reported separately from complete-driver
+qualification.
+
+All 33 runs remain in the denominator. Early termination is reported with its
+stage and reason. Results are summarised for each robot and for the experiment
+as a whole. The analysis is descriptive because the tasks and simulation
+environments differ between robots.
+
+
 \section{Interpretation and Limitations}
 
 Auto-Adapter's principal methodological choice is to separate capability
