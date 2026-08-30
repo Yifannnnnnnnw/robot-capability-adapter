@@ -22,6 +22,13 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
+from autoadapter2.provider_config import (
+    HolisticAIRouteProfile,
+    ProviderConfigError,
+    reject_inline_holisticai_route_fields,
+    resolve_holisticai_route_profile,
+)
+
 EXPERIMENT_ID = "experiment3-direct-mujoco-cohort-r3"
 MODEL_ID = "eu.anthropic.claude-sonnet-4-6"
 CONDITION = "skeleton-assisted"
@@ -59,6 +66,7 @@ EXPECTED_RETRY_POLICY = {
 }
 ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
+DEFAULT_HOLISTICAI_ENV_FILE = Path(__file__).resolve().parents[2] / ".env.holisticai-api"
 AUTHORITY_REVISION = "0.2.1"
 MANIFEST_REVISION = "0.2.1"
 PROTOCOL_REVISION = "0.2.1"
@@ -149,7 +157,10 @@ def _dotenv_value(raw: str, *, path: Path, line_number: int) -> str:
 def _load_env_files(paths: list[str]) -> None:
     """Load explicit dotenv files without expansion and without replacing values."""
 
-    for path_value in paths:
+    selected_paths = paths
+    if not selected_paths and DEFAULT_HOLISTICAI_ENV_FILE.is_file():
+        selected_paths = [str(DEFAULT_HOLISTICAI_ENV_FILE)]
+    for path_value in selected_paths:
         path = Path(path_value).resolve()
         try:
             lines = path.read_text(encoding="utf-8-sig").splitlines()
@@ -347,11 +358,25 @@ def expand_cells(manifest: Mapping[str, Any]) -> list[dict[str, str]]:
     ]
 
 
-def _pipeline_model(value: Any, *, label: str) -> dict[str, Any]:
+def _pipeline_model(
+    value: Any, *, label: str, route: HolisticAIRouteProfile
+) -> dict[str, Any]:
     from autoadapter2.pipeline import ExperimentConfig, PipelineError
 
     _require(isinstance(value, Mapping), f"runtime.{label} must be a pipeline model manifest")
     assert isinstance(value, Mapping)
+    route_fields = dict(value)
+    route_fields.pop("api_protocol", None)
+    try:
+        reject_inline_holisticai_route_fields(route_fields, label=f"runtime.{label}")
+    except ProviderConfigError as exc:
+        raise Experiment3RunnerError(str(exc)) from exc
+    _require(
+        value.get("api_protocol") == route.api_protocol,
+        f"runtime.{label}.api_protocol must match the holisticai route profile",
+    )
+    resolved_model = dict(value)
+    resolved_model["base_url"] = route.base_url
     # ExperimentConfig is the single runtime authority for this exact shape,
     # including HTTPS endpoint and dated price fields.
     try:
@@ -360,7 +385,7 @@ def _pipeline_model(value: Any, *, label: str) -> dict[str, Any]:
                 "experiment_id": "experiment3-model-pin-check",
                 "robots": [ROBOT_CONFIGURATIONS[0]],
                 "generation_conditions": [CONDITION],
-                "model": dict(value),
+                "model": resolved_model,
             }
         ).model_manifest
     except PipelineError as exc:
@@ -373,28 +398,39 @@ def _pipeline_model(value: Any, *, label: str) -> dict[str, Any]:
     return copy.deepcopy(dict(checked))
 
 
-def _transport_pin(value: Any, *, label: str) -> dict[str, Any]:
+def _transport_pin(
+    value: Any, *, label: str, route: HolisticAIRouteProfile
+) -> dict[str, Any]:
     required = {
-        "endpoint_region",
         "request_timeout_s",
         "retry_policy",
         "history_char_budget",
-        "credential_env",
-        "auth_header",
-        "auth_prefix",
     }
     _require(isinstance(value, Mapping), f"runtime.{label} must be pinned")
     assert isinstance(value, Mapping)
+    try:
+        reject_inline_holisticai_route_fields(value, label=f"runtime.{label}")
+    except ProviderConfigError as exc:
+        raise Experiment3RunnerError(str(exc)) from exc
     _require(set(value) == required, f"runtime.{label} must pin exactly {sorted(required)}")
-    for key in ("endpoint_region", "credential_env", "auth_header"):
-        _require(isinstance(value.get(key), str) and bool(str(value[key]).strip()), f"runtime.{label}.{key} must be non-empty")
-    _require(isinstance(value.get("auth_prefix"), str), f"runtime.{label}.auth_prefix must be text")
     timeout = value.get("request_timeout_s")
-    _require(isinstance(timeout, (int, float)) and not isinstance(timeout, bool) and float(timeout) > 0, f"runtime.{label}.request_timeout_s must be positive")
+    _require(
+        isinstance(timeout, (int, float))
+        and not isinstance(timeout, bool)
+        and float(timeout) == float(route.maximum_request_timeout_s),
+        f"runtime.{label}.request_timeout_s must equal the holisticai profile limit of {route.maximum_request_timeout_s}",
+    )
     history = value.get("history_char_budget")
     _require(isinstance(history, int) and not isinstance(history, bool) and history > 0, f"runtime.{label}.history_char_budget must be positive")
     _require(value.get("retry_policy") == EXPECTED_RETRY_POLICY, f"runtime.{label}.retry_policy must pin the current model client policy")
-    return copy.deepcopy(dict(value))
+    return {
+        **copy.deepcopy(dict(value)),
+        "endpoint_path": route.endpoint_path,
+        "endpoint_region": route.endpoint_region,
+        "credential_env": route.credential_env,
+        "auth_header": route.auth_header,
+        "auth_prefix": route.auth_prefix,
+    }
 
 
 def _resources(value: Any) -> dict[str, Any]:
@@ -555,6 +591,17 @@ def _evidence_item(value: Any, *, label: str, root: Path) -> dict[str, Any]:
     }
 
 
+def _repository_root(mainline_root: str | Path) -> Path:
+    """Resolve the repository root from the normal ``--root autoadapter`` input."""
+
+    root = Path(mainline_root).resolve()
+    if (root / "src" / "autoadapter2").is_dir():
+        return root.parent
+    if (root / "autoadapter" / "src" / "autoadapter2").is_dir():
+        return root
+    return root.parent if root.name == "autoadapter" else root
+
+
 def validate_executable_preflight(
     manifest: Mapping[str, Any], *, mainline_root: str | Path
 ) -> dict[str, Any]:
@@ -566,11 +613,30 @@ def validate_executable_preflight(
     _require(isinstance(runtime, Mapping), "formal dispatch requires a pinned runtime block")
     assert isinstance(runtime, Mapping)
     _require(
-        set(runtime) == {"producer_model", "producer_transport", "resources"},
-        "runtime must pin producer_model, producer_transport, and resources",
+        set(runtime)
+        == {
+            "holisticai_route_profile",
+            "producer_model",
+            "producer_transport",
+            "resources",
+        },
+        "runtime must pin one holisticai route profile, producer model/transport, and resources",
     )
-    producer_model = _pipeline_model(runtime.get("producer_model"), label="producer_model")
-    producer_transport = _transport_pin(runtime.get("producer_transport"), label="producer_transport")
+    try:
+        route = resolve_holisticai_route_profile(
+            runtime.get("holisticai_route_profile"),
+            _repository_root(root),
+        )
+    except ProviderConfigError as exc:
+        raise Experiment3RunnerError(
+            f"runtime.holisticai_route_profile is invalid: {exc}"
+        ) from exc
+    producer_model = _pipeline_model(
+        runtime.get("producer_model"), label="producer_model", route=route
+    )
+    producer_transport = _transport_pin(
+        runtime.get("producer_transport"), label="producer_transport", route=route
+    )
     resources = _resources(runtime.get("resources"))
 
     evidence = checked.get("readiness_evidence")
@@ -599,6 +665,7 @@ def validate_executable_preflight(
     for key in sorted(required_global):
         checked_evidence[key] = _evidence_item(evidence[key], label=key, root=root)
     return {
+        "holisticai_route_profile": route.to_evidence_dict(),
         "producer_model": producer_model,
         "producer_transport": producer_transport,
         "resources": resources,
@@ -705,6 +772,7 @@ def _assert_client_pin(client: Any, *, model: Mapping[str, Any], transport: Mapp
         "provider": model["vendor"],
         "model": model["model_id"],
         "base_url": str(model["base_url"]).rstrip("/"),
+        "endpoint_path": transport["endpoint_path"],
         "api_protocol": model["api_protocol"],
         "thinking": (
             None if model["thinking"] in {None, "disabled"} else model["thinking"]
@@ -730,7 +798,7 @@ def _built_in_client(
 
     credential_env = str(transport["credential_env"])
     api_key = os.environ.get(credential_env, "")
-    _require(bool(api_key), f"manifest-pinned credential environment variable {credential_env!r} is missing")
+    _require(bool(api_key), f"holisticai profile credential environment variable {credential_env!r} is missing")
     _require(model["temperature"] == 0.0, "built-in JsonModelClient supports temperature 0 only")
     return JsonModelClient(
         ModelConfig(
@@ -738,6 +806,7 @@ def _built_in_client(
             model=str(model["model_id"]),
             base_url=str(model["base_url"]),
             api_key=api_key,
+            endpoint_path=str(transport["endpoint_path"]),
             api_protocol=str(model["api_protocol"]),
             auth_header=str(transport["auth_header"]),
             auth_prefix=str(transport["auth_prefix"]),
@@ -1331,6 +1400,9 @@ def run_formal(
         check_self_containment=check_self_containment,
     )
     record["dispatch_started"] = True
+    record["holisticai_route_profile"] = copy.deepcopy(
+        preflight["holisticai_route_profile"]
+    )
     record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
     record["package_ivc_context_check"] = preflight[
         "package_ivc_context_check"
@@ -1494,6 +1566,9 @@ def run_resume(
         check_self_containment=check_self_containment,
     )
     record["dispatch_started"] = True
+    record["holisticai_route_profile"] = copy.deepcopy(
+        preflight["holisticai_route_profile"]
+    )
     record["readiness_evidence"] = copy.deepcopy(preflight["readiness_evidence"])
     record["package_ivc_context_check"] = preflight[
         "package_ivc_context_check"
@@ -1803,6 +1878,7 @@ def main(argv: list[str] | None = None) -> int:
                 "command": args.command,
                 "experiment_id": EXPERIMENT_ID,
                 "model_id": checked["producer_model"]["model_id"],
+                "holisticai_route_profile": checked["holisticai_route_profile"],
                 "retained_package_evidence_count": len(
                     checked["readiness_evidence"]["packages"]
                 ),
@@ -1817,11 +1893,13 @@ def main(argv: list[str] | None = None) -> int:
                 ]["package_check_passed"],
             }
         elif args.command in {"formal", "resume"}:
+            manifest = load_manifest(args.manifest)
+            validate_executable_preflight(manifest, mainline_root=args.root)
             _load_env_files(args.env_file)
             action = run_formal if args.command == "formal" else run_resume
             record = action(
                 args.root,
-                manifest_path=args.manifest,
+                manifest=manifest,
                 output_dir=args.output,
             )
             output = Path(args.output).resolve()

@@ -26,12 +26,15 @@
     ]
   },
   "runtime": {
+    "holisticai_route_profile": {
+      "path": "autoadapter/configs/providers/holisticai-gateway-long-request-eu-west-2-v1.json",
+      "profile_id": "holisticai-gateway-long-request-eu-west-2-v1"
+    },
     "producer_model": {
       "vendor": "anthropic",
       "api_protocol": "openai-compatible",
       "model_id": "eu.anthropic.claude-sonnet-4-6",
       "revision": "claude-sonnet-4-6",
-      "base_url": "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1",
       "context_window_tokens": 1000000,
       "max_output_tokens": 16384,
       "temperature": 0.0,
@@ -45,17 +48,13 @@
       }
     },
     "producer_transport": {
-      "endpoint_region": "eu-west-2",
-      "request_timeout_s": 300,
+      "request_timeout_s": 120,
       "retry_policy": {
         "maximum_physical_requests": 2,
         "backoff_seconds": 1.0,
         "retryable_http_statuses": [429, 500, 502, 503, 504]
       },
-      "history_char_budget": 80000,
-      "credential_env": "AUTOADAPTER_COMPANY_API_KEY",
-      "auth_header": "X-Api-Key",
-      "auth_prefix": ""
+      "history_char_budget": 80000
     },
     "resources": {
       "phase_turn_budgets": {

@@ -37,7 +37,7 @@ def _pin() -> dict[str, object]:
 
 
 def test_env_loader_does_not_mutate_process_environment(tmp_path: Path) -> None:
-    path = tmp_path / ".env.company-api"
+    path = tmp_path / ".env.holisticai-api"
     path.write_text(
         "# comment\nexport FIRST='one'\nSECOND=\"two\"\n",
         encoding="utf-8",

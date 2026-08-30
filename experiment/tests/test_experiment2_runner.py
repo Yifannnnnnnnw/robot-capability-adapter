@@ -13,6 +13,7 @@ from experiment.experiment2 import runner
 
 
 TEST_GIT_COMMIT = "a" * 40
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(autouse=True)
@@ -28,7 +29,6 @@ def _model_pin(
         "api_protocol": "openai-compatible",
         "model_id": model_id,
         "revision": revision,
-        "base_url": "https://model.invalid/v1",
         "context_window_tokens": 1_000_000,
         "max_output_tokens": max_output_tokens,
         "temperature": 0.0,
@@ -45,13 +45,9 @@ def _model_pin(
 
 def _transport() -> dict[str, Any]:
     return {
-        "endpoint_region": "test-region",
         "request_timeout_s": 120,
         "retry_policy": copy.deepcopy(runner.EXPECTED_RETRY_POLICY),
         "history_char_budget": 80_000,
-        "credential_env": "TEST_MODEL_KEY",
-        "auth_header": "Authorization",
-        "auth_prefix": "Bearer ",
     }
 
 
@@ -63,6 +59,7 @@ def _client(model: dict[str, Any], transport: dict[str, Any], role: str) -> Any:
             provider=model["vendor"],
             model=model["model_id"],
             base_url=model["base_url"],
+            endpoint_path=transport["endpoint_path"],
             api_protocol=model["api_protocol"],
             thinking=model["thinking"],
             timeout_s=float(transport["request_timeout_s"]),
@@ -73,6 +70,14 @@ def _client(model: dict[str, Any], transport: dict[str, Any], role: str) -> Any:
             auth_prefix=transport["auth_prefix"],
         ),
     )
+
+
+def _install_route_profile(tmp_path: Path, reference: Mapping[str, Any]) -> None:
+    relative_path = str(reference["path"])
+    source = REPOSITORY_ROOT / relative_path
+    destination = tmp_path / relative_path
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(source.read_bytes())
 
 
 def _evidence(
@@ -86,6 +91,8 @@ def _evidence(
 
 def _executable_manifest(tmp_path: Path) -> dict[str, Any]:
     manifest = runner.load_manifest()
+    route_reference = copy.deepcopy(manifest["runtime"]["holisticai_route_profile"])
+    _install_route_profile(tmp_path, route_reference)
     test_opus_id = runner.OPUS_MODEL_ID
     declared_opus = manifest["models"]["terminal_evolution"]
     declared_opus["exact_model_id"] = test_opus_id
@@ -100,6 +107,7 @@ def _executable_manifest(tmp_path: Path) -> dict[str, Any]:
     ):
         declared_opus.pop(key, None)
     manifest["runtime"] = {
+        "holisticai_route_profile": route_reference,
         "producer_model": _model_pin(runner.SONNET_MODEL_ID, "test-sonnet-pin"),
         "producer_transport": _transport(),
         "evolution_model": _model_pin(
@@ -400,6 +408,24 @@ def test_checked_in_manifest_has_executable_readiness_and_model_pins() -> None:
     assert preflight["evolution_model"]["model_id"] == runner.OPUS_MODEL_ID
     assert preflight["evolution_model"]["temperature"] == 0.0
     assert preflight["evolution_model"]["max_output_tokens"] == 32_768
+    route_evidence = preflight["holisticai_route_profile"]
+    assert route_evidence["reference"] == manifest["runtime"]["holisticai_route_profile"]
+    assert route_evidence["resolved_route"]["endpoint_url"].endswith(
+        "/v1/chat/completions"
+    )
+    assert (
+        route_evidence["resolved_route"]["credential_env"]
+        == "AUTOADAPTER_HOLISTICAI_API_KEY"
+    )
+    for key in ("producer_model", "evolution_model"):
+        assert "base_url" not in manifest["runtime"][key]
+    for key in ("producer_transport", "evolution_transport"):
+        assert set(manifest["runtime"][key]) == {
+            "request_timeout_s",
+            "retry_policy",
+            "history_char_budget",
+        }
+        assert manifest["runtime"][key]["request_timeout_s"] == 120
     assert (
         preflight["resources"]["development_probe"]["max_requests_per_stage"]
         == runner.DRIVER_PROBE_CALLS_PER_STAGE
@@ -431,6 +457,30 @@ def test_checked_in_manifest_has_executable_readiness_and_model_pins() -> None:
             mainline_root=Path(__file__).resolve().parents[2] / "autoadapter",
         )
 
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["producer_model"]["base_url"] = "https://inline.invalid/v1"
+    with pytest.raises(runner.Experiment2RunnerError, match="must not inline"):
+        runner.validate_executable_preflight(
+            drifted,
+            mainline_root=REPOSITORY_ROOT / "autoadapter",
+        )
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["evolution_transport"]["credential_env"] = "INLINE_KEY"
+    with pytest.raises(runner.Experiment2RunnerError, match="must not inline"):
+        runner.validate_executable_preflight(
+            drifted,
+            mainline_root=REPOSITORY_ROOT / "autoadapter",
+        )
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["producer_transport"]["request_timeout_s"] = 121
+    with pytest.raises(runner.Experiment2RunnerError, match="profile limit of 120"):
+        runner.validate_executable_preflight(
+            drifted,
+            mainline_root=REPOSITORY_ROOT / "autoadapter",
+        )
+
     readiness = preflight["readiness_evidence"]
     assert set(readiness) == {
         "package",
@@ -456,6 +506,123 @@ def test_checked_in_manifest_has_executable_readiness_and_model_pins() -> None:
         readiness["evolution_model_canary"]["artifact_type"]
         == "experiment2_company_api_model_identity_canaries"
     )
+
+
+def test_holisticai_route_is_resolved_once_and_inline_route_fields_are_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _executable_manifest(tmp_path)
+    monkeypatch.setattr(
+        runner,
+        "validate_design_manifest",
+        lambda value: copy.deepcopy(dict(value)),
+    )
+
+    checked = runner.validate_executable_preflight(manifest, mainline_root=tmp_path)
+
+    route_evidence = checked["holisticai_route_profile"]
+    assert route_evidence["reference"] == manifest["runtime"]["holisticai_route_profile"]
+    assert route_evidence["resolved_route"]["endpoint_url"].endswith(
+        "/v1/chat/completions"
+    )
+    assert checked["producer_transport"]["credential_env"] == (
+        "AUTOADAPTER_HOLISTICAI_API_KEY"
+    )
+    assert checked["evolution_transport"]["request_timeout_s"] == 120
+    monkeypatch.setenv("AUTOADAPTER_HOLISTICAI_API_KEY", "route-test-secret")
+    monkeypatch.setenv("AUTOADAPTER_MODEL_API_KEY", "must-not-be-read")
+    client = runner._built_in_client(
+        checked["producer_model"], checked["producer_transport"]
+    )
+    assert client.config.api_key == "route-test-secret"
+    assert client.config.endpoint_path == "/chat/completions"
+    assert "route-test-secret" not in json.dumps(route_evidence, sort_keys=True)
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["producer_model"]["base_url"] = "https://inline.invalid/v1"
+    with pytest.raises(runner.Experiment2RunnerError, match="must not inline"):
+        runner.validate_executable_preflight(drifted, mainline_root=tmp_path)
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["producer_transport"]["credential_env"] = "INLINE_KEY"
+    with pytest.raises(runner.Experiment2RunnerError, match="must not inline"):
+        runner.validate_executable_preflight(drifted, mainline_root=tmp_path)
+
+    drifted = copy.deepcopy(manifest)
+    drifted["runtime"]["evolution_transport"]["request_timeout_s"] = 121
+    with pytest.raises(runner.Experiment2RunnerError, match="profile limit of 120"):
+        runner.validate_executable_preflight(drifted, mainline_root=tmp_path)
+
+
+def test_default_holisticai_env_file_supplies_only_the_new_credential_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env_file = tmp_path / ".env.holisticai-api"
+    env_file.write_text(
+        "AUTOADAPTER_HOLISTICAI_API_KEY=default-holisticai-secret\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "DEFAULT_HOLISTICAI_ENV_FILE", env_file)
+    monkeypatch.delenv("AUTOADAPTER_HOLISTICAI_API_KEY", raising=False)
+
+    runner._load_env_files([])
+
+    assert os.environ["AUTOADAPTER_HOLISTICAI_API_KEY"] == (
+        "default-holisticai-secret"
+    )
+
+
+@pytest.mark.parametrize(
+    ("command", "extra_args"),
+    (
+        ("source", []),
+        ("later", ["--snapshot", "unused-snapshot.json"]),
+    ),
+)
+def test_cli_rejects_the_route_before_reading_credentials(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    command: str,
+    extra_args: list[str],
+) -> None:
+    events: list[str] = []
+    monkeypatch.setattr(runner, "load_manifest", lambda _path: {"loaded": True})
+
+    def reject_route(
+        _manifest: Mapping[str, Any], *, mainline_root: str | Path
+    ) -> dict[str, Any]:
+        events.append(f"preflight:{mainline_root}")
+        raise runner.Experiment2RunnerError("invalid holisticai route profile")
+
+    monkeypatch.setattr(runner, "validate_executable_preflight", reject_route)
+    monkeypatch.setattr(
+        runner,
+        "_load_env_files",
+        lambda _paths: events.append("credentials-read"),
+    )
+
+    rc = runner.main(
+        [
+            command,
+            "--root",
+            str(tmp_path),
+            "--manifest",
+            "unused-manifest.json",
+            "--output",
+            str(tmp_path / "unused-output"),
+            "--manual-event",
+            "operator-launch",
+            "--env-file",
+            str(tmp_path / "missing.env"),
+            *extra_args,
+        ]
+    )
+
+    error = json.loads(capsys.readouterr().err)
+    assert rc == 2
+    assert error["error"] == "invalid holisticai route profile"
+    assert events == [f"preflight:{tmp_path}"]
 
 
 def test_source_requires_committed_revision_before_client_construction(
@@ -570,6 +737,10 @@ def test_source_runs_sonnet_to_task_demo_before_one_distinct_opus_call_and_no_ov
         "run:opus",
     ]
     assert result["cells"][0]["outcomes"]["Evolution"]["proposal_created"] is True
+    assert (
+        result["holisticai_route_profile"]["resolved_route"]["endpoint_url"]
+        .endswith("/v1/chat/completions")
+    )
     assert result["experiment2_revision_evidence"] == _source_revision_evidence()
     for field, value in _source_revision_evidence().items():
         assert result[field] == value
@@ -657,7 +828,7 @@ def test_source_public_function_builds_clients_from_only_the_pinned_credential_e
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     manifest = _executable_manifest(tmp_path)
-    monkeypatch.setenv("TEST_MODEL_KEY", "manifest-pinned-secret")
+    monkeypatch.setenv("AUTOADAPTER_HOLISTICAI_API_KEY", "manifest-pinned-secret")
     monkeypatch.setenv("AUTOADAPTER_MODEL_API_KEY", "must-not-be-read")
     observed_clients: list[Any] = []
 
@@ -688,6 +859,9 @@ def test_source_public_function_builds_clients_from_only_the_pinned_credential_e
     assert observed_clients[0] is not observed_clients[1]
     assert observed_clients[0].config.model == runner.SONNET_MODEL_ID
     assert observed_clients[1].config.model == manifest["models"]["terminal_evolution"]["exact_model_id"]
+    assert observed_clients[0].config.endpoint_path == "/chat/completions"
+    assert observed_clients[1].config.endpoint_path == "/chat/completions"
+    assert "manifest-pinned-secret" not in json.dumps(result, sort_keys=True)
     producer_resources = result["resource_summary"]["producer"]
     evolution_resources = result["resource_summary"]["terminal_evolution"]
     assert producer_resources["call_count"] == 1
@@ -1120,7 +1294,7 @@ def test_accept_freezes_exact_id_and_manual_later_consumes_it_without_evolution(
     assert blocked_clients == []
     assert not blocked_output.exists()
 
-    monkeypatch.setenv("TEST_MODEL_KEY", "manifest-pinned-secret")
+    monkeypatch.setenv("AUTOADAPTER_HOLISTICAI_API_KEY", "manifest-pinned-secret")
     later_clients: list[Any] = []
 
     def fake_later(_root: Path, **kwargs: Any) -> dict[str, Any]:
@@ -1361,6 +1535,15 @@ def test_cli_keeps_source_review_and_later_as_separate_explicit_commands(
     monkeypatch.setattr(runner, "run_source", fake_source)
     monkeypatch.setattr(runner, "review_source", fake_review)
     monkeypatch.setattr(runner, "run_later", fake_later)
+    manifest = runner.load_manifest(manifest_path)
+    preflight_calls: list[tuple[dict[str, Any], str]] = []
+    monkeypatch.setattr(
+        runner,
+        "validate_executable_preflight",
+        lambda value, *, mainline_root: preflight_calls.append(
+            (copy.deepcopy(dict(value)), str(mainline_root))
+        ),
+    )
     monkeypatch.setenv("TEST_MODEL_KEY", "must-never-be-printed")
 
     source_output = tmp_path / "source-cli"
@@ -1389,12 +1572,13 @@ def test_cli_keeps_source_review_and_later_as_separate_explicit_commands(
             "source",
             {
                 "root": str(tmp_path),
-                "manifest_path": str(manifest_path),
+                "manifest": manifest,
                 "output_dir": str(source_output),
                 "manual_launch_event": "operator-source-launch",
             },
         )
     ]
+    assert preflight_calls == [(manifest, str(tmp_path))]
     printed = source_capture.out + source_capture.err
     assert "must-never-be-printed" not in printed
     assert "file-secret-one" not in printed
@@ -1432,6 +1616,7 @@ def test_cli_keeps_source_review_and_later_as_separate_explicit_commands(
     later_payload = json.loads(capsys.readouterr().out)
     assert later_payload["experience_id"] == runner.EXPERIENCE_ID
     assert [event[0] for event in events] == ["source", "review", "later"]
+    assert preflight_calls == [(manifest, str(tmp_path)), (manifest, str(tmp_path))]
 
 
 def test_cli_returns_nonzero_secret_free_json_for_runner_error(
@@ -1446,6 +1631,11 @@ def test_cli_returns_nonzero_secret_free_json_for_runner_error(
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             runner.Experiment2RunnerError("formal source pin is incomplete")
         ),
+    )
+    monkeypatch.setattr(
+        runner,
+        "validate_executable_preflight",
+        lambda _value, *, mainline_root: {},
     )
     rc = runner.main(
         [

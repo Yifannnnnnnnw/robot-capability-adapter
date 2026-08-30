@@ -29,6 +29,12 @@ from autoadapter2.evolution import (
     run_evolution,
 )
 from autoadapter2.pipeline import ExperimentConfig, PipelineError, run_experiment
+from autoadapter2.provider_config import (
+    HolisticAIRouteProfile,
+    ProviderConfigError,
+    reject_inline_holisticai_route_fields,
+    resolve_holisticai_route_profile,
+)
 
 
 EXPERIMENT_ID = "experiment2-so101-cross-run-closure"
@@ -75,6 +81,7 @@ EXPECTED_RETRY_POLICY = {
     "retryable_http_statuses": [429, 500, 502, 503, 504],
 }
 ENV_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+DEFAULT_HOLISTICAI_ENV_FILE = Path(__file__).resolve().parents[2] / ".env.holisticai-api"
 
 
 class Experiment2RunnerError(RuntimeError):
@@ -142,7 +149,10 @@ def _dotenv_value(raw: str, *, path: Path, line_number: int) -> str:
 def _load_env_files(paths: list[str]) -> None:
     """Load explicit dotenv files without expansion and without replacing values."""
 
-    for path_value in paths:
+    selected_paths = paths
+    if not selected_paths and DEFAULT_HOLISTICAI_ENV_FILE.is_file():
+        selected_paths = [str(DEFAULT_HOLISTICAI_ENV_FILE)]
+    for path_value in selected_paths:
         path = Path(path_value).resolve()
         try:
             lines = path.read_text(encoding="utf-8-sig").splitlines()
@@ -280,16 +290,29 @@ def _pipeline_model(
     label: str,
     expected_id: str,
     declared_settings: Mapping[str, Any],
+    route: HolisticAIRouteProfile,
 ) -> dict[str, Any]:
     _require(isinstance(value, Mapping), f"runtime.{label} must be a pipeline model manifest")
     assert isinstance(value, Mapping)
+    route_fields = dict(value)
+    route_fields.pop("api_protocol", None)
+    try:
+        reject_inline_holisticai_route_fields(route_fields, label=f"runtime.{label}")
+    except ProviderConfigError as exc:
+        raise Experiment2RunnerError(str(exc)) from exc
+    _require(
+        value.get("api_protocol") == route.api_protocol,
+        f"runtime.{label}.api_protocol must match the holisticai route profile",
+    )
+    resolved_model = dict(value)
+    resolved_model["base_url"] = route.base_url
     try:
         checked = ExperimentConfig.from_mapping(
             {
                 "experiment_id": "experiment2-model-pin-check",
                 "robots": [ROBOT_CONFIGURATION],
                 "generation_conditions": [CONDITION],
-                "model": dict(value),
+                "model": resolved_model,
             }
         ).model_manifest
     except PipelineError as exc:
@@ -312,28 +335,39 @@ def _pipeline_model(
     return copy.deepcopy(dict(checked))
 
 
-def _transport_pin(value: Any, *, label: str) -> dict[str, Any]:
+def _transport_pin(
+    value: Any, *, label: str, route: HolisticAIRouteProfile
+) -> dict[str, Any]:
     required = {
-        "endpoint_region",
         "request_timeout_s",
         "retry_policy",
         "history_char_budget",
-        "credential_env",
-        "auth_header",
-        "auth_prefix",
     }
     _require(isinstance(value, Mapping), f"runtime.{label} must be pinned")
     assert isinstance(value, Mapping)
+    try:
+        reject_inline_holisticai_route_fields(value, label=f"runtime.{label}")
+    except ProviderConfigError as exc:
+        raise Experiment2RunnerError(str(exc)) from exc
     _require(set(value) == required, f"runtime.{label} must pin exactly {sorted(required)}")
-    for key in ("endpoint_region", "credential_env", "auth_header"):
-        _require(isinstance(value.get(key), str) and bool(str(value[key]).strip()), f"runtime.{label}.{key} must be non-empty")
-    _require(isinstance(value.get("auth_prefix"), str), f"runtime.{label}.auth_prefix must be text")
     timeout = value.get("request_timeout_s")
-    _require(isinstance(timeout, (int, float)) and not isinstance(timeout, bool) and float(timeout) > 0, f"runtime.{label}.request_timeout_s must be positive")
+    _require(
+        isinstance(timeout, (int, float))
+        and not isinstance(timeout, bool)
+        and float(timeout) == float(route.maximum_request_timeout_s),
+        f"runtime.{label}.request_timeout_s must equal the holisticai profile limit of {route.maximum_request_timeout_s}",
+    )
     history = value.get("history_char_budget")
     _require(isinstance(history, int) and not isinstance(history, bool) and history > 0, f"runtime.{label}.history_char_budget must be positive")
     _require(value.get("retry_policy") == EXPECTED_RETRY_POLICY, f"runtime.{label}.retry_policy must pin the current model client policy")
-    return copy.deepcopy(dict(value))
+    return {
+        **copy.deepcopy(dict(value)),
+        "endpoint_path": route.endpoint_path,
+        "endpoint_region": route.endpoint_region,
+        "credential_env": route.credential_env,
+        "auth_header": route.auth_header,
+        "auth_prefix": route.auth_prefix,
+    }
 
 
 def _resources(value: Any) -> dict[str, Any]:
@@ -547,6 +581,17 @@ def _evidence_item(value: Any, *, label: str, root: Path) -> dict[str, Any]:
     }
 
 
+def _repository_root(mainline_root: str | Path) -> Path:
+    """Resolve the repository root from the normal ``--root autoadapter`` input."""
+
+    root = Path(mainline_root).resolve()
+    if (root / "src" / "autoadapter2").is_dir():
+        return root.parent
+    if (root / "autoadapter" / "src" / "autoadapter2").is_dir():
+        return root
+    return root.parent if root.name == "autoadapter" else root
+
+
 def validate_executable_preflight(
     manifest: Mapping[str, Any], *, mainline_root: str | Path
 ) -> dict[str, Any]:
@@ -558,6 +603,7 @@ def validate_executable_preflight(
     _require(isinstance(runtime, Mapping), "formal dispatch requires a pinned runtime block")
     assert isinstance(runtime, Mapping)
     required_runtime = {
+        "holisticai_route_profile",
         "producer_model",
         "producer_transport",
         "evolution_model",
@@ -565,6 +611,15 @@ def validate_executable_preflight(
         "resources",
     }
     _require(set(runtime) == required_runtime, "runtime must separately pin Producer, Evolution, transports, and resources")
+    try:
+        route = resolve_holisticai_route_profile(
+            runtime.get("holisticai_route_profile"),
+            _repository_root(root),
+        )
+    except ProviderConfigError as exc:
+        raise Experiment2RunnerError(
+            f"runtime.holisticai_route_profile is invalid: {exc}"
+        ) from exc
     declared_opus_id = checked["models"]["terminal_evolution"].get("exact_model_id")
     _require(
         isinstance(declared_opus_id, str) and bool(declared_opus_id.strip()),
@@ -575,16 +630,22 @@ def validate_executable_preflight(
         label="producer_model",
         expected_id=SONNET_MODEL_ID,
         declared_settings=checked["models"]["producer"],
+        route=route,
     )
     evolution_model = _pipeline_model(
         runtime.get("evolution_model"),
         label="evolution_model",
         expected_id=declared_opus_id,
         declared_settings=checked["models"]["terminal_evolution"],
+        route=route,
     )
     _require(producer_model["model_id"] != evolution_model["model_id"], "Producer and Evolution models must be distinct")
-    producer_transport = _transport_pin(runtime.get("producer_transport"), label="producer_transport")
-    evolution_transport = _transport_pin(runtime.get("evolution_transport"), label="evolution_transport")
+    producer_transport = _transport_pin(
+        runtime.get("producer_transport"), label="producer_transport", route=route
+    )
+    evolution_transport = _transport_pin(
+        runtime.get("evolution_transport"), label="evolution_transport", route=route
+    )
     resources = _resources(runtime.get("resources"))
 
     evidence = checked.get("readiness_evidence")
@@ -607,6 +668,7 @@ def validate_executable_preflight(
         key: _evidence_item(evidence[key], label=key, root=root) for key in sorted(required)
     }
     return {
+        "holisticai_route_profile": route.to_evidence_dict(),
         "producer_model": producer_model,
         "producer_transport": producer_transport,
         "evolution_model": evolution_model,
@@ -629,6 +691,7 @@ def _assert_client_pin(
         "provider": model["vendor"],
         "model": model["model_id"],
         "base_url": str(model["base_url"]).rstrip("/"),
+        "endpoint_path": transport["endpoint_path"],
         "api_protocol": model["api_protocol"],
         "thinking": (
             None if model["thinking"] in {None, "disabled"} else model["thinking"]
@@ -654,7 +717,7 @@ def _built_in_client(
 
     credential_env = str(transport["credential_env"])
     api_key = os.environ.get(credential_env, "")
-    _require(bool(api_key), f"manifest-pinned credential environment variable {credential_env!r} is missing")
+    _require(bool(api_key), f"holisticai profile credential environment variable {credential_env!r} is missing")
     _require(model["temperature"] == 0.0, "built-in JsonModelClient supports temperature 0 only")
     return JsonModelClient(
         ModelConfig(
@@ -662,6 +725,7 @@ def _built_in_client(
             model=str(model["model_id"]),
             base_url=str(model["base_url"]),
             api_key=api_key,
+            endpoint_path=str(transport["endpoint_path"]),
             api_protocol=str(model["api_protocol"]),
             auth_header=str(transport["auth_header"]),
             auth_prefix=str(transport["auth_prefix"]),
@@ -1128,6 +1192,9 @@ def run_source(
         kwargs["hooks"] = hooks
     result = copy.deepcopy(dict(run_experiment_fn(mainline_root, **kwargs)))
     _attach_revision_evidence(result, revisions)
+    result["holisticai_route_profile"] = copy.deepcopy(
+        preflight["holisticai_route_profile"]
+    )
     result["experiment2_manual_launch_event"] = manual_launch_event.strip()
     result["experiment2_manual_launched_at_utc"] = launched_at_utc
     try:
@@ -1445,6 +1512,9 @@ def run_later(
         kwargs["hooks"] = hooks
     result = copy.deepcopy(dict(run_experiment_fn(mainline_root, **kwargs)))
     _attach_revision_evidence(result, revisions)
+    result["holisticai_route_profile"] = copy.deepcopy(
+        preflight["holisticai_route_profile"]
+    )
     result["experiment2_manual_launch_event"] = manual_launch_event.strip()
     result["experiment2_manual_launched_at_utc"] = loaded_at_utc
     result["experiment2_loaded_experience_id"] = EXPERIENCE_ID
@@ -1571,13 +1641,16 @@ def main(argv: list[str] | None = None) -> int:
                 "experiment_id": EXPERIMENT_ID,
                 "producer_model_id": checked["producer_model"]["model_id"],
                 "terminal_evolution_model_id": checked["evolution_model"]["model_id"],
+                "holisticai_route_profile": checked["holisticai_route_profile"],
                 "readiness_evidence_count": len(checked["readiness_evidence"]),
             }
         elif args.command == "source":
+            manifest = load_manifest(args.manifest)
+            validate_executable_preflight(manifest, mainline_root=args.root)
             _load_env_files(args.env_file)
             result = run_source(
                 args.root,
-                manifest_path=args.manifest,
+                manifest=manifest,
                 output_dir=args.output,
                 manual_launch_event=args.manual_event,
             )
@@ -1600,10 +1673,12 @@ def main(argv: list[str] | None = None) -> int:
             )
             payload = {"ok": True, "command": args.command, **review}
         else:
+            manifest = load_manifest(args.manifest)
+            validate_executable_preflight(manifest, mainline_root=args.root)
             _load_env_files(args.env_file)
             result = run_later(
                 args.root,
-                manifest_path=args.manifest,
+                manifest=manifest,
                 snapshot_path=args.snapshot,
                 output_dir=args.output,
                 manual_launch_event=args.manual_event,

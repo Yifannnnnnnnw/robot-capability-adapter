@@ -86,7 +86,7 @@ Use a new or empty output directory for each real run.
 Source run:
 
 ```sh
-env -u AUTOADAPTER_COMPANY_API_KEY \
+env -u AUTOADAPTER_HOLISTICAI_API_KEY \
   PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
   pyenv exec python -m experiment.experiment2.runner \
   source \
@@ -94,7 +94,7 @@ env -u AUTOADAPTER_COMPANY_API_KEY \
   --manifest experiment/experiment2/manifest.json \
   --output autoadapter/runs/experiment2/exp2-so101-source-v2 \
   --manual-event operator-manual-launch-exp2-source-v2 \
-  --env-file .env.company-api
+  --env-file .env.holisticai-api
 ```
 
 Inspect the retained terminal report and unedited proposal. A review command is
@@ -118,7 +118,7 @@ Only after an acceptance and frozen snapshot, manually launch the independent
 later run:
 
 ```sh
-env -u AUTOADAPTER_COMPANY_API_KEY \
+env -u AUTOADAPTER_HOLISTICAI_API_KEY \
   PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
   pyenv exec python -m experiment.experiment2.runner \
   later \
@@ -127,7 +127,7 @@ env -u AUTOADAPTER_COMPANY_API_KEY \
   --snapshot autoadapter/runs/experiment2/exp2-so101-source-v2/experience_snapshot.json \
   --output autoadapter/runs/experiment2/exp2-so101-later \
   --manual-event operator-manual-launch-exp2-later \
-  --env-file .env.company-api
+  --env-file .env.holisticai-api
 ```
 
 The later report must retain the exact Experience ID in the load event, TGCD
@@ -141,14 +141,14 @@ output directory. Only the `resume` command below may reuse that same partial
 directory after a process interruption.
 
 ```sh
-env -u AUTOADAPTER_COMPANY_API_KEY \
+env -u AUTOADAPTER_HOLISTICAI_API_KEY \
   PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
   pyenv exec python -m experiment.experiment3.runner \
   formal \
   --root autoadapter \
   --manifest experiment/experiment3/manifest.json \
   --output autoadapter/runs/experiment3/experiment3-direct-mujoco-cohort-r3 \
-  --env-file .env.company-api
+  --env-file .env.holisticai-api
 ```
 
 Each declared cell is attempted once. A model, package, or Harness failure is
@@ -159,14 +159,14 @@ If the operator, host, or Python process interrupts the command, resume the same
 record with the same committed revision:
 
 ```sh
-env -u AUTOADAPTER_COMPANY_API_KEY \
+env -u AUTOADAPTER_HOLISTICAI_API_KEY \
   PYTHONPATH=autoadapter/src MUJOCO_GL=cgl \
   pyenv exec python -m experiment.experiment3.runner \
   resume \
   --root autoadapter \
   --manifest experiment/experiment3/manifest.json \
   --output autoadapter/runs/experiment3/experiment3-direct-mujoco-cohort-r3 \
-  --env-file .env.company-api
+  --env-file .env.holisticai-api
 ```
 
 Resume never calls a model for `completed` or `failed` rows. A predeclared row
