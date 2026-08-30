@@ -73,9 +73,20 @@ also need to separate morphology from differences in control interfaces,
 observations, and tasks.
 
 \textbf{Finally, simulator evidence should be extended to real execution in
-stages.} Future work should connect the framework to genuine vendor software
-development kits and robot-specific Translation Layers before conducting
-hardware experiments that examine calibration, communication latency, sensor
-noise, contact behaviour, and safety constraints. Simulator validation can
-serve as a filter before real execution, but it is not sufficient evidence for
-physical deployment.
+stages.} Future work should first connect the framework to genuine vendor
+software development kits and robot-specific Translation Layers. Within that
+extension, the Model Hardware Standard described in
+Section~\ref{sec:interfaces-drivers} could be evaluated as a common interface
+between the generated robot-specific driver and device-specific execution,
+rather than as a replacement for the underlying vendor integration. A matched
+comparison should hold the robot configuration, capability interface, tasks,
+generation model and budget, and trusted Harness measurement definitions and
+verdict rules fixed while comparing direct-SDK and MHS-backed execution routes.
+It should measure integration effort, behavioural correctness, communication
+latency, and recovery from device errors. Physical experiments would
+additionally examine calibration, sensor noise, contact behaviour, and
+violations of declared interface limits. The present thesis does not integrate
+MHS or evaluate an MHS-backed execution route, so it provides no evidence that
+this route improves interoperability or physical safety. Simulator validation
+can serve as a filter before either route reaches real hardware, but it is not
+sufficient evidence for physical deployment.

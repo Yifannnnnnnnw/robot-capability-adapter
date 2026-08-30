@@ -215,6 +215,29 @@ interface \citep{lerobot2026hardware}. These systems expose different software
 boundaries, but each connects an operation understood by higher-level software
 to a robot-specific means of execution.
 
+The Model Hardware Standard (MHS), whose development began as a collaboration
+between Anthropic and the HHMI Janelia Research Campus, extends this interface
+problem to AI agents operating physical equipment \citep{anthropic2026mhs}. It
+proposes a model-agnostic device layer whose standardised drivers expose
+discoverable states and procedures through common \texttt{read} and
+\texttt{write} operations. Device descriptions record physical characteristics
+and the safety limits that the interface is intended to enforce. Agents may
+access this surface through the Model Context Protocol, command-line tools, or
+code interfaces.
+
+MHS shares Auto-Adapter's aim of reducing bespoke integrations, but assigns a
+different role to the driver. The term \emph{MHS driver} denotes the
+device-integration component, whereas \emph{robot-specific driver} in this
+thesis denotes the generated, application-level implementation of a robot
+capability interface. The public MHS description emphasises standardised device
+exposure and orchestration, but does not specify a general,
+candidate-independent validation protocol comparable to the trusted Harness
+used in this thesis. The approaches therefore address the same integration
+boundary at different, potentially composable layers. Since MHS remains a
+limited research preview ahead of a planned open-source release, this thesis
+treats it as an emerging interface proposal rather than an evaluated baseline
+\citep{anthropic2026mhs}.
+
 Auto-Adapter places this connection in one generated Python robot-specific
 driver for each robot configuration. Its public methods implement the
 capability interface, while the code behind them maps requests and feedback to
