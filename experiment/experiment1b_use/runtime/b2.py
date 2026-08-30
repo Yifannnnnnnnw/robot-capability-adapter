@@ -19,6 +19,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from autoadapter2.provider_config import (
+    reject_inline_holisticai_route_fields,
+    resolve_holisticai_route_profile,
+)
+
 from .readiness import validate_readiness_evidence
 
 
@@ -129,6 +134,7 @@ class ResolvedB2Manifest:
     selections: Mapping[str, Mapping[str, Any]]
     provider_pins: Mapping[str, Mapping[str, Any]]
     provider_source_paths: Mapping[str, Path]
+    provider_route_profiles: Mapping[str, Any | None]
     readiness_evidence: Mapping[str, Any]
     provider_formal_ready: bool
     units: tuple[B2Unit, ...]
@@ -336,7 +342,12 @@ def _validate_task_suite(
 
 def _validate_provider_manifest(
     path: Path, *, models: Sequence[str]
-) -> tuple[dict[str, Mapping[str, Any]], dict[str, Path], bool]:
+) -> tuple[
+    dict[str, Mapping[str, Any]],
+    dict[str, Path],
+    dict[str, Any | None],
+    bool,
+]:
     document = _read_object(path, label="B2 provider manifest")
     if document.get("artifact_type") != "b2_recap_provider_manifest":
         raise B2FormalError("B2 provider manifest artifact_type is invalid")
@@ -363,11 +374,10 @@ def _validate_provider_manifest(
         raise B2FormalError("B2 provider manifest has no common transport policy")
     if common.get("transport") != "openai-compatible":
         raise B2FormalError("B2 provider transport is not openai-compatible")
-    if common.get("endpoint_path") != "/chat/completions":
-        raise B2FormalError("B2 provider endpoint path is not fixed")
 
     pins: dict[str, Mapping[str, Any]] = {}
     source_paths: dict[str, Path] = {}
+    route_profiles: dict[str, Any | None] = {}
     for model_id in models:
         raw_path = _required_string(
             runtime_configs.get(model_id), label=f"provider_runtime_configs.{model_id}"
@@ -382,22 +392,71 @@ def _validate_provider_manifest(
         _required_string(source.get("exact_model_id"), label=f"{model_id}.exact_model_id")
         for field in (
             "vendor",
-            "endpoint_base_url",
-            "endpoint_path",
-            "credential_env",
-            "auth_header",
+            "deployment_mode",
+            "api_route_kind",
             "transport",
         ):
             _required_string(source.get(field), label=f"{model_id}.{field}")
-        if not isinstance(source.get("auth_prefix"), str):
-            raise B2FormalError(f"{model_id}.auth_prefix must be a string")
         if source.get("transport") != common.get("transport"):
             raise B2FormalError(f"{model_id} provider transport differs from the common pin")
-        if source.get("endpoint_path") != common.get("endpoint_path"):
-            raise B2FormalError(f"{model_id} provider endpoint path differs from the common pin")
         settings = source.get("inference_settings")
         if not isinstance(settings, Mapping):
             raise B2FormalError(f"{model_id} provider pin has no inference settings")
+        route_profile = None
+        if model_id == "M5":
+            if source.get("deployment_mode") != "vendor-direct-hosted-api":
+                raise B2FormalError("M5 must remain vendor-direct-hosted-api")
+            for field in (
+                "endpoint_base_url",
+                "endpoint_path",
+                "credential_env",
+                "auth_header",
+            ):
+                _required_string(source.get(field), label=f"{model_id}.{field}")
+            if not isinstance(source.get("auth_prefix"), str):
+                raise B2FormalError("M5.auth_prefix must be a string")
+            if source.get("endpoint_path") != "/chat/completions":
+                raise B2FormalError("M5 endpoint path is not fixed")
+        else:
+            if (
+                source.get("deployment_mode") != "holisticai-hosted-api"
+                or source.get("api_route_kind") != "holisticai-gateway"
+            ):
+                raise B2FormalError(
+                    f"{model_id} must use the holisticai gateway classifications"
+                )
+            try:
+                reject_inline_holisticai_route_fields(
+                    source, label=f"{model_id} provider pin"
+                )
+                route_profile = resolve_holisticai_route_profile(
+                    source.get("holisticai_route_profile"), REPOSITORY_ROOT
+                )
+            except (OSError, TypeError, ValueError) as exc:
+                raise B2FormalError(
+                    f"{model_id} holisticai route profile is invalid: {exc}"
+                ) from exc
+            if (
+                route_profile.deployment_mode != source.get("deployment_mode")
+                or route_profile.api_protocol != source.get("transport")
+            ):
+                raise B2FormalError(
+                    f"{model_id} classifications differ from the holisticai profile"
+                )
+            timeout = settings.get("timeout_s")
+            common_timeout = common.get("timeout_s")
+            if (
+                isinstance(timeout, bool)
+                or not isinstance(timeout, (int, float))
+                or float(timeout) <= 0
+                or float(timeout) > route_profile.maximum_request_timeout_s
+                or isinstance(common_timeout, bool)
+                or not isinstance(common_timeout, (int, float))
+                or float(common_timeout) > route_profile.maximum_request_timeout_s
+            ):
+                raise B2FormalError(
+                    f"{model_id} timeout exceeds the holisticai profile maximum"
+                )
         if model_id == "M8":
             if (
                 source.get("expected_returned_model_id")
@@ -408,7 +467,10 @@ def _validate_provider_manifest(
                 or source.get("context_limit_tokens") != 1_050_000
                 or source.get("provider_max_output_tokens") != 128_000
                 or source.get("limits_scope")
-                != "OpenAI public model specification; company-gateway enforcement not independently verified"
+                != (
+                    "OpenAI public model specification; holisticai-gateway "
+                    "enforcement not independently verified"
+                )
                 or source.get("limits_source")
                 != "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
             ):
@@ -437,7 +499,10 @@ def _validate_provider_manifest(
                     or price.get("cost_basis")
                     != "public_standard_reference_estimate"
                     or price.get("pricing_scope")
-                    != "OpenAI public Standard API reference; company-gateway billing not independently verified"
+                    != (
+                        "OpenAI public Standard API reference; holisticai-gateway "
+                        "billing not independently verified"
+                    )
                 ):
                     raise B2FormalError("M8 public base price pin is invalid")
                 long_context = price.get("long_context")
@@ -450,12 +515,13 @@ def _validate_provider_manifest(
                     raise B2FormalError("M8 long-context public price pin is invalid")
         pins[model_id] = dict(source)
         source_paths[model_id] = source_path
+        route_profiles[model_id] = route_profile
     provider_formal_ready = (
         document.get("formal_dispatch_enabled") is True
         and document.get("diagnostic_only") is False
         and unresolved_prices == []
     )
-    return pins, source_paths, provider_formal_ready
+    return pins, source_paths, route_profiles, provider_formal_ready
 
 
 def _validate_reference_selection(path: Path, *, robots: Sequence[str]) -> dict[str, Mapping[str, Any]]:
@@ -560,9 +626,12 @@ def resolve_manifest(path: str | Path = DEFAULT_MANIFEST_PATH) -> ResolvedB2Mani
     task_ids = _validate_task_suite(
         task_suite_path, robots=robots, replicates=replicates
     )
-    provider_pins, provider_source_paths, provider_formal_ready = _validate_provider_manifest(
-        provider_manifest_path, models=models
-    )
+    (
+        provider_pins,
+        provider_source_paths,
+        provider_route_profiles,
+        provider_formal_ready,
+    ) = _validate_provider_manifest(provider_manifest_path, models=models)
     selections = _validate_reference_selection(reference_selection_path, robots=robots)
     task_suite_document = _read_object(task_suite_path, label="B2 task suite")
     try:
@@ -598,6 +667,7 @@ def resolve_manifest(path: str | Path = DEFAULT_MANIFEST_PATH) -> ResolvedB2Mani
         selections=selections,
         provider_pins=provider_pins,
         provider_source_paths=provider_source_paths,
+        provider_route_profiles=provider_route_profiles,
         readiness_evidence=readiness_evidence,
         provider_formal_ready=provider_formal_ready,
         units=units,
@@ -685,8 +755,35 @@ def _load_dotenv(path: Path) -> dict[str, str]:
     return values
 
 
+def _provider_runtime_pin(
+    provider_pin: Mapping[str, Any], route_profile: Any | None
+) -> dict[str, Any]:
+    """Merge a validated shared route with model-local settings in memory."""
+
+    resolved = dict(provider_pin)
+    if route_profile is None:
+        return resolved
+    resolved.update(
+        {
+            "endpoint_base_url": route_profile.base_url,
+            "endpoint_path": route_profile.endpoint_path,
+            "endpoint_region": route_profile.endpoint_region,
+            "credential_env": route_profile.credential_env,
+            "auth_header": route_profile.auth_header,
+            "auth_prefix": route_profile.auth_prefix,
+        }
+    )
+    return resolved
+
+
 def _default_credential_loader(provider_pin: Mapping[str, Any], env_file: Path | None) -> str:
-    selected = env_file or (REPOSITORY_ROOT / ".env.company-api")
+    selected = env_file
+    if selected is None:
+        selected = REPOSITORY_ROOT / (
+            ".env.holisticai-api"
+            if provider_pin.get("deployment_mode") == "holisticai-hosted-api"
+            else ".env"
+        )
     values = _load_dotenv(selected)
     key = _required_string(provider_pin.get("credential_env"), label="credential_env")
     credential = values.get(key, "")
@@ -708,11 +805,14 @@ def _provider_config(
     if not isinstance(settings, Mapping):
         raise B2FormalError("B2 provider inference settings are invalid")
     return B2ModelProviderConfig(
-        provider=str(provider_pin.get("vendor") or "company").strip().lower(),
+        provider=str(provider_pin.get("vendor") or "holisticai").strip().lower(),
         model=_required_string(provider_pin.get("exact_model_id"), label="exact_model_id"),
         base_url=_required_string(
             provider_pin.get("endpoint_base_url"), label="endpoint_base_url"
         ).rstrip("/"),
+        endpoint_path=_required_string(
+            provider_pin.get("endpoint_path"), label="endpoint_path"
+        ),
         api_protocol=str(common.get("transport", "openai-compatible")),
         auth_header=_required_string(provider_pin.get("auth_header"), label="auth_header"),
         auth_prefix=str(provider_pin.get("auth_prefix", "")),
@@ -811,6 +911,7 @@ def _provider_evidence(
     model: Any,
     provider_pin: Mapping[str, Any],
     provider_source_path: Path,
+    route_profile: Any | None,
 ) -> dict[str, Any]:
     calls = _model_records(model, "provider_call_records")
     exchanges = _model_records(model, "provider_exchange_records")
@@ -818,7 +919,7 @@ def _provider_evidence(
     price_snapshot = dict(price) if isinstance(price, Mapping) else {}
     costs = [_call_cost_usd(call, price_snapshot) for call in calls]
     known_costs = [cost for cost in costs if cost is not None]
-    return {
+    evidence = {
         "provider_source_path": str(provider_source_path),
         "backbone_id": provider_pin.get("backbone_id"),
         "requested_model": provider_pin.get("exact_model_id"),
@@ -833,6 +934,11 @@ def _provider_evidence(
         "output_tokens": sum(int(call.get("output_tokens") or 0) for call in calls),
         "total_cost_usd": sum(known_costs) if len(known_costs) == len(calls) else None,
     }
+    if route_profile is not None:
+        route_evidence = route_profile.to_evidence_dict()
+        evidence["holisticai_route_profile"] = route_evidence["reference"]
+        evidence["resolved_route"] = route_evidence["resolved_route"]
+    return evidence
 
 
 def _model_identity(model: Any, expected_model: str) -> tuple[bool, list[str | None]]:
@@ -1050,6 +1156,7 @@ def run_formal_unit(
     terminal_written = False
     credential_value: str | None = None
     provider_pin: Mapping[str, Any] | None = None
+    provider_route_profile: Any | None = None
     model: Any = None
     episode: Any = None
     fixed_inputs: dict[str, Any] = {}
@@ -1092,14 +1199,20 @@ def run_formal_unit(
             raise
 
         provider_pin = manifest.provider_pins[unit.model_id]
+        provider_route_profile = manifest.provider_route_profiles[unit.model_id]
+        runtime_provider_pin = _provider_runtime_pin(
+            provider_pin, provider_route_profile
+        )
         selected_env = Path(env_file).resolve() if env_file is not None else None
         phase = "provider"
         loader = credential_loader or _default_credential_loader
-        credential = loader(provider_pin, selected_env)
+        credential = loader(runtime_provider_pin, selected_env)
         if not isinstance(credential, str) or not credential:
             raise B2FormalError("credential loader returned an empty credential")
         credential_value = credential
-        provider_config = _provider_config(provider_pin, manifest.provider_manifest_path)
+        provider_config = _provider_config(
+            runtime_provider_pin, manifest.provider_manifest_path
+        )
 
         phase = "model"
         model_builder = model_factory or _default_model_factory
@@ -1152,6 +1265,7 @@ def run_formal_unit(
                 model=model,
                 provider_pin=provider_pin,
                 provider_source_path=manifest.provider_source_paths[unit.model_id],
+                route_profile=provider_route_profile,
             ),
         }
         provider_manifest = _read_object(
@@ -1194,6 +1308,10 @@ def run_formal_unit(
             model=model,
             expected_model=str(provider_pin["exact_model_id"]),
         )
+        if provider_route_profile is not None:
+            route_evidence = provider_route_profile.to_evidence_dict()
+            model_identity["holisticai_route_profile"] = route_evidence["reference"]
+            model_identity["resolved_route"] = route_evidence["resolved_route"]
         terminal = {
             "artifact_type": "b2_formal_unit_terminal",
             "authority": manifest.authority,
@@ -1241,6 +1359,7 @@ def run_formal_unit(
                             provider_source_path=manifest.provider_source_paths[
                                 unit.model_id
                             ],
+                            route_profile=provider_route_profile,
                         ),
                     },
                     credential=credential_value or "",
@@ -1266,6 +1385,12 @@ def run_formal_unit(
                 "returned_models": returned,
                 "exact_match": exact,
             }
+            if provider_route_profile is not None:
+                route_evidence = provider_route_profile.to_evidence_dict()
+                model_identity["holisticai_route_profile"] = route_evidence[
+                    "reference"
+                ]
+                model_identity["resolved_route"] = route_evidence["resolved_route"]
         terminal = {
             "artifact_type": "b2_formal_unit_terminal",
             "authority": manifest.authority,

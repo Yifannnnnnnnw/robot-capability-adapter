@@ -20,6 +20,7 @@ from .b1 import (
     EXPERIMENT_ROOT,
     REPOSITORY_ROOT,
     _read_json,
+    _resolve_pinned_route,
     _write_json,
     resolve_experiment_manifest,
 )
@@ -52,19 +53,11 @@ def _runtime_environment(
         raise B1RunError(f"{config_path}: backbone_id does not match {backbone_id}")
     if config.get("transport") != "openai-compatible":
         raise B1RunError(
-            f"{config_path}: transport must be openai-compatible for company API"
+            f"{config_path}: transport must be openai-compatible"
         )
     model_id = config.get("exact_model_id")
-    base_url = config.get("endpoint_base_url")
-    endpoint_path = config.get("endpoint_path")
     if not isinstance(model_id, str) or not model_id.strip():
         raise B1RunError(f"{config_path}: exact_model_id must be non-empty")
-    if not isinstance(base_url, str) or not base_url.strip():
-        raise B1RunError(f"{config_path}: endpoint_base_url must be non-empty")
-    if endpoint_path != "/chat/completions":
-        raise B1RunError(
-            f"{config_path}: endpoint_path must be /chat/completions"
-        )
     settings = config.get("inference_settings")
     if not isinstance(settings, Mapping):
         raise B1RunError(f"{config_path}: inference_settings must be an object")
@@ -88,28 +81,21 @@ def _runtime_environment(
     thinking = settings["thinking"]
     if thinking is not None and not isinstance(thinking, str):
         raise B1RunError(f"{config_path}: thinking must be a string or null")
-    credential_env = config.get("credential_env")
-    if not isinstance(credential_env, str) or not credential_env.strip():
-        raise B1RunError(f"{config_path}: credential_env must be non-empty")
-    credential_env = credential_env.strip()
+    route = _resolve_pinned_route(config, label=str(config_path))
+    credential_env = str(route["credential_env"])
     model_key = parent_environment.get(credential_env, "").strip()
     if not model_key:
         raise B1RunError(f"{credential_env} is required for backbone {backbone_id}")
-    auth_header = config.get("auth_header")
-    auth_prefix = config.get("auth_prefix")
-    if not isinstance(auth_header, str) or not auth_header.strip():
-        raise B1RunError(f"{config_path}: auth_header must be non-empty")
-    if not isinstance(auth_prefix, str):
-        raise B1RunError(f"{config_path}: auth_prefix must be a string")
 
     environment = dict(parent_environment)
     environment.update(
         {
             "AUTOADAPTER_MODEL_PROVIDER": "openai-compatible",
             "AUTOADAPTER_MODEL_ID": model_id.strip(),
-            "AUTOADAPTER_MODEL_API_BASE_URL": base_url.rstrip("/"),
-            "AUTOADAPTER_MODEL_API_AUTH_HEADER": auth_header.strip(),
-            "AUTOADAPTER_MODEL_API_AUTH_PREFIX": auth_prefix,
+            "AUTOADAPTER_MODEL_API_BASE_URL": str(route["base_url"]).rstrip("/"),
+            "AUTOADAPTER_MODEL_API_ENDPOINT_PATH": str(route["endpoint_path"]),
+            "AUTOADAPTER_MODEL_API_AUTH_HEADER": str(route["auth_header"]),
+            "AUTOADAPTER_MODEL_API_AUTH_PREFIX": str(route["auth_prefix"]),
             "AUTOADAPTER_MODEL_API_KEY": model_key,
             "AUTOADAPTER_MODEL_THINKING": thinking or "",
             "AUTOADAPTER_MODEL_MAX_TOKENS": str(settings["max_tokens"]),
@@ -121,13 +107,13 @@ def _runtime_environment(
             ),
             "AUTOADAPTER_MODEL_TIMEOUT_S": str(settings["timeout_s"]),
             "AUTOADAPTER_MODEL_VENDOR": str(
-                config.get("vendor") or "company"
+                config.get("vendor") or "holisticai"
             ).strip().lower(),
         }
     )
     # The child needs only the model client's canonical key variable. Keeping
     # provider-specific aliases out of the child prevents duplicate capture.
-    environment.pop("AUTOADAPTER_COMPANY_API_KEY", None)
+    environment.pop("AUTOADAPTER_HOLISTICAI_API_KEY", None)
     if credential_env != "AUTOADAPTER_MODEL_API_KEY":
         environment.pop(credential_env, None)
     return environment, config, config_path

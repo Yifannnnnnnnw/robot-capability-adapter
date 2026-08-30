@@ -16,7 +16,7 @@ if str(PROVIDER_ROOT) not in sys.path:
 
 from autoadapter2.b2.model_client import ReCAPJsonModelClient
 
-from run_connectivity import _load_env_files, run_connectivity
+from run_connectivity import DEFAULT_ENV_PATHS, _load_env_files, run_connectivity
 from validate_manifest import (
     DEFAULT_MANIFEST_PATH,
     ProviderManifestError,
@@ -48,6 +48,14 @@ def test_manifest_pins_all_levels_and_overrides_source_runtime_differences() -> 
     assert resolved["providers"]["M6"]["inference_settings"][
         "tool_history_mode"
     ] == "text-observation"
+    holistic_profiles = [
+        resolved["route_profiles"][backbone_id]
+        for backbone_id in ("M1", "M2", "M3", "M4", "M6", "M8")
+    ]
+    assert {profile.profile_id for profile in holistic_profiles} == {
+        "holisticai-gateway-long-request-eu-west-2-v1"
+    }
+    assert resolved["route_profiles"]["M5"] is None
     for backbone_id in ("M5", "M6"):
         config = provider_model_config(resolved, backbone_id=backbone_id)
         client = ReCAPJsonModelClient(
@@ -57,6 +65,7 @@ def test_manifest_pins_all_levels_and_overrides_source_runtime_differences() -> 
         assert config.max_tokens == 4096
         assert config.timeout_s == 120
         assert config.history_char_budget == 80000
+        assert config.endpoint_path == "/chat/completions"
         assert client._client.config.tool_history_mode == "native"
 
 
@@ -78,7 +87,10 @@ def test_m8_source_pin_uses_the_public_limits_and_reference_price() -> None:
     assert source["upstream_revision_status"] == "not_independently_verifiable"
     assert source["context_limit_tokens"] == 1_050_000
     assert source["provider_max_output_tokens"] == 128_000
-    assert source["endpoint_region"] == "eu-west-2"
+    assert "endpoint_region" not in source
+    profile = load_and_validate_manifest()["route_profiles"]["M8"]
+    assert profile.endpoint_region == "eu-west-2"
+    assert profile.endpoint_url.endswith("/v1/chat/completions")
     price = source["price_snapshot"]
     assert price["snapshot_date"] == "2026-08-23"
     assert (price["input_cache_miss"], price["input_cache_hit"], price["output"]) == (
@@ -112,6 +124,15 @@ def test_env_loader_is_parent_local_and_rejects_conflicts(tmp_path: Path) -> Non
     second.write_text("SHARED=different\n", encoding="utf-8")
     with pytest.raises(ProviderManifestError, match="conflicting dotenv value"):
         _load_env_files((first, second))
+
+
+def test_connectivity_default_env_files_are_at_repository_root() -> None:
+    repository_root = HERE.parents[2]
+
+    assert DEFAULT_ENV_PATHS == (
+        repository_root / ".env",
+        repository_root / ".env.holisticai-api",
+    )
 
 
 class _FakeClient:
@@ -177,7 +198,7 @@ class _FakeClient:
 
 def _credential_file(path: Path) -> Path:
     path.write_text(
-        "AUTOADAPTER_COMPANY_API_KEY=company-parent-secret\n"
+        "AUTOADAPTER_HOLISTICAI_API_KEY=holisticai-parent-secret\n"
         "AUTOADAPTER_MODEL_API_KEY=direct-parent-secret\n",
         encoding="utf-8",
     )
@@ -215,11 +236,21 @@ def test_all_level_connectivity_runner_uses_one_common_contract_without_secrets(
     )
     assert all(call["config"].max_tokens == 4096 for call in _FakeClient.seen)
     serialized = output.read_text(encoding="utf-8")
-    assert "company-parent-secret" not in serialized
+    assert "holisticai-parent-secret" not in serialized
     assert "direct-parent-secret" not in serialized
     assert all(
         len(level["raw_secret_free_exchanges"]) == 1 for level in report["levels"]
     )
+    for level in report["levels"]:
+        if level["backbone_id"] == "M5":
+            assert level["holisticai_route_profile"] is None
+        else:
+            assert level["holisticai_route_profile"]["profile_id"] == (
+                "holisticai-gateway-long-request-eu-west-2-v1"
+            )
+            assert level["resolved_route"]["credential_env"] == (
+                "AUTOADAPTER_HOLISTICAI_API_KEY"
+            )
 
 
 def test_connectivity_failure_remains_visible_and_does_not_stop_later_levels(

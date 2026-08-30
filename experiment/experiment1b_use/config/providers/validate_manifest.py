@@ -32,6 +32,10 @@ from autoadapter2.model_api import (  # noqa: E402
     _RETRYABLE_HTTP_STATUSES,
     _RETRY_BACKOFF_S,
 )
+from autoadapter2.provider_config import (  # noqa: E402
+    reject_inline_holisticai_route_fields,
+    resolve_holisticai_route_profile,
+)
 
 
 DEFAULT_MANIFEST_PATH = Path(__file__).with_name("manifest.json")
@@ -43,13 +47,13 @@ _PROVIDER_ROOT = (
     / "providers"
 )
 _EXPECTED_CONFIGS = {
-    "M1": "M1-company-api-sonnet-4-6.json",
-    "M2": "M2-company-api-opus-5.json",
-    "M3": "M3-company-api-haiku-4-5.json",
-    "M4": "M4-company-api-nova-pro.json",
+    "M1": "M1-holisticai-sonnet-4-6.json",
+    "M2": "M2-holisticai-opus-5.json",
+    "M3": "M3-holisticai-haiku-4-5.json",
+    "M4": "M4-holisticai-nova-pro.json",
     "M5": "M5-deepseek-v4-pro.json",
-    "M6": "M6-company-api-ministral-3-8b.json",
-    "M8": "M8-company-api-gpt-5-6-sol.json",
+    "M6": "M6-holisticai-ministral-3-8b.json",
+    "M8": "M8-holisticai-gpt-5-6-sol.json",
 }
 _EXPECTED_FAMILIES = {
     "M1": "Sonnet 4.6",
@@ -102,7 +106,6 @@ def _positive_number(value: Any, *, label: str) -> float:
 def _expected_common_transport() -> dict[str, Any]:
     return {
         "transport": "openai-compatible",
-        "endpoint_path": "/chat/completions",
         "temperature": 0.0,
         "max_tokens": 4096,
         "timeout_s": 120,
@@ -128,7 +131,7 @@ def _validate_provider_source(
     raw_path: Any,
     manifest_path: Path,
     common: dict[str, Any],
-) -> tuple[Path, dict[str, Any]]:
+) -> tuple[Path, dict[str, Any], Any | None]:
     relative = Path(_required_string(raw_path, label=f"{backbone_id} source path"))
     if relative.is_absolute():
         raise ProviderManifestError(f"{backbone_id} source path must be relative")
@@ -154,8 +157,6 @@ def _validate_provider_source(
         "deployment_mode",
         "api_route_kind",
         "exact_model_id",
-        "credential_env",
-        "auth_header",
     ):
         _required_string(source.get(field), label=f"{backbone_id}.{field}")
     if backbone_id == "M8":
@@ -176,24 +177,55 @@ def _validate_provider_source(
             source.get("provider_model_revision"),
             label=f"{backbone_id}.provider_model_revision",
         )
-    _required_string(
-        source.get("auth_prefix"),
-        label=f"{backbone_id}.auth_prefix",
-        allow_empty=True,
-    )
     if source.get("transport") != common["transport"]:
         raise ProviderManifestError(f"{backbone_id} transport is not compatible")
-    if source.get("endpoint_path") != common["endpoint_path"]:
-        raise ProviderManifestError(f"{backbone_id} endpoint path is not compatible")
-    base_url = _required_string(
-        source.get("endpoint_base_url"), label=f"{backbone_id}.endpoint_base_url"
-    )
-    if urlparse(base_url).scheme != "https":
-        raise ProviderManifestError(f"{backbone_id} endpoint must use HTTPS")
-    if source.get("deployment_mode") == "company-hosted-api":
+    route_profile = None
+    if backbone_id == "M5":
+        if source.get("deployment_mode") != "vendor-direct-hosted-api":
+            raise ProviderManifestError("M5 must remain vendor-direct-hosted-api")
+        for field in (
+            "endpoint_base_url",
+            "endpoint_path",
+            "credential_env",
+            "auth_header",
+        ):
+            _required_string(source.get(field), label=f"{backbone_id}.{field}")
         _required_string(
-            source.get("endpoint_region"), label=f"{backbone_id}.endpoint_region"
+            source.get("auth_prefix"),
+            label=f"{backbone_id}.auth_prefix",
+            allow_empty=True,
         )
+        if source.get("endpoint_path") != "/chat/completions":
+            raise ProviderManifestError("M5 endpoint path is not compatible")
+        if urlparse(str(source["endpoint_base_url"])).scheme != "https":
+            raise ProviderManifestError("M5 endpoint must use HTTPS")
+    else:
+        if source.get("deployment_mode") != "holisticai-hosted-api":
+            raise ProviderManifestError(
+                f"{backbone_id} must use holisticai-hosted-api"
+            )
+        if source.get("api_route_kind") != "holisticai-gateway":
+            raise ProviderManifestError(
+                f"{backbone_id} must use the holisticai gateway"
+            )
+        try:
+            reject_inline_holisticai_route_fields(
+                source, label=f"{backbone_id} provider pin"
+            )
+            route_profile = resolve_holisticai_route_profile(
+                source.get("holisticai_route_profile"), REPOSITORY_ROOT
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            raise ProviderManifestError(
+                f"{backbone_id} holisticai route profile is invalid: {exc}"
+            ) from exc
+        if (
+            route_profile.deployment_mode != source.get("deployment_mode")
+            or route_profile.api_protocol != source.get("transport")
+        ):
+            raise ProviderManifestError(
+                f"{backbone_id} classifications differ from the holisticai profile"
+            )
 
     context_limit = _positive_integer(
         source.get("context_limit_tokens"),
@@ -215,7 +247,10 @@ def _validate_provider_source(
         context_limit != 1_050_000
         or output_limit != 128_000
         or source.get("limits_scope")
-        != "OpenAI public model specification; company-gateway enforcement not independently verified"
+        != (
+            "OpenAI public model specification; holisticai-gateway enforcement "
+            "not independently verified"
+        )
         or source.get("limits_source")
         != "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
     ):
@@ -228,6 +263,19 @@ def _validate_provider_source(
         inference.get("thinking"), str
     ):
         raise ProviderManifestError(f"{backbone_id}.thinking is invalid")
+    if route_profile is not None:
+        timeout = inference.get("timeout_s")
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, (int, float))
+            or float(timeout) <= 0
+            or float(timeout) > route_profile.maximum_request_timeout_s
+            or float(common["timeout_s"])
+            > route_profile.maximum_request_timeout_s
+        ):
+            raise ProviderManifestError(
+                f"{backbone_id} timeout exceeds the holisticai profile maximum"
+            )
 
     price = source.get("price_snapshot")
     if not isinstance(price, dict):
@@ -261,13 +309,13 @@ def _validate_provider_source(
         "cost_basis": "public_standard_reference_estimate",
         "pricing_scope": (
             "OpenAI public Standard API reference; "
-            "company-gateway billing not independently verified"
+            "holisticai-gateway billing not independently verified"
         ),
         "source": "https://platform.openai.com/pricing",
     }:
         raise ProviderManifestError("M8 public reference price pin is invalid")
 
-    return path, source
+    return path, source, route_profile
 
 
 def validate_manifest_document(
@@ -336,8 +384,9 @@ def validate_manifest_document(
         raise ProviderManifestError("B2 provider set must be ordered M1 through M6 and M8")
     providers: dict[str, dict[str, Any]] = {}
     provider_paths: dict[str, Path] = {}
+    route_profiles: dict[str, Any | None] = {}
     for backbone_id, raw_path in sources.items():
-        source_path, source = _validate_provider_source(
+        source_path, source, route_profile = _validate_provider_source(
             backbone_id=backbone_id,
             raw_path=raw_path,
             manifest_path=manifest_path,
@@ -345,6 +394,7 @@ def validate_manifest_document(
         )
         providers[backbone_id] = source
         provider_paths[backbone_id] = source_path
+        route_profiles[backbone_id] = route_profile
     unresolved_price_backbones: list[str] = []
     if unresolved_price_backbones != document["unresolved_price_backbones"]:
         raise ProviderManifestError(
@@ -356,6 +406,7 @@ def validate_manifest_document(
         "manifest": document,
         "providers": providers,
         "provider_paths": provider_paths,
+        "route_profiles": route_profiles,
         "common_transport_policy": common,
         "unresolved_price_backbones": unresolved_price_backbones,
     }
@@ -378,18 +429,64 @@ def provider_model_config(
     source = providers[backbone_id]
     common = resolved["common_transport_policy"]
     inference = source["inference_settings"]
+    route_profile = resolved["route_profiles"][backbone_id]
+    if route_profile is None:
+        base_url = str(source["endpoint_base_url"]).rstrip("/")
+        endpoint_path = str(source["endpoint_path"])
+        auth_header = str(source["auth_header"])
+        auth_prefix = str(source["auth_prefix"])
+    else:
+        base_url = route_profile.base_url.rstrip("/")
+        endpoint_path = route_profile.endpoint_path
+        auth_header = route_profile.auth_header
+        auth_prefix = route_profile.auth_prefix
     return B2ModelProviderConfig(
         provider=str(source["vendor"]).strip().lower(),
         model=str(source["exact_model_id"]),
-        base_url=str(source["endpoint_base_url"]).rstrip("/"),
+        base_url=base_url,
+        endpoint_path=endpoint_path,
         api_protocol=str(common["transport"]),
-        auth_header=str(source["auth_header"]),
-        auth_prefix=str(source["auth_prefix"]),
+        auth_header=auth_header,
+        auth_prefix=auth_prefix,
         thinking=inference.get("thinking"),
         timeout_s=float(common["timeout_s"]),
         max_tokens=int(common["max_tokens"]),
         history_char_budget=int(common["history_char_budget"]),
     )
+
+
+def provider_route(
+    resolved: dict[str, Any], *, backbone_id: str
+) -> dict[str, Any]:
+    """Return the resolved non-secret transport for one B2 provider."""
+
+    providers = resolved["providers"]
+    if backbone_id not in providers:
+        raise ProviderManifestError(f"unknown B2 backbone {backbone_id!r}")
+    profile = resolved["route_profiles"][backbone_id]
+    if profile is not None:
+        evidence = profile.to_evidence_dict()
+        return {
+            "holisticai_route_profile": evidence["reference"],
+            "resolved_route": evidence["resolved_route"],
+        }
+    source = providers[backbone_id]
+    base_url = str(source["endpoint_base_url"]).rstrip("/")
+    endpoint_path = str(source["endpoint_path"])
+    return {
+        "holisticai_route_profile": None,
+        "resolved_route": {
+            "deployment_mode": source["deployment_mode"],
+            "api_protocol": source["transport"],
+            "base_url": base_url,
+            "endpoint_path": endpoint_path,
+            "endpoint_url": base_url + endpoint_path,
+            "endpoint_region": source.get("endpoint_region"),
+            "credential_env": source["credential_env"],
+            "auth_header": source["auth_header"],
+            "auth_prefix": source["auth_prefix"],
+        },
+    }
 
 
 def main() -> int:

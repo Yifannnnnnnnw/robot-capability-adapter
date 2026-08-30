@@ -22,6 +22,7 @@ from experiment.experiment1a_generation.runtime.parallel import (  # noqa: E402
     materialized_units,
 )
 from experiment.experiment1a_generation.runtime.b1 import B1RunError  # noqa: E402
+from autoadapter2.provider_config import resolve_holisticai_route_profile  # noqa: E402
 
 
 class Experiment1ParallelRunnerTests(unittest.TestCase):
@@ -136,6 +137,7 @@ safe_environment = {
     'vendor': os.environ.get('AUTOADAPTER_MODEL_VENDOR'),
     'model_id': os.environ.get('AUTOADAPTER_MODEL_ID'),
     'base_url': os.environ.get('AUTOADAPTER_MODEL_API_BASE_URL'),
+    'endpoint_path': os.environ.get('AUTOADAPTER_MODEL_API_ENDPOINT_PATH'),
     'auth_header': os.environ.get('AUTOADAPTER_MODEL_API_AUTH_HEADER'),
     'auth_prefix': os.environ.get('AUTOADAPTER_MODEL_API_AUTH_PREFIX'),
     'thinking': os.environ.get('AUTOADAPTER_MODEL_THINKING'),
@@ -144,7 +146,7 @@ safe_environment = {
     'history_chars': os.environ.get('AUTOADAPTER_MODEL_HISTORY_CHARS'),
     'timeout_s': os.environ.get('AUTOADAPTER_MODEL_TIMEOUT_S'),
     'model_key_present': bool(os.environ.get('AUTOADAPTER_MODEL_API_KEY')),
-    'company_key_present': bool(os.environ.get('AUTOADAPTER_COMPANY_API_KEY')),
+    'holisticai_key_present': bool(os.environ.get('AUTOADAPTER_HOLISTICAI_API_KEY')),
 }
 (out / 'cell_record.json').write_text(json.dumps({
     'unit_id': a.unit_id,
@@ -182,12 +184,12 @@ safe_environment = {
             json.dumps(dispatch_manifest), encoding="utf-8"
         )
 
-        company_key = "test-company-secret-not-for-records"
+        holisticai_key = "test-holisticai-secret-not-for-records"
         deepseek_key = "test-deepseek-secret-not-for-records"
         with patch.dict(
             os.environ,
             {
-                "AUTOADAPTER_COMPANY_API_KEY": company_key,
+                "AUTOADAPTER_HOLISTICAI_API_KEY": holisticai_key,
                 "AUTOADAPTER_MODEL_API_KEY": deepseek_key,
             },
             clear=False,
@@ -236,9 +238,19 @@ safe_environment = {
             self.assertEqual(safe["provider"], "openai-compatible")
             self.assertEqual(safe["vendor"], config["vendor"].lower())
             self.assertEqual(safe["model_id"], config["exact_model_id"])
-            self.assertEqual(safe["base_url"], config["endpoint_base_url"])
-            self.assertEqual(safe["auth_header"], config["auth_header"])
-            self.assertEqual(safe["auth_prefix"], config["auth_prefix"])
+            if config["deployment_mode"] == "holisticai-hosted-api":
+                route = resolve_holisticai_route_profile(
+                    config["holisticai_route_profile"], REPOSITORY_ROOT
+                )
+                self.assertEqual(safe["base_url"], route.base_url)
+                self.assertEqual(safe["endpoint_path"], route.endpoint_path)
+                self.assertEqual(safe["auth_header"], route.auth_header)
+                self.assertEqual(safe["auth_prefix"], route.auth_prefix)
+            else:
+                self.assertEqual(safe["base_url"], config["endpoint_base_url"])
+                self.assertEqual(safe["endpoint_path"], config["endpoint_path"])
+                self.assertEqual(safe["auth_header"], config["auth_header"])
+                self.assertEqual(safe["auth_prefix"], config["auth_prefix"])
             self.assertEqual(safe["thinking"], settings["thinking"] or "")
             self.assertEqual(safe["max_tokens"], str(settings["max_tokens"]))
             self.assertEqual(
@@ -249,13 +261,13 @@ safe_environment = {
             )
             self.assertEqual(safe["timeout_s"], str(settings["timeout_s"]))
             self.assertTrue(safe["model_key_present"])
-            self.assertFalse(safe["company_key_present"])
+            self.assertFalse(safe["holisticai_key_present"])
         persisted = json.loads(
             (output / "scheduler_record.json").read_text(encoding="utf-8")
         )
         self.assertEqual(persisted["exit_summary"], record["exit_summary"])
         self.assertNotIn(
-            company_key,
+            holisticai_key,
             (output / "scheduler_record.json").read_text(encoding="utf-8"),
         )
         self.assertNotIn(

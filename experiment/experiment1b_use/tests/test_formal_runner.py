@@ -140,6 +140,15 @@ def test_one_enabled_unit_calls_existing_episode_runner_once_with_video(
     assert provider_record["calls"][0]["input_tokens"] == 10
     assert provider_record["raw_secret_free_exchanges"]
     assert provider_record["total_cost_usd"] is not None
+    assert provider_record["holisticai_route_profile"]["profile_id"] == (
+        "holisticai-gateway-long-request-eu-west-2-v1"
+    )
+    assert provider_record["resolved_route"]["credential_env"] == (
+        "AUTOADAPTER_HOLISTICAI_API_KEY"
+    )
+    assert terminal["model_identity"]["resolved_route"]["endpoint_url"].endswith(
+        "/v1/chat/completions"
+    )
     assert "parent-secret" not in json.dumps(episode_record)
     assert "parent-secret" not in json.dumps(provider_record)
 
@@ -240,6 +249,33 @@ def test_existing_episode_directory_is_rejected_before_credential_loading(
             credential_loader=credential_loader,
         )
     assert credential_loaded is False
+
+
+def test_default_credential_files_separate_holisticai_and_m5(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    selected: list[Path] = []
+
+    def load_dotenv(path: Path) -> dict[str, str]:
+        selected.append(path)
+        return {
+            "AUTOADAPTER_HOLISTICAI_API_KEY": "holisticai-secret",
+            "AUTOADAPTER_MODEL_API_KEY": "direct-secret",
+        }
+
+    monkeypatch.setattr(b2, "_load_dotenv", load_dotenv)
+    manifest = resolve_manifest()
+    holisticai_pin = b2._provider_runtime_pin(
+        manifest.provider_pins["M1"], manifest.provider_route_profiles["M1"]
+    )
+    m5_pin = b2._provider_runtime_pin(
+        manifest.provider_pins["M5"], manifest.provider_route_profiles["M5"]
+    )
+
+    assert b2._default_credential_loader(holisticai_pin, None) == "holisticai-secret"
+    assert selected[-1].name == ".env.holisticai-api"
+    assert b2._default_credential_loader(m5_pin, None) == "direct-secret"
+    assert selected[-1].name == ".env"
 
 
 def test_integrity_guard_failure_is_an_evaluable_harness_fail() -> None:

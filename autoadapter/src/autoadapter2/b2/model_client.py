@@ -37,6 +37,7 @@ class B2ModelProviderConfig:
     timeout_s: float = 180.0
     max_tokens: int = 16000
     history_char_budget: int = 80000
+    endpoint_path: str = "/chat/completions"
 
 
 class ReCAPJsonModelClient:
@@ -58,6 +59,7 @@ class ReCAPJsonModelClient:
                 model=provider_config.model,
                 base_url=provider_config.base_url,
                 api_key=credential,
+                endpoint_path=provider_config.endpoint_path,
                 api_protocol=provider_config.api_protocol,
                 auth_header=provider_config.auth_header,
                 auth_prefix=provider_config.auth_prefix,

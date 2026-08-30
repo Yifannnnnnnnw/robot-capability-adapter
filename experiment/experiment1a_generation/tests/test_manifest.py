@@ -19,6 +19,7 @@ from experiment.experiment1a_generation.runtime.b1 import (  # noqa: E402
     _select_unit,
     resolve_experiment_manifest,
 )
+from autoadapter2.provider_config import resolve_holisticai_route_profile  # noqa: E402
 
 
 class Experiment1ManifestTests(unittest.TestCase):
@@ -178,13 +179,13 @@ class Experiment1ManifestTests(unittest.TestCase):
         self.assertEqual(
             recipe["backbone_runtime_configs"],
             {
-                "M1": "config/providers/M1-company-api-sonnet-4-6.json",
-                "M2": "config/providers/M2-company-api-opus-5.json",
-                "M3": "config/providers/M3-company-api-haiku-4-5.json",
-                "M4": "config/providers/M4-company-api-nova-pro.json",
+                "M1": "config/providers/M1-holisticai-sonnet-4-6.json",
+                "M2": "config/providers/M2-holisticai-opus-5.json",
+                "M3": "config/providers/M3-holisticai-haiku-4-5.json",
+                "M4": "config/providers/M4-holisticai-nova-pro.json",
                 "M5": "config/providers/M5-deepseek-v4-pro.json",
-                "M6": "config/providers/M6-company-api-ministral-3-8b.json",
-                "M8": "config/providers/M8-company-api-gpt-5-6-sol.json",
+                "M6": "config/providers/M6-holisticai-ministral-3-8b.json",
+                "M8": "config/providers/M8-holisticai-gpt-5-6-sol.json",
             },
         )
         self.assertEqual(recipe["model_execution_policy"], "remote-hosted-api-only")
@@ -194,6 +195,35 @@ class Experiment1ManifestTests(unittest.TestCase):
                 (EXPERIMENT_ROOT / config_path).read_text(encoding="utf-8")
             )
             self.assertEqual(config["backbone_id"], backbone_id)
+            if backbone_id != "M5":
+                self.assertEqual(config["deployment_mode"], "holisticai-hosted-api")
+                self.assertEqual(config["api_route_kind"], "holisticai-gateway")
+                for route_field in (
+                    "endpoint_base_url",
+                    "endpoint_path",
+                    "endpoint_region",
+                    "credential_env",
+                    "auth_header",
+                    "auth_prefix",
+                ):
+                    self.assertNotIn(route_field, config)
+                profile = resolve_holisticai_route_profile(
+                    config["holisticai_route_profile"], REPOSITORY_ROOT
+                )
+                self.assertEqual(
+                    profile.endpoint_url,
+                    (
+                        "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou."
+                        "lambda-url.eu-west-2.on.aws/v1/chat/completions"
+                    ),
+                )
+                self.assertEqual(
+                    profile.credential_env, "AUTOADAPTER_HOLISTICAI_API_KEY"
+                )
+                self.assertLessEqual(
+                    config["inference_settings"]["timeout_s"],
+                    profile.maximum_request_timeout_s,
+                )
             if backbone_id == "M8":
                 self.assertEqual(config["context_limit_tokens"], 1_050_000)
                 self.assertEqual(config["provider_max_output_tokens"], 128_000)
@@ -207,12 +237,11 @@ class Experiment1ManifestTests(unittest.TestCase):
                     config["expected_returned_model_id"], "openai.gpt-5.6-sol"
                 )
                 self.assertEqual(
-                    config["endpoint_base_url"].rstrip("/") + config["endpoint_path"],
-                    "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1/chat/completions",
-                )
-                self.assertEqual(
                     config["limits_scope"],
-                    "OpenAI public model specification; company-gateway enforcement not independently verified",
+                    (
+                        "OpenAI public model specification; holisticai-gateway "
+                        "enforcement not independently verified"
+                    ),
                 )
                 self.assertEqual(
                     config["limits_source"],
@@ -236,7 +265,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                         "cost_basis": "public_standard_reference_estimate",
                         "pricing_scope": (
                             "OpenAI public Standard API reference; "
-                            "company-gateway billing not independently verified"
+                            "holisticai-gateway billing not independently verified"
                         ),
                         "source": "https://platform.openai.com/pricing",
                     },
@@ -256,14 +285,17 @@ class Experiment1ManifestTests(unittest.TestCase):
                 EXPERIMENT_ROOT
                 / "config"
                 / "providers"
-                / "M1-company-api-sonnet-4-6.json"
+                / "M1-holisticai-sonnet-4-6.json"
             ).read_text(encoding="utf-8")
         )
         self.assertEqual(m1["backbone_id"], "M1")
-        self.assertEqual(m1["deployment_mode"], "company-hosted-api")
+        self.assertEqual(m1["deployment_mode"], "holisticai-hosted-api")
         self.assertEqual(m1["exact_model_id"], "eu.anthropic.claude-sonnet-4-6")
         self.assertEqual(m1["transport"], "openai-compatible")
-        self.assertEqual(m1["auth_header"], "X-Api-Key")
+        self.assertEqual(
+            m1["holisticai_route_profile"]["profile_id"],
+            "holisticai-gateway-long-request-eu-west-2-v1",
+        )
         self.assertEqual(m1["inference_settings"]["temperature"], 0.0)
         self.assertEqual(m1["price_snapshot"]["snapshot_date"], "2026-08-21")
 
@@ -272,7 +304,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                 EXPERIMENT_ROOT
                 / "config"
                 / "providers"
-                / "M2-company-api-opus-5.json"
+                / "M2-holisticai-opus-5.json"
             ).read_text(encoding="utf-8")
         )
         self.assertEqual(m2["authority_revision"], "0.1.17")
@@ -295,7 +327,7 @@ class Experiment1ManifestTests(unittest.TestCase):
                 EXPERIMENT_ROOT
                 / "config"
                 / "providers"
-                / "M6-company-api-ministral-3-8b.json"
+                / "M6-holisticai-ministral-3-8b.json"
             ).read_text(encoding="utf-8")
         )
         self.assertEqual(

@@ -14,25 +14,26 @@ from pathlib import Path
 from typing import Any
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
 SOURCE_ROOT = REPOSITORY_ROOT / "autoadapter" / "src"
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
 from autoadapter2.b2.model_client import ReCAPJsonModelClient  # noqa: E402
-from autoadapter2.b2.recap import _parse_model_output  # noqa: E402
+from autoadapter2.task_demo.recap import _parse_model_output  # noqa: E402
 
 from validate_manifest import (  # noqa: E402
     DEFAULT_MANIFEST_PATH,
     ProviderManifestError,
     load_and_validate_manifest,
     provider_model_config,
+    provider_route,
 )
 
 
 DEFAULT_ENV_PATHS = (
     REPOSITORY_ROOT / ".env",
-    REPOSITORY_ROOT / ".env.company-api",
+    REPOSITORY_ROOT / ".env.holisticai-api",
 )
 ClientFactory = Callable[..., Any]
 
@@ -125,7 +126,11 @@ def run_connectivity(
 
     environment = _load_env_files(env_paths)
     credential_names = {
-        str(resolved["providers"][backbone_id]["credential_env"])
+        str(
+            provider_route(resolved, backbone_id=backbone_id)["resolved_route"][
+                "credential_env"
+            ]
+        )
         for backbone_id in selected
     }
     credentials = [environment.get(name, "") for name in credential_names]
@@ -137,7 +142,8 @@ def run_connectivity(
 
     for backbone_id in selected:
         source = resolved["providers"][backbone_id]
-        credential_env = str(source["credential_env"])
+        route = provider_route(resolved, backbone_id=backbone_id)
+        credential_env = str(route["resolved_route"]["credential_env"])
         credential = environment.get(credential_env, "")
         client: Any | None = None
         parsed_output: dict[str, Any] | None = None
@@ -197,7 +203,9 @@ def run_connectivity(
                 "upstream_revision_status": manifest["identity_evidence_policy"][
                     "upstream_revision_status"
                 ],
-                "endpoint_region": source.get("endpoint_region"),
+                "holisticai_route_profile": route["holisticai_route_profile"],
+                "resolved_route": route["resolved_route"],
+                "endpoint_region": route["resolved_route"].get("endpoint_region"),
                 "credential_env": credential_env,
                 "credential_value_recorded": False,
                 "logical_model_requests": 1 if client is not None else 0,

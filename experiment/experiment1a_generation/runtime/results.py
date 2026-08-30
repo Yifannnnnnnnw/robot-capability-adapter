@@ -7,6 +7,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from autoadapter2.provider_config import resolve_holisticai_route_profile
+
 from .b1 import EXPERIMENT_ROOT, REPOSITORY_ROOT, resolve_experiment_manifest
 
 
@@ -174,17 +176,9 @@ def discover_cell_records(
 def _eligibility(candidate: Mapping[str, Any]) -> tuple[bool, str | None]:
     record = _require_mapping(candidate.get("record"), label="candidate record")
     identity = _require_mapping(record.get("identity"), label="candidate identity")
-    backbone = identity.get("backbone_id")
     revision = identity.get("authority_revision")
     if revision != CURRENT_AUTHORITY_REVISION:
         return False, "superseded_pre_020"
-    if backbone == "M2":
-        model = _require_mapping(record.get("model"), label="M2 model record")
-        if float(model.get("timeout_s", -1)) != 600.0:
-            raise ResultsError(
-                f"current M2 record does not use 600 s: "
-                f"{candidate.get('cell_record_path')}"
-            )
     return True, None
 
 
@@ -823,11 +817,22 @@ def aggregate_formal_results(
         settings = _require_mapping(
             config.get("inference_settings"), label=f"{backbone} config settings"
         )
+        if config.get("deployment_mode") == "holisticai-hosted-api":
+            try:
+                route_base_url = resolve_holisticai_route_profile(
+                    config.get("holisticai_route_profile"), repository_root
+                ).base_url
+            except (OSError, TypeError, ValueError) as exc:
+                raise ResultsError(
+                    f"{backbone} holisticai route profile is invalid: {exc}"
+                ) from exc
+        else:
+            route_base_url = str(config.get("endpoint_base_url", ""))
         expected_model = {
             "backbone_id": backbone,
             "exact_model_id": config.get("exact_model_id"),
             "transport": config.get("transport"),
-            "base_url": str(config.get("endpoint_base_url", "")).rstrip("/"),
+            "base_url": route_base_url.rstrip("/"),
             "timeout_s": float(settings.get("timeout_s", -1)),
             "token_limit": settings.get("max_tokens"),
         }

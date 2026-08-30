@@ -7,13 +7,13 @@
   "protocol": "../../AutoAdapter-Bench/protocols/b1-driver-synthesis.json",
   "backbone_set": "config/components/backbone-set-m1-m6-m8.json",
   "backbone_runtime_configs": {
-    "M1": "config/providers/M1-company-api-sonnet-4-6.json",
-    "M2": "config/providers/M2-company-api-opus-5.json",
-    "M3": "config/providers/M3-company-api-haiku-4-5.json",
-    "M4": "config/providers/M4-company-api-nova-pro.json",
+    "M1": "config/providers/M1-holisticai-sonnet-4-6.json",
+    "M2": "config/providers/M2-holisticai-opus-5.json",
+    "M3": "config/providers/M3-holisticai-haiku-4-5.json",
+    "M4": "config/providers/M4-holisticai-nova-pro.json",
     "M5": "config/providers/M5-deepseek-v4-pro.json",
-    "M6": "config/providers/M6-company-api-ministral-3-8b.json",
-    "M8": "config/providers/M8-company-api-gpt-5-6-sol.json"
+    "M6": "config/providers/M6-holisticai-ministral-3-8b.json",
+    "M8": "config/providers/M8-holisticai-gpt-5-6-sol.json"
   },
   "model_execution_policy": "remote-hosted-api-only",
   "replicate_set": "config/components/replicates-core-r3.json",

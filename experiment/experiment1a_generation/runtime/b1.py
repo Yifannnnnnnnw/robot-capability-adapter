@@ -34,6 +34,10 @@ from autoadapter2.driver_synthesis.repair import repair_with_probes
 from autoadapter2.harness.runner import run_private_suite
 from autoadapter2.libraries import load_indexed_robot_package
 from autoadapter2.model_api import JsonModelClient, ModelConfig
+from autoadapter2.provider_config import (
+    reject_inline_holisticai_route_fields,
+    resolve_holisticai_route_profile,
+)
 from autoadapter2.validation_compiler import validate_capability_validation_suite
 
 from .fixed_bundles import validate_b1_fixed_bundle
@@ -1098,15 +1102,92 @@ def _runtime_config_for_unit(
     return config, path
 
 
+def _resolve_pinned_route(
+    pinned: Mapping[str, Any], *, label: str = "pinned runtime config"
+) -> dict[str, Any]:
+    """Resolve one secret-free route before credentials or clients are touched."""
+
+    deployment_mode = pinned.get("deployment_mode")
+    if deployment_mode == "holisticai-hosted-api":
+        if pinned.get("api_route_kind") != "holisticai-gateway":
+            raise B1RunError(f"{label}: api_route_kind must be holisticai-gateway")
+        try:
+            reject_inline_holisticai_route_fields(pinned, label=label)
+            profile = resolve_holisticai_route_profile(
+                pinned.get("holisticai_route_profile"), REPOSITORY_ROOT
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            raise B1RunError(f"{label}: invalid holisticai route profile: {exc}") from exc
+        if profile.deployment_mode != deployment_mode:
+            raise B1RunError(
+                f"{label}: deployment_mode differs from the holisticai profile"
+            )
+        if pinned.get("transport") != profile.api_protocol:
+            raise B1RunError(f"{label}: transport differs from the holisticai profile")
+        settings = pinned.get("inference_settings")
+        timeout = settings.get("timeout_s") if isinstance(settings, Mapping) else None
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, (int, float))
+            or float(timeout) <= 0
+            or float(timeout) > profile.maximum_request_timeout_s
+        ):
+            raise B1RunError(
+                f"{label}: timeout_s exceeds the holisticai profile maximum"
+            )
+        return {
+            "profile": profile,
+            "api_protocol": profile.api_protocol,
+            "base_url": profile.base_url,
+            "endpoint_path": profile.endpoint_path,
+            "endpoint_region": profile.endpoint_region,
+            "credential_env": profile.credential_env,
+            "auth_header": profile.auth_header,
+            "auth_prefix": profile.auth_prefix,
+        }
+
+    if "holisticai_route_profile" in pinned:
+        raise B1RunError(
+            f"{label}: holisticai_route_profile requires holisticai-hosted-api"
+        )
+    required = {
+        "api_protocol": pinned.get("transport"),
+        "base_url": pinned.get("endpoint_base_url"),
+        "endpoint_path": pinned.get("endpoint_path"),
+        "credential_env": pinned.get("credential_env"),
+        "auth_header": pinned.get("auth_header"),
+    }
+    missing = [
+        field
+        for field, value in required.items()
+        if not isinstance(value, str) or not value.strip()
+    ]
+    if missing:
+        raise B1RunError(f"{label}: missing direct route fields: {', '.join(missing)}")
+    auth_prefix = pinned.get("auth_prefix")
+    if not isinstance(auth_prefix, str):
+        raise B1RunError(f"{label}: auth_prefix must be a string")
+    return {
+        "profile": None,
+        **{field: str(value).strip() for field, value in required.items()},
+        "endpoint_region": pinned.get("endpoint_region"),
+        "auth_prefix": auth_prefix,
+    }
+
+
 def _validated_runtime_model_config(pinned: Mapping[str, Any]) -> ModelConfig:
-    runtime = ModelConfig.from_env()
     settings = pinned.get("inference_settings")
     if not isinstance(settings, Mapping):
         raise B1RunError("pinned runtime config lacks inference_settings")
+    route = _resolve_pinned_route(pinned)
+    runtime = ModelConfig.from_env()
     expected = {
         "model": pinned.get("exact_model_id"),
-        "api_protocol": pinned.get("transport"),
-        "base_url": str(pinned.get("endpoint_base_url", "")).rstrip("/"),
+        "api_protocol": route["api_protocol"],
+        "base_url": str(route["base_url"]).rstrip("/"),
+        "endpoint_path": route["endpoint_path"],
+        "auth_header": route["auth_header"],
+        "auth_prefix": route["auth_prefix"],
         "thinking": settings.get("thinking"),
         "max_tokens": settings.get("max_tokens"),
         "tool_history_mode": settings.get("tool_history_mode"),
@@ -1117,6 +1198,9 @@ def _validated_runtime_model_config(pinned: Mapping[str, Any]) -> ModelConfig:
         "model": runtime.model,
         "api_protocol": runtime.api_protocol,
         "base_url": runtime.base_url.rstrip("/"),
+        "endpoint_path": runtime.endpoint_path,
+        "auth_header": runtime.auth_header,
+        "auth_prefix": runtime.auth_prefix,
         "thinking": runtime.thinking,
         "max_tokens": runtime.max_tokens,
         "tool_history_mode": runtime.tool_history_mode,
@@ -1126,8 +1210,9 @@ def _validated_runtime_model_config(pinned: Mapping[str, Any]) -> ModelConfig:
     mismatches = [field for field in expected if expected[field] != actual[field]]
     if settings.get("temperature") != 0.0:
         mismatches.append("temperature")
-    endpoint_path = pinned.get("endpoint_path")
-    if not isinstance(endpoint_path, str) or not runtime.endpoint_url.endswith(endpoint_path):
+    if runtime.endpoint_url != str(route["base_url"]).rstrip("/") + str(
+        route["endpoint_path"]
+    ):
         mismatches.append("endpoint_path")
     if mismatches:
         raise B1RunError(
@@ -1185,12 +1270,13 @@ def _model_identity(
     pinned_path: Path | None,
 ) -> dict[str, Any]:
     config = getattr(client, "config", None)
-    return {
+    identity = {
         "backbone_id": backbone_id,
         "vendor": getattr(config, "provider", None),
         "exact_model_id": getattr(config, "model", None),
         "transport": getattr(config, "api_protocol", None),
         "base_url": getattr(config, "base_url", None),
+        "endpoint_path": getattr(config, "endpoint_path", None),
         "inference_settings": {
             "temperature": 0.0,
             "thinking": getattr(config, "thinking", None),
@@ -1210,6 +1296,12 @@ def _model_identity(
         "runtime_config_path": str(pinned_path) if pinned_path else None,
         "price_snapshot": copy.deepcopy(pinned.get("price_snapshot")) if pinned else None,
     }
+    if pinned and pinned.get("deployment_mode") == "holisticai-hosted-api":
+        profile = _resolve_pinned_route(pinned)["profile"]
+        route_evidence = profile.to_evidence_dict()
+        identity["holisticai_route_profile"] = route_evidence["reference"]
+        identity["resolved_holisticai_route"] = route_evidence["resolved_route"]
+    return identity
 
 
 def _observable_error(value: Any) -> bool:

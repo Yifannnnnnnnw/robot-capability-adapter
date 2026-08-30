@@ -26,6 +26,7 @@ from experiment.experiment1a_generation.runtime.b1 import (  # noqa: E402
     FixedBundle,
     RecordingClient,
     RunnerHooks,
+    _model_identity,
     _provider_infrastructure_blocker,
     _refresh_derived,
     _validation_case_counts,
@@ -378,7 +379,7 @@ class Experiment1B1RunnerTests(unittest.TestCase):
         route = ScriptedRoute(root, [])
         client = JsonModelClient(
             ModelConfig(
-                provider="company",
+                provider="holisticai",
                 model="model",
                 base_url="https://model.example/v1",
                 api_key="test-only",
@@ -633,6 +634,52 @@ class Experiment1B1RunnerTests(unittest.TestCase):
             recorder.calls[0]["tokens"]["input_cache_miss_tokens"], 2_000_000
         )
 
+    def test_holisticai_profile_is_resolved_into_runtime_and_evidence(self) -> None:
+        pinned_path = (
+            EXPERIMENT_ROOT
+            / "config"
+            / "providers"
+            / "M1-holisticai-sonnet-4-6.json"
+        )
+        pinned = json.loads(pinned_path.read_text(encoding="utf-8"))
+        settings = pinned["inference_settings"]
+        environment = {
+            "AUTOADAPTER_MODEL_PROVIDER": "openai-compatible",
+            "AUTOADAPTER_MODEL_VENDOR": "anthropic",
+            "AUTOADAPTER_MODEL_ID": pinned["exact_model_id"],
+            "AUTOADAPTER_MODEL_API_BASE_URL": (
+                "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou."
+                "lambda-url.eu-west-2.on.aws/v1"
+            ),
+            "AUTOADAPTER_MODEL_API_ENDPOINT_PATH": "/chat/completions",
+            "AUTOADAPTER_MODEL_API_AUTH_HEADER": "X-Api-Key",
+            "AUTOADAPTER_MODEL_API_AUTH_PREFIX": "",
+            "AUTOADAPTER_MODEL_API_KEY": "test-only",
+            "AUTOADAPTER_MODEL_MAX_TOKENS": str(settings["max_tokens"]),
+            "AUTOADAPTER_MODEL_TIMEOUT_S": str(settings["timeout_s"]),
+            "AUTOADAPTER_MODEL_TOOL_HISTORY_MODE": settings[
+                "tool_history_mode"
+            ],
+            "AUTOADAPTER_MODEL_HISTORY_CHARS": str(
+                settings["history_char_budget"]
+            ),
+        }
+        with patch.dict("os.environ", environment, clear=True):
+            config = _validated_runtime_model_config(pinned)
+
+        self.assertEqual(config.endpoint_path, "/chat/completions")
+        identity = _model_identity(
+            SimpleNamespace(config=config), "M1", pinned, pinned_path
+        )
+        self.assertEqual(
+            identity["holisticai_route_profile"]["profile_id"],
+            "holisticai-gateway-long-request-eu-west-2-v1",
+        )
+        self.assertEqual(
+            identity["resolved_holisticai_route"]["credential_env"],
+            "AUTOADAPTER_HOLISTICAI_API_KEY",
+        )
+
     def test_uncached_provider_usage_without_cache_split_uses_miss_rate(self) -> None:
         class UsageClient(ScriptedClient):
             def generate_json(self, **_: Any) -> dict[str, Any]:
@@ -673,7 +720,7 @@ class Experiment1B1RunnerTests(unittest.TestCase):
                 EXPERIMENT_ROOT
                 / "config"
                 / "providers"
-                / "M8-company-api-gpt-5-6-sol.json"
+                / "M8-holisticai-gpt-5-6-sol.json"
             ).read_text(encoding="utf-8")
         )
 
@@ -718,7 +765,7 @@ class Experiment1B1RunnerTests(unittest.TestCase):
     def test_retry_requests_remain_separate_with_one_completed_model_turn(self) -> None:
         client = JsonModelClient(
             ModelConfig(
-                provider="company",
+                provider="holisticai",
                 model="model",
                 base_url="https://model.example/v1",
                 api_key="secret-value",

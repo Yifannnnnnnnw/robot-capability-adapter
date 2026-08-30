@@ -137,7 +137,7 @@ class Experiment1ResultTests(unittest.TestCase):
         m1_unit = "b1::unitree-go2-stock-12dof::M1::r01::from-scratch"
         so_unit = "b1::robotstudio_so101::M4::r01::from-scratch"
         old_m2 = candidate(
-            minimal_record(m2_unit, backbone_id="M2", revision="0.1.17", timeout_s=600),
+            minimal_record(m2_unit, backbone_id="M2", revision="0.1.17"),
             "/formal/old-m2.json",
         )
         new_m2 = candidate(
@@ -145,7 +145,7 @@ class Experiment1ResultTests(unittest.TestCase):
                 m2_unit,
                 backbone_id="M2",
                 revision="0.2.0",
-                timeout_s=600,
+                timeout_s=120,
             ),
             "/formal/new-m2.json",
         )

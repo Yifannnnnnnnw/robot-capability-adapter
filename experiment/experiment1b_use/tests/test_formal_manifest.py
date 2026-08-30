@@ -23,6 +23,11 @@ def test_formal_manifest_has_mechanical_readiness_and_exact_210_units() -> None:
     assert m8["upstream_revision_status"] == "not_independently_verifiable"
     assert m8["context_limit_tokens"] == 1_050_000
     assert m8["provider_max_output_tokens"] == 128_000
+    assert "endpoint_base_url" not in m8
+    route = manifest.provider_route_profiles["M8"]
+    assert route.profile_id == "holisticai-gateway-long-request-eu-west-2-v1"
+    assert route.endpoint_url.endswith("/v1/chat/completions")
+    assert route.maximum_request_timeout_s == 120
     assert m8["price_snapshot"]["cost_basis"] == (
         "public_standard_reference_estimate"
     )

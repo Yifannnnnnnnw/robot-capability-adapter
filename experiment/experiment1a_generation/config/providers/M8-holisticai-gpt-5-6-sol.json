@@ -5,30 +5,28 @@
   "backbone_id": "M8",
   "family": "GPT-5.6 Sol",
   "vendor": "OpenAI",
-  "deployment_mode": "company-hosted-api",
-  "api_route_kind": "unified-company-gateway",
+  "deployment_mode": "holisticai-hosted-api",
+  "api_route_kind": "holisticai-gateway",
   "exact_model_id": "openai.gpt-5.6-sol",
   "expected_returned_model_id": "openai.gpt-5.6-sol",
   "provider_model_revision": null,
   "upstream_revision_status": "not_independently_verifiable",
   "transport": "openai-compatible",
-  "endpoint_base_url": "https://q7s6v6seerne7eyh5ttsovjjcu0hxbou.lambda-url.eu-west-2.on.aws/v1",
-  "endpoint_path": "/chat/completions",
-  "endpoint_region": "eu-west-2",
-  "credential_env": "AUTOADAPTER_COMPANY_API_KEY",
-  "auth_header": "X-Api-Key",
-  "auth_prefix": "",
+  "holisticai_route_profile": {
+    "path": "autoadapter/configs/providers/holisticai-gateway-long-request-eu-west-2-v1.json",
+    "profile_id": "holisticai-gateway-long-request-eu-west-2-v1"
+  },
   "inference_settings": {
     "temperature": 0.0,
     "thinking": null,
     "max_tokens": 32768,
     "tool_history_mode": "native",
     "history_char_budget": 80000,
-    "timeout_s": 600
+    "timeout_s": 120
   },
   "context_limit_tokens": 1050000,
   "provider_max_output_tokens": 128000,
-  "limits_scope": "OpenAI public model specification; company-gateway enforcement not independently verified",
+  "limits_scope": "OpenAI public model specification; holisticai-gateway enforcement not independently verified",
   "limits_source": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
   "price_snapshot": {
     "snapshot_date": "2026-08-23",
@@ -44,7 +42,7 @@
       "output": 45.0
     },
     "cost_basis": "public_standard_reference_estimate",
-    "pricing_scope": "OpenAI public Standard API reference; company-gateway billing not independently verified",
+    "pricing_scope": "OpenAI public Standard API reference; holisticai-gateway billing not independently verified",
     "source": "https://platform.openai.com/pricing"
   }
 }
