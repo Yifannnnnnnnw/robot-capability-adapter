@@ -42,20 +42,20 @@ def test_so101_104_is_self_contained_and_all_catalog_scenes_load() -> None:
         model = mujoco.MjModel.from_xml_path(str(scene_path))
         assert model.nbody > 0
 
-def test_so101_104_preserves_dial_and_merges_wall_and_lever_fixtures() -> None:
+def test_so101_104_preserves_dial_and_declares_wall_and_lever_fixtures() -> None:
     base = ROOT / "libraries" / "robots" / "robotstudio_so101"
     assert (base / "1.0.4" / "assets" / "dial_scene.xml").read_bytes() == (
         base / "1.0.3" / "assets" / "dial_scene.xml"
     ).read_bytes()
-    for scene_name in ("pick_place_wall_scene.xml", "lever_scene.xml"):
-        assert (base / "1.0.4" / "assets" / scene_name).read_bytes() == (
-            base / "1.0.1" / "assets" / scene_name
-        ).read_bytes()
 
     instances = _document(PACKAGE_ROOT / "tasks" / "private" / "instances.json")[
         "instances"
     ]
     by_task = {instance["task_id"]: instance for instance in instances}
+    assert by_task["mw_pick_place_wall"]["scene_entrypoint"] == (
+        "assets/pick_place_wall_scene.xml"
+    )
+    assert by_task["mw_lever_pull"]["scene_entrypoint"] == "assets/lever_scene.xml"
     assert by_task["mw_lever_pull"]["public_arguments"]["request"][
         "task_parameters"
     ]["contact_position"] == [0.327, 0.12, 0.30]
