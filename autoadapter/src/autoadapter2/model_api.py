@@ -747,12 +747,14 @@ class JsonModelClient:
             "messages": [
                 {
                     "role": "system",
-                    "content": "Return exactly one JSON object and no Markdown.",
+                    "content": (
+                        "Return exactly one JSON object and no Markdown.\n\n"
+                        + prompt
+                    ),
                 },
                 {
                     "role": "user",
-                    "content": prompt
-                    + "\n\nPUBLIC_INPUT_JSON:\n"
+                    "content": "PUBLIC_INPUT_JSON:\n"
                     + json.dumps(dict(inputs), ensure_ascii=True, sort_keys=True),
                 },
             ],

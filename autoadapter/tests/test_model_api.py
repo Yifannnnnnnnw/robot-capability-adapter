@@ -56,6 +56,79 @@ class ModelApiTests(unittest.TestCase):
         self.assertEqual(client.calls[0]["finish_reason"], "length")
         self.assertEqual(client.calls[0]["usage"]["completion_tokens"], 16)
 
+    def test_generate_json_keeps_fixed_prompt_in_system_across_dynamic_inputs(self) -> None:
+        client = JsonModelClient(
+            ModelConfig(
+                provider="company",
+                model="model",
+                base_url="https://model.example/v1",
+                api_key="secret-value",
+            )
+        )
+        payload = {
+            "model": "model",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"role": "assistant", "content": '{"ok": true}'},
+                }
+            ],
+            "usage": {},
+        }
+        request_bodies: list[dict[str, object]] = []
+
+        def post(*, stage: str, body: dict[str, object]) -> dict:
+            del stage
+            request_bodies.append(body)
+            return payload
+
+        fixed_prompt = "FIXED_EVOLUTION_RULES"
+        with mock.patch.object(client, "_post", side_effect=post):
+            for item in ("DYNAMIC_ITEM_ONE", "DYNAMIC_ITEM_TWO"):
+                self.assertEqual(
+                    client.generate_json(
+                        stage="evolution",
+                        prompt=fixed_prompt,
+                        inputs={"item": item},
+                    ),
+                    {"ok": True},
+                )
+
+        first_messages = request_bodies[0]["messages"]
+        second_messages = request_bodies[1]["messages"]
+        self.assertIsInstance(first_messages, list)
+        self.assertIsInstance(second_messages, list)
+        self.assertEqual(first_messages[0], second_messages[0])
+        self.assertEqual(
+            first_messages[0],
+            {
+                "role": "system",
+                "content": (
+                    "Return exactly one JSON object and no Markdown.\n\n"
+                    + fixed_prompt
+                ),
+            },
+        )
+        self.assertEqual(
+            first_messages[1],
+            {
+                "role": "user",
+                "content": 'PUBLIC_INPUT_JSON:\n{"item": "DYNAMIC_ITEM_ONE"}',
+            },
+        )
+        self.assertEqual(
+            second_messages[1],
+            {
+                "role": "user",
+                "content": 'PUBLIC_INPUT_JSON:\n{"item": "DYNAMIC_ITEM_TWO"}',
+            },
+        )
+        self.assertNotIn(fixed_prompt, first_messages[1]["content"])
+        self.assertNotIn("DYNAMIC_ITEM_ONE", first_messages[0]["content"])
+        for body in request_bodies:
+            self.assertEqual(body["temperature"], 0.0)
+            self.assertEqual(body["response_format"], {"type": "json_object"})
+
     def test_config_repr_does_not_expose_api_key(self) -> None:
         config = ModelConfig(
             provider="openai",
