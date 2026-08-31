@@ -92,7 +92,7 @@ feedback rather than follow an unchanged initial plan.
   \label{fig:chapter3-recap-backtracking}
 \end{figure}
 
-Experiment~1b adapts this pattern as a fixed high-level controller. Executable
+Experiment~2b adapts this pattern as a fixed high-level controller. Executable
 leaves become typed calls to the fixed robot capability interface, while
 bounded public observations support replanning within the same MuJoCo session.
 Controller-reported completion is not task success; only the trusted Harness
@@ -106,13 +106,13 @@ AutoAdapter-Bench therefore treats observed performance as conditional on a
 fixed model-plus-endpoint configuration and experimental route, rather than as
 an intrinsic property of a model family. The chapter addresses two questions:
 
-\paragraph{\textit{RQ1a---Driver synthesis.}}
+\paragraph{\textit{RQ2a---Driver synthesis.}}
 Across the selected fixed serial-arm and quadruped configurations, to what
 extent do the seven LLM configurations differ in the proportion of generated
 drivers that satisfy the fixed capability-level behavioural standard, and
 how does providing trusted, task-neutral starter source affect that outcome?
 
-\paragraph{\textit{RQ1b---Driver use.}}
+\paragraph{\textit{RQ2b---Driver use.}}
 When each robot's capability-validated driver and task conditions are held
 constant, to what extent do the same seven LLM configurations differ in
 independently judged complete-task success?
@@ -185,7 +185,7 @@ enters every experiment.
 
 \section[Experiment design]{Experiment design}
 
-Experiment~1a compares driver synthesis for SO-101 and Unitree Go2. The
+Experiment~2a compares driver synthesis for SO-101 and Unitree Go2. The
 deployed model factor has seven configurations: Sonnet 4.6, Opus 5, Haiku 4.5,
 Nova Pro, DeepSeek V4 Pro, Ministral 3 8B, and GPT-5.6 Sol. Each configuration
 is evaluated under both skeleton-assisted and from-scratch generation. The
@@ -205,7 +205,7 @@ $2$ robots $\times 7$ models $\times 2$ conditions $\times 3$ replicates
 $=84$ cells and permits at most 252 trusted Harness validations. Cell-level
 success is determined by the final frozen driver.
 
-Experiment~1b evaluates downstream task completion rather than driver
+Experiment~2b evaluates downstream task completion rather than driver
 synthesis. The same seven model configurations serve as interchangeable
 backbones within one fixed ReCAP high-level planner
 \citep{zhang2025recap}. Auto-Adapter supplies one fixed,
@@ -233,7 +233,7 @@ not robustness to different task seeds or starting states.
 The corrected non-formal audit reported below retained the first four
 SO-101 tasks and used Dial Turn in place of Bin Picking; its selected
 outcomes do not replace the source formal record.
-Figure~\ref{fig:chapter4-exp1b-task-scenes} groups the ten corrected-audit
+Figure~\ref{fig:chapter4-exp2b-task-scenes} groups the ten corrected-audit
 scenes by robot and task family. The upper row contains five SO-101
 object-interaction tasks, spanning planar pushing, sweeping, grasping,
 obstacle-constrained placement, and dial rotation. The lower row contains five
@@ -245,21 +245,21 @@ record.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.95\linewidth]{assets/exp1b_task_scenes_horizontal.png}
-  \caption[Corrected Experiment~1b task scenes]
-  {Corrected Experiment~1b MuJoCo task scenes.
+  \caption[Corrected Experiment~2b task scenes]
+  {Corrected Experiment~2b MuJoCo task scenes.
   \textbf{Top:} SO-101 Push to Goal, Sweep into Goal, Pick and Place, Pick and
   Place with Wall, and Dial Turn.
   \textbf{Bottom:} Unitree Go2 Single-step Ascent, Single-step Descent,
   Mixed-obstacle Path, Pause-table Transition, and Weave Poles.
   The panels identify evaluation conditions rather than task outcomes.}
-  \label{fig:chapter4-exp1b-task-scenes}
+  \label{fig:chapter4-exp2b-task-scenes}
 \end{figure}
 
 \section[Result]{Result}
 
-\subsection[Experiment 1a: Driver Synthesis]{Experiment 1a: Driver Synthesis}
+\subsection[Experiment 2a: Driver Synthesis]{Experiment 2a: Driver Synthesis}
 
-Table~\ref{tab:chapter3-exp1a-skeleton-r01-results} reports the completed
+Table~\ref{tab:chapter3-exp2a-skeleton-r01-results} reports the completed
 skeleton-assisted R01 diagnostic slice. For each cell that reached the trusted
 Harness, the best-attempt case pass rate is the largest number of cases passed
 by any frozen Driver attempt divided by the applicable suite size. This
@@ -274,8 +274,8 @@ determined by the final frozen Driver and requires every case to pass.
   \setlength{\tabcolsep}{2.5pt}
   \renewcommand{\arraystretch}{1.18}
   \caption{Best-attempt case coverage and resource use in the
-  skeleton-assisted R01 diagnostic slice of Experiment~1a.}
-  \label{tab:chapter3-exp1a-skeleton-r01-results}
+  skeleton-assisted R01 diagnostic slice of Experiment~2a.}
+  \label{tab:chapter3-exp2a-skeleton-r01-results}
   \begin{tabularx}{\textwidth}{@{}X
     >{\centering\arraybackslash}p{17mm}
     >{\raggedleft\arraybackslash}p{27mm}
@@ -361,9 +361,9 @@ DeepSeek V4 Pro reached 93.3\% and 86.7\%, respectively. No fixed-suite cell
 passed every case. Because this diagnostic slice contains one
 skeleton-assisted run per model, it does not estimate run-to-run repeatability
 or the effect of skeleton assistance in the prespecified 84-cell
-Experiment~1a design.
+Experiment~2a design.
 
-\subsection[Experiment 1b: Driver Use]{Experiment 1b : Driver Use}
+\subsection[Experiment 2b: Driver Use]{Experiment 2b : Driver Use}
 
 \begin{table}[htbp]
   \centering
@@ -395,7 +395,7 @@ Experiment~1a design.
   \setstretch{1.0}
   \renewcommand{\arraystretch}{1.12}
   \caption{Performance of seven LLMs acting as the ReCAP controller across ten  tasks on SO-101 and Unitree Go2, using robot drivers generated and validated by AutoAdapter.}
-  \label{tab:chapter3-exp1b-model-results}
+  \label{tab:chapter3-exp2b-model-results}
   \begin{tabularx}{\textwidth}{@{}X
     >{\raggedleft\arraybackslash}p{43mm}
     >{\raggedleft\arraybackslash}p{45mm}@{}}
@@ -421,7 +421,7 @@ Experiment~1a design.
   \small
   \renewcommand{\arraystretch}{1.12}
   \caption{Task-level success rates for SO-101 and Unitree Go2. Pick and Place with Wall routes an object around a barrier; Dial Turn rotates a mounted dial to its target; Mixed-obstacle Path crosses a ramp, platform, stairs and blocks in sequence; Pause-table Transition moves Go2 between two separated tables and requires a stable terminal hold; and Weave Poles follows five alternating waypoints around physical poles.}
-  \label{tab:chapter3-exp1b-task-results}
+  \label{tab:chapter3-exp2b-task-results}
   \begin{tabularx}{\textwidth}{@{}X r X r@{}}
     \toprule
     \textbf{SO-101 task} & \textbf{Success rate} &
@@ -443,7 +443,7 @@ Experiment~1a design.
 
 Across all evaluable R1--R2 episodes, aggregate success was almost identical for SO-101 and Go2 (50.0\% and 49.2\%), placing the larger performance variation at task level rather than between robot platforms. Weave Poles failed in all 11 evaluable episodes because none completed the five alternating 0.12\,m waypoint regions in order (median one completed); nine nevertheless met the 0.10\,m torso-clearance requirement and all passed terminal stability. Pick and Place with Wall was limited by failed grasp recovery before wall traversal: across all eight evaluable failures the object rose by at most 7.1\,mm and moved at most 2.9\,cm from its start while contact integrity remained valid, whereas the sole success recognised an unsuccessful first grasp, issued a fully closed re-grasp, and then followed the elevated route.
 
-Figure~\ref{fig:chapter3-exp1b-task-examples} contrasts two successful R2
+Figure~\ref{fig:chapter3-exp2b-task-examples} contrasts two successful R2
 episodes with a failed R2 episode. Panel~(a) records GPT-5.6 Sol using SO-101
 to grasp and place the object, while panel~(b) records Claude Sonnet 4.6
 guiding Go2 through the Mixed-obstacle Path. Panel~(c), also from Claude
@@ -456,20 +456,20 @@ do not estimate aggregate model or task success.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{assets/exp1b_task_trajectory_examples.png}
-  \caption[Experiment~1b trajectory examples]
-  {Five-frame Experiment~1b trajectory examples.
+  \caption[Experiment~2b trajectory examples]
+  {Five-frame Experiment~2b trajectory examples.
   \textbf{(a)} successful SO-101 Pick and Place (GPT-5.6 Sol, R2);
   \textbf{(b)} successful Unitree Go2 Mixed-obstacle Path
   (Claude Sonnet 4.6, R2);
   \textbf{(c)} failed Unitree Go2 Weave Poles (Claude Sonnet 4.6, R2).
   The failed episode passed execution, integrity, clearance, stability, and
   video checks but completed only one of five ordered waypoints.}
-  \label{fig:chapter3-exp1b-task-examples}
+  \label{fig:chapter3-exp2b-task-examples}
 \end{figure}
 
 \section[Discussion]{Discussion}
 
-Taken together, Table~\ref{tab:chapter3-exp1b-model-results} and the retained controller traces indicate that the most consequential difference was not command emission itself, but whether returned observations were used to revise an incomplete plan. In the successful Pick and Place with Wall episode, the controller recognised a failed first grasp, fully closed the gripper, and retried before following the elevated route; failed traces instead moved towards release while the object remained near its start. Weave Poles exposed a complementary long-horizon weakness: several controllers generated locally plausible motions and maintained pole separation, yet none preserved the alternating waypoint sequence across calls. This suggests that exposing ReCAP feedback is insufficient unless the model retains subgoal state and uses the observations to replan.
+Taken together, Table~\ref{tab:chapter3-exp2b-model-results} and the retained controller traces indicate that the most consequential difference was not command emission itself, but whether returned observations were used to revise an incomplete plan. In the successful Pick and Place with Wall episode, the controller recognised a failed first grasp, fully closed the gripper, and retried before following the elevated route; failed traces instead moved towards release while the object remained near its start. Weave Poles exposed a complementary long-horizon weakness: several controllers generated locally plausible motions and maintained pole separation, yet none preserved the alternating waypoint sequence across calls. This suggests that exposing ReCAP feedback is insufficient unless the model retains subgoal state and uses the observations to replan.
 
 A second implication concerns completion judgement. Nova Pro and Ministral sometimes produced invalid controller outputs, but every normally terminated Harness failure across the cohort had nevertheless been declared complete by the controller. The trusted Harness is therefore necessary to distinguish valid capability execution and model-reported completion from externally observed task completion. Within these simulator conditions, the practically important model differences concerned feedback interpretation, multi-stage state tracking, and recovery from failed intermediate actions.
 
@@ -477,14 +477,14 @@ A second implication concerns completion judgement. Nova Pro and Ministral somet
 
 This chapter evaluated two distinct abilities at the robot--software boundary:
 synthesising a reusable driver and completing tasks through an existing,
-capability-validated driver. For RQ1a, no fixed-suite cell reaching the trusted
+capability-validated driver. For RQ2a, no fixed-suite cell reaching the trusted
 Harness achieved complete driver-level conformance. Partial behavioural
 coverage nevertheless differed across model--robot configurations, reaching
 14/18 cases (77.8\%) for SO-101 with Opus~5 and 14/15 cases (93.3\%) for
 Unitree Go2 with Sonnet~4.6. Providing a reviewed, task-neutral driver skeleton
 was therefore insufficient to ensure complete behavioural conformance.
 
-For RQ1b, the model-plus-endpoint configurations produced markedly different
+For RQ2b, the model-plus-endpoint configurations produced markedly different
 outcomes when controlling fixed drivers through ReCAP. The Harness recorded 61
 successes among 123 evaluable episodes (49.6\%); model-level rates ranged from
 12/12 (100.0\%) for Opus~5 to 0/20 (0.0\%) for Ministral~3~8B. Because the
@@ -497,7 +497,7 @@ state contributed to task failures.
 
 Taken together, the findings show that driver synthesis and driver use require
 separate evidence. Every normally terminated Harness failure in
-Experiment~1b had nevertheless been declared complete by the controller,
+Experiment~2b had nevertheless been declared complete by the controller,
 supporting the need for candidate-independent behavioural judgement. The
 conclusions remain bounded to the selected model-plus-endpoint configurations,
 fixed tasks and initial conditions, the ReCAP controller, and the evaluated
