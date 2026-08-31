@@ -121,10 +121,7 @@ behaviour.
   \textbf{Top:} SO-101, Unitree Go2, Franka Panda, Kinova Gen3 with Robotiq
   2F-85, UFACTORY xArm7, and Universal Robots UR5e with Robotiq 2F-85.
   \textbf{Bottom:} AgileX PiPER, KUKA LBR iiwa 14, LEAP Hand, Hello Robot
-  Stretch 2, and ALOHA 2.
-  The renders identify simulated configurations only; inclusion does not imply
-  behavioural validation, hardware execution, or a controlled morphology
-  comparison.}
+  Stretch 2, and ALOHA 2.}
   \label{fig:autoadapter-robot-cohort}
 \end{figure}
 
@@ -160,13 +157,9 @@ exposing or changing the fixed validation cases.
     width=\linewidth
   ]{assets/auto_adapter_framework.png}
   \caption[Five-stage Auto-Adapter workflow]
-  {Five-stage Auto-Adapter workflow.
-  Robot metadata, the MJCF model, the task library, and optional prior-run
-  Experience support study and capability design; a ReAct agent then develops
-  \texttt{driver.py} through bounded simulation.
-  Independent assessment runs the frozen driver in fresh MuJoCo tests and issues
-  the capability verdict before task demonstration; the dashed path denotes
-  bounded Repair feedback.}
+  {Five-stage Auto-Adapter workflow from fixed inputs and capability design to
+  driver synthesis, independent MuJoCo assessment, and task demonstration. The
+  dashed path denotes bounded Repair feedback.}
   \label{fig:autoadapter-framework-workflow}
 \end{figure}
 
