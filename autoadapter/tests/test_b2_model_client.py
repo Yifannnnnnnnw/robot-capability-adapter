@@ -98,20 +98,18 @@ def test_recap_prompt_and_history_roles_reach_existing_json_client() -> None:
     request = urlopen.call_args.args[0]
     request_body = json.loads(request.data)
     assert request_body["response_format"] == {"type": "json_object"}
-    assert request_body["messages"][0] == {
-        "role": "system",
-        "content": SYSTEM_PROMPT,
-    }
-    assert request_body["messages"][1:3] == list(MESSAGES)
-    schema_instruction = request_body["messages"][3]
-    assert schema_instruction["role"] == "user"
+    system_message = request_body["messages"][0]
+    assert system_message["role"] == "system"
+    assert system_message["content"].startswith(SYSTEM_PROMPT + "\n\n")
     transported_schema = json.loads(
-        schema_instruction["content"].split(
+        system_message["content"].split(
             "FIXED_RESPONSE_SCHEMA_JSON:\n",
             maxsplit=1,
         )[1]
     )
     assert transported_schema == RESPONSE_SCHEMA
+    assert request_body["messages"][1:] == list(MESSAGES)
+    assert "controller_start" not in system_message["content"]
     exchange = adapter.provider_exchange_records[0]
     assert exchange["stage"] == "recursive_plan_or_refine"
     assert exchange["status"] == "success"
@@ -154,25 +152,13 @@ def test_provider_exception_propagates_without_adapter_retry_or_rewrite() -> Non
             )
 
     assert raised.value is failure
-    generate.assert_called_once_with(
-        stage="recursive_plan_or_refine",
-        system_prompt=SYSTEM_PROMPT,
-        messages=[
-            *MESSAGES,
-            {
-                "role": "user",
-                "content": (
-                    "Return exactly one JSON object that conforms to this fixed "
-                    "response schema. Do not add Markdown or fields outside the "
-                    "schema.\n\nFIXED_RESPONSE_SCHEMA_JSON:\n"
-                    '{"additionalProperties":false,"properties":'
-                    '{"reasoning_summary":{"type":"string"},"subtasks":'
-                    '{"type":"array"}},"required":["reasoning_summary",'
-                    '"subtasks"],"type":"object"}'
-                ),
-            },
-        ],
-    )
+    generate.assert_called_once()
+    call = generate.call_args.kwargs
+    assert call["stage"] == "recursive_plan_or_refine"
+    assert call["messages"] == list(MESSAGES)
+    assert call["system_prompt"].startswith(SYSTEM_PROMPT + "\n\n")
+    assert "FIXED_RESPONSE_SCHEMA_JSON:\n" in call["system_prompt"]
+    assert "controller_start" not in call["system_prompt"]
 
 
 def test_parent_call_records_and_repr_do_not_expose_credential() -> None:

@@ -105,6 +105,10 @@ write/correction only. The authoring brief is sufficient, so write on turn one w
 Every successful write is audited immediately. Large files may use bounded append writes; the combined
 canonical file alone must parse."""
 
+_IVC_REACT_SYSTEM_PROMPT = (
+    IVC_SYSTEM_PROMPT + f"\n\nWrite {IVC_ARTIFACT_NAME}."
+)
+
 
 class IVCError(ValueError):
     """Raised when a private validation suite is incomplete or weakened."""
@@ -2249,11 +2253,8 @@ def run_ivc(
                 result = run_artifact_react(
                     client=client,
                     stage="ivc",
-                    system_prompt=IVC_SYSTEM_PROMPT,
-                    user_prompt=(
-                        f"Authoring brief:\n{authoring_brief}\n"
-                        f"Write {IVC_ARTIFACT_NAME}."
-                    ),
+                    system_prompt=_IVC_REACT_SYSTEM_PROMPT,
+                    user_prompt=authoring_brief,
                     tools=ivc_tools,
                     artifact_name=IVC_ARTIFACT_NAME,
                     artifact_path=working_artifact,

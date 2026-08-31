@@ -114,7 +114,7 @@ hidden acceptance rules, private resets, expected trajectories, or privileged si
 """.strip()
 
 
-STUDY_PROMPT = """You are the AutoAdapter 1.0 STUDY stage for a Direct-MuJoCo driver.
+STUDY_PROMPT = """You are the Auto-Adapter STUDY stage for a Direct-MuJoCo driver.
 Study only the supplied public robot package, runtime contract, and eligible experience. This is a
 pre-TGCD study: no capability design, task dispatch, private criteria, or whole-task request is
 available or needed. Produce one concise JSON study record from the public morphology, source
@@ -128,7 +128,7 @@ physics, and print diagnostics. It may not read private validation data or claim
 result. Return one JSON object with condition, findings, implementation_plan, and probe_requests."""
 
 
-GENERATE_PROMPT = """You are the AutoAdapter 1.0 GENERATE stage. Using the supplied public package,
+GENERATE_PROMPT = """You are the Auto-Adapter GENERATE stage. Using the supplied public package,
 sealed capability design, STUDY record, and bounded local-probe facts, write exactly one executable
 candidate driver. Return one JSON object containing driver_filename='driver.py', driver_source,
 and a short generation_note.
@@ -155,7 +155,7 @@ getattr, setattr, eval, exec, or dynamic binding.""" + (
 )
 
 
-STUDY_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 STUDY stage.
+STUDY_REACT_SYSTEM = """You are the interactive Auto-Adapter STUDY stage.
 STUDY is identical across skeleton-assisted and from-scratch conditions: use only the supplied
 public package projection, runtime contract, and eligible Experience. This is pre-TGCD, so no
 capability design, task dispatch, private criteria, or whole-task request is available or needed.
@@ -170,10 +170,15 @@ execute a real public probe that loads only
 ``mujoco.mj_step``. Keep state across execute_python calls and keep code bounded. Write one JSON
 object to study.json containing condition, non-empty findings, non-empty implementation_plan, and
 at least one probe_requests entry with probe_id and script. Skeleton inspection is not part of
-STUDY. When the file is complete, end the turn; the Framework validates study.json."""
+STUDY. When the file is complete, end the turn; the Framework validates study.json.
+
+Use the complete supplied public inputs directly. Use execute_python to run a
+focused real-physics probe against os.environ["AUTOADAPTER_PROBE_SCENE"], then write study.json
+with non-empty findings, implementation_plan, and probe_requests. Do not write driver.py or inspect
+skeletons. End the turn only after study.json is complete."""
 
 
-GENERATE_REACT_SYSTEM = """You are the interactive AutoAdapter 1.0 GENERATE/GEN_ALGO stage.
+GENERATE_REACT_SYSTEM = """You are the interactive Auto-Adapter GENERATE/GEN_ALGO stage.
 Use read_file and execute_python on the supplied public projection and use write_file to create the
 canonical condition-workspace artifact driver.py. The interface-only stub, when present, is only a
 starting point: replace every placeholder with a complete executable driver. Follow the sealed
@@ -187,14 +192,9 @@ Python/MuJoCo session for bounded development probes. Do not use private Harness
 reference code, the other condition, credentials, or network. Finish by ending a turn once driver.py
 is written; the Framework validates its source and public import/build boundary.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
-)
+) + """
 
-STUDY_REACT_TASK = """Use the complete supplied public inputs directly. Use execute_python to run a
-focused real-physics probe against os.environ["AUTOADAPTER_PROBE_SCENE"], then write study.json
-with non-empty findings, implementation_plan, and probe_requests. Do not write driver.py or inspect
-skeletons. End the turn only after study.json is complete."""
-
-GENERATE_REACT_TASK = """Develop the complete executable driver from the supplied public inputs.
+Develop the complete executable driver from the supplied public inputs.
 Use write_file to write the complete source to driver.py, and use execute_python for any bounded
 public checks needed while developing it. Skeleton discovery is available only in the
 skeleton-assisted condition. Do not merely print source in a JSON answer; leave the valid canonical
@@ -310,11 +310,9 @@ def _react_evidence(
     )
 
 
-def _react_user_prompt(prompt: str, inputs: Mapping[str, Any]) -> str:
-    return (
-        prompt
-        + "\n\nPUBLIC_INPUT_JSON:\n"
-        + json.dumps(dict(inputs), ensure_ascii=True, sort_keys=True)
+def _react_user_prompt(inputs: Mapping[str, Any]) -> str:
+    return "PUBLIC_INPUT_JSON:\n" + json.dumps(
+        dict(inputs), ensure_ascii=True, sort_keys=True
     )
 
 
@@ -796,7 +794,7 @@ def study(
                 client=client,
                 stage="study",
                 system_prompt=STUDY_REACT_SYSTEM,
-                user_prompt=_react_user_prompt(STUDY_REACT_TASK, inputs),
+                user_prompt=_react_user_prompt(inputs),
                 tools=session.artifact_tools(include_skeleton=False),
                 artifact_name="study.json",
                 artifact_path=study_path,
@@ -955,7 +953,7 @@ def generate(
                 client=client,
                 stage="generate",
                 system_prompt=GENERATE_REACT_SYSTEM,
-                user_prompt=_react_user_prompt(GENERATE_REACT_TASK, inputs),
+                user_prompt=_react_user_prompt(inputs),
                 tools=session.artifact_tools(
                     include_skeleton=selected_condition == "skeleton-assisted"
                 ),

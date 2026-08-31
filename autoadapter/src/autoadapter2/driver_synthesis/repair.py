@@ -62,7 +62,7 @@ class RepairLimitError(RepairError):
     """Raised when a condition has already used its three total attempts."""
 
 
-REPAIR_PROMPT = """You are the condition-local AutoAdapter 1.0 Repair stage.
+REPAIR_PROMPT = """You are the condition-local Auto-Adapter Repair stage.
 Repair only the previous model-authored driver.py using the complete candidate-facing report and
 media manifest from the immediately preceding attempt. Public capability interfaces, source-derived
 standards, actual invocation arguments, measured values, exceptions, logs, guard outcomes, and
@@ -86,7 +86,7 @@ dynamic binding. Do not return a verdict.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
 )
 
-REPAIR_PROBE_PROMPT = """You are the preparation half of the condition-local AutoAdapter 1.0 Repair
+REPAIR_PROBE_PROMPT = """You are the preparation half of the condition-local Auto-Adapter Repair
 stage. Read the previous driver and complete candidate-facing report/media supplied here. You may
 request a bounded local Python/MuJoCo development probe to investigate the observed failure. Return
 one JSON object with probe_requests (each containing probe_id and complete Python script) and a repair
@@ -96,7 +96,7 @@ modules. Public measured values, invocation arguments, failures, logs, guards, a
 remain available."""
 
 
-REPAIR_REACT_SYSTEM = """You are the interactive, condition-local AutoAdapter 1.0 Repair stage.
+REPAIR_REACT_SYSTEM = """You are the interactive, condition-local Auto-Adapter Repair stage.
 The complete candidate-facing report and media manifest from the immediately preceding attempt are
 in the public input; only private IVC/Harness definitions and secrets have been removed. The current
 driver.py is the previous model-authored source. Diagnose the report and revise that source directly;
@@ -111,9 +111,9 @@ autoadapter2.trusted_skeletons. End a turn after writing a corrected driver.py; 
 Framework validates its source and public import/build boundary. Never access or infer private suite
 construction, reference code, the other condition, credentials, or a final Harness verdict.""" + (
     "\n\n" + IMPLEMENTATION_FEEDBACK_LOOP_CONTRACT
-)
+) + """
 
-REPAIR_REACT_TASK = """Repair previous_driver_source from the complete supplied report. Start with
+Repair previous_driver_source from the complete supplied report. Start with
 repair_focus_summary, then consult candidate_report for the complete per-trial evidence. Use
 write_file to replace only driver.py and execute_python for bounded public checks. Leave a complete
 corrected driver.py artifact in the workspace and end the turn; do not merely print or return source
@@ -831,7 +831,7 @@ def _interactive_repair(
             client=client,
             stage="repair",
             system_prompt=REPAIR_REACT_SYSTEM,
-            user_prompt=_react_user_prompt(REPAIR_REACT_TASK, repair_inputs),
+            user_prompt=_react_user_prompt(repair_inputs),
             tools=session.artifact_tools(
                 include_skeleton=str(condition) == "skeleton-assisted"
             ),

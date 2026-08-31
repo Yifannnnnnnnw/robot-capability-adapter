@@ -1097,10 +1097,12 @@ class _InspectThenCorrectIVCModel:
     def __init__(self, suite: dict[str, Any]) -> None:
         self.suite = copy.deepcopy(suite)
         self.messages: list[list[dict[str, Any]]] = []
+        self.system_prompts: list[str] = []
         self.tool_names: list[set[str]] = []
 
     def generate_tool_turn(self, **kwargs: Any) -> ToolTurn:
         self.messages.append([dict(item) for item in kwargs["messages"]])
+        self.system_prompts.append(str(kwargs["system_prompt"]))
         self.tool_names.append(
             {item["function"]["name"] for item in kwargs["tools"]}
         )
@@ -1166,6 +1168,11 @@ def test_ivc_reserves_turns_two_through_six_for_delivery_and_correction(
         model.messages[2]
     )
     first_prompt = str(model.messages[0][0]["content"])
+    json.loads(first_prompt)
+    assert "Write capability_validation_suite.json." in model.system_prompts[0]
+    assert "Write capability_validation_suite.json." not in first_prompt
+    assert "novel-scene" in first_prompt
+    assert "novel-scene" not in model.system_prompts[0]
     assert '"instances":"ivc_inputs.json::private_instances.instances"' in first_prompt
     assert '"instance_id":"novel-scene"' in first_prompt
     assert '"mandatory_guard_ids":["control","state","canonical"]' in first_prompt

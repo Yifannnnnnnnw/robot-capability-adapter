@@ -1745,27 +1745,24 @@ class _LegacyRecapJsonAdapter:
                 response_schema=response_schema,
             )
         message_json = getattr(self.client, "generate_message_json", None)
+        schema_system_prompt = (
+            system_prompt
+            + "\n\nReturn exactly one JSON object matching this schema: "
+            + json.dumps(response_schema, sort_keys=True)
+        )
         if callable(message_json):
-            schema_message = {
-                "role": "user",
-                "content": (
-                    "Return exactly one JSON object matching this schema: "
-                    + json.dumps(response_schema, sort_keys=True)
-                ),
-            }
             return message_json(
                 stage=stage,
-                system_prompt=system_prompt,
-                messages=[*_copy(list(messages)), schema_message],
+                system_prompt=schema_system_prompt,
+                messages=_copy(list(messages)),
             )
         generate_json = getattr(self.client, "generate_json", None)
         if callable(generate_json):
             return generate_json(
                 stage=stage,
-                prompt=system_prompt,
+                prompt=schema_system_prompt,
                 inputs={
                     "messages": _copy(list(messages)),
-                    "response_schema": _copy(dict(response_schema)),
                 },
             )
         raise PipelineError("unified model client has no ReCAP JSON turn")

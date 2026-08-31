@@ -13,10 +13,58 @@ from autoadapter2.driver_synthesis.generation import (
 from autoadapter2.pipeline import (
     ExperimentConfig,
     PipelineHooks,
+    _LegacyRecapJsonAdapter,
     _RecapClientAdapter,
     _run_cell,
     run_experiment,
 )
+
+
+def test_legacy_recap_fallbacks_keep_schema_in_system_and_history_dynamic() -> None:
+    messages = [{"role": "user", "content": '{"dynamic_event":"start"}'}]
+    schema = {"type": "object", "required": ["result"]}
+
+    class MessageClient:
+        def __init__(self) -> None:
+            self.call: dict[str, Any] | None = None
+
+        def generate_message_json(self, **kwargs: Any) -> dict[str, Any]:
+            self.call = kwargs
+            return {"result": "message"}
+
+    message_client = MessageClient()
+    assert _LegacyRecapJsonAdapter(message_client).generate_recap_json(
+        stage="legacy-recap",
+        system_prompt="fixed recap rules",
+        messages=messages,
+        response_schema=schema,
+    ) == {"result": "message"}
+    assert message_client.call is not None
+    assert "Return exactly one JSON object matching this schema" in message_client.call[
+        "system_prompt"
+    ]
+    assert "dynamic_event" not in message_client.call["system_prompt"]
+    assert message_client.call["messages"] == messages
+
+    class JsonClient:
+        def __init__(self) -> None:
+            self.call: dict[str, Any] | None = None
+
+        def generate_json(self, **kwargs: Any) -> dict[str, Any]:
+            self.call = kwargs
+            return {"result": "json"}
+
+    json_client = JsonClient()
+    assert _LegacyRecapJsonAdapter(json_client).generate_recap_json(
+        stage="legacy-recap",
+        system_prompt="fixed recap rules",
+        messages=messages,
+        response_schema=schema,
+    ) == {"result": "json"}
+    assert json_client.call is not None
+    assert "Return exactly one JSON object matching this schema" in json_client.call["prompt"]
+    assert "dynamic_event" not in json_client.call["prompt"]
+    assert json_client.call["inputs"] == {"messages": messages}
 
 
 def _package(root: Path) -> Any:

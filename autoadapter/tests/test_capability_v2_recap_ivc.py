@@ -634,10 +634,12 @@ class _ArtifactModel:
     def __init__(self, artifacts: list[dict[str, Any]]) -> None:
         self.artifacts = list(artifacts)
         self.messages: list[list[dict[str, Any]]] = []
+        self.system_prompts: list[str] = []
         self.tool_names: list[set[str]] = []
 
     def generate_tool_turn(self, **kwargs: Any) -> ToolTurn:
         self.messages.append([dict(item) for item in kwargs["messages"]])
+        self.system_prompts.append(str(kwargs["system_prompt"]))
         self.tool_names.append(
             {item["function"]["name"] for item in kwargs["tools"]}
         )
@@ -656,6 +658,7 @@ class _ArtifactModel:
 class _ReadThenArtifactModel(_ArtifactModel):
     def generate_tool_turn(self, **kwargs: Any) -> ToolTurn:
         self.messages.append([dict(item) for item in kwargs["messages"]])
+        self.system_prompts.append(str(kwargs["system_prompt"]))
         self.tool_names.append(
             {item["function"]["name"] for item in kwargs["tools"]}
         )
@@ -756,9 +759,15 @@ def test_tgcd_real_client_uses_exact_file_tools_and_accepts_final_turn_write(
 
     assert result["artifact_type"] == "capability_design"
     assert model.tool_names == [{"write_file"}]
-    assert '"artifact_header"' in model.messages[0][0]["content"]
-    assert '"validator_contract"' in model.messages[0][0]["content"]
-    assert '"matching_capability_references":[]' in model.messages[0][0]["content"]
+    first_user = str(model.messages[0][0]["content"])
+    authoring_brief = json.loads(first_user)
+    assert "artifact_header" in authoring_brief
+    assert "validator_contract" in authoring_brief
+    assert authoring_brief["matching_capability_references"] == []
+    assert "Conserve the six-turn budget" in model.system_prompts[0]
+    assert "Conserve the six-turn budget" not in first_user
+    assert package.robot_configuration_id in first_user
+    assert package.robot_configuration_id not in model.system_prompts[0]
     assert (tmp_path / "sealed" / "capability_design.json").is_file()
 
 
@@ -791,9 +800,11 @@ def test_tgcd_full_input_is_compact_and_readable_before_delivery(tmp_path: Path)
     assert len(compact_text.encode("utf-8")) <= 200_000
     assert len(compact_text.splitlines()) == 1
     first_prompt = str(model.messages[0][0]["content"])
-    assert "array and its items are separate nodes" in first_prompt
-    assert "requires exactly all of its property names" in first_prompt
-    assert "parent unit/frame/evidence do not propagate" in first_prompt
+    json.loads(first_prompt)
+    assert "array and its items are separate nodes" in model.system_prompts[0]
+    assert "requires exactly all of its property names" in model.system_prompts[0]
+    assert "parent unit/frame/evidence do not propagate" in model.system_prompts[0]
+    assert "array and its items are separate nodes" not in first_prompt
 
 
 def test_tgcd_rejects_candidate_material_in_study_projection() -> None:

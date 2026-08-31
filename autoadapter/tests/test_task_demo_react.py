@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from autoadapter2.react import ToolCall, ToolTurn
-from autoadapter2.task_demo import run_task_demo_react
+from autoadapter2.task_demo import TASK_DEMO_REACT_SYSTEM_PROMPT, run_task_demo_react
 
 
 class ScriptedToolClient:
@@ -128,6 +128,20 @@ def test_react_selects_the_covering_capability_and_finishes_without_issuing_a_ve
     assert result.capability_calls == 2
     assert invocations == [("reach_target", public_arguments)]
     assert all(call["stage"] == "task_demo_controller" for call in client.calls)
+    first_user = str(client.calls[0]["messages"][0]["content"])
+    assert first_user.startswith("PUBLIC_INPUT_JSON:\n")
+    public_input = json.loads(first_user.removeprefix("PUBLIC_INPUT_JSON:\n"))
+    assert public_input["robot_configuration_id"] == "robot-arm"
+    assert public_input["task_id"] == "task-reach"
+    assert public_input["public_arguments"] == public_arguments
+    fixed_sentinel = "Invoke the reusable capability interface"
+    assert fixed_sentinel in TASK_DEMO_REACT_SYSTEM_PROMPT
+    assert fixed_sentinel in client.calls[0]["system_prompt"]
+    assert "public_arguments is the exact capability-tool argument object" in client.calls[0][
+        "system_prompt"
+    ]
+    assert fixed_sentinel not in first_user
+    assert "robot-arm" not in client.calls[0]["system_prompt"]
     first_names = [tool["function"]["name"] for tool in client.calls[0]["tools"]]
     assert first_names == ["push_object", "reach_target"]
     final_names = [tool["function"]["name"] for tool in client.calls[-1]["tools"]]

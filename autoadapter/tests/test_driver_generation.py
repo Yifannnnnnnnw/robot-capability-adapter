@@ -14,6 +14,7 @@ from autoadapter2.driver_synthesis.generation import (
     STUDY_PROMPT,
     STUDY_REACT_SYSTEM,
     GenerationError,
+    _react_user_prompt,
     build_public_generation_inputs,
     generate,
     study,
@@ -217,6 +218,25 @@ class DriverGenerationTests(unittest.TestCase):
             self.assertIn("request_schema", normalized)
             self.assertIn("do not add task, scene, reset, private-criteria, or whole-task fields", normalized)
             self.assertNotIn("request.task_parameters", normalized)
+
+    def test_react_fixed_tasks_are_in_system_and_user_is_only_sorted_public_input(self) -> None:
+        user_prompt = _react_user_prompt(
+            {"z_dynamic_sentinel": 2, "a_dynamic_sentinel": 1}
+        )
+
+        self.assertEqual(
+            user_prompt,
+            'PUBLIC_INPUT_JSON:\n{"a_dynamic_sentinel": 1, "z_dynamic_sentinel": 2}',
+        )
+        for system_prompt, fixed_sentinel in (
+            (STUDY_REACT_SYSTEM, "Do not write driver.py"),
+            (GENERATE_REACT_SYSTEM, "Do not merely print source in a JSON answer"),
+            (REPAIR_REACT_SYSTEM, "Repair previous_driver_source"),
+        ):
+            self.assertIn(fixed_sentinel, system_prompt)
+            self.assertNotIn(fixed_sentinel, user_prompt)
+            self.assertNotIn("dynamic_sentinel", system_prompt)
+            self.assertNotIn("AutoAdapter 1.0", system_prompt)
 
     @staticmethod
     def _study(condition: str) -> dict:

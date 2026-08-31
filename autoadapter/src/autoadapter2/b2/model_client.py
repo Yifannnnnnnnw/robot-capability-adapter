@@ -99,20 +99,21 @@ class ReCAPJsonModelClient:
             raise ValueError("system_prompt must be a non-empty string")
         history = _finite_json_array(messages, label="ReCAP messages")
         schema = _finite_json_object(response_schema, label="ReCAP response schema")
-        schema_message = {
-            "role": "user",
-            "content": _SCHEMA_INSTRUCTION
+        schema_system_prompt = (
+            system_prompt
+            + "\n\n"
+            + _SCHEMA_INSTRUCTION
             + json.dumps(
                 schema,
                 ensure_ascii=False,
                 separators=(",", ":"),
                 sort_keys=True,
-            ),
-        }
+            )
+        )
         return self._client.generate_message_json(
             stage=stage,
-            system_prompt=system_prompt,
-            messages=[*history, schema_message],
+            system_prompt=schema_system_prompt,
+            messages=history,
         )
 
 

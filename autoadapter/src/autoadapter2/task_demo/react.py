@@ -23,7 +23,10 @@ task objective and must be passed to a capability exactly as supplied. Use tool 
 recover from a rejected selection or failed invocation. Call finish_task_demo only after at least
 one capability invocation succeeds. Your text and finish call are controller outcomes only: the
 trusted Direct-MuJoCo Harness alone measures the task and issues the verdict. Do not claim PASS,
-infer hidden scoring criteria, or request private scene, binding, guard, or reference information."""
+infer hidden scoring criteria, or request private scene, binding, guard, or reference information.
+In PUBLIC_INPUT_JSON, public_arguments is the exact capability-tool argument object; the robot and
+task fields are context only.
+Invoke the reusable capability interface with this exact public request:"""
 
 _FINISH_TOOL_NAME = "finish_task_demo"
 
@@ -303,12 +306,15 @@ def run_task_demo_react(
         )
     )
 
-    user_prompt = (
-        f"Robot configuration: {robot_configuration_id}\n"
-        f"Public task ID: {task_id}\n"
-        f"Task: {description}\n"
-        "Invoke the reusable capability interface with this exact public request:\n"
-        + json.dumps(expected_arguments, ensure_ascii=True, sort_keys=True)
+    user_prompt = "PUBLIC_INPUT_JSON:\n" + json.dumps(
+        {
+            "public_arguments": expected_arguments,
+            "robot_configuration_id": robot_configuration_id,
+            "task_description": description,
+            "task_id": task_id,
+        },
+        ensure_ascii=True,
+        sort_keys=True,
     )
     result: ReactResult = run_react(
         client=client,
