@@ -55,8 +55,8 @@ The domain boundary is adapted as follows:
   `autoadapter/src/autoadapter2/b2/public_observation.py`
 - Worker-to-controller envelope mapping:
   `autoadapter/src/autoadapter2/b2/worker_protocol.py`
-- Interface source for the current preparation:
-  `experiment/experiment1a_generation/validation/fixed_validation_bundles/*/capability_design.json`
+- Historical fixed-interface source retained by the active reference metadata:
+  `experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/*/capability_design.json`
 
 This record is source-audited preparation, not a formal B2 admission. The
 controller now has a persistent credential-free worker path and fixed SO-101

@@ -20,6 +20,8 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 TASK_SUITE_PATH = (
     REPOSITORY_ROOT
     / "experiment"
+    / "archive"
+    / "pre_thesis_realign_2026-08-31"
     / "experiment1b_use"
     / "config"
     / "task_suite"
@@ -36,6 +38,8 @@ SO101_PACKAGE_ROOT = (
 SO101_DESIGN_PATH = (
     REPOSITORY_ROOT
     / "experiment"
+    / "archive"
+    / "pre_thesis_realign_2026-08-31"
     / "experiment1b_use"
     / "validation"
     / "reference"

@@ -2,13 +2,14 @@
 
 > **Superseded historical proposal — inactive.** This file records the
 > eleven-configuration, five-replicate proposal drafted on 2026-08-21. It is
-> not an input, admission rule, denominator, or authority for the active
-> Chapter 3 Experiment 1a. The current two-robot design is governed only by
-> `../experiment/experiment1a_generation/EXPERIMENT_1_AUTHORITY.md`, with its
-> public criteria in
-> `../experiment/experiment1a_generation/validation/B1_DRIVER_VALIDATION_CRITERIA.md`.
+> not an input, admission rule, denominator, or authority for any current
+> experiment; there is no active experiment workspace. The later two-robot
+> executable workspace is itself historical and is preserved at
+> `../experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/`,
+> with its public criteria in
+> `validation/B1_DRIVER_VALIDATION_CRITERIA.md` beneath that archive path.
 > References below to a proposed or formal B1 run describe the superseded
-> design and must not be applied to current execution.
+> design and must not be applied to current execution or a future denominator.
 
 **Status:** superseded historical proposal; inactive
 
@@ -16,15 +17,15 @@
 capabilities approved on 2026-08-21; numeric gates remain proposed until threshold approval and
 reference calibration
 
-**Scope:** the exact eleven-configuration cohort declared by `AUTOADAPTER_2_AUTHORITY.md`
+**Historical scope:** the exact eleven-configuration cohort proposed in this document
 
 **Historical purpose:** record the proposed interface and admission design for
 the former eleven-configuration B1 cohort
 
 This specification replaces the task-wrapper design of `fixed_driver_v1` as the proposed B1
 direction. It does not change the current executable benchmark by itself. The interfaces,
-private cases, reference drivers, Harness bindings, and Authority clauses identified in Section
-11 must be implemented and calibrated before a formal B1 run.
+private cases, reference drivers, Harness bindings, and requirements identified in Section 11
+would need a newly approved manifest/protocol before any future formal B1 run.
 
 ## 中文决策摘要
 
@@ -47,7 +48,7 @@ B1 对每项 capability 使用 3 个互不相同的隐藏参数/reset variant。
 `data.ctrl`/`mj_step`、5 mm 穿透、接触/支撑完整性和完整视频门槛。
 
 本文的低层路径、接触、往返和协调阈值属于拟预注册的实验标准，不冒充现有 Task Library 的完整
-任务门槛。正式封存前必须先修订 Authority 的 task-specific ABI，再由 task-blind reference driver
+任务门槛。任何未来正式封存都必须先在新 manifest/protocol 中确定 task-specific ABI，再由 task-blind reference driver
 对完全相同的隐藏 suite 做正控制校准。
 
 ## 1. Decision
@@ -603,9 +604,10 @@ Every trial additionally requires:
 Focused false-success checks must reject both (a) source containing task-ID/name dispatch and (b) a
 driver that ignores requests and always replays one fixed trajectory.
 
-The current Authority-wide `0.005 m` maximum penetration remains global, including allowed support
-contacts, unless Authority is explicitly revised before freeze. Contact allowlisting changes which
-pairs are permitted; it does not waive the penetration guard.
+This historical proposal's `0.005 m` maximum penetration is global, including allowed support
+contacts. Contact allowlisting changes which pairs are permitted; it does not waive the
+penetration guard. A future experiment must restate or revise that rule in its own approved
+manifest/protocol before freeze.
 
 ### 10.4 Repair-facing projection
 
@@ -652,8 +654,9 @@ summaries are descriptive repeated-measure diagnostics, not additional independe
 
 This proposal is not executable evidence until the following minimum work is complete:
 
-1. Revise the Authority's task-specific request envelope, exact-one task clustering, B1 Task
-   Library exposure, source-task-only capability criterion, and Repair disclosure rules.
+1. Define the task-specific request envelope, exact-one task clustering, B1 Task Library
+   exposure, source-task-only capability criterion, and Repair disclosure rules in a newly
+   approved manifest/protocol.
 2. Replace the current `reach_task`/`contact_task`/task-family benchmark and generated-driver
    prompts with the capability-native ABI above.
 3. Materialise one strict JSON Schema per method, including exact safe/reachable numeric domains,
@@ -673,5 +676,5 @@ This proposal is not executable evidence until the following minimum work is com
 10. Run every package reference driver through the exact suite before any formal generated model is
     evaluated.
 
-Until these items are complete, this file is a concrete interface and acceptance proposal, not a
-claim that the current B1 runner or fixed bundle already implements it.
+Until these items are complete, this file remains only a historical interface and acceptance
+proposal. The archived B1 runner and fixed bundle do not implement a current experiment.

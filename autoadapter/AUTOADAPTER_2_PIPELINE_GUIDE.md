@@ -1,23 +1,23 @@
 # AutoAdapter 2.0 当前主线实现说明
 
 > 本文解释当前代码怎样运行，便于开发、审查和读取实验证据；它不是新的实验规范。
-> 项目级规则仍以仓库根目录的 `AUTOADAPTER_2_AUTHORITY.md` 为准，Exp1a 与 Exp3
-> 分别以各自的 scoped Authority 为准。若本文与适用 Authority 冲突，以 Authority 为准。
+> 当前没有 active experiment workspace，也没有获批的新实验 manifest/protocol。正式编译链
+> `thesis/Main.tex` 决定当前论文编号，但不因此授权任何实验运行。新实验需另行确定后再建立。
 
-本文对应 `AA2-AUTH` revision `0.20.1` 的原地改造：没有 `aa1_runtime`，也没有另一套
+本文保留原 `AA2-AUTH` revision `0.20.1` 时期的实现说明作为代码沿革：没有 `aa1_runtime`，也没有另一套
 并行协议。AA1 commit `585eb1f1fde33f17f5f9a1e169a18dd41f97b586` 中有用的
 ReAct、文件工作区、持久 Python/MuJoCo session 和 expected-artifact 完成语义，被合并到
 现有 AutoAdapter 2.0 模块；多模型、自动 Capability Design、自动 IVC、可信 Harness、
 ReCAP 和 Experience 仍由 AA2 当前模块负责。
 
-当前实验边界是：
+当前仓库边界是：
 
-- Exp1a 只准备新的文件工作流、SO-101 `1.0.4` fixed bundle 和零模型检查；84 个正式
-  cells 仍锁定，未获批准前不能发送正式模型请求。
-- Exp1b 已完成。本轮不重跑，不修改其 Authority、配置或结果。
-- Exp2 本轮不作为活动、输入或验收门禁；保留的文件和测试不因此被改写。
-- Exp3 只允许 `design-check` 和 `preflight`。正式 33 cells 仍锁定。
-- 模型 canary 只有在用户针对该次 run 明确批准后才可执行；正式 Exp1a/Exp3 仍需独立批准。
+- `experiment/` 下只保留通用 path-layout 支持；没有 active runner、manifest 或实验分母。
+- 四套旧实验、runner-specific tests、runbook、ignored runs、冻结源码和视频整体保存在
+  `experiment/archive/pre_thesis_realign_2026-08-31/`。
+- archive 只保存历史证据。不得从 archived runner 发起新实验，也不得把旧结果并入未来分母。
+- 通用 Framework/Direct-MuJoCo 代码仍可做共享实现检查；任何新实验运行必须等待单独确定的
+  thesis-aligned manifest/protocol。
 
 ## 1. 一张图看完整主线
 
@@ -99,8 +99,8 @@ optional one-call Evolution --> proposal only --> human accept/reject + reason
 | `src/autoadapter2/b2/` | ReCAP worker/adapter/Harness 的薄兼容入口；不再拥有第二份 controller |
 | `src/autoadapter2/evolution.py` | 一次 terminal proposal、人工 disposition、review queue 和 later-run snapshot |
 | `src/autoadapter2/pipeline.py` | 按顺序组合阶段、建立可见性边界、冻结 Driver、派生 whitelist、落盘证据 |
-| `experiment/experiment1a_generation/` | 固定输入的 84-cell Exp1a 配置、runner、fixed bundle 与零模型诊断 |
-| `experiment/experiment3/` | 固定 33-cell Exp3 Authority、manifest、preflight runner 和报告边界 |
+| `experiment/path_layout.py` | 当前通用的 repository/path-layout 支持；不定义实验 |
+| `experiment/archive/pre_thesis_realign_2026-08-31/` | 旧实验、runner 和证据的只读历史快照；不是活动主线 |
 
 ## 3. 统一模型调用层
 
@@ -205,8 +205,8 @@ envelope 最多 24,000 characters，trace 中保存的 raw arguments 最多 4,00
 会先行生效。
 
 `generation.py`、TGCD 和 IVC 中仍可看到只实现 `generate_json` 的兼容分支，它们用于既有 focused
-fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，因此当前主线必然选择上述
-文件工作流；兼容分支不能作为 Exp1a、Exp3 或 DeepSeek canary 的执行证据。
+fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，因此共享主线会选择上述
+文件工作流；兼容分支不能作为未来正式实验的执行证据。
 
 ### 4.1 Driver freeze 与 attempt
 
@@ -299,10 +299,9 @@ fixtures 和旧 caller。真实 `JsonModelClient` 提供 `generate_tool_turn`，
   minimal-environment boundary；不存在一个权限更宽的旧 probe subprocess。
 - `mujoco.mj_step` 被 wrapper 计数；超过每阶段 step 或 simulated-time budget 会失败。
 - `ProbeBudget` 的代码默认是每 call 30 秒、24,000 输出字符、每 phase 4,000 physics steps、
-  每 phase 20 simulated seconds；当前通用 mainline 与 Exp3 config 把输出进一步固定为 12,000。
-  Pipeline 会把同一 `execute_python` block 传给 STUDY、TGCD、IVC、Generate 和 Repair。Exp1a 的
-  scoped runner 只固定 turn budgets，未另行覆盖时使用 24,000 的代码默认。具体运行以适用的
-  scoped config/runner 为准。
+  每 phase 20 simulated seconds；通用 mainline config 可把输出进一步固定为 12,000。
+  Pipeline 会把同一 `execute_python` block 传给 STUDY、TGCD、IVC、Generate 和 Repair。历史实验
+  的 runner/config 取值只记录在 archive 中；未来正式运行以届时获批的 config/runner 为准。
 - code 最多 200,000 characters。stdout/stderr 被合并在边界内，超出部分明确标记 truncated。
 - timeout、worker exit 或协议损坏会终止并丢弃当前持久进程；失败代码不会自动重放。下一次显式
   `execute_python` 会启动干净 worker，并返回 `session_restarted=true`，此前 Python globals 不再
@@ -409,8 +408,8 @@ task macro 或 oracle plan。
   `set_body_height`、`hold_stable_stance`。
 
 这两份 JSON 给出完整参数 schema、bounds、units/frames 和真实 criteria，但 loader 会拒绝
-`task_id`、`task_support`、task mapping、calls、waypoints、macro 和 plan，避免把 Exp1b oracle
-使用方案泄漏成 TGCD 答案。其他九台机器人可以参考合同形式，必须自己设计 target-specific
+`task_id`、`task_support`、task mapping、calls、waypoints、macro 和 plan，避免把 archived Exp1b
+oracle 使用方案泄漏成 TGCD 答案。其他九台机器人可以参考合同形式，必须自己设计 target-specific
 capabilities。
 
 下面是当前 reference 的核对索引；JSON 文件本身才是完整机器可读版本。每个 request numeric
@@ -508,8 +507,9 @@ task dispatch/`task_id`、Driver/Repair/verdict/self-PASS material 都拒绝。
 封存后的 candidate Harness 只把 native `{"request": <case.request>}` 交给 Driver method。inline
 measurement、sealed criteria、scene mechanics、guards、temporal/aggregation、视频和 verdict 均在
 Framework parent side。reference-only adapter 若在单独诊断中需要私有 task envelope，也不能改变
-candidate payload 或 report。Exp1a B1 fixed suite 继续使用自己的冻结 `binding_id`/contract，不受
-动态 `capability-v2` 接口迁移影响。
+candidate payload 或 report。archived Exp1a B1 fixed suite 保留自己的冻结 `binding_id`/contract，
+不受动态 `capability-v2` 接口迁移影响；共享代码若仍需读取该历史固定输入，必须使用明确的 archive
+路径。
 
 ### 7.4 Generate / GEN_ALGO
 
@@ -878,112 +878,25 @@ Driver synthesis、implementation-blind validation，也不是可信 verdict own
 因此新版本不复制 AA1 TaskPlanner，也不引入 AWS CodeInterpreter、SSH/SCP、EXPORT、MCP 或旧
 Demo。`autoadapter2.b2` 下保留的入口只是已有 worker/Harness import 的兼容层。
 
-## 13. Exp1a：固定输入 Driver comparison
+## 13. Archived fixed-input Driver comparison
 
-Exp1a 不在每个 cell 重新跑 TGCD/IVC。每台机器人使用预先封存的 capability design、pass standard
-和完整 private suite，从 STUDY 开始比较 LLM Driver synthesis。
+原 Exp1a/后改名 Exp2a 的固定输入 Driver comparison 已整体归档到：
 
-固定矩阵：
+`experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/`
 
-```text
-2 robots × 7 LLMs × 2 conditions × 3 replicates = 84 cells
-```
+其中保留原 manifest、runner、tests、runs 和 fixed bundles；历史固定输入位于
+`validation/fixed_validation_bundles/`。这些文件只用于复核旧证据，不是当前可运行的实验主线，
+旧矩阵与结果也不进入未来实验分母。本文不再提供 archived runner 的启动命令。
 
-- robots：`robotstudio_so101` `1.0.4`、`unitree-go2-stock-12dof`（冻结 bundle）；
-- LLMs：M1--M6、M8；M7 仅保留历史，不复用编号；
-- conditions：skeleton-assisted、from-scratch；
-- replicates：`r01--r03`；
-- 每 cell 最多三个 frozen Driver attempts；
-- 不运行 Task Demo、high-level controller、Evolution；Experience 为空；
-- 最终统计 final frozen Driver，不使用 best attempt。
+## 14. Archived fixed-input cross-robot cohort
 
-表格中的 `Study completed / 3` 表示同一 robot × LLM × condition 的三个 replicates 中，有几次
-写出并通过审核的 `study.json`。`Driver fully validated / 3` 也按每个 replicate 的最后一份 frozen
-Driver 计算：SO-101 必须通过 fixed suite 的 `18/18` cases，Go2 必须通过 `15/15` cases，才把该
-replicate 计为一次 fully validated；较早 attempt 曾通过部分 cases 或取得更高分都不能替代 final
-frozen attempt。这就是“按照最后一次正式提交是否整套通过”的成功率，不是 best-attempt 成功率。
+原固定 33-cell cross-robot cohort 已整体归档到：
 
-本轮只允许：manifest resolution、`--check-only`、fixed-bundle checks 和 reference positive control。
-`manifest.json` 的 `formal_dispatch_enabled=false` 是硬门；runner 在创建正式 client 前拒绝 dispatch。
+`experiment/archive/pre_thesis_realign_2026-08-31/experiment3_fixed_input_cross_robot/`
 
-零模型例子：
-
-```bash
-PYTHONPATH=autoadapter/src:. pyenv exec python \
-  experiment/experiment1a_generation/run_b1.py \
-  --manifest experiment/experiment1a_generation/manifest.json \
-  --unit-id 'b1::robotstudio_so101::M1::r01::skeleton-assisted' \
-  --check-only
-
-PYTHONPATH=autoadapter/src:. pyenv exec python \
-  experiment/experiment1a_generation/diagnostics/reference_positive_control.py \
-  --robot robotstudio_so101 \
-  --output autoadapter/evidence/diagnostic/exp1a-reference/robotstudio_so101
-```
-
-第二个命令运行真实 MuJoCo/Harness reference diagnostic，但模型调用数为 0；它不是正式 cell。
-
-## 14. Exp3：固定 33-cell cohort
-
-Exp3 是描述性 cross-configuration cohort：
-
-```text
-11 configurations × r01--r03 × Sonnet 4.6 × skeleton-assisted = 33 cells
-```
-
-11 个 configuration IDs 固定为：
-
-```text
-robotstudio_so101
-unitree-go2-stock-12dof
-franka_panda
-kinova_gen3_robotiq_2f85
-ufactory_xarm7
-universal_robots_ur5e_robotiq_2f85
-piper
-kuka_iiwa_14
-leap_hand
-hello_robot_stretch_2
-aloha_2
-```
-
-每个 indexed package 都必须提供非空 `morphology.public_observations`，因为 ReCAP worker 只能把
-这些 package-declared public observations 返回模型；缺少 observation adapter 的 package 不能靠
-通用 state dump 冒充 Exp3 readiness。
-
-每 cell 都 fresh STUDY、TGCD、IVC、workspace、conversation 和 reset，empty Experience，最多三个
-frozen attempts，ReCAP Task Demo 后停止，Evolution disabled。SO-101/Go2 的六行单列为
-`reference-seen controls`，其余 27 行为 `transfer cells`；这只是 reference exposure 标签，不是
-morphology 或 quadruped-transfer effect。
-
-runner 为未来获批的正式 row 机械写入 `formal=true`，并固定
-`skip_reference_calibration=true`；每个 fresh IVC 依靠本次 artifact 的 inline
-request/operator/entity/guard/criteria 审核封存，不依赖 reference Driver，也不能拿历史 readiness
-文件代替本次审核。final Driver 只要有
-至少一个 nominal+boundary 双过 capability，就必须用该 whitelist 运行 ReCAP；正式 evidence gate
-要求执行的 Task Demo 有 1--5 个由该 whitelist 支持的 tasks 和完整视频（有至少五个 eligible tasks
-时由 pipeline 取五个）。若 whitelist 为空，则必须保留非空 not-run
-reason。两种终态都进入 33-cell 描述性 denominator，不把 partial capability closure 改写为 full-suite
-Driver PASS。
-
-当前允许的零模型命令：
-
-```bash
-PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment3.runner \
-  design-check --manifest experiment/experiment3/manifest.json
-
-PYTHONPATH=autoadapter/src pyenv exec python -m experiment.experiment3.runner \
-  preflight --root autoadapter \
-  --manifest experiment/experiment3/manifest.json
-```
-
-`manifest.json` 保持 `formal_dispatch_authorised=false`。本轮不要调用 runner 中为将来保留的
-`formal` 或 `resume` 子命令。
-
-Exp3 自己的 preflight 只证明 scoped manifest 与 package pins。当前 dynamic IVC 的额外可执行 gate
-见下一节：它会真实构建 11 个 package 的全部 scene/entity/operator inputs。即使该 gate 通过，也不
-预先保证未来任意 TGCD criterion 一定可表达；无法由 trusted catalog 表达时，IVC 必须收到明确错误
-并在六回合内修正或如实失败，不能回退到旧 `binding_id`。
+其中保留原 manifest、protocol、fixed inputs、diagnostics 和 runner。它们记录当时的实现与结果，
+但不构成新实验设计、readiness gate 或受支持的 launch interface。新 cross-robot 实验必须等待
+另行确认的 thesis-aligned manifest/protocol；本文不再提供 archived runner 的启动命令。
 
 ## 15. 通用零模型检查和主线 CLI
 
@@ -1021,15 +934,15 @@ PYTHONPATH=autoadapter/src pyenv exec python -m autoadapter2 full \
   --run-id <new-run-id>
 ```
 
-输出目录应为新的诊断/实验目录。当前默认 `mainline.json` 明确是 `formal=false`；不要用它的通用
-cohort 配置代替 Exp1a 或 Exp3 scoped runner，也不能把它的输出升级成正式 evidence。正式实验的
-matrix 和 dispatch gate 由各自 Authority/manifest 控制。
+输出目录应为新的诊断目录。当前默认 `mainline.json` 明确是 `formal=false`；不能把它的输出升级成
+正式 evidence，也不能用它替代尚未确定的新实验 manifest。未来正式实验的 matrix 和 dispatch gate
+由届时获批的 thesis-aligned manifest/protocol 控制。
 当前 `full` CLI 不提供 `--reuse-sealed-inputs-from` 或 `--skip-reference-calibration`：每个 cell 都使用
 fresh TGCD/IVC artifact；动态主线默认依靠 inline suite 的 deterministic audit，不运行 reference
 Driver diagnostic。
 
-以上 `full` 命令只说明程序入口；只有获得针对某次 diagnostic run 的明确批准后才可实际调用，且
-它不会因此成为 Exp1a/Exp3 正式 evidence。
+以上 `full` 命令只说明共享程序入口；只有获得针对某次 diagnostic run 的明确批准后才可实际调用，
+且它不会因此成为正式实验 evidence。
 
 ## 16. DeepSeek SO-101 `1.0.4` 全线 canary（配置保留，当前锁定）
 
@@ -1096,35 +1009,22 @@ DeepSeek canary 的判读条件不是“整套必须 PASS”，而是同时检�
 6. Task Demo 有真实 physics、可信 Harness verdict 和视频；其 verdict 可以 FAIL；
 7. Evolution proposal 在 source run 后展示给用户；在用户 accept/reject 并给非空 reason 前，
    不建立/启动 later run；
-8. 不调用其他 LLM，不写入 Exp1a/Exp3 denominator。
+8. 不调用其他 LLM，不写入任何 archived 或未来正式实验 denominator。
 
 source evidence gate 通过后先在对话里展示打印出的 proposal。此时
 `experience_review_queue.json` 必须仍为 pending，且 `experience_snapshot.json` 不存在；只有用户明确
 给出 `accept`/`reject` 和非空理由后，才能调用第 7.7 节的 review/snapshot API。若接受，later run
 也必须由用户另行启动；上述 canary 命令不会自动创建或消费 Experience snapshot。
 
-### 16.1 Sonnet 其余机器人 skeleton 诊断（配置保留，当前锁定）
+### 16.1 Archived Sonnet cross-robot diagnostics
 
-`configs/experiments/sonnet-exp3-remaining-skeleton-diagnostic.json` 固定 Exp3 的 Sonnet 4.6
-model、file-workflow budgets、skeleton-assisted、empty Experience 和 Evolution disabled，但明确
-保持 `formal=false`。它包含除 SO-101 外的 10 台机器人。诊断入口每次只取其中一台，显式从
-`.env.company-api` 加载 company credential，调用 fresh STUDY/TGCD/IVC/Generate/Repair/ReCAP
-主线；下面命令当前仅保留作获批后的接口说明：
+旧 Sonnet cross-robot diagnostic runner、tests 和其历史输出随旧 cross-robot workspace 保存在：
 
-```bash
-PYTHONPATH=autoadapter/src pyenv exec python \
-  experiment/experiment3/diagnostics/run_sonnet_skeleton_diagnostic.py \
-  --robot unitree-go2-stock-12dof \
-  --output autoadapter/runs/diagnostic/sonnet-go2-skeleton-20260825 \
-  --run-id sonnet-go2-skeleton-20260825
-```
+`experiment/archive/pre_thesis_realign_2026-08-31/experiment3_fixed_input_cross_robot/diagnostics/`
 
-其他允许值是 `franka_panda`、`kinova_gen3_robotiq_2f85`、`ufactory_xarm7`、
-`universal_robots_ur5e_robotiq_2f85`、`piper`、`kuka_iiwa_14`、`leap_hand`、
-`hello_robot_stretch_2` 和 `aloha_2`。入口在发出模型请求前先验证 exact model pin、credential
-来源和单机器人 package；结束时打印 stage/Driver/ReCAP 摘要、requested/returned model、累计 token
-以及 evidence path。这些运行不占 Exp3 的 33-cell denominator，也不授权正式 dispatch；revision
-`0.20.1` 下诊断本身同样等待用户再次批准，当前不得执行该命令。
+`configs/experiments/sonnet-exp3-remaining-skeleton-diagnostic.json` 仍保留为共享实现沿革，但没有
+对应的 active experiment runner。不要从 archive 启动该诊断，也不要把旧输出计入未来分母；若新实验
+需要相同机制，应在新 manifest/protocol 确定后建立新的入口。
 
 ## 17. 怎样读一份运行证据
 
@@ -1163,7 +1063,8 @@ PYTHONPATH=autoadapter/src pyenv exec python \
 - 一个 capability 双过不等于完整 Driver 全套通过。
 - ReCAP `finish`/controller completion 不等于 Task Demo PASS。
 - 有 MP4 path 不等于视频证据完整。
-- DeepSeek canary 是 diagnostic，不进入 Exp1a/Exp3 denominator。
-- Exp3 的 `reference-seen`/`transfer` 是暴露描述，不支持 morphology、quadruped-transfer 或因果主张。
+- DeepSeek canary 是历史 diagnostic，不进入 archived 或未来正式实验 denominator。
+- archived cross-robot cohort 的 `reference-seen`/`transfer` 是暴露描述，不支持 morphology、
+  quadruped-transfer 或因果主张。
 - Experience proposal 本身不支持 improvement claim；只有后续另行设计的 matched evidence 才可能
   讨论效果，本轮没有这样的实验。

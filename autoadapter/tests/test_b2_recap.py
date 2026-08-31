@@ -13,8 +13,11 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SO101_DESIGN = (
     REPOSITORY_ROOT
     / "experiment"
-    / "b2_recap"
-    / "reference_validation"
+    / "archive"
+    / "pre_thesis_realign_2026-08-31"
+    / "experiment1b_use"
+    / "validation"
+    / "reference"
     / "resolved"
     / "robotstudio_so101"
     / "capability_design.json"
@@ -402,8 +405,11 @@ def test_catalogue_metadata_matches_the_implemented_fixed_core() -> None:
             SO101_DESIGN,
             REPOSITORY_ROOT
             / "experiment"
-            / "b2_recap"
-            / "reference_validation"
+            / "archive"
+            / "pre_thesis_realign_2026-08-31"
+            / "experiment1b_use"
+            / "validation"
+            / "reference"
             / "resolved"
             / "unitree-go2-stock-12dof"
             / "capability_design.json",

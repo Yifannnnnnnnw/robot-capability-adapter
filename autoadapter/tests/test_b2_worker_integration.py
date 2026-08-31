@@ -307,8 +307,11 @@ def test_real_persistent_worker_canary_runs_typed_recap_leaf(tmp_path: Path) -> 
         (
             REPOSITORY_ROOT
             / "experiment"
-            / "b2_recap"
-            / "reference_validation"
+            / "archive"
+            / "pre_thesis_realign_2026-08-31"
+            / "experiment1b_use"
+            / "validation"
+            / "reference"
             / "resolved"
             / "robotstudio_so101"
             / "capability_design.json"

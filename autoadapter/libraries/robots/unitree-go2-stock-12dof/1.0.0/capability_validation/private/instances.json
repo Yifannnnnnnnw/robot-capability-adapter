@@ -5,7 +5,7 @@
   "task_snapshot_id": "unitree-go2-source-protocols-2026-08-18-v4",
   "calibration_source": {
     "suite_id": "experiment1-b1-fixed-suite::unitree-go2-stock-12dof::v3",
-    "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof/capability_validation_suite.json",
+    "repository_path": "experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof/capability_validation_suite.json",
     "role_mapping": {
       "nominal": "H1",
       "calibrated_boundary": "H3"

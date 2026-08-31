@@ -8,7 +8,7 @@ from experiment.path_layout import REPOSITORY_ROOT, resolve_run_path
 
 class PathLayoutTests(unittest.TestCase):
     def test_existing_path_is_unchanged(self) -> None:
-        path = Path("experiment/experiment1a_generation/manifest.json")
+        path = Path("experiment/path_layout.py")
         self.assertEqual(resolve_run_path(path), path)
 
     def test_old_b1_scheduler_maps_to_archive(self) -> None:

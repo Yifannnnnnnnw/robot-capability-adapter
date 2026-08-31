@@ -15,8 +15,11 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DESIGN_ROOT = (
     REPOSITORY_ROOT
     / "experiment"
-    / "b2_recap"
-    / "reference_validation"
+    / "archive"
+    / "pre_thesis_realign_2026-08-31"
+    / "experiment1b_use"
+    / "validation"
+    / "reference"
     / "resolved"
 )
 

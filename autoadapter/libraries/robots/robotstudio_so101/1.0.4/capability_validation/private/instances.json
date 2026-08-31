@@ -5,7 +5,7 @@
   "task_snapshot_id": "robotstudio-so101-corrected-r123-v2-2026-08-24-v1",
   "calibration_source": {
     "suite_id": "experiment1-b1-fixed-suite::robotstudio_so101::v6",
-    "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101/capability_validation_suite.json",
+    "repository_path": "experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101/capability_validation_suite.json",
     "role_mapping": {
       "nominal": "H1",
       "calibrated_boundary": "H3"

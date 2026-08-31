@@ -277,7 +277,8 @@ def test_persistent_worker_uses_task_projection_for_ready_and_leaf_feedback() ->
     )
     design = _read(
         REPOSITORY_ROOT
-        / "experiment/experiment1b_use/validation/reference/resolved"
+        / "experiment/archive/pre_thesis_realign_2026-08-31"
+        / "experiment1b_use/validation/reference/resolved"
         / robot_id
         / "capability_design.json"
     )
@@ -333,7 +334,8 @@ def test_declared_projection_never_silently_uses_generic_fallback() -> None:
     projection["projection_revision"] = "unfixed-public-task-revision"
     design = _read(
         REPOSITORY_ROOT
-        / "experiment/experiment1b_use/validation/reference/resolved"
+        / "experiment/archive/pre_thesis_realign_2026-08-31"
+        / "experiment1b_use/validation/reference/resolved"
         / robot_id
         / "capability_design.json"
     )

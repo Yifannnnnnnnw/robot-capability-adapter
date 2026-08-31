@@ -6,7 +6,7 @@
   "reference_source": {
     "source_id": "b1_driver_validation_criteria",
     "specific_reference": "Experiment 1 B1 Driver Validation Criteria, Unitree Go2 G1-G5 and fixed capability bundle",
-    "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof",
+    "repository_path": "experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof",
     "calibration_kind": "retained real MuJoCo fixed-bundle calibration",
     "interface_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2",
     "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",

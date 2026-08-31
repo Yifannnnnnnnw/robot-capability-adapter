@@ -27,6 +27,8 @@ PACKAGE_ROOT = (
 TASK_SUITE_PATH = (
     REPOSITORY_ROOT
     / "experiment"
+    / "archive"
+    / "pre_thesis_realign_2026-08-31"
     / "experiment1b_use"
     / "config"
     / "task_suite"
@@ -35,6 +37,8 @@ TASK_SUITE_PATH = (
 CAPABILITY_DESIGN_PATH = (
     REPOSITORY_ROOT
     / "experiment"
+    / "archive"
+    / "pre_thesis_realign_2026-08-31"
     / "experiment1b_use"
     / "validation"
     / "reference"

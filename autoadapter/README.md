@@ -1,21 +1,25 @@
 # AutoAdapter 2.0
 
-For the current Authority `0.20.1` implementation, stage interfaces, tools,
-visibility boundaries, artifacts, and experiment-preparation commands, see
-[`AUTOADAPTER_2_PIPELINE_GUIDE.md`](AUTOADAPTER_2_PIPELINE_GUIDE.md). The
-Authority remains normative; older interface descriptions below are retained
-only as historical context where they conflict with the current guide.
+For the current shared-runtime stage interfaces, tools, visibility boundaries,
+and artifacts, see
+[`AUTOADAPTER_2_PIPELINE_GUIDE.md`](AUTOADAPTER_2_PIPELINE_GUIDE.md). There is
+currently no approved experiment workspace, manifest, protocol, or runner. The
+compiled thesis rooted at `../thesis/Main.tex` supplies current research
+numbering; a separately confirmed protocol is still required before a new
+experiment can run.
 
 `autoadapter/` is the self-contained, experiment-grade Direct-MuJoCo mainline.
 It does not import or copy runtime code from `demo2/`, `demo3/`,
 `general_demo/`, or `extensions/`.
 
-The active dynamic path is file-delivered STUDY → TGCD → implementation-blind
+The shared dynamic path is file-delivered STUDY → TGCD → implementation-blind
 IVC → Generate/Repair → trusted Capability Harness → double-pass whitelist →
 ReCAP Task Demo Harness → optional Evolution. Dynamic IVC authors each native
 nominal/boundary request and inline trusted `measurement_binding`; it cannot
 select `binding_id`, see candidate code, or run arbitrary measurement Python.
-The fixed Experiment 1a B1 path is unchanged.
+The retired fixed-input and cross-run experiment implementations are preserved
+under `../experiment/archive/pre_thesis_realign_2026-08-31/` for historical
+inspection only.
 
 The executable no-credential gate is:
 
@@ -27,12 +31,17 @@ PYTHONPATH=autoadapter/src pyenv exec python \
 It builds all eleven package projections and runs local SO-101/Go2 MuJoCo plus
 ReCAP orchestration without constructing an external model client. It is a
 diagnostic, not an experiment cell. A model canary requires explicit per-run
-approval; formal Exp1a and Exp3 dispatch remain separately locked.
+approval and cannot create a formal experiment denominator. Archived
+experiment dispatch is not an active mainline.
 
-## Historical experiment description (superseded where inconsistent)
+## Historical experiment description (retired)
 
-- The formal mainline cohort is the exact eleven-configuration set in
-  `AUTOADAPTER_2_AUTHORITY.md` Section 1.3: SO-101, Go2, Franka Panda, Kinova
+The bullets in this section describe the superseded programme that accompanied
+the deleted Authority files. They are retained as design history, not as an
+active specification or launch checklist.
+
+- The former proposed mainline cohort was the exact eleven-configuration set:
+  SO-101, Go2, Franka Panda, Kinova
   Gen3 + Robotiq 2F-85, xArm7, UR5e + Robotiq 2F-85, Piper, KUKA iiwa 14,
   LEAP Hand, Stretch 2, and ALOHA 2. Unitree G1 and Barkour vB remain optional
   research backups and are not part of the formal cohort.
@@ -106,14 +115,14 @@ capability design, fixed `method(request=request)` transport ABI, and condition
 specific primitives. It never receives private cases, reference source, or a
 Framework-owned MuJoCo session outside the Harness.
 
-The separate fixed-interface benchmark slice and its exact per-robot methods
+The separate historical fixed-interface benchmark slice and its exact per-robot methods
 and source-backed primary gates are recorded in
 [`FIXED_DRIVER_BENCHMARK.md`](FIXED_DRIVER_BENCHMARK.md) and
 [`configs/benchmarks/fixed_driver_v1.json`](configs/benchmarks/fixed_driver_v1.json).
-That slice is useful for bounded driver and high-level-controller comparisons,
-but it is not a substitute for the formal real-model TGCD path above.
+That slice records a bounded driver and high-level-controller comparison design,
+but it is not an active experiment protocol.
 
-A driver becomes a formal attempt only after the model explicitly submits the
+A driver in the retired programme became a formal attempt only after the model explicitly submitted the
 current revision. Submission requires source audit and a successful public
 physics smoke for every sealed capability through the bundled public check;
 development rewrites and rejected pre-submission checks do not consume one of
@@ -133,9 +142,9 @@ pyenv exec python -m autoadapter2 check-only
 pyenv exec python -m pytest -q
 ```
 
-The default command reads `configs/experiments/mainline.json`, whose formal
-version must select the complete declared cohort. Focused single-robot package
-checks use an explicit canary through
+The default command reads the shared diagnostic configuration at
+`configs/experiments/mainline.json`; running it does not constitute a current
+formal experiment. Focused single-robot package checks use an explicit canary through
 `--config configs/experiments/<canary-name>.json`; the existing SO-101 and Go2
 canaries are diagnostics, not a definition of mainline scope.
 

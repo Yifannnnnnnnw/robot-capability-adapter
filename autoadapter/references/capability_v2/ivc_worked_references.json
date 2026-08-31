@@ -14,7 +14,7 @@
         "reference_source": {
           "source_id": "b1_driver_validation_criteria",
           "specific_reference": "Experiment 1 B1 Driver Validation Criteria, SO-101 A1-A6 and fixed capability bundle",
-          "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101",
+          "repository_path": "experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101",
           "calibration_kind": "retained real MuJoCo fixed-bundle calibration",
           "interface_id": "experiment1-b1-fixed-interface::robotstudio_so101::v4",
           "pass_standard_id": "experiment1-b1-driver-validation-criteria-v4",
@@ -1688,7 +1688,7 @@
       },
       "source_lineage": {
         "design": "autoadapter/references/capability_v2/so101.json",
-        "fixed_request_calibration": "experiment/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101/capability_validation_suite.json",
+        "fixed_request_calibration": "experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/robotstudio_so101/capability_validation_suite.json",
         "private_scene_guard_calibration": "autoadapter/libraries/robots/robotstudio_so101/1.0.4/capability_validation/private"
       }
     },
@@ -1703,7 +1703,7 @@
         "reference_source": {
           "source_id": "b1_driver_validation_criteria",
           "specific_reference": "Experiment 1 B1 Driver Validation Criteria, Unitree Go2 G1-G5 and fixed capability bundle",
-          "repository_path": "experiment/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof",
+          "repository_path": "experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof",
           "calibration_kind": "retained real MuJoCo fixed-bundle calibration",
           "interface_id": "experiment1-b1-fixed-interface::unitree-go2-stock-12dof::v2",
           "pass_standard_id": "experiment1-b1-driver-validation-criteria-v2",
@@ -3167,7 +3167,7 @@
       },
       "source_lineage": {
         "design": "autoadapter/references/capability_v2/go2.json",
-        "fixed_request_calibration": "experiment/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof/capability_validation_suite.json",
+        "fixed_request_calibration": "experiment/archive/pre_thesis_realign_2026-08-31/experiment1a_generation/validation/fixed_validation_bundles/unitree-go2-stock-12dof/capability_validation_suite.json",
         "private_scene_guard_calibration": "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.0/capability_validation/private"
       }
     }

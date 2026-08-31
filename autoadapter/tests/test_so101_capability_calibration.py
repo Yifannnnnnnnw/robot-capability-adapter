@@ -22,6 +22,8 @@ PUBLIC_REFERENCE = ROOT / "references" / "capability_v2" / "so101.json"
 FIXED_SUITE = (
     ROOT.parent
     / "experiment"
+    / "archive"
+    / "pre_thesis_realign_2026-08-31"
     / "experiment1a_generation"
     / "validation"
     / "fixed_validation_bundles"

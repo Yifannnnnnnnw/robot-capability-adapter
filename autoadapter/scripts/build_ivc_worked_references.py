@@ -24,7 +24,8 @@ CONFIGURATIONS = {
         "design": ROOT / "autoadapter/references/capability_v2/so101.json",
         "package": ROOT / "autoadapter/libraries/robots/robotstudio_so101/1.0.4",
         "fixed_suite": ROOT
-        / "experiment/experiment1a_generation/validation/fixed_validation_bundles"
+        / "experiment/archive/pre_thesis_realign_2026-08-31"
+        / "experiment1a_generation/validation/fixed_validation_bundles"
         / "robotstudio_so101/capability_validation_suite.json",
         "instance_prefix": "so101",
         "operators": {
@@ -41,7 +42,8 @@ CONFIGURATIONS = {
         "package": ROOT
         / "autoadapter/libraries/robots/unitree-go2-stock-12dof/1.0.0",
         "fixed_suite": ROOT
-        / "experiment/experiment1a_generation/validation/fixed_validation_bundles"
+        / "experiment/archive/pre_thesis_realign_2026-08-31"
+        / "experiment1a_generation/validation/fixed_validation_bundles"
         / "unitree-go2-stock-12dof/capability_validation_suite.json",
         "instance_prefix": "go2",
         "operators": {
